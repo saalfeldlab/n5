@@ -37,4 +37,10 @@ public class ByteArrayDataBlock extends AbstractDataBlock<byte[]>
 	public ByteBuffer toByteBuffer() {
 		return ByteBuffer.wrap(getData());
 	}
+
+	@Override
+	public void readData(final ByteBuffer buffer) {
+		if (buffer.array() != getData())
+			buffer.get(getData());
+	}
 }

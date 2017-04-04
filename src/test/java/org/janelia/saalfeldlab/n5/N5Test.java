@@ -21,9 +21,8 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Random;
 
-import org.janelia.saalfeldlab.n5.N5.CompressionType;
-import org.janelia.saalfeldlab.n5.N5.DataType;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -45,7 +44,9 @@ public class N5Test {
 
 	static private long[] dimensions = new long[]{100, 200, 300};
 
-	static private int[] cellSize = new int[]{33, 22, 11};
+	static private int[] blockSize = new int[]{33, 22, 11};
+
+	static byte[] block;
 
 	static private N5 n5;
 
@@ -60,6 +61,10 @@ public class N5Test {
 			throw new IOException("Could not create test directory for HDF5Utils test.");
 
 		n5 = new N5(testDirPath);
+
+		final Random rnd = new Random();
+		block = new byte[blockSize[0] * blockSize[1] * blockSize[2]];
+		rnd.nextBytes(block);
 	}
 
 	/**
@@ -91,10 +96,11 @@ public class N5Test {
 		if (!(file.exists() && file.isDirectory()))
 			fail("File does not exist");
 	}
+
 	@Test
 	public void testCreateDataset() {
 		try {
-			n5.createDataset(datasetName, dimensions, cellSize, DataType.UINT64, CompressionType.RAW);
+			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, CompressionType.RAW);
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
@@ -104,9 +110,9 @@ public class N5Test {
 			fail("File does not exist");
 
 		try {
-			final DatasetAttributes info = n5.getDatasetInfo(datasetName);
+			final DatasetAttributes info = n5.getDatasetAttributes(datasetName);
 			Assert.assertArrayEquals(dimensions, info.getDimensions());
-			Assert.assertArrayEquals(cellSize, info.getBlockSize());
+			Assert.assertArrayEquals(blockSize, info.getBlockSize());
 			Assert.assertEquals(DataType.UINT64, info.getDataType());
 			Assert.assertEquals(CompressionType.RAW, info.getCompressionType());
 		} catch (final IOException e) {
@@ -116,8 +122,32 @@ public class N5Test {
 	}
 
 	@Test
+	public void testWriteReadBlock() {
+		for (final CompressionType compressionType : CompressionType.values()) {
+			System.out.println("Testing " + compressionType);
+			try {
+				n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT8, compressionType);
+				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+				final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, new long[]{0, 0, 0}, block);
+				n5.writeBlock(datasetName, attributes, dataBlock);
+
+				final AbstractDataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+
+				Assert.assertArrayEquals(block, (byte[])loadedDataBlock.getData());
+
+//				Assert.assertTrue(n5.remove(datasetName));
+
+			} catch (final IOException e) {
+				e.printStackTrace();
+				fail("Block cannot be written.");
+			}
+		}
+	}
+
+	@Test
 	public void testRemove() {
 		try {
+			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, CompressionType.RAW);
 			n5.remove(groupName);
 		} catch (final IOException e) {
 			fail(e.getMessage());

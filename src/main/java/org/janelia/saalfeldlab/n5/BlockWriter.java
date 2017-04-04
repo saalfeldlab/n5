@@ -26,7 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
-import java.nio.channels.ByteChannel;
+import java.nio.channels.FileChannel;
 
 /**
  *
@@ -35,5 +35,5 @@ import java.nio.channels.ByteChannel;
  */
 public interface BlockWriter
 {
-	public <T> void write(final AbstractDataBlock<T> dataBlock, final ByteChannel channel) throws IOException;
+	public <T> void write(final AbstractDataBlock<T> dataBlock, final FileChannel channel) throws IOException;
 }

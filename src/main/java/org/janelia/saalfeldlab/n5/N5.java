@@ -25,10 +25,12 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Writer;
 import java.lang.reflect.Type;
 import java.nio.channels.Channels;
@@ -45,16 +47,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentHashMap.KeySetView;
+import java.util.stream.Stream;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
 
 /**
@@ -72,114 +69,13 @@ public class N5
 
 	private final KeySetView<Object, Boolean> threadLocks = ConcurrentHashMap.newKeySet();
 
-	public enum DataType {
-
-		UINT8("uint8"),
-		UINT16("uint16"),
-		UINT32("uint32"),
-		UINT64("uint64"),
-		INT8("int8"),
-		INT16("int16"),
-		INT32("int32"),
-		INT64("int64"),
-		FLOAT32("float32"),
-		FLOAT64("float64");
-
-		private final String label;
-
-		private DataType(final String label) {
-			this.label = label;
-		}
-
-		@Override
-		public String toString() {
-			return label;
-		}
-
-		public static DataType fromString(final String string) {
-			for (final DataType value : values())
-				if (value.toString().equals(string))
-					return value;
-			return null;
-		}
-	}
-
-	private class DataTypeJsonAdapter implements JsonDeserializer<DataType>, JsonSerializer<DataType>
-	{
-		@Override
-		public DataType deserialize(
-				final JsonElement json,
-				final Type typeOfT,
-				final JsonDeserializationContext context) throws JsonParseException {
-			return DataType.fromString(json.getAsString());
-		}
-
-		@Override
-		public JsonElement serialize(
-				final DataType src,
-				final Type typeOfSrc,
-				final JsonSerializationContext context) {
-			return new JsonPrimitive(src.toString());
-		}
-	}
-
-	private class CompressionTypeJsonAdapter implements JsonDeserializer<CompressionType>, JsonSerializer<CompressionType>
-	{
-		@Override
-		public CompressionType deserialize(
-				final JsonElement json,
-				final Type typeOfT,
-				final JsonDeserializationContext context) throws JsonParseException {
-			return CompressionType.fromString(json.getAsString());
-		}
-
-		@Override
-		public JsonElement serialize(
-				final CompressionType src,
-				final Type typeOfSrc,
-				final JsonSerializationContext context) {
-			return new JsonPrimitive(src.toString());
-		}
-	}
-
-	public enum CompressionType {
-
-		RAW("raw", new RawBlockWriter()),
-		GZIP("gzip", new GzipBlockWriter()),
-		BZIP2("bzip2", new Bzip2BlockWriter());
-
-		private final String label;
-		private final BlockWriter writer;
-
-		private CompressionType(final String label, final BlockWriter writer) {
-			this.label = label;
-			this.writer = writer;
-		}
-
-		@Override
-		public String toString() {
-			return label;
-		}
-
-		public static CompressionType fromString(final String string) {
-			for (final CompressionType value : values())
-				if (value.toString().equals(string))
-					return value;
-			return null;
-		}
-
-		public BlockWriter getWriter() {
-			return writer;
-		}
-	}
-
 	final private Gson gson;
 	final private String basePath;
 
 	public N5(final String basePath, final GsonBuilder gsonBuilder) {
 		this.basePath = basePath;
-		gsonBuilder.registerTypeAdapter(DataType.class, new DataTypeJsonAdapter());
-		gsonBuilder.registerTypeAdapter(CompressionType.class, new CompressionTypeJsonAdapter());
+		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
+		gsonBuilder.registerTypeAdapter(CompressionType.class, new CompressionType.JsonAdapter());
 		this.gson = gsonBuilder.create();
 	}
 
@@ -305,7 +201,7 @@ public class N5
 	 * @return dataset info or null if either dimensions or dataType are not set
 	 * @throws IOException
 	 */
-	public DatasetAttributes getDatasetInfo(final String pathName) throws IOException {
+	public DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
 
 		final HashMap<String, JsonElement> attributes = getAttributes(pathName);
 
@@ -352,7 +248,7 @@ public class N5
 	public void createGroup(final String pathName) throws IOException {
 
 		final Path path = Paths.get(basePath, pathName);
-		Files.createDirectories( path );
+		Files.createDirectories(path);
 	}
 
 	/**
@@ -361,25 +257,28 @@ public class N5
 	 * @param pathName
 	 * @throws IOException
 	 */
-	public void remove(final String pathName) throws IOException {
+	public boolean remove(final String pathName) throws IOException {
 		final Path path = Paths.get(basePath, pathName);
-		if (path.toFile().exists())
-			Files.walk(path)
-		    	.sorted(Comparator.reverseOrder())
-		    	.forEach(
-		    			filePath -> {
-		    				final File file = filePath.toFile();
-		    				if (file.isFile()) {
-		    					try (final FileLock lock = FileChannel.open(filePath, StandardOpenOption.WRITE).lock()) {
-									file.delete();
-									lock.release();
-								} catch (final IOException e) {
-									e.printStackTrace();
-								}
-		    				}
-		    				else
-		    					file.delete();
-		    				});
+		final File file = path.toFile();
+		if (file.exists())
+			try (final Stream<Path> pathStream = Files.walk(path)) {
+				pathStream.sorted(Comparator.reverseOrder()).forEach(
+	    			childPath -> {
+	    				final File childFile = childPath.toFile();
+	    				if (childFile.isFile()) {
+	    					try (final FileLock lock = FileChannel.open(childPath, StandardOpenOption.WRITE).lock()) {
+								childFile.delete();
+								lock.release();
+							} catch (final IOException e) {
+								e.printStackTrace();
+							}
+	    				}
+	    				else
+	    					childFile.delete();
+	    			});
+			}
+
+		return !file.exists();
 	}
 
 	/**
@@ -424,7 +323,7 @@ public class N5
 			final DatasetAttributes datasetAttributes,
 			final AbstractDataBlock< T > dataBlock ) throws IOException {
 
-		final Path path = dataBlock.getPath(pathName);
+		final Path path = AbstractDataBlock.getPath(Paths.get(basePath, pathName).toString(), dataBlock.getGridPosition());
 		Files.createDirectories(path.getParent());
 		final File file = path.toFile();
 		try (final FileOutputStream out = new FileOutputStream(file)) {
@@ -433,13 +332,57 @@ public class N5
 			final DataOutputStream dos = new DataOutputStream(out);
 			dos.writeInt(datasetAttributes.getNumDimensions());
 			for (final int size : dataBlock.size)
-				dos.writeLong(size);
+				dos.writeInt(size);
+
+			dos.flush();
 
 			final BlockWriter writer = datasetAttributes.getCompressionType().getWriter();
 			writer.write(dataBlock, channel);
-			channel.truncate(channel.position());
-			dos.flush();
-			lock.release();
+			if (lock.isValid()) lock.release();
+		}
+	}
+
+	public AbstractDataBlock< ? > readBlock(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final long[] gridPosition ) throws IOException {
+
+		final Path path = AbstractDataBlock.getPath(Paths.get(basePath, pathName).toString(), gridPosition);
+		final File file = path.toFile();
+		if (!file.exists())
+			return null;
+		FileLock fileLock;
+		FileChannel channel;
+		try {
+			channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE);
+			fileLock = channel.lock();
+		} catch (final IOException e) {
+			channel = FileChannel.open(path, StandardOpenOption.READ);
+			fileLock = null;
+		}
+
+		try (final InputStream in = Channels.newInputStream(channel)) {
+			final DataInputStream dis = new DataInputStream(in);
+			final int nDim = dis.readInt();
+			final int[] blockSize = new int[nDim];
+			int n = 1;
+			for (int d = 0; d < nDim; ++d) {
+				blockSize[d] = dis.readInt();
+				n *= blockSize[d];
+			}
+			AbstractDataBlock<?> dataBlock;
+			switch (datasetAttributes.getDataType()) {
+			case UINT8:
+				dataBlock = new ByteArrayDataBlock(blockSize, gridPosition, new byte[n]);
+				break;
+			default:
+				throw new IOException( "Data type " + datasetAttributes.getDataType() + " not supported" );
+			}
+
+			final BlockReader reader = datasetAttributes.getCompressionType().getReader();
+			reader.read(dataBlock, channel);
+			if (fileLock.isValid()) fileLock.release();
+			return dataBlock;
 		}
 	}
 }

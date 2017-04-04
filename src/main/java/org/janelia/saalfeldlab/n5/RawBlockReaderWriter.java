@@ -28,18 +28,25 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
-import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
-
-public class Bzip2BlockWriter implements BlockWriter
+public class RawBlockReaderWriter implements BlockReader, BlockWriter
 {
 	@Override
-	public <T> void write(final AbstractDataBlock<T> dataBlock, final ByteChannel channel) throws IOException {
+	public <T, B extends AbstractDataBlock<T>> void read(
+			final B dataBlock,
+			final ByteChannel channel) throws IOException {
+		ByteBuffer buffer = dataBlock.toByteBuffer();
+		channel.read(buffer);
+		dataBlock.readData(buffer);
+	}
+
+	@Override
+	public <T> void write(
+			final AbstractDataBlock<T> dataBlock,
+			final FileChannel channel) throws IOException {
 		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final BZip2CompressorOutputStream dos = new BZip2CompressorOutputStream(Channels.newOutputStream(channel))) {
-			dos.write(buffer.array());
-			dos.finish();
-		}
+		channel.write(buffer);
+		channel.truncate(channel.position());
 	}
 }

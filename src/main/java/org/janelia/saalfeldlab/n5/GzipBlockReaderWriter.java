@@ -29,16 +29,33 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.Channels;
-import java.util.zip.GZIPOutputStream;
+import java.nio.channels.FileChannel;
 
-public class GzipBlockWriter implements BlockWriter
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+
+public class GzipBlockReaderWriter implements BlockReader, BlockWriter
 {
 	@Override
-	public <T> void write(final AbstractDataBlock<T> dataBlock, final ByteChannel channel) throws IOException {
+	public <T, B extends AbstractDataBlock<T>> void read(
+			final B dataBlock,
+			final ByteChannel channel) throws IOException {
+		ByteBuffer buffer = dataBlock.toByteBuffer();
+		try (final GzipCompressorInputStream in = new GzipCompressorInputStream(Channels.newInputStream(channel))) {
+			in.read(buffer.array());
+		}
+		dataBlock.readData(buffer);
+	}
+
+	@Override
+	public <T> void write(
+			final AbstractDataBlock<T> dataBlock,
+			final FileChannel channel) throws IOException {
 		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final GZIPOutputStream dos = new GZIPOutputStream(Channels.newOutputStream(channel))) {
-			dos.write(buffer.array());
-			dos.finish();
+		try (final GzipCompressorOutputStream os = new GzipCompressorOutputStream(Channels.newOutputStream(channel))) {
+			os.write(buffer.array());
+			os.flush();
+			channel.truncate(channel.position());
 		}
 	}
 }

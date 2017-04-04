@@ -25,15 +25,68 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-import java.nio.channels.ByteChannel;
+import java.lang.reflect.Type;
+
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
 /**
- *
+ * Enumerates available data types.
  *
  * @author Stephan Saalfeld
  */
-public interface BlockReader
-{
-	public <T, B extends AbstractDataBlock<T>> void read(final B dataBlock, final ByteChannel channel) throws IOException;
+public enum DataType {
+
+	UINT8("uint8"),
+	UINT16("uint16"),
+	UINT32("uint32"),
+	UINT64("uint64"),
+	INT8("int8"),
+	INT16("int16"),
+	INT32("int32"),
+	INT64("int64"),
+	FLOAT32("float32"),
+	FLOAT64("float64");
+
+	private final String label;
+
+	private DataType(final String label) {
+		this.label = label;
+	}
+
+	@Override
+	public String toString() {
+		return label;
+	}
+
+	public static DataType fromString(final String string) {
+		for (final DataType value : values())
+			if (value.toString().equals(string))
+				return value;
+		return null;
+	}
+
+	static public class JsonAdapter implements JsonDeserializer<DataType>, JsonSerializer<DataType>
+	{
+		@Override
+		public DataType deserialize(
+				final JsonElement json,
+				final Type typeOfT,
+				final JsonDeserializationContext context) throws JsonParseException {
+			return DataType.fromString(json.getAsString());
+		}
+
+		@Override
+		public JsonElement serialize(
+				final DataType src,
+				final Type typeOfSrc,
+				final JsonSerializationContext context) {
+			return new JsonPrimitive(src.toString());
+		}
+	}
 }

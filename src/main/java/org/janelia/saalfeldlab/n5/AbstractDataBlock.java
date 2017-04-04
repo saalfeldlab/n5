@@ -31,37 +31,31 @@ import java.nio.file.Paths;
 
 abstract public class AbstractDataBlock<T>
 {
-	final int[] size;
+	protected final int[] size;
 	protected final long[] gridPosition;
-	private T data = null;
-
-	public AbstractDataBlock(final int[] size, final long[] gridPosition) {
-		this.size = size;
-		this.gridPosition = gridPosition;
-		this.setData(data);
-	}
+	protected final T data;
 
 	public AbstractDataBlock(final int[] size, final long[] gridPosition, final T data) {
 		this.size = size;
 		this.gridPosition = gridPosition;
-		this.setData(data);
+		this.data = data;
 	}
 
 	public int[] getSize() {
 		return size;
 	}
 
+	public long[] getGridPosition() {
+		return gridPosition;
+	}
+
 	public T getData() {
 		return data;
 	}
 
-	public void setData(final T data) {
-		this.data = data;
-	}
+	public static Path getPath(final String datasetPathName, final long[] gridPosition) {
 
-	public Path getPath(final String datasetPathName) {
-
-		final String[] pathComponents = new String[size.length];
+		final String[] pathComponents = new String[gridPosition.length];
 		for (int i = 0; i < pathComponents.length; ++i)
 			pathComponents[i] = Long.toString(gridPosition[i]);
 
@@ -70,5 +64,14 @@ abstract public class AbstractDataBlock<T>
 				pathComponents);
 	}
 
+	public static int getNumElements(final int[] size) {
+		int n = size[0];
+		for (int i = 1; i < size.length; ++i)
+			n += size[i];
+		return n;
+	}
+
 	abstract public ByteBuffer toByteBuffer();
+
+	abstract public void readData(final ByteBuffer buffer);
 }

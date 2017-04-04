@@ -27,9 +27,19 @@ package org.janelia.saalfeldlab.n5;
 
 import java.util.HashMap;
 
-import org.janelia.saalfeldlab.n5.N5.CompressionType;
-import org.janelia.saalfeldlab.n5.N5.DataType;
-
+/**
+ * Mandatory dataset attributes:
+ *
+ * <ol>
+ * <li>long[] : dimensions</li>
+ * <li>int[] : blockSize</li>
+ * <li>{@link DataType} : dataType</li>
+ * <li>{@link CompressionType} : compressionType</li>
+ * </ol>
+ *
+ * @author Stephan Saalfeld
+ *
+ */
 public class DatasetAttributes
 {
 	final private long[] dimensions;
