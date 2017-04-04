@@ -62,10 +62,6 @@ import com.google.gson.reflect.TypeToken;
 public class N5
 {
 	private static final String jsonFile = "attributes.json";
-	static final String dimensionsKey = "dimensions";
-	static final String blockSizeKey = "blockSize";
-	static final String dataTypeKey = "dataType";
-	static final String compressionTypeKey = "compressionType";
 
 	private final KeySetView<Object, Boolean> threadLocks = ConcurrentHashMap.newKeySet();
 
@@ -205,28 +201,28 @@ public class N5
 
 		final HashMap<String, JsonElement> attributes = getAttributes(pathName);
 
-		final JsonElement dimensionsElement = attributes.get(dimensionsKey);
+		final JsonElement dimensionsElement = attributes.get(DatasetAttributes.dimensionsKey);
 		if (dimensionsElement == null)
 			return null;
 		final long[] dimensions = gson.fromJson(dimensionsElement, long[].class);
 		if (dimensions == null)
 			return null;
 
-		final JsonElement dataTypeElement = attributes.get(dataTypeKey);
+		final JsonElement dataTypeElement = attributes.get(DatasetAttributes.dataTypeKey);
 		if (dataTypeElement == null)
 			return null;
 		final DataType dataType = gson.fromJson(dataTypeElement, DataType.class);
 		if (dataType == null)
 			return null;
 
-		final JsonElement blockSizeElement = attributes.get(blockSizeKey);
+		final JsonElement blockSizeElement = attributes.get(DatasetAttributes.blockSizeKey);
 		int[] blockSize = null;
 		if (blockSizeElement != null)
 			blockSize = gson.fromJson(blockSizeElement, int[].class);
 		if (blockSize == null)
 			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
 
-		final JsonElement compressionTypeElement = attributes.get(compressionTypeKey);
+		final JsonElement compressionTypeElement = attributes.get(DatasetAttributes.compressionTypeKey);
 		CompressionType compressionType = null;
 		if (compressionTypeElement == null)
 			return null;
