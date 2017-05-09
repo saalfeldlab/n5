@@ -47,7 +47,11 @@ public class N5Test {
 	static private int[] blockSize = new int[]{33, 22, 11};
 
 	static byte[] byteBlock;
+	static short[] shortBlock;
+	static int[] intBlock;
+	static long[] longBlock;
 	static float[] floatBlock;
+	static double[] doubleBlock;
 
 	static private N5 n5;
 
@@ -65,10 +69,19 @@ public class N5Test {
 
 		final Random rnd = new Random();
 		byteBlock = new byte[blockSize[0] * blockSize[1] * blockSize[2]];
-		rnd.nextBytes(byteBlock);
+		shortBlock = new short[blockSize[0] * blockSize[1] * blockSize[2]];
+		intBlock = new int[blockSize[0] * blockSize[1] * blockSize[2]];
+		longBlock = new long[blockSize[0] * blockSize[1] * blockSize[2]];
 		floatBlock = new float[blockSize[0] * blockSize[1] * blockSize[2]];
-		for(int i = 0; i < floatBlock.length; ++i)
-			floatBlock[i] = rnd.nextFloat();
+		doubleBlock = new double[blockSize[0] * blockSize[1] * blockSize[2]];
+		rnd.nextBytes(byteBlock);
+		for(int i = 0; i < floatBlock.length; ++i) {
+			shortBlock[i] = (short)rnd.nextInt();
+			intBlock[i] = rnd.nextInt();
+			longBlock[i] = rnd.nextLong();
+			floatBlock[i] = Float.intBitsToFloat(rnd.nextInt());
+			doubleBlock[i] = Double.longBitsToDouble(rnd.nextLong());
+		}
 
 	}
 
@@ -155,6 +168,90 @@ public class N5Test {
 	}
 
 	@Test
+	public void testWriteReadShortBlock() {
+		for (final CompressionType compressionType : CompressionType.values()) {
+			for (final DataType dataType : new DataType[]{
+					DataType.UINT16,
+					DataType.INT16}) {
+
+				System.out.println("Testing " + compressionType + " " + dataType);
+				try {
+					n5.createDataset(datasetName, dimensions, blockSize, dataType, compressionType);
+					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+					final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(blockSize, new long[]{0, 0, 0}, shortBlock);
+					n5.writeBlock(datasetName, attributes, dataBlock);
+
+					final AbstractDataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+
+					Assert.assertArrayEquals(shortBlock, (short[])loadedDataBlock.getData());
+
+					Assert.assertTrue(n5.remove(datasetName));
+
+				} catch (final IOException e) {
+					e.printStackTrace();
+					fail("Block cannot be written.");
+				}
+			}
+		}
+	}
+
+	@Test
+	public void testWriteReadIntBlock() {
+		for (final CompressionType compressionType : CompressionType.values()) {
+			for (final DataType dataType : new DataType[]{
+					DataType.UINT32,
+					DataType.INT32}) {
+
+				System.out.println("Testing " + compressionType + " " + dataType);
+				try {
+					n5.createDataset(datasetName, dimensions, blockSize, dataType, compressionType);
+					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+					final IntArrayDataBlock dataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
+					n5.writeBlock(datasetName, attributes, dataBlock);
+
+					final AbstractDataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+
+					Assert.assertArrayEquals(intBlock, (int[])loadedDataBlock.getData());
+
+					Assert.assertTrue(n5.remove(datasetName));
+
+				} catch (final IOException e) {
+					e.printStackTrace();
+					fail("Block cannot be written.");
+				}
+			}
+		}
+	}
+
+	@Test
+	public void testWriteReadLongBlock() {
+		for (final CompressionType compressionType : CompressionType.values()) {
+			for (final DataType dataType : new DataType[]{
+					DataType.UINT64,
+					DataType.INT64}) {
+
+				System.out.println("Testing " + compressionType + " " + dataType);
+				try {
+					n5.createDataset(datasetName, dimensions, blockSize, dataType, compressionType);
+					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+					final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, longBlock);
+					n5.writeBlock(datasetName, attributes, dataBlock);
+
+					final AbstractDataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+
+					Assert.assertArrayEquals(longBlock, (long[])loadedDataBlock.getData());
+
+					Assert.assertTrue(n5.remove(datasetName));
+
+				} catch (final IOException e) {
+					e.printStackTrace();
+					fail("Block cannot be written.");
+				}
+			}
+		}
+	}
+
+	@Test
 	public void testWriteReadFloatBlock() {
 		for (final CompressionType compressionType : CompressionType.values()) {
 			System.out.println("Testing " + compressionType + " float32");
@@ -167,6 +264,30 @@ public class N5Test {
 				final AbstractDataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 
 				Assert.assertArrayEquals(floatBlock, (float[])loadedDataBlock.getData(), 0.001f);
+
+				Assert.assertTrue(n5.remove(datasetName));
+
+			} catch (final IOException e) {
+				e.printStackTrace();
+				fail("Block cannot be written.");
+			}
+		}
+	}
+
+
+	@Test
+	public void testWriteReadDoubleBlock() {
+		for (final CompressionType compressionType : CompressionType.values()) {
+			System.out.println("Testing " + compressionType + " float64");
+			try {
+				n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT64, compressionType);
+				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+				final DoubleArrayDataBlock dataBlock = new DoubleArrayDataBlock(blockSize, new long[]{0, 0, 0}, doubleBlock);
+				n5.writeBlock(datasetName, attributes, dataBlock);
+
+				final AbstractDataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+
+				Assert.assertArrayEquals(doubleBlock, (double[])loadedDataBlock.getData(), 0.001);
 
 				Assert.assertTrue(n5.remove(datasetName));
 
