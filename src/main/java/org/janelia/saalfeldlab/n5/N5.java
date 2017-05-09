@@ -369,7 +369,11 @@ public class N5
 			AbstractDataBlock<?> dataBlock;
 			switch (datasetAttributes.getDataType()) {
 			case UINT8:
+			case INT8:
 				dataBlock = new ByteArrayDataBlock(blockSize, gridPosition, new byte[n]);
+				break;
+			case FLOAT32:
+				dataBlock = new FloatArrayDataBlock(blockSize, gridPosition, new float[n]);
 				break;
 			default:
 				throw new IOException( "Data type " + datasetAttributes.getDataType() + " not supported" );

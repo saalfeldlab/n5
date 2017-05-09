@@ -46,7 +46,8 @@ public class N5Test {
 
 	static private int[] blockSize = new int[]{33, 22, 11};
 
-	static byte[] block;
+	static byte[] byteBlock;
+	static float[] floatBlock;
 
 	static private N5 n5;
 
@@ -63,8 +64,12 @@ public class N5Test {
 		n5 = new N5(testDirPath);
 
 		final Random rnd = new Random();
-		block = new byte[blockSize[0] * blockSize[1] * blockSize[2]];
-		rnd.nextBytes(block);
+		byteBlock = new byte[blockSize[0] * blockSize[1] * blockSize[2]];
+		rnd.nextBytes(byteBlock);
+		floatBlock = new float[blockSize[0] * blockSize[1] * blockSize[2]];
+		for(int i = 0; i < floatBlock.length; ++i)
+			floatBlock[i] = rnd.nextFloat();
+
 	}
 
 	/**
@@ -122,20 +127,48 @@ public class N5Test {
 	}
 
 	@Test
-	public void testWriteReadBlock() {
+	public void testWriteReadByteBlock() {
 		for (final CompressionType compressionType : CompressionType.values()) {
-			System.out.println("Testing " + compressionType);
+			for (final DataType dataType : new DataType[]{
+					DataType.UINT8,
+					DataType.INT8}) {
+
+				System.out.println("Testing " + compressionType + " " + dataType);
+				try {
+					n5.createDataset(datasetName, dimensions, blockSize, dataType, compressionType);
+					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+					final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, new long[]{0, 0, 0}, byteBlock);
+					n5.writeBlock(datasetName, attributes, dataBlock);
+
+					final AbstractDataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+
+					Assert.assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
+
+					Assert.assertTrue(n5.remove(datasetName));
+
+				} catch (final IOException e) {
+					e.printStackTrace();
+					fail("Block cannot be written.");
+				}
+			}
+		}
+	}
+
+	@Test
+	public void testWriteReadFloatBlock() {
+		for (final CompressionType compressionType : CompressionType.values()) {
+			System.out.println("Testing " + compressionType + " float32");
 			try {
-				n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT8, compressionType);
+				n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT32, compressionType);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
-				final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, new long[]{0, 0, 0}, block);
+				final FloatArrayDataBlock dataBlock = new FloatArrayDataBlock(blockSize, new long[]{0, 0, 0}, floatBlock);
 				n5.writeBlock(datasetName, attributes, dataBlock);
 
 				final AbstractDataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 
-				Assert.assertArrayEquals(block, (byte[])loadedDataBlock.getData());
+				Assert.assertArrayEquals(floatBlock, (float[])loadedDataBlock.getData(), 0.001f);
 
-//				Assert.assertTrue(n5.remove(datasetName));
+				Assert.assertTrue(n5.remove(datasetName));
 
 			} catch (final IOException e) {
 				e.printStackTrace();

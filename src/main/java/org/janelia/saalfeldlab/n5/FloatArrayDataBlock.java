@@ -25,29 +25,23 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
-import java.nio.channels.FileChannel;
 
-public class RawBlockReaderWriter implements BlockReader, BlockWriter
+public class FloatArrayDataBlock extends AbstractDataBlock<float[]>
 {
-	@Override
-	public <T, B extends AbstractDataBlock<T>> void read(
-			final B dataBlock,
-			final ByteChannel channel) throws IOException {
-		ByteBuffer buffer = dataBlock.toByteBuffer();
-		channel.read(buffer);
-		buffer.position(0);
-		dataBlock.readData(buffer);
+	public FloatArrayDataBlock(final int[] size, final long[] gridPosition, final float[] data) {
+		super(size, gridPosition, data);
 	}
 
 	@Override
-	public <T> void write(
-			final AbstractDataBlock<T> dataBlock,
-			final FileChannel channel) throws IOException {
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		channel.write(buffer);
-		channel.truncate(channel.position());
+	public ByteBuffer toByteBuffer() {
+		final ByteBuffer buffer = ByteBuffer.allocate(data.length * 4);
+		buffer.asFloatBuffer().put(data);
+		return buffer;
+	}
+
+	@Override
+	public void readData(final ByteBuffer buffer) {
+		buffer.asFloatBuffer().get(data);
 	}
 }
