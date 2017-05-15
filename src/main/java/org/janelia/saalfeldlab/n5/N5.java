@@ -361,38 +361,9 @@ public class N5
 			final DataInputStream dis = new DataInputStream(in);
 			final int nDim = dis.readInt();
 			final int[] blockSize = new int[nDim];
-			int n = 1;
-			for (int d = 0; d < nDim; ++d) {
+			for (int d = 0; d < nDim; ++d)
 				blockSize[d] = dis.readInt();
-				n *= blockSize[d];
-			}
-			AbstractDataBlock<?> dataBlock;
-			switch (datasetAttributes.getDataType()) {
-			case UINT8:
-			case INT8:
-				dataBlock = new ByteArrayDataBlock(blockSize, gridPosition, new byte[n]);
-				break;
-			case UINT16:
-			case INT16:
-				dataBlock = new ShortArrayDataBlock(blockSize, gridPosition, new short[n]);
-				break;
-			case UINT32:
-			case INT32:
-				dataBlock = new IntArrayDataBlock(blockSize, gridPosition, new int[n]);
-				break;
-			case UINT64:
-			case INT64:
-				dataBlock = new LongArrayDataBlock(blockSize, gridPosition, new long[n]);
-				break;
-			case FLOAT32:
-				dataBlock = new FloatArrayDataBlock(blockSize, gridPosition, new float[n]);
-				break;
-			case FLOAT64:
-				dataBlock = new DoubleArrayDataBlock(blockSize, gridPosition, new double[n]);
-				break;
-			default:
-				throw new IOException( "Data type " + datasetAttributes.getDataType() + " not supported" );
-			}
+			final AbstractDataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition);
 
 			final BlockReader reader = datasetAttributes.getCompressionType().getReader();
 			reader.read(dataBlock, channel);
