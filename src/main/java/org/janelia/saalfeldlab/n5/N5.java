@@ -36,6 +36,7 @@ import java.lang.reflect.Type;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -79,6 +80,51 @@ public class N5
 		this(basePath, new GsonBuilder());
 	}
 
+	private static class LockedFileChannel {
+
+		private final FileChannel channel;
+		private final FileLock lock;
+
+		LockedFileChannel(final Path path) throws IOException {
+
+			@SuppressWarnings("hiding")
+			FileChannel channel = null;
+			@SuppressWarnings("hiding")
+			FileLock lock = null;
+			for (boolean waiting = true; waiting;) {
+				waiting = false;
+				try {
+					channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE);
+					lock = channel.lock();
+				} catch (final OverlappingFileLockException e) {
+					waiting = true;
+					try {
+						Thread.sleep(100);
+					} catch (final InterruptedException f) {
+						channel = null;
+						lock = null;
+						waiting = false;
+						System.err.println("Interrupted!!!!!!!!!!!!!!!!!!!!!!");
+						f.printStackTrace(System.err);
+					}
+				} catch (final IOException e) {
+					channel = FileChannel.open(path, StandardOpenOption.READ);
+					lock = null;
+				}
+			}
+
+			this.channel = channel;
+			this.lock = lock;
+		}
+
+		private void close() throws IOException {
+
+			if (lock != null)
+				lock.release();
+			channel.close();
+		}
+	}
+
 	/**
 	 * Returns or creates attributes map of a group or dataset.
 	 *
@@ -91,22 +137,12 @@ public class N5
 	 */
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
 		final Path path = Paths.get(basePath, pathName, jsonFile);
-		FileLock fileLock;
-		FileChannel channel;
-		try {
-			channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE);
-			fileLock = channel.lock();
-		} catch (final IOException e) {
-			channel = FileChannel.open(path, StandardOpenOption.READ);
-			fileLock = null;
-		}
+		final LockedFileChannel lockedFileChannel = new LockedFileChannel(path);
 		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
-		HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(channel, "UTF-8"), mapType);
+		HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(lockedFileChannel.channel, "UTF-8"), mapType);
 		if (map == null)
 			map = new HashMap<>();
-		if (fileLock != null)
-			fileLock.release();
-		channel.close();
+		lockedFileChannel.close();
 		return map;
 	}
 
@@ -347,17 +383,9 @@ public class N5
 		final File file = path.toFile();
 		if (!file.exists())
 			return null;
-		FileLock fileLock;
-		FileChannel channel;
-		try {
-			channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE);
-			fileLock = channel.lock();
-		} catch (final IOException e) {
-			channel = FileChannel.open(path, StandardOpenOption.READ);
-			fileLock = null;
-		}
+		final LockedFileChannel lockedChannel = new LockedFileChannel(path);
 
-		try (final InputStream in = Channels.newInputStream(channel)) {
+		try (final InputStream in = Channels.newInputStream(lockedChannel.channel)) {
 			final DataInputStream dis = new DataInputStream(in);
 			final int nDim = dis.readInt();
 			final int[] blockSize = new int[nDim];
@@ -366,8 +394,8 @@ public class N5
 			final AbstractDataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition);
 
 			final BlockReader reader = datasetAttributes.getCompressionType().getReader();
-			reader.read(dataBlock, channel);
-			if (fileLock.isValid()) fileLock.release();
+			reader.read(dataBlock, lockedChannel.channel);
+			if (lockedChannel.lock != null && lockedChannel.lock.isValid()) lockedChannel.lock.release();
 			return dataBlock;
 		}
 	}
