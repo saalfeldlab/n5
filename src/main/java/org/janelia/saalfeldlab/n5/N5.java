@@ -353,9 +353,9 @@ public class N5
 	public < T > void writeBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
-			final AbstractDataBlock< T > dataBlock ) throws IOException {
+			final DataBlock< T > dataBlock ) throws IOException {
 
-		final Path path = AbstractDataBlock.getPath(Paths.get(basePath, pathName).toString(), dataBlock.getGridPosition());
+		final Path path = DataBlock.getPath(Paths.get(basePath, pathName).toString(), dataBlock.getGridPosition());
 		Files.createDirectories(path.getParent());
 		final File file = path.toFile();
 		try (final FileOutputStream out = new FileOutputStream(file)) {
@@ -363,7 +363,7 @@ public class N5
 			final FileLock lock = channel.lock();
 			final DataOutputStream dos = new DataOutputStream(out);
 			dos.writeInt(datasetAttributes.getNumDimensions());
-			for (final int size : dataBlock.size)
+			for (final int size : dataBlock.getSize())
 				dos.writeInt(size);
 
 			dos.flush();
@@ -374,12 +374,12 @@ public class N5
 		}
 	}
 
-	public AbstractDataBlock< ? > readBlock(
+	public DataBlock< ? > readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition ) throws IOException {
 
-		final Path path = AbstractDataBlock.getPath(Paths.get(basePath, pathName).toString(), gridPosition);
+		final Path path = DataBlock.getPath(Paths.get(basePath, pathName).toString(), gridPosition);
 		final File file = path.toFile();
 		if (!file.exists())
 			return null;
@@ -391,7 +391,7 @@ public class N5
 			final int[] blockSize = new int[nDim];
 			for (int d = 0; d < nDim; ++d)
 				blockSize[d] = dis.readInt();
-			final AbstractDataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition);
+			final DataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition);
 
 			final BlockReader reader = datasetAttributes.getCompressionType().getReader();
 			reader.read(dataBlock, lockedChannel.channel);

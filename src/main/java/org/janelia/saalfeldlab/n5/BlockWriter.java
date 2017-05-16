@@ -35,5 +35,5 @@ import java.nio.channels.FileChannel;
  */
 public interface BlockWriter
 {
-	public <T> void write(final AbstractDataBlock<T> dataBlock, final FileChannel channel) throws IOException;
+	public <T> void write(final DataBlock<T> dataBlock, final FileChannel channel) throws IOException;
 }

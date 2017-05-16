@@ -25,11 +25,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.nio.ByteBuffer;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-abstract public class AbstractDataBlock<T>
+abstract public class AbstractDataBlock<T> implements DataBlock<T>
 {
 	protected final int[] size;
 	protected final long[] gridPosition;
@@ -41,37 +37,18 @@ abstract public class AbstractDataBlock<T>
 		this.data = data;
 	}
 
+	@Override
 	public int[] getSize() {
 		return size;
 	}
 
+	@Override
 	public long[] getGridPosition() {
 		return gridPosition;
 	}
 
+	@Override
 	public T getData() {
 		return data;
 	}
-
-	public static Path getPath(final String datasetPathName, final long[] gridPosition) {
-
-		final String[] pathComponents = new String[gridPosition.length];
-		for (int i = 0; i < pathComponents.length; ++i)
-			pathComponents[i] = Long.toString(gridPosition[i]);
-
-		return Paths.get(
-				datasetPathName,
-				pathComponents);
-	}
-
-	public static int getNumElements(final int[] size) {
-		int n = size[0];
-		for (int i = 1; i < size.length; ++i)
-			n += size[i];
-		return n;
-	}
-
-	abstract public ByteBuffer toByteBuffer();
-
-	abstract public void readData(final ByteBuffer buffer);
 }

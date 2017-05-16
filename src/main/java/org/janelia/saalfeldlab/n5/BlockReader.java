@@ -35,5 +35,5 @@ import java.nio.channels.ByteChannel;
  */
 public interface BlockReader
 {
-	public <T, B extends AbstractDataBlock<T>> void read(final B dataBlock, final ByteChannel channel) throws IOException;
+	public <T, B extends DataBlock<T>> void read(final B dataBlock, final ByteChannel channel) throws IOException;
 }

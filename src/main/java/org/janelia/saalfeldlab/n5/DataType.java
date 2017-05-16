@@ -74,7 +74,7 @@ public enum DataType {
 		return null;
 	}
 
-	public AbstractDataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition) {
+	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition) {
 		return dataBlockFactory.createDataBlock(blockSize, gridPosition);
 	}
 
@@ -88,7 +88,7 @@ public enum DataType {
 
 	private static interface DataBlockFactory {
 
-		public AbstractDataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition);
+		public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition);
 	}
 
 	static public class JsonAdapter implements JsonDeserializer<DataType>, JsonSerializer<DataType> {
