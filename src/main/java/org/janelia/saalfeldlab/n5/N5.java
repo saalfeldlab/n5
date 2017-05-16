@@ -46,8 +46,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentHashMap.KeySetView;
 import java.util.stream.Stream;
 
 import com.google.gson.Gson;
@@ -63,8 +61,6 @@ import com.google.gson.reflect.TypeToken;
 public class N5
 {
 	private static final String jsonFile = "attributes.json";
-
-	private final KeySetView<Object, Boolean> threadLocks = ConcurrentHashMap.newKeySet();
 
 	final private Gson gson;
 	final private String basePath;
