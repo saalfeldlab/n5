@@ -29,11 +29,19 @@ import java.io.IOException;
 import java.nio.channels.ByteChannel;
 
 /**
- *
+ * Interface for block readers that can read a {@link DataBlock} from a
+ * {@link ByteChannel}.
  *
  * @author Stephan Saalfeld
  */
 public interface BlockReader
 {
+	/**
+	 * Reads a {@link DataBlock} from a {@link ByteChannel}.
+	 *
+	 * @param dataBlock
+	 * @param channel
+	 * @throws IOException
+	 */
 	public <T, B extends DataBlock<T>> void read(final B dataBlock, final ByteChannel channel) throws IOException;
 }

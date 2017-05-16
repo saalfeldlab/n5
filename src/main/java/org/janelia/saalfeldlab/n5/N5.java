@@ -54,7 +54,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 
 /**
+ * A simple structured container format for hierarchies of chunked
+ * n-dimensional datasets and attributes.
  *
+ * {@linkplain https://github.com/axtimwalde/n5}
  *
  * @author Stephan Saalfeld
  */
@@ -65,6 +68,20 @@ public class N5
 	final private Gson gson;
 	final private String basePath;
 
+	/**
+	 * Opens an N5 container at a given base path with a custom
+	 * {@link GsonBuilder} to support custom attributes.
+	 *
+	 * If the base path does not exist, it will not be created and all
+	 * subsequent attempts to read or write attributes, groups, or datasets
+	 * will fail with an {@link IOException}.
+	 *
+	 * If the base path is not writable, all subsequent attempts to write
+	 * attributes, groups, or datasets will fail with an {@link IOException}.
+	 *
+	 * @param basePath
+	 * @param gsonBuilder
+	 */
 	public N5(final String basePath, final GsonBuilder gsonBuilder) {
 		this.basePath = basePath;
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
@@ -72,6 +89,19 @@ public class N5
 		this.gson = gsonBuilder.create();
 	}
 
+	/**
+	 * Opens an N5 container at a given base path.
+	 *
+	 * If the base path does not exist, it will not be created and all
+	 * subsequent attempts to read or write attributes, groups, or datasets
+	 * will fail with an {@link IOException}.
+	 *
+	 * If the base path is not writable, all subsequent attempts to write
+	 * attributes, groups, or datasets will fail with an {@link IOException}.
+	 *
+	 * @param basePath
+	 * @param gsonBuilder
+	 */
 	public N5(final String basePath) {
 		this(basePath, new GsonBuilder());
 	}
@@ -122,7 +152,7 @@ public class N5
 	}
 
 	/**
-	 * Returns or creates attributes map of a group or dataset.
+	 * Returns or creates the attributes map of a group or dataset.
 	 *
 	 * @param path
 	 * @return

@@ -25,6 +25,13 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+/**
+ * Abstract base class for {@link DataBlock} implementations.
+ *
+ * @param <T>
+ *
+ * @author Stephan Saalfeld
+ */
 abstract public class AbstractDataBlock<T> implements DataBlock<T>
 {
 	protected final int[] size;
