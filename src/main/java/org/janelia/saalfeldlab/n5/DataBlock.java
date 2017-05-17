@@ -38,7 +38,7 @@ import java.nio.file.Paths;
  *
  * @author Stephan Saalfeld
  */
-interface DataBlock<T>
+public interface DataBlock<T>
 {
 	/**
 	 * Returns the size of this data block.
