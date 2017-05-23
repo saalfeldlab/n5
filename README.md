@@ -19,9 +19,89 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
    * blockSize (e.g. [64, 64, 64]),
    * dataType (one of {uint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, float64})
    * compressionType (one of {raw, bzip2, gzip, xz}).
-4. Chunks are stored in a directory hierarchy that enumerates their position in the chunk grid.
+4. Chunks are stored in a directory hierarchy that enumerates their positive integer position in the chunk grid (e.g. `0/4/1/7` for chunk grid position p=(0, 4, 1, 7)).
 5. All chunks of a chunked dataset have the same size except for end-chunks that may be smaller (thereofore 6.)
-6. Each chunk file contains the block size of the chunk in the first 4 * n bytes
+6. Datasets are sparse, i.e. there is no guarantee that all chunks of a dataset exist.
+6. Chunks are stored in the following binray format:
+    * number of dimensions (uint32 big endian)
+    * dimension 1[,...,n] (uint32 big endian)
+    * compressed data (big endian)
+    
+    Example:
+    
+    A 3-dimensional `uint16` datablock of 1&times;2&times;3 pixels with raw compression storing the values (1,2,3,4,5,6) starts with:
+    
+    ```bash
+    00000000: 00 00 00 03  ....    # 3 (number of dimensions)
+    00000004: 00 00 00 01  ....    # 1 (dimensions)
+    00000008: 00 00 00 02  ....    # 2
+    0000000c: 00 00 00 03  ....    # 3
+    ```
+    
+    followed by data stored as raw or compressed big endian values.  For raw:
+    
+    ```bash
+    00000010: 00 01        ..      # 1
+    00000012: 00 02        ..      # 2
+    00000014: 00 03        ..      # 3
+    00000016: 00 04        ..      # 4
+    00000018: 00 05        ..      # 5
+    0000001a: 00 06        ..      # 6
+    ```
+    
+    for bzip2 compression:
+    
+    ```bash
+    00000010: 42 5a 68 39  BZh9
+    00000014: 31 41 59 26  1AY&
+    00000018: 53 59 02 3e  SY.>
+    0000001c: 0d d2 00 00  ....
+    00000020: 00 40 00 7f  .@..
+    00000024: 00 20 00 31  . .1
+    00000028: 0c 01 0d 31  ...1
+    0000002c: a8 73 94 33  .s.3
+    00000030: 7c 5d c9 14  |]..
+    00000034: e1 42 40 08  .B@.
+    00000038: f8 37 48     .7H
+
+    ```
+    
+    for gzip2 compression:
+    
+    ```bash
+    00000010: 1f 8b 08 00  ....
+    00000014: 00 00 00 00  ....
+    00000018: 00 00 63 60  ..c`
+    0000001c: 64 60 62 60  d`b`
+    00000020: 66 60 61 60  f`a`
+    00000024: 65 60 03 00  e`..
+    00000028: aa ea 6d bf  ..m.
+    0000002c: 0c 00 00 00  ....
+    ```
+    
+    for xz compression:
+    
+    ```bash
+    00000010: fd 37 7a 58  .7zX
+    00000014: 5a 00 00 04  Z...
+    00000018: e6 d6 b4 46  ...F
+    0000001c: 02 00 21 01  ..!.
+    00000020: 16 00 00 00  ....
+    00000024: 74 2f e5 a3  t/..
+    00000028: 01 00 0b 00  ....
+    0000002c: 01 00 02 00  ....
+    00000030: 03 00 04 00  ....
+    00000034: 05 00 06 00  ....
+    00000038: 0d 03 09 ca  ....
+    0000003c: 34 ec 15 a7  4...
+    00000040: 00 01 24 0c  ..$.
+    00000044: a6 18 d8 d8  ....
+    00000048: 1f b6 f3 7d  ...}
+    0000004c: 01 00 00 00  ....
+    00000050: 00 04 59 5a  ..YZ
+    ```
+    
+    
 
 ## Disclaimer
 
