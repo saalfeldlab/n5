@@ -31,7 +31,7 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
     
     A 3-dimensional `uint16` datablock of 1&times;2&times;3 pixels with raw compression storing the values (1,2,3,4,5,6) starts with:
     
-    ```bash
+    ```hexdump
     00000000: 00 00 00 03  ....    # 3 (number of dimensions)
     00000004: 00 00 00 01  ....    # 1 (dimensions)
     00000008: 00 00 00 02  ....    # 2
@@ -40,7 +40,7 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
     
     followed by data stored as raw or compressed big endian values.  For raw:
     
-    ```bash
+    ```hexdump
     00000010: 00 01        ..      # 1
     00000012: 00 02        ..      # 2
     00000014: 00 03        ..      # 3
@@ -51,7 +51,7 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
     
     for bzip2 compression:
     
-    ```bash
+    ```hexdump
     00000010: 42 5a 68 39  BZh9
     00000014: 31 41 59 26  1AY&
     00000018: 53 59 02 3e  SY.>
@@ -68,7 +68,7 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
     
     for gzip2 compression:
     
-    ```bash
+    ```hexdump
     00000010: 1f 8b 08 00  ....
     00000014: 00 00 00 00  ....
     00000018: 00 00 63 60  ..c`
@@ -81,7 +81,7 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
     
     for xz compression:
     
-    ```bash
+    ```hexdump
     00000010: fd 37 7a 58  .7zX
     00000014: 5a 00 00 04  Z...
     00000018: e6 d6 b4 46  ...F
