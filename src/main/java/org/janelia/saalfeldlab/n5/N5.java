@@ -130,7 +130,6 @@ public class N5
 						channel = null;
 						lock = null;
 						waiting = false;
-						System.err.println("Interrupted!!!!!!!!!!!!!!!!!!!!!!");
 						f.printStackTrace(System.err);
 					}
 				} catch (final IOException e) {
@@ -310,7 +309,15 @@ public class N5
 	}
 
 	/**
-	 * Remove a group or dataset (directory and all contained files)
+	 * Remove a group or dataset (directory and all contained files).
+	 *
+	 * <p><code>{@link #remove(String) remove("")}</code> or
+	 * <code>{@link #remove(String) remove("")}</code> will delete this N5
+	 * container.  Please note that no checks for safety will be performed,
+	 * e.g. <code>{@link #remove(String) remove("..")}</code> will try to
+	 * recursively delete the parent directory of this N5 container which
+	 * only fails because it attempts to delete the parent directory before it
+	 * is empty.
 	 *
 	 * @param pathName
 	 * @throws IOException

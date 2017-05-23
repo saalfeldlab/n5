@@ -90,8 +90,7 @@ public class N5Test {
 	 */
 	@AfterClass
 	public static void rampDownAfterClass() throws Exception {
-		final File testDir = new File(testDirPath);
-		testDir.delete();
+		n5.remove("");
 	}
 
 	/**
@@ -310,5 +309,20 @@ public class N5Test {
 		final File file = Paths.get(testDirPath, groupName).toFile();
 		if (file.exists())
 			fail("Group still exists not exist");
+	}
+
+	public void testDocExample() {
+		final short[] dataBlockData = new short[]{1, 2, 3, 4, 5, 6};
+		for (final CompressionType compressionType : CompressionType.values()) {
+			try {
+				final String compressedDatasetName = datasetName + "." + compressionType.name();
+				n5.createDataset(compressedDatasetName, new long[]{1, 2, 3}, new int[]{1, 2, 3}, DataType.UINT16, compressionType);
+				final DatasetAttributes attributes = n5.getDatasetAttributes(compressedDatasetName);
+				final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(new int[]{1, 2, 3}, new long[]{0, 0, 0}, dataBlockData);
+				n5.writeBlock(compressedDatasetName, attributes, dataBlock);
+			} catch (final IOException e) {
+				fail(e.getMessage());
+			}
+		}
 	}
 }

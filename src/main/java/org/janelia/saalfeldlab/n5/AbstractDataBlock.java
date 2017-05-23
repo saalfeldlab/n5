@@ -32,7 +32,7 @@ package org.janelia.saalfeldlab.n5;
  *
  * @author Stephan Saalfeld
  */
-abstract public class AbstractDataBlock<T> implements DataBlock<T>
+public abstract class AbstractDataBlock<T> implements DataBlock<T>
 {
 	protected final int[] size;
 	protected final long[] gridPosition;
