@@ -45,8 +45,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentHashMap.KeySetView;
 import java.util.stream.Stream;
 
 import com.google.gson.Gson;
@@ -63,11 +61,16 @@ public class N5
 {
 	private static final String jsonFile = "attributes.json";
 
-	private final KeySetView<Object, Boolean> threadLocks = ConcurrentHashMap.newKeySet();
-
 	final private Gson gson;
 	final private String basePath;
 
+	/**
+	 * Constructor with gsonBuilder for custom non-primitive attributes (adds
+	 * JsonAdapters for {@link DataType} and {@link CompressionType}).
+	 *
+	 * @param basePath
+	 * @param gsonBuilder
+	 */
 	public N5(final String basePath, final GsonBuilder gsonBuilder) {
 		this.basePath = basePath;
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
@@ -75,6 +78,12 @@ public class N5
 		this.gson = gsonBuilder.create();
 	}
 
+	/**
+	 * Constructor assuming that only default primitive attributes will be used.
+	 *
+	 * @param basePath
+	 * @param gsonBuilder
+	 */
 	public N5(final String basePath) {
 		this(basePath, new GsonBuilder());
 	}
