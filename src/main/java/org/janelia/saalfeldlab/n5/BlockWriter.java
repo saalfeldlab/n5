@@ -29,11 +29,19 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 
 /**
- *
+ * Interface for block writers that can write a {@link DataBlock} into a
+ * {@link FileChannel}.
  *
  * @author Stephan Saalfeld
  */
 public interface BlockWriter
 {
-	public <T> void write(final AbstractDataBlock<T> dataBlock, final FileChannel channel) throws IOException;
+	/**
+	 * Writes a {@link DataBlock} into a {@link FileChannel}.
+	 *
+	 * @param dataBlock
+	 * @param channel
+	 * @throws IOException
+	 */
+	public <T> void write(final DataBlock<T> dataBlock, final FileChannel channel) throws IOException;
 }

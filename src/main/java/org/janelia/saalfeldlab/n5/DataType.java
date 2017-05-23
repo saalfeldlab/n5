@@ -42,21 +42,24 @@ import com.google.gson.JsonSerializer;
  */
 public enum DataType {
 
-	UINT8("uint8"),
-	UINT16("uint16"),
-	UINT32("uint32"),
-	UINT64("uint64"),
-	INT8("int8"),
-	INT16("int16"),
-	INT32("int32"),
-	INT64("int64"),
-	FLOAT32("float32"),
-	FLOAT64("float64");
+	UINT8("uint8", (blockSize, gridPosition) -> new ByteArrayDataBlock(blockSize, gridPosition, new byte[blockLength(blockSize)])),
+	UINT16("uint16", (blockSize, gridPosition) -> new ShortArrayDataBlock(blockSize, gridPosition, new short[blockLength(blockSize)])),
+	UINT32("uint32", (blockSize, gridPosition) -> new IntArrayDataBlock(blockSize, gridPosition, new int[blockLength(blockSize)])),
+	UINT64("uint64", (blockSize, gridPosition) -> new LongArrayDataBlock(blockSize, gridPosition, new long[blockLength(blockSize)])),
+	INT8("int8", (blockSize, gridPosition) -> new ByteArrayDataBlock(blockSize, gridPosition, new byte[blockLength(blockSize)])),
+	INT16("int16", (blockSize, gridPosition) -> new ShortArrayDataBlock(blockSize, gridPosition, new short[blockLength(blockSize)])),
+	INT32("int32", (blockSize, gridPosition) -> new IntArrayDataBlock(blockSize, gridPosition, new int[blockLength(blockSize)])),
+	INT64("int64", (blockSize, gridPosition) -> new LongArrayDataBlock(blockSize, gridPosition, new long[blockLength(blockSize)])),
+	FLOAT32("float32", (blockSize, gridPosition) -> new FloatArrayDataBlock(blockSize, gridPosition, new float[blockLength(blockSize)])),
+	FLOAT64("float64", (blockSize, gridPosition) -> new DoubleArrayDataBlock(blockSize, gridPosition, new double[blockLength(blockSize)]));
 
 	private final String label;
 
-	private DataType(final String label) {
+	private DataBlockFactory dataBlockFactory;
+
+	private DataType(final String label, final DataBlockFactory dataBlockFactory) {
 		this.label = label;
+		this.dataBlockFactory = dataBlockFactory;
 	}
 
 	@Override
@@ -71,8 +74,25 @@ public enum DataType {
 		return null;
 	}
 
-	static public class JsonAdapter implements JsonDeserializer<DataType>, JsonSerializer<DataType>
-	{
+	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition) {
+		return dataBlockFactory.createDataBlock(blockSize, gridPosition);
+	}
+
+	public static int blockLength(final int[] blockSize) {
+		int n = 1;
+		for (int d = 0; d < blockSize.length; ++d) {
+			n *= blockSize[d];
+		}
+		return n;
+	}
+
+	private static interface DataBlockFactory {
+
+		public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition);
+	}
+
+	static public class JsonAdapter implements JsonDeserializer<DataType>, JsonSerializer<DataType> {
+
 		@Override
 		public DataType deserialize(
 				final JsonElement json,

@@ -36,6 +36,7 @@ import java.lang.reflect.Type;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -53,7 +54,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 
 /**
+ * A simple structured container format for hierarchies of chunked
+ * n-dimensional datasets and attributes.
  *
+ * {@linkplain https://github.com/axtimwalde/n5}
  *
  * @author Stephan Saalfeld
  */
@@ -65,8 +69,15 @@ public class N5
 	final private String basePath;
 
 	/**
-	 * Constructor with gsonBuilder for custom non-primitive attributes (adds
-	 * JsonAdapters for {@link DataType} and {@link CompressionType}).
+	 * Opens an N5 container at a given base path with a custom
+	 * {@link GsonBuilder} to support custom attributes.
+	 *
+	 * If the base path does not exist, it will not be created and all
+	 * subsequent attempts to read or write attributes, groups, or datasets
+	 * will fail with an {@link IOException}.
+	 *
+	 * If the base path is not writable, all subsequent attempts to write
+	 * attributes, groups, or datasets will fail with an {@link IOException}.
 	 *
 	 * @param basePath
 	 * @param gsonBuilder
@@ -79,7 +90,14 @@ public class N5
 	}
 
 	/**
-	 * Constructor assuming that only default primitive attributes will be used.
+	 * Opens an N5 container at a given base path.
+	 *
+	 * If the base path does not exist, it will not be created and all
+	 * subsequent attempts to read or write attributes, groups, or datasets
+	 * will fail with an {@link IOException}.
+	 *
+	 * If the base path is not writable, all subsequent attempts to write
+	 * attributes, groups, or datasets will fail with an {@link IOException}.
 	 *
 	 * @param basePath
 	 * @param gsonBuilder
@@ -88,8 +106,52 @@ public class N5
 		this(basePath, new GsonBuilder());
 	}
 
+	private static class LockedFileChannel {
+
+		private final FileChannel channel;
+		private final FileLock lock;
+
+		LockedFileChannel(final Path path) throws IOException {
+
+			@SuppressWarnings("hiding")
+			FileChannel channel = null;
+			@SuppressWarnings("hiding")
+			FileLock lock = null;
+			for (boolean waiting = true; waiting;) {
+				waiting = false;
+				try {
+					channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE);
+					lock = channel.lock();
+				} catch (final OverlappingFileLockException e) {
+					waiting = true;
+					try {
+						Thread.sleep(100);
+					} catch (final InterruptedException f) {
+						channel = null;
+						lock = null;
+						waiting = false;
+						f.printStackTrace(System.err);
+					}
+				} catch (final IOException e) {
+					channel = FileChannel.open(path, StandardOpenOption.READ);
+					lock = null;
+				}
+			}
+
+			this.channel = channel;
+			this.lock = lock;
+		}
+
+		private void close() throws IOException {
+
+			if (lock != null)
+				lock.release();
+			channel.close();
+		}
+	}
+
 	/**
-	 * Returns or creates attributes map of a group or dataset.
+	 * Reads or creates the attributes map of a group or dataset.
 	 *
 	 * @param path
 	 * @return
@@ -100,27 +162,17 @@ public class N5
 	 */
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
 		final Path path = Paths.get(basePath, pathName, jsonFile);
-		FileLock fileLock;
-		FileChannel channel;
-		try {
-			channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE);
-			fileLock = channel.lock();
-		} catch (final IOException e) {
-			channel = FileChannel.open(path, StandardOpenOption.READ);
-			fileLock = null;
-		}
+		final LockedFileChannel lockedFileChannel = new LockedFileChannel(path);
 		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
-		HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(channel, "UTF-8"), mapType);
+		HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(lockedFileChannel.channel, "UTF-8"), mapType);
 		if (map == null)
 			map = new HashMap<>();
-		if (fileLock != null)
-			fileLock.release();
-		channel.close();
+		lockedFileChannel.close();
 		return map;
 	}
 
 	/**
-	 * Return an attribute.
+	 * Reads an attribute.
 	 *
 	 * @param path
 	 * @return
@@ -245,7 +297,7 @@ public class N5
 
 
 	/**
-	 * Create  group (directory)
+	 * Creates a group (directory)
 	 *
 	 * @param pathName
 	 * @throws IOException
@@ -257,7 +309,15 @@ public class N5
 	}
 
 	/**
-	 * Remove a group or dataset (directory and all contained files)
+	 * Removes a group or dataset (directory and all contained files).
+	 *
+	 * <p><code>{@link #remove(String) remove("")}</code> or
+	 * <code>{@link #remove(String) remove("")}</code> will delete this N5
+	 * container.  Please note that no checks for safety will be performed,
+	 * e.g. <code>{@link #remove(String) remove("..")}</code> will try to
+	 * recursively delete the parent directory of this N5 container which
+	 * only fails because it attempts to delete the parent directory before it
+	 * is empty.
 	 *
 	 * @param pathName
 	 * @throws IOException
@@ -287,7 +347,7 @@ public class N5
 	}
 
 	/**
-	 * Create a dataset.  This does not create any data but the path and
+	 * Creates a dataset.  This does not create any data but the path and
 	 * mandatory attributes only.
 	 *
 	 * @param pathName
@@ -304,7 +364,7 @@ public class N5
 	}
 
 	/**
-	 * Create a dataset.  This does not create any data but the path and
+	 * Creates a dataset.  This does not create any data but the path and
 	 * mandatory attributes only.
 	 *
 	 * @param pathName
@@ -326,9 +386,9 @@ public class N5
 	public < T > void writeBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
-			final AbstractDataBlock< T > dataBlock ) throws IOException {
+			final DataBlock< T > dataBlock ) throws IOException {
 
-		final Path path = AbstractDataBlock.getPath(Paths.get(basePath, pathName).toString(), dataBlock.getGridPosition());
+		final Path path = DataBlock.getPath(Paths.get(basePath, pathName).toString(), dataBlock.getGridPosition());
 		Files.createDirectories(path.getParent());
 		final File file = path.toFile();
 		try (final FileOutputStream out = new FileOutputStream(file)) {
@@ -336,7 +396,7 @@ public class N5
 			final FileLock lock = channel.lock();
 			final DataOutputStream dos = new DataOutputStream(out);
 			dos.writeInt(datasetAttributes.getNumDimensions());
-			for (final int size : dataBlock.size)
+			for (final int size : dataBlock.getSize())
 				dos.writeInt(size);
 
 			dos.flush();
@@ -347,65 +407,28 @@ public class N5
 		}
 	}
 
-	public AbstractDataBlock< ? > readBlock(
+	public DataBlock< ? > readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition ) throws IOException {
 
-		final Path path = AbstractDataBlock.getPath(Paths.get(basePath, pathName).toString(), gridPosition);
+		final Path path = DataBlock.getPath(Paths.get(basePath, pathName).toString(), gridPosition);
 		final File file = path.toFile();
 		if (!file.exists())
 			return null;
-		FileLock fileLock;
-		FileChannel channel;
-		try {
-			channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE);
-			fileLock = channel.lock();
-		} catch (final IOException e) {
-			channel = FileChannel.open(path, StandardOpenOption.READ);
-			fileLock = null;
-		}
+		final LockedFileChannel lockedChannel = new LockedFileChannel(path);
 
-		try (final InputStream in = Channels.newInputStream(channel)) {
+		try (final InputStream in = Channels.newInputStream(lockedChannel.channel)) {
 			final DataInputStream dis = new DataInputStream(in);
 			final int nDim = dis.readInt();
 			final int[] blockSize = new int[nDim];
-			int n = 1;
-			for (int d = 0; d < nDim; ++d) {
+			for (int d = 0; d < nDim; ++d)
 				blockSize[d] = dis.readInt();
-				n *= blockSize[d];
-			}
-			AbstractDataBlock<?> dataBlock;
-			switch (datasetAttributes.getDataType()) {
-			case UINT8:
-			case INT8:
-				dataBlock = new ByteArrayDataBlock(blockSize, gridPosition, new byte[n]);
-				break;
-			case UINT16:
-			case INT16:
-				dataBlock = new ShortArrayDataBlock(blockSize, gridPosition, new short[n]);
-				break;
-			case UINT32:
-			case INT32:
-				dataBlock = new IntArrayDataBlock(blockSize, gridPosition, new int[n]);
-				break;
-			case UINT64:
-			case INT64:
-				dataBlock = new LongArrayDataBlock(blockSize, gridPosition, new long[n]);
-				break;
-			case FLOAT32:
-				dataBlock = new FloatArrayDataBlock(blockSize, gridPosition, new float[n]);
-				break;
-			case FLOAT64:
-				dataBlock = new DoubleArrayDataBlock(blockSize, gridPosition, new double[n]);
-				break;
-			default:
-				throw new IOException( "Data type " + datasetAttributes.getDataType() + " not supported" );
-			}
+			final DataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition);
 
 			final BlockReader reader = datasetAttributes.getCompressionType().getReader();
-			reader.read(dataBlock, channel);
-			if (fileLock.isValid()) fileLock.release();
+			reader.read(dataBlock, lockedChannel.channel);
+			if (lockedChannel.lock != null && lockedChannel.lock.isValid()) lockedChannel.lock.release();
 			return dataBlock;
 		}
 	}

@@ -90,8 +90,7 @@ public class N5Test {
 	 */
 	@AfterClass
 	public static void rampDownAfterClass() throws Exception {
-		final File testDir = new File(testDirPath);
-		testDir.delete();
+		n5.remove("");
 	}
 
 	/**
@@ -153,7 +152,7 @@ public class N5Test {
 					final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, new long[]{0, 0, 0}, byteBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
 
-					final AbstractDataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 
 					Assert.assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
 
@@ -181,7 +180,7 @@ public class N5Test {
 					final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(blockSize, new long[]{0, 0, 0}, shortBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
 
-					final AbstractDataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 
 					Assert.assertArrayEquals(shortBlock, (short[])loadedDataBlock.getData());
 
@@ -209,7 +208,7 @@ public class N5Test {
 					final IntArrayDataBlock dataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
 
-					final AbstractDataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 
 					Assert.assertArrayEquals(intBlock, (int[])loadedDataBlock.getData());
 
@@ -237,7 +236,7 @@ public class N5Test {
 					final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, longBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
 
-					final AbstractDataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 
 					Assert.assertArrayEquals(longBlock, (long[])loadedDataBlock.getData());
 
@@ -261,7 +260,7 @@ public class N5Test {
 				final FloatArrayDataBlock dataBlock = new FloatArrayDataBlock(blockSize, new long[]{0, 0, 0}, floatBlock);
 				n5.writeBlock(datasetName, attributes, dataBlock);
 
-				final AbstractDataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 
 				Assert.assertArrayEquals(floatBlock, (float[])loadedDataBlock.getData(), 0.001f);
 
@@ -285,7 +284,7 @@ public class N5Test {
 				final DoubleArrayDataBlock dataBlock = new DoubleArrayDataBlock(blockSize, new long[]{0, 0, 0}, doubleBlock);
 				n5.writeBlock(datasetName, attributes, dataBlock);
 
-				final AbstractDataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 
 				Assert.assertArrayEquals(doubleBlock, (double[])loadedDataBlock.getData(), 0.001);
 
@@ -310,5 +309,20 @@ public class N5Test {
 		final File file = Paths.get(testDirPath, groupName).toFile();
 		if (file.exists())
 			fail("Group still exists not exist");
+	}
+
+	public void testDocExample() {
+		final short[] dataBlockData = new short[]{1, 2, 3, 4, 5, 6};
+		for (final CompressionType compressionType : CompressionType.values()) {
+			try {
+				final String compressedDatasetName = datasetName + "." + compressionType.name();
+				n5.createDataset(compressedDatasetName, new long[]{1, 2, 3}, new int[]{1, 2, 3}, DataType.UINT16, compressionType);
+				final DatasetAttributes attributes = n5.getDatasetAttributes(compressedDatasetName);
+				final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(new int[]{1, 2, 3}, new long[]{0, 0, 0}, dataBlockData);
+				n5.writeBlock(compressedDatasetName, attributes, dataBlock);
+			} catch (final IOException e) {
+				fail(e.getMessage());
+			}
+		}
 	}
 }

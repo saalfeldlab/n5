@@ -37,10 +37,10 @@ import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream
 public class Bzip2BlockReaderWriter implements BlockReader, BlockWriter
 {
 	@Override
-	public <T, B extends AbstractDataBlock<T>> void read(
+	public <T, B extends DataBlock<T>> void read(
 			final B dataBlock,
 			final ByteChannel channel) throws IOException {
-		ByteBuffer buffer = dataBlock.toByteBuffer();
+		final ByteBuffer buffer = dataBlock.toByteBuffer();
 		try (final BZip2CompressorInputStream in = new BZip2CompressorInputStream(Channels.newInputStream(channel))) {
 			in.read(buffer.array());
 		}
@@ -49,7 +49,7 @@ public class Bzip2BlockReaderWriter implements BlockReader, BlockWriter
 
 	@Override
 	public <T> void write(
-			final AbstractDataBlock<T> dataBlock,
+			final DataBlock<T> dataBlock,
 			final FileChannel channel) throws IOException {
 		final ByteBuffer buffer = dataBlock.toByteBuffer();
 		try (final BZip2CompressorOutputStream out = new BZip2CompressorOutputStream(Channels.newOutputStream(channel))) {
