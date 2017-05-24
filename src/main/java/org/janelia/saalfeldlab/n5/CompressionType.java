@@ -46,6 +46,7 @@ public enum CompressionType {
 	RAW("raw", new RawBlockReaderWriter(), new RawBlockReaderWriter()),
 	BZIP2("bzip2", new Bzip2BlockReaderWriter(), new Bzip2BlockReaderWriter()),
 	GZIP("gzip", new GzipBlockReaderWriter(), new GzipBlockReaderWriter()),
+	LZ4("lz4", new Lz4BlockReaderWriter(), new Lz4BlockReaderWriter()),
 	XZ("xz", new XzBlockReaderWriter(), new XzBlockReaderWriter());
 
 	private final String label;
