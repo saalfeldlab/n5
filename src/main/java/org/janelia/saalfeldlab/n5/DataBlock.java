@@ -129,7 +129,7 @@ public interface DataBlock<T>
 	public static int getNumElements(final int[] size) {
 		int n = size[0];
 		for (int i = 1; i < size.length; ++i)
-			n += size[i];
+			n *= size[i];
 		return n;
 	}
 }
