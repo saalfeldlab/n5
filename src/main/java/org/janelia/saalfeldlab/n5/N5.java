@@ -331,10 +331,11 @@ public class N5
 	    			childPath -> {
 	    				final File childFile = childPath.toFile();
 	    				if (childFile.isFile()) {
-	    					try (final FileLock lock = FileChannel.open(childPath, StandardOpenOption.WRITE).lock()) {
-								childFile.delete();
-								lock.release();
-							} catch (final IOException e) {
+	    					try (final FileChannel channel = FileChannel.open(childPath, StandardOpenOption.WRITE)) {
+		    					final FileLock lock = channel.lock();
+    							childFile.delete();
+		    					if (lock.isValid()) lock.release();
+	    					} catch (final IOException e) {
 								e.printStackTrace();
 							}
 	    				}
