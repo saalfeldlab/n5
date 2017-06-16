@@ -321,31 +321,32 @@ public class N5
 	 * only fails because it attempts to delete the parent directory before it
 	 * is empty.
 	 *
-	 * @param pathName
+	 * @param pathName group path
 	 * @throws IOException
 	 */
 	public boolean remove(final String pathName) throws IOException {
 		final Path path = Paths.get(basePath, pathName);
-		final File file = path.toFile();
-		if (file.exists())
+		if (Files.exists(path))
 			try (final Stream<Path> pathStream = Files.walk(path)) {
 				pathStream.sorted(Comparator.reverseOrder()).forEach(
-	    			childPath -> {
-	    				final File childFile = childPath.toFile();
-	    				if (childFile.isFile()) {
-	    					try (final FileLock lock = FileChannel.open(childPath, StandardOpenOption.WRITE).lock()) {
-								childFile.delete();
-								lock.release();
-							} catch (final IOException e) {
-								e.printStackTrace();
-							}
-	    				}
-	    				else
-	    					childFile.delete();
-	    			});
+						childPath -> {
+							if (Files.isRegularFile(childPath)) {
+								try (final FileLock lock = FileChannel.open(childPath, StandardOpenOption.WRITE).lock()) {
+									Files.delete(childPath);
+									lock.release();
+								} catch (final IOException e) {
+									e.printStackTrace();
+								}
+							} else
+								try {
+									Files.delete(childPath);
+								} catch (final IOException e) {
+									e.printStackTrace();
+								}
+						});
 			}
 
-		return !file.exists();
+		return !Files.exists(path);
 	}
 
 	/**
