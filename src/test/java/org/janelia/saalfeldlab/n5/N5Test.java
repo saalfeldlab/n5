@@ -308,6 +308,6 @@ public class N5Test {
 
 		final File file = Paths.get(testDirPath, groupName).toFile();
 		if (file.exists())
-			fail("Group still exists not exist");
+			fail("Group still exists");
 	}
 }
