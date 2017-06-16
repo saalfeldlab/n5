@@ -449,4 +449,25 @@ public class N5
 			return dataBlock;
 		}
 	}
+
+	/**
+	 * Test whether a group or dataset exists.
+	 *
+	 * @param pathName group path
+	 * @return
+	 */
+	public boolean exists(final String pathName) {
+		final Path path = Paths.get(basePath, pathName);
+		return Files.exists(path) && Files.isDirectory(path);
+	}
+
+	/**
+	 * Test whether a dataset exists.
+	 *
+	 * @param pathName dataset path
+	 * @return
+	 */
+	public boolean datasetExists(final String pathName) throws IOException {
+		return exists(pathName) && getDatasetAttributes(pathName) != null;
+	}
 }
