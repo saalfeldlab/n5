@@ -79,7 +79,7 @@ public class N5
 	 * If the base path is not writable, all subsequent attempts to write
 	 * attributes, groups, or datasets will fail with an {@link IOException}.
 	 *
-	 * @param basePath
+	 * @param basePath n5 base path
 	 * @param gsonBuilder
 	 */
 	public N5(final String basePath, final GsonBuilder gsonBuilder) {
@@ -99,8 +99,8 @@ public class N5
 	 * If the base path is not writable, all subsequent attempts to write
 	 * attributes, groups, or datasets will fail with an {@link IOException}.
 	 *
-	 * @param basePath
-	 * @param gsonBuilder
+	 * @param basePath n5 base path
+	 * @param gsonBuilder custom {@link GsonBuilder}
 	 */
 	public N5(final String basePath) {
 		this(basePath, new GsonBuilder());
@@ -153,7 +153,7 @@ public class N5
 	/**
 	 * Reads or creates the attributes map of a group or dataset.
 	 *
-	 * @param path
+	 * @param pathName group path
 	 * @return
 	 * @throws IOException
 	 *
@@ -174,7 +174,9 @@ public class N5
 	/**
 	 * Reads an attribute.
 	 *
-	 * @param path
+	 * @param pathName group path
+	 * @param key
+	 * @param clazz attribute class
 	 * @return
 	 */
 	public <T> T getAttribute(final String pathName, final String key, final Class<T> clazz) throws IOException {
@@ -189,7 +191,7 @@ public class N5
 	/**
 	 * Sets an attribute.
 	 *
-	 * @param pathName
+	 * @param pathName group path
 	 * @param key
 	 * @param attribute
 	 * @throws IOException
@@ -216,7 +218,7 @@ public class N5
 	/**
 	 * Sets a map of attributes.
 	 *
-	 * @param pathName
+	 * @param pathName group path
 	 * @param attributes
 	 * @throws IOException
 	 */
@@ -243,7 +245,7 @@ public class N5
 	/**
 	 * Sets mandatory dataset attributes.
 	 *
-	 * @param pathName
+	 * @param pathName dataset path
 	 * @param datasetInfo
 	 * @throws IOException
 	 */
@@ -254,8 +256,8 @@ public class N5
 	/**
 	 * Get mandatory dataset attributes.
 	 *
-	 * @param pathName
-	 * @return dataset info or null if either dimensions or dataType are not set
+	 * @param pathName dataset path
+	 * @return dataset attributes or null if either dimensions or dataType are not set
 	 * @throws IOException
 	 */
 	public DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
@@ -350,24 +352,22 @@ public class N5
 	 * Creates a dataset.  This does not create any data but the path and
 	 * mandatory attributes only.
 	 *
-	 * @param pathName
-	 * @param dimensions
-	 * @param blockSizes
-	 * @param dataType
+	 * @param pathName dataset path
+	 * @param datasetAttributes
 	 * @throws IOException
 	 */
 	public void createDataset(
 			final String pathName,
-			final DatasetAttributes datasetInfo) throws IOException{
+			final DatasetAttributes datasetAttributes) throws IOException{
 		createGroup(pathName);
-		setDatasetAttributes(pathName, datasetInfo);
+		setDatasetAttributes(pathName, datasetAttributes);
 	}
 
 	/**
 	 * Creates a dataset.  This does not create any data but the path and
 	 * mandatory attributes only.
 	 *
-	 * @param pathName
+	 * @param pathName dataset path
 	 * @param dimensions
 	 * @param blockSize
 	 * @param dataType
@@ -383,6 +383,14 @@ public class N5
 		setDatasetAttributes(pathName, new DatasetAttributes(dimensions, blockSize, dataType, compressionType));
 	}
 
+	/**
+	 * Writes a {@link DataBlock}.
+	 *
+	 * @param pathName dataset path
+	 * @param datasetAttributes
+	 * @param dataBlock
+	 * @throws IOException
+	 */
 	public < T > void writeBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
@@ -407,6 +415,15 @@ public class N5
 		}
 	}
 
+	/**
+	 * Reads a {@link DataBlock}.
+	 *
+	 * @param pathName dataset path
+	 * @param datasetAttributes
+	 * @param gridPosition
+	 * @return
+	 * @throws IOException
+	 */
 	public DataBlock< ? > readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
