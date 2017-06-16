@@ -13,16 +13,16 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
 ## Specifications
 
 1. All directories of the file system are N5 groups.
-2. A JSON file `attributes`.json in a directory contains arbitrary attributes.
+2. A JSON file `attributes.json` in a directory contains arbitrary attributes.
 3. A dataset is a group with the mandatory attributes:
    * dimensions (e.g. [100, 200, 300]),
    * blockSize (e.g. [64, 64, 64]),
    * dataType (one of {uint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, float64})
    * compressionType (one of {raw, bzip2, gzip, xz}).
 4. Chunks are stored in a directory hierarchy that enumerates their positive integer position in the chunk grid (e.g. `0/4/1/7` for chunk grid position p=(0, 4, 1, 7)).
-5. All chunks of a chunked dataset have the same size except for end-chunks that may be smaller (thereofore 6.)
-6. Datasets are sparse, i.e. there is no guarantee that all chunks of a dataset exist.
-6. Chunks are stored in the following binary format:
+5. Datasets are sparse, i.e. there is no guarantee that all chunks of a dataset exist.
+6. All chunks of a chunked dataset have the same size except for end-chunks that may be smaller, therefore
+7. Chunks are stored in the following binary format:
     * number of dimensions (uint32 big endian)
     * dimension 1[,...,n] (uint32 big endian)
     * compressed data (big endian)

@@ -331,9 +331,10 @@ public class N5
 				pathStream.sorted(Comparator.reverseOrder()).forEach(
 						childPath -> {
 							if (Files.isRegularFile(childPath)) {
-								try (final FileLock lock = FileChannel.open(childPath, StandardOpenOption.WRITE).lock()) {
-									Files.delete(childPath);
-									lock.release();
+								try (final FileChannel channel = FileChannel.open(childPath, StandardOpenOption.WRITE)) {
+									final FileLock lock = channel.lock();
+    									Files.delete(childPath);
+									if (lock.isValid()) lock.release();
 								} catch (final IOException e) {
 									e.printStackTrace();
 								}
