@@ -26,8 +26,6 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Interface for data blocks.  A data block has data, a position on the block
@@ -94,31 +92,6 @@ public interface DataBlock<T>
 	 * @param buffer
 	 */
 	public void readData(final ByteBuffer buffer);
-
-	/**
-	 * Creates the path for a data block in a dataset at a given grid position.
-	 *
-	 * The returned path is
-	 * <pre>
-	 * $datasetPathName/$gridPosition[0]/$gridPosition[1]/.../$gridPosition[n]
-	 * </pre>
-	 *
-	 * This is the file into which the data block will be stored.
-	 *
-	 * @param datasetPathName
-	 * @param gridPosition
-	 * @return
-	 */
-	public static Path getPath(final String datasetPathName, final long[] gridPosition) {
-
-		final String[] pathComponents = new String[gridPosition.length];
-		for (int i = 0; i < pathComponents.length; ++i)
-			pathComponents[i] = Long.toString(gridPosition[i]);
-
-		return Paths.get(
-				datasetPathName,
-				pathComponents);
-	}
 
 	/**
 	 * Returns the number of elements in a box of given size.

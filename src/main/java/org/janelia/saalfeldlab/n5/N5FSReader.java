@@ -394,7 +394,7 @@ public class N5FSReader implements N5Reader {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock< T > dataBlock ) throws IOException {
 
-		final Path path = DataBlock.getPath(Paths.get(basePath, pathName).toString(), dataBlock.getGridPosition());
+		final Path path = getDataBlockPath(Paths.get(basePath, pathName).toString(), dataBlock.getGridPosition());
 		Files.createDirectories(path.getParent());
 		final File file = path.toFile();
 		try (final FileOutputStream out = new FileOutputStream(file)) {
@@ -428,7 +428,7 @@ public class N5FSReader implements N5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition ) throws IOException {
 
-		final Path path = DataBlock.getPath(Paths.get(basePath, pathName).toString(), gridPosition);
+		final Path path = getDataBlockPath(Paths.get(basePath, pathName).toString(), gridPosition);
 		final File file = path.toFile();
 		if (!file.exists())
 			return null;
@@ -470,5 +470,30 @@ public class N5FSReader implements N5Reader {
 	@Override
 	public boolean datasetExists(final String pathName) throws IOException {
 		return exists(pathName) && getDatasetAttributes(pathName) != null;
+	}
+
+	/**
+	 * Creates the path for a data block in a dataset at a given grid position.
+	 *
+	 * The returned path is
+	 * <pre>
+	 * $datasetPathName/$gridPosition[0]/$gridPosition[1]/.../$gridPosition[n]
+	 * </pre>
+	 *
+	 * This is the file into which the data block will be stored.
+	 *
+	 * @param datasetPathName
+	 * @param gridPosition
+	 * @return
+	 */
+	public static Path getDataBlockPath(final String datasetPathName, final long[] gridPosition) {
+
+		final String[] pathComponents = new String[gridPosition.length];
+		for (int i = 0; i < pathComponents.length; ++i)
+			pathComponents[i] = Long.toString(gridPosition[i]);
+
+		return Paths.get(
+				datasetPathName,
+				pathComponents);
 	}
 }

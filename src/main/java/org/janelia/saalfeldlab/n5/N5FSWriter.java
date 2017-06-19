@@ -399,7 +399,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock< T > dataBlock ) throws IOException {
 
-		final Path path = DataBlock.getPath(Paths.get(basePath, pathName).toString(), dataBlock.getGridPosition());
+		final Path path = getDataBlockPath(Paths.get(basePath, pathName).toString(), dataBlock.getGridPosition());
 		Files.createDirectories(path.getParent());
 		final File file = path.toFile();
 		try (final FileOutputStream out = new FileOutputStream(file)) {
@@ -433,7 +433,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition ) throws IOException {
 
-		final Path path = DataBlock.getPath(Paths.get(basePath, pathName).toString(), gridPosition);
+		final Path path = getDataBlockPath(Paths.get(basePath, pathName).toString(), gridPosition);
 		final File file = path.toFile();
 		if (!file.exists())
 			return null;
