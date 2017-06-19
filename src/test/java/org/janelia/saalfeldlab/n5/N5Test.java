@@ -53,7 +53,7 @@ public class N5Test {
 	static float[] floatBlock;
 	static double[] doubleBlock;
 
-	static private N5 n5;
+	static private N5Writer n5;
 
 	/**
 	 * @throws java.lang.Exception
@@ -65,7 +65,7 @@ public class N5Test {
 		if (!(testDir.exists() && testDir.isDirectory()))
 			throw new IOException("Could not create test directory for HDF5Utils test.");
 
-		n5 = new N5(testDirPath);
+		n5 = N5.openFSWriter(testDirPath);
 
 		final Random rnd = new Random();
 		byteBlock = new byte[blockSize[0] * blockSize[1] * blockSize[2]];

@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import ch.systemsx.cisd.base.mdarray.MDShortArray;
 import ch.systemsx.cisd.hdf5.HDF5Factory;
@@ -56,7 +57,7 @@ public class N5Benchmark {
 
 	private static String datasetName = "/dataset";
 
-	private static N5 n5;
+	private static N5Writer n5;
 
 	private static short[] data;
 
@@ -77,7 +78,7 @@ public class N5Benchmark {
 		for (int i = 0; i < data.length; ++i)
 			data[i] = (short)cursor.next().get();
 
-		n5 = new N5(testDirPath);
+		n5 = N5.openFSWriter(testDirPath);
 	}
 
 	/**
@@ -189,7 +190,7 @@ public class N5Benchmark {
 		}
 	}
 
-//	@Test
+	@Test
 	public void benchmarkParallelWritingSpeed() {
 		final int nBlocks = 5;
 
