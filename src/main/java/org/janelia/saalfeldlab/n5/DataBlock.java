@@ -36,8 +36,8 @@ import java.nio.ByteBuffer;
  *
  * @author Stephan Saalfeld
  */
-public interface DataBlock<T>
-{
+public interface DataBlock<T> {
+
 	/**
 	 * Returns the size of this data block.
 	 *

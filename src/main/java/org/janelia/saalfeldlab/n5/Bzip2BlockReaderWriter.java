@@ -34,12 +34,13 @@ import java.nio.channels.FileChannel;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 
-public class Bzip2BlockReaderWriter implements BlockReader, BlockWriter
-{
+public class Bzip2BlockReaderWriter implements BlockReader, BlockWriter {
+
 	@Override
 	public <T, B extends DataBlock<T>> void read(
 			final B dataBlock,
 			final ByteChannel channel) throws IOException {
+
 		final ByteBuffer buffer = dataBlock.toByteBuffer();
 		try (final BZip2CompressorInputStream in = new BZip2CompressorInputStream(Channels.newInputStream(channel))) {
 			in.read(buffer.array());
@@ -51,6 +52,7 @@ public class Bzip2BlockReaderWriter implements BlockReader, BlockWriter
 	public <T> void write(
 			final DataBlock<T> dataBlock,
 			final FileChannel channel) throws IOException {
+
 		final ByteBuffer buffer = dataBlock.toByteBuffer();
 		try (final BZip2CompressorOutputStream out = new BZip2CompressorOutputStream(Channels.newOutputStream(channel))) {
 			out.write(buffer.array());

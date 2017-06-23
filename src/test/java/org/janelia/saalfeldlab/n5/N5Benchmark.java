@@ -66,6 +66,7 @@ public class N5Benchmark {
 	 */
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
+
 		final File testDir = new File(testDirPath);
 		testDir.mkdirs();
 		if (!(testDir.exists() && testDir.isDirectory()))
@@ -86,6 +87,7 @@ public class N5Benchmark {
 	 */
 	@AfterClass
 	public static void rampDownAfterClass() throws Exception {
+
 		n5.remove("");
 	}
 
@@ -100,6 +102,7 @@ public class N5Benchmark {
 	 */
 //	@Test
 	public void testDocExample() {
+
 		final short[] dataBlockData = new short[]{1, 2, 3, 4, 5, 6};
 		for (final CompressionType compressionType : CompressionType.values()) {
 			try {
@@ -116,6 +119,7 @@ public class N5Benchmark {
 
 //	@Test
 	public void benchmarkWritingSpeed() {
+
 		final int nBlocks = 5;
 
 		for (int i = 0; i < 1; ++i) {
@@ -192,6 +196,7 @@ public class N5Benchmark {
 
 	@Test
 	public void benchmarkParallelWritingSpeed() {
+
 		final int nBlocks = 5;
 
 		for (int i = 1; i <= 16; i *= 2 ) {

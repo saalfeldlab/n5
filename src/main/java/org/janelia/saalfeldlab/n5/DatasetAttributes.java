@@ -40,8 +40,8 @@ import java.util.HashMap;
  * @author Stephan Saalfeld
  *
  */
-public class DatasetAttributes
-{
+public class DatasetAttributes {
+
 	static final String dimensionsKey = "dimensions";
 	static final String blockSizeKey = "blockSize";
 	static final String dataTypeKey = "dataType";
@@ -57,6 +57,7 @@ public class DatasetAttributes
 			final int[] blockSize,
 			final DataType dataType,
 			final CompressionType compressionType) {
+
 		this.dimensions = dimensions;
 		this.blockSize = blockSize;
 		this.dataType = dataType;
@@ -64,27 +65,32 @@ public class DatasetAttributes
 	}
 
 	public long[] getDimensions() {
+
 		return dimensions;
 	}
 
 	public int getNumDimensions() {
+
 		return dimensions.length;
 	}
 
 	public int[] getBlockSize() {
+
 		return blockSize;
 	}
 
 	public CompressionType getCompressionType() {
+
 		return compressionType;
 	}
 
 	public DataType getDataType() {
+
 		return dataType;
 	}
 
-	public HashMap<String, Object> asMap()
-	{
+	public HashMap<String, Object> asMap() {
+
 		final HashMap<String, Object> map = new HashMap<>();
 		map.put(dimensionsKey, dimensions);
 		map.put(blockSizeKey, blockSize);

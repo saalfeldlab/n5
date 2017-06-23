@@ -34,8 +34,8 @@ import java.nio.channels.FileChannel;
  *
  * @author Stephan Saalfeld
  */
-public interface BlockWriter
-{
+public interface BlockWriter {
+
 	/**
 	 * Writes a {@link DataBlock} into a {@link FileChannel}.
 	 *

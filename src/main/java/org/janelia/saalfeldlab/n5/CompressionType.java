@@ -54,6 +54,7 @@ public enum CompressionType {
 	private final BlockWriter writer;
 
 	private CompressionType(final String label, final BlockReader reader, final BlockWriter writer) {
+
 		this.label = label;
 		this.reader = reader;
 		this.writer = writer;
@@ -61,10 +62,12 @@ public enum CompressionType {
 
 	@Override
 	public String toString() {
+
 		return label;
 	}
 
 	public static CompressionType fromString(final String string) {
+
 		for (final CompressionType value : values())
 			if (value.toString().equals(string))
 				return value;
@@ -72,24 +75,32 @@ public enum CompressionType {
 	}
 
 	public BlockReader getReader() {
+
 		return reader;
 	}
 
 	public BlockWriter getWriter() {
+
 		return writer;
 	}
 
-	public static class JsonAdapter
-			implements JsonDeserializer<CompressionType>, JsonSerializer<CompressionType> {
+	public static class JsonAdapter implements JsonDeserializer<CompressionType>, JsonSerializer<CompressionType> {
+
 		@Override
-		public CompressionType deserialize(final JsonElement json, final Type typeOfT,
+		public CompressionType deserialize(
+				final JsonElement json,
+				final Type typeOfT,
 				final JsonDeserializationContext context) throws JsonParseException {
+
 			return CompressionType.fromString(json.getAsString());
 		}
 
 		@Override
-		public JsonElement serialize(final CompressionType src, final Type typeOfSrc,
+		public JsonElement serialize(
+				final CompressionType src,
+				final Type typeOfSrc,
 				final JsonSerializationContext context) {
+
 			return new JsonPrimitive(src.toString());
 		}
 	}

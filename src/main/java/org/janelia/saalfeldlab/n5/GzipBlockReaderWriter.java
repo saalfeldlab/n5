@@ -34,12 +34,13 @@ import java.nio.channels.FileChannel;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 
-public class GzipBlockReaderWriter implements BlockReader, BlockWriter
-{
+public class GzipBlockReaderWriter implements BlockReader, BlockWriter {
+
 	@Override
 	public <T, B extends DataBlock<T>> void read(
 			final B dataBlock,
 			final ByteChannel channel) throws IOException {
+
 		final ByteBuffer buffer = dataBlock.toByteBuffer();
 		try (final GzipCompressorInputStream in = new GzipCompressorInputStream(Channels.newInputStream(channel))) {
 			in.read(buffer.array());
@@ -51,6 +52,7 @@ public class GzipBlockReaderWriter implements BlockReader, BlockWriter
 	public <T> void write(
 			final DataBlock<T> dataBlock,
 			final FileChannel channel) throws IOException {
+
 		final ByteBuffer buffer = dataBlock.toByteBuffer();
 		try (final GzipCompressorOutputStream os = new GzipCompressorOutputStream(Channels.newOutputStream(channel))) {
 			os.write(buffer.array());

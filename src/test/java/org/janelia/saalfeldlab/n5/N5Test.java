@@ -63,6 +63,7 @@ public class N5Test {
 	 */
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
+
 		final File testDir = new File(testDirPath);
 		testDir.mkdirs();
 		if (!(testDir.exists() && testDir.isDirectory()))
@@ -93,6 +94,7 @@ public class N5Test {
 	 */
 	@AfterClass
 	public static void rampDownAfterClass() throws Exception {
+
 		n5.remove("");
 	}
 
@@ -100,12 +102,11 @@ public class N5Test {
 	 * @throws java.lang.Exception
 	 */
 	@Before
-	public void setUp() throws Exception {
-
-	}
+	public void setUp() throws Exception {}
 
 	@Test
 	public void testCreateGroup() {
+
 		try {
 			n5.createGroup(groupName);
 		} catch (final IOException e) {
@@ -119,6 +120,7 @@ public class N5Test {
 
 	@Test
 	public void testCreateDataset() {
+
 		try {
 			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, CompressionType.RAW);
 		} catch (final IOException e) {
@@ -143,6 +145,7 @@ public class N5Test {
 
 	@Test
 	public void testWriteReadByteBlock() {
+
 		for (final CompressionType compressionType : CompressionType.values()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT8,
@@ -171,6 +174,7 @@ public class N5Test {
 
 	@Test
 	public void testWriteReadShortBlock() {
+
 		for (final CompressionType compressionType : CompressionType.values()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT16,
@@ -199,6 +203,7 @@ public class N5Test {
 
 	@Test
 	public void testWriteReadIntBlock() {
+
 		for (final CompressionType compressionType : CompressionType.values()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT32,
@@ -227,6 +232,7 @@ public class N5Test {
 
 	@Test
 	public void testWriteReadLongBlock() {
+
 		for (final CompressionType compressionType : CompressionType.values()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT64,
@@ -255,6 +261,7 @@ public class N5Test {
 
 	@Test
 	public void testWriteReadFloatBlock() {
+
 		for (final CompressionType compressionType : CompressionType.values()) {
 			System.out.println("Testing " + compressionType + " float32");
 			try {
@@ -279,6 +286,7 @@ public class N5Test {
 
 	@Test
 	public void testWriteReadDoubleBlock() {
+
 		for (final CompressionType compressionType : CompressionType.values()) {
 			System.out.println("Testing " + compressionType + " float64");
 			try {
@@ -302,6 +310,7 @@ public class N5Test {
 
 	@Test
 	public void testRemove() {
+
 		try {
 			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, CompressionType.RAW);
 			n5.remove(groupName);
