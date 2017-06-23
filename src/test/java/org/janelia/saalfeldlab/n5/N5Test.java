@@ -21,6 +21,7 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Random;
 
 import org.junit.AfterClass;
@@ -39,6 +40,8 @@ public class N5Test {
 	static private String testDirPath = System.getProperty("user.home") + "/tmp/n5-test";
 
 	static private String groupName = "/test/group";
+
+	static private String[] subGroupNames = new String[]{"a", "b", "c"};
 
 	static private String datasetName = "/test/group/dataset";
 
@@ -309,5 +312,24 @@ public class N5Test {
 		final File file = Paths.get(testDirPath, groupName).toFile();
 		if (file.exists())
 			fail("Group still exists");
+	}
+
+	@Test
+	public void testList() {
+
+		try {
+			n5.createGroup(groupName);
+			for (final String subGroup : subGroupNames)
+				n5.createGroup(groupName + "/" + subGroup);
+
+			n5.setAttribute(groupName, "test", "test");
+
+			final String[] groupsList = n5.list(groupName);
+			Arrays.sort(groupsList);
+
+			Assert.assertArrayEquals(subGroupNames, groupsList);
+		} catch (final IOException e) {
+			fail(e.getMessage());
+		}
 	}
 }

@@ -496,4 +496,14 @@ public class N5FSReader implements N5Reader {
 				datasetPathName,
 				pathComponents);
 	}
+
+	@Override
+	public String[] list(final String pathName) throws IOException {
+
+		final Path path = Paths.get(basePath, pathName);
+		return Files.list(path)
+				.filter(a -> Files.isDirectory(a))
+				.map(a -> path.relativize(a).toString())
+				.toArray(n -> new String[n]);
+	}
 }

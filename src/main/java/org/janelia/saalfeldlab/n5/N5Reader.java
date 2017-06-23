@@ -103,4 +103,13 @@ public interface N5Reader {
 	 * @return
 	 */
 	public boolean datasetExists(final String pathName) throws IOException;
+
+	/**
+	 * List all groups (including datasets) in a group.
+	 *
+	 * @param pathName group path
+	 * @return
+	 * @throws IOException
+	 */
+	public String[] list(final String pathName) throws IOException;
 }
