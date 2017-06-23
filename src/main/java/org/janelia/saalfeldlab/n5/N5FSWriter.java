@@ -25,23 +25,19 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Writer;
 import java.lang.reflect.Type;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -77,6 +73,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	 * @param gsonBuilder
 	 */
 	public N5FSWriter(final String basePath, final GsonBuilder gsonBuilder) {
+
 		super(basePath, gsonBuilder);
 	}
 
@@ -93,103 +90,13 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	 * @param basePath n5 base path
 	 */
 	public N5FSWriter(final String basePath) {
+
 		this(basePath, new GsonBuilder());
 	}
 
-	private static class LockedFileChannel {
-
-		private final FileChannel channel;
-		private final FileLock lock;
-
-		LockedFileChannel(final Path path) throws IOException {
-
-			@SuppressWarnings("hiding")
-			FileChannel channel = null;
-			@SuppressWarnings("hiding")
-			FileLock lock = null;
-			for (boolean waiting = true; waiting;) {
-				waiting = false;
-				try {
-					channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE);
-					lock = channel.lock();
-				} catch (final OverlappingFileLockException e) {
-					waiting = true;
-					try {
-						Thread.sleep(100);
-					} catch (final InterruptedException f) {
-						channel = null;
-						lock = null;
-						waiting = false;
-						f.printStackTrace(System.err);
-					}
-				} catch (final IOException e) {
-					channel = FileChannel.open(path, StandardOpenOption.READ);
-					lock = null;
-				}
-			}
-
-			this.channel = channel;
-			this.lock = lock;
-		}
-
-		private void close() throws IOException {
-
-			if (lock != null)
-				lock.release();
-			channel.close();
-		}
-	}
-
-	/**
-	 * Reads or creates the attributes map of a group or dataset.
-	 *
-	 * @param pathName group path
-	 * @return
-	 * @throws IOException
-	 *
-	 * TODO uses file locks to synchronize with other processes, now also
-	 *   synchronize for threads inside the JVM
-	 */
-	@Override
-	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
-		final Path path = Paths.get(basePath, pathName, jsonFile);
-		final LockedFileChannel lockedFileChannel = new LockedFileChannel(path);
-		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
-		HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(lockedFileChannel.channel, "UTF-8"), mapType);
-		if (map == null)
-			map = new HashMap<>();
-		lockedFileChannel.close();
-		return map;
-	}
-
-	/**
-	 * Reads an attribute.
-	 *
-	 * @param pathName group path
-	 * @param key
-	 * @param clazz attribute class
-	 * @return
-	 */
-	@Override
-	public <T> T getAttribute(final String pathName, final String key, final Class<T> clazz) throws IOException {
-		final HashMap<String, JsonElement> map = getAttributes(pathName);
-		final JsonElement attribute = map.get(key);
-		if (attribute != null)
-			return gson.fromJson(attribute, clazz);
-		else
-			return null;
-	}
-
-	/**
-	 * Sets an attribute.
-	 *
-	 * @param pathName group path
-	 * @param key
-	 * @param attribute
-	 * @throws IOException
-	 */
 	@Override
 	public <T> void setAttribute(final String pathName, final String key, final T attribute) throws IOException {
+
 		final Path path = Paths.get(basePath, pathName, jsonFile);
 		try (final FileChannel channel = FileChannel.open(
 				path, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
@@ -208,15 +115,9 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		}
 	}
 
-	/**
-	 * Sets a map of attributes.
-	 *
-	 * @param pathName group path
-	 * @param attributes
-	 * @throws IOException
-	 */
 	@Override
 	public void setAttributes(final String pathName, final Map<String, ?> attributes) throws IOException {
+
 		final Path path = Paths.get(basePath, pathName, jsonFile);
 		try (final FileChannel channel = FileChannel.open(
 				path, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
@@ -236,70 +137,6 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		}
 	}
 
-	/**
-	 * Sets mandatory dataset attributes.
-	 *
-	 * @param pathName dataset path
-	 * @param datasetInfo
-	 * @throws IOException
-	 */
-	@Override
-	public void setDatasetAttributes(final String pathName, final DatasetAttributes datasetInfo) throws IOException {
-		setAttributes(pathName, datasetInfo.asMap());
-	}
-
-	/**
-	 * Get mandatory dataset attributes.
-	 *
-	 * @param pathName dataset path
-	 * @return dataset attributes or null if either dimensions or dataType are not set
-	 * @throws IOException
-	 */
-	@Override
-	public DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
-
-		final HashMap<String, JsonElement> attributes = getAttributes(pathName);
-
-		final JsonElement dimensionsElement = attributes.get(DatasetAttributes.dimensionsKey);
-		if (dimensionsElement == null)
-			return null;
-		final long[] dimensions = gson.fromJson(dimensionsElement, long[].class);
-		if (dimensions == null)
-			return null;
-
-		final JsonElement dataTypeElement = attributes.get(DatasetAttributes.dataTypeKey);
-		if (dataTypeElement == null)
-			return null;
-		final DataType dataType = gson.fromJson(dataTypeElement, DataType.class);
-		if (dataType == null)
-			return null;
-
-		final JsonElement blockSizeElement = attributes.get(DatasetAttributes.blockSizeKey);
-		int[] blockSize = null;
-		if (blockSizeElement != null)
-			blockSize = gson.fromJson(blockSizeElement, int[].class);
-		if (blockSize == null)
-			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
-
-		final JsonElement compressionTypeElement = attributes.get(DatasetAttributes.compressionTypeKey);
-		CompressionType compressionType = null;
-		if (compressionTypeElement == null)
-			return null;
-		compressionType = gson.fromJson(compressionTypeElement, CompressionType.class);
-		if (compressionType == null)
-			compressionType = CompressionType.RAW;
-
-		return new DatasetAttributes(dimensions, blockSize, dataType, compressionType);
-	}
-
-
-
-	/**
-	 * Creates a group (directory)
-	 *
-	 * @param pathName
-	 * @throws IOException
-	 */
 	@Override
 	public void createGroup(final String pathName) throws IOException {
 
@@ -323,6 +160,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	 */
 	@Override
 	public boolean remove(final String pathName) throws IOException {
+
 		final Path path = Paths.get(basePath, pathName);
 		if (Files.exists(path))
 			try (final Stream<Path> pathStream = Files.walk(path)) {
@@ -360,6 +198,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	public void createDataset(
 			final String pathName,
 			final DatasetAttributes datasetAttributes) throws IOException{
+
 		createGroup(pathName);
 		setDatasetAttributes(pathName, datasetAttributes);
 	}
@@ -381,23 +220,16 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			final int[] blockSize,
 			final DataType dataType,
 			final CompressionType compressionType) throws IOException{
+
 		createGroup(pathName);
 		setDatasetAttributes(pathName, new DatasetAttributes(dimensions, blockSize, dataType, compressionType));
 	}
 
-	/**
-	 * Writes a {@link DataBlock}.
-	 *
-	 * @param pathName dataset path
-	 * @param datasetAttributes
-	 * @param dataBlock
-	 * @throws IOException
-	 */
 	@Override
-	public < T > void writeBlock(
+	public <T> void writeBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
-			final DataBlock< T > dataBlock ) throws IOException {
+			final DataBlock<T> dataBlock) throws IOException {
 
 		final Path path = getDataBlockPath(Paths.get(basePath, pathName).toString(), dataBlock.getGridPosition());
 		Files.createDirectories(path.getParent());
@@ -416,64 +248,5 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			writer.write(dataBlock, channel);
 			if (lock.isValid()) lock.release();
 		}
-	}
-
-	/**
-	 * Reads a {@link DataBlock}.
-	 *
-	 * @param pathName dataset path
-	 * @param datasetAttributes
-	 * @param gridPosition
-	 * @return
-	 * @throws IOException
-	 */
-	@Override
-	public DataBlock< ? > readBlock(
-			final String pathName,
-			final DatasetAttributes datasetAttributes,
-			final long[] gridPosition ) throws IOException {
-
-		final Path path = getDataBlockPath(Paths.get(basePath, pathName).toString(), gridPosition);
-		final File file = path.toFile();
-		if (!file.exists())
-			return null;
-		final LockedFileChannel lockedChannel = new LockedFileChannel(path);
-
-		try (final InputStream in = Channels.newInputStream(lockedChannel.channel)) {
-			final DataInputStream dis = new DataInputStream(in);
-			final int nDim = dis.readInt();
-			final int[] blockSize = new int[nDim];
-			for (int d = 0; d < nDim; ++d)
-				blockSize[d] = dis.readInt();
-			final DataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition);
-
-			final BlockReader reader = datasetAttributes.getCompressionType().getReader();
-			reader.read(dataBlock, lockedChannel.channel);
-			if (lockedChannel.lock != null && lockedChannel.lock.isValid()) lockedChannel.lock.release();
-			return dataBlock;
-		}
-	}
-
-	/**
-	 * Test whether a group or dataset exists.
-	 *
-	 * @param pathName group path
-	 * @return
-	 */
-	@Override
-	public boolean exists(final String pathName) {
-		final Path path = Paths.get(basePath, pathName);
-		return Files.exists(path) && Files.isDirectory(path);
-	}
-
-	/**
-	 * Test whether a dataset exists.
-	 *
-	 * @param pathName dataset path
-	 * @return
-	 */
-	@Override
-	public boolean datasetExists(final String pathName) throws IOException {
-		return exists(pathName) && getDatasetAttributes(pathName) != null;
 	}
 }

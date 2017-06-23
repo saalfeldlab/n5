@@ -66,13 +66,14 @@ public interface N5Writer extends N5Reader {
 	 * Sets mandatory dataset attributes.
 	 *
 	 * @param pathName dataset path
-	 * @param datasetInfo
+	 * @param datasetAttributes
 	 * @throws IOException
 	 */
 	public default void setDatasetAttributes(
 			final String pathName,
-			final DatasetAttributes datasetInfo) throws IOException {
-		setAttributes(pathName, datasetInfo.asMap());
+			final DatasetAttributes datasetAttributes) throws IOException {
+
+		setAttributes(pathName, datasetAttributes.asMap());
 	}
 
 	/**

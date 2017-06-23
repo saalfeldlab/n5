@@ -34,8 +34,8 @@ import java.nio.channels.ByteChannel;
  *
  * @author Stephan Saalfeld
  */
-public interface BlockReader
-{
+public interface BlockReader {
+
 	/**
 	 * Reads a {@link DataBlock} from a {@link ByteChannel}.
 	 *

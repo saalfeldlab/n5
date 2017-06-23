@@ -27,14 +27,16 @@ package org.janelia.saalfeldlab.n5;
 
 import java.nio.ByteBuffer;
 
-public class IntArrayDataBlock extends AbstractDataBlock<int[]>
-{
+public class IntArrayDataBlock extends AbstractDataBlock<int[]> {
+
 	public IntArrayDataBlock(final int[] size, final long[] gridPosition, final int[] data) {
+
 		super(size, gridPosition, data);
 	}
 
 	@Override
 	public ByteBuffer toByteBuffer() {
+
 		final ByteBuffer buffer = ByteBuffer.allocate(data.length * 4);
 		buffer.asIntBuffer().put(data);
 		return buffer;
@@ -42,6 +44,7 @@ public class IntArrayDataBlock extends AbstractDataBlock<int[]>
 
 	@Override
 	public void readData(final ByteBuffer buffer) {
+
 		buffer.asIntBuffer().get(data);
 	}
 }

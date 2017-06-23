@@ -32,13 +32,14 @@ package org.janelia.saalfeldlab.n5;
  *
  * @author Stephan Saalfeld
  */
-public abstract class AbstractDataBlock<T> implements DataBlock<T>
-{
+public abstract class AbstractDataBlock<T> implements DataBlock<T> {
+
 	protected final int[] size;
 	protected final long[] gridPosition;
 	protected final T data;
 
 	public AbstractDataBlock(final int[] size, final long[] gridPosition, final T data) {
+
 		this.size = size;
 		this.gridPosition = gridPosition;
 		this.data = data;
@@ -46,16 +47,19 @@ public abstract class AbstractDataBlock<T> implements DataBlock<T>
 
 	@Override
 	public int[] getSize() {
+
 		return size;
 	}
 
 	@Override
 	public long[] getGridPosition() {
+
 		return gridPosition;
 	}
 
 	@Override
 	public T getData() {
+
 		return data;
 	}
 }

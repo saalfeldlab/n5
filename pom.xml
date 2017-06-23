@@ -45,8 +45,6 @@
 		<license.copyrightOwners>Stephan Saalfeld</license.copyrightOwners>
 
 		<enforcer.skip>true</enforcer.skip>
-
-		<maven-deploy-path>/home/saalfelds/workspace/maven</maven-deploy-path>
 	</properties>
 
 	<developers>
@@ -69,7 +67,7 @@
 	<repositories>
 		<repository>
 			<id>imagej.public</id>
-			<url>http://maven.imagej.net/content/groups/public</url>
+			<url>https://maven.imagej.net/content/groups/public</url>
 		</repository>
 	</repositories>
 
@@ -143,7 +141,7 @@
 					<artifactId>maven-deploy-plugin</artifactId>
 					<version>2.8.1</version>
 					<configuration>
-						<altDeploymentRepository>internal.repo::default::file://${maven-deploy-path}</altDeploymentRepository>
+						<altDeploymentRepository>internal.repo::default::file://${deploy.path}</altDeploymentRepository>
 					</configuration>
 				</plugin>
 			</plugins>
@@ -153,8 +151,8 @@
 	<distributionManagement>
 		<repository>
 			<id>local-maven-repo</id>
-			<name>Local Saalfeldlab Repo</name>
-			<url>file://${maven-deploy-path}</url>
+			<name>Local Maven Repository</name>
+			<url>file://${deploy.path}</url>
 		</repository>
 	</distributionManagement>
 </project>

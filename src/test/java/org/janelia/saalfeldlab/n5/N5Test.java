@@ -21,6 +21,7 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Random;
 
 import org.junit.AfterClass;
@@ -39,6 +40,8 @@ public class N5Test {
 	static private String testDirPath = System.getProperty("user.home") + "/tmp/n5-test";
 
 	static private String groupName = "/test/group";
+
+	static private String[] subGroupNames = new String[]{"a", "b", "c"};
 
 	static private String datasetName = "/test/group/dataset";
 
@@ -60,6 +63,7 @@ public class N5Test {
 	 */
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
+
 		final File testDir = new File(testDirPath);
 		testDir.mkdirs();
 		if (!(testDir.exists() && testDir.isDirectory()))
@@ -90,6 +94,7 @@ public class N5Test {
 	 */
 	@AfterClass
 	public static void rampDownAfterClass() throws Exception {
+
 		n5.remove("");
 	}
 
@@ -97,12 +102,11 @@ public class N5Test {
 	 * @throws java.lang.Exception
 	 */
 	@Before
-	public void setUp() throws Exception {
-
-	}
+	public void setUp() throws Exception {}
 
 	@Test
 	public void testCreateGroup() {
+
 		try {
 			n5.createGroup(groupName);
 		} catch (final IOException e) {
@@ -116,6 +120,7 @@ public class N5Test {
 
 	@Test
 	public void testCreateDataset() {
+
 		try {
 			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, CompressionType.RAW);
 		} catch (final IOException e) {
@@ -140,6 +145,7 @@ public class N5Test {
 
 	@Test
 	public void testWriteReadByteBlock() {
+
 		for (final CompressionType compressionType : CompressionType.values()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT8,
@@ -168,6 +174,7 @@ public class N5Test {
 
 	@Test
 	public void testWriteReadShortBlock() {
+
 		for (final CompressionType compressionType : CompressionType.values()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT16,
@@ -196,6 +203,7 @@ public class N5Test {
 
 	@Test
 	public void testWriteReadIntBlock() {
+
 		for (final CompressionType compressionType : CompressionType.values()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT32,
@@ -224,6 +232,7 @@ public class N5Test {
 
 	@Test
 	public void testWriteReadLongBlock() {
+
 		for (final CompressionType compressionType : CompressionType.values()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT64,
@@ -252,6 +261,7 @@ public class N5Test {
 
 	@Test
 	public void testWriteReadFloatBlock() {
+
 		for (final CompressionType compressionType : CompressionType.values()) {
 			System.out.println("Testing " + compressionType + " float32");
 			try {
@@ -276,6 +286,7 @@ public class N5Test {
 
 	@Test
 	public void testWriteReadDoubleBlock() {
+
 		for (final CompressionType compressionType : CompressionType.values()) {
 			System.out.println("Testing " + compressionType + " float64");
 			try {
@@ -299,6 +310,7 @@ public class N5Test {
 
 	@Test
 	public void testRemove() {
+
 		try {
 			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, CompressionType.RAW);
 			n5.remove(groupName);
@@ -309,5 +321,24 @@ public class N5Test {
 		final File file = Paths.get(testDirPath, groupName).toFile();
 		if (file.exists())
 			fail("Group still exists");
+	}
+
+	@Test
+	public void testList() {
+
+		try {
+			n5.createGroup(groupName);
+			for (final String subGroup : subGroupNames)
+				n5.createGroup(groupName + "/" + subGroup);
+
+			n5.setAttribute(groupName, "test", "test");
+
+			final String[] groupsList = n5.list(groupName);
+			Arrays.sort(groupsList);
+
+			Assert.assertArrayEquals(subGroupNames, groupsList);
+		} catch (final IOException e) {
+			fail(e.getMessage());
+		}
 	}
 }

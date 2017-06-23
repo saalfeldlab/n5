@@ -30,12 +30,13 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.FileChannel;
 
-public class RawBlockReaderWriter implements BlockReader, BlockWriter
-{
+public class RawBlockReaderWriter implements BlockReader, BlockWriter {
+
 	@Override
 	public <T, B extends DataBlock<T>> void read(
 			final B dataBlock,
 			final ByteChannel channel) throws IOException {
+
 		final ByteBuffer buffer = dataBlock.toByteBuffer();
 		channel.read(buffer);
 		buffer.position(0);
@@ -46,6 +47,7 @@ public class RawBlockReaderWriter implements BlockReader, BlockWriter
 	public <T> void write(
 			final DataBlock<T> dataBlock,
 			final FileChannel channel) throws IOException {
+
 		final ByteBuffer buffer = dataBlock.toByteBuffer();
 		channel.write(buffer);
 		channel.truncate(channel.position());

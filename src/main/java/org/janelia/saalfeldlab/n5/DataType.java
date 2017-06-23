@@ -60,16 +60,19 @@ public enum DataType {
 	private DataBlockFactory dataBlockFactory;
 
 	private DataType(final String label, final DataBlockFactory dataBlockFactory) {
+
 		this.label = label;
 		this.dataBlockFactory = dataBlockFactory;
 	}
 
 	@Override
 	public String toString() {
+
 		return label;
 	}
 
 	public static DataType fromString(final String string) {
+
 		for (final DataType value : values())
 			if (value.toString().equals(string))
 				return value;
@@ -77,6 +80,7 @@ public enum DataType {
 	}
 
 	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition) {
+
 		return dataBlockFactory.createDataBlock(blockSize, gridPosition);
 	}
 
@@ -92,6 +96,7 @@ public enum DataType {
 				final JsonElement json,
 				final Type typeOfT,
 				final JsonDeserializationContext context) throws JsonParseException {
+
 			return DataType.fromString(json.getAsString());
 		}
 
@@ -100,6 +105,7 @@ public enum DataType {
 				final DataType src,
 				final Type typeOfSrc,
 				final JsonSerializationContext context) {
+
 			return new JsonPrimitive(src.toString());
 		}
 	}
