@@ -341,4 +341,27 @@ public class N5Test {
 			fail(e.getMessage());
 		}
 	}
+
+	@Test
+	public void testExists() {
+
+		final String groupName2 = groupName + "-2";
+		final String datasetName2 = datasetName + "-2";
+		try {
+			n5.createDataset(datasetName2, dimensions, blockSize, DataType.UINT64, CompressionType.RAW);
+			Assert.assertTrue(n5.exists(datasetName2));
+			Assert.assertTrue(n5.datasetExists(datasetName2));
+			Assert.assertTrue(n5.hasAttributes(datasetName2));
+
+			n5.createGroup(groupName2);
+			Assert.assertTrue(n5.exists(groupName2));
+			Assert.assertFalse(n5.datasetExists(groupName2));
+			Assert.assertFalse(n5.hasAttributes(groupName2));
+
+			n5.setAttribute(groupName2, "test", "test");
+			Assert.assertTrue(n5.hasAttributes(groupName2));
+		} catch (final IOException e) {
+			fail(e.getMessage());
+		}
+	}
 }
