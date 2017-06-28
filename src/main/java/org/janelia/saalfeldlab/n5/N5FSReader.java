@@ -245,6 +245,13 @@ public class N5FSReader implements N5Reader {
 		return exists(pathName) && getDatasetAttributes(pathName) != null;
 	}
 
+	@Override
+	public boolean hasAttributes(final String pathName) {
+
+		final Path path = Paths.get(basePath, pathName, jsonFile);
+		return Files.exists(path) && Files.isRegularFile(path);
+	}
+
 	/**
 	 * Creates the path for a data block in a dataset at a given grid position.
 	 *
