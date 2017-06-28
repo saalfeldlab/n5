@@ -67,7 +67,7 @@ public interface N5 {
 	 * @param basePath n5 base path
 	 * @param gsonBuilder
 	 */
-	public static N5Reader openFSWriter(final String basePath, final GsonBuilder gsonBuilder) {
+	public static N5Writer openFSWriter(final String basePath, final GsonBuilder gsonBuilder) {
 
 		return new N5FSWriter(basePath, gsonBuilder);
 	}
