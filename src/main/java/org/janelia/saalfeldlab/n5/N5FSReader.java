@@ -136,7 +136,7 @@ public class N5FSReader implements N5Reader {
 	}
 
 	/**
-	 * Reads or creates the attributes map of a group or dataset.
+	 * Reads the attributes map of a group or dataset.
 	 *
 	 * @param pathName group path
 	 * @return

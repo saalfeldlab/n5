@@ -41,7 +41,7 @@ import com.google.gson.JsonElement;
 public interface N5Reader {
 
 	/**
-	 * Reads or creates the attributes map of a group or dataset.
+	 * Reads the attributes map of a group or dataset.
 	 *
 	 * @param pathName group path
 	 * @return
