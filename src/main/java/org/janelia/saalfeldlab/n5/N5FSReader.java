@@ -242,7 +242,7 @@ public class N5FSReader implements N5Reader {
 	@Override
 	public boolean datasetExists(final String pathName) throws IOException {
 
-		return exists(pathName) && getDatasetAttributes(pathName) != null;
+		return exists(pathName) && hasAttributes(pathName) && getDatasetAttributes(pathName) != null;
 	}
 
 	@Override
