@@ -351,15 +351,14 @@ public class N5Test {
 			n5.createDataset(datasetName2, dimensions, blockSize, DataType.UINT64, CompressionType.RAW);
 			Assert.assertTrue(n5.exists(datasetName2));
 			Assert.assertTrue(n5.datasetExists(datasetName2));
-			Assert.assertTrue(n5.hasAttributes(datasetName2));
 
 			n5.createGroup(groupName2);
 			Assert.assertTrue(n5.exists(groupName2));
 			Assert.assertFalse(n5.datasetExists(groupName2));
-			Assert.assertFalse(n5.hasAttributes(groupName2));
+			Assert.assertTrue(n5.getAttributes(groupName2).isEmpty());
 
 			n5.setAttribute(groupName2, "test", "test");
-			Assert.assertTrue(n5.hasAttributes(groupName2));
+			Assert.assertFalse(n5.getAttributes(groupName2).isEmpty());
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}

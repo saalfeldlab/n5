@@ -105,14 +105,6 @@ public interface N5Reader {
 	public boolean datasetExists(final String pathName) throws IOException;
 
 	/**
-	 * Test whether a group or dataset has attributes.
-	 *
-	 * @param pathName group path
-	 * @return
-	 */
-	public boolean hasAttributes(final String pathName);
-
-	/**
 	 * List all groups (including datasets) in a group.
 	 *
 	 * @param pathName group path
