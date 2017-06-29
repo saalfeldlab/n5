@@ -40,6 +40,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.stream.Stream;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -277,9 +278,12 @@ public class N5FSReader implements N5Reader {
 	public String[] list(final String pathName) throws IOException {
 
 		final Path path = Paths.get(basePath, pathName);
-		return Files.list(path)
-				.filter(a -> Files.isDirectory(a))
-				.map(a -> path.relativize(a).toString())
-				.toArray(n -> new String[n]);
+		try (final Stream<Path> pathStream = Files.list(path))
+		{
+			return pathStream
+					.filter(a -> Files.isDirectory(a))
+					.map(a -> path.relativize(a).toString())
+					.toArray(n -> new String[n]);
+		}
 	}
 }
