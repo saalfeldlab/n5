@@ -149,6 +149,9 @@ public class N5FSReader implements N5Reader {
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
 
 		final Path path = Paths.get(basePath, pathName, jsonFile);
+		if (exists(pathName) && !Files.exists(path))
+			return new HashMap<>();
+
 		final LockedFileChannel lockedFileChannel = new LockedFileChannel(path);
 		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
 		HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(lockedFileChannel.channel, "UTF-8"), mapType);
