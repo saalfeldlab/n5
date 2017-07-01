@@ -94,6 +94,15 @@ public interface DataBlock<T> {
 	public void readData(final ByteBuffer buffer);
 
 	/**
+	 * Returns the number of elements in this {@link DataBlock}. This number is
+	 * not necessarily equal {@link #getNumElements(int[])
+	 * getNumElements(getSize())}.
+	 * 
+	 * @return
+	 */
+	public int getNumElements();
+
+	/**
 	 * Returns the number of elements in a box of given size.
 	 *
 	 * @param size

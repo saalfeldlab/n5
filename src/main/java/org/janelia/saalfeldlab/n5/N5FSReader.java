@@ -223,11 +223,20 @@ public class N5FSReader implements N5Reader {
 
 		try (final InputStream in = Channels.newInputStream(lockedChannel.channel)) {
 			final DataInputStream dis = new DataInputStream(in);
-			final int nDim = dis.readInt();
+			final short mode = dis.readShort();
+			final int nDim = dis.readShort();
 			final int[] blockSize = new int[nDim];
 			for (int d = 0; d < nDim; ++d)
 				blockSize[d] = dis.readInt();
-			final DataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition);
+			final int numElements;
+			switch (mode) {
+			case 1:
+				numElements = dis.readInt();
+				break;
+			default:
+				numElements = DataBlock.getNumElements(blockSize);
+			}
+			final DataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
 
 			final BlockReader reader = datasetAttributes.getCompressionType().getReader();
 			reader.read(dataBlock, lockedChannel.channel);

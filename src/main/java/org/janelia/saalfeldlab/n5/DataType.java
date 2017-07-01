@@ -25,8 +25,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import static org.janelia.saalfeldlab.n5.DataBlock.getNumElements;
-
 import java.lang.reflect.Type;
 
 import com.google.gson.JsonDeserializationContext;
@@ -44,17 +42,17 @@ import com.google.gson.JsonSerializer;
  */
 public enum DataType {
 
-	UINT8("uint8", (blockSize, gridPosition) -> new ByteArrayDataBlock(blockSize, gridPosition, new byte[getNumElements(blockSize)])),
-	UINT16("uint16", (blockSize, gridPosition) -> new ShortArrayDataBlock(blockSize, gridPosition, new short[getNumElements(blockSize)])),
-	UINT32("uint32", (blockSize, gridPosition) -> new IntArrayDataBlock(blockSize, gridPosition, new int[getNumElements(blockSize)])),
-	UINT64("uint64", (blockSize, gridPosition) -> new LongArrayDataBlock(blockSize, gridPosition, new long[getNumElements(blockSize)])),
-	INT8("int8", (blockSize, gridPosition) -> new ByteArrayDataBlock(blockSize, gridPosition, new byte[getNumElements(blockSize)])),
-	INT16("int16", (blockSize, gridPosition) -> new ShortArrayDataBlock(blockSize, gridPosition, new short[getNumElements(blockSize)])),
-	INT32("int32", (blockSize, gridPosition) -> new IntArrayDataBlock(blockSize, gridPosition, new int[getNumElements(blockSize)])),
-	INT64("int64", (blockSize, gridPosition) -> new LongArrayDataBlock(blockSize, gridPosition, new long[getNumElements(blockSize)])),
-	FLOAT32("float32", (blockSize, gridPosition) -> new FloatArrayDataBlock(blockSize, gridPosition, new float[getNumElements(blockSize)])),
-	FLOAT64("float64", (blockSize, gridPosition) -> new DoubleArrayDataBlock(blockSize, gridPosition, new double[getNumElements(blockSize)]));
-
+	UINT8("uint8", (blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(blockSize, gridPosition, new byte[numElements])),
+	UINT16("uint16", (blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(blockSize, gridPosition, new short[numElements])),
+	UINT32("uint32", (blockSize, gridPosition, numElements) -> new IntArrayDataBlock(blockSize, gridPosition, new int[numElements])),
+	UINT64("uint64", (blockSize, gridPosition, numElements) -> new LongArrayDataBlock(blockSize, gridPosition, new long[numElements])),
+	INT8("int8", (blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(blockSize, gridPosition, new byte[numElements])),
+	INT16("int16", (blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(blockSize, gridPosition, new short[numElements])),
+	INT32("int32", (blockSize, gridPosition, numElements) -> new IntArrayDataBlock(blockSize, gridPosition, new int[numElements])),
+	INT64("int64", (blockSize, gridPosition, numElements) -> new LongArrayDataBlock(blockSize, gridPosition, new long[numElements])),
+	FLOAT32("float32", (blockSize, gridPosition, numElements) -> new FloatArrayDataBlock(blockSize, gridPosition, new float[numElements])),
+	FLOAT64("float64", (blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(blockSize, gridPosition, new double[numElements]));
+	
 	private final String label;
 
 	private DataBlockFactory dataBlockFactory;
@@ -79,14 +77,14 @@ public enum DataType {
 		return null;
 	}
 
-	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition) {
+	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition, final int numElements) {
 
-		return dataBlockFactory.createDataBlock(blockSize, gridPosition);
+		return dataBlockFactory.createDataBlock(blockSize, gridPosition, numElements);
 	}
 
 	private static interface DataBlockFactory {
 
-		public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition);
+		public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition, final int numElements);
 	}
 
 	static public class JsonAdapter implements JsonDeserializer<DataType>, JsonSerializer<DataType> {
