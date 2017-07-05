@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.lang.reflect.Type;
+import java.io.Serializable;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -51,7 +52,10 @@ public enum DataType {
 	INT32("int32", (blockSize, gridPosition, numElements) -> new IntArrayDataBlock(blockSize, gridPosition, new int[numElements])),
 	INT64("int64", (blockSize, gridPosition, numElements) -> new LongArrayDataBlock(blockSize, gridPosition, new long[numElements])),
 	FLOAT32("float32", (blockSize, gridPosition, numElements) -> new FloatArrayDataBlock(blockSize, gridPosition, new float[numElements])),
-	FLOAT64("float64", (blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(blockSize, gridPosition, new double[numElements]));
+	FLOAT64("float64", (blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(blockSize, gridPosition, new double[numElements])),
+	
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	SERIALIZABLE("serializable", (blockSize, gridPosition, numElements) -> new SerializableArrayDataBlock(blockSize, gridPosition, new Serializable[numElements]));
 	
 	private final String label;
 

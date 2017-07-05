@@ -31,6 +31,8 @@ import java.nio.channels.ByteChannel;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 
+import org.apache.commons.io.IOUtils;
+
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
 
@@ -41,9 +43,10 @@ public class Lz4BlockReaderWriter implements BlockReader, BlockWriter {
 			final B dataBlock,
 			final ByteChannel channel) throws IOException {
 
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
+		final ByteBuffer buffer;
 		try (final LZ4BlockInputStream in = new LZ4BlockInputStream(Channels.newInputStream(channel))) {
-			in.read(buffer.array());
+			final byte[] bytes = IOUtils.toByteArray(in);
+			buffer = ByteBuffer.wrap(bytes);
 		}
 		dataBlock.readData(buffer);
 	}

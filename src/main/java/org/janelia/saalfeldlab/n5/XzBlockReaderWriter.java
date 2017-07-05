@@ -33,6 +33,7 @@ import java.nio.channels.FileChannel;
 
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
+import org.apache.commons.io.IOUtils;
 
 public class XzBlockReaderWriter implements BlockReader, BlockWriter {
 
@@ -41,9 +42,10 @@ public class XzBlockReaderWriter implements BlockReader, BlockWriter {
 			final B dataBlock,
 			final ByteChannel channel) throws IOException {
 
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
+		final ByteBuffer buffer;
 		try (final XZCompressorInputStream in = new XZCompressorInputStream(Channels.newInputStream(channel))) {
-			in.read(buffer.array());
+			final byte[] bytes = IOUtils.toByteArray(in);
+			buffer = ByteBuffer.wrap(bytes);
 		}
 		dataBlock.readData(buffer);
 	}

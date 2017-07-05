@@ -25,37 +25,52 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
 
-import org.apache.commons.io.IOUtils;
+public class SerializableArrayDataBlock<T extends Serializable> extends AbstractDataBlock<T[]> {
 
-public class RawBlockReaderWriter implements BlockReader, BlockWriter {
+	public SerializableArrayDataBlock(final int[] size, final long[] gridPosition, final T[] data) {
 
-	@Override
-	public <T, B extends DataBlock<T>> void read(
-			final B dataBlock,
-			final ByteChannel channel) throws IOException {
-
-		final ByteBuffer buffer;
-		try (final InputStream in = Channels.newInputStream(channel)) {
-			final byte[] bytes = IOUtils.toByteArray(in);
-			buffer = ByteBuffer.wrap(bytes);
-		}
-		dataBlock.readData(buffer);
+		super(size, gridPosition, data);
 	}
 
 	@Override
-	public <T> void write(
-			final DataBlock<T> dataBlock,
-			final FileChannel channel) throws IOException {
+	public ByteBuffer toByteBuffer() {
 
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		channel.write(buffer);
-		channel.truncate(channel.position());
+		try (final ByteArrayOutputStream b = new ByteArrayOutputStream()) {
+            try (final ObjectOutputStream o = new ObjectOutputStream(b)) {
+                o.writeObject(getData());
+            }
+            return ByteBuffer.wrap(b.toByteArray());
+        } catch (final IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void readData(final ByteBuffer buffer) {
+
+		try (final ByteArrayInputStream b = new ByteArrayInputStream(buffer.array())) {
+            try (final ObjectInputStream o = new ObjectInputStream(b)) {
+            		final T[] readData = (T[])o.readObject();
+            		System.arraycopy(readData, 0, data, 0, Math.max(readData.length, data.length));
+            }
+        } catch (final IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	@Override
+	public int getNumElements() {
+		
+		return data.length;
 	}
 }
