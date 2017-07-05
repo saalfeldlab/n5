@@ -62,9 +62,7 @@ public class SerializableTypeTest {
 				
 				final DataBlock<?> readDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 	
-				final String[] readData = new String[readDataBlock.getNumElements()];
-				System.arraycopy(readDataBlock.getData(), 0, readData, 0, readData.length);
-				
+				final String[] readData = (String[])readDataBlock.getData();
 				Assert.assertArrayEquals(data, readData);
 	
 				Assert.assertTrue(n5.remove(datasetName));
@@ -99,9 +97,7 @@ public class SerializableTypeTest {
 				final DataBlock<?> readDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 	
 				@SuppressWarnings("unchecked")
-				final HashSet<Integer>[] readData = new HashSet[readDataBlock.getNumElements()];
-				System.arraycopy(readDataBlock.getData(), 0, readData, 0, readData.length);
-				
+				final HashSet<Integer>[] readData = (HashSet[])readDataBlock.getData();
 				Assert.assertEquals(data.length, readData.length);
 				for (int i = 0; i < data.length; ++i)
 					Assert.assertArrayEquals(new TreeSet<>(data[i]).toArray(), new TreeSet<>(readData[i]).toArray());
@@ -134,9 +130,7 @@ public class SerializableTypeTest {
 				
 				final DataBlock<?> readDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 	
-				final BigInteger[] readData = new BigInteger[readDataBlock.getNumElements()];
-				System.arraycopy(readDataBlock.getData(), 0, readData, 0, readData.length);
-				
+				final BigInteger[] readData = (BigInteger[])readDataBlock.getData();
 				Assert.assertArrayEquals(data, readData);
 	
 				Assert.assertTrue(n5.remove(datasetName));

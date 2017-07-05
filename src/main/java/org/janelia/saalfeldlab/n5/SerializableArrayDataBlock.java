@@ -60,8 +60,7 @@ public class SerializableArrayDataBlock<T extends Serializable> extends Abstract
 
 		try (final ByteArrayInputStream b = new ByteArrayInputStream(buffer.array())) {
             try (final ObjectInputStream o = new ObjectInputStream(b)) {
-            		final T[] readData = (T[])o.readObject();
-            		System.arraycopy(readData, 0, data, 0, Math.max(readData.length, data.length));
+            		data = (T[])o.readObject();
             }
         } catch (final IOException | ClassNotFoundException e) {
 			e.printStackTrace();
