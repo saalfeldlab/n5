@@ -49,8 +49,7 @@ public class SerializableArrayDataBlock<T extends Serializable> extends Abstract
             }
             return ByteBuffer.wrap(b.toByteArray());
         } catch (final IOException e) {
-			e.printStackTrace();
-			return null;
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -63,7 +62,7 @@ public class SerializableArrayDataBlock<T extends Serializable> extends Abstract
             		data = (T[])o.readObject();
             }
         } catch (final IOException | ClassNotFoundException e) {
-			e.printStackTrace();
+        	throw new RuntimeException(e);
 		}
 	}
 	
