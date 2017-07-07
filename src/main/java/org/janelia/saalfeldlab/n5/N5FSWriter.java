@@ -26,23 +26,20 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Type;
 import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
+
+import org.janelia.saalfeldlab.n5.LockedFileChannel.WriteLockedFileChannel;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -98,20 +95,17 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	public <T> void setAttribute(final String pathName, final String key, final T attribute) throws IOException {
 
 		final Path path = Paths.get(basePath, pathName, jsonFile);
-		try (final FileChannel channel = FileChannel.open(
-				path, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
-			final FileLock lock = channel.lock();
+		try (final LockedFileChannel channel = new WriteLockedFileChannel(path)) {
 			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
-			HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(channel, "UTF-8"), mapType);
+			HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(channel.getFileChannel(), "UTF-8"), mapType);
 			if (map == null)
 				map = new HashMap<>();
 			map.put(key, gson.toJsonTree(attribute, new TypeToken<T>(){}.getType()));
-			channel.position(0);
-			final Writer writer = Channels.newWriter(channel, "UTF-8");
+			channel.getFileChannel().position(0);
+			final Writer writer = Channels.newWriter(channel.getFileChannel(), "UTF-8");
 			gson.toJson(map, mapType, writer);
 			writer.flush();
-			channel.truncate(channel.position());
-			lock.release();
+			channel.getFileChannel().truncate(channel.getFileChannel().position());
 		}
 	}
 
@@ -119,21 +113,18 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	public void setAttributes(final String pathName, final Map<String, ?> attributes) throws IOException {
 
 		final Path path = Paths.get(basePath, pathName, jsonFile);
-		try (final FileChannel channel = FileChannel.open(
-				path, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
-			final FileLock lock = channel.lock();
+		try (final LockedFileChannel channel = new WriteLockedFileChannel(path)) {
 			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
-			HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(channel, "UTF-8"), mapType);
+			HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(channel.getFileChannel(), "UTF-8"), mapType);
 			if (map == null)
 				map = new HashMap<>();
 			for (final Entry<String, ?> entry : attributes.entrySet())
 				map.put(entry.getKey(), gson.toJsonTree(entry.getValue()));
-			channel.position(0);
-			final Writer writer = Channels.newWriter(channel, "UTF-8");
+			channel.getFileChannel().position(0);
+			final Writer writer = Channels.newWriter(channel.getFileChannel(), "UTF-8");
 			gson.toJson(map, mapType, writer);
 			writer.flush();
-			channel.truncate(channel.position());
-			lock.release();
+			channel.getFileChannel().truncate(channel.getFileChannel().position());
 		}
 	}
 
@@ -167,10 +158,8 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 				pathStream.sorted(Comparator.reverseOrder()).forEach(
 						childPath -> {
 							if (Files.isRegularFile(childPath)) {
-								try (final FileChannel channel = FileChannel.open(childPath, StandardOpenOption.WRITE)) {
-									final FileLock lock = channel.lock();
-    									Files.delete(childPath);
-									if (lock.isValid()) lock.release();
+								try (final WriteLockedFileChannel channel = new WriteLockedFileChannel(childPath)) {
+									Files.delete(childPath);
 								} catch (final IOException e) {
 									e.printStackTrace();
 								}
@@ -233,17 +222,14 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 
 		final Path path = getDataBlockPath(Paths.get(basePath, pathName).toString(), dataBlock.getGridPosition());
 		Files.createDirectories(path.getParent());
-		final File file = path.toFile();
-		try (final FileOutputStream out = new FileOutputStream(file)) {
-			final FileChannel channel = out.getChannel();
-			final FileLock lock = channel.lock();
-			final DataOutputStream dos = new DataOutputStream(out);
-			
+		try (final WriteLockedFileChannel channel = new WriteLockedFileChannel(path)) {
+			final DataOutputStream dos = new DataOutputStream(Channels.newOutputStream(channel.getFileChannel()));
+
 			if (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize()))
 				dos.writeShort(0);
 			else
 				dos.writeShort(1);
-			
+
 			dos.writeShort(datasetAttributes.getNumDimensions());
 			for (final int size : dataBlock.getSize())
 				dos.writeInt(size);
@@ -251,8 +237,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			dos.flush();
 
 			final BlockWriter writer = datasetAttributes.getCompressionType().getWriter();
-			writer.write(dataBlock, channel);
-			if (lock.isValid()) lock.release();
+			writer.write(dataBlock, channel.getFileChannel());
 		}
 	}
 }

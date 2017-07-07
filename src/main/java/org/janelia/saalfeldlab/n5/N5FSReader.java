@@ -31,16 +31,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.stream.Stream;
+
+import org.janelia.saalfeldlab.n5.LockedFileChannel.ReadLockedFileChannel;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -92,41 +90,6 @@ public class N5FSReader implements N5Reader {
 		this(basePath, new GsonBuilder());
 	}
 
-	protected static class LockedFileChannel {
-
-		private final FileChannel channel;
-
-		LockedFileChannel(final Path path) throws IOException {
-
-			@SuppressWarnings("hiding")
-			FileChannel channel = null;
-			for (boolean waiting = true; waiting;) {
-				waiting = false;
-				try {
-					channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE);
-					channel.lock();
-				} catch (final OverlappingFileLockException e) {
-					channel.close();
-					waiting = true;
-					try {
-						Thread.sleep(100);
-					} catch (final InterruptedException f) {
-						channel = null;
-						waiting = false;
-						f.printStackTrace(System.err);
-					}
-				}
-			}
-
-			this.channel = channel;
-		}
-
-		private void close() throws IOException {
-
-			channel.close();
-		}
-	}
-
 	/**
 	 * Reads or creates the attributes map of a group or dataset.
 	 *
@@ -144,13 +107,11 @@ public class N5FSReader implements N5Reader {
 		if (exists(pathName) && !Files.exists(path))
 			return new HashMap<>();
 
-		final LockedFileChannel lockedFileChannel = new LockedFileChannel(path);
-		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
-		HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(lockedFileChannel.channel, "UTF-8"), mapType);
-		if (map == null)
-			map = new HashMap<>();
-		lockedFileChannel.close();
-		return map;
+		try (final LockedFileChannel lockedFileChannel = new ReadLockedFileChannel(path)) {
+			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
+			final HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(lockedFileChannel.getFileChannel(), "UTF-8"), mapType);
+			return map == null ? new HashMap<>() : map;
+		}
 	}
 
 	@Override
@@ -210,28 +171,29 @@ public class N5FSReader implements N5Reader {
 		final File file = path.toFile();
 		if (!file.exists())
 			return null;
-		final LockedFileChannel lockedChannel = new LockedFileChannel(path);
 
-		try (final InputStream in = Channels.newInputStream(lockedChannel.channel)) {
-			final DataInputStream dis = new DataInputStream(in);
-			final short mode = dis.readShort();
-			final int nDim = dis.readShort();
-			final int[] blockSize = new int[nDim];
-			for (int d = 0; d < nDim; ++d)
-				blockSize[d] = dis.readInt();
-			final int numElements;
-			switch (mode) {
-			case 1:
-				numElements = dis.readInt();
-				break;
-			default:
-				numElements = DataBlock.getNumElements(blockSize);
+		try (final LockedFileChannel lockedChannel = new ReadLockedFileChannel(path)) {
+			try (final InputStream in = Channels.newInputStream(lockedChannel.getFileChannel())) {
+				final DataInputStream dis = new DataInputStream(in);
+				final short mode = dis.readShort();
+				final int nDim = dis.readShort();
+				final int[] blockSize = new int[nDim];
+				for (int d = 0; d < nDim; ++d)
+					blockSize[d] = dis.readInt();
+				final int numElements;
+				switch (mode) {
+				case 1:
+					numElements = dis.readInt();
+					break;
+				default:
+					numElements = DataBlock.getNumElements(blockSize);
+				}
+				final DataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
+
+				final BlockReader reader = datasetAttributes.getCompressionType().getReader();
+				reader.read(dataBlock, lockedChannel.getFileChannel());
+				return dataBlock;
 			}
-			final DataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
-
-			final BlockReader reader = datasetAttributes.getCompressionType().getReader();
-			reader.read(dataBlock, lockedChannel.channel);
-			return dataBlock;
 		}
 	}
 
