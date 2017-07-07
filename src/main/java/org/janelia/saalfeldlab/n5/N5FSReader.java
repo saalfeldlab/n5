@@ -95,19 +95,16 @@ public class N5FSReader implements N5Reader {
 	protected static class LockedFileChannel {
 
 		private final FileChannel channel;
-		private final FileLock lock;
 
 		LockedFileChannel(final Path path) throws IOException {
 
 			@SuppressWarnings("hiding")
 			FileChannel channel = null;
-			@SuppressWarnings("hiding")
-			FileLock lock = null;
 			for (boolean waiting = true; waiting;) {
 				waiting = false;
 				try {
 					channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE);
-					lock = channel.lock();
+					channel.lock();
 				} catch (final OverlappingFileLockException e) {
 					channel.close();
 					waiting = true;
@@ -115,7 +112,6 @@ public class N5FSReader implements N5Reader {
 						Thread.sleep(100);
 					} catch (final InterruptedException f) {
 						channel = null;
-						lock = null;
 						waiting = false;
 						f.printStackTrace(System.err);
 					}
@@ -123,13 +119,10 @@ public class N5FSReader implements N5Reader {
 			}
 
 			this.channel = channel;
-			this.lock = lock;
 		}
 
 		private void close() throws IOException {
 
-			if (lock != null)
-				lock.release();
 			channel.close();
 		}
 	}
@@ -238,7 +231,6 @@ public class N5FSReader implements N5Reader {
 
 			final BlockReader reader = datasetAttributes.getCompressionType().getReader();
 			reader.read(dataBlock, lockedChannel.channel);
-			if (lockedChannel.lock != null && lockedChannel.lock.isValid()) lockedChannel.lock.release();
 			return dataBlock;
 		}
 	}
