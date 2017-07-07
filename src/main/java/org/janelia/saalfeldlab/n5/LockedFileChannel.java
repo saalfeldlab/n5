@@ -22,14 +22,16 @@ public abstract class LockedFileChannel implements Closeable {
 				channel = FileChannel.open(path, options);
 				channel.lock(0L, Long.MAX_VALUE, readOnly);
 			} catch (final OverlappingFileLockException e) {
-				channel.close();
-				waiting = true;
-				try {
-					Thread.sleep(100);
-				} catch (final InterruptedException f) {
-					channel = null;
-					waiting = false;
-					f.printStackTrace(System.err);
+				if (!readOnly) {
+					channel.close();
+					waiting = true;
+					try {
+						Thread.sleep(100);
+					} catch (final InterruptedException f) {
+						channel = null;
+						waiting = false;
+						f.printStackTrace(System.err);
+					}
 				}
 			}
 		}
