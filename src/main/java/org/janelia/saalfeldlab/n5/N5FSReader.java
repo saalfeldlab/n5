@@ -119,9 +119,6 @@ public class N5FSReader implements N5Reader {
 						waiting = false;
 						f.printStackTrace(System.err);
 					}
-				} catch (final IOException e) {
-					channel = FileChannel.open(path, StandardOpenOption.READ);
-					lock = null;
 				}
 			}
 
