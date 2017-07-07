@@ -109,6 +109,7 @@ public class N5FSReader implements N5Reader {
 					channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE);
 					lock = channel.lock();
 				} catch (final OverlappingFileLockException e) {
+					channel.close();
 					waiting = true;
 					try {
 						Thread.sleep(100);
