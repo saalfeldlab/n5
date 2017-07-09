@@ -23,8 +23,10 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
 5. Datasets are sparse, i.e. there is no guarantee that all chunks of a dataset exist.
 6. All chunks of a chunked dataset have the same size except for end-chunks that may be smaller, therefore
 7. Chunks are stored in the following binary format:
+    * mode (uint16 big endian, default = 0x0000, varlength = 0x0001)
     * number of dimensions (uint32 big endian)
     * dimension 1[,...,n] (uint32 big endian)
+    * [ mode == varlength ? number of elements (uint32 big endian) ]
     * compressed data (big endian)
     
     Example:
@@ -32,7 +34,8 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
     A 3-dimensional `uint16` datablock of 1&times;2&times;3 pixels with raw compression storing the values (1,2,3,4,5,6) starts with:
     
     ```hexdump
-    00000000: 00 00 00 03  ....    # 3 (number of dimensions)
+    00000000: 00 00        ..      # 0 (default mode)
+    00000002: 00 03        ..      # 3 (number of dimensions)
     00000004: 00 00 00 01  ....    # 1 (dimensions)
     00000008: 00 00 00 02  ....    # 2
     0000000c: 00 00 00 03  ....    # 3
