@@ -93,7 +93,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	public <T> void setAttribute(final String pathName, final String key, final T attribute) throws IOException {
 
 		final Path path = Paths.get(basePath, pathName, jsonFile);
-		try (final LockedFileChannel channel = new LockedFileChannel(path, false)) {
+		try (final LockedFileChannel channel = LockedFileChannel.openForWriting(path)) {
 			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
 			HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(channel.getFileChannel(), "UTF-8"), mapType);
 			if (map == null)
@@ -111,7 +111,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	public void setAttributes(final String pathName, final Map<String, ?> attributes) throws IOException {
 
 		final Path path = Paths.get(basePath, pathName, jsonFile);
-		try (final LockedFileChannel channel = new LockedFileChannel(path, false)) {
+		try (final LockedFileChannel channel = LockedFileChannel.openForWriting(path)) {
 			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
 			HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(channel.getFileChannel(), "UTF-8"), mapType);
 			if (map == null)
@@ -156,7 +156,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 				pathStream.sorted(Comparator.reverseOrder()).forEach(
 						childPath -> {
 							if (Files.isRegularFile(childPath)) {
-								try (final LockedFileChannel channel = new LockedFileChannel(childPath, false)) {
+								try (final LockedFileChannel channel = LockedFileChannel.openForWriting(childPath)) {
 									Files.delete(childPath);
 								} catch (final IOException e) {
 									e.printStackTrace();
@@ -220,7 +220,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 
 		final Path path = getDataBlockPath(Paths.get(basePath, pathName).toString(), dataBlock.getGridPosition());
 		Files.createDirectories(path.getParent());
-		try (final LockedFileChannel channel = new LockedFileChannel(path, false)) {
+		try (final LockedFileChannel channel = LockedFileChannel.openForWriting(path)) {
 			final DataOutputStream dos = new DataOutputStream(Channels.newOutputStream(channel.getFileChannel()));
 
 			if (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize()))

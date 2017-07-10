@@ -55,11 +55,21 @@ import com.google.gson.reflect.TypeToken;
  */
 public class N5FSReader implements N5Reader {
 
-	protected class LockedFileChannel implements Closeable {
+	protected static class LockedFileChannel implements Closeable {
 
 		private final FileChannel channel;
 
-		LockedFileChannel(final Path path, final boolean readOnly) throws IOException {
+		public static LockedFileChannel openForReading(final Path path) throws IOException {
+
+			return new LockedFileChannel(path, true);
+		}
+
+		public static LockedFileChannel openForWriting(final Path path) throws IOException {
+
+			return new LockedFileChannel(path, false);
+		}
+
+		private LockedFileChannel(final Path path, final boolean readOnly) throws IOException {
 
 			final OpenOption[] options = readOnly ? new OpenOption[]{StandardOpenOption.READ} : new OpenOption[]{StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE};
 			channel = FileChannel.open(path, options);
@@ -147,7 +157,7 @@ public class N5FSReader implements N5Reader {
 		if (exists(pathName) && !Files.exists(path))
 			return new HashMap<>();
 
-		try (final LockedFileChannel lockedFileChannel = new LockedFileChannel(path, true)) {
+		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForReading(path)) {
 			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
 			final HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(lockedFileChannel.getFileChannel(), "UTF-8"), mapType);
 			return map == null ? new HashMap<>() : map;
@@ -212,7 +222,7 @@ public class N5FSReader implements N5Reader {
 		if (!file.exists())
 			return null;
 
-		try (final LockedFileChannel lockedChannel = new LockedFileChannel(path, true)) {
+		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForReading(path)) {
 			try (final InputStream in = Channels.newInputStream(lockedChannel.getFileChannel())) {
 				final DataInputStream dis = new DataInputStream(in);
 				final short mode = dis.readShort();
