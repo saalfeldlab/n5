@@ -25,20 +25,23 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.stream.Stream;
-
-import org.janelia.saalfeldlab.n5.LockedFileChannel.ReadLockedFileChannel;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -51,6 +54,43 @@ import com.google.gson.reflect.TypeToken;
  * @author Stephan Saalfeld
  */
 public class N5FSReader implements N5Reader {
+
+	protected class LockedFileChannel implements Closeable {
+
+		private final FileChannel channel;
+
+		LockedFileChannel(final Path path, final boolean readOnly) throws IOException {
+
+			final OpenOption[] options = readOnly ? new OpenOption[]{StandardOpenOption.READ} : new OpenOption[]{StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE};
+			channel = FileChannel.open(path, options);
+
+			for (boolean waiting = true; waiting;) {
+				waiting = false;
+				try {
+					channel.lock(0L, Long.MAX_VALUE, readOnly);
+				} catch (final OverlappingFileLockException e) {
+					waiting = true;
+					try {
+						Thread.sleep(100);
+					} catch (final InterruptedException f) {
+						waiting = false;
+						f.printStackTrace(System.err);
+					}
+				}
+			}
+		}
+
+		public FileChannel getFileChannel() {
+
+			return channel;
+		}
+
+		@Override
+		public void close() throws IOException {
+
+			channel.close();
+		}
+	}
 
 	protected static final String jsonFile = "attributes.json";
 
@@ -107,7 +147,7 @@ public class N5FSReader implements N5Reader {
 		if (exists(pathName) && !Files.exists(path))
 			return new HashMap<>();
 
-		try (final LockedFileChannel lockedFileChannel = new ReadLockedFileChannel(path)) {
+		try (final LockedFileChannel lockedFileChannel = new LockedFileChannel(path, true)) {
 			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
 			final HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(lockedFileChannel.getFileChannel(), "UTF-8"), mapType);
 			return map == null ? new HashMap<>() : map;
@@ -172,7 +212,7 @@ public class N5FSReader implements N5Reader {
 		if (!file.exists())
 			return null;
 
-		try (final LockedFileChannel lockedChannel = new ReadLockedFileChannel(path)) {
+		try (final LockedFileChannel lockedChannel = new LockedFileChannel(path, true)) {
 			try (final InputStream in = Channels.newInputStream(lockedChannel.getFileChannel())) {
 				final DataInputStream dis = new DataInputStream(in);
 				final short mode = dis.readShort();
