@@ -223,15 +223,16 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		try (final LockedFileChannel channel = LockedFileChannel.openForWriting(path)) {
 			final DataOutputStream dos = new DataOutputStream(Channels.newOutputStream(channel.getFileChannel()));
 
-			if (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize()))
-				dos.writeShort(0);
-			else
-				dos.writeShort(1);
-
+			int mode = (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize())) ? 0 : 1; 
+			dos.writeShort(mode);
+			
 			dos.writeShort(datasetAttributes.getNumDimensions());
 			for (final int size : dataBlock.getSize())
 				dos.writeInt(size);
 
+			if(mode != 0)
+				dos.writeInt(dataBlock.getNumElements());
+			
 			dos.flush();
 
 			final BlockWriter writer = datasetAttributes.getCompressionType().getWriter();
