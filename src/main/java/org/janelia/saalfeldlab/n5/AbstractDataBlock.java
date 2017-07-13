@@ -36,7 +36,7 @@ public abstract class AbstractDataBlock<T> implements DataBlock<T> {
 
 	protected final int[] size;
 	protected final long[] gridPosition;
-	protected final T data;
+	protected T data;
 
 	public AbstractDataBlock(final int[] size, final long[] gridPosition, final T data) {
 

@@ -25,24 +25,50 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.nio.ByteBuffer;
 
-import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
-import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
+public class SerializableArrayDataBlock<T extends Serializable> extends AbstractDataBlock<T[]> {
 
-public class XzBlockReaderWriter extends AbstractBlockReaderWriter {
+	public SerializableArrayDataBlock(final int[] size, final long[] gridPosition, final T[] data) {
 
-	@Override
-	protected InputStream getInputStream(final InputStream in) throws IOException {
-
-		return new XZCompressorInputStream(in);
+		super(size, gridPosition, data);
 	}
 
 	@Override
-	protected OutputStream getOutputStream(final OutputStream out) throws IOException {
+	public ByteBuffer toByteBuffer() {
 
-		return new XZCompressorOutputStream(out);
+		try (final ByteArrayOutputStream b = new ByteArrayOutputStream()) {
+            try (final ObjectOutputStream o = new ObjectOutputStream(b)) {
+                o.writeObject(getData());
+            }
+            return ByteBuffer.wrap(b.toByteArray());
+        } catch (final IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void readData(final ByteBuffer buffer) {
+
+		try (final ByteArrayInputStream b = new ByteArrayInputStream(buffer.array())) {
+            try (final ObjectInputStream o = new ObjectInputStream(b)) {
+            		data = (T[])o.readObject();
+            }
+        } catch (final IOException | ClassNotFoundException e) {
+        	throw new RuntimeException(e);
+		}
+	}
+	
+	@Override
+	public int getNumElements() {
+		
+		return data.length;
 	}
 }

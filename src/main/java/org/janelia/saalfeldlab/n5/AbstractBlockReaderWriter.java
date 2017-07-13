@@ -28,21 +28,41 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 
-import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
-import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
+import org.apache.commons.io.IOUtils;
 
-public class XzBlockReaderWriter extends AbstractBlockReaderWriter {
+public abstract class AbstractBlockReaderWriter implements BlockReader, BlockWriter {
+
+	protected abstract InputStream getInputStream(final InputStream in) throws IOException;
+	protected abstract OutputStream getOutputStream(final OutputStream out) throws IOException;
 
 	@Override
-	protected InputStream getInputStream(final InputStream in) throws IOException {
+	public <T, B extends DataBlock<T>> void read(
+			final B dataBlock,
+			final ByteChannel channel) throws IOException {
 
-		return new XZCompressorInputStream(in);
+		final ByteBuffer buffer;
+		try (final InputStream in = getInputStream(Channels.newInputStream(channel))) {
+			final byte[] bytes = IOUtils.toByteArray(in);
+			buffer = ByteBuffer.wrap(bytes);
+		}
+		dataBlock.readData(buffer);
 	}
 
 	@Override
-	protected OutputStream getOutputStream(final OutputStream out) throws IOException {
+	public <T> void write(
+			final DataBlock<T> dataBlock,
+			final FileChannel channel) throws IOException {
 
-		return new XZCompressorOutputStream(out);
+		final ByteBuffer buffer = dataBlock.toByteBuffer();
+		try (final OutputStream out = getOutputStream(Channels.newOutputStream(channel))) {
+			out.write(buffer.array());
+			out.flush();
+			channel.truncate(channel.position());
+		}
 	}
 }
