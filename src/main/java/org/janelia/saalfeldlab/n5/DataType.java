@@ -52,7 +52,7 @@ public enum DataType {
 	INT64("int64", (blockSize, gridPosition, numElements) -> new LongArrayDataBlock(blockSize, gridPosition, new long[numElements])),
 	FLOAT32("float32", (blockSize, gridPosition, numElements) -> new FloatArrayDataBlock(blockSize, gridPosition, new float[numElements])),
 	FLOAT64("float64", (blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(blockSize, gridPosition, new double[numElements]));
-	
+
 	private final String label;
 
 	private DataBlockFactory dataBlockFactory;
@@ -77,9 +77,30 @@ public enum DataType {
 		return null;
 	}
 
+	/**
+	 * Factory for {@link DataBlock DataBlocks}.
+	 *
+	 * @param blockSize
+	 * @param gridPosition
+	 * @param numElements not necessarily one element per block element
+	 * @return
+	 */
 	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition, final int numElements) {
 
 		return dataBlockFactory.createDataBlock(blockSize, gridPosition, numElements);
+	}
+
+	/**
+	 * Factory for {@link DataBlock DataBlocks} with one data element for each
+	 * block element (e.g. pixel image).
+	 *
+	 * @param blockSize
+	 * @param gridPosition
+	 * @return
+	 */
+	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition) {
+
+		return dataBlockFactory.createDataBlock(blockSize, gridPosition, DataBlock.getNumElements(blockSize));
 	}
 
 	private static interface DataBlockFactory {
