@@ -46,4 +46,10 @@ public class FloatArrayDataBlock extends AbstractDataBlock<float[]> {
 
 		buffer.asFloatBuffer().get(data);
 	}
+	
+	@Override
+	public int getNumElements() {
+		
+		return data.length;
+	}
 }

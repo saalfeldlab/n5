@@ -47,4 +47,10 @@ public class LongArrayDataBlock extends AbstractDataBlock<long[]> {
 
 		buffer.asLongBuffer().get(data);
 	}
+	
+	@Override
+	public int getNumElements() {
+		
+		return data.length;
+	}
 }

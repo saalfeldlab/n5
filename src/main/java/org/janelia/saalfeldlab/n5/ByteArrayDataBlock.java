@@ -46,4 +46,10 @@ public class ByteArrayDataBlock extends AbstractDataBlock<byte[]> {
 		if (buffer.array() != getData())
 			buffer.get(getData());
 	}
+	
+	@Override
+	public int getNumElements() {
+		
+		return data.length;
+	}
 }
