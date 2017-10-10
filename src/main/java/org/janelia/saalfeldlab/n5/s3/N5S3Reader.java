@@ -116,9 +116,6 @@ public class N5S3Reader implements N5Reader {
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
 
 		final String metadataKey = Paths.get(pathName, jsonFile).toString();
-		if (!s3.doesObjectExist(bucket, metadataKey))
-			return new HashMap<>();
-
 		try (final InputStream in = s3.getObject(bucket, metadataKey).getObjectContent()) {
 			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
 			final HashMap<String, JsonElement> map = gson.fromJson(new InputStreamReader(in, "UTF-8"), mapType);
@@ -210,11 +207,8 @@ public class N5S3Reader implements N5Reader {
 	@Override
 	public boolean exists(final String pathName) {
 
-		return
-				!s3.listObjects(bucket, pathName).getObjectSummaries().isEmpty() // contains objects with pathName prefix
-				&&
-				!s3.doesObjectExist(bucket, pathName) // pathName itself is not an actual object
-			;
+		final String metadataKey = Paths.get(pathName, jsonFile).toString();
+		return s3.doesObjectExist(bucket, metadataKey);
 	}
 
 	@Override
