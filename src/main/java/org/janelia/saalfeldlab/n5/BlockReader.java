@@ -26,22 +26,22 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
-import java.nio.channels.ByteChannel;
+import java.nio.channels.ReadableByteChannel;
 
 /**
  * Interface for block readers that can read a {@link DataBlock} from a
- * {@link ByteChannel}.
+ * {@link ReadableByteChannel}.
  *
  * @author Stephan Saalfeld
  */
 public interface BlockReader {
 
 	/**
-	 * Reads a {@link DataBlock} from a {@link ByteChannel}.
+	 * Reads a {@link DataBlock} from a {@link ReadableByteChannel}.
 	 *
 	 * @param dataBlock
 	 * @param channel
 	 * @throws IOException
 	 */
-	public <T, B extends DataBlock<T>> void read(final B dataBlock, final ByteChannel channel) throws IOException;
+	public <T, B extends DataBlock<T>> void read(final B dataBlock, final ReadableByteChannel channel) throws IOException;
 }

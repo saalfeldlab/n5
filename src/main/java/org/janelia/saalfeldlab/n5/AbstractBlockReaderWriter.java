@@ -29,9 +29,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
 import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 
 import org.apache.commons.io.IOUtils;
 
@@ -43,7 +43,7 @@ public abstract class AbstractBlockReaderWriter implements BlockReader, BlockWri
 	@Override
 	public <T, B extends DataBlock<T>> void read(
 			final B dataBlock,
-			final ByteChannel channel) throws IOException {
+			final ReadableByteChannel channel) throws IOException {
 
 		final ByteBuffer buffer;
 		try (final InputStream in = getInputStream(Channels.newInputStream(channel))) {
@@ -56,13 +56,12 @@ public abstract class AbstractBlockReaderWriter implements BlockReader, BlockWri
 	@Override
 	public <T> void write(
 			final DataBlock<T> dataBlock,
-			final FileChannel channel) throws IOException {
+			final WritableByteChannel channel) throws IOException {
 
 		final ByteBuffer buffer = dataBlock.toByteBuffer();
 		try (final OutputStream out = getOutputStream(Channels.newOutputStream(channel))) {
 			out.write(buffer.array());
 			out.flush();
-			channel.truncate(channel.position());
 		}
 	}
 }
