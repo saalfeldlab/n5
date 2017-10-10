@@ -23,7 +23,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.janelia.saalfeldlab.n5;
+package org.janelia.saalfeldlab.n5.fs;
 
 import java.io.Closeable;
 import java.io.DataInputStream;
@@ -42,6 +42,13 @@ import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.stream.Stream;
+
+import org.janelia.saalfeldlab.n5.BlockReader;
+import org.janelia.saalfeldlab.n5.CompressionType;
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.N5Reader;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

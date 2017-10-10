@@ -23,7 +23,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.janelia.saalfeldlab.n5;
+package org.janelia.saalfeldlab.n5.fs;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -38,6 +38,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
+
+import org.janelia.saalfeldlab.n5.BlockWriter;
+import org.janelia.saalfeldlab.n5.CompressionType;
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.N5Writer;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -223,16 +230,16 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		try (final LockedFileChannel channel = LockedFileChannel.openForWriting(path)) {
 			final DataOutputStream dos = new DataOutputStream(Channels.newOutputStream(channel.getFileChannel()));
 
-			int mode = (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize())) ? 0 : 1; 
+			final int mode = (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize())) ? 0 : 1;
 			dos.writeShort(mode);
-			
+
 			dos.writeShort(datasetAttributes.getNumDimensions());
 			for (final int size : dataBlock.getSize())
 				dos.writeInt(size);
 
 			if(mode != 0)
 				dos.writeInt(dataBlock.getNumElements());
-			
+
 			dos.flush();
 
 			final BlockWriter writer = datasetAttributes.getCompressionType().getWriter();

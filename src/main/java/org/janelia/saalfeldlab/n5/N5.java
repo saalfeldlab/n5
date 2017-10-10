@@ -27,6 +27,9 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 
+import org.janelia.saalfeldlab.n5.fs.N5FSReader;
+import org.janelia.saalfeldlab.n5.fs.N5FSWriter;
+
 import com.google.gson.GsonBuilder;
 
 /**
