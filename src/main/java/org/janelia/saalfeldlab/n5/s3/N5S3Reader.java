@@ -33,11 +33,10 @@ import java.lang.reflect.Type;
 import java.nio.channels.Channels;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.janelia.saalfeldlab.n5.BlockReader;
 import org.janelia.saalfeldlab.n5.CompressionType;
@@ -48,7 +47,8 @@ import org.janelia.saalfeldlab.n5.N5Reader;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -245,19 +245,22 @@ public class N5S3Reader implements N5Reader {
 	@Override
 	public String[] list(final String pathName) throws IOException {
 
-		final Path path = Paths.get(pathName);
-		final List<S3ObjectSummary> subObjects = s3.listObjects(bucket, pathName).getObjectSummaries();
-		final Set<String> subGroups = new HashSet<>();
-		for (final S3ObjectSummary subObject : subObjects)
-		{
-			final Path keyPath = Paths.get(subObject.getKey());
-			final Path relativeKeyPath = path.relativize(keyPath);
-			if (relativeKeyPath.getNameCount() > 1) // not an actual object
-			{
-				final Path subgroupPath = relativeKeyPath.subpath(0, 1);
-				subGroups.add(subgroupPath.toString());
+		final List<String> subGroups = new ArrayList<>();
+		ObjectListing objectsListing = null;
+		do {
+			if (objectsListing == null) {
+				objectsListing = s3.listObjects(new ListObjectsRequest()
+						.withBucketName(bucket)
+						.withPrefix(pathName)
+						.withDelimiter("/")
+					);
+			} else {
+				objectsListing = s3.listNextBatchOfObjects(objectsListing);
 			}
-		}
+			for (final String commonPrefix : objectsListing.getCommonPrefixes())
+				if (exists(commonPrefix))
+					subGroups.add(commonPrefix);
+		} while (objectsListing.isTruncated());
 		return subGroups.toArray(new String[subGroups.size()]);
 	}
 }
