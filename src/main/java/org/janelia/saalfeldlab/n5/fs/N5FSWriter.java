@@ -33,6 +33,7 @@ import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -99,19 +100,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	@Override
 	public <T> void setAttribute(final String pathName, final String key, final T attribute) throws IOException {
 
-		final Path path = Paths.get(basePath, pathName, jsonFile);
-		try (final LockedFileChannel channel = LockedFileChannel.openForWriting(path)) {
-			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
-			HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(channel.getFileChannel(), "UTF-8"), mapType);
-			if (map == null)
-				map = new HashMap<>();
-			map.put(key, gson.toJsonTree(attribute, new TypeToken<T>(){}.getType()));
-			channel.getFileChannel().position(0);
-			final Writer writer = Channels.newWriter(channel.getFileChannel(), "UTF-8");
-			gson.toJson(map, mapType, writer);
-			writer.flush();
-			channel.getFileChannel().truncate(channel.getFileChannel().position());
-		}
+		setAttributes(pathName, Collections.singletonMap(key, attribute));
 	}
 
 	@Override
@@ -191,7 +180,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	@Override
 	public void createDataset(
 			final String pathName,
-			final DatasetAttributes datasetAttributes) throws IOException{
+			final DatasetAttributes datasetAttributes) throws IOException {
 
 		createGroup(pathName);
 		setDatasetAttributes(pathName, datasetAttributes);
@@ -213,7 +202,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final CompressionType compressionType) throws IOException{
+			final CompressionType compressionType) throws IOException {
 
 		createGroup(pathName);
 		setDatasetAttributes(pathName, new DatasetAttributes(dimensions, blockSize, dataType, compressionType));
@@ -237,7 +226,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			for (final int size : dataBlock.getSize())
 				dos.writeInt(size);
 
-			if(mode != 0)
+			if (mode != 0)
 				dos.writeInt(dataBlock.getNumElements());
 
 			dos.flush();
