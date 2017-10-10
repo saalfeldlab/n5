@@ -97,6 +97,13 @@
 			<artifactId>gson</artifactId>
 			<version>2.3.1</version>
 		</dependency>
+		
+		<!-- Amazon Web Services support -->
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-s3</artifactId>
+			<version>1.11.210</version>
+		</dependency>
 
 		<!-- Test dependencies -->
 		<dependency>
