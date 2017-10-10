@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
@@ -62,6 +63,13 @@ public abstract class AbstractBlockReaderWriter implements BlockReader, BlockWri
 		try (final OutputStream out = getOutputStream(Channels.newOutputStream(channel))) {
 			out.write(buffer.array());
 			out.flush();
+
+			// closing the stream will in turn cause the channel to be closed, ensure that it is properly truncated
+			if (channel instanceof FileChannel)
+			{
+				final FileChannel fileChannel = (FileChannel)channel;
+				fileChannel.truncate(fileChannel.position());
+			}
 		}
 	}
 }
