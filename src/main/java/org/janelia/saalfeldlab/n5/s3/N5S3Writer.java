@@ -128,8 +128,11 @@ public class N5S3Writer extends N5S3Reader implements N5Writer {
 	public void createGroup(final String pathName) throws IOException {
 
 		final Path path = Paths.get(pathName);
-		for (int i = 0; i < path.getNameCount(); ++i)
-			setAttributes(path.subpath(0, i + 1).toString(), Collections.emptyMap());
+		for (int i = 0; i < path.getNameCount(); ++i) {
+			final String subgroup = path.subpath(0, i + 1).toString();
+			if (!exists(subgroup))
+				setAttributes(subgroup, Collections.emptyMap());
+		}
 	}
 
 	/**
