@@ -50,8 +50,8 @@ import org.janelia.saalfeldlab.n5.N5Writer;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ListObjectsV2Request;
+import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.gson.GsonBuilder;
@@ -159,16 +159,12 @@ public class N5S3Writer extends N5S3Reader implements N5Writer {
 	public boolean remove(final String pathName) throws IOException {
 
 		final String prefix = appendDelimiter(removeFrontDelimiter(pathName));
-		ObjectListing objectsListing = null;
+		final ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request()
+				.withBucketName(bucket)
+				.withPrefix(prefix);
+		ListObjectsV2Result objectsListing;
 		do {
-			if (objectsListing == null) {
-				objectsListing = s3.listObjects(new ListObjectsRequest()
-						.withBucketName(bucket)
-						.withPrefix(prefix)
-					);
-			} else {
-				objectsListing = s3.listNextBatchOfObjects(objectsListing);
-			}
+			objectsListing = s3.listObjectsV2(listObjectsRequest);
 			final List<String> objectsToDelete = new ArrayList<>();
 			for (final S3ObjectSummary object : objectsListing.getObjectSummaries())
 				objectsToDelete.add(object.getKey());
@@ -178,6 +174,7 @@ public class N5S3Writer extends N5S3Reader implements N5Writer {
 						.withKeys(objectsToDelete.toArray(new String[objectsToDelete.size()]))
 					);
 			}
+			listObjectsRequest.setContinuationToken(objectsListing.getNextContinuationToken());
 		} while (objectsListing.isTruncated());
 		return !exists(pathName);
 	}
