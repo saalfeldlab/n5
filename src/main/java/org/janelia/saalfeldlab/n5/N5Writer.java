@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -37,6 +38,20 @@ import java.util.Map;
  * @author Stephan Saalfeld
  */
 public interface N5Writer extends N5Reader {
+
+	/**
+	 * Creates an N5 container
+	 *
+	 * @throws IOException
+	 */
+	public void createContainer() throws IOException;
+
+	/**
+	 * Removes an N5 container
+	 *
+	 * @throws IOException
+	 */
+	public void removeContainer() throws IOException;
 
 	/**
 	 * Sets an attribute.

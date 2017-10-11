@@ -33,7 +33,6 @@ import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -98,9 +97,15 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	}
 
 	@Override
-	public <T> void setAttribute(final String pathName, final String key, final T attribute) throws IOException {
+	public void createContainer() throws IOException {
 
-		setAttributes(pathName, Collections.singletonMap(key, attribute));
+		Files.createDirectories(Paths.get(basePath));
+	}
+
+	@Override
+	public void removeContainer() throws IOException {
+
+		remove("");
 	}
 
 	@Override

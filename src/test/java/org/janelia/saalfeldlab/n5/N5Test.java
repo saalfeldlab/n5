@@ -26,7 +26,6 @@ import java.util.Random;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -59,17 +58,13 @@ public class N5Test {
 	static private N5Writer n5;
 
 	/**
-	 * @throws java.lang.Exception
+	 * @throws IOException
 	 */
 	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-
-		final File testDir = new File(testDirPath);
-		testDir.mkdirs();
-		if (!(testDir.exists() && testDir.isDirectory()))
-			throw new IOException("Could not create test directory for HDF5Utils test.");
+	public static void setUpBeforeClass() throws IOException {
 
 		n5 = N5.openFSWriter(testDirPath);
+		n5.createContainer();
 
 		final Random rnd = new Random();
 		byteBlock = new byte[blockSize[0] * blockSize[1] * blockSize[2]];
@@ -90,19 +85,13 @@ public class N5Test {
 	}
 
 	/**
-	 * @throws java.lang.Exception
+	 * @throws IOException
 	 */
 	@AfterClass
-	public static void rampDownAfterClass() throws Exception {
+	public static void rampDownAfterClass() throws IOException {
 
-		n5.remove("");
+		n5.removeContainer();
 	}
-
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@Before
-	public void setUp() throws Exception {}
 
 	@Test
 	public void testCreateGroup() {
@@ -307,12 +296,12 @@ public class N5Test {
 			}
 		}
 	}
-	
+
 	@Test
 	public void testMode1WriteReadByteBlock() {
 
-		int[] differentBlockSize = new int[] {5, 10, 15};
-		
+		final int[] differentBlockSize = new int[] {5, 10, 15};
+
 		for (final CompressionType compressionType : CompressionType.values()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT8,

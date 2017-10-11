@@ -105,16 +105,24 @@ public class N5S3Writer extends N5S3Reader implements N5Writer {
 	}
 
 	@Override
-	public <T> void setAttribute(final String pathName, final String key, final T attribute) throws IOException {
+	public void createContainer() throws IOException {
 
-		setAttributes(pathName, Collections.singletonMap(key, attribute));
+		if (!s3.doesBucketExistV2(bucket))
+			s3.createBucket(bucket);
+		createGroup("");
+	}
+
+	@Override
+	public void removeContainer() throws IOException {
+
+		remove("");
+		s3.deleteBucket(bucket);
 	}
 
 	@Override
 	public void setAttributes(final String pathName, final Map<String, ?> attributes) throws IOException {
 
 		final String metadataKey = Paths.get(pathName, jsonFile).toString();
-
 		final HashMap<String, JsonElement> map = getAttributes(pathName);
 		for (final Entry<String, ?> entry : attributes.entrySet())
 			map.put(entry.getKey(), gson.toJsonTree(entry.getValue()));
