@@ -221,9 +221,7 @@ public class N5S3Writer extends N5S3Reader implements N5Writer {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		final String dataBlockRelativePath = getDataBlockPath(pathName, dataBlock.getGridPosition()).toString();
-		final String dataBlockKey = Paths.get(pathName, dataBlockRelativePath).toString();
-
+		final String dataBlockKey = getDataBlockPath(pathName, dataBlock.getGridPosition()).toString();
 		try (final ByteArrayOutputStream byteStream = new ByteArrayOutputStream()) {
 			final DataOutputStream dos = new DataOutputStream(byteStream);
 

@@ -175,8 +175,7 @@ public class N5S3Reader implements N5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition) throws IOException {
 
-		final String dataBlockRelativePath = getDataBlockPath(pathName, gridPosition).toString();
-		final String dataBlockKey = Paths.get(pathName, dataBlockRelativePath).toString();
+		final String dataBlockKey = getDataBlockPath(pathName, gridPosition).toString();
 		if (!s3.doesObjectExist(bucket, dataBlockKey))
 			return null;
 
