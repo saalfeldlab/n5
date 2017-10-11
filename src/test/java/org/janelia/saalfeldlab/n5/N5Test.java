@@ -340,6 +340,31 @@ public class N5Test {
 	}
 
 	@Test
+	public void testOverwriteBlock() {
+
+		try {
+			n5.createDataset(datasetName, dimensions, blockSize, DataType.INT32, CompressionType.GZIP);
+			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+
+			final IntArrayDataBlock randomDataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
+			n5.writeBlock(datasetName, attributes, randomDataBlock);
+			final DataBlock<?> loadedRandomDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+			Assert.assertArrayEquals(intBlock, (int[])loadedRandomDataBlock.getData());
+
+			final IntArrayDataBlock emptyDataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, new int[DataBlock.getNumElements(blockSize)]);
+			n5.writeBlock(datasetName, attributes, emptyDataBlock);
+			final DataBlock<?> loadedEmptyDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+			Assert.assertArrayEquals(new int[DataBlock.getNumElements(blockSize)], (int[])loadedEmptyDataBlock.getData());
+
+			Assert.assertTrue(n5.remove(datasetName));
+
+		} catch (final IOException e) {
+			e.printStackTrace();
+			fail("Block cannot be written.");
+		}
+	}
+
+	@Test
 	public void testRemove() {
 
 		try {
