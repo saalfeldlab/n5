@@ -18,8 +18,8 @@ package org.janelia.saalfeldlab.n5;
 
 import static org.junit.Assert.fail;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Random;
@@ -30,32 +30,28 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- *
+ * Base class for testing N5 functionality.
+ * Subclasses are expected to provide a specific N5 implementation to be tested by having a custom setUpBeforeClass() method.
  *
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
+ * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
  */
-public class N5Test {
+public abstract class N5TestBase {
 
-	static private String testDirPath = System.getProperty("user.home") + "/tmp/n5-test";
+	static private final String groupName = "/test/group";
+	static private final String[] subGroupNames = new String[]{"a", "b", "c"};
+	static private final String datasetName = "/test/group/dataset";
+	static private final long[] dimensions = new long[]{100, 200, 300};
+	static private final int[] blockSize = new int[]{33, 22, 11};
 
-	static private String groupName = "/test/group";
+	static private byte[] byteBlock;
+	static private short[] shortBlock;
+	static private int[] intBlock;
+	static private long[] longBlock;
+	static private float[] floatBlock;
+	static private double[] doubleBlock;
 
-	static private String[] subGroupNames = new String[]{"a", "b", "c"};
-
-	static private String datasetName = "/test/group/dataset";
-
-	static private long[] dimensions = new long[]{100, 200, 300};
-
-	static private int[] blockSize = new int[]{33, 22, 11};
-
-	static byte[] byteBlock;
-	static short[] shortBlock;
-	static int[] intBlock;
-	static long[] longBlock;
-	static float[] floatBlock;
-	static double[] doubleBlock;
-
-	static private N5Writer n5;
+	protected static N5Writer n5;
 
 	/**
 	 * @throws IOException
@@ -63,7 +59,6 @@ public class N5Test {
 	@BeforeClass
 	public static void setUpBeforeClass() throws IOException {
 
-		n5 = N5.openFSWriter(testDirPath);
 		n5.createContainer();
 
 		final Random rnd = new Random();
@@ -81,7 +76,6 @@ public class N5Test {
 			floatBlock[i] = Float.intBitsToFloat(rnd.nextInt());
 			doubleBlock[i] = Double.longBitsToDouble(rnd.nextLong());
 		}
-
 	}
 
 	/**
@@ -102,9 +96,10 @@ public class N5Test {
 			fail(e.getMessage());
 		}
 
-		final File file = Paths.get(testDirPath, groupName).toFile();
-		if (!(file.exists() && file.isDirectory()))
-			fail("File does not exist");
+		final Path groupPath = Paths.get(groupName);
+		for (int i = 0; i < groupPath.getNameCount(); ++i)
+			if (!n5.exists(groupPath.subpath(0, i + 1).toString()))
+				fail("Group does not exist");
 	}
 
 	@Test
@@ -116,9 +111,8 @@ public class N5Test {
 			fail(e.getMessage());
 		}
 
-		final File file = Paths.get(testDirPath, datasetName).toFile();
-		if (!(file.exists() && file.isDirectory()))
-			fail("File does not exist");
+		if (!n5.exists(datasetName))
+			fail("Dataset does not exist");
 
 		try {
 			final DatasetAttributes info = n5.getDatasetAttributes(datasetName);
@@ -363,8 +357,7 @@ public class N5Test {
 			fail(e.getMessage());
 		}
 
-		final File file = Paths.get(testDirPath, groupName).toFile();
-		if (file.exists())
+		if (n5.exists(groupName))
 			fail("Group still exists");
 	}
 
