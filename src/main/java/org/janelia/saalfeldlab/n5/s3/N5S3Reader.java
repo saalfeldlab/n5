@@ -46,8 +46,8 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Reader;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ListObjectsV2Request;
+import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -246,21 +246,27 @@ public class N5S3Reader implements N5Reader {
 	@Override
 	public String[] list(final String pathName) throws IOException {
 
+		// ensure that the prefix ends with '/' so that the delimiter works as expected
+		final String delimeter = "/";
+		final String correctedPathName = getCorrectedPath(pathName);
+		final String prefix = correctedPathName.endsWith(delimeter) ? correctedPathName : correctedPathName + delimeter;
+		final Path path = Paths.get(correctedPathName);
+
 		final List<String> subGroups = new ArrayList<>();
-		ObjectListing objectsListing = null;
+		final ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request()
+				.withBucketName(bucket)
+				.withPrefix(prefix)
+				.withDelimiter(delimeter);
+		ListObjectsV2Result objectsListing;
 		do {
-			if (objectsListing == null) {
-				objectsListing = s3.listObjects(new ListObjectsRequest()
-						.withBucketName(bucket)
-						.withPrefix(pathName)
-						.withDelimiter("/")
-					);
-			} else {
-				objectsListing = s3.listNextBatchOfObjects(objectsListing);
+			objectsListing = s3.listObjectsV2(listObjectsRequest);
+			for (final String commonPrefix : objectsListing.getCommonPrefixes()) {
+				if (exists(commonPrefix)) {
+					final Path relativePath = path.relativize(Paths.get(commonPrefix));
+					subGroups.add(relativePath.toString());
+				}
 			}
-			for (final String commonPrefix : objectsListing.getCommonPrefixes())
-				if (exists(commonPrefix))
-					subGroups.add(commonPrefix);
+			listObjectsRequest.setContinuationToken(objectsListing.getNextContinuationToken());
 		} while (objectsListing.isTruncated());
 		return subGroups.toArray(new String[subGroups.size()]);
 	}
