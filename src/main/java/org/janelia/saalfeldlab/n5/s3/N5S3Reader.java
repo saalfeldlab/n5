@@ -115,7 +115,7 @@ public class N5S3Reader implements N5Reader {
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
 
 		final String metadataKey = Paths.get(pathName, jsonFile).toString();
-		try (final InputStream in = s3.getObject(bucket, metadataKey).getObjectContent()) {
+		try (final InputStream in = s3.getObject(bucket, getCorrectedPath(metadataKey)).getObjectContent()) {
 			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
 			final HashMap<String, JsonElement> map = gson.fromJson(new InputStreamReader(in, "UTF-8"), mapType);
 			return map == null ? new HashMap<>() : map;
@@ -176,10 +176,10 @@ public class N5S3Reader implements N5Reader {
 			final long[] gridPosition) throws IOException {
 
 		final String dataBlockKey = getDataBlockPath(pathName, gridPosition).toString();
-		if (!s3.doesObjectExist(bucket, dataBlockKey))
+		if (!s3.doesObjectExist(bucket, getCorrectedPath(dataBlockKey)))
 			return null;
 
-		try (final InputStream in = s3.getObject(bucket, dataBlockKey).getObjectContent()) {
+		try (final InputStream in = s3.getObject(bucket, getCorrectedPath(dataBlockKey)).getObjectContent()) {
 			final DataInputStream dis = new DataInputStream(in);
 			final short mode = dis.readShort();
 			final int nDim = dis.readShort();
@@ -206,7 +206,7 @@ public class N5S3Reader implements N5Reader {
 	public boolean exists(final String pathName) {
 
 		final String metadataKey = Paths.get(pathName, jsonFile).toString();
-		return s3.doesObjectExist(bucket, metadataKey);
+		return s3.doesObjectExist(bucket, getCorrectedPath(metadataKey));
 	}
 
 	@Override
@@ -260,5 +260,18 @@ public class N5S3Reader implements N5Reader {
 					subGroups.add(commonPrefix);
 		} while (objectsListing.isTruncated());
 		return subGroups.toArray(new String[subGroups.size()]);
+	}
+
+	/**
+	 * When absolute paths are passed (e.g. /group/data), AWS S3 service creates an additional root folder with an empty name.
+	 * This method removes the root slash symbol and returns the corrected path.
+	 *
+	 * @param pathName
+	 * @return
+	 */
+	protected static String getCorrectedPath(final String pathName) {
+
+		final Path path = Paths.get(pathName);
+		return path.subpath(0, path.getNameCount()).toString();
 	}
 }

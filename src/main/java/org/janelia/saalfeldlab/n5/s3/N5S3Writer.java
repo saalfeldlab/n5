@@ -123,7 +123,7 @@ public class N5S3Writer extends N5S3Reader implements N5Writer {
  		final String json = gson.toJson(map, mapType);
 
 		try (final InputStream data = new ByteArrayInputStream(json.getBytes("UTF-8"))) {
-			s3.putObject(bucket, metadataKey, data, new ObjectMetadata());
+			s3.putObject(bucket, getCorrectedPath(metadataKey), data, new ObjectMetadata());
 		}
 	}
 
@@ -160,7 +160,7 @@ public class N5S3Writer extends N5S3Reader implements N5Writer {
 			if (objectsListing == null) {
 				objectsListing = s3.listObjects(new ListObjectsRequest()
 						.withBucketName(bucket)
-						.withPrefix(pathName)
+						.withPrefix(getCorrectedPath(pathName))
 					);
 			} else {
 				objectsListing = s3.listNextBatchOfObjects(objectsListing);
@@ -241,7 +241,7 @@ public class N5S3Writer extends N5S3Reader implements N5Writer {
 			writer.write(dataBlock, Channels.newChannel(dos));
 
 			try (final InputStream data = new ByteArrayInputStream(byteStream.toByteArray())) {
-				s3.putObject(bucket, dataBlockKey, data, new ObjectMetadata());
+				s3.putObject(bucket, getCorrectedPath(dataBlockKey), data, new ObjectMetadata());
 			}
 		}
 	}
