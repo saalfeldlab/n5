@@ -115,6 +115,9 @@ public class N5S3Reader implements N5Reader {
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
 
 		final String metadataKey = Paths.get(pathName, jsonFile).toString();
+		if (!s3.doesObjectExist(bucket, getCorrectedPath(metadataKey)))
+			return new HashMap<>();
+
 		try (final InputStream in = s3.getObject(bucket, getCorrectedPath(metadataKey)).getObjectContent()) {
 			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
 			final HashMap<String, JsonElement> map = gson.fromJson(new InputStreamReader(in, "UTF-8"), mapType);
