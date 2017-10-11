@@ -46,7 +46,6 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Reader;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.google.gson.Gson;
@@ -78,10 +77,10 @@ public class N5S3Reader implements N5Reader {
 	 * @param basePath n5 base path
 	 * @param gsonBuilder
 	 */
-	public N5S3Reader(final String bucket, final GsonBuilder gsonBuilder) {
+	public N5S3Reader(final AmazonS3 s3, final String bucket, final GsonBuilder gsonBuilder) {
 
+		this.s3 = s3;
 		this.bucket = bucket;
-		this.s3 = AmazonS3ClientBuilder.defaultClient();
 
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
 		gsonBuilder.registerTypeAdapter(CompressionType.class, new CompressionType.JsonAdapter());
@@ -97,9 +96,9 @@ public class N5S3Reader implements N5Reader {
 	 *
 	 * @param basePath n5 base path
 	 */
-	public N5S3Reader(final String bucket) {
+	public N5S3Reader(final AmazonS3 s3, final String bucket) {
 
-		this(bucket, new GsonBuilder());
+		this(s3, bucket, new GsonBuilder());
 	}
 
 	/**

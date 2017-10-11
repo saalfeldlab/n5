@@ -48,6 +48,7 @@ import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Writer;
 
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
@@ -81,9 +82,9 @@ public class N5S3Writer extends N5S3Reader implements N5Writer {
 	 * @param basePath n5 base path
 	 * @param gsonBuilder
 	 */
-	public N5S3Writer(final String bucket, final GsonBuilder gsonBuilder) {
+	public N5S3Writer(final AmazonS3 s3, final String bucket, final GsonBuilder gsonBuilder) {
 
-		super(bucket, gsonBuilder);
+		super(s3, bucket, gsonBuilder);
 	}
 
 	/**
@@ -98,9 +99,9 @@ public class N5S3Writer extends N5S3Reader implements N5Writer {
 	 *
 	 * @param basePath n5 base path
 	 */
-	public N5S3Writer(final String bucket) {
+	public N5S3Writer(final AmazonS3 s3, final String bucket) {
 
-		this(bucket, new GsonBuilder());
+		this(s3, bucket, new GsonBuilder());
 	}
 
 	@Override
