@@ -217,6 +217,8 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		final Path path = getDataBlockPath(Paths.get(basePath, pathName).toString(), dataBlock.getGridPosition());
 		Files.createDirectories(path.getParent());
 		try (final LockedFileChannel channel = LockedFileChannel.openForWriting(path)) {
+			// ensure that the file will have correct length by truncating it first
+			channel.getFileChannel().truncate(0);
 			final DataOutputStream dos = new DataOutputStream(Channels.newOutputStream(channel.getFileChannel()));
 
 			final int mode = (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize())) ? 0 : 1;
