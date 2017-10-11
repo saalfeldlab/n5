@@ -247,7 +247,8 @@ public class N5S3Reader implements N5Reader {
 	@Override
 	public String[] list(final String pathName) throws IOException {
 
-		final String prefix = appendDelimiter(removeFrontDelimiter(pathName));
+		final String correctedPathName = removeFrontDelimiter(pathName);
+		final String prefix = !correctedPathName.isEmpty() ? appendDelimiter(correctedPathName) : correctedPathName;
 		final Path path = Paths.get(prefix);
 
 		final List<String> subGroups = new ArrayList<>();

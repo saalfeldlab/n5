@@ -158,7 +158,8 @@ public class N5S3Writer extends N5S3Reader implements N5Writer {
 	@Override
 	public boolean remove(final String pathName) throws IOException {
 
-		final String prefix = appendDelimiter(removeFrontDelimiter(pathName));
+		final String correctedPathName = removeFrontDelimiter(pathName);
+		final String prefix = !correctedPathName.isEmpty() ? appendDelimiter(correctedPathName) : correctedPathName;
 		final ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request()
 				.withBucketName(bucket)
 				.withPrefix(prefix);
