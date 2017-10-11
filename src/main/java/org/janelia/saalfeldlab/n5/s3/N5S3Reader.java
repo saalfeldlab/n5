@@ -61,6 +61,7 @@ import com.google.gson.reflect.TypeToken;
 public class N5S3Reader implements N5Reader {
 
 	protected static final String jsonFile = "attributes.json";
+	protected static final String delimiter = "/";
 
 	protected final AmazonS3 s3;
 	protected final String bucket;
@@ -115,10 +116,10 @@ public class N5S3Reader implements N5Reader {
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
 
 		final String metadataKey = Paths.get(pathName, jsonFile).toString();
-		if (!s3.doesObjectExist(bucket, getCorrectedPath(metadataKey)))
+		if (!s3.doesObjectExist(bucket, removeFrontDelimiter(metadataKey)))
 			return new HashMap<>();
 
-		try (final InputStream in = s3.getObject(bucket, getCorrectedPath(metadataKey)).getObjectContent()) {
+		try (final InputStream in = s3.getObject(bucket, removeFrontDelimiter(metadataKey)).getObjectContent()) {
 			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
 			final HashMap<String, JsonElement> map = gson.fromJson(new InputStreamReader(in, "UTF-8"), mapType);
 			return map == null ? new HashMap<>() : map;
@@ -179,10 +180,10 @@ public class N5S3Reader implements N5Reader {
 			final long[] gridPosition) throws IOException {
 
 		final String dataBlockKey = getDataBlockPath(pathName, gridPosition).toString();
-		if (!s3.doesObjectExist(bucket, getCorrectedPath(dataBlockKey)))
+		if (!s3.doesObjectExist(bucket, removeFrontDelimiter(dataBlockKey)))
 			return null;
 
-		try (final InputStream in = s3.getObject(bucket, getCorrectedPath(dataBlockKey)).getObjectContent()) {
+		try (final InputStream in = s3.getObject(bucket, removeFrontDelimiter(dataBlockKey)).getObjectContent()) {
 			final DataInputStream dis = new DataInputStream(in);
 			final short mode = dis.readShort();
 			final int nDim = dis.readShort();
@@ -209,7 +210,7 @@ public class N5S3Reader implements N5Reader {
 	public boolean exists(final String pathName) {
 
 		final String metadataKey = Paths.get(pathName, jsonFile).toString();
-		return s3.doesObjectExist(bucket, getCorrectedPath(metadataKey));
+		return s3.doesObjectExist(bucket, removeFrontDelimiter(metadataKey));
 	}
 
 	@Override
@@ -246,17 +247,14 @@ public class N5S3Reader implements N5Reader {
 	@Override
 	public String[] list(final String pathName) throws IOException {
 
-		// ensure that the prefix ends with '/' so that the delimiter works as expected
-		final String delimeter = "/";
-		final String correctedPathName = getCorrectedPath(pathName);
-		final String prefix = correctedPathName.endsWith(delimeter) ? correctedPathName : correctedPathName + delimeter;
-		final Path path = Paths.get(correctedPathName);
+		final String prefix = appendDelimiter(removeFrontDelimiter(pathName));
+		final Path path = Paths.get(prefix);
 
 		final List<String> subGroups = new ArrayList<>();
 		final ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request()
 				.withBucketName(bucket)
 				.withPrefix(prefix)
-				.withDelimiter(delimeter);
+				.withDelimiter(delimiter);
 		ListObjectsV2Result objectsListing;
 		do {
 			objectsListing = s3.listObjectsV2(listObjectsRequest);
@@ -278,9 +276,20 @@ public class N5S3Reader implements N5Reader {
 	 * @param pathName
 	 * @return
 	 */
-	protected static String getCorrectedPath(final String pathName) {
+	protected static String removeFrontDelimiter(final String pathName) {
 
-		final Path path = Paths.get(pathName);
-		return path.subpath(0, path.getNameCount()).toString();
+		return pathName.startsWith(delimiter) ? pathName.substring(1) : pathName;
+	}
+
+	/**
+	 * When listing children objects for a group, must append a delimiter to the path (e.g. group/data/).
+	 * This is necessary for not including wrong objects in the filtered set (e.g. group/data-2/attributes.json when group/data is passed without the last slash)
+	 *
+	 * @param pathName
+	 * @return
+	 */
+	protected static String appendDelimiter(final String pathName) {
+
+		return pathName.endsWith(delimiter) ? pathName : pathName + delimiter;
 	}
 }

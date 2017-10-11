@@ -126,7 +126,7 @@ public class N5S3Writer extends N5S3Reader implements N5Writer {
 		try (final InputStream data = new ByteArrayInputStream(bytes)) {
 			final ObjectMetadata objectMetadata = new ObjectMetadata();
 			objectMetadata.setContentLength(bytes.length);
-			s3.putObject(bucket, getCorrectedPath(metadataKey), data, objectMetadata);
+			s3.putObject(bucket, removeFrontDelimiter(metadataKey), data, objectMetadata);
 		}
 	}
 
@@ -158,12 +158,13 @@ public class N5S3Writer extends N5S3Reader implements N5Writer {
 	@Override
 	public boolean remove(final String pathName) throws IOException {
 
+		final String prefix = appendDelimiter(removeFrontDelimiter(pathName));
 		ObjectListing objectsListing = null;
 		do {
 			if (objectsListing == null) {
 				objectsListing = s3.listObjects(new ListObjectsRequest()
 						.withBucketName(bucket)
-						.withPrefix(getCorrectedPath(pathName))
+						.withPrefix(prefix)
 					);
 			} else {
 				objectsListing = s3.listNextBatchOfObjects(objectsListing);
@@ -249,7 +250,7 @@ public class N5S3Writer extends N5S3Reader implements N5Writer {
 			try (final InputStream data = new ByteArrayInputStream(bytes)) {
 				final ObjectMetadata objectMetadata = new ObjectMetadata();
 				objectMetadata.setContentLength(bytes.length);
-				s3.putObject(bucket, getCorrectedPath(dataBlockKey), data, objectMetadata);
+				s3.putObject(bucket, removeFrontDelimiter(dataBlockKey), data, objectMetadata);
 			}
 		}
 	}
