@@ -46,10 +46,13 @@ public interface N5Writer extends N5Reader {
 	 * @param attribute
 	 * @throws IOException
 	 */
-	public <T> void setAttribute(
+	public default <T> void setAttribute(
 			final String pathName,
 			final String key,
-			final T attribute) throws IOException;
+			final T attribute) throws IOException {
+
+		setAttributes(pathName, Collections.singletonMap(key, attribute));
+	}
 
 	/**
 	 * Sets a map of attributes.
