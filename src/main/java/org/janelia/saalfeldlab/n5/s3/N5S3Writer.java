@@ -172,11 +172,13 @@ public class N5S3Writer extends N5S3Reader implements N5Writer {
 			for (final S3ObjectSummary object : objectsListing.getObjectSummaries())
 				objectsToDelete.add(object.getKey());
 
-			s3.deleteObjects(new DeleteObjectsRequest(bucket)
-					.withKeys(objectsToDelete.toArray(new String[objectsToDelete.size()]))
-				);
+			if (!objectsToDelete.isEmpty()) {
+				s3.deleteObjects(new DeleteObjectsRequest(bucket)
+						.withKeys(objectsToDelete.toArray(new String[objectsToDelete.size()]))
+					);
+			}
 		} while (objectsListing.isTruncated());
-		return true;
+		return !exists(pathName);
 	}
 
 	/**
