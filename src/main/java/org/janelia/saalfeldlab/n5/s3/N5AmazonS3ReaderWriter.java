@@ -25,7 +25,8 @@
  */
 package org.janelia.saalfeldlab.n5.s3;
 
-import java.io.DataInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -34,11 +35,13 @@ import java.nio.channels.Channels;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
-import org.janelia.saalfeldlab.n5.BlockReader;
+import org.janelia.saalfeldlab.n5.AbstractN5ReaderWriter;
 import org.janelia.saalfeldlab.n5.CompressionType;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
@@ -46,26 +49,29 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Reader;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 
 /**
- * Amazon Web Services S3 implementation of the {@link N5Reader} interface.
+ * Amazon Web Services S3-based N5 implementation.
  *
  * @author Igor Pisarev
  */
-public class N5S3Reader implements N5Reader {
+public class N5AmazonS3ReaderWriter extends AbstractN5ReaderWriter {
 
-	protected static final String jsonFile = "attributes.json";
-	protected static final String delimiter = "/";
+	private static final String jsonFile = "attributes.json";
+	private static final String delimiter = "/";
 
-	protected final AmazonS3 s3;
-	protected final String bucket;
-	protected final Gson gson;
+	private final AmazonS3 s3;
+	private final String bucketName;
+	private final Gson gson;
 
 	/**
 	 * Opens an {@link N5Reader} at a given base path with a custom
@@ -78,10 +84,10 @@ public class N5S3Reader implements N5Reader {
 	 * @param basePath n5 base path
 	 * @param gsonBuilder
 	 */
-	public N5S3Reader(final AmazonS3 s3, final String bucket, final GsonBuilder gsonBuilder) {
+	public N5AmazonS3ReaderWriter(final AmazonS3 s3, final String bucketName, final GsonBuilder gsonBuilder) {
 
 		this.s3 = s3;
-		this.bucket = bucket;
+		this.bucketName = bucketName;
 
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
 		gsonBuilder.registerTypeAdapter(CompressionType.class, new CompressionType.JsonAdapter());
@@ -97,9 +103,42 @@ public class N5S3Reader implements N5Reader {
 	 *
 	 * @param basePath n5 base path
 	 */
-	public N5S3Reader(final AmazonS3 s3, final String bucket) {
+	public N5AmazonS3ReaderWriter(final AmazonS3 s3, final String bucketName) {
 
-		this(s3, bucket, new GsonBuilder());
+		this(s3, bucketName, new GsonBuilder());
+	}
+
+	@Override
+	public void createContainer() throws IOException {
+
+		if (!s3.doesBucketExistV2(bucketName))
+			s3.createBucket(bucketName);
+		createGroup("");
+	}
+
+	@Override
+	public void removeContainer() throws IOException {
+
+		remove("");
+		s3.deleteBucket(bucketName);
+	}
+
+	@Override
+	public boolean exists(final String pathName) {
+
+		final String metadataKey = Paths.get(pathName, jsonFile).toString();
+		return s3.doesObjectExist(bucketName, removeFrontDelimiter(metadataKey));
+	}
+
+	@Override
+	public void createGroup(final String pathName) throws IOException {
+
+		final Path path = Paths.get(pathName);
+		for (int i = 0; i < path.getNameCount(); ++i) {
+			final String subgroup = path.subpath(0, i + 1).toString();
+			if (!exists(subgroup))
+				setAttributes(subgroup, Collections.emptyMap());
+		}
 	}
 
 	/**
@@ -116,10 +155,10 @@ public class N5S3Reader implements N5Reader {
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
 
 		final String metadataKey = Paths.get(pathName, jsonFile).toString();
-		if (!s3.doesObjectExist(bucket, removeFrontDelimiter(metadataKey)))
+		if (!s3.doesObjectExist(bucketName, removeFrontDelimiter(metadataKey)))
 			return new HashMap<>();
 
-		try (final InputStream in = s3.getObject(bucket, removeFrontDelimiter(metadataKey)).getObjectContent()) {
+		try (final InputStream in = s3.getObject(bucketName, removeFrontDelimiter(metadataKey)).getObjectContent()) {
 			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
 			final HashMap<String, JsonElement> map = gson.fromJson(new InputStreamReader(in, "UTF-8"), mapType);
 			return map == null ? new HashMap<>() : map;
@@ -137,40 +176,22 @@ public class N5S3Reader implements N5Reader {
 	}
 
 	@Override
-	public DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
+	public void setAttributes(final String pathName, final Map<String, ?> attributes) throws IOException {
 
-		final HashMap<String, JsonElement> attributes = getAttributes(pathName);
+		final String metadataKey = Paths.get(pathName, jsonFile).toString();
+		final HashMap<String, JsonElement> map = getAttributes(pathName);
+		for (final Entry<String, ?> entry : attributes.entrySet())
+			map.put(entry.getKey(), gson.toJsonTree(entry.getValue()));
 
-		final JsonElement dimensionsElement = attributes.get(DatasetAttributes.dimensionsKey);
-		if (dimensionsElement == null)
-			return null;
-		final long[] dimensions = gson.fromJson(dimensionsElement, long[].class);
-		if (dimensions == null)
-			return null;
+		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
+ 		final String json = gson.toJson(map, mapType);
 
-		final JsonElement dataTypeElement = attributes.get(DatasetAttributes.dataTypeKey);
-		if (dataTypeElement == null)
-			return null;
-		final DataType dataType = gson.fromJson(dataTypeElement, DataType.class);
-		if (dataType == null)
-			return null;
-
-		final JsonElement blockSizeElement = attributes.get(DatasetAttributes.blockSizeKey);
-		int[] blockSize = null;
-		if (blockSizeElement != null)
-			blockSize = gson.fromJson(blockSizeElement, int[].class);
-		if (blockSize == null)
-			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
-
-		final JsonElement compressionTypeElement = attributes.get(DatasetAttributes.compressionTypeKey);
-		CompressionType compressionType = null;
-		if (compressionTypeElement == null)
-			return null;
-		compressionType = gson.fromJson(compressionTypeElement, CompressionType.class);
-		if (compressionType == null)
-			compressionType = CompressionType.RAW;
-
-		return new DatasetAttributes(dimensions, blockSize, dataType, compressionType);
+		final byte[] bytes = json.getBytes("UTF-8");
+		try (final InputStream data = new ByteArrayInputStream(bytes)) {
+			final ObjectMetadata objectMetadata = new ObjectMetadata();
+			objectMetadata.setContentLength(bytes.length);
+			s3.putObject(bucketName, removeFrontDelimiter(metadataKey), data, objectMetadata);
+		}
 	}
 
 	@Override
@@ -180,68 +201,30 @@ public class N5S3Reader implements N5Reader {
 			final long[] gridPosition) throws IOException {
 
 		final String dataBlockKey = getDataBlockPath(pathName, gridPosition).toString();
-		if (!s3.doesObjectExist(bucket, removeFrontDelimiter(dataBlockKey)))
+		if (!s3.doesObjectExist(bucketName, removeFrontDelimiter(dataBlockKey)))
 			return null;
 
-		try (final InputStream in = s3.getObject(bucket, removeFrontDelimiter(dataBlockKey)).getObjectContent()) {
-			final DataInputStream dis = new DataInputStream(in);
-			final short mode = dis.readShort();
-			final int nDim = dis.readShort();
-			final int[] blockSize = new int[nDim];
-			for (int d = 0; d < nDim; ++d)
-				blockSize[d] = dis.readInt();
-			final int numElements;
-			switch (mode) {
-			case 1:
-				numElements = dis.readInt();
-				break;
-			default:
-				numElements = DataBlock.getNumElements(blockSize);
-			}
-			final DataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
-
-			final BlockReader reader = datasetAttributes.getCompressionType().getReader();
-			reader.read(dataBlock, Channels.newChannel(in));
-			return dataBlock;
+		try (final InputStream in = s3.getObject(bucketName, removeFrontDelimiter(dataBlockKey)).getObjectContent()) {
+			return readBlock(Channels.newChannel(in), datasetAttributes, gridPosition);
 		}
 	}
 
 	@Override
-	public boolean exists(final String pathName) {
+	public <T> void writeBlock(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T> dataBlock) throws IOException {
 
-		final String metadataKey = Paths.get(pathName, jsonFile).toString();
-		return s3.doesObjectExist(bucket, removeFrontDelimiter(metadataKey));
-	}
-
-	@Override
-	public boolean datasetExists(final String pathName) throws IOException {
-
-		return exists(pathName) && getDatasetAttributes(pathName) != null;
-	}
-
-	/**
-	 * Creates the path for a data block in a dataset at a given grid position.
-	 *
-	 * The returned path is
-	 * <pre>
-	 * $datasetPathName/$gridPosition[0]/$gridPosition[1]/.../$gridPosition[n]
-	 * </pre>
-	 *
-	 * This is the file into which the data block will be stored.
-	 *
-	 * @param datasetPathName
-	 * @param gridPosition
-	 * @return
-	 */
-	public static Path getDataBlockPath(final String datasetPathName, final long[] gridPosition) {
-
-		final String[] pathComponents = new String[gridPosition.length];
-		for (int i = 0; i < pathComponents.length; ++i)
-			pathComponents[i] = Long.toString(gridPosition[i]);
-
-		return Paths.get(
-				datasetPathName,
-				pathComponents);
+		final String dataBlockKey = getDataBlockPath(pathName, dataBlock.getGridPosition()).toString();
+		try (final ByteArrayOutputStream byteStream = new ByteArrayOutputStream()) {
+			writeBlock(Channels.newChannel(byteStream), datasetAttributes, dataBlock);
+			final byte[] bytes = byteStream.toByteArray();
+			try (final InputStream data = new ByteArrayInputStream(bytes)) {
+				final ObjectMetadata objectMetadata = new ObjectMetadata();
+				objectMetadata.setContentLength(bytes.length);
+				s3.putObject(bucketName, removeFrontDelimiter(dataBlockKey), data, objectMetadata);
+			}
+		}
 	}
 
 	@Override
@@ -253,7 +236,7 @@ public class N5S3Reader implements N5Reader {
 
 		final List<String> subGroups = new ArrayList<>();
 		final ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request()
-				.withBucketName(bucket)
+				.withBucketName(bucketName)
 				.withPrefix(prefix)
 				.withDelimiter(delimiter);
 		ListObjectsV2Result objectsListing;
@@ -271,13 +254,52 @@ public class N5S3Reader implements N5Reader {
 	}
 
 	/**
+	 * Removes a group or dataset (directory and all contained files).
+	 *
+	 * <p><code>{@link #remove(String) remove("")}</code> or
+	 * <code>{@link #remove(String) remove("")}</code> will delete this N5
+	 * container.  Please note that no checks for safety will be performed,
+	 * e.g. <code>{@link #remove(String) remove("..")}</code> will try to
+	 * recursively delete the parent directory of this N5 container which
+	 * only fails because it attempts to delete the parent directory before it
+	 * is empty.
+	 *
+	 * @param pathName group path
+	 * @throws IOException
+	 */
+	@Override
+	public boolean remove(final String pathName) throws IOException {
+
+		final String correctedPathName = removeFrontDelimiter(pathName);
+		final String prefix = !correctedPathName.isEmpty() ? appendDelimiter(correctedPathName) : correctedPathName;
+		final ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request()
+				.withBucketName(bucketName)
+				.withPrefix(prefix);
+		ListObjectsV2Result objectsListing;
+		do {
+			objectsListing = s3.listObjectsV2(listObjectsRequest);
+			final List<String> objectsToDelete = new ArrayList<>();
+			for (final S3ObjectSummary object : objectsListing.getObjectSummaries())
+				objectsToDelete.add(object.getKey());
+
+			if (!objectsToDelete.isEmpty()) {
+				s3.deleteObjects(new DeleteObjectsRequest(bucketName)
+						.withKeys(objectsToDelete.toArray(new String[objectsToDelete.size()]))
+					);
+			}
+			listObjectsRequest.setContinuationToken(objectsListing.getNextContinuationToken());
+		} while (objectsListing.isTruncated());
+		return !exists(pathName);
+	}
+
+	/**
 	 * When absolute paths are passed (e.g. /group/data), AWS S3 service creates an additional root folder with an empty name.
 	 * This method removes the root slash symbol and returns the corrected path.
 	 *
 	 * @param pathName
 	 * @return
 	 */
-	protected static String removeFrontDelimiter(final String pathName) {
+	private static String removeFrontDelimiter(final String pathName) {
 
 		return pathName.startsWith(delimiter) ? pathName.substring(1) : pathName;
 	}
@@ -289,7 +311,7 @@ public class N5S3Reader implements N5Reader {
 	 * @param pathName
 	 * @return
 	 */
-	protected static String appendDelimiter(final String pathName) {
+	private static String appendDelimiter(final String pathName) {
 
 		return pathName.endsWith(delimiter) ? pathName : pathName + delimiter;
 	}

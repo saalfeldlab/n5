@@ -26,7 +26,6 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -61,13 +60,10 @@ public interface N5Writer extends N5Reader {
 	 * @param attribute
 	 * @throws IOException
 	 */
-	public default <T> void setAttribute(
+	public <T> void setAttribute(
 			final String pathName,
 			final String key,
-			final T attribute) throws IOException {
-
-		setAttributes(pathName, Collections.singletonMap(key, attribute));
-	}
+			final T attribute) throws IOException;
 
 	/**
 	 * Sets a map of attributes.
@@ -87,12 +83,9 @@ public interface N5Writer extends N5Reader {
 	 * @param datasetAttributes
 	 * @throws IOException
 	 */
-	public default void setDatasetAttributes(
+	public void setDatasetAttributes(
 			final String pathName,
-			final DatasetAttributes datasetAttributes) throws IOException {
-
-		setAttributes(pathName, datasetAttributes.asMap());
-	}
+			final DatasetAttributes datasetAttributes) throws IOException;
 
 	/**
 	 * Creates a group (directory)

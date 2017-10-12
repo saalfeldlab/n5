@@ -25,25 +25,21 @@
  */
 package org.janelia.saalfeldlab.n5.fs;
 
-import java.io.Closeable;
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.Writer;
 import java.lang.reflect.Type;
 import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Stream;
 
-import org.janelia.saalfeldlab.n5.BlockReader;
+import org.janelia.saalfeldlab.n5.AbstractN5ReaderWriter;
 import org.janelia.saalfeldlab.n5.CompressionType;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
@@ -56,58 +52,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 
 /**
- * Filesystem implementation of the {@link N5Reader} interface.
+ * Filesystem N5 implementation.
  *
  * @author Stephan Saalfeld
  */
-public class N5FSReader implements N5Reader {
-
-	protected static class LockedFileChannel implements Closeable {
-
-		private final FileChannel channel;
-
-		public static LockedFileChannel openForReading(final Path path) throws IOException {
-
-			return new LockedFileChannel(path, true);
-		}
-
-		public static LockedFileChannel openForWriting(final Path path) throws IOException {
-
-			return new LockedFileChannel(path, false);
-		}
-
-		private LockedFileChannel(final Path path, final boolean readOnly) throws IOException {
-
-			final OpenOption[] options = readOnly ? new OpenOption[]{StandardOpenOption.READ} : new OpenOption[]{StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE};
-			channel = FileChannel.open(path, options);
-
-			for (boolean waiting = true; waiting;) {
-				waiting = false;
-				try {
-					channel.lock(0L, Long.MAX_VALUE, readOnly);
-				} catch (final OverlappingFileLockException e) {
-					waiting = true;
-					try {
-						Thread.sleep(100);
-					} catch (final InterruptedException f) {
-						waiting = false;
-						f.printStackTrace(System.err);
-					}
-				}
-			}
-		}
-
-		public FileChannel getFileChannel() {
-
-			return channel;
-		}
-
-		@Override
-		public void close() throws IOException {
-
-			channel.close();
-		}
-	}
+public class N5FSReaderWriter extends AbstractN5ReaderWriter {
 
 	protected static final String jsonFile = "attributes.json";
 
@@ -125,7 +74,7 @@ public class N5FSReader implements N5Reader {
 	 * @param basePath n5 base path
 	 * @param gsonBuilder
 	 */
-	public N5FSReader(final String basePath, final GsonBuilder gsonBuilder) {
+	public N5FSReaderWriter(final String basePath, final GsonBuilder gsonBuilder) {
 
 		this.basePath = basePath;
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
@@ -142,9 +91,35 @@ public class N5FSReader implements N5Reader {
 	 *
 	 * @param basePath n5 base path
 	 */
-	public N5FSReader(final String basePath) {
+	public N5FSReaderWriter(final String basePath) {
 
 		this(basePath, new GsonBuilder());
+	}
+
+	@Override
+	public void createContainer() throws IOException {
+
+		Files.createDirectories(Paths.get(basePath));
+	}
+
+	@Override
+	public void removeContainer() throws IOException {
+
+		remove("");
+	}
+
+	@Override
+	public boolean exists(final String pathName) {
+
+		final Path path = Paths.get(basePath, pathName);
+		return Files.exists(path) && Files.isDirectory(path);
+	}
+
+	@Override
+	public void createGroup(final String pathName) throws IOException {
+
+		final Path path = Paths.get(basePath, pathName);
+		Files.createDirectories(path);
 	}
 
 	/**
@@ -182,40 +157,22 @@ public class N5FSReader implements N5Reader {
 	}
 
 	@Override
-	public DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
+	public void setAttributes(final String pathName, final Map<String, ?> attributes) throws IOException {
 
-		final HashMap<String, JsonElement> attributes = getAttributes(pathName);
-
-		final JsonElement dimensionsElement = attributes.get(DatasetAttributes.dimensionsKey);
-		if (dimensionsElement == null)
-			return null;
-		final long[] dimensions = gson.fromJson(dimensionsElement, long[].class);
-		if (dimensions == null)
-			return null;
-
-		final JsonElement dataTypeElement = attributes.get(DatasetAttributes.dataTypeKey);
-		if (dataTypeElement == null)
-			return null;
-		final DataType dataType = gson.fromJson(dataTypeElement, DataType.class);
-		if (dataType == null)
-			return null;
-
-		final JsonElement blockSizeElement = attributes.get(DatasetAttributes.blockSizeKey);
-		int[] blockSize = null;
-		if (blockSizeElement != null)
-			blockSize = gson.fromJson(blockSizeElement, int[].class);
-		if (blockSize == null)
-			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
-
-		final JsonElement compressionTypeElement = attributes.get(DatasetAttributes.compressionTypeKey);
-		CompressionType compressionType = null;
-		if (compressionTypeElement == null)
-			return null;
-		compressionType = gson.fromJson(compressionTypeElement, CompressionType.class);
-		if (compressionType == null)
-			compressionType = CompressionType.RAW;
-
-		return new DatasetAttributes(dimensions, blockSize, dataType, compressionType);
+		final Path path = Paths.get(basePath, pathName, jsonFile);
+		try (final LockedFileChannel channel = LockedFileChannel.openForWriting(path)) {
+			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
+			HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(channel.getFileChannel(), "UTF-8"), mapType);
+			if (map == null)
+				map = new HashMap<>();
+			for (final Entry<String, ?> entry : attributes.entrySet())
+				map.put(entry.getKey(), gson.toJsonTree(entry.getValue()));
+			channel.getFileChannel().position(0);
+			final Writer writer = Channels.newWriter(channel.getFileChannel(), "UTF-8");
+			gson.toJson(map, mapType, writer);
+			writer.flush();
+			channel.getFileChannel().truncate(channel.getFileChannel().position());
+		}
 	}
 
 	@Override
@@ -230,66 +187,23 @@ public class N5FSReader implements N5Reader {
 			return null;
 
 		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForReading(path)) {
-			try (final InputStream in = Channels.newInputStream(lockedChannel.getFileChannel())) {
-				final DataInputStream dis = new DataInputStream(in);
-				final short mode = dis.readShort();
-				final int nDim = dis.readShort();
-				final int[] blockSize = new int[nDim];
-				for (int d = 0; d < nDim; ++d)
-					blockSize[d] = dis.readInt();
-				final int numElements;
-				switch (mode) {
-				case 1:
-					numElements = dis.readInt();
-					break;
-				default:
-					numElements = DataBlock.getNumElements(blockSize);
-				}
-				final DataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
-
-				final BlockReader reader = datasetAttributes.getCompressionType().getReader();
-				reader.read(dataBlock, lockedChannel.getFileChannel());
-				return dataBlock;
-			}
+			return readBlock(lockedChannel.getFileChannel(), datasetAttributes, gridPosition);
 		}
 	}
 
 	@Override
-	public boolean exists(final String pathName) {
+	public <T> void writeBlock(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T> dataBlock) throws IOException {
 
-		final Path path = Paths.get(basePath, pathName);
-		return Files.exists(path) && Files.isDirectory(path);
-	}
-
-	@Override
-	public boolean datasetExists(final String pathName) throws IOException {
-
-		return exists(pathName) && getDatasetAttributes(pathName) != null;
-	}
-
-	/**
-	 * Creates the path for a data block in a dataset at a given grid position.
-	 *
-	 * The returned path is
-	 * <pre>
-	 * $datasetPathName/$gridPosition[0]/$gridPosition[1]/.../$gridPosition[n]
-	 * </pre>
-	 *
-	 * This is the file into which the data block will be stored.
-	 *
-	 * @param datasetPathName
-	 * @param gridPosition
-	 * @return
-	 */
-	public static Path getDataBlockPath(final String datasetPathName, final long[] gridPosition) {
-
-		final String[] pathComponents = new String[gridPosition.length];
-		for (int i = 0; i < pathComponents.length; ++i)
-			pathComponents[i] = Long.toString(gridPosition[i]);
-
-		return Paths.get(
-				datasetPathName,
-				pathComponents);
+		final Path path = getDataBlockPath(Paths.get(basePath, pathName).toString(), dataBlock.getGridPosition());
+		Files.createDirectories(path.getParent());
+		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForWriting(path)) {
+			// ensure that the file will have correct length by truncating it first
+			lockedChannel.getFileChannel().truncate(0);
+			writeBlock(lockedChannel.getFileChannel(), datasetAttributes, dataBlock);
+		}
 	}
 
 	@Override
@@ -303,5 +217,45 @@ public class N5FSReader implements N5Reader {
 					.map(a -> path.relativize(a).toString())
 					.toArray(n -> new String[n]);
 		}
+	}
+
+	/**
+	 * Removes a group or dataset (directory and all contained files).
+	 *
+	 * <p><code>{@link #remove(String) remove("")}</code> or
+	 * <code>{@link #remove(String) remove("")}</code> will delete this N5
+	 * container.  Please note that no checks for safety will be performed,
+	 * e.g. <code>{@link #remove(String) remove("..")}</code> will try to
+	 * recursively delete the parent directory of this N5 container which
+	 * only fails because it attempts to delete the parent directory before it
+	 * is empty.
+	 *
+	 * @param pathName group path
+	 * @throws IOException
+	 */
+	@Override
+	public boolean remove(final String pathName) throws IOException {
+
+		final Path path = Paths.get(basePath, pathName);
+		if (Files.exists(path))
+			try (final Stream<Path> pathStream = Files.walk(path)) {
+				pathStream.sorted(Comparator.reverseOrder()).forEach(
+						childPath -> {
+							if (Files.isRegularFile(childPath)) {
+								try (final LockedFileChannel channel = LockedFileChannel.openForWriting(childPath)) {
+									Files.delete(childPath);
+								} catch (final IOException e) {
+									e.printStackTrace();
+								}
+							} else
+								try {
+									Files.delete(childPath);
+								} catch (final IOException e) {
+									e.printStackTrace();
+								}
+						});
+			}
+
+		return !Files.exists(path);
 	}
 }
