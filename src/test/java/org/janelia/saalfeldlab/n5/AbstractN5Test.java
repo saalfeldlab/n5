@@ -31,12 +31,12 @@ import org.junit.Test;
 
 /**
  * Base class for testing N5 functionality.
- * Subclasses are expected to provide a specific N5 implementation to be tested by having a custom setUpBeforeClass() method.
+ * Subclasses are expected to provide a specific N5 implementation to be tested by defining a custom setUpBeforeClass() method.
  *
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
  */
-public abstract class N5TestBase {
+public abstract class AbstractN5Test {
 
 	static private final String groupName = "/test/group";
 	static private final String[] subGroupNames = new String[]{"a", "b", "c"};

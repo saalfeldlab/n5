@@ -21,7 +21,7 @@ import java.io.IOException;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.varia.NullAppender;
-import org.janelia.saalfeldlab.n5.N5TestBase;
+import org.janelia.saalfeldlab.n5.AbstractN5Test;
 import org.junit.BeforeClass;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
@@ -37,9 +37,9 @@ import io.findify.s3mock.S3Mock;
  *
  * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
  */
-public class N5S3MockTest extends N5TestBase {
+public class N5AmazonS3MockTest extends AbstractN5Test {
 
-	static private String testBucket = "test-bucket-n5-" + RandomStringUtils.randomAlphanumeric(8).toLowerCase();
+	static private String testBucketName = "test-bucket-n5-" + RandomStringUtils.randomAlphanumeric(8).toLowerCase();
 
 	/**
 	 * @throws IOException
@@ -61,7 +61,7 @@ public class N5S3MockTest extends N5TestBase {
 			      .withCredentials(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()))
 			      .build();
 
-		n5 = new N5S3Writer(s3, testBucket);
-		N5TestBase.setUpBeforeClass();
+		n5 = N5AmazonS3Factory.openS3Writer(s3, testBucketName);
+		AbstractN5Test.setUpBeforeClass();
 	}
 }

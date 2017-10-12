@@ -18,7 +18,8 @@ package org.janelia.saalfeldlab.n5.fs;
 
 import java.io.IOException;
 
-import org.janelia.saalfeldlab.n5.N5TestBase;
+import org.janelia.saalfeldlab.n5.AbstractN5Test;
+import org.janelia.saalfeldlab.n5.N5;
 import org.junit.BeforeClass;
 
 /**
@@ -26,7 +27,7 @@ import org.junit.BeforeClass;
  *
  * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
  */
-public class N5FSTest extends N5TestBase {
+public class N5FSTest extends AbstractN5Test {
 
 	static private String testDirPath = System.getProperty("user.home") + "/tmp/n5-test";
 
@@ -36,7 +37,7 @@ public class N5FSTest extends N5TestBase {
 	@BeforeClass
 	public static void setUpBeforeClass() throws IOException {
 
-		n5 = new N5FSWriter(testDirPath);
-		N5TestBase.setUpBeforeClass();
+		n5 = N5.openFSWriter(testDirPath);
+		AbstractN5Test.setUpBeforeClass();
 	}
 }
