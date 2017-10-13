@@ -148,13 +148,6 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 		setDatasetAttributes(pathName, new DatasetAttributes(dimensions, blockSize, dataType, compressionType));
 	}
 
-	protected HashMap<String, JsonElement> readAttributes(final Reader reader) throws IOException {
-
-		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
-		final HashMap<String, JsonElement> map = gson.fromJson(reader, mapType);
-		return map == null ? new HashMap<>() : map;
-	}
-
 	@Override
 	public <T> T getAttribute(
 			final String pathName,
@@ -174,7 +167,7 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 		setAttributes(pathName, Collections.singletonMap(key, attribute));
 	}
 
-	public <T> T getAttribute(
+	protected <T> T getAttribute(
 			final HashMap<String, JsonElement> map,
 			final String key,
 			final Class<T> clazz) throws IOException {
@@ -194,13 +187,20 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 			map.put(entry.getKey(), gson.toJsonTree(entry.getValue()));
 	}
 
-	protected void writeAttributes(
-			final Writer writer,
-			final Map<String, ?> attributes) throws IOException {
+	protected HashMap<String, JsonElement> readAttributes(final Reader reader) throws IOException {
 
 		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
- 		gson.toJson(attributes, mapType, writer);
- 		writer.flush();
+		final HashMap<String, JsonElement> map = gson.fromJson(reader, mapType);
+		return map == null ? new HashMap<>() : map;
+	}
+
+	protected void writeAttributes(
+			final Writer writer,
+			final HashMap<String, JsonElement> map) throws IOException {
+
+		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
+		gson.toJson(map, mapType, writer);
+		writer.flush();
 	}
 
 	protected DataBlock<?> readBlock(
