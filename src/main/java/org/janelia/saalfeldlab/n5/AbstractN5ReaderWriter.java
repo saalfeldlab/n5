@@ -82,19 +82,21 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 	@Override
 	public DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
 
-		final long[] dimensions = getAttribute(pathName, DatasetAttributes.dimensionsKey, long[].class);
+		final HashMap<String, JsonElement> map = getAttributes(pathName);
+
+		final long[] dimensions = getAttribute(map, DatasetAttributes.dimensionsKey, long[].class);
 		if (dimensions == null)
 			return null;
 
-		final DataType dataType = getAttribute(pathName, DatasetAttributes.dataTypeKey, DataType.class);
+		final DataType dataType = getAttribute(map, DatasetAttributes.dataTypeKey, DataType.class);
 		if (dataType == null)
 			return null;
 
-		int[] blockSize = getAttribute(pathName, DatasetAttributes.blockSizeKey, int[].class);
+		int[] blockSize = getAttribute(map, DatasetAttributes.blockSizeKey, int[].class);
 		if (blockSize == null)
 			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
 
-		CompressionType compressionType = getAttribute(pathName, DatasetAttributes.compressionTypeKey, CompressionType.class);
+		CompressionType compressionType = getAttribute(map, DatasetAttributes.compressionTypeKey, CompressionType.class);
 		if (compressionType == null)
 			compressionType = CompressionType.RAW;
 
@@ -160,11 +162,7 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 			final Class<T> clazz) throws IOException {
 
 		final HashMap<String, JsonElement> map = getAttributes(pathName);
-		final JsonElement attribute = map.get(key);
-		if (attribute != null)
-			return gson.fromJson(attribute, clazz);
-		else
-			return null;
+		return getAttribute(map, key, clazz);
 	}
 
 	@Override
@@ -174,6 +172,18 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 			final T attribute) throws IOException {
 
 		setAttributes(pathName, Collections.singletonMap(key, attribute));
+	}
+
+	public <T> T getAttribute(
+			final HashMap<String, JsonElement> map,
+			final String key,
+			final Class<T> clazz) throws IOException {
+
+		final JsonElement attribute = map.get(key);
+		if (attribute != null)
+			return gson.fromJson(attribute, clazz);
+		else
+			return null;
 	}
 
 	protected HashMap<String, JsonElement> getUpdatedAttributes(
