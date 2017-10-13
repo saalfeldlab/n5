@@ -26,30 +26,20 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
-import java.nio.channels.FileChannel;
+import java.io.InputStream;
+import java.io.OutputStream;
 
-public class RawBlockReaderWriter implements BlockReader, BlockWriter {
+public class RawBlockReaderWriter extends AbstractBlockReaderWriter {
 
 	@Override
-	public <T, B extends DataBlock<T>> void read(
-			final B dataBlock,
-			final ByteChannel channel) throws IOException {
+	protected InputStream getInputStream(final InputStream in) throws IOException {
 
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		channel.read(buffer);
-		buffer.position(0);
-		dataBlock.readData(buffer);
+		return in;
 	}
 
 	@Override
-	public <T> void write(
-			final DataBlock<T> dataBlock,
-			final FileChannel channel) throws IOException {
+	protected OutputStream getOutputStream(final OutputStream out) throws IOException {
 
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		channel.write(buffer);
-		channel.truncate(channel.position());
+		return out;
 	}
 }

@@ -39,6 +39,20 @@ import java.util.Map;
 public interface N5Writer extends N5Reader {
 
 	/**
+	 * Creates an N5 container.
+	 *
+	 * @throws IOException
+	 */
+	public void createContainer() throws IOException;
+
+	/**
+	 * Removes an N5 container.
+	 *
+	 * @throws IOException
+	 */
+	public void removeContainer() throws IOException;
+
+	/**
 	 * Sets an attribute.
 	 *
 	 * @param pathName group path
@@ -69,12 +83,9 @@ public interface N5Writer extends N5Reader {
 	 * @param datasetAttributes
 	 * @throws IOException
 	 */
-	public default void setDatasetAttributes(
+	public void setDatasetAttributes(
 			final String pathName,
-			final DatasetAttributes datasetAttributes) throws IOException {
-
-		setAttributes(pathName, datasetAttributes.asMap());
-	}
+			final DatasetAttributes datasetAttributes) throws IOException;
 
 	/**
 	 * Creates a group (directory)
@@ -96,6 +107,7 @@ public interface N5Writer extends N5Reader {
 	 * is empty.
 	 *
 	 * @param pathName group path
+	 * @return true if removal was successful, false otherwise
 	 * @throws IOException
 	 */
 	public boolean remove(final String pathName) throws IOException;
