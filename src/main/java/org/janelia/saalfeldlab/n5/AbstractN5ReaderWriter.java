@@ -186,16 +186,12 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 			return null;
 	}
 
-	protected HashMap<String, JsonElement> getUpdatedAttributes(
-			final String pathName,
+	protected void insertAttributes(
+			final HashMap<String, JsonElement> map,
 			final Map<String, ?> attributes) throws IOException {
 
-		HashMap<String, JsonElement> map = getAttributes(pathName);
-		if (map == null)
-			map = new HashMap<>();
 		for (final Entry<String, ?> entry : attributes.entrySet())
 			map.put(entry.getKey(), gson.toJsonTree(entry.getValue()));
-		return map;
 	}
 
 	protected void writeAttributes(

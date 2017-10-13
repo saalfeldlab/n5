@@ -150,9 +150,11 @@ public class N5AmazonS3ReaderWriter extends AbstractN5ReaderWriter {
 			final String pathName,
 			final Map<String, ?> attributes) throws IOException {
 
-		final HashMap<String, JsonElement> updatedAttributes = getUpdatedAttributes(pathName, attributes);
+		final HashMap<String, JsonElement> map = getAttributes(pathName);
+		insertAttributes(map, attributes);
+
 		try (final ByteArrayOutputStream byteStream = new ByteArrayOutputStream()) {
-			writeAttributes(new OutputStreamWriter(byteStream, "UTF-8"), updatedAttributes);
+			writeAttributes(new OutputStreamWriter(byteStream, "UTF-8"), map);
 
 			final String metadataKey = getAttributesPath(pathName).toString();
 			writeS3Object(removeFrontDelimiter(metadataKey), byteStream.toByteArray());

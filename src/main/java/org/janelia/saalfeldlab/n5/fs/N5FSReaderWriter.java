@@ -127,11 +127,15 @@ public class N5FSReaderWriter extends AbstractN5ReaderWriter {
 			final String pathName,
 			final Map<String, ?> attributes) throws IOException {
 
-		final HashMap<String, JsonElement> updatedAttributes = getUpdatedAttributes(pathName, attributes);
 		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());
-		try (final LockedFileChannel channel = LockedFileChannel.openForWriting(path)) {
-			channel.getFileChannel().truncate(0);
-			writeAttributes(Channels.newWriter(channel.getFileChannel(), "UTF-8"), updatedAttributes);
+		final HashMap<String, JsonElement> map = new HashMap<>();
+
+		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path)) {
+			map.putAll(readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), "UTF-8")));
+			insertAttributes(map, attributes);
+
+			lockedFileChannel.getFileChannel().truncate(0);
+			writeAttributes(Channels.newWriter(lockedFileChannel.getFileChannel(), "UTF-8"), map);
 		}
 	}
 
