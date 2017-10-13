@@ -46,9 +46,6 @@ public interface N5Reader {
 	 * @param pathName group path
 	 * @return
 	 * @throws IOException
-	 *
-	 * TODO uses file locks to synchronize with other processes, now also
-	 *   synchronize for threads inside the JVM
 	 */
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException;
 
@@ -59,6 +56,7 @@ public interface N5Reader {
 	 * @param key
 	 * @param clazz attribute class
 	 * @return
+	 * @throws IOException
 	 */
 	public <T> T getAttribute(
 			final String pathName,
@@ -101,6 +99,7 @@ public interface N5Reader {
 	 *
 	 * @param pathName dataset path
 	 * @return
+	 * @throws IOException
 	 */
 	public boolean datasetExists(final String pathName) throws IOException;
 

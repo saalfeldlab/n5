@@ -23,8 +23,9 @@ import org.janelia.saalfeldlab.n5.N5;
 import org.junit.BeforeClass;
 
 /**
- * Initiates testing of filesystem-based N5 implementation.
+ * Initiates testing of the filesystem-based N5 implementation.
  *
+ * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
  */
 public class N5FSTest extends AbstractN5Test {

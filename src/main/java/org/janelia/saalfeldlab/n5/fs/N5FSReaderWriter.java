@@ -39,6 +39,7 @@ import org.janelia.saalfeldlab.n5.AbstractN5ReaderWriter;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Reader;
+import org.janelia.saalfeldlab.n5.N5Writer;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -53,12 +54,15 @@ public class N5FSReaderWriter extends AbstractN5ReaderWriter {
 	protected final String basePath;
 
 	/**
-	 * Opens an {@link N5Reader} at a given base path with a custom
-	 * {@link GsonBuilder} to support custom attributes.
+	 * Opens an {@link N5Reader}/{@link N5Writer} at a given base path
+	 * with a custom {@link GsonBuilder} to support custom attributes.
 	 *
-	 * If the base path does not exist, it will not be created and all
-	 * subsequent attempts to read attributes, groups, or datasets
-	 * will fail with an {@link IOException}.
+	 * If the base path does not exist, make sure to create it by calling {@link #createContainer()}
+	 * before attempting to read or write attributes, groups, or datasets,
+	 * otherwise all such attempts will fail with an {@link IOException}.
+	 *
+	 * If the base path is not writable, all subsequent attempts to
+	 * write attributes, groups, or datasets will fail with an {@link IOException}.
 	 *
 	 * @param basePath n5 base path
 	 * @param gsonBuilder
@@ -70,11 +74,14 @@ public class N5FSReaderWriter extends AbstractN5ReaderWriter {
 	}
 
 	/**
-	 * Opens an {@link N5Reader} at a given base path.
+	 * Opens an {@link N5Reader}/{@link N5Writer} at a given base path.
 	 *
-	 * If the base path does not exist, it will not be created and all
-	 * subsequent attempts to read or write attributes, groups, or datasets
-	 * will fail with an {@link IOException}.
+	 * If the base path does not exist, make sure to create it by calling {@link #createContainer()}
+	 * before attempting to read or write attributes, groups, or datasets,
+	 * otherwise all such attempts will fail with an {@link IOException}.
+	 *
+	 * If the base path is not writable, all subsequent attempts to
+	 * write attributes, groups, or datasets will fail with an {@link IOException}.
 	 *
 	 * @param basePath n5 base path
 	 */
@@ -181,20 +188,6 @@ public class N5FSReaderWriter extends AbstractN5ReaderWriter {
 		}
 	}
 
-	/**
-	 * Removes a group or dataset (directory and all contained files).
-	 *
-	 * <p><code>{@link #remove(String) remove("")}</code> or
-	 * <code>{@link #remove(String) remove("")}</code> will delete this N5
-	 * container.  Please note that no checks for safety will be performed,
-	 * e.g. <code>{@link #remove(String) remove("..")}</code> will try to
-	 * recursively delete the parent directory of this N5 container which
-	 * only fails because it attempts to delete the parent directory before it
-	 * is empty.
-	 *
-	 * @param pathName group path
-	 * @throws IOException
-	 */
 	@Override
 	public boolean remove(final String pathName) throws IOException {
 

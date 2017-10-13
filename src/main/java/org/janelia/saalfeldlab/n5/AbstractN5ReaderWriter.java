@@ -48,7 +48,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 
 /**
- * Abstract implementation of the common methods of the {@link N5Reader} and {@link N5Writer} interfaces.
+ * Implementations of common methods of the {@link N5Reader} and {@link N5Writer} interfaces.
  *
  * @author Stephan Saalfeld
  * @author Igor Pisarev
@@ -57,8 +57,13 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 
 	protected static final String jsonFile = "attributes.json";
 
-	private final Gson gson;
+	protected final Gson gson;
 
+	/**
+	 * Opens an {@link N5Reader}/{@link N5Writer} with a custom {@link GsonBuilder} to support custom attributes.
+	 *
+	 * @param gsonBuilder
+	 */
 	public AbstractN5ReaderWriter(final GsonBuilder gsonBuilder) {
 
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
@@ -66,6 +71,11 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 		this.gson = gsonBuilder.create();
 	}
 
+	/**
+	 * Opens an {@link N5Reader}/{@link N5Writer} with a default {@link GsonBuilder}.
+	 *
+	 * @param gsonBuilder
+	 */
 	public AbstractN5ReaderWriter() {
 
 		this(new GsonBuilder());
@@ -109,14 +119,6 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 		return exists(pathName) && getDatasetAttributes(pathName) != null;
 	}
 
-	/**
-	 * Creates a dataset.  This does not create any data but the path and
-	 * mandatory attributes only.
-	 *
-	 * @param pathName dataset path
-	 * @param datasetAttributes
-	 * @throws IOException
-	 */
 	@Override
 	public void createDataset(
 			final String pathName,
@@ -126,16 +128,6 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 		setDatasetAttributes(pathName, datasetAttributes);
 	}
 
-	/**
-	 * Creates a dataset.  This does not create any data but the path and
-	 * mandatory attributes only.
-	 *
-	 * @param pathName dataset path
-	 * @param dimensions
-	 * @param blockSize
-	 * @param dataType
-	 * @throws IOException
-	 */
 	@Override
 	public void createDataset(
 			final String pathName,
@@ -167,6 +159,15 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 		setAttributes(pathName, Collections.singletonMap(key, attribute));
 	}
 
+	/**
+	 * Extracts an attribute from the given attributes map.
+	 *
+	 * @param map
+	 * @param key
+	 * @param clazz
+	 * @return
+	 * @throws IOException
+	 */
 	protected <T> T getAttribute(
 			final HashMap<String, JsonElement> map,
 			final String key,
@@ -179,6 +180,13 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 			return null;
 	}
 
+	/**
+	 * Inserts new attributes into the given attributes map.
+	 *
+	 * @param map
+	 * @param attributes
+	 * @throws IOException
+	 */
 	protected void insertAttributes(
 			final HashMap<String, JsonElement> map,
 			final Map<String, ?> attributes) throws IOException {
@@ -187,6 +195,13 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 			map.put(entry.getKey(), gson.toJsonTree(entry.getValue()));
 	}
 
+	/**
+	 * Reads the attributes map from a given {@link Reader}.
+	 *
+	 * @param reader
+	 * @return
+	 * @throws IOException
+	 */
 	protected HashMap<String, JsonElement> readAttributes(final Reader reader) throws IOException {
 
 		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
@@ -194,6 +209,13 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 		return map == null ? new HashMap<>() : map;
 	}
 
+	/**
+	 * Writes the attributes map to a given {@link Writer}.
+	 *
+	 * @param writer
+	 * @param map
+	 * @throws IOException
+	 */
 	protected void writeAttributes(
 			final Writer writer,
 			final HashMap<String, JsonElement> map) throws IOException {
@@ -203,6 +225,15 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 		writer.flush();
 	}
 
+	/**
+	 * Reads a {@link DataBlock} from a given {@link ReadableByteChannel}.
+	 *
+	 * @param channel
+	 * @param datasetAttributes
+	 * @param gridPosition
+	 * @return
+	 * @throws IOException
+	 */
 	protected DataBlock<?> readBlock(
 			final ReadableByteChannel channel,
 			final DatasetAttributes datasetAttributes,
@@ -229,6 +260,14 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 		return dataBlock;
 	}
 
+	/**
+	 * Writes a {@link DataBlock} to a given {@link WritableByteChannel}.
+	 *
+	 * @param channel
+	 * @param datasetAttributes
+	 * @param dataBlock
+	 * @throws IOException
+	 */
 	protected <T> void writeBlock(
 			final WritableByteChannel channel,
 			final DatasetAttributes datasetAttributes,
@@ -253,7 +292,7 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 	}
 
 	/**
-	 * Creates the path for a data block in a dataset at a given grid position.
+	 * Constructs the path for a data block in a dataset at a given grid position.
 	 *
 	 * The returned path is
 	 * <pre>
@@ -266,7 +305,9 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 	 * @param gridPosition
 	 * @return
 	 */
-	protected Path getDataBlockPath(final String datasetPathName, final long[] gridPosition) {
+	protected Path getDataBlockPath(
+			final String datasetPathName,
+			final long[] gridPosition) {
 
 		final String[] pathComponents = new String[gridPosition.length];
 		for (int i = 0; i < pathComponents.length; ++i)
@@ -275,6 +316,12 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 		return Paths.get(datasetPathName, pathComponents);
 	}
 
+	/**
+	 * Constructs the path for the attributes file of a group or dataset.
+	 *
+	 * @param pathName
+	 * @return
+	 */
 	protected Path getAttributesPath(final String pathName) {
 
 		return Paths.get(pathName, jsonFile);

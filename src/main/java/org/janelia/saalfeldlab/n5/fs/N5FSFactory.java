@@ -44,9 +44,8 @@ public abstract class N5FSFactory {
 	 * Opens an {@link N5Reader} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
-	 * If the base path does not exist, it will not be created and all
-	 * subsequent attempts to read attributes, groups, or datasets
-	 * will fail with an {@link IOException}.
+	 * If the base path does not exist, all subsequent attempts to
+	 * read attributes, groups, or datasets will fail with an {@link IOException}.
 	 *
 	 * @param basePath n5 base path
 	 * @param gsonBuilder
@@ -60,12 +59,12 @@ public abstract class N5FSFactory {
 	 * Opens an {@link N5Writer} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
-	 * If the base path does not exist, it will not be created and all
-	 * subsequent attempts to read or write attributes, groups, or datasets
-	 * will fail with an {@link IOException}.
+	 * If the base path does not exist, make sure to create it by calling {@link N5Writer#createContainer()}
+	 * before attempting to read or write attributes, groups, or datasets,
+	 * otherwise all such attempts will fail with an {@link IOException}.
 	 *
-	 * If the base path is not writable, all subsequent attempts to write
-	 * attributes, groups, or datasets will fail with an {@link IOException}.
+	 * If the base path is not writable, all subsequent attempts to
+	 * write attributes, groups, or datasets will fail with an {@link IOException}.
 	 *
 	 * @param basePath n5 base path
 	 * @param gsonBuilder
@@ -78,9 +77,8 @@ public abstract class N5FSFactory {
 	/**
 	 * Opens an {@link N5Reader} at a given base path.
 	 *
-	 * If the base path does not exist, it will not be created and all
-	 * subsequent attempts to read or write attributes, groups, or datasets
-	 * will fail with an {@link IOException}.
+	 * If the base path does not exist, all subsequent attempts to read
+	 * attributes, groups, or datasets will fail with an {@link IOException}.
 	 *
 	 * @param basePath n5 base path
 	 */
@@ -92,12 +90,12 @@ public abstract class N5FSFactory {
 	/**
 	 * Opens an {@link N5Writer} at a given base path.
 	 *
-	 * If the base path does not exist, it will not be created and all
-	 * subsequent attempts to read or write attributes, groups, or datasets
-	 * will fail with an {@link IOException}.
+	 * If the base path does not exist, make sure to create it by calling {@link N5Writer#createContainer()}
+	 * before attempting to read or write attributes, groups, or datasets,
+	 * otherwise all such attempts will fail with an {@link IOException}.
 	 *
-	 * If the base path is not writable, all subsequent attempts to write
-	 * attributes, groups, or datasets will fail with an {@link IOException}.
+	 * If the base path is not writable, all subsequent attempts to
+	 * write attributes, groups, or datasets will fail with an {@link IOException}.
 	 *
 	 * @param basePath n5 base path
 	 */

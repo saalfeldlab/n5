@@ -39,14 +39,14 @@ import java.util.Map;
 public interface N5Writer extends N5Reader {
 
 	/**
-	 * Creates an N5 container
+	 * Creates an N5 container.
 	 *
 	 * @throws IOException
 	 */
 	public void createContainer() throws IOException;
 
 	/**
-	 * Removes an N5 container
+	 * Removes an N5 container.
 	 *
 	 * @throws IOException
 	 */
@@ -107,6 +107,7 @@ public interface N5Writer extends N5Reader {
 	 * is empty.
 	 *
 	 * @param pathName group path
+	 * @return true if removal was successful, false otherwise
 	 * @throws IOException
 	 */
 	public boolean remove(final String pathName) throws IOException;

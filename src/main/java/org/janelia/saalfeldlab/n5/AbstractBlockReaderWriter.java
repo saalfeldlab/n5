@@ -35,6 +35,14 @@ import java.nio.channels.WritableByteChannel;
 
 import org.apache.commons.io.IOUtils;
 
+/**
+ * Abstract base class for reading/writing {@link DataBlock DataBlocks}.
+ * Subclasses are expected to provide implementations of {@link #getInputStream}/{@link #getOutputStream} methods,
+ * for example, for a particular compression type.
+ *
+ * @author Stephan Saalfeld
+ * @author Igor Pisarev
+ */
 public abstract class AbstractBlockReaderWriter implements BlockReader, BlockWriter {
 
 	protected abstract InputStream getInputStream(final InputStream in) throws IOException;

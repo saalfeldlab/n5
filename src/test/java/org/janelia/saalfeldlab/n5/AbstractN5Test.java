@@ -32,8 +32,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Base class for testing N5 functionality.
- * Subclasses are expected to provide a specific N5 implementation to be tested by defining a custom setUpBeforeClass() method.
+ * Abstract base class for testing N5 functionality.
+ * Subclasses are expected to provide a specific N5 implementation to be tested by defining a custom {@link #setUpBeforeClass()} method.
  *
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
