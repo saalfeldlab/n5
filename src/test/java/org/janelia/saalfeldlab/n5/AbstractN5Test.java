@@ -408,23 +408,10 @@ public abstract class AbstractN5Test {
 			Arrays.sort(groupsList);
 
 			Assert.assertArrayEquals(subGroupNames, groupsList);
-		} catch (final IOException e) {
-			fail(e.getMessage());
-		}
-	}
 
-	@Test
-	public void testListCommonPrefix() {
-
-		try {
-			n5.createGroup(groupName);
-			for (final String subGroup : subGroupNames)
-				n5.createGroup(groupName + "/" + subGroup);
-
-			final String[] groupsList = n5.list(groupName);
-			Arrays.sort(groupsList);
-
-			Assert.assertArrayEquals(subGroupNames, groupsList);
+			// test listing the root group ("" and "/" should give identical results)
+			Assert.assertArrayEquals(new String[] {"test"}, n5.list(""));
+			Assert.assertArrayEquals(new String[] {"test"}, n5.list("/"));
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
