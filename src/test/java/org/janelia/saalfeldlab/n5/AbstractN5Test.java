@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import org.junit.AfterClass;
@@ -334,6 +336,7 @@ public abstract class AbstractN5Test {
 			final DataBlock<?> loadedRandomDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 			Assert.assertArrayEquals(intBlock, (int[])loadedRandomDataBlock.getData());
 
+			// test the case where the resulting file becomes shorter
 			final IntArrayDataBlock emptyDataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, new int[DataBlock.getNumElements(blockSize)]);
 			n5.writeBlock(datasetName, attributes, emptyDataBlock);
 			final DataBlock<?> loadedEmptyDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
@@ -344,6 +347,38 @@ public abstract class AbstractN5Test {
 		} catch (final IOException e) {
 			e.printStackTrace();
 			fail("Block cannot be written.");
+		}
+	}
+
+	@Test
+	public void testAttributes() {
+
+		try {
+			n5.createGroup(groupName);
+
+			n5.setAttribute(groupName, "key1", "value1");
+			Assert.assertEquals(1, n5.getAttributes(groupName).size());
+			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
+
+			final Map<String, String> newAttributes = new HashMap<>();
+			newAttributes.put("key2", "value2");
+			newAttributes.put("key3", "value3");
+			n5.setAttributes(groupName, newAttributes);
+			Assert.assertEquals(3, n5.getAttributes(groupName).size());
+			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
+			Assert.assertEquals("value2", n5.getAttribute(groupName, "key2", String.class));
+			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
+
+			// test the case where the resulting file becomes shorter
+			n5.setAttribute(groupName, "key1", new Integer(1));
+			n5.setAttribute(groupName, "key2", new Integer(2));
+			Assert.assertEquals(3, n5.getAttributes(groupName).size());
+			Assert.assertEquals(new Integer(1), n5.getAttribute(groupName, "key1", Integer.class));
+			Assert.assertEquals(new Integer(2), n5.getAttribute(groupName, "key2", Integer.class));
+			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
+
+		} catch (final IOException e) {
+			fail(e.getMessage());
 		}
 	}
 
@@ -369,7 +404,22 @@ public abstract class AbstractN5Test {
 			for (final String subGroup : subGroupNames)
 				n5.createGroup(groupName + "/" + subGroup);
 
-			n5.setAttribute(groupName, "test", "test");
+			final String[] groupsList = n5.list(groupName);
+			Arrays.sort(groupsList);
+
+			Assert.assertArrayEquals(subGroupNames, groupsList);
+		} catch (final IOException e) {
+			fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testListCommonPrefix() {
+
+		try {
+			n5.createGroup(groupName);
+			for (final String subGroup : subGroupNames)
+				n5.createGroup(groupName + "/" + subGroup);
 
 			final String[] groupsList = n5.list(groupName);
 			Arrays.sort(groupsList);
@@ -394,9 +444,6 @@ public abstract class AbstractN5Test {
 			Assert.assertTrue(n5.exists(groupName2));
 			Assert.assertFalse(n5.datasetExists(groupName2));
 			Assert.assertTrue(n5.getAttributes(groupName2).isEmpty());
-
-			n5.setAttribute(groupName2, "test", "test");
-			Assert.assertFalse(n5.getAttributes(groupName2).isEmpty());
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
