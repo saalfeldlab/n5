@@ -30,7 +30,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Type;
+import java.io.OutputStreamWriter;
 import java.nio.channels.Channels;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,12 +39,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.janelia.saalfeldlab.n5.AbstractN5ReaderWriter;
-import org.janelia.saalfeldlab.n5.CompressionType;
 import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Reader;
 
@@ -54,10 +51,8 @@ import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import com.google.gson.reflect.TypeToken;
 
 /**
  * Amazon Web Services S3-based N5 implementation.
@@ -66,12 +61,10 @@ import com.google.gson.reflect.TypeToken;
  */
 public class N5AmazonS3ReaderWriter extends AbstractN5ReaderWriter {
 
-	private static final String jsonFile = "attributes.json";
 	private static final String delimiter = "/";
 
 	private final AmazonS3 s3;
 	private final String bucketName;
-	private final Gson gson;
 
 	/**
 	 * Opens an {@link N5Reader} at a given base path with a custom
@@ -86,12 +79,9 @@ public class N5AmazonS3ReaderWriter extends AbstractN5ReaderWriter {
 	 */
 	public N5AmazonS3ReaderWriter(final AmazonS3 s3, final String bucketName, final GsonBuilder gsonBuilder) {
 
+		super(gsonBuilder);
 		this.s3 = s3;
 		this.bucketName = bucketName;
-
-		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
-		gsonBuilder.registerTypeAdapter(CompressionType.class, new CompressionType.JsonAdapter());
-		this.gson = gsonBuilder.create();
 	}
 
 	/**
@@ -105,7 +95,9 @@ public class N5AmazonS3ReaderWriter extends AbstractN5ReaderWriter {
 	 */
 	public N5AmazonS3ReaderWriter(final AmazonS3 s3, final String bucketName) {
 
-		this(s3, bucketName, new GsonBuilder());
+		super();
+		this.s3 = s3;
+		this.bucketName = bucketName;
 	}
 
 	@Override
@@ -141,56 +133,29 @@ public class N5AmazonS3ReaderWriter extends AbstractN5ReaderWriter {
 		}
 	}
 
-	/**
-	 * Reads or creates the attributes map of a group or dataset.
-	 *
-	 * @param pathName group path
-	 * @return
-	 * @throws IOException
-	 *
-	 * TODO uses file locks to synchronize with other processes, now also
-	 *   synchronize for threads inside the JVM
-	 */
 	@Override
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
 
-		final String metadataKey = Paths.get(pathName, jsonFile).toString();
+		final String metadataKey = getAttributesPath(pathName).toString();
 		if (!s3.doesObjectExist(bucketName, removeFrontDelimiter(metadataKey)))
 			return new HashMap<>();
 
-		try (final InputStream in = s3.getObject(bucketName, removeFrontDelimiter(metadataKey)).getObjectContent()) {
-			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
-			final HashMap<String, JsonElement> map = gson.fromJson(new InputStreamReader(in, "UTF-8"), mapType);
-			return map == null ? new HashMap<>() : map;
+		try (final InputStream in = readS3Object(removeFrontDelimiter(metadataKey))) {
+			return readAttributes(new InputStreamReader(in, "UTF-8"));
 		}
 	}
 
 	@Override
-	public <T> T getAttribute(final String pathName, final String key, final Class<T> clazz) throws IOException {
-		final HashMap<String, JsonElement> map = getAttributes(pathName);
-		final JsonElement attribute = map.get(key);
-		if (attribute != null)
-			return gson.fromJson(attribute, clazz);
-		else
-			return null;
-	}
+	public void setAttributes(
+			final String pathName,
+			final Map<String, ?> attributes) throws IOException {
 
-	@Override
-	public void setAttributes(final String pathName, final Map<String, ?> attributes) throws IOException {
+		final HashMap<String, JsonElement> updatedAttributes = getUpdatedAttributes(pathName, attributes);
+		try (final ByteArrayOutputStream byteStream = new ByteArrayOutputStream()) {
+			writeAttributes(new OutputStreamWriter(byteStream, "UTF-8"), updatedAttributes);
 
-		final String metadataKey = Paths.get(pathName, jsonFile).toString();
-		final HashMap<String, JsonElement> map = getAttributes(pathName);
-		for (final Entry<String, ?> entry : attributes.entrySet())
-			map.put(entry.getKey(), gson.toJsonTree(entry.getValue()));
-
-		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
- 		final String json = gson.toJson(map, mapType);
-
-		final byte[] bytes = json.getBytes("UTF-8");
-		try (final InputStream data = new ByteArrayInputStream(bytes)) {
-			final ObjectMetadata objectMetadata = new ObjectMetadata();
-			objectMetadata.setContentLength(bytes.length);
-			s3.putObject(bucketName, removeFrontDelimiter(metadataKey), data, objectMetadata);
+			final String metadataKey = getAttributesPath(pathName).toString();
+			writeS3Object(removeFrontDelimiter(metadataKey), byteStream.toByteArray());
 		}
 	}
 
@@ -204,7 +169,7 @@ public class N5AmazonS3ReaderWriter extends AbstractN5ReaderWriter {
 		if (!s3.doesObjectExist(bucketName, removeFrontDelimiter(dataBlockKey)))
 			return null;
 
-		try (final InputStream in = s3.getObject(bucketName, removeFrontDelimiter(dataBlockKey)).getObjectContent()) {
+		try (final InputStream in = readS3Object(removeFrontDelimiter(dataBlockKey))) {
 			return readBlock(Channels.newChannel(in), datasetAttributes, gridPosition);
 		}
 	}
@@ -215,15 +180,11 @@ public class N5AmazonS3ReaderWriter extends AbstractN5ReaderWriter {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		final String dataBlockKey = getDataBlockPath(pathName, dataBlock.getGridPosition()).toString();
 		try (final ByteArrayOutputStream byteStream = new ByteArrayOutputStream()) {
 			writeBlock(Channels.newChannel(byteStream), datasetAttributes, dataBlock);
-			final byte[] bytes = byteStream.toByteArray();
-			try (final InputStream data = new ByteArrayInputStream(bytes)) {
-				final ObjectMetadata objectMetadata = new ObjectMetadata();
-				objectMetadata.setContentLength(bytes.length);
-				s3.putObject(bucketName, removeFrontDelimiter(dataBlockKey), data, objectMetadata);
-			}
+
+			final String dataBlockKey = getDataBlockPath(pathName, dataBlock.getGridPosition()).toString();
+			writeS3Object(removeFrontDelimiter(dataBlockKey), byteStream.toByteArray());
 		}
 	}
 
@@ -290,6 +251,23 @@ public class N5AmazonS3ReaderWriter extends AbstractN5ReaderWriter {
 			listObjectsRequest.setContinuationToken(objectsListing.getNextContinuationToken());
 		} while (objectsListing.isTruncated());
 		return !exists(pathName);
+	}
+
+	private InputStream readS3Object(final String objectKey) throws IOException {
+
+		return s3.getObject(bucketName, objectKey).getObjectContent();
+	}
+
+	private void writeS3Object(
+			final String objectKey,
+			final byte[] bytes) throws IOException {
+
+		final ObjectMetadata objectMetadata = new ObjectMetadata();
+		objectMetadata.setContentLength(bytes.length);
+
+		try (final InputStream data = new ByteArrayInputStream(bytes)) {
+			s3.putObject(bucketName, removeFrontDelimiter(objectKey), data, objectMetadata);
+		}
 	}
 
 	/**

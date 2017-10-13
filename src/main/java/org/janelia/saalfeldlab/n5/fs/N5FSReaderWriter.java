@@ -25,10 +25,7 @@
  */
 package org.janelia.saalfeldlab.n5.fs;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.Writer;
-import java.lang.reflect.Type;
 import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,20 +33,15 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.AbstractN5ReaderWriter;
-import org.janelia.saalfeldlab.n5.CompressionType;
 import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Reader;
 
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import com.google.gson.reflect.TypeToken;
 
 /**
  * Filesystem N5 implementation.
@@ -58,9 +50,6 @@ import com.google.gson.reflect.TypeToken;
  */
 public class N5FSReaderWriter extends AbstractN5ReaderWriter {
 
-	protected static final String jsonFile = "attributes.json";
-
-	protected final Gson gson;
 	protected final String basePath;
 
 	/**
@@ -76,10 +65,8 @@ public class N5FSReaderWriter extends AbstractN5ReaderWriter {
 	 */
 	public N5FSReaderWriter(final String basePath, final GsonBuilder gsonBuilder) {
 
+		super(gsonBuilder);
 		this.basePath = basePath;
-		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
-		gsonBuilder.registerTypeAdapter(CompressionType.class, new CompressionType.JsonAdapter());
-		this.gson = gsonBuilder.create();
 	}
 
 	/**
@@ -93,7 +80,8 @@ public class N5FSReaderWriter extends AbstractN5ReaderWriter {
 	 */
 	public N5FSReaderWriter(final String basePath) {
 
-		this(basePath, new GsonBuilder());
+		super();
+		this.basePath = basePath;
 	}
 
 	@Override
@@ -122,56 +110,28 @@ public class N5FSReaderWriter extends AbstractN5ReaderWriter {
 		Files.createDirectories(path);
 	}
 
-	/**
-	 * Reads or creates the attributes map of a group or dataset.
-	 *
-	 * @param pathName group path
-	 * @return
-	 * @throws IOException
-	 *
-	 * TODO uses file locks to synchronize with other processes, now also
-	 *   synchronize for threads inside the JVM
-	 */
 	@Override
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
 
-		final Path path = Paths.get(basePath, pathName, jsonFile);
+		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());
 		if (exists(pathName) && !Files.exists(path))
 			return new HashMap<>();
 
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForReading(path)) {
-			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
-			final HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(lockedFileChannel.getFileChannel(), "UTF-8"), mapType);
-			return map == null ? new HashMap<>() : map;
+			return readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), "UTF-8"));
 		}
 	}
 
 	@Override
-	public <T> T getAttribute(final String pathName, final String key, final Class<T> clazz) throws IOException {
-		final HashMap<String, JsonElement> map = getAttributes(pathName);
-		final JsonElement attribute = map.get(key);
-		if (attribute != null)
-			return gson.fromJson(attribute, clazz);
-		else
-			return null;
-	}
+	public void setAttributes(
+			final String pathName,
+			final Map<String, ?> attributes) throws IOException {
 
-	@Override
-	public void setAttributes(final String pathName, final Map<String, ?> attributes) throws IOException {
-
-		final Path path = Paths.get(basePath, pathName, jsonFile);
+		final HashMap<String, JsonElement> updatedAttributes = getUpdatedAttributes(pathName, attributes);
+		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());
 		try (final LockedFileChannel channel = LockedFileChannel.openForWriting(path)) {
-			final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
-			HashMap<String, JsonElement> map = gson.fromJson(Channels.newReader(channel.getFileChannel(), "UTF-8"), mapType);
-			if (map == null)
-				map = new HashMap<>();
-			for (final Entry<String, ?> entry : attributes.entrySet())
-				map.put(entry.getKey(), gson.toJsonTree(entry.getValue()));
-			channel.getFileChannel().position(0);
-			final Writer writer = Channels.newWriter(channel.getFileChannel(), "UTF-8");
-			gson.toJson(map, mapType, writer);
-			writer.flush();
-			channel.getFileChannel().truncate(channel.getFileChannel().position());
+			channel.getFileChannel().truncate(0);
+			writeAttributes(Channels.newWriter(channel.getFileChannel(), "UTF-8"), updatedAttributes);
 		}
 	}
 
@@ -181,9 +141,8 @@ public class N5FSReaderWriter extends AbstractN5ReaderWriter {
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition) throws IOException {
 
-		final Path path = getDataBlockPath(Paths.get(basePath, pathName).toString(), gridPosition);
-		final File file = path.toFile();
-		if (!file.exists())
+		final Path path = Paths.get(basePath, getDataBlockPath(pathName, gridPosition).toString());
+		if (!Files.exists(path))
 			return null;
 
 		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForReading(path)) {
@@ -197,10 +156,9 @@ public class N5FSReaderWriter extends AbstractN5ReaderWriter {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		final Path path = getDataBlockPath(Paths.get(basePath, pathName).toString(), dataBlock.getGridPosition());
+		final Path path = Paths.get(basePath, getDataBlockPath(pathName, dataBlock.getGridPosition()).toString());
 		Files.createDirectories(path.getParent());
 		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForWriting(path)) {
-			// ensure that the file will have correct length by truncating it first
 			lockedChannel.getFileChannel().truncate(0);
 			writeBlock(lockedChannel.getFileChannel(), datasetAttributes, dataBlock);
 		}

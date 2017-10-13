@@ -28,6 +28,9 @@ package org.janelia.saalfeldlab.n5;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.lang.reflect.Type;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
@@ -35,6 +38,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * Abstract implementation of the common methods of the {@link N5Reader} and {@link N5Writer} interfaces.
@@ -43,6 +54,30 @@ import java.util.Collections;
  * @author Igor Pisarev
  */
 public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
+
+	protected static final String jsonFile = "attributes.json";
+
+	private final Gson gson;
+
+	public AbstractN5ReaderWriter(final GsonBuilder gsonBuilder) {
+
+		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
+		gsonBuilder.registerTypeAdapter(CompressionType.class, new CompressionType.JsonAdapter());
+		this.gson = gsonBuilder.create();
+	}
+
+	public AbstractN5ReaderWriter() {
+
+		this(new GsonBuilder());
+	}
+
+	@Override
+	public void setDatasetAttributes(
+			final String pathName,
+			final DatasetAttributes datasetAttributes) throws IOException {
+
+		setAttributes(pathName, datasetAttributes.asMap());
+	}
 
 	@Override
 	public DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
@@ -70,23 +105,6 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 	public boolean datasetExists(final String pathName) throws IOException {
 
 		return exists(pathName) && getDatasetAttributes(pathName) != null;
-	}
-
-	@Override
-	public <T> void setAttribute(
-			final String pathName,
-			final String key,
-			final T attribute) throws IOException {
-
-		setAttributes(pathName, Collections.singletonMap(key, attribute));
-	}
-
-	@Override
-	public void setDatasetAttributes(
-			final String pathName,
-			final DatasetAttributes datasetAttributes) throws IOException {
-
-		setAttributes(pathName, datasetAttributes.asMap());
 	}
 
 	/**
@@ -126,6 +144,57 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 
 		createGroup(pathName);
 		setDatasetAttributes(pathName, new DatasetAttributes(dimensions, blockSize, dataType, compressionType));
+	}
+
+	protected HashMap<String, JsonElement> readAttributes(final Reader reader) throws IOException {
+
+		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
+		final HashMap<String, JsonElement> map = gson.fromJson(reader, mapType);
+		return map == null ? new HashMap<>() : map;
+	}
+
+	@Override
+	public <T> T getAttribute(
+			final String pathName,
+			final String key,
+			final Class<T> clazz) throws IOException {
+
+		final HashMap<String, JsonElement> map = getAttributes(pathName);
+		final JsonElement attribute = map.get(key);
+		if (attribute != null)
+			return gson.fromJson(attribute, clazz);
+		else
+			return null;
+	}
+
+	@Override
+	public <T> void setAttribute(
+			final String pathName,
+			final String key,
+			final T attribute) throws IOException {
+
+		setAttributes(pathName, Collections.singletonMap(key, attribute));
+	}
+
+	protected HashMap<String, JsonElement> getUpdatedAttributes(
+			final String pathName,
+			final Map<String, ?> attributes) throws IOException {
+
+		HashMap<String, JsonElement> map = getAttributes(pathName);
+		if (map == null)
+			map = new HashMap<>();
+		for (final Entry<String, ?> entry : attributes.entrySet())
+			map.put(entry.getKey(), gson.toJsonTree(entry.getValue()));
+		return map;
+	}
+
+	protected void writeAttributes(
+			final Writer writer,
+			final Map<String, ?> attributes) throws IOException {
+
+		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
+ 		gson.toJson(attributes, mapType, writer);
+ 		writer.flush();
 	}
 
 	protected DataBlock<?> readBlock(
@@ -197,8 +266,11 @@ public abstract class AbstractN5ReaderWriter implements N5Reader, N5Writer {
 		for (int i = 0; i < pathComponents.length; ++i)
 			pathComponents[i] = Long.toString(gridPosition[i]);
 
-		return Paths.get(
-				datasetPathName,
-				pathComponents);
+		return Paths.get(datasetPathName, pathComponents);
+	}
+
+	protected Path getAttributesPath(final String pathName) {
+
+		return Paths.get(pathName, jsonFile);
 	}
 }
