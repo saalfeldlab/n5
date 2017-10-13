@@ -97,13 +97,6 @@
 			<artifactId>gson</artifactId>
 			<version>2.3.1</version>
 		</dependency>
-		
-		<!-- Amazon Web Services support -->
-		<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk-s3</artifactId>
-			<version>1.11.210</version>
-		</dependency>
 
 		<!-- Test dependencies -->
 		<dependency>
@@ -134,18 +127,6 @@
 			<groupId>cisd</groupId>
 			<artifactId>jhdf5</artifactId>
 			<version>14.12.5</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>io.findify</groupId>
-			<artifactId>s3mock_2.12</artifactId>
-			<version>0.2.3</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
-			<version>1.7.25</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
