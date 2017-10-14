@@ -33,8 +33,6 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
-import org.apache.commons.io.IOUtils;
-
 /**
  * Abstract base class for reading/writing {@link DataBlock DataBlocks}.
  * Subclasses are expected to provide implementations of {@link #getInputStream}/{@link #getOutputStream} methods,
@@ -53,10 +51,9 @@ public abstract class AbstractBlockReaderWriter implements BlockReader, BlockWri
 			final B dataBlock,
 			final ReadableByteChannel channel) throws IOException {
 
-		final ByteBuffer buffer;
+		final ByteBuffer buffer = dataBlock.toByteBuffer();
 		try (final InputStream in = getInputStream(Channels.newInputStream(channel))) {
-			final byte[] bytes = IOUtils.toByteArray(in);
-			buffer = ByteBuffer.wrap(bytes);
+			in.read(buffer.array());
 		}
 		dataBlock.readData(buffer);
 	}
