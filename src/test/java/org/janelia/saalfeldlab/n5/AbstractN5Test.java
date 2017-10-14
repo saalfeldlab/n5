@@ -18,58 +18,50 @@ package org.janelia.saalfeldlab.n5;
 
 import static org.junit.Assert.fail;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- *
+ * Abstract base class for testing N5 functionality.
+ * Subclasses are expected to provide a specific N5 implementation to be tested by defining a custom {@link #setUpBeforeClass()} method.
  *
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
+ * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
  */
-public class N5Test {
+public abstract class AbstractN5Test {
 
-	static private String testDirPath = System.getProperty("user.home") + "/tmp/n5-test";
+	static private final String groupName = "/test/group";
+	static private final String[] subGroupNames = new String[]{"a", "b", "c"};
+	static private final String datasetName = "/test/group/dataset";
+	static private final long[] dimensions = new long[]{100, 200, 300};
+	static private final int[] blockSize = new int[]{33, 22, 11};
 
-	static private String groupName = "/test/group";
+	static private byte[] byteBlock;
+	static private short[] shortBlock;
+	static private int[] intBlock;
+	static private long[] longBlock;
+	static private float[] floatBlock;
+	static private double[] doubleBlock;
 
-	static private String[] subGroupNames = new String[]{"a", "b", "c"};
-
-	static private String datasetName = "/test/group/dataset";
-
-	static private long[] dimensions = new long[]{100, 200, 300};
-
-	static private int[] blockSize = new int[]{33, 22, 11};
-
-	static byte[] byteBlock;
-	static short[] shortBlock;
-	static int[] intBlock;
-	static long[] longBlock;
-	static float[] floatBlock;
-	static double[] doubleBlock;
-
-	static private N5Writer n5;
+	protected static N5Writer n5;
 
 	/**
-	 * @throws java.lang.Exception
+	 * @throws IOException
 	 */
 	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
+	public static void setUpBeforeClass() throws IOException {
 
-		final File testDir = new File(testDirPath);
-		testDir.mkdirs();
-		if (!(testDir.exists() && testDir.isDirectory()))
-			throw new IOException("Could not create test directory for HDF5Utils test.");
-
-		n5 = N5.openFSWriter(testDirPath);
+		n5.createContainer();
 
 		final Random rnd = new Random();
 		byteBlock = new byte[blockSize[0] * blockSize[1] * blockSize[2]];
@@ -86,23 +78,16 @@ public class N5Test {
 			floatBlock[i] = Float.intBitsToFloat(rnd.nextInt());
 			doubleBlock[i] = Double.longBitsToDouble(rnd.nextLong());
 		}
-
 	}
 
 	/**
-	 * @throws java.lang.Exception
+	 * @throws IOException
 	 */
 	@AfterClass
-	public static void rampDownAfterClass() throws Exception {
+	public static void rampDownAfterClass() throws IOException {
 
-		n5.remove("");
+		n5.removeContainer();
 	}
-
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@Before
-	public void setUp() throws Exception {}
 
 	@Test
 	public void testCreateGroup() {
@@ -113,9 +98,10 @@ public class N5Test {
 			fail(e.getMessage());
 		}
 
-		final File file = Paths.get(testDirPath, groupName).toFile();
-		if (!(file.exists() && file.isDirectory()))
-			fail("File does not exist");
+		final Path groupPath = Paths.get(groupName);
+		for (int i = 0; i < groupPath.getNameCount(); ++i)
+			if (!n5.exists(groupPath.subpath(0, i + 1).toString()))
+				fail("Group does not exist");
 	}
 
 	@Test
@@ -127,9 +113,8 @@ public class N5Test {
 			fail(e.getMessage());
 		}
 
-		final File file = Paths.get(testDirPath, datasetName).toFile();
-		if (!(file.exists() && file.isDirectory()))
-			fail("File does not exist");
+		if (!n5.exists(datasetName))
+			fail("Dataset does not exist");
 
 		try {
 			final DatasetAttributes info = n5.getDatasetAttributes(datasetName);
@@ -307,12 +292,12 @@ public class N5Test {
 			}
 		}
 	}
-	
+
 	@Test
 	public void testMode1WriteReadByteBlock() {
 
-		int[] differentBlockSize = new int[] {5, 10, 15};
-		
+		final int[] differentBlockSize = new int[] {5, 10, 15};
+
 		for (final CompressionType compressionType : CompressionType.values()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT8,
@@ -340,6 +325,64 @@ public class N5Test {
 	}
 
 	@Test
+	public void testOverwriteBlock() {
+
+		try {
+			n5.createDataset(datasetName, dimensions, blockSize, DataType.INT32, CompressionType.GZIP);
+			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+
+			final IntArrayDataBlock randomDataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
+			n5.writeBlock(datasetName, attributes, randomDataBlock);
+			final DataBlock<?> loadedRandomDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+			Assert.assertArrayEquals(intBlock, (int[])loadedRandomDataBlock.getData());
+
+			// test the case where the resulting file becomes shorter
+			final IntArrayDataBlock emptyDataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, new int[DataBlock.getNumElements(blockSize)]);
+			n5.writeBlock(datasetName, attributes, emptyDataBlock);
+			final DataBlock<?> loadedEmptyDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+			Assert.assertArrayEquals(new int[DataBlock.getNumElements(blockSize)], (int[])loadedEmptyDataBlock.getData());
+
+			Assert.assertTrue(n5.remove(datasetName));
+
+		} catch (final IOException e) {
+			e.printStackTrace();
+			fail("Block cannot be written.");
+		}
+	}
+
+	@Test
+	public void testAttributes() {
+
+		try {
+			n5.createGroup(groupName);
+
+			n5.setAttribute(groupName, "key1", "value1");
+			Assert.assertEquals(1, n5.getAttributes(groupName).size());
+			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
+
+			final Map<String, String> newAttributes = new HashMap<>();
+			newAttributes.put("key2", "value2");
+			newAttributes.put("key3", "value3");
+			n5.setAttributes(groupName, newAttributes);
+			Assert.assertEquals(3, n5.getAttributes(groupName).size());
+			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
+			Assert.assertEquals("value2", n5.getAttribute(groupName, "key2", String.class));
+			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
+
+			// test the case where the resulting file becomes shorter
+			n5.setAttribute(groupName, "key1", new Integer(1));
+			n5.setAttribute(groupName, "key2", new Integer(2));
+			Assert.assertEquals(3, n5.getAttributes(groupName).size());
+			Assert.assertEquals(new Integer(1), n5.getAttribute(groupName, "key1", Integer.class));
+			Assert.assertEquals(new Integer(2), n5.getAttribute(groupName, "key2", Integer.class));
+			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
+
+		} catch (final IOException e) {
+			fail(e.getMessage());
+		}
+	}
+
+	@Test
 	public void testRemove() {
 
 		try {
@@ -349,8 +392,7 @@ public class N5Test {
 			fail(e.getMessage());
 		}
 
-		final File file = Paths.get(testDirPath, groupName).toFile();
-		if (file.exists())
+		if (n5.exists(groupName))
 			fail("Group still exists");
 	}
 
@@ -362,12 +404,14 @@ public class N5Test {
 			for (final String subGroup : subGroupNames)
 				n5.createGroup(groupName + "/" + subGroup);
 
-			n5.setAttribute(groupName, "test", "test");
-
 			final String[] groupsList = n5.list(groupName);
 			Arrays.sort(groupsList);
 
 			Assert.assertArrayEquals(subGroupNames, groupsList);
+
+			// test listing the root group ("" and "/" should give identical results)
+			Assert.assertArrayEquals(new String[] {"test"}, n5.list(""));
+			Assert.assertArrayEquals(new String[] {"test"}, n5.list("/"));
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
@@ -387,9 +431,6 @@ public class N5Test {
 			Assert.assertTrue(n5.exists(groupName2));
 			Assert.assertFalse(n5.datasetExists(groupName2));
 			Assert.assertTrue(n5.getAttributes(groupName2).isEmpty());
-
-			n5.setAttribute(groupName2, "test", "test");
-			Assert.assertFalse(n5.getAttributes(groupName2).isEmpty());
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}

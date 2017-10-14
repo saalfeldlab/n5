@@ -26,22 +26,47 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
 /**
- * Interface for block writers that can write a {@link DataBlock} into a
- * {@link WritableByteChannel}.
+ * Abstract base class for reading/writing {@link DataBlock DataBlocks}.
+ * Subclasses are expected to provide implementations of {@link #getInputStream}/{@link #getOutputStream} methods,
+ * for example, for a particular compression type.
  *
  * @author Stephan Saalfeld
+ * @author Igor Pisarev
  */
-public interface BlockWriter {
+public abstract class AbstractBlockReaderWriter implements BlockReader, BlockWriter {
 
-	/**
-	 * Writes a {@link DataBlock} into a {@link WritableByteChannel}.
-	 *
-	 * @param dataBlock
-	 * @param channel
-	 * @throws IOException
-	 */
-	public <T> void write(final DataBlock<T> dataBlock, final WritableByteChannel channel) throws IOException;
+	protected abstract InputStream getInputStream(final InputStream in) throws IOException;
+	protected abstract OutputStream getOutputStream(final OutputStream out) throws IOException;
+
+	@Override
+	public <T, B extends DataBlock<T>> void read(
+			final B dataBlock,
+			final ReadableByteChannel channel) throws IOException {
+
+		final ByteBuffer buffer = dataBlock.toByteBuffer();
+		try (final InputStream in = getInputStream(Channels.newInputStream(channel))) {
+			in.read(buffer.array());
+		}
+		dataBlock.readData(buffer);
+	}
+
+	@Override
+	public <T> void write(
+			final DataBlock<T> dataBlock,
+			final WritableByteChannel channel) throws IOException {
+
+		final ByteBuffer buffer = dataBlock.toByteBuffer();
+		try (final OutputStream out = getOutputStream(Channels.newOutputStream(channel))) {
+			out.write(buffer.array());
+			out.flush();
+		}
+	}
 }
