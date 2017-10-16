@@ -26,9 +26,6 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
-import java.util.HashMap;
-
-import com.google.gson.JsonElement;
 
 /**
  * A simple structured container format for hierarchies of chunked
@@ -39,15 +36,6 @@ import com.google.gson.JsonElement;
  * @author Stephan Saalfeld
  */
 public interface N5Reader {
-
-	/**
-	 * Reads or creates the attributes map of a group or dataset.
-	 *
-	 * @param pathName group path
-	 * @return
-	 * @throws IOException
-	 */
-	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException;
 
 	/**
 	 * Reads an attribute.
@@ -101,7 +89,10 @@ public interface N5Reader {
 	 * @return
 	 * @throws IOException
 	 */
-	public boolean datasetExists(final String pathName) throws IOException;
+	public default boolean datasetExists(final String pathName) throws IOException {
+
+		return exists(pathName) && getDatasetAttributes(pathName) != null;
+	}
 
 	/**
 	 * List all groups (including datasets) in a group.

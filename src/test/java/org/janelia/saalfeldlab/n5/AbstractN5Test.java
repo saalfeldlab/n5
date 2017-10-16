@@ -54,14 +54,13 @@ public abstract class AbstractN5Test {
 	static private double[] doubleBlock;
 
 	protected static N5Writer n5;
+	protected static GsonAttributesParser n5Parser;
 
 	/**
 	 * @throws IOException
 	 */
 	@BeforeClass
 	public static void setUpBeforeClass() throws IOException {
-
-		n5.createContainer();
 
 		final Random rnd = new Random();
 		byteBlock = new byte[blockSize[0] * blockSize[1] * blockSize[2]];
@@ -86,7 +85,7 @@ public abstract class AbstractN5Test {
 	@AfterClass
 	public static void rampDownAfterClass() throws IOException {
 
-		n5.removeContainer();
+		n5.remove();
 	}
 
 	@Test
@@ -357,14 +356,14 @@ public abstract class AbstractN5Test {
 			n5.createGroup(groupName);
 
 			n5.setAttribute(groupName, "key1", "value1");
-			Assert.assertEquals(1, n5.getAttributes(groupName).size());
+			Assert.assertEquals(1, n5Parser.getAttributes(groupName).size());
 			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
 
 			final Map<String, String> newAttributes = new HashMap<>();
 			newAttributes.put("key2", "value2");
 			newAttributes.put("key3", "value3");
 			n5.setAttributes(groupName, newAttributes);
-			Assert.assertEquals(3, n5.getAttributes(groupName).size());
+			Assert.assertEquals(3, n5Parser.getAttributes(groupName).size());
 			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
 			Assert.assertEquals("value2", n5.getAttribute(groupName, "key2", String.class));
 			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
@@ -372,7 +371,7 @@ public abstract class AbstractN5Test {
 			// test the case where the resulting file becomes shorter
 			n5.setAttribute(groupName, "key1", new Integer(1));
 			n5.setAttribute(groupName, "key2", new Integer(2));
-			Assert.assertEquals(3, n5.getAttributes(groupName).size());
+			Assert.assertEquals(3, n5Parser.getAttributes(groupName).size());
 			Assert.assertEquals(new Integer(1), n5.getAttribute(groupName, "key1", Integer.class));
 			Assert.assertEquals(new Integer(2), n5.getAttribute(groupName, "key2", Integer.class));
 			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
@@ -430,7 +429,7 @@ public abstract class AbstractN5Test {
 			n5.createGroup(groupName2);
 			Assert.assertTrue(n5.exists(groupName2));
 			Assert.assertFalse(n5.datasetExists(groupName2));
-			Assert.assertTrue(n5.getAttributes(groupName2).isEmpty());
+			Assert.assertTrue(n5Parser.getAttributes(groupName2).isEmpty());
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}

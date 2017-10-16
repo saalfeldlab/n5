@@ -25,7 +25,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import org.janelia.saalfeldlab.n5.fs.N5FSFactory;
+import java.io.IOException;
+
+import com.google.gson.GsonBuilder;
 
 /**
  * Factory methods to create {@link N5Reader N5Readers} and
@@ -33,6 +35,69 @@ import org.janelia.saalfeldlab.n5.fs.N5FSFactory;
  *
  * @author Stephan Saalfeld
  */
-public abstract class N5 extends N5FSFactory {
+public interface N5 {
 
+	/**
+	 * Opens an {@link N5Reader} at a given base path with a custom
+	 * {@link GsonBuilder} to support custom attributes.
+	 *
+	 * If the base path does not exist, it will not be created and all
+	 * subsequent attempts to read attributes, groups, or datasets
+	 * will fail with an {@link IOException}.
+	 *
+	 * @param basePath n5 base path
+	 * @param gsonBuilder
+	 */
+	public static N5Reader openFSReader(final String basePath, final GsonBuilder gsonBuilder) {
+
+		return new N5FSReader(basePath, gsonBuilder);
+	}
+
+	/**
+	 * Opens an {@link N5Writer} at a given base path with a custom
+	 * {@link GsonBuilder} to support custom attributes.
+	 *
+	 * If the base path does not exist, it will be created.
+	 *
+	 * If the base path is not writable, all subsequent attempts to write
+	 * attributes, groups, or datasets will fail with an {@link IOException}.
+	 *
+	 * @param basePath n5 base path
+	 * @param gsonBuilder
+	 * @throws IOException
+	 */
+	public static N5Writer openFSWriter(final String basePath, final GsonBuilder gsonBuilder) throws IOException {
+
+		return new N5FSWriter(basePath, gsonBuilder);
+	}
+
+	/**
+	 * Opens an {@link N5Reader} at a given base path.
+	 *
+	 * If the base path does not exist, it will not be created and all
+	 * subsequent attempts to read or write attributes, groups, or datasets
+	 * will fail with an {@link IOException}.
+	 *
+	 * @param basePath n5 base path
+	 */
+	public static N5Reader openFSReader(final String basePath) {
+
+		return new N5FSReader(basePath);
+	}
+
+	/**
+	 * Opens an {@link N5Writer} at a given base path.
+	 *
+	 * If the base path does not exist, it will be created.
+	 *
+	 * If the base path is not writable, all subsequent attempts to write
+	 * attributes, groups, or datasets will fail with an {@link IOException}.
+	 *
+	 * @param basePath n5 base path
+	 * @throws IOException
+	 */
+	public static N5Writer openFSWriter(final String basePath) throws IOException {
+
+		return new N5FSWriter(basePath);
+	}
 }

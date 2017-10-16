@@ -14,12 +14,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.janelia.saalfeldlab.n5.fs;
+package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 
-import org.janelia.saalfeldlab.n5.AbstractN5Test;
 import org.janelia.saalfeldlab.n5.N5;
+import org.janelia.saalfeldlab.n5.GsonAttributesParser;
 import org.junit.BeforeClass;
 
 /**
@@ -39,6 +39,7 @@ public class N5FSTest extends AbstractN5Test {
 	public static void setUpBeforeClass() throws IOException {
 
 		n5 = N5.openFSWriter(testDirPath);
+		n5Parser = (GsonAttributesParser)n5;
 		AbstractN5Test.setUpBeforeClass();
 	}
 }
