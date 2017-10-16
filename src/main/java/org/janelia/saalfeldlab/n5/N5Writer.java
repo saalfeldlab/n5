@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -46,10 +47,13 @@ public interface N5Writer extends N5Reader {
 	 * @param attribute
 	 * @throws IOException
 	 */
-	public <T> void setAttribute(
+	public default <T> void setAttribute(
 			final String pathName,
 			final String key,
-			final T attribute) throws IOException;
+			final T attribute) throws IOException {
+
+		setAttributes(pathName, Collections.singletonMap(key, attribute));
+	}
 
 	/**
 	 * Sets a map of attributes.
@@ -96,9 +100,18 @@ public interface N5Writer extends N5Reader {
 	 * is empty.
 	 *
 	 * @param pathName group path
+	 * @return true if removal was successful, false otherwise
 	 * @throws IOException
 	 */
 	public boolean remove(final String pathName) throws IOException;
+
+	/**
+	 * Removes the N5 container.
+	 *
+	 * @return true if removal was successful, false otherwise
+	 * @throws IOException
+	 */
+	public boolean remove() throws IOException;
 
 	/**
 	 * Creates a dataset.  This does not create any data but the path and
@@ -108,9 +121,13 @@ public interface N5Writer extends N5Reader {
 	 * @param datasetAttributes
 	 * @throws IOException
 	 */
-	public void createDataset(
+	public default void createDataset(
 			final String pathName,
-			final DatasetAttributes datasetAttributes) throws IOException;
+			final DatasetAttributes datasetAttributes) throws IOException {
+
+		createGroup(pathName);
+		setDatasetAttributes(pathName, datasetAttributes);
+	}
 
 	/**
 	 * Creates a dataset.  This does not create any data but the path and
@@ -122,12 +139,15 @@ public interface N5Writer extends N5Reader {
 	 * @param dataType
 	 * @throws IOException
 	 */
-	public void createDataset(
+	public default void createDataset(
 			final String pathName,
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final CompressionType compressionType) throws IOException;
+			final CompressionType compressionType) throws IOException {
+
+		createDataset(pathName, new DatasetAttributes(dimensions, blockSize, dataType, compressionType));
+	}
 
 	/**
 	 * Writes a {@link DataBlock}.

@@ -57,17 +57,16 @@ public interface N5 {
 	 * Opens an {@link N5Writer} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
-	 * If the base path does not exist, it will not be created and all
-	 * subsequent attempts to read or write attributes, groups, or datasets
-	 * will fail with an {@link IOException}.
+	 * If the base path does not exist, it will be created.
 	 *
 	 * If the base path is not writable, all subsequent attempts to write
 	 * attributes, groups, or datasets will fail with an {@link IOException}.
 	 *
 	 * @param basePath n5 base path
 	 * @param gsonBuilder
+	 * @throws IOException
 	 */
-	public static N5Writer openFSWriter(final String basePath, final GsonBuilder gsonBuilder) {
+	public static N5Writer openFSWriter(final String basePath, final GsonBuilder gsonBuilder) throws IOException {
 
 		return new N5FSWriter(basePath, gsonBuilder);
 	}
@@ -79,9 +78,6 @@ public interface N5 {
 	 * subsequent attempts to read or write attributes, groups, or datasets
 	 * will fail with an {@link IOException}.
 	 *
-	 * If the base path is not writable, all subsequent attempts to write
-	 * attributes, groups, or datasets will fail with an {@link IOException}.
-	 *
 	 * @param basePath n5 base path
 	 */
 	public static N5Reader openFSReader(final String basePath) {
@@ -92,16 +88,15 @@ public interface N5 {
 	/**
 	 * Opens an {@link N5Writer} at a given base path.
 	 *
-	 * If the base path does not exist, it will not be created and all
-	 * subsequent attempts to read or write attributes, groups, or datasets
-	 * will fail with an {@link IOException}.
+	 * If the base path does not exist, it will be created.
 	 *
 	 * If the base path is not writable, all subsequent attempts to write
 	 * attributes, groups, or datasets will fail with an {@link IOException}.
 	 *
 	 * @param basePath n5 base path
+	 * @throws IOException
 	 */
-	public static N5Writer openFSWriter(final String basePath) {
+	public static N5Writer openFSWriter(final String basePath) throws IOException {
 
 		return new N5FSWriter(basePath);
 	}

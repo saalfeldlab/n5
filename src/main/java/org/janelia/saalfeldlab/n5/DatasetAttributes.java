@@ -42,12 +42,12 @@ import java.util.HashMap;
  */
 public class DatasetAttributes {
 
-	static final String dimensionsKey = "dimensions";
-	static final String blockSizeKey = "blockSize";
-	static final String dataTypeKey = "dataType";
-	static final String compressionTypeKey = "compressionType";
+	protected static final String dimensionsKey = "dimensions";
+	protected static final String blockSizeKey = "blockSize";
+	protected static final String dataTypeKey = "dataType";
+	protected static final String compressionTypeKey = "compressionType";
 
-	final private long[] dimensions;
+	private final long[] dimensions;
 	private final int[] blockSize;
 	private final DataType dataType;
 	private final CompressionType compressionType;

@@ -26,38 +26,23 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 
-public class Bzip2BlockReaderWriter implements BlockReader, BlockWriter {
+public class Bzip2BlockReaderWriter implements DefaultBlockReader, DefaultBlockWriter {
 
 	@Override
-	public <T, B extends DataBlock<T>> void read(
-			final B dataBlock,
-			final ByteChannel channel) throws IOException {
+	public InputStream getInputStream(final InputStream in) throws IOException {
 
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final BZip2CompressorInputStream in = new BZip2CompressorInputStream(Channels.newInputStream(channel))) {
-			in.read(buffer.array());
-		}
-		dataBlock.readData(buffer);
+		return new BZip2CompressorInputStream(in);
 	}
 
 	@Override
-	public <T> void write(
-			final DataBlock<T> dataBlock,
-			final FileChannel channel) throws IOException {
+	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final BZip2CompressorOutputStream out = new BZip2CompressorOutputStream(Channels.newOutputStream(channel))) {
-			out.write(buffer.array());
-			out.finish();
-		}
-		channel.truncate(channel.position());
+		return new BZip2CompressorOutputStream(out);
 	}
 }

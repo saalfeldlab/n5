@@ -26,37 +26,23 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
 
-public class Lz4BlockReaderWriter implements BlockReader, BlockWriter {
+public class Lz4BlockReaderWriter implements DefaultBlockReader, DefaultBlockWriter {
 
 	@Override
-	public <T, B extends DataBlock<T>> void read(
-			final B dataBlock,
-			final ByteChannel channel) throws IOException {
+	public InputStream getInputStream(final InputStream in) throws IOException {
 
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final LZ4BlockInputStream in = new LZ4BlockInputStream(Channels.newInputStream(channel))) {
-			in.read(buffer.array());
-		}
-		dataBlock.readData(buffer);
+		return new LZ4BlockInputStream(in);
 	}
 
 	@Override
-	public <T> void write(
-			final DataBlock<T> dataBlock,
-			final FileChannel channel) throws IOException {
+	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final LZ4BlockOutputStream out = new LZ4BlockOutputStream(Channels.newOutputStream(channel))) {
-			out.write(buffer.array());
-			out.finish();
-		}
+		return new LZ4BlockOutputStream(out);
 	}
 }
