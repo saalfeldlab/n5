@@ -35,7 +35,7 @@ import java.util.Map.Entry;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import com.googlecode.gentyref.TypeToken;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * {@link N5Reader} for JSON attributes parsed by {@link Gson}.
