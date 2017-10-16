@@ -29,16 +29,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class RawBlockReaderWriter extends AbstractBlockReaderWriter {
+public class RawBlockReaderWriter implements DefaultBlockReader, DefaultBlockWriter {
 
 	@Override
-	protected InputStream getInputStream(final InputStream in) throws IOException {
+	public InputStream getInputStream(final InputStream in) throws IOException {
 
 		return in;
 	}
 
 	@Override
-	protected OutputStream getOutputStream(final OutputStream out) throws IOException {
+	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
 		return out;
 	}

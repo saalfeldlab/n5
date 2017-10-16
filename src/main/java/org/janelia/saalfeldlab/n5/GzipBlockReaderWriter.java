@@ -32,16 +32,16 @@ import java.io.OutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 
-public class GzipBlockReaderWriter extends AbstractBlockReaderWriter {
+public class GzipBlockReaderWriter implements DefaultBlockReader, DefaultBlockWriter {
 
 	@Override
-	protected InputStream getInputStream(final InputStream in) throws IOException {
+	public InputStream getInputStream(final InputStream in) throws IOException {
 
 		return new GzipCompressorInputStream(in);
 	}
 
 	@Override
-	protected OutputStream getOutputStream(final OutputStream out) throws IOException {
+	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
 		return new GzipCompressorOutputStream(out);
 	}

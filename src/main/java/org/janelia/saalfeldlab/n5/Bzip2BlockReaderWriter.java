@@ -32,16 +32,16 @@ import java.io.OutputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 
-public class Bzip2BlockReaderWriter extends AbstractBlockReaderWriter {
+public class Bzip2BlockReaderWriter implements DefaultBlockReader, DefaultBlockWriter {
 
 	@Override
-	protected InputStream getInputStream(final InputStream in) throws IOException {
+	public InputStream getInputStream(final InputStream in) throws IOException {
 
 		return new BZip2CompressorInputStream(in);
 	}
 
 	@Override
-	protected OutputStream getOutputStream(final OutputStream out) throws IOException {
+	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
 		return new BZip2CompressorOutputStream(out);
 	}

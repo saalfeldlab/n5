@@ -32,16 +32,16 @@ import java.io.OutputStream;
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
 
-public class Lz4BlockReaderWriter extends AbstractBlockReaderWriter {
+public class Lz4BlockReaderWriter implements DefaultBlockReader, DefaultBlockWriter {
 
 	@Override
-	protected InputStream getInputStream(final InputStream in) throws IOException {
+	public InputStream getInputStream(final InputStream in) throws IOException {
 
 		return new LZ4BlockInputStream(in);
 	}
 
 	@Override
-	protected OutputStream getOutputStream(final OutputStream out) throws IOException {
+	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
 		return new LZ4BlockOutputStream(out);
 	}

@@ -27,22 +27,29 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 
-import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
-import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
+/**
+ * Default implementation of {@link BlockReader}.
+ *
+ * @author Stephan Saalfeld
+ * @author Igor Pisarev
+ */
+public interface DefaultBlockReader extends BlockReader {
 
-public class XzBlockReaderWriter implements DefaultBlockReader, DefaultBlockWriter {
+	public InputStream getInputStream(final InputStream in) throws IOException;
 
 	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
+	public default <T, B extends DataBlock<T>> void read(
+			final B dataBlock,
+			final ReadableByteChannel channel) throws IOException {
 
-		return new XZCompressorInputStream(in);
-	}
-
-	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
-
-		return new XZCompressorOutputStream(out);
+		final ByteBuffer buffer = dataBlock.toByteBuffer();
+		try (final InputStream in = getInputStream(Channels.newInputStream(channel))) {
+			in.read(buffer.array());
+		}
+		dataBlock.readData(buffer);
 	}
 }
