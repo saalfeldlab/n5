@@ -26,22 +26,22 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
-import java.nio.channels.WritableByteChannel;
+import java.io.OutputStream;
 
 /**
- * Interface for block writers that can write a {@link DataBlock} into a
- * {@link WritableByteChannel}.
+ * Interface for block writers that can write a {@link DataBlock} into an
+ * {@link OutputStream}.
  *
  * @author Stephan Saalfeld
  */
 public interface BlockWriter {
 
 	/**
-	 * Writes a {@link DataBlock} into a {@link WritableByteChannel}.
+	 * Writes a {@link DataBlock} into an {@link OutputStream}.
 	 *
 	 * @param dataBlock
-	 * @param channel
+	 * @param out
 	 * @throws IOException
 	 */
-	public <T> void write(final DataBlock<T> dataBlock, final WritableByteChannel channel) throws IOException;
+	public <T> void write(final DataBlock<T> dataBlock, final OutputStream out) throws IOException;
 }

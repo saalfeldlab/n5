@@ -25,11 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 
 /**
  * Default implementation of {@link BlockWriter}.
@@ -37,19 +36,50 @@ import java.nio.channels.WritableByteChannel;
  * @author Stephan Saalfeld
  * @author Igor Pisarev
  */
-interface DefaultBlockWriter extends BlockWriter {
+public interface DefaultBlockWriter extends BlockWriter {
 
 	public OutputStream getOutputStream(final OutputStream out) throws IOException;
 
 	@Override
 	public default <T> void write(
 			final DataBlock<T> dataBlock,
-			final WritableByteChannel channel) throws IOException {
+			final OutputStream out) throws IOException {
 
 		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final OutputStream out = getOutputStream(Channels.newOutputStream(channel))) {
-			out.write(buffer.array());
-			out.flush();
+		try (final OutputStream deflater = getOutputStream(out)) {
+			deflater.write(buffer.array());
+			deflater.flush();
 		}
+	}
+
+	/**
+	 * Writes a {@link DataBlock} into an {@link OutputStream}.
+	 *
+	 * @param out
+	 * @param datasetAttributes
+	 * @param dataBlock
+	 * @throws IOException
+	 */
+	public static <T> void writeBlock(
+			final OutputStream out,
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T> dataBlock) throws IOException {
+
+		final DataOutputStream dos = new DataOutputStream(out);
+
+		final int mode = (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize())) ? 0 : 1;
+		dos.writeShort(mode);
+
+		dos.writeShort(datasetAttributes.getNumDimensions());
+		for (final int size : dataBlock.getSize())
+			dos.writeInt(size);
+
+		if (mode != 0)
+			dos.writeInt(dataBlock.getNumElements());
+
+		dos.flush();
+
+		final BlockWriter writer = datasetAttributes.getCompressionType().getWriter();
+		writer.write(dataBlock, out);
 	}
 }
