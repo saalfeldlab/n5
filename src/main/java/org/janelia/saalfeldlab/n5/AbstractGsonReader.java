@@ -40,17 +40,17 @@ import com.google.gson.JsonElement;
  * @author Stephan Saalfeld
  * @author Igor Pisarev
  */
-public abstract class DefaultGsonReader implements GsonAttributesParser, N5Reader {
+public abstract class AbstractGsonReader implements GsonAttributesParser, N5Reader {
 
 	protected final Gson gson;
 
 	/**
-	 * Constructs an {@link DefaultGsonReader} with a custom
+	 * Constructs an {@link AbstractGsonReader} with a custom
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
 	 * @param gsonBuilder
 	 */
-	public DefaultGsonReader(final GsonBuilder gsonBuilder) {
+	public AbstractGsonReader(final GsonBuilder gsonBuilder) {
 
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
 		gsonBuilder.registerTypeAdapter(CompressionType.class, new CompressionType.JsonAdapter());
@@ -58,10 +58,10 @@ public abstract class DefaultGsonReader implements GsonAttributesParser, N5Reade
 	}
 
 	/**
-	 * Constructs an {@link DefaultGsonReader} with a default
+	 * Constructs an {@link AbstractGsonReader} with a default
 	 * {@link GsonBuilder}.
 	 */
-	public DefaultGsonReader() {
+	public AbstractGsonReader() {
 
 		this(new GsonBuilder());
 	}

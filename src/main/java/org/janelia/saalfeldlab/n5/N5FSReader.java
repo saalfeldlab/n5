@@ -46,7 +46,7 @@ import com.google.gson.JsonElement;
  *
  * @author Stephan Saalfeld
  */
-public class N5FSReader extends DefaultGsonReader {
+public class N5FSReader extends AbstractGsonReader {
 
 	protected static class LockedFileChannel implements Closeable {
 
