@@ -25,11 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 
 /**
  * Default implementation of {@link BlockWriter}.
@@ -44,12 +43,12 @@ public interface DefaultBlockWriter extends BlockWriter {
 	@Override
 	public default <T> void write(
 			final DataBlock<T> dataBlock,
-			final WritableByteChannel channel) throws IOException {
+			final OutputStream out) throws IOException {
 
 		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final OutputStream out = getOutputStream(Channels.newOutputStream(channel))) {
-			out.write(buffer.array());
-			out.flush();
+		try (final OutputStream deflater = getOutputStream(out)) {
+			deflater.write(buffer.array());
+			deflater.flush();
 		}
 	}
 }

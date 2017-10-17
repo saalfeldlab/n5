@@ -178,6 +178,6 @@ public class N5FSWriter extends N5FSReader implements DefaultGsonReader, N5Write
 		dos.flush();
 
 		final BlockWriter writer = datasetAttributes.getCompressionType().getWriter();
-		writer.write(dataBlock, channel);
+		writer.write(dataBlock, Channels.newOutputStream(channel));
 	}
 }

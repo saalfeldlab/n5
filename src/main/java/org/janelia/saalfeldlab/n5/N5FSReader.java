@@ -213,7 +213,7 @@ public class N5FSReader implements DefaultGsonReader {
 		final DataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
 
 		final BlockReader reader = datasetAttributes.getCompressionType().getReader();
-		reader.read(dataBlock, channel);
+		reader.read(dataBlock, Channels.newInputStream(channel));
 		return dataBlock;
 	}
 

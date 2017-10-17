@@ -25,11 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 
 /**
  * Default implementation of {@link BlockReader}.
@@ -44,11 +43,11 @@ public interface DefaultBlockReader extends BlockReader {
 	@Override
 	public default <T, B extends DataBlock<T>> void read(
 			final B dataBlock,
-			final ReadableByteChannel channel) throws IOException {
+			final InputStream in) throws IOException {
 
 		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final InputStream in = getInputStream(Channels.newInputStream(channel))) {
-			in.read(buffer.array());
+		try (final InputStream inflater = getInputStream(in)) {
+			inflater.read(buffer.array());
 		}
 		dataBlock.readData(buffer);
 	}
