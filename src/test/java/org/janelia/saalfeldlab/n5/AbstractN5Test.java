@@ -44,7 +44,7 @@ public abstract class AbstractN5Test {
 	static private final String[] subGroupNames = new String[]{"a", "b", "c"};
 	static private final String datasetName = "/test/group/dataset";
 	static private final long[] dimensions = new long[]{100, 200, 300};
-	static private final int[] blockSize = new int[]{33, 22, 11};
+	static private final int[] blockSize = new int[]{44, 33, 22};
 
 	static private byte[] byteBlock;
 	static private short[] shortBlock;
