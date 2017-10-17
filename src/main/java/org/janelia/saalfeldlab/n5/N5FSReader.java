@@ -184,7 +184,7 @@ public class N5FSReader extends AbstractGsonReader {
 	 * @param gridPosition
 	 * @return
 	 */
-	protected Path getDataBlockPath(
+	protected static Path getDataBlockPath(
 			final String datasetPathName,
 			final long[] gridPosition) {
 
@@ -201,7 +201,7 @@ public class N5FSReader extends AbstractGsonReader {
 	 * @param pathName
 	 * @return
 	 */
-	protected Path getAttributesPath(final String pathName) {
+	protected static Path getAttributesPath(final String pathName) {
 
 		return Paths.get(pathName, jsonFile);
 	}
