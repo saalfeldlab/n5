@@ -43,7 +43,7 @@ import com.google.gson.JsonElement;
  *
  * @author Stephan Saalfeld
  */
-public class N5FSWriter extends N5FSReader implements DefaultGsonReader, N5Writer {
+public class N5FSWriter extends N5FSReader implements N5Writer {
 
 	/**
 	 * Opens an {@link N5FSWriter} at a given base path with a custom
@@ -94,11 +94,11 @@ public class N5FSWriter extends N5FSReader implements DefaultGsonReader, N5Write
 		final HashMap<String, JsonElement> map = new HashMap<>();
 
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path)) {
-			map.putAll(GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), "UTF-8"), gson));
+			map.putAll(GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), "UTF-8"), getGson()));
 			GsonAttributesParser.insertAttributes(map, attributes, gson);
 
 			lockedFileChannel.getFileChannel().truncate(0);
-			GsonAttributesParser.writeAttributes(Channels.newWriter(lockedFileChannel.getFileChannel(), "UTF-8"), map, gson);
+			GsonAttributesParser.writeAttributes(Channels.newWriter(lockedFileChannel.getFileChannel(), "UTF-8"), map, getGson());
 		}
 	}
 

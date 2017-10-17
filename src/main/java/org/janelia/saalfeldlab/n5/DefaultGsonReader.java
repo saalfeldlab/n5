@@ -30,29 +30,50 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 
 /**
- * Default implementation of {@link N5Reader} with JSON attributes parsed
- * with {@link Gson}.
+ * Abstract base class implementing {@link N5Reader} with JSON attributes
+ * parsed with {@link Gson}.
  *
  * @author Stephan Saalfeld
  * @author Igor Pisarev
  */
-public interface DefaultGsonReader extends GsonAttributesParser, N5Reader {
+public abstract class DefaultGsonReader implements GsonAttributesParser, N5Reader {
+
+	protected final Gson gson;
 
 	/**
-	 * Reads or creates the attributes map of a group or dataset.
+	 * Constructs an {@link DefaultGsonReader} with a custom
+	 * {@link GsonBuilder} to support custom attributes.
 	 *
-	 * @param pathName group path
-	 * @return
-	 * @throws IOException
+	 * @param gsonBuilder
 	 */
-	@Override
-	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException;
+	public DefaultGsonReader(final GsonBuilder gsonBuilder) {
+
+		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
+		gsonBuilder.registerTypeAdapter(CompressionType.class, new CompressionType.JsonAdapter());
+		this.gson = gsonBuilder.create();
+	}
+
+	/**
+	 * Constructs an {@link DefaultGsonReader} with a default
+	 * {@link GsonBuilder}.
+	 */
+	public DefaultGsonReader() {
+
+		this(new GsonBuilder());
+	}
 
 	@Override
-	public default DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
+	public Gson getGson() {
+
+		return gson;
+	}
+
+	@Override
+	public DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
 
 		final HashMap<String, JsonElement> map = getAttributes(pathName);
 		final Gson gson = getGson();
@@ -77,7 +98,7 @@ public interface DefaultGsonReader extends GsonAttributesParser, N5Reader {
 	}
 
 	@Override
-	public default <T> T getAttribute(
+	public <T> T getAttribute(
 			final String pathName,
 			final String key,
 			final Class<T> clazz) throws IOException {
