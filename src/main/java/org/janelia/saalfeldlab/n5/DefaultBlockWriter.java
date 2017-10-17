@@ -37,7 +37,7 @@ import java.nio.channels.WritableByteChannel;
  * @author Stephan Saalfeld
  * @author Igor Pisarev
  */
-interface DefaultBlockWriter extends BlockWriter {
+public interface DefaultBlockWriter extends BlockWriter {
 
 	public OutputStream getOutputStream(final OutputStream out) throws IOException;
 
