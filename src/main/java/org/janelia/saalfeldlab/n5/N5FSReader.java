@@ -26,12 +26,10 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.Closeable;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -165,7 +163,7 @@ public class N5FSReader implements DefaultGsonReader {
 			return null;
 
 		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForReading(path)) {
-			return readBlock(lockedChannel.getFileChannel(), datasetAttributes, gridPosition);
+			return DefaultBlockReader.readBlock(Channels.newInputStream(lockedChannel.getFileChannel()), datasetAttributes, gridPosition);
 		}
 	}
 
@@ -180,41 +178,6 @@ public class N5FSReader implements DefaultGsonReader {
 					.map(a -> path.relativize(a).toString())
 					.toArray(n -> new String[n]);
 		}
-	}
-
-	/**
-	 * Reads a {@link DataBlock} from a given {@link ReadableByteChannel}.
-	 *
-	 * @param channel
-	 * @param datasetAttributes
-	 * @param gridPosition
-	 * @return
-	 * @throws IOException
-	 */
-	protected DataBlock<?> readBlock(
-			final ReadableByteChannel channel,
-			final DatasetAttributes datasetAttributes,
-			final long[] gridPosition) throws IOException {
-
-		final DataInputStream dis = new DataInputStream(Channels.newInputStream(channel));
-		final short mode = dis.readShort();
-		final int nDim = dis.readShort();
-		final int[] blockSize = new int[nDim];
-		for (int d = 0; d < nDim; ++d)
-			blockSize[d] = dis.readInt();
-		final int numElements;
-		switch (mode) {
-		case 1:
-			numElements = dis.readInt();
-			break;
-		default:
-			numElements = DataBlock.getNumElements(blockSize);
-		}
-		final DataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
-
-		final BlockReader reader = datasetAttributes.getCompressionType().getReader();
-		reader.read(dataBlock, Channels.newInputStream(channel));
-		return dataBlock;
 	}
 
 	/**

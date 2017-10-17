@@ -25,10 +25,8 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -114,7 +112,7 @@ public class N5FSWriter extends N5FSReader implements DefaultGsonReader, N5Write
 		Files.createDirectories(path.getParent());
 		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForWriting(path)) {
 			lockedChannel.getFileChannel().truncate(0);
-			writeBlock(lockedChannel.getFileChannel(), datasetAttributes, dataBlock);
+			DefaultBlockWriter.writeBlock(Channels.newOutputStream(lockedChannel.getFileChannel()), datasetAttributes, dataBlock);
 		}
 	}
 
@@ -148,36 +146,5 @@ public class N5FSWriter extends N5FSReader implements DefaultGsonReader, N5Write
 			}
 
 		return !Files.exists(path);
-	}
-
-	/**
-	 * Writes a {@link DataBlock} to a given {@link WritableByteChannel}.
-	 *
-	 * @param channel
-	 * @param datasetAttributes
-	 * @param dataBlock
-	 * @throws IOException
-	 */
-	protected <T> void writeBlock(
-			final WritableByteChannel channel,
-			final DatasetAttributes datasetAttributes,
-			final DataBlock<T> dataBlock) throws IOException {
-
-		final DataOutputStream dos = new DataOutputStream(Channels.newOutputStream(channel));
-
-		final int mode = (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize())) ? 0 : 1;
-		dos.writeShort(mode);
-
-		dos.writeShort(datasetAttributes.getNumDimensions());
-		for (final int size : dataBlock.getSize())
-			dos.writeInt(size);
-
-		if (mode != 0)
-			dos.writeInt(dataBlock.getNumElements());
-
-		dos.flush();
-
-		final BlockWriter writer = datasetAttributes.getCompressionType().getWriter();
-		writer.write(dataBlock, Channels.newOutputStream(channel));
 	}
 }
