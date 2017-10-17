@@ -47,7 +47,8 @@ public interface DefaultBlockReader extends BlockReader {
 
 		final ByteBuffer buffer = dataBlock.toByteBuffer();
 		try (final InputStream inflater = getInputStream(in)) {
-			inflater.read(buffer.array());
+			final DataInputStream dis = new DataInputStream(inflater);
+			dis.readFully(buffer.array());
 		}
 		dataBlock.readData(buffer);
 	}
