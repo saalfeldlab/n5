@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -137,7 +138,7 @@ public class N5FSReader extends AbstractGsonReader {
 			return new HashMap<>();
 
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForReading(path)) {
-			return GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), "UTF-8"), getGson());
+			return GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
 		}
 	}
 

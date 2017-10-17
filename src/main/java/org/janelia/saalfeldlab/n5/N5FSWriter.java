@@ -27,6 +27,7 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.nio.channels.Channels;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -94,11 +95,11 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		final HashMap<String, JsonElement> map = new HashMap<>();
 
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path)) {
-			map.putAll(GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), "UTF-8"), getGson()));
+			map.putAll(GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson()));
 			GsonAttributesParser.insertAttributes(map, attributes, gson);
 
 			lockedFileChannel.getFileChannel().truncate(0);
-			GsonAttributesParser.writeAttributes(Channels.newWriter(lockedFileChannel.getFileChannel(), "UTF-8"), map, getGson());
+			GsonAttributesParser.writeAttributes(Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), map, getGson());
 		}
 	}
 
