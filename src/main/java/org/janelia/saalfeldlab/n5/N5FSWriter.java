@@ -87,13 +87,6 @@ public class N5FSWriter extends N5FSReader implements DefaultGsonReader, N5Write
 	}
 
 	@Override
-	public boolean exists(final String pathName) {
-
-		final Path path = Paths.get(basePath, pathName);
-		return Files.exists(path) && Files.isDirectory(path);
-	}
-
-	@Override
 	public void createGroup(final String pathName) throws IOException {
 
 		final Path path = Paths.get(basePath, pathName);
@@ -118,21 +111,6 @@ public class N5FSWriter extends N5FSReader implements DefaultGsonReader, N5Write
 	}
 
 	@Override
-	public DataBlock<?> readBlock(
-			final String pathName,
-			final DatasetAttributes datasetAttributes,
-			final long[] gridPosition) throws IOException {
-
-		final Path path = Paths.get(basePath, getDataBlockPath(pathName, gridPosition).toString());
-		if (!Files.exists(path))
-			return null;
-
-		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForReading(path)) {
-			return readBlock(lockedChannel.getFileChannel(), datasetAttributes, gridPosition);
-		}
-	}
-
-	@Override
 	public <T> void writeBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
@@ -143,19 +121,6 @@ public class N5FSWriter extends N5FSReader implements DefaultGsonReader, N5Write
 		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForWriting(path)) {
 			lockedChannel.getFileChannel().truncate(0);
 			writeBlock(lockedChannel.getFileChannel(), datasetAttributes, dataBlock);
-		}
-	}
-
-	@Override
-	public String[] list(final String pathName) throws IOException {
-
-		final Path path = Paths.get(basePath, pathName);
-		try (final Stream<Path> pathStream = Files.list(path))
-		{
-			return pathStream
-					.filter(a -> Files.isDirectory(a))
-					.map(a -> path.relativize(a).toString())
-					.toArray(n -> new String[n]);
 		}
 	}
 
@@ -214,43 +179,5 @@ public class N5FSWriter extends N5FSReader implements DefaultGsonReader, N5Write
 
 		final BlockWriter writer = datasetAttributes.getCompressionType().getWriter();
 		writer.write(dataBlock, channel);
-	}
-
-	/**
-	 * Constructs the path for a data block in a dataset at a given grid position.
-	 *
-	 * The returned path is
-	 * <pre>
-	 * $datasetPathName/$gridPosition[0]/$gridPosition[1]/.../$gridPosition[n]
-	 * </pre>
-	 *
-	 * This is the file into which the data block will be stored.
-	 *
-	 * @param datasetPathName
-	 * @param gridPosition
-	 * @return
-	 */
-	@Override
-	protected Path getDataBlockPath(
-			final String datasetPathName,
-			final long[] gridPosition) {
-
-		final String[] pathComponents = new String[gridPosition.length];
-		for (int i = 0; i < pathComponents.length; ++i)
-			pathComponents[i] = Long.toString(gridPosition[i]);
-
-		return Paths.get(datasetPathName, pathComponents);
-	}
-
-	/**
-	 * Constructs the path for the attributes file of a group or dataset.
-	 *
-	 * @param pathName
-	 * @return
-	 */
-	@Override
-	protected Path getAttributesPath(final String pathName) {
-
-		return Paths.get(pathName, jsonFile);
 	}
 }
