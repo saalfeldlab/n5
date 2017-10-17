@@ -81,12 +81,6 @@ public class N5FSWriter extends N5FSReader implements DefaultGsonReader, N5Write
 	}
 
 	@Override
-	public boolean remove() throws IOException {
-
-		return remove("");
-	}
-
-	@Override
 	public void createGroup(final String pathName) throws IOException {
 
 		final Path path = Paths.get(basePath, pathName);
@@ -122,6 +116,12 @@ public class N5FSWriter extends N5FSReader implements DefaultGsonReader, N5Write
 			lockedChannel.getFileChannel().truncate(0);
 			writeBlock(lockedChannel.getFileChannel(), datasetAttributes, dataBlock);
 		}
+	}
+
+	@Override
+	public boolean remove() throws IOException {
+
+		return remove("");
 	}
 
 	@Override
