@@ -85,7 +85,7 @@ public abstract class AbstractN5Test {
 	@AfterClass
 	public static void rampDownAfterClass() throws IOException {
 
-		n5.remove();
+		Assert.assertTrue(n5.remove());
 	}
 
 	@Test
