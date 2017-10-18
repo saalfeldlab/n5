@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -38,7 +39,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.stream.Stream;
 
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 
@@ -47,7 +47,7 @@ import com.google.gson.JsonElement;
  *
  * @author Stephan Saalfeld
  */
-public class N5FSReader implements DefaultGsonReader {
+public class N5FSReader extends AbstractGsonReader {
 
 	protected static class LockedFileChannel implements Closeable {
 
@@ -96,11 +96,9 @@ public class N5FSReader implements DefaultGsonReader {
 		}
 	}
 
-	protected final String basePath;
-
 	protected static final String jsonFile = "attributes.json";
 
-	protected final Gson gson;
+	protected final String basePath;
 
 	/**
 	 * Opens an {@link N5FSReader} at a given base path with a custom
@@ -111,9 +109,7 @@ public class N5FSReader implements DefaultGsonReader {
 	 */
 	public N5FSReader(final String basePath, final GsonBuilder gsonBuilder) {
 
-		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
-		gsonBuilder.registerTypeAdapter(CompressionType.class, new CompressionType.JsonAdapter());
-		this.gson = gsonBuilder.create();
+		super(gsonBuilder);
 		this.basePath = basePath;
 	}
 
@@ -125,12 +121,6 @@ public class N5FSReader implements DefaultGsonReader {
 	public N5FSReader(final String basePath) {
 
 		this(basePath, new GsonBuilder());
-	}
-
-	@Override
-	public Gson getGson() {
-
-		return gson;
 	}
 
 	@Override
@@ -148,7 +138,7 @@ public class N5FSReader implements DefaultGsonReader {
 			return new HashMap<>();
 
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForReading(path)) {
-			return GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), "UTF-8"), gson);
+			return GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
 		}
 	}
 
@@ -194,7 +184,7 @@ public class N5FSReader implements DefaultGsonReader {
 	 * @param gridPosition
 	 * @return
 	 */
-	protected Path getDataBlockPath(
+	protected static Path getDataBlockPath(
 			final String datasetPathName,
 			final long[] gridPosition) {
 
@@ -211,7 +201,7 @@ public class N5FSReader implements DefaultGsonReader {
 	 * @param pathName
 	 * @return
 	 */
-	protected Path getAttributesPath(final String pathName) {
+	protected static Path getAttributesPath(final String pathName) {
 
 		return Paths.get(pathName, jsonFile);
 	}
