@@ -21,8 +21,9 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
    * compressionType (one of {raw, bzip2, gzip, xz}).
 4. Chunks are stored in a directory hierarchy that enumerates their positive integer position in the chunk grid (e.g. `0/4/1/7` for chunk grid position p=(0, 4, 1, 7)).
 5. Datasets are sparse, i.e. there is no guarantee that all chunks of a dataset exist.
-6. All chunks of a chunked dataset have the same size except for end-chunks that may be smaller, therefore
-7. Chunks are stored in the following binary format:
+6. Chunks cannot be larger than 2GB (2<sup>31</sup>Bytes).
+7. All chunks of a chunked dataset have the same size except for end-chunks that may be smaller, therefore
+8. Chunks are stored in the following binary format:
     * mode (uint16 big endian, default = 0x0000, varlength = 0x0001)
     * number of dimensions (uint32 big endian)
     * dimension 1[,...,n] (uint32 big endian)
