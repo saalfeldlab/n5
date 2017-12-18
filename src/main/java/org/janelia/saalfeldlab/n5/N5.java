@@ -33,8 +33,13 @@ import com.google.gson.GsonBuilder;
  * Factory methods to create {@link N5Reader N5Readers} and
  * {@link N5Writer N5Writers}
  *
+ * @deprecated Use the constructors of {@link N5Reader} and {@link N5Writer}
+ * implementations directly.  These factory methods have no advantage and
+ * prevent extensibility.
+ *
  * @author Stephan Saalfeld
  */
+@Deprecated
 public interface N5 {
 
 	/**
