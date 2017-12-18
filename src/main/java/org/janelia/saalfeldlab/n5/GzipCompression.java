@@ -28,11 +28,28 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.zip.Deflater;
 
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipParameters;
+import org.janelia.saalfeldlab.n5.compression.Compression;
+import org.janelia.saalfeldlab.n5.compression.Compression.CompressionType;
 
-public class GzipBlockReaderWriter implements DefaultBlockReader, DefaultBlockWriter {
+@CompressionType("gzip")
+public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
+
+	private final int level;
+
+	public GzipCompression(final int level) {
+
+		this.level = level;
+	}
+
+	public GzipCompression() {
+
+		this(Deflater.DEFAULT_COMPRESSION);
+	}
 
 	@Override
 	public InputStream getInputStream(final InputStream in) throws IOException {
@@ -43,6 +60,20 @@ public class GzipBlockReaderWriter implements DefaultBlockReader, DefaultBlockWr
 	@Override
 	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
+		final GzipParameters gzipParameters = new GzipParameters();
+		gzipParameters.setCompressionLevel(level);
 		return new GzipCompressorOutputStream(out);
+	}
+
+	@Override
+	public GzipCompression getReader() {
+
+		return this;
+	}
+
+	@Override
+	public GzipCompression getWriter() {
+
+		return this;
 	}
 }

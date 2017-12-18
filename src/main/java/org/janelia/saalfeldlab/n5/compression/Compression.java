@@ -23,39 +23,46 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.janelia.saalfeldlab.n5;
+package org.janelia.saalfeldlab.n5.compression;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import org.janelia.saalfeldlab.n5.compression.Compression;
-import org.janelia.saalfeldlab.n5.compression.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.BlockReader;
+import org.janelia.saalfeldlab.n5.BlockWriter;
 
-@CompressionType("raw")
-public class RawCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
+/**
+ * Compression scheme interface.
+ *
+ * @author Stephan Saalfeld
+ */
+public interface Compression {
 
-	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
+	/**
+	 * Annotation for runtime discovery of compression schemes.
+	 *
+	 */
+	@Retention(RetentionPolicy.RUNTIME)
+	@Inherited
+	@Target(ElementType.TYPE)
+	public static @interface CompressionType {
 
-		return in;
+		String value();
 	}
 
-	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
+	public default String getType() {
 
-		return out;
+		final CompressionType compressionType = getClass().getAnnotation(CompressionType.class);
+		if (compressionType == null)
+			return null;
+		else
+			return compressionType.value();
 	}
 
-	@Override
-	public BlockReader getReader() {
+	public BlockReader getReader();
 
-		return this;
-	}
-
-	@Override
-	public BlockWriter getWriter() {
-
-		return this;
-	}
+	public BlockWriter getWriter();
 }
