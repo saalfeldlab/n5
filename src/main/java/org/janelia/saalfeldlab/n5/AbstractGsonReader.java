@@ -53,7 +53,7 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 	public AbstractGsonReader(final GsonBuilder gsonBuilder) {
 
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
-		gsonBuilder.registerTypeAdapter(CompressionType.class, new CompressionType.JsonAdapter());
+		gsonBuilder.registerTypeAdapter(CompressionScheme.class, new CompressionScheme.JsonAdapter());
 		this.gson = gsonBuilder.create();
 	}
 
@@ -90,9 +90,9 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 		if (blockSize == null)
 			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
 
-		CompressionType compressionType = GsonAttributesParser.parseAttribute(map, DatasetAttributes.compressionTypeKey, CompressionType.class, gson);
+		CompressionScheme compressionType = GsonAttributesParser.parseAttribute(map, DatasetAttributes.compressionTypeKey, CompressionScheme.class, gson);
 		if (compressionType == null)
-			compressionType = CompressionType.RAW;
+			compressionType = CompressionScheme.RAW;
 
 		return new DatasetAttributes(dimensions, blockSize, dataType, compressionType);
 	}

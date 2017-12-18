@@ -41,11 +41,11 @@ import com.google.gson.JsonSerializer;
  *
  * @author Stephan Saalfeld
  */
-public enum CompressionType {
+public enum CompressionScheme {
 
-	RAW("raw", new RawBlockReaderWriter(), new RawBlockReaderWriter()),
+	RAW("raw", new RawCompression(), new RawCompression()),
 	BZIP2("bzip2", new Bzip2BlockReaderWriter(), new Bzip2BlockReaderWriter()),
-	GZIP("gzip", new GzipBlockReaderWriter(), new GzipBlockReaderWriter()),
+	GZIP("gzip", new GzipCompression(), new GzipCompression()),
 	LZ4("lz4", new Lz4BlockReaderWriter(), new Lz4BlockReaderWriter()),
 	XZ("xz", new XzBlockReaderWriter(), new XzBlockReaderWriter());
 
@@ -53,7 +53,7 @@ public enum CompressionType {
 	private final BlockReader reader;
 	private final BlockWriter writer;
 
-	private CompressionType(final String label, final BlockReader reader, final BlockWriter writer) {
+	private CompressionScheme(final String label, final BlockReader reader, final BlockWriter writer) {
 
 		this.label = label;
 		this.reader = reader;
@@ -66,9 +66,9 @@ public enum CompressionType {
 		return label;
 	}
 
-	public static CompressionType fromString(final String string) {
+	public static CompressionScheme fromString(final String string) {
 
-		for (final CompressionType value : values())
+		for (final CompressionScheme value : values())
 			if (value.toString().equals(string))
 				return value;
 		return null;
@@ -84,20 +84,20 @@ public enum CompressionType {
 		return writer;
 	}
 
-	public static class JsonAdapter implements JsonDeserializer<CompressionType>, JsonSerializer<CompressionType> {
+	public static class JsonAdapter implements JsonDeserializer<CompressionScheme>, JsonSerializer<CompressionScheme> {
 
 		@Override
-		public CompressionType deserialize(
+		public CompressionScheme deserialize(
 				final JsonElement json,
 				final Type typeOfT,
 				final JsonDeserializationContext context) throws JsonParseException {
 
-			return CompressionType.fromString(json.getAsString());
+			return CompressionScheme.fromString(json.getAsString());
 		}
 
 		@Override
 		public JsonElement serialize(
-				final CompressionType src,
+				final CompressionScheme src,
 				final Type typeOfSrc,
 				final JsonSerializationContext context) {
 

@@ -104,7 +104,7 @@ public class N5Benchmark {
 	public void testDocExample() {
 
 		final short[] dataBlockData = new short[]{1, 2, 3, 4, 5, 6};
-		for (final CompressionType compressionType : CompressionType.values()) {
+		for (final CompressionScheme compressionType : CompressionScheme.values()) {
 			try {
 				final String compressedDatasetName = datasetName + "." + compressionType.name();
 				n5.createDataset(compressedDatasetName, new long[]{1, 2, 3}, new int[]{1, 2, 3}, DataType.UINT16, compressionType);
@@ -123,7 +123,7 @@ public class N5Benchmark {
 		final int nBlocks = 5;
 
 		for (int i = 0; i < 1; ++i) {
-			for (final CompressionType compressionType : CompressionType.values()) {
+			for (final CompressionScheme compressionType : CompressionScheme.values()) {
 
 				final long t = System.currentTimeMillis();
 				try {
@@ -207,7 +207,7 @@ public class N5Benchmark {
 			final ArrayList<Future<Boolean>> futures = new ArrayList<>();
 			long t;
 
-			for (final CompressionType compressionType : CompressionType.values()) {
+			for (final CompressionScheme compressionType : CompressionScheme.values()) {
 				t = System.currentTimeMillis();
 				try {
 					final String compressedDatasetName = datasetName + "." + compressionType.name();

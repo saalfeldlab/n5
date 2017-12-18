@@ -34,7 +34,7 @@ import java.util.HashMap;
  * <li>long[] : dimensions</li>
  * <li>int[] : blockSize</li>
  * <li>{@link DataType} : dataType</li>
- * <li>{@link CompressionType} : compressionType</li>
+ * <li>{@link CompressionScheme} : compressionType</li>
  * </ol>
  *
  * @author Stephan Saalfeld
@@ -50,13 +50,13 @@ public class DatasetAttributes {
 	private final long[] dimensions;
 	private final int[] blockSize;
 	private final DataType dataType;
-	private final CompressionType compressionType;
+	private final CompressionScheme compressionType;
 
 	public DatasetAttributes(
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final CompressionType compressionType) {
+			final CompressionScheme compressionType) {
 
 		this.dimensions = dimensions;
 		this.blockSize = blockSize;
@@ -79,7 +79,7 @@ public class DatasetAttributes {
 		return blockSize;
 	}
 
-	public CompressionType getCompressionType() {
+	public CompressionScheme getCompressionType() {
 
 		return compressionType;
 	}
