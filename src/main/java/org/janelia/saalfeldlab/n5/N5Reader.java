@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * A simple structured container format for hierarchies of chunked
@@ -102,4 +103,13 @@ public interface N5Reader {
 	 * @throws IOException
 	 */
 	public String[] list(final String pathName) throws IOException;
+
+	/**
+	 * List all attributes and their class of a group.
+	 *
+	 * @param pathName group path
+	 * @return
+	 * @throws IOException
+	 */
+	public Map<String, Class<?>> listAttributes(final String pathName) throws IOException;
 }
