@@ -27,7 +27,6 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
@@ -38,11 +37,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 
@@ -218,50 +215,5 @@ public class N5FSReader extends AbstractGsonReader {
 		else if (jsonPrimitive.isString())
 			return String.class;
 		else return Object.class;
-	}
-
-	/**
-	 * Best effort implementation of {@link N5Reader#listAttributes(String)}
-	 * with limited type resolution.  Possible types are
-	 * <ul>
-	 * <li>null</li>
-	 * <li>boolean</li>
-	 * <li>double</li>
-	 * <li>String</li>
-	 * <li>Object</li>
-	 * <li>boolean[]</li>
-	 * <li>double[]</li>
-	 * <li>String[]</li>
-	 * <li>Object[]</li>
-	 */
-	@Override
-	public Map<String, Class<?>> listAttributes(String pathName) throws IOException {
-
-		HashMap<String, JsonElement> jsonElementMap = getAttributes(pathName);
-		final HashMap<String, Class<?>> attributes = new HashMap<>();
-		jsonElementMap.forEach(
-				(key, jsonElement) -> {
-					final Class<?> clazz;
-					if (jsonElement.isJsonNull())
-						clazz = null;
-					else if (jsonElement.isJsonPrimitive())
-						clazz = classForJsonPrimitive((JsonPrimitive)jsonElement);
-					else if (jsonElement.isJsonArray()) {
-						final JsonArray jsonArray = (JsonArray)jsonElement;
-						if (jsonArray.size() > 0) {
-							final JsonElement firstElement = jsonArray.get(0);
-							if (firstElement.isJsonPrimitive())
-								clazz = Array.newInstance(classForJsonPrimitive((JsonPrimitive)firstElement), 0).getClass();
-							else
-								clazz = Object[].class;
-							}
-						else
-							clazz = Object[].class;
-					}
-					else
-						clazz = Object.class;
-					attributes.put(key, clazz);
-				});
-		return attributes;
 	}
 }
