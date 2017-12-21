@@ -421,6 +421,7 @@ public abstract class AbstractN5Test {
 
 		final String groupName2 = groupName + "-2";
 		final String datasetName2 = datasetName + "-2";
+		final String notExists = groupName + "-notexists";
 		try {
 			n5.createDataset(datasetName2, dimensions, blockSize, DataType.UINT64, CompressionType.RAW);
 			Assert.assertTrue(n5.exists(datasetName2));
@@ -429,6 +430,9 @@ public abstract class AbstractN5Test {
 			n5.createGroup(groupName2);
 			Assert.assertTrue(n5.exists(groupName2));
 			Assert.assertFalse(n5.datasetExists(groupName2));
+
+			Assert.assertFalse(n5.exists(notExists));
+			Assert.assertFalse(n5.datasetExists(notExists));
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
