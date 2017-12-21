@@ -429,7 +429,6 @@ public abstract class AbstractN5Test {
 			n5.createGroup(groupName2);
 			Assert.assertTrue(n5.exists(groupName2));
 			Assert.assertFalse(n5.datasetExists(groupName2));
-			Assert.assertTrue(n5Parser.getAttributes(groupName2).isEmpty());
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
