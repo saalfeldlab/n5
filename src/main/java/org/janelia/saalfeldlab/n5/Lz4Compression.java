@@ -23,46 +23,54 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.janelia.saalfeldlab.n5.compression;
+package org.janelia.saalfeldlab.n5;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
-import org.janelia.saalfeldlab.n5.BlockReader;
-import org.janelia.saalfeldlab.n5.BlockWriter;
+import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 
-/**
- * Compression scheme interface.
- *
- * @author Stephan Saalfeld
- */
-public interface Compression {
+import net.jpountz.lz4.LZ4BlockInputStream;
+import net.jpountz.lz4.LZ4BlockOutputStream;
 
-	/**
-	 * Annotation for runtime discovery of compression schemes.
-	 *
-	 */
-	@Retention(RetentionPolicy.RUNTIME)
-	@Inherited
-	@Target(ElementType.TYPE)
-	public static @interface CompressionType {
+@CompressionType("lz4")
+public class Lz4Compression implements DefaultBlockReader, DefaultBlockWriter, Compression {
 
-		String value();
+	@CompressionParameter
+	private final int blockSize;
+
+	public Lz4Compression(final int blockSize) {
+
+		this.blockSize = blockSize;
 	}
 
-	public default String getType() {
+	public Lz4Compression() {
 
-		final CompressionType compressionType = getClass().getAnnotation(CompressionType.class);
-		if (compressionType == null)
-			return null;
-		else
-			return compressionType.value();
+		this(1 << 16);
 	}
 
-	public BlockReader getReader();
+	@Override
+	public InputStream getInputStream(final InputStream in) throws IOException {
 
-	public BlockWriter getWriter();
+		return new LZ4BlockInputStream(in);
+	}
+
+	@Override
+	public OutputStream getOutputStream(final OutputStream out) throws IOException {
+
+		return new LZ4BlockOutputStream(out, blockSize);
+	}
+
+	@Override
+	public Lz4Compression getReader() {
+
+		return this;
+	}
+
+	@Override
+	public Lz4Compression getWriter() {
+
+		return this;
+	}
 }

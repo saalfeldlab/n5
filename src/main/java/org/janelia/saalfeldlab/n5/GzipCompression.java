@@ -33,13 +33,15 @@ import java.util.zip.Deflater;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipParameters;
-import org.janelia.saalfeldlab.n5.compression.Compression;
-import org.janelia.saalfeldlab.n5.compression.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 
 @CompressionType("gzip")
 public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
 
+	@CompressionParameter
 	private final int level;
+
+	private final transient GzipParameters parameters = new GzipParameters();
 
 	public GzipCompression(final int level) {
 
@@ -60,9 +62,8 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	@Override
 	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
-		final GzipParameters gzipParameters = new GzipParameters();
-		gzipParameters.setCompressionLevel(level);
-		return new GzipCompressorOutputStream(out);
+		parameters.setCompressionLevel(level);
+		return new GzipCompressorOutputStream(out, parameters);
 	}
 
 	@Override

@@ -144,9 +144,9 @@ public interface N5Writer extends N5Reader {
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final CompressionScheme compressionType) throws IOException {
+			final Compression compression) throws IOException {
 
-		createDataset(pathName, new DatasetAttributes(dimensions, blockSize, dataType, compressionType));
+		createDataset(pathName, new DatasetAttributes(dimensions, blockSize, dataType, compression));
 	}
 
 	/**

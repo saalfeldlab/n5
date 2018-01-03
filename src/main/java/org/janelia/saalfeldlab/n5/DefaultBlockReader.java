@@ -83,7 +83,7 @@ public interface DefaultBlockReader extends BlockReader {
 		}
 		final DataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
 
-		final BlockReader reader = datasetAttributes.getCompressionType().getReader();
+		final BlockReader reader = datasetAttributes.getCompression().getReader();
 		reader.read(dataBlock, in);
 		return dataBlock;
 	}

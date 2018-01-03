@@ -3,8 +3,11 @@
  */
 package org.janelia.saalfeldlab.n5.compression;
 
-import static org.junit.Assert.fail;
+import java.lang.reflect.Field;
+import java.util.Map;
 
+import org.apache.commons.collections4.MapUtils;
+import org.janelia.saalfeldlab.n5.CompressionAdapter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -46,9 +49,19 @@ public class CompressionTypesTest {
 	}
 
 	@Test
-	public void test() {
+	public void test() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 
-		Compressions compressionTypes = Compressions.getInstance();
+		CompressionAdapter compressionTypes = CompressionAdapter.getJsonAdapter();
+
+		Field field = CompressionAdapter.class.getDeclaredField("compressionConstructors");
+		field.setAccessible(true);
+		Object value = field.get(compressionTypes);
+		MapUtils.verbosePrint(System.out, "", (Map)value);
+
+		field = CompressionAdapter.class.getDeclaredField("compressionParameters");
+		field.setAccessible(true);
+		value = field.get(compressionTypes);
+		MapUtils.verbosePrint(System.out, "", (Map)value);
 	}
 
 }

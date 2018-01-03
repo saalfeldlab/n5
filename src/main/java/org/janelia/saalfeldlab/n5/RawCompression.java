@@ -29,8 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.janelia.saalfeldlab.n5.compression.Compression;
-import org.janelia.saalfeldlab.n5.compression.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 
 @CompressionType("raw")
 public class RawCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
@@ -48,13 +47,13 @@ public class RawCompression implements DefaultBlockReader, DefaultBlockWriter, C
 	}
 
 	@Override
-	public BlockReader getReader() {
+	public RawCompression getReader() {
 
 		return this;
 	}
 
 	@Override
-	public BlockWriter getWriter() {
+	public RawCompression getWriter() {
 
 		return this;
 	}

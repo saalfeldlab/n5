@@ -25,24 +25,50 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
+/**
+ * Compression scheme interface.
+ *
+ * @author Stephan Saalfeld
+ */
+public interface Compression {
 
-public class Bzip2BlockReaderWriter implements DefaultBlockReader, DefaultBlockWriter {
+	/**
+	 * Annotation for runtime discovery of compression schemes.
+	 *
+	 */
+	@Retention(RetentionPolicy.RUNTIME)
+	@Inherited
+	@Target(ElementType.TYPE)
+	public static @interface CompressionType {
 
-	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
-
-		return new BZip2CompressorInputStream(in);
+		String value();
 	}
 
-	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
+	/**
+	 * Annotation for runtime discovery of compression schemes.
+	 *
+	 */
+	@Retention(RetentionPolicy.RUNTIME)
+	@Inherited
+	@Target(ElementType.FIELD)
+	public static @interface CompressionParameter {}
 
-		return new BZip2CompressorOutputStream(out);
+	public default String getType() {
+
+		final CompressionType compressionType = getClass().getAnnotation(CompressionType.class);
+		if (compressionType == null)
+			return null;
+		else
+			return compressionType.value();
 	}
+
+	public BlockReader getReader();
+
+	public BlockWriter getWriter();
 }

@@ -31,8 +31,24 @@ import java.io.OutputStream;
 
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
+import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 
-public class XzBlockReaderWriter implements DefaultBlockReader, DefaultBlockWriter {
+@CompressionType("xz")
+public class XzCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
+
+	@CompressionParameter
+	private final int preset;
+
+	public XzCompression(final int preset) {
+
+		this.preset = preset;
+	}
+
+	public XzCompression() {
+
+		this(6);
+	}
+
 
 	@Override
 	public InputStream getInputStream(final InputStream in) throws IOException {
@@ -43,6 +59,20 @@ public class XzBlockReaderWriter implements DefaultBlockReader, DefaultBlockWrit
 	@Override
 	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
-		return new XZCompressorOutputStream(out);
+		return new XZCompressorOutputStream(out, preset);
 	}
+
+	@Override
+	public XzCompression getReader() {
+
+		return this;
+	}
+
+	@Override
+	public XzCompression getWriter() {
+
+		return this;
+	}
+
+
 }

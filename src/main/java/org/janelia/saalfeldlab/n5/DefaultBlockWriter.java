@@ -79,7 +79,7 @@ public interface DefaultBlockWriter extends BlockWriter {
 
 		dos.flush();
 
-		final BlockWriter writer = datasetAttributes.getCompressionType().getWriter();
+		final BlockWriter writer = datasetAttributes.getCompression().getWriter();
 		writer.write(dataBlock, out);
 	}
 }

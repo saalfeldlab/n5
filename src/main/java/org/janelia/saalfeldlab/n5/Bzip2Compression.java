@@ -29,20 +29,47 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import net.jpountz.lz4.LZ4BlockInputStream;
-import net.jpountz.lz4.LZ4BlockOutputStream;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
+import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 
-public class Lz4BlockReaderWriter implements DefaultBlockReader, DefaultBlockWriter {
+@CompressionType("bzip2")
+public class Bzip2Compression implements DefaultBlockReader, DefaultBlockWriter, Compression {
+
+	@CompressionParameter
+	private final int blockSize;
+
+	public Bzip2Compression(final int blockSize) {
+
+		this.blockSize = blockSize;
+	}
+
+	public Bzip2Compression() {
+
+		this(BZip2CompressorOutputStream.MAX_BLOCKSIZE);
+	}
 
 	@Override
 	public InputStream getInputStream(final InputStream in) throws IOException {
 
-		return new LZ4BlockInputStream(in);
+		return new BZip2CompressorInputStream(in);
 	}
 
 	@Override
 	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
-		return new LZ4BlockOutputStream(out);
+		return new BZip2CompressorOutputStream(out, blockSize);
+	}
+
+	@Override
+	public Bzip2Compression getReader() {
+
+		return this;
+	}
+
+	@Override
+	public Bzip2Compression getWriter() {
+
+		return this;
 	}
 }
