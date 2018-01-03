@@ -6,13 +6,13 @@
 	<parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava-base</artifactId>
-		<version>3.1.0</version>
+		<version>3.2.0</version>
 		<relativePath />
 	</parent>
 
 	<groupId>org.janelia.saalfeldlab</groupId>
 	<artifactId>n5</artifactId>
-	<version>1.2.1-SNAPSHOT</version>
+	<version>1.4.1-SNAPSHOT</version>
 
 	<name>N5</name>
 	<description>Not HDF5</description>

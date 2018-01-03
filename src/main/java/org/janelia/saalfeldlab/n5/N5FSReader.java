@@ -41,6 +41,7 @@ import java.util.stream.Stream;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
 
 /**
  * Filesystem N5 implementation.
@@ -161,8 +162,7 @@ public class N5FSReader extends AbstractGsonReader {
 	public String[] list(final String pathName) throws IOException {
 
 		final Path path = Paths.get(basePath, pathName);
-		try (final Stream<Path> pathStream = Files.list(path))
-		{
+		try (final Stream<Path> pathStream = Files.list(path)) {
 			return pathStream
 					.filter(a -> Files.isDirectory(a))
 					.map(a -> path.relativize(a).toString())
@@ -204,5 +204,16 @@ public class N5FSReader extends AbstractGsonReader {
 	protected static Path getAttributesPath(final String pathName) {
 
 		return Paths.get(pathName, jsonFile);
+	}
+
+	protected static Class<?> classForJsonPrimitive(final JsonPrimitive jsonPrimitive) {
+
+		if (jsonPrimitive.isBoolean())
+			return boolean.class;
+		else if (jsonPrimitive.isNumber())
+			return double.class;
+		else if (jsonPrimitive.isString())
+			return String.class;
+		else return Object.class;
 	}
 }

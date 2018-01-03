@@ -28,13 +28,16 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 
 /**
@@ -123,5 +126,75 @@ public interface GsonAttributesParser extends N5Reader {
 		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
 		gson.toJson(map, mapType, writer);
 		writer.flush();
+	}
+
+	/**
+	 * Return a reasonable class for a {@link JsonPrimitive}.  Possible return
+	 * types are
+	 * <ul>
+	 * <li>boolean</li>
+	 * <li>double</li>
+	 * <li>String</li>
+	 * <li>Object</li>
+	 * </ul>
+	 *
+	 * @param jsonPrimitive
+	 * @return
+	 */
+	public static Class<?> classForJsonPrimitive(final JsonPrimitive jsonPrimitive) {
+
+		if (jsonPrimitive.isBoolean())
+			return boolean.class;
+		else if (jsonPrimitive.isNumber())
+			return double.class;
+		else if (jsonPrimitive.isString())
+			return String.class;
+		else return Object.class;
+	}
+
+	/**
+	 * Best effort implementation of {@link N5Reader#listAttributes(String)}
+	 * with limited type resolution.  Possible return types are
+	 * <ul>
+	 * <li>null</li>
+	 * <li>boolean</li>
+	 * <li>double</li>
+	 * <li>String</li>
+	 * <li>Object</li>
+	 * <li>boolean[]</li>
+	 * <li>double[]</li>
+	 * <li>String[]</li>
+	 * <li>Object[]</li>
+	 * </ul>
+	 */
+	@Override
+	public default Map<String, Class<?>> listAttributes(String pathName) throws IOException {
+
+		HashMap<String, JsonElement> jsonElementMap = getAttributes(pathName);
+		final HashMap<String, Class<?>> attributes = new HashMap<>();
+		jsonElementMap.forEach(
+				(key, jsonElement) -> {
+					final Class<?> clazz;
+					if (jsonElement.isJsonNull())
+						clazz = null;
+					else if (jsonElement.isJsonPrimitive())
+						clazz = classForJsonPrimitive((JsonPrimitive)jsonElement);
+					else if (jsonElement.isJsonArray()) {
+						final JsonArray jsonArray = (JsonArray)jsonElement;
+						if (jsonArray.size() > 0) {
+							final JsonElement firstElement = jsonArray.get(0);
+							if (firstElement.isJsonPrimitive())
+								clazz = Array.newInstance(classForJsonPrimitive((JsonPrimitive)firstElement), 0).getClass();
+							else
+								clazz = Object[].class;
+							}
+						else
+							clazz = Object[].class;
+					}
+					else
+						clazz = Object.class;
+					attributes.put(key, clazz);
+				});
+		return attributes;
 	}
 }
