@@ -31,6 +31,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.scijava.annotations.Indexable;
+
 /**
  * Compression scheme interface.
  *
@@ -45,6 +47,7 @@ public interface Compression {
 	@Retention(RetentionPolicy.RUNTIME)
 	@Inherited
 	@Target(ElementType.TYPE)
+	@Indexable
 	public static @interface CompressionType {
 
 		String value();
