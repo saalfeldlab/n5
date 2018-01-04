@@ -88,7 +88,7 @@ public class N5Benchmark {
 		for (int i = 0; i < data.length; ++i)
 			data[i] = (short)cursor.next().get();
 
-		n5 = N5.openFSWriter(testDirPath);
+		n5 = new N5FSWriter(testDirPath);
 	}
 
 	/**
