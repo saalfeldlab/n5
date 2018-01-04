@@ -5,14 +5,14 @@
 
 	<parent>
 		<groupId>org.scijava</groupId>
-		<artifactId>pom-scijava-base</artifactId>
-		<version>3.2.0</version>
+		<artifactId>pom-scijava</artifactId>
+		<version>19.0.0</version>
 		<relativePath />
 	</parent>
 
 	<groupId>org.janelia.saalfeldlab</groupId>
 	<artifactId>n5</artifactId>
-	<version>1.4.1-SNAPSHOT</version>
+	<version>2.0.0-SNAPSHOT</version>
 
 	<name>N5</name>
 	<description>Not HDF5</description>
@@ -92,11 +92,6 @@
 			<artifactId>gson</artifactId>
 			<version>2.3.1</version>
 		</dependency>
-		<dependency>
-			<groupId>io.github.lukehutch</groupId>
-			<artifactId>fast-classpath-scanner</artifactId>
-			<version>2.9.3</version>
-		</dependency>
 
 		<!-- Test dependencies -->
 		<dependency>
@@ -134,6 +129,10 @@
 			<artifactId>commons-collections4</artifactId>
 			<version>4.1</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.scijava</groupId>
+			<artifactId>scijava-common</artifactId>
 		</dependency>
 	</dependencies>
 

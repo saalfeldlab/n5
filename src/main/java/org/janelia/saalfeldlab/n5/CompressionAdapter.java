@@ -25,7 +25,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -34,11 +33,12 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map.Entry;
 
 import org.janelia.saalfeldlab.n5.Compression.CompressionParameter;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.scijava.annotations.Index;
+import org.scijava.annotations.IndexItem;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -47,9 +47,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
-import io.github.lukehutch.fastclasspathscanner.scanner.ScanResult;
 
 /**
  * Compression adapter, auto-discovers annotated compression implementations
@@ -78,14 +75,12 @@ public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSe
 
 		compressionParameters.clear();
 
-		final FastClasspathScanner scanner = new FastClasspathScanner();
-		scanner.setAnnotationVisibility(RetentionPolicy.RUNTIME);
-		final ScanResult result = scanner.scan(Runtime.getRuntime().availableProcessors());
-		final List<String> compressionClasses = result.getNamesOfClassesWithAnnotation(CompressionType.class);
-		for (final String className : compressionClasses) {
+		final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		final Index<CompressionType> annotationIndex = Index.load(CompressionType.class, classLoader);
+		for (final IndexItem<CompressionType> item : annotationIndex) {
 			Class<? extends Compression> clazz;
 			try {
-				clazz = (Class<? extends Compression>)Class.forName(className);
+				clazz = (Class<? extends Compression>)Class.forName(item.className());
 				final String type = clazz.getAnnotation(CompressionType.class).value();
 
 				Constructor<? extends Compression> constructor = clazz.getDeclaredConstructor();
