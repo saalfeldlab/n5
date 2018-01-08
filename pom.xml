@@ -10,7 +10,7 @@
 		<relativePath />
 	</parent>
 
-	<groupId>org.saalfeldlab</groupId>
+	<groupId>org.janelia.saalfeldlab</groupId>
 	<artifactId>n5</artifactId>
 	<version>2.0.0-SNAPSHOT</version>
 
