@@ -29,6 +29,7 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
        * blockSize (integer, default 65536)
      * xz with parameters
        * preset (integer, default 6).
+       
    Custom compression schemes with arbitrary parameters can be added using [compression annotations](#extensible-compression-schemes).
 5. Chunks are stored in a directory hierarchy that enumerates their positive integer position in the chunk grid (e.g. `0/4/1/7` for chunk grid position p=(0, 4, 1, 7)).
 6. Datasets are sparse, i.e. there is no guarantee that all chunks of a dataset exist.
@@ -118,7 +119,7 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
     
 ## Extensible compression schemes
 
-Other compression schemes can be implemented using the annotation discovery mechanism of SciJava.  Implement the [`BlockReader`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/BlockReader.java) and [`BlockWriter`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/BlockWriter.java) interfaces for the compression scheme and create a parameter class implementing the [`Compression`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/Compression.java) interface that is annotated with the [`CompressionType`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/Compression.java#L51) and [`CompressionParameter`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/Compression.java#L63) annotations.  Typically, all this can happen in a single class such as in [`GzipCompression`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/GzipCompression.java).
+Custom compression schemes can be implemented using the annotation discovery mechanism of SciJava.  Implement the [`BlockReader`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/BlockReader.java) and [`BlockWriter`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/BlockWriter.java) interfaces for the compression scheme and create a parameter class implementing the [`Compression`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/Compression.java) interface that is annotated with the [`CompressionType`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/Compression.java#L51) and [`CompressionParameter`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/Compression.java#L63) annotations.  Typically, all this can happen in a single class such as in [`GzipCompression`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/GzipCompression.java).
 
 ## Disclaimer
 
