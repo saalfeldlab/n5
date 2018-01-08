@@ -29,17 +29,50 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class RawBlockReaderWriter implements DefaultBlockReader, DefaultBlockWriter {
+import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
+import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
+import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+
+@CompressionType("xz")
+public class XzCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
+
+	@CompressionParameter
+	private final int preset;
+
+	public XzCompression(final int preset) {
+
+		this.preset = preset;
+	}
+
+	public XzCompression() {
+
+		this(6);
+	}
+
 
 	@Override
 	public InputStream getInputStream(final InputStream in) throws IOException {
 
-		return in;
+		return new XZCompressorInputStream(in);
 	}
 
 	@Override
 	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
-		return out;
+		return new XZCompressorOutputStream(out, preset);
 	}
+
+	@Override
+	public XzCompression getReader() {
+
+		return this;
+	}
+
+	@Override
+	public XzCompression getWriter() {
+
+		return this;
+	}
+
+
 }

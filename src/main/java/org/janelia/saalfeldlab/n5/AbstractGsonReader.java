@@ -53,7 +53,7 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 	public AbstractGsonReader(final GsonBuilder gsonBuilder) {
 
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
-		gsonBuilder.registerTypeAdapter(CompressionType.class, new CompressionType.JsonAdapter());
+		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
 		this.gson = gsonBuilder.create();
 	}
 
@@ -90,11 +90,30 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 		if (blockSize == null)
 			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
 
-		CompressionType compressionType = GsonAttributesParser.parseAttribute(map, DatasetAttributes.compressionTypeKey, CompressionType.class, gson);
-		if (compressionType == null)
-			compressionType = CompressionType.RAW;
+		Compression compression = GsonAttributesParser.parseAttribute(map, DatasetAttributes.compressionKey, Compression.class, gson);
 
-		return new DatasetAttributes(dimensions, blockSize, dataType, compressionType);
+		/* version 0 */
+		if (compression == null) {
+			switch (GsonAttributesParser.parseAttribute(map, DatasetAttributes.compressionTypeKey, String.class, gson)) {
+			case "raw":
+				compression = new RawCompression();
+				break;
+			case "gzip":
+				compression = new GzipCompression();
+				break;
+			case "bzip2":
+				compression = new Bzip2Compression();
+				break;
+			case "lz4":
+				compression = new Lz4Compression();
+				break;
+			case "xz":
+				compression = new XzCompression();
+				break;
+			}
+		}
+
+		return new DatasetAttributes(dimensions, blockSize, dataType, compression);
 	}
 
 	@Override

@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * A simple structured container format for hierarchies of chunked
+ * A simple structured container API for hierarchies of chunked
  * n-dimensional datasets and attributes.
  *
  * {@linkplain https://github.com/axtimwalde/n5}
@@ -37,6 +37,26 @@ import java.util.Map;
  * @author Stephan Saalfeld
  */
 public interface N5Reader {
+
+	/**
+	 * Major SemVer version of this N5 spec.
+	 */
+	public static final int VERSION_MAJOR = 2;
+
+	/**
+	 * Minor SemVer version of this N5 spec.
+	 */
+	public static final int VERSION_MINOR = 0;
+
+	/**
+	 * Path SemVar version of this N5 spec.
+	 */
+	public static final int VERSION_PATCH = 0;
+
+	/**
+	 * String representation of the SemVer version of this N5 spec.
+	 */
+	public static final String VERSION = VERSION_MAJOR + "." + VERSION_MINOR + "." + VERSION_PATCH;
 
 	/**
 	 * Reads an attribute.
@@ -112,4 +132,56 @@ public interface N5Reader {
 	 * @throws IOException
 	 */
 	public Map<String, Class<?>> listAttributes(final String pathName) throws IOException;
+
+	/**
+	 * /**
+	 * Get the SemVer version [major, minor, patch] of this container
+	 * as specified in the 'version' attribute of the root group.
+	 *
+	 * If no version is specified, 0.0.0 will be returned.
+	 * For incomplete versions, such as 1.2, the missing elements are
+	 * filled with 0, i.e. 1.2.0 in this case.
+	 * If the version does not conform to the "\d+\.\d+\.\d+" format,
+	 * a {@link NumberFormatException} is thrown.
+	 *
+	 * @return
+	 * @throws IOException
+	 * @throws NumberFormatException
+	 */
+	public default int[] getVersion() throws IOException, NumberFormatException {
+
+		String version = getAttribute("/", "version", String.class);
+		final int[] semVer = new int[3];
+		if (version != null) {
+			final String[] components = version.split("\\.");
+			if (components.length > 0)
+				semVer[0] = Integer.parseInt(components[0]);
+			if (components.length > 1)
+				semVer[1] = Integer.parseInt(components[1]);
+			if (components.length > 2)
+				semVer[2] = Integer.parseInt(components[2]);
+		}
+		return semVer;
+	}
+
+	/**
+	 * Returns true if this implementation is compatible with a given version.
+	 *
+	 * Currently, this means that the version is less than or equal to 1.0.0.
+	 *
+	 * @param major
+	 * @param minor
+	 * @param patch
+	 * @return
+	 */
+	public static boolean isCompatible(final int major, final int minor, final int patch) {
+
+		if (major > VERSION_MAJOR)
+			return false;
+		if (minor > VERSION_MINOR)
+			return false;
+		if (patch > VERSION_PATCH)
+			return false;
+		return true;
+	}
 }

@@ -28,21 +28,53 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.zip.Deflater;
 
-import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
-import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipParameters;
+import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 
-public class XzBlockReaderWriter implements DefaultBlockReader, DefaultBlockWriter {
+@CompressionType("gzip")
+public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
+
+	@CompressionParameter
+	private final int level;
+
+	private final transient GzipParameters parameters = new GzipParameters();
+
+	public GzipCompression(final int level) {
+
+		this.level = level;
+	}
+
+	public GzipCompression() {
+
+		this(Deflater.DEFAULT_COMPRESSION);
+	}
 
 	@Override
 	public InputStream getInputStream(final InputStream in) throws IOException {
 
-		return new XZCompressorInputStream(in);
+		return new GzipCompressorInputStream(in);
 	}
 
 	@Override
 	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
-		return new XZCompressorOutputStream(out);
+		parameters.setCompressionLevel(level);
+		return new GzipCompressorOutputStream(out, parameters);
+	}
+
+	@Override
+	public GzipCompression getReader() {
+
+		return this;
+	}
+
+	@Override
+	public GzipCompression getWriter() {
+
+		return this;
 	}
 }

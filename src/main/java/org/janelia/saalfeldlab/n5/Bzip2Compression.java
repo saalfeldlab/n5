@@ -25,61 +25,51 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 
-/**
- * Default implementation of {@link BlockWriter}.
- *
- * @author Stephan Saalfeld
- * @author Igor Pisarev
- */
-public interface DefaultBlockWriter extends BlockWriter {
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
+import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 
-	public OutputStream getOutputStream(final OutputStream out) throws IOException;
+@CompressionType("bzip2")
+public class Bzip2Compression implements DefaultBlockReader, DefaultBlockWriter, Compression {
 
-	@Override
-	public default <T> void write(
-			final DataBlock<T> dataBlock,
-			final OutputStream out) throws IOException {
+	@CompressionParameter
+	private final int blockSize;
 
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final OutputStream deflater = getOutputStream(out)) {
-			deflater.write(buffer.array());
-			deflater.flush();
-		}
+	public Bzip2Compression(final int blockSize) {
+
+		this.blockSize = blockSize;
 	}
 
-	/**
-	 * Writes a {@link DataBlock} into an {@link OutputStream}.
-	 *
-	 * @param out
-	 * @param datasetAttributes
-	 * @param dataBlock
-	 * @throws IOException
-	 */
-	public static <T> void writeBlock(
-			final OutputStream out,
-			final DatasetAttributes datasetAttributes,
-			final DataBlock<T> dataBlock) throws IOException {
+	public Bzip2Compression() {
 
-		final DataOutputStream dos = new DataOutputStream(out);
+		this(BZip2CompressorOutputStream.MAX_BLOCKSIZE);
+	}
 
-		final int mode = (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize())) ? 0 : 1;
-		dos.writeShort(mode);
+	@Override
+	public InputStream getInputStream(final InputStream in) throws IOException {
 
-		dos.writeShort(datasetAttributes.getNumDimensions());
-		for (final int size : dataBlock.getSize())
-			dos.writeInt(size);
+		return new BZip2CompressorInputStream(in);
+	}
 
-		if (mode != 0)
-			dos.writeInt(dataBlock.getNumElements());
+	@Override
+	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
-		dos.flush();
+		return new BZip2CompressorOutputStream(out, blockSize);
+	}
 
-		final BlockWriter writer = datasetAttributes.getCompression().getWriter();
-		writer.write(dataBlock, out);
+	@Override
+	public Bzip2Compression getReader() {
+
+		return this;
+	}
+
+	@Override
+	public Bzip2Compression getWriter() {
+
+		return this;
 	}
 }

@@ -29,20 +29,32 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import net.jpountz.lz4.LZ4BlockInputStream;
-import net.jpountz.lz4.LZ4BlockOutputStream;
+import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 
-public class Lz4BlockReaderWriter implements DefaultBlockReader, DefaultBlockWriter {
+@CompressionType("raw")
+public class RawCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
 
 	@Override
 	public InputStream getInputStream(final InputStream in) throws IOException {
 
-		return new LZ4BlockInputStream(in);
+		return in;
 	}
 
 	@Override
 	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
-		return new LZ4BlockOutputStream(out);
+		return out;
+	}
+
+	@Override
+	public RawCompression getReader() {
+
+		return this;
+	}
+
+	@Override
+	public RawCompression getWriter() {
+
+		return this;
 	}
 }

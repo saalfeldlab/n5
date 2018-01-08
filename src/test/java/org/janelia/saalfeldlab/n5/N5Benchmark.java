@@ -61,6 +61,15 @@ public class N5Benchmark {
 
 	private static short[] data;
 
+	private static final Compression[] compressions = {
+			new RawCompression(),
+			new Bzip2Compression(),
+			new GzipCompression(),
+			new Lz4Compression(),
+			new XzCompression()
+	};
+
+
 	/**
 	 * @throws java.lang.Exception
 	 */
@@ -79,7 +88,7 @@ public class N5Benchmark {
 		for (int i = 0; i < data.length; ++i)
 			data[i] = (short)cursor.next().get();
 
-		n5 = N5.openFSWriter(testDirPath);
+		n5 = new N5FSWriter(testDirPath);
 	}
 
 	/**
@@ -104,10 +113,10 @@ public class N5Benchmark {
 	public void testDocExample() {
 
 		final short[] dataBlockData = new short[]{1, 2, 3, 4, 5, 6};
-		for (final CompressionType compressionType : CompressionType.values()) {
+		for (final Compression compression : compressions) {
 			try {
-				final String compressedDatasetName = datasetName + "." + compressionType.name();
-				n5.createDataset(compressedDatasetName, new long[]{1, 2, 3}, new int[]{1, 2, 3}, DataType.UINT16, compressionType);
+				final String compressedDatasetName = datasetName + "." + compression.getType();
+				n5.createDataset(compressedDatasetName, new long[]{1, 2, 3}, new int[]{1, 2, 3}, DataType.UINT16, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(compressedDatasetName);
 				final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(new int[]{1, 2, 3}, new long[]{0, 0, 0}, dataBlockData);
 				n5.writeBlock(compressedDatasetName, attributes, dataBlock);
@@ -123,12 +132,12 @@ public class N5Benchmark {
 		final int nBlocks = 5;
 
 		for (int i = 0; i < 1; ++i) {
-			for (final CompressionType compressionType : CompressionType.values()) {
+			for (final Compression compression : compressions) {
 
 				final long t = System.currentTimeMillis();
 				try {
-					final String compressedDatasetName = datasetName + "." + compressionType.name();
-					n5.createDataset(compressedDatasetName, new long[]{64 * nBlocks, 64 * nBlocks, 64 * nBlocks}, new int[]{64, 64, 64}, DataType.UINT16, compressionType);
+					final String compressedDatasetName = datasetName + "." + compression.getType();
+					n5.createDataset(compressedDatasetName, new long[]{64 * nBlocks, 64 * nBlocks, 64 * nBlocks}, new int[]{64, 64, 64}, DataType.UINT16, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(compressedDatasetName);
 					for (int z = 0; z < nBlocks; ++z)
 						for (int y = 0; y < nBlocks; ++y)
@@ -139,7 +148,7 @@ public class N5Benchmark {
 				} catch (final IOException e) {
 					fail(e.getMessage());
 				}
-				System.out.println(String.format("%d : %s : %fs", i, compressionType.toString(), 0.001 * (System.currentTimeMillis() - t)));
+				System.out.println(String.format("%d : %s : %fs", i, compression.getType(), 0.001 * (System.currentTimeMillis() - t)));
 			}
 
 			/* TIF blocks */
@@ -207,11 +216,11 @@ public class N5Benchmark {
 			final ArrayList<Future<Boolean>> futures = new ArrayList<>();
 			long t;
 
-			for (final CompressionType compressionType : CompressionType.values()) {
+			for (final Compression compression : compressions) {
 				t = System.currentTimeMillis();
 				try {
-					final String compressedDatasetName = datasetName + "." + compressionType.name();
-					n5.createDataset(compressedDatasetName, new long[]{64 * nBlocks, 64 * nBlocks, 64 * nBlocks}, new int[]{64, 64, 64}, DataType.UINT16, compressionType);
+					final String compressedDatasetName = datasetName + "." + compression.getType();
+					n5.createDataset(compressedDatasetName, new long[]{64 * nBlocks, 64 * nBlocks, 64 * nBlocks}, new int[]{64, 64, 64}, DataType.UINT16, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(compressedDatasetName);
 					for (int z = 0; z < nBlocks; ++z) {
 						final int fz = z;
@@ -232,7 +241,7 @@ public class N5Benchmark {
 					for (final Future<Boolean> f : futures)
 						f.get();
 
-					System.out.println(String.format("%d : %s : %fs", i, compressionType.toString(), 0.001 * (System.currentTimeMillis() - t)));
+					System.out.println(String.format("%d : %s : %fs", i, compression.getType(), 0.001 * (System.currentTimeMillis() - t)));
 				} catch (final IOException | InterruptedException | ExecutionException e) {
 					fail(e.getMessage());
 				}
