@@ -28,12 +28,12 @@ import java.util.Random;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
  * Abstract base class for testing N5 functionality.
- * Subclasses are expected to provide a specific N5 implementation to be tested by defining a custom {@link #setUpBeforeClass()} method.
+ * Subclasses are expected to provide a specific N5 implementation to be tested by defining the {@link #createN5Writer()} method.
  *
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
@@ -53,7 +53,10 @@ public abstract class AbstractN5Test {
 	static private float[] floatBlock;
 	static private double[] doubleBlock;
 
-	protected static N5Writer n5;
+	static private N5Writer n5;
+	static private boolean initialized = false;
+
+	protected abstract N5Writer createN5Writer() throws IOException;
 
 	protected Compression[] getCompressions() {
 
@@ -69,8 +72,13 @@ public abstract class AbstractN5Test {
 	/**
 	 * @throws IOException
 	 */
-	@BeforeClass
-	public static void setUpBeforeClass() throws IOException {
+	@Before
+	public void setUpOnce() throws IOException {
+
+		if (initialized)
+			return;
+
+		n5 = createN5Writer();
 
 		final Random rnd = new Random();
 		byteBlock = new byte[blockSize[0] * blockSize[1] * blockSize[2]];
@@ -87,6 +95,8 @@ public abstract class AbstractN5Test {
 			floatBlock[i] = Float.intBitsToFloat(rnd.nextInt());
 			doubleBlock[i] = Double.longBitsToDouble(rnd.nextLong());
 		}
+
+		initialized = true;
 	}
 
 	/**
