@@ -53,7 +53,7 @@ public abstract class AbstractN5Test {
 	static private float[] floatBlock;
 	static private double[] doubleBlock;
 
-	static private N5Writer n5;
+	static protected N5Writer n5;
 	static private boolean initialized = false;
 
 	protected abstract N5Writer createN5Writer() throws IOException;
