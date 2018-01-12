@@ -24,7 +24,7 @@ import java.io.IOException;
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
  */
-public class N5FSTest extends AbstractN5Test {
+public class N5FSTest extends AbstractN5VersionedTest {
 
 	static private String testDirPath = System.getProperty("user.home") + "/tmp/n5-test";
 
@@ -32,7 +32,7 @@ public class N5FSTest extends AbstractN5Test {
 	 * @throws IOException
 	 */
 	@Override
-	protected N5Writer createN5Writer() throws IOException {
+	protected N5VersionedWriter createN5Writer() throws IOException {
 
 		return new N5FSWriter(testDirPath);
 	}
