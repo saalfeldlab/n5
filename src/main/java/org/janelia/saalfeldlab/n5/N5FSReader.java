@@ -34,7 +34,7 @@ import com.google.gson.GsonBuilder;
  *
  * @author Stephan Saalfeld
  */
-public class N5FSReader extends AbstractN5FSReader {
+public class N5FSReader extends AbstractN5FSReader implements N5VersionedReader {
 
 	/**
 	 * Opens an {@link N5FSReader} at a given base path with a custom
@@ -52,10 +52,7 @@ public class N5FSReader extends AbstractN5FSReader {
 	public N5FSReader(final String basePath, final GsonBuilder gsonBuilder) throws IOException, NumberFormatException {
 
 		super(basePath, gsonBuilder);
-
-		int[] version = getVersion();
-		if (!N5Reader.isCompatible(version[0], version[1], version[2]))
-			throw new IOException("Incompatible version " + getAttribute("/", "version", String.class) + " (this is " + VERSION + ").");
+		checkVersion();
 	}
 
 	/**

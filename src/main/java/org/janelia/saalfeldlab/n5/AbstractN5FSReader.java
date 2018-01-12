@@ -41,14 +41,13 @@ import java.util.stream.Stream;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
 
 /**
  * Filesystem {@link N5Reader} implementation without version compatibility test.
  *
  * @author Stephan Saalfeld
  */
-public abstract class AbstractN5FSReader extends AbstractGsonReader {
+public abstract class AbstractN5FSReader extends AbstractGsonReader implements N5Reader {
 
 	protected static class LockedFileChannel implements Closeable {
 
@@ -212,16 +211,5 @@ public abstract class AbstractN5FSReader extends AbstractGsonReader {
 	protected static Path getAttributesPath(final String pathName) {
 
 		return Paths.get(pathName, jsonFile);
-	}
-
-	protected static Class<?> classForJsonPrimitive(final JsonPrimitive jsonPrimitive) {
-
-		if (jsonPrimitive.isBoolean())
-			return boolean.class;
-		else if (jsonPrimitive.isNumber())
-			return double.class;
-		else if (jsonPrimitive.isString())
-			return String.class;
-		else return Object.class;
 	}
 }
