@@ -40,11 +40,11 @@ import org.junit.Test;
  */
 public abstract class AbstractN5Test {
 
-	static private final String groupName = "/test/group";
-	static private final String[] subGroupNames = new String[]{"a", "b", "c"};
-	static private final String datasetName = "/test/group/dataset";
-	static private final long[] dimensions = new long[]{100, 200, 300};
-	static private final int[] blockSize = new int[]{44, 33, 22};
+	static protected final String groupName = "/test/group";
+	static protected final String[] subGroupNames = new String[]{"a", "b", "c"};
+	static protected final String datasetName = "/test/group/dataset";
+	static protected final long[] dimensions = new long[]{100, 200, 300};
+	static protected final int[] blockSize = new int[]{44, 33, 22};
 
 	static private byte[] byteBlock;
 	static private short[] shortBlock;
