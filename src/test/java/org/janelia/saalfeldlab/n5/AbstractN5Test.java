@@ -55,13 +55,16 @@ public abstract class AbstractN5Test {
 
 	protected static N5Writer n5;
 
-	private static final Compression[] compressions = {
-			new RawCompression(),
-			new Bzip2Compression(),
-			new GzipCompression(),
-			new Lz4Compression(),
-			new XzCompression()
-	};
+	protected Compression[] getCompressions() {
+
+		return new Compression[] {
+				new RawCompression(),
+				new Bzip2Compression(),
+				new GzipCompression(),
+				new Lz4Compression(),
+				new XzCompression()
+			};
+	}
 
 	/**
 	 * @throws IOException
@@ -137,7 +140,7 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testWriteReadByteBlock() {
 
-		for (final Compression compression : compressions) {
+		for (final Compression compression : getCompressions()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT8,
 					DataType.INT8}) {
@@ -166,7 +169,7 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testWriteReadShortBlock() {
 
-		for (final Compression compression : compressions) {
+		for (final Compression compression : getCompressions()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT16,
 					DataType.INT16}) {
@@ -195,7 +198,7 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testWriteReadIntBlock() {
 
-		for (final Compression compression : compressions) {
+		for (final Compression compression : getCompressions()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT32,
 					DataType.INT32}) {
@@ -224,7 +227,7 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testWriteReadLongBlock() {
 
-		for (final Compression compression : compressions) {
+		for (final Compression compression : getCompressions()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT64,
 					DataType.INT64}) {
@@ -253,7 +256,7 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testWriteReadFloatBlock() {
 
-		for (final Compression compression : compressions) {
+		for (final Compression compression : getCompressions()) {
 			System.out.println("Testing " + compression.getType() + " float32");
 			try {
 				n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT32, compression);
@@ -278,7 +281,7 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testWriteReadDoubleBlock() {
 
-		for (final Compression compression : compressions) {
+		for (final Compression compression : getCompressions()) {
 			System.out.println("Testing " + compression.getType() + " float64");
 			try {
 				n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT64, compression);
@@ -304,7 +307,7 @@ public abstract class AbstractN5Test {
 
 		final int[] differentBlockSize = new int[] {5, 10, 15};
 
-		for (final Compression compression : compressions) {
+		for (final Compression compression : getCompressions()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT8,
 					DataType.INT8}) {
