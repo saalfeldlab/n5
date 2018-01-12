@@ -37,7 +37,6 @@ public class N5FSTest extends AbstractN5Test {
 	public static void setUpBeforeClass() throws IOException {
 
 		n5 = new N5FSWriter(testDirPath);
-		n5Parser = (GsonAttributesParser)n5;
 		AbstractN5Test.setUpBeforeClass();
 	}
 }

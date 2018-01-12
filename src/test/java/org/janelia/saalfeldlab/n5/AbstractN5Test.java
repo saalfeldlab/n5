@@ -54,7 +54,6 @@ public abstract class AbstractN5Test {
 	static private double[] doubleBlock;
 
 	protected static N5Writer n5;
-	protected static GsonAttributesParser n5Parser;
 
 	private static final Compression[] compressions = {
 			new RawCompression(),
@@ -364,14 +363,14 @@ public abstract class AbstractN5Test {
 			n5.createGroup(groupName);
 
 			n5.setAttribute(groupName, "key1", "value1");
-			Assert.assertEquals(1, n5Parser.getAttributes(groupName).size());
+			Assert.assertEquals(1, n5.listAttributes(groupName).size());
 			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
 
 			final Map<String, String> newAttributes = new HashMap<>();
 			newAttributes.put("key2", "value2");
 			newAttributes.put("key3", "value3");
 			n5.setAttributes(groupName, newAttributes);
-			Assert.assertEquals(3, n5Parser.getAttributes(groupName).size());
+			Assert.assertEquals(3, n5.listAttributes(groupName).size());
 			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
 			Assert.assertEquals("value2", n5.getAttribute(groupName, "key2", String.class));
 			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
@@ -379,7 +378,7 @@ public abstract class AbstractN5Test {
 			// test the case where the resulting file becomes shorter
 			n5.setAttribute(groupName, "key1", new Integer(1));
 			n5.setAttribute(groupName, "key2", new Integer(2));
-			Assert.assertEquals(3, n5Parser.getAttributes(groupName).size());
+			Assert.assertEquals(3, n5.listAttributes(groupName).size());
 			Assert.assertEquals(new Integer(1), n5.getAttribute(groupName, "key1", Integer.class));
 			Assert.assertEquals(new Integer(2), n5.getAttribute(groupName, "key2", Integer.class));
 			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
