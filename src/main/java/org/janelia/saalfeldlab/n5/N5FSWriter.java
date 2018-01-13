@@ -40,11 +40,11 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 
 /**
- * Filesystem N5Writer implementation with version compatibility check.
+ * Filesystem {@link N5Writer} implementation with version compatibility check.
  *
  * @author Stephan Saalfeld
  */
-public class N5FSWriter extends AbstractN5FSReader implements N5Writer {
+public class N5FSWriter extends N5FSReader implements N5VersionedWriter {
 
 	/**
 	 * Opens an {@link N5FSWriter} at a given base path with a custom
@@ -68,15 +68,8 @@ public class N5FSWriter extends AbstractN5FSReader implements N5Writer {
 	public N5FSWriter(final String basePath, final GsonBuilder gsonBuilder) throws IOException, NumberFormatException {
 
 		super(basePath, gsonBuilder);
-		final Path path = Paths.get(basePath);
-		if (Files.exists(path)) {
-			int[] version = getVersion();
-			if (!N5Reader.isCompatible(version[0], version[1], version[2]))
-				throw new IOException("Incompatible version " + getAttribute("/", "version", String.class) + " (this is " + VERSION + ").");
-		} else
-			Files.createDirectories(path);
-
-		setAttribute("/", "version", VERSION);
+		Files.createDirectories(Paths.get(basePath));
+		setVersion();
 	}
 
 	/**
@@ -97,7 +90,7 @@ public class N5FSWriter extends AbstractN5FSReader implements N5Writer {
 	 * @throws NumberFormatException
 	 *    if the version attribute exists but is malformed.
 	 */
-	public N5FSWriter(final String basePath) throws IOException {
+	public N5FSWriter(final String basePath) throws IOException, NumberFormatException {
 
 		this(basePath, new GsonBuilder());
 	}

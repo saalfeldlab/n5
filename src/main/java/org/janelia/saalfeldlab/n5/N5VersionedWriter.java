@@ -27,47 +27,24 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 
-import com.google.gson.GsonBuilder;
-
 /**
- * Filesystem {@link N5Reader} implementation with version compatibility check.
+ * A simple structured versioned container API for hierarchies
+ * of chunked n-dimensional datasets and attributes.
+ *
+ * {@linkplain https://github.com/axtimwalde/n5}
  *
  * @author Stephan Saalfeld
  */
-public class N5FSReader extends AbstractN5FSReader implements N5VersionedReader {
+public interface N5VersionedWriter extends N5VersionedReader, N5Writer {
 
 	/**
-	 * Opens an {@link N5FSReader} at a given base path with a custom
-	 * {@link GsonBuilder} to support custom attributes.
+	 * Set the version of this container to
+	 * the current N5 specification version.
 	 *
-	 * @param basePath N5 base path
-	 * @param gsonBuilder
 	 * @throws IOException
-	 *    if the base path cannot be read or does not exist,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
-	 * @throws NumberFormatException
-	 *    if the version attribute exists but is malformed.
 	 */
-	public N5FSReader(final String basePath, final GsonBuilder gsonBuilder) throws IOException, NumberFormatException {
+	public default void setVersion() throws IOException {
 
-		super(basePath, gsonBuilder);
-		checkVersion();
-	}
-
-	/**
-	 * Opens an {@link N5FSReader} at a given base path.
-	 *
-	 * @param basePath N5 base path
-	 * @throws IOException
-	 *    if the base path cannot be read or does not exist,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
-	 * @throws NumberFormatException
-	 *    if the version attribute exists but is malformed.
-	 */
-	public N5FSReader(final String basePath) throws IOException, NumberFormatException {
-
-		this(basePath, new GsonBuilder());
+		setAttribute("/", VERSION_KEY, VERSION);
 	}
 }

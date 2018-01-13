@@ -18,22 +18,36 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 
+import org.junit.Assert;
+import org.junit.Test;
+
 /**
- * Initiates testing of the filesystem-based N5 implementation.
+ * Abstract base class for testing versioned N5 functionality.
+ * Subclasses are expected to provide a specific N5 implementation to be tested by defining the {@link #createN5Writer()} method.
  *
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
  */
-public class N5FSTest extends AbstractN5VersionedTest {
+public abstract class AbstractN5VersionedTest extends AbstractN5Test {
 
-	static private String testDirPath = System.getProperty("user.home") + "/tmp/n5-test";
-
-	/**
-	 * @throws IOException
-	 */
 	@Override
-	protected N5VersionedWriter createN5Writer() throws IOException {
+	protected abstract N5VersionedWriter createN5Writer() throws IOException;
 
-		return new N5FSWriter(testDirPath);
+	@Test
+	public void testVersion() throws NumberFormatException, IOException {
+
+		final N5VersionedWriter n5Versioned = (N5VersionedWriter)n5;
+		n5Versioned.checkVersion();
+
+		Assert.assertEquals(N5VersionedReader.VERSION, n5Versioned.getVersionString());
+
+		Assert.assertArrayEquals(
+				new int[] {
+						N5VersionedReader.VERSION_MAJOR,
+						N5VersionedReader.VERSION_MINOR,
+						N5VersionedReader.VERSION_PATCH
+					},
+				n5Versioned.getVersion()
+			);
 	}
 }

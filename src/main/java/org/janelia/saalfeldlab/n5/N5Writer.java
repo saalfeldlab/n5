@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * A simple structured container format for hierarchies of chunked
+ * A simple structured container API for hierarchies of chunked
  * n-dimensional datasets and attributes.
  *
  * {@linkplain https://github.com/axtimwalde/n5}
