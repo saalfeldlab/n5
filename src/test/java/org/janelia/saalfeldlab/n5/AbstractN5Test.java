@@ -468,4 +468,32 @@ public abstract class AbstractN5Test {
 			fail(e.getMessage());
 		}
 	}
+
+	protected abstract N5Writer createN5Writer() throws IOException;
+
+	@Test
+	public void testVersion() throws NumberFormatException, IOException {
+
+		n5.checkVersion();
+
+		final String n5VersionString = n5.getVersionString();
+
+		Assert.assertTrue(n5VersionString == null || n5VersionString.equals(N5Reader.VERSION));
+
+		Assert.assertArrayEquals(
+				new int[] {
+						N5Reader.VERSION_MAJOR,
+						N5Reader.VERSION_MINOR,
+						N5Reader.VERSION_PATCH
+					},
+				n5.getVersion()
+			);
+
+
+		n5.checkVersion();
+
+		n5.setAttribute("/", "version", "2.0.0");
+
+		Assert.assertFalse(N5Reader.isCompatible(2, 0, 0));
+	}
 }

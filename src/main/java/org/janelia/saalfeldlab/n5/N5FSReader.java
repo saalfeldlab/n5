@@ -105,21 +105,34 @@ public class N5FSReader extends AbstractGsonReader {
 	 * Opens an {@link N5FSReader} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
-	 * @param basePath n5 base path
+	 * @param basePath N5 base path
 	 * @param gsonBuilder
+	 * @throws IOException
+	 *    if the base path cannot be read or does not exist,
+	 *    if the N5 version of the container is not compatible with this
+	 *    implementation.
+	 * @throws NumberFormatException
+	 *    if the version attribute exists but is malformed.
 	 */
-	public N5FSReader(final String basePath, final GsonBuilder gsonBuilder) {
+	public N5FSReader(final String basePath, final GsonBuilder gsonBuilder) throws IOException, NumberFormatException {
 
 		super(gsonBuilder);
 		this.basePath = basePath;
+		checkVersion();
 	}
 
 	/**
 	 * Opens an {@link N5FSReader} at a given base path.
 	 *
-	 * @param basePath n5 base path
+	 * @param basePath N5 base path
+	 * @throws IOException
+	 *    if the base path cannot be read or does not exist,
+	 *    if the N5 version of the container is not compatible with this
+	 *    implementation.
+	 * @throws NumberFormatException
+	 *    if the version attribute exists but is malformed.
 	 */
-	public N5FSReader(final String basePath) {
+	public N5FSReader(final String basePath) throws IOException, NumberFormatException {
 
 		this(basePath, new GsonBuilder());
 	}

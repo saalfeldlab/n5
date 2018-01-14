@@ -47,8 +47,10 @@ public interface N5 {
 	 *
 	 * @param basePath n5 base path
 	 * @param gsonBuilder
+	 * @throws IOException
+	 * @throws NumberFormatException
 	 */
-	public static N5Reader openFSReader(final String basePath, final GsonBuilder gsonBuilder) {
+	public static N5Reader openFSReader(final String basePath, final GsonBuilder gsonBuilder) throws NumberFormatException, IOException {
 
 		return new N5FSReader(basePath, gsonBuilder);
 	}
@@ -79,8 +81,10 @@ public interface N5 {
 	 * will fail with an {@link IOException}.
 	 *
 	 * @param basePath n5 base path
+	 * @throws IOException
+	 * @throws NumberFormatException
 	 */
-	public static N5Reader openFSReader(final String basePath) {
+	public static N5Reader openFSReader(final String basePath) throws NumberFormatException, IOException {
 
 		return new N5FSReader(basePath);
 	}

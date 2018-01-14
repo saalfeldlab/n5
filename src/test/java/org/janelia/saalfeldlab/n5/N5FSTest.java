@@ -18,8 +18,6 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 
-import org.janelia.saalfeldlab.n5.N5;
-import org.janelia.saalfeldlab.n5.GsonAttributesParser;
 import org.junit.BeforeClass;
 
 /**
@@ -41,5 +39,11 @@ public class N5FSTest extends AbstractN5Test {
 		n5 = N5.openFSWriter(testDirPath);
 		n5Parser = (GsonAttributesParser)n5;
 		AbstractN5Test.setUpBeforeClass();
+	}
+
+	@Override
+	protected N5Writer createN5Writer() throws IOException {
+
+		return new N5FSWriter(testDirPath);
 	}
 }
