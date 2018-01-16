@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import org.janelia.saalfeldlab.n5.N5Reader.Version;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -476,24 +477,14 @@ public abstract class AbstractN5Test {
 
 		n5.checkVersion();
 
-		final String n5VersionString = n5.getVersionString();
+		final Version n5Version = n5.getVersion();
 
-		Assert.assertTrue(n5VersionString == null || n5VersionString.equals(N5Reader.VERSION));
-
-		Assert.assertArrayEquals(
-				new int[] {
-						N5Reader.VERSION_MAJOR,
-						N5Reader.VERSION_MINOR,
-						N5Reader.VERSION_PATCH
-					},
-				n5.getVersion()
-			);
-
+		Assert.assertTrue(n5Version.equals(N5Reader.VERSION));
 
 		n5.checkVersion();
 
 		n5.setAttribute("/", "version", "2.0.0");
 
-		Assert.assertFalse(N5Reader.isCompatible(2, 0, 0));
+		Assert.assertFalse(N5Reader.isCompatible(n5.getVersion()));
 	}
 }

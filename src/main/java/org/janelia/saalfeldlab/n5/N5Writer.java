@@ -170,6 +170,6 @@ public interface N5Writer extends N5Reader {
 	 */
 	public default void setVersion() throws IOException {
 
-		setAttribute("/", VERSION_KEY, VERSION);
+		setAttribute("/", VERSION_KEY, VERSION.toString());
 	}
 }

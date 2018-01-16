@@ -27,6 +27,8 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A simple structured container for hierarchies of chunked
@@ -38,25 +40,131 @@ import java.util.Map;
  */
 public interface N5Reader {
 
-	/**
-	 * Major SemVer version of this N5 spec.
-	 */
-	public static final int VERSION_MAJOR = 0;
+	static public class Version {
+
+		private final int major;
+		private final int minor;
+		private final int patch;
+		private String rest;
+
+		public Version(
+				final int major,
+				final int minor,
+				final int patch,
+				final String rest) {
+
+			this.major = major;
+			this.minor = minor;
+			this.patch = patch;
+			this.rest = rest;
+		}
+
+		public Version(
+				final int major,
+				final int minor,
+				final int patch) {
+
+			this(major, minor, patch, "");
+		}
+
+		public Version(final String versionString) {
+
+			boolean isSemVer = false;
+			if (versionString != null) {
+				final Matcher matcher = Pattern.compile("(\\d+)(\\.(\\d+))?(\\.(\\d+))?(.*)").matcher(versionString);
+				isSemVer = matcher.find();
+				if (isSemVer) {
+					final String majorString = matcher.group(1);
+					if (!majorString.equals(""))
+						major = Integer.parseInt(majorString);
+					else
+						major = 0;
+					final String minorString = matcher.group(3);
+					if (!minorString.equals(""))
+						minor = Integer.parseInt(minorString);
+					else
+						minor = 0;
+					final String patchString = matcher.group(5);
+					if (!patchString.equals(""))
+						patch = Integer.parseInt(patchString);
+					else
+						patch = 0;
+					rest = matcher.group(6);
+				}
+				else {
+					major = 0;
+					minor = 0;
+					patch = 0;
+					rest = "";
+				}
+			}
+			else {
+				major = 0;
+				minor = 0;
+				patch = 0;
+				rest = "";
+			}
+		}
+
+		public final String getRest() {
+
+			return rest;
+		}
+
+		public final void setRest(String rest) {
+
+			this.rest = rest;
+		}
+
+		public final int getMajor() {
+
+			return major;
+		}
+
+		public final int getMinor() {
+
+			return minor;
+		}
+
+		public final int getPatch() {
+
+			return patch;
+		}
+
+		@Override
+		public String toString() {
+
+			StringBuilder s = new StringBuilder();
+			s.append(major);
+			s.append(".");
+			s.append(minor);
+			s.append(".");
+			s.append(patch);
+			s.append(rest);
+
+			return s.toString();
+		}
+
+		@Override
+		public boolean equals(Object other) {
+
+			if (other instanceof Version) {
+				final Version otherVersion = (Version)other;
+				return
+						(major == otherVersion.major) &
+						(minor == otherVersion.minor) &
+						(patch == otherVersion.patch) &
+						(rest.equals(otherVersion.rest));
+			}
+			else
+				return false;
+		}
+	}
 
 	/**
-	 * Minor SemVer version of this N5 spec.
+	 * SemVer version of this N5 spec.
 	 */
-	public static final int VERSION_MINOR = 0;
-
-	/**
-	 * Patch SemVar version of this N5 spec.
-	 */
-	public static final int VERSION_PATCH = 0;
-
-	/**
-	 * String representation of the SemVer version of this N5 spec.
-	 */
-	public static final String VERSION = VERSION_MAJOR + "." + VERSION_MINOR + "." + VERSION_PATCH;
+	public static final Version VERSION = new Version(N5Reader.class.getPackage().getImplementationVersion());
 
 	/**
 	 * Version attribute key.
@@ -71,43 +179,31 @@ public interface N5Reader {
 	 * @throws IOException
 	 * @throws NumberFormatException
 	 */
-	public default void checkVersion() throws IOException, NumberFormatException {
+	public default void checkVersion() throws IOException {
 
 		if (exists("/")) {
-			final int[] version = getVersion();
-			if (!isCompatible(version[0], version[1], version[2]))
+			final Version version = getVersion();
+			if (!isCompatible(version))
 				throw new IOException("Incompatible version " + getVersionString() + " (this is " + VERSION + ").");
 		}
 	}
 
 	/**
-	 * Get the SemVer version [major, minor, patch] of this container
-	 * as specified in the 'version' attribute of the root group.
+	 * Get the SemVer version of this container as specified in the 'version'
+	 * attribute of the root group.
 	 *
-	 * If no version is specified, 0.0.0 will be returned.
-	 * For incomplete versions, such as 1.2, the missing elements are
-	 * filled with 0, i.e. 1.2.0 in this case.
-	 * If the version does not conform to the "\d+\.\d+\.\d+" format,
-	 * a {@link NumberFormatException} is thrown.
+	 * If no version is specified or the  version string does not conform to
+	 * the SemVer format, 0.0.0 will be returned.  For incomplete versions,
+	 * such as 1.2, the missing elements are filled with 0, i.e. 1.2.0 in this
+	 * case.
 	 *
 	 * @return
 	 * @throws IOException
 	 * @throws NumberFormatException
 	 */
-	public default int[] getVersion() throws IOException, NumberFormatException {
+	public default Version getVersion() throws IOException {
 
-		final String version = getVersionString();
-		final int[] semVer = new int[3];
-		if (version != null) {
-			final String[] components = version.split("\\.");
-			if (components.length > 0)
-				semVer[0] = Integer.parseInt(components[0]);
-			if (components.length > 1)
-				semVer[1] = Integer.parseInt(components[1]);
-			if (components.length > 2)
-				semVer[2] = Integer.parseInt(components[2]);
-		}
-		return semVer;
+		return new Version(getVersionString());
 	}
 
 	/**
@@ -129,18 +225,16 @@ public interface N5Reader {
 	 *
 	 * Currently, this means that the version is less than or equal to 1.0.0.
 	 *
-	 * @param major
-	 * @param minor
-	 * @param patch
+	 * @param version
 	 * @return
 	 */
-	public static boolean isCompatible(final int major, final int minor, final int patch) {
+	public static boolean isCompatible(final Version version) {
 
-		if (major > VERSION_MAJOR)
+		if (version.getMajor() > VERSION.getMajor())
 			return false;
-		if (minor > VERSION_MINOR)
+		if (version.getMinor() > VERSION.getMinor())
 			return false;
-		if (patch > VERSION_PATCH)
+		if (version.getPatch() > VERSION.getPatch())
 			return false;
 		return true;
 	}
