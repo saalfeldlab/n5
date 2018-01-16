@@ -124,6 +124,11 @@
 			<version>14.12.5</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.scijava</groupId>
+			<artifactId>scijava-common</artifactId>
+			<version>2.69.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>

@@ -161,15 +161,4 @@ public interface N5Writer extends N5Reader {
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException;
-
-	/**
-	 * Set the version of this container to
-	 * the current N5 specification version.
-	 *
-	 * @throws IOException
-	 */
-	public default void setVersion() throws IOException {
-
-		setAttribute("/", VERSION_KEY, VERSION.toString());
-	}
 }

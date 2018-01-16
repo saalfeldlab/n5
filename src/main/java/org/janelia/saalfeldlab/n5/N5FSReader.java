@@ -118,7 +118,11 @@ public class N5FSReader extends AbstractGsonReader {
 
 		super(gsonBuilder);
 		this.basePath = basePath;
-		checkVersion();
+		if (exists("/")) {
+			final Version version = getVersion();
+			if (!VERSION.isCompatible(version))
+				throw new IOException("Incompatible version " + version + " (this is " + VERSION + ").");
+		}
 	}
 
 	/**

@@ -475,16 +475,14 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testVersion() throws NumberFormatException, IOException {
 
-		n5.checkVersion();
-
 		final Version n5Version = n5.getVersion();
+
+		System.out.println(n5Version);
 
 		Assert.assertTrue(n5Version.equals(N5Reader.VERSION));
 
-		n5.checkVersion();
+		n5.setAttribute("/", N5Reader.VERSION_KEY, new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
 
-		n5.setAttribute("/", "version", "2.0.0");
-
-		Assert.assertFalse(N5Reader.isCompatible(n5.getVersion()));
+		Assert.assertFalse(N5Reader.VERSION.isCompatible(n5.getVersion()));
 	}
 }
