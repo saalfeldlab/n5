@@ -44,7 +44,7 @@ import com.google.gson.JsonElement;
  *
  * @author Stephan Saalfeld
  */
-public class N5FSWriter extends N5FSReader implements N5VersionedWriter {
+public class N5FSWriter extends N5FSReader implements N5Writer {
 
 	/**
 	 * Opens an {@link N5FSWriter} at a given base path with a custom
@@ -69,7 +69,7 @@ public class N5FSWriter extends N5FSReader implements N5VersionedWriter {
 
 		super(basePath, gsonBuilder);
 		Files.createDirectories(Paths.get(basePath));
-		setVersion();
+		setAttribute("/", VERSION_KEY, VERSION.toString());
 	}
 
 	/**
@@ -90,7 +90,7 @@ public class N5FSWriter extends N5FSReader implements N5VersionedWriter {
 	 * @throws NumberFormatException
 	 *    if the version attribute exists but is malformed.
 	 */
-	public N5FSWriter(final String basePath) throws IOException, NumberFormatException {
+	public N5FSWriter(final String basePath) throws IOException {
 
 		this(basePath, new GsonBuilder());
 	}

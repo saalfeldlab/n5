@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import org.janelia.saalfeldlab.n5.N5Reader.Version;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -490,5 +491,19 @@ public abstract class AbstractN5Test {
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
+	}
+
+	@Test
+	public void testVersion() throws NumberFormatException, IOException {
+
+		final Version n5Version = n5.getVersion();
+
+		System.out.println(n5Version);
+
+		Assert.assertTrue(n5Version.equals(N5Reader.VERSION));
+
+		n5.setAttribute("/", N5Reader.VERSION_KEY, new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
+
+		Assert.assertFalse(N5Reader.VERSION.isCompatible(n5.getVersion()));
 	}
 }
