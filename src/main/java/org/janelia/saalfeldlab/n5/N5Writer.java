@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * A simple structured container format for hierarchies of chunked
+ * A simple structured container API for hierarchies of chunked
  * n-dimensional datasets and attributes.
  *
  * {@linkplain https://github.com/axtimwalde/n5}
@@ -144,9 +144,9 @@ public interface N5Writer extends N5Reader {
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final CompressionType compressionType) throws IOException {
+			final Compression compression) throws IOException {
 
-		createDataset(pathName, new DatasetAttributes(dimensions, blockSize, dataType, compressionType));
+		createDataset(pathName, new DatasetAttributes(dimensions, blockSize, dataType, compression));
 	}
 
 	/**

@@ -34,7 +34,7 @@ import java.util.HashMap;
  * <li>long[] : dimensions</li>
  * <li>int[] : blockSize</li>
  * <li>{@link DataType} : dataType</li>
- * <li>{@link CompressionType} : compressionType</li>
+ * <li>{@link CompressionScheme} : compressionType</li>
  * </ol>
  *
  * @author Stephan Saalfeld
@@ -45,23 +45,26 @@ public class DatasetAttributes {
 	protected static final String dimensionsKey = "dimensions";
 	protected static final String blockSizeKey = "blockSize";
 	protected static final String dataTypeKey = "dataType";
+	protected static final String compressionKey = "compression";
+
+	/* version 0 */
 	protected static final String compressionTypeKey = "compressionType";
 
 	private final long[] dimensions;
 	private final int[] blockSize;
 	private final DataType dataType;
-	private final CompressionType compressionType;
+	private final Compression compression;
 
 	public DatasetAttributes(
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final CompressionType compressionType) {
+			final Compression compression) {
 
 		this.dimensions = dimensions;
 		this.blockSize = blockSize;
 		this.dataType = dataType;
-		this.compressionType = compressionType;
+		this.compression = compression;
 	}
 
 	public long[] getDimensions() {
@@ -79,9 +82,9 @@ public class DatasetAttributes {
 		return blockSize;
 	}
 
-	public CompressionType getCompressionType() {
+	public Compression getCompression() {
 
-		return compressionType;
+		return compression;
 	}
 
 	public DataType getDataType() {
@@ -95,7 +98,7 @@ public class DatasetAttributes {
 		map.put(dimensionsKey, dimensions);
 		map.put(blockSizeKey, blockSize);
 		map.put(dataTypeKey, dataType.toString());
-		map.put(compressionTypeKey, compressionType.toString());
+		map.put(compressionKey, compression);
 		return map;
 	}
 }

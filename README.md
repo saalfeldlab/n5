@@ -10,20 +10,32 @@ N5 is a library to store large chunked n-dimensional tensors, and arbitrary meta
 
 Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
 
-## Specifications
+## Filesystem specification, version 1.0.0
 
 1. All directories of the file system are N5 groups.
 2. A JSON file `attributes.json` in a directory contains arbitrary attributes.
-3. A dataset is a group with the mandatory attributes:
+3. The version of this specification is 1.0.0 and is stored in the version attribute of the root group "/".
+4. A dataset is a group with the mandatory attributes:
    * dimensions (e.g. [100, 200, 300]),
    * blockSize (e.g. [64, 64, 64]),
    * dataType (one of {uint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, float64})
-   * compressionType (one of {raw, bzip2, gzip, xz}).
-4. Chunks are stored in a directory hierarchy that enumerates their positive integer position in the chunk grid (e.g. `0/4/1/7` for chunk grid position p=(0, 4, 1, 7)).
-5. Datasets are sparse, i.e. there is no guarantee that all chunks of a dataset exist.
-6. Chunks cannot be larger than 2GB (2<sup>31</sup>Bytes).
-7. All chunks of a chunked dataset have the same size except for end-chunks that may be smaller, therefore
-8. Chunks are stored in the following binary format:
+   * compression as a struct with the mandatory attribute type that specifies the compression scheme, currently available are:
+     * raw (no parameters),
+     * bzip2 with parameters
+       * blockSize ([1-9], default 9)
+     * gzip with parameters
+       * level (integer, default -1)
+     * lz4 with parameters
+       * blockSize (integer, default 65536)
+     * xz with parameters
+       * preset (integer, default 6).
+       
+   Custom compression schemes with arbitrary parameters can be added using [compression annotations](#extensible-compression-schemes).
+5. Chunks are stored in a directory hierarchy that enumerates their positive integer position in the chunk grid (e.g. `0/4/1/7` for chunk grid position p=(0, 4, 1, 7)).
+6. Datasets are sparse, i.e. there is no guarantee that all chunks of a dataset exist.
+7. Chunks cannot be larger than 2GB (2<sup>31</sup>Bytes).
+8. All chunks of a chunked dataset have the same size except for end-chunks that may be smaller, therefore
+9. Chunks are stored in the following binary format:
     * mode (uint16 big endian, default = 0x0000, varlength = 0x0001)
     * number of dimensions (uint32 big endian)
     * dimension 1[,...,n] (uint32 big endian)
@@ -105,7 +117,9 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
     00000050: 00 04 59 5a  ..YZ
     ```
     
-    
+## Extensible compression schemes
+
+Custom compression schemes can be implemented using the annotation discovery mechanism of SciJava.  Implement the [`BlockReader`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/BlockReader.java) and [`BlockWriter`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/BlockWriter.java) interfaces for the compression scheme and create a parameter class implementing the [`Compression`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/Compression.java) interface that is annotated with the [`CompressionType`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/Compression.java#L51) and [`CompressionParameter`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/Compression.java#L63) annotations.  Typically, all this can happen in a single class such as in [`GzipCompression`](https://github.com/saalfeldlab/n5/blob/master/src/main/java/org/janelia/saalfeldlab/n5/GzipCompression.java).
 
 ## Disclaimer
 

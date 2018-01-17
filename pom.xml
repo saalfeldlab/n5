@@ -5,14 +5,14 @@
 
 	<parent>
 		<groupId>org.scijava</groupId>
-		<artifactId>pom-scijava-base</artifactId>
-		<version>3.2.0</version>
+		<artifactId>pom-scijava</artifactId>
+		<version>19.0.0</version>
 		<relativePath />
 	</parent>
 
 	<groupId>org.janelia.saalfeldlab</groupId>
 	<artifactId>n5</artifactId>
-	<version>1.5.0</version>
+	<version>2.0.0-SNAPSHOT</version>
 
 	<name>N5</name>
 	<description>Not HDF5</description>
@@ -125,9 +125,14 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-collections4</artifactId>
+			<version>4.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.scijava</groupId>
 			<artifactId>scijava-common</artifactId>
-			<version>2.69.0</version>
 		</dependency>
 	</dependencies>
 

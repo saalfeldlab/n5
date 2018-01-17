@@ -29,23 +29,23 @@ import java.util.Random;
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
 import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
  * Abstract base class for testing N5 functionality.
- * Subclasses are expected to provide a specific N5 implementation to be tested by defining a custom {@link #setUpBeforeClass()} method.
+ * Subclasses are expected to provide a specific N5 implementation to be tested by defining the {@link #createN5Writer()} method.
  *
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
  */
 public abstract class AbstractN5Test {
 
-	static private final String groupName = "/test/group";
-	static private final String[] subGroupNames = new String[]{"a", "b", "c"};
-	static private final String datasetName = "/test/group/dataset";
-	static private final long[] dimensions = new long[]{100, 200, 300};
-	static private final int[] blockSize = new int[]{44, 33, 22};
+	static protected final String groupName = "/test/group";
+	static protected final String[] subGroupNames = new String[]{"a", "b", "c"};
+	static protected final String datasetName = "/test/group/dataset";
+	static protected final long[] dimensions = new long[]{100, 200, 300};
+	static protected final int[] blockSize = new int[]{44, 33, 22};
 
 	static private byte[] byteBlock;
 	static private short[] shortBlock;
@@ -54,14 +54,32 @@ public abstract class AbstractN5Test {
 	static private float[] floatBlock;
 	static private double[] doubleBlock;
 
-	protected static N5Writer n5;
-	protected static GsonAttributesParser n5Parser;
+	static protected N5Writer n5;
+	static private boolean initialized = false;
+
+	protected abstract N5Writer createN5Writer() throws IOException;
+
+	protected Compression[] getCompressions() {
+
+		return new Compression[] {
+				new RawCompression(),
+				new Bzip2Compression(),
+				new GzipCompression(),
+				new Lz4Compression(),
+				new XzCompression()
+			};
+	}
 
 	/**
 	 * @throws IOException
 	 */
-	@BeforeClass
-	public static void setUpBeforeClass() throws IOException {
+	@Before
+	public void setUpOnce() throws IOException {
+
+		if (initialized)
+			return;
+
+		n5 = createN5Writer();
 
 		final Random rnd = new Random();
 		byteBlock = new byte[blockSize[0] * blockSize[1] * blockSize[2]];
@@ -78,6 +96,8 @@ public abstract class AbstractN5Test {
 			floatBlock[i] = Float.intBitsToFloat(rnd.nextInt());
 			doubleBlock[i] = Double.longBitsToDouble(rnd.nextLong());
 		}
+
+		initialized = true;
 	}
 
 	/**
@@ -108,7 +128,7 @@ public abstract class AbstractN5Test {
 	public void testCreateDataset() {
 
 		try {
-			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, CompressionType.RAW);
+			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
@@ -121,7 +141,7 @@ public abstract class AbstractN5Test {
 			Assert.assertArrayEquals(dimensions, info.getDimensions());
 			Assert.assertArrayEquals(blockSize, info.getBlockSize());
 			Assert.assertEquals(DataType.UINT64, info.getDataType());
-			Assert.assertEquals(CompressionType.RAW, info.getCompressionType());
+			Assert.assertEquals(RawCompression.class, info.getCompression().getClass());
 		} catch (final IOException e) {
 			fail("Dataset info cannot be opened");
 			e.printStackTrace();
@@ -131,14 +151,14 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testWriteReadByteBlock() {
 
-		for (final CompressionType compressionType : CompressionType.values()) {
+		for (final Compression compression : getCompressions()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT8,
 					DataType.INT8}) {
 
-				System.out.println("Testing " + compressionType + " " + dataType);
+				System.out.println("Testing " + compression.getType() + " " + dataType);
 				try {
-					n5.createDataset(datasetName, dimensions, blockSize, dataType, compressionType);
+					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 					final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, new long[]{0, 0, 0}, byteBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
@@ -160,14 +180,14 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testWriteReadShortBlock() {
 
-		for (final CompressionType compressionType : CompressionType.values()) {
+		for (final Compression compression : getCompressions()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT16,
 					DataType.INT16}) {
 
-				System.out.println("Testing " + compressionType + " " + dataType);
+				System.out.println("Testing " + compression.getType() + " " + dataType);
 				try {
-					n5.createDataset(datasetName, dimensions, blockSize, dataType, compressionType);
+					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 					final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(blockSize, new long[]{0, 0, 0}, shortBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
@@ -189,14 +209,14 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testWriteReadIntBlock() {
 
-		for (final CompressionType compressionType : CompressionType.values()) {
+		for (final Compression compression : getCompressions()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT32,
 					DataType.INT32}) {
 
-				System.out.println("Testing " + compressionType + " " + dataType);
+				System.out.println("Testing " + compression.getType() + " " + dataType);
 				try {
-					n5.createDataset(datasetName, dimensions, blockSize, dataType, compressionType);
+					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 					final IntArrayDataBlock dataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
@@ -218,14 +238,14 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testWriteReadLongBlock() {
 
-		for (final CompressionType compressionType : CompressionType.values()) {
+		for (final Compression compression : getCompressions()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT64,
 					DataType.INT64}) {
 
-				System.out.println("Testing " + compressionType + " " + dataType);
+				System.out.println("Testing " + compression.getType() + " " + dataType);
 				try {
-					n5.createDataset(datasetName, dimensions, blockSize, dataType, compressionType);
+					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 					final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, longBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
@@ -247,10 +267,10 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testWriteReadFloatBlock() {
 
-		for (final CompressionType compressionType : CompressionType.values()) {
-			System.out.println("Testing " + compressionType + " float32");
+		for (final Compression compression : getCompressions()) {
+			System.out.println("Testing " + compression.getType() + " float32");
 			try {
-				n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT32, compressionType);
+				n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT32, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 				final FloatArrayDataBlock dataBlock = new FloatArrayDataBlock(blockSize, new long[]{0, 0, 0}, floatBlock);
 				n5.writeBlock(datasetName, attributes, dataBlock);
@@ -272,10 +292,10 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testWriteReadDoubleBlock() {
 
-		for (final CompressionType compressionType : CompressionType.values()) {
-			System.out.println("Testing " + compressionType + " float64");
+		for (final Compression compression : getCompressions()) {
+			System.out.println("Testing " + compression.getType() + " float64");
 			try {
-				n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT64, compressionType);
+				n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT64, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 				final DoubleArrayDataBlock dataBlock = new DoubleArrayDataBlock(blockSize, new long[]{0, 0, 0}, doubleBlock);
 				n5.writeBlock(datasetName, attributes, dataBlock);
@@ -298,14 +318,14 @@ public abstract class AbstractN5Test {
 
 		final int[] differentBlockSize = new int[] {5, 10, 15};
 
-		for (final CompressionType compressionType : CompressionType.values()) {
+		for (final Compression compression : getCompressions()) {
 			for (final DataType dataType : new DataType[]{
 					DataType.UINT8,
 					DataType.INT8}) {
 
-				System.out.println("Testing " + compressionType + " " + dataType + " (mode=1)");
+				System.out.println("Testing " + compression.getType() + " " + dataType + " (mode=1)");
 				try {
-					n5.createDataset(datasetName, dimensions, differentBlockSize, dataType, compressionType);
+					n5.createDataset(datasetName, dimensions, differentBlockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 					final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(differentBlockSize, new long[]{0, 0, 0}, byteBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
@@ -328,7 +348,7 @@ public abstract class AbstractN5Test {
 	public void testOverwriteBlock() {
 
 		try {
-			n5.createDataset(datasetName, dimensions, blockSize, DataType.INT32, CompressionType.GZIP);
+			n5.createDataset(datasetName, dimensions, blockSize, DataType.INT32, new GzipCompression());
 			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 
 			final IntArrayDataBlock randomDataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
@@ -357,14 +377,14 @@ public abstract class AbstractN5Test {
 			n5.createGroup(groupName);
 
 			n5.setAttribute(groupName, "key1", "value1");
-			Assert.assertEquals(1, n5Parser.getAttributes(groupName).size());
+			Assert.assertEquals(1, n5.listAttributes(groupName).size());
 			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
 
 			final Map<String, String> newAttributes = new HashMap<>();
 			newAttributes.put("key2", "value2");
 			newAttributes.put("key3", "value3");
 			n5.setAttributes(groupName, newAttributes);
-			Assert.assertEquals(3, n5Parser.getAttributes(groupName).size());
+			Assert.assertEquals(3, n5.listAttributes(groupName).size());
 			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
 			Assert.assertEquals("value2", n5.getAttribute(groupName, "key2", String.class));
 			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
@@ -372,7 +392,7 @@ public abstract class AbstractN5Test {
 			// test the case where the resulting file becomes shorter
 			n5.setAttribute(groupName, "key1", new Integer(1));
 			n5.setAttribute(groupName, "key2", new Integer(2));
-			Assert.assertEquals(3, n5Parser.getAttributes(groupName).size());
+			Assert.assertEquals(3, n5.listAttributes(groupName).size());
 			Assert.assertEquals(new Integer(1), n5.getAttribute(groupName, "key1", Integer.class));
 			Assert.assertEquals(new Integer(2), n5.getAttribute(groupName, "key2", Integer.class));
 			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
@@ -386,7 +406,7 @@ public abstract class AbstractN5Test {
 	public void testRemove() {
 
 		try {
-			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, CompressionType.RAW);
+			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
 			n5.remove(groupName);
 		} catch (final IOException e) {
 			fail(e.getMessage());
@@ -422,15 +442,18 @@ public abstract class AbstractN5Test {
 
 		final String groupName2 = groupName + "-2";
 		final String datasetName2 = datasetName + "-2";
+		final String notExists = groupName + "-notexists";
 		try {
-			n5.createDataset(datasetName2, dimensions, blockSize, DataType.UINT64, CompressionType.RAW);
+			n5.createDataset(datasetName2, dimensions, blockSize, DataType.UINT64, new RawCompression());
 			Assert.assertTrue(n5.exists(datasetName2));
 			Assert.assertTrue(n5.datasetExists(datasetName2));
 
 			n5.createGroup(groupName2);
 			Assert.assertTrue(n5.exists(groupName2));
 			Assert.assertFalse(n5.datasetExists(groupName2));
-			Assert.assertTrue(n5Parser.getAttributes(groupName2).isEmpty());
+
+			Assert.assertFalse(n5.exists(notExists));
+			Assert.assertFalse(n5.datasetExists(notExists));
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
@@ -442,7 +465,7 @@ public abstract class AbstractN5Test {
 		final String groupName2 = groupName + "-2";
 		final String datasetName2 = datasetName + "-2";
 		try {
-			n5.createDataset(datasetName2, dimensions, blockSize, DataType.UINT64, CompressionType.RAW);
+			n5.createDataset(datasetName2, dimensions, blockSize, DataType.UINT64, new RawCompression());
 			n5.setAttribute(datasetName2, "attr1", new double[] {1, 2, 3});
 			n5.setAttribute(datasetName2, "attr2", new String[] {"a", "b", "c"});
 			n5.setAttribute(datasetName2, "attr3", 1.0);
@@ -469,8 +492,6 @@ public abstract class AbstractN5Test {
 			fail(e.getMessage());
 		}
 	}
-
-	protected abstract N5Writer createN5Writer() throws IOException;
 
 	@Test
 	public void testVersion() throws NumberFormatException, IOException {

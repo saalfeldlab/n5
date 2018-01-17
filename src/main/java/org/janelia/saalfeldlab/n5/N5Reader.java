@@ -69,6 +69,14 @@ public interface N5Reader {
 			this(major, minor, patch, "");
 		}
 
+		/**
+		 * Creates a version from a SemVer compatible version string.
+		 *
+		 * If the version string is null or not a SemVer version, this
+		 * version will be "0.0.0"
+		 *
+		 * @param versionString
+		 */
 		public Version(final String versionString) {
 
 			System.out.println("version " + versionString);
@@ -77,11 +85,7 @@ public interface N5Reader {
 				final Matcher matcher = Pattern.compile("(\\d+)(\\.(\\d+))?(\\.(\\d+))?(.*)").matcher(versionString);
 				isSemVer = matcher.find();
 				if (isSemVer) {
-					final String majorString = matcher.group(1);
-					if (!majorString.equals(""))
-						major = Integer.parseInt(majorString);
-					else
-						major = 0;
+					major = Integer.parseInt(matcher.group(1));
 					final String minorString = matcher.group(3);
 					if (!minorString.equals(""))
 						minor = Integer.parseInt(minorString);

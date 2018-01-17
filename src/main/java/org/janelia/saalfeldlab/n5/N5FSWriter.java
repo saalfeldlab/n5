@@ -40,7 +40,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 
 /**
- * Filesystem N5 implementation.
+ * Filesystem {@link N5Writer} implementation with version compatibility check.
  *
  * @author Stephan Saalfeld
  */
@@ -62,10 +62,8 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	 *    if the base path cannot be written to or cannot be created,
 	 *    if the N5 version of the container is not compatible with this
 	 *    implementation.
-	 * @throws NumberFormatException
-	 *    if the version attribute exists but is malformed.
 	 */
-	public N5FSWriter(final String basePath, final GsonBuilder gsonBuilder) throws IOException, NumberFormatException {
+	public N5FSWriter(final String basePath, final GsonBuilder gsonBuilder) throws IOException {
 
 		super(basePath, gsonBuilder);
 		Files.createDirectories(Paths.get(basePath));
@@ -87,8 +85,6 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	 *    if the base path cannot be written to or cannot be created,
 	 *    if the N5 version of the container is not compatible with this
 	 *    implementation.
-	 * @throws NumberFormatException
-	 *    if the version attribute exists but is malformed.
 	 */
 	public N5FSWriter(final String basePath) throws IOException {
 
