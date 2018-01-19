@@ -80,7 +80,7 @@ public class N5FSReader extends AbstractGsonReader {
 						waiting = false;
 						f.printStackTrace(System.err);
 					}
-				}
+				} catch (final IOException e) {}
 			}
 		}
 
