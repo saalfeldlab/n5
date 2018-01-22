@@ -79,7 +79,6 @@ public interface N5Reader {
 		 */
 		public Version(final String versionString) {
 
-			System.out.println("version " + versionString);
 			boolean isSemVer = false;
 			if (versionString != null) {
 				final Matcher matcher = Pattern.compile("(\\d+)(\\.(\\d+))?(\\.(\\d+))?(.*)").matcher(versionString);
