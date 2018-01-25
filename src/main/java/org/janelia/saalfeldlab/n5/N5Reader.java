@@ -178,7 +178,7 @@ public interface N5Reader {
 	/**
 	 * SemVer version of this N5 spec.
 	 */
-	public static final Version VERSION = new Version(VersionUtils.getVersion(N5Reader.class));
+	public static final Version VERSION = new Version(VersionUtils.getVersionFromPOM(N5Reader.class, "org.janelia.saalfeldlab", "n5"));
 
 	/**
 	 * Version attribute key.
