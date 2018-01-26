@@ -67,7 +67,8 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 
 		super(basePath, gsonBuilder);
 		Files.createDirectories(Paths.get(basePath));
-		setAttribute("/", VERSION_KEY, VERSION.toString());
+		if (!VERSION.equals(getVersion()))
+			setAttribute("/", VERSION_KEY, VERSION.toString());
 	}
 
 	/**
