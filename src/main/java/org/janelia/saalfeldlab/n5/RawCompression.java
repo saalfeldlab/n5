@@ -34,6 +34,8 @@ import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 @CompressionType("raw")
 public class RawCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
 
+	private static final long serialVersionUID = 7526445806847086477L;
+
 	@Override
 	public InputStream getInputStream(final InputStream in) throws IOException {
 

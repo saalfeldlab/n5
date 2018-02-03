@@ -36,6 +36,8 @@ import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 @CompressionType("xz")
 public class XzCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
 
+	private static final long serialVersionUID = -7272153943564743774L;
+
 	@CompressionParameter
 	private final int preset;
 

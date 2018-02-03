@@ -38,6 +38,8 @@ import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 @CompressionType("gzip")
 public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
 
+	private static final long serialVersionUID = 8630847239813334263L;
+
 	@CompressionParameter
 	private final int level;
 

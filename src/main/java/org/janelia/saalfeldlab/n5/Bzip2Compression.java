@@ -36,6 +36,8 @@ import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 @CompressionType("bzip2")
 public class Bzip2Compression implements DefaultBlockReader, DefaultBlockWriter, Compression {
 
+	private static final long serialVersionUID = -4873117458390529118L;
+
 	@CompressionParameter
 	private final int blockSize;
 

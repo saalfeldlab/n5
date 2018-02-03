@@ -25,6 +25,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.Serializable;
 import java.util.HashMap;
 
 /**
@@ -40,7 +41,9 @@ import java.util.HashMap;
  * @author Stephan Saalfeld
  *
  */
-public class DatasetAttributes {
+public class DatasetAttributes implements Serializable {
+
+	private static final long serialVersionUID = -4521467080388947553L;
 
 	protected static final String dimensionsKey = "dimensions";
 	protected static final String blockSizeKey = "blockSize";

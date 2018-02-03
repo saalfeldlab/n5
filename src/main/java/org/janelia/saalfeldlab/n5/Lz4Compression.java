@@ -37,6 +37,8 @@ import net.jpountz.lz4.LZ4BlockOutputStream;
 @CompressionType("lz4")
 public class Lz4Compression implements DefaultBlockReader, DefaultBlockWriter, Compression {
 
+	private static final long serialVersionUID = -9071316415067427256L;
+
 	@CompressionParameter
 	private final int blockSize;
 

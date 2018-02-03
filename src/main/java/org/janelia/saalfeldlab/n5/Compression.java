@@ -25,6 +25,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.Serializable;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
@@ -38,7 +39,7 @@ import org.scijava.annotations.Indexable;
  *
  * @author Stephan Saalfeld
  */
-public interface Compression {
+public interface Compression extends Serializable {
 
 	/**
 	 * Annotation for runtime discovery of compression schemes.
