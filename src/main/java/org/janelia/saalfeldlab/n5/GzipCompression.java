@@ -27,6 +27,7 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.util.zip.Deflater;
 
@@ -43,7 +44,7 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	@CompressionParameter
 	private final int level;
 
-	private final transient GzipParameters parameters = new GzipParameters();
+	private transient GzipParameters parameters = new GzipParameters();
 
 	public GzipCompression(final int level) {
 
@@ -78,5 +79,11 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	public GzipCompression getWriter() {
 
 		return this;
+	}
+
+	private void readObject(final ObjectInputStream in) throws IOException, ClassNotFoundException {
+
+		in.defaultReadObject();
+		parameters = new GzipParameters();
 	}
 }
