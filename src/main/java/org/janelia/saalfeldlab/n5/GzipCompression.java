@@ -27,7 +27,10 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.zip.Deflater;
 
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -78,5 +81,23 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	public GzipCompression getWriter() {
 
 		return this;
+	}
+
+	private void readObject(final ObjectInputStream in) throws Exception {
+
+		in.defaultReadObject();
+
+		final Field modifiersField = Field.class.getDeclaredField("modifiers");
+		final boolean isModifiersAccessible = modifiersField.isAccessible();
+		modifiersField.setAccessible(true);
+		final Field parametersField = getClass().getDeclaredField("parameters");
+		final boolean isFieldAccessible = parametersField.isAccessible();
+		parametersField.setAccessible(true);
+		final int modifiers = parametersField.getModifiers();
+		modifiersField.setInt(parametersField, modifiers & ~Modifier.FINAL);
+		parametersField.set(this, new GzipParameters());
+		modifiersField.setInt(parametersField, modifiers);
+		parametersField.setAccessible(isFieldAccessible);
+		modifiersField.setAccessible(isModifiersAccessible);
 	}
 }
