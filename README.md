@@ -14,7 +14,7 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
 
 1. All directories of the file system are N5 groups.
 2. A JSON file `attributes.json` in a directory contains arbitrary attributes.
-3. The version of this specification is 1.0.0 and is stored in the version attribute of the root group "/".
+3. The version of this specification is 1.0.0 and is stored in the "n5" attribute of the root group "/".
 4. A dataset is a group with the mandatory attributes:
    * dimensions (e.g. [100, 200, 300]),
    * blockSize (e.g. [64, 64, 64]),
