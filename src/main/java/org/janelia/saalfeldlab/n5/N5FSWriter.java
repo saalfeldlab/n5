@@ -95,7 +95,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	@Override
 	public void createGroup(final String pathName) throws IOException {
 
-		final Path path = Paths.get(basePath, pathName);
+		final Path path = Paths.get(basePath, removeRootSlash(pathName));
 		Files.createDirectories(path);
 	}
 
@@ -133,13 +133,13 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	@Override
 	public boolean remove() throws IOException {
 
-		return remove("");
+		return remove("/");
 	}
 
 	@Override
 	public boolean remove(final String pathName) throws IOException {
 
-		final Path path = Paths.get(basePath, pathName);
+		final Path path = Paths.get(basePath, removeRootSlash(pathName));
 		if (Files.exists(path))
 			try (final Stream<Path> pathStream = Files.walk(path)) {
 				pathStream.sorted(Comparator.reverseOrder()).forEach(
