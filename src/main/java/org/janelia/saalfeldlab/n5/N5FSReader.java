@@ -139,7 +139,7 @@ public class N5FSReader extends AbstractGsonReader {
 	@Override
 	public boolean exists(final String pathName) {
 
-		final Path path = Paths.get(basePath, removeRootSlash(pathName));
+		final Path path = Paths.get(basePath, pathName);
 		return Files.exists(path) && Files.isDirectory(path);
 	}
 
@@ -173,7 +173,7 @@ public class N5FSReader extends AbstractGsonReader {
 	@Override
 	public String[] list(final String pathName) throws IOException {
 
-		final Path path = Paths.get(basePath, removeRootSlash(pathName));
+		final Path path = Paths.get(basePath, pathName);
 		try (final Stream<Path> pathStream = Files.list(path)) {
 			return pathStream
 					.filter(a -> Files.isDirectory(a))
@@ -204,7 +204,7 @@ public class N5FSReader extends AbstractGsonReader {
 		for (int i = 0; i < pathComponents.length; ++i)
 			pathComponents[i] = Long.toString(gridPosition[i]);
 
-		return Paths.get(removeRootSlash(datasetPathName), pathComponents);
+		return Paths.get(removeLeadingSlash(datasetPathName), pathComponents);
 	}
 
 	/**
@@ -215,18 +215,18 @@ public class N5FSReader extends AbstractGsonReader {
 	 */
 	protected static Path getAttributesPath(final String pathName) {
 
-		return Paths.get(removeRootSlash(pathName), jsonFile);
+		return Paths.get(removeLeadingSlash(pathName), jsonFile);
 	}
 
 	/**
-	 * Removes the root slash from a given path and returns the corrected path.
+	 * Removes the leading slash from a given path and returns the corrected path.
 	 * It ensures correctness on both Unix and Windows, otherwise {@code pathName} is treated
-	 * as UNC path on Windows, and {@link Paths#get(String, String...)} may fail with {@code InvalidPathException}.
+	 * as UNC path on Windows, and {@code Paths.get(pathName, ...)} fails with {@code InvalidPathException}.
 	 *
 	 * @param pathName
 	 * @return
 	 */
-	protected static String removeRootSlash(final String pathName) {
+	protected static String removeLeadingSlash(final String pathName) {
 
 		return pathName.startsWith("/") || pathName.startsWith("\\") ? pathName.substring(1) : pathName;
 	}
