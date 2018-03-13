@@ -14,7 +14,7 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
 
 1. All directories of the file system are N5 groups.
 2. A JSON file `attributes.json` in a directory contains arbitrary attributes.
-3. The version of this specification is 1.0.0 and is stored in the version attribute of the root group "/".
+3. The version of this specification is 1.0.0 and is stored in the "n5" attribute of the root group "/".
 4. A dataset is a group with the mandatory attributes:
    * dimensions (e.g. [100, 200, 300]),
    * blockSize (e.g. [64, 64, 64]),
@@ -37,7 +37,7 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
 8. All chunks of a chunked dataset have the same size except for end-chunks that may be smaller, therefore
 9. Chunks are stored in the following binary format:
     * mode (uint16 big endian, default = 0x0000, varlength = 0x0001)
-    * number of dimensions (uint32 big endian)
+    * number of dimensions (uint16 big endian)
     * dimension 1[,...,n] (uint32 big endian)
     * [ mode == varlength ? number of elements (uint32 big endian) ]
     * compressed data (big endian)
