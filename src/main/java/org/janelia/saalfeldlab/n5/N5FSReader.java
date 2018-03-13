@@ -204,7 +204,7 @@ public class N5FSReader extends AbstractGsonReader {
 		for (int i = 0; i < pathComponents.length; ++i)
 			pathComponents[i] = Long.toString(gridPosition[i]);
 
-		return Paths.get(datasetPathName, pathComponents);
+		return Paths.get(removeLeadingSlash(datasetPathName), pathComponents);
 	}
 
 	/**
@@ -215,6 +215,19 @@ public class N5FSReader extends AbstractGsonReader {
 	 */
 	protected static Path getAttributesPath(final String pathName) {
 
-		return Paths.get(pathName, jsonFile);
+		return Paths.get(removeLeadingSlash(pathName), jsonFile);
+	}
+
+	/**
+	 * Removes the leading slash from a given path and returns the corrected path.
+	 * It ensures correctness on both Unix and Windows, otherwise {@code pathName} is treated
+	 * as UNC path on Windows, and {@code Paths.get(pathName, ...)} fails with {@code InvalidPathException}.
+	 *
+	 * @param pathName
+	 * @return
+	 */
+	protected static String removeLeadingSlash(final String pathName) {
+
+		return pathName.startsWith("/") || pathName.startsWith("\\") ? pathName.substring(1) : pathName;
 	}
 }
