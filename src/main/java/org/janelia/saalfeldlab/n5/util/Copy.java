@@ -310,7 +310,7 @@ public class Copy
 		final String[] subGroups = n5.list( from );
 		for ( final String g : subGroups )
 		{
-			listAll( n5, Paths.get( from, g ).toString(), store );
+			listAll( n5, Paths.get( removeLeadingSlash( from ), g ).toString(), store );
 		}
 	}
 
@@ -451,7 +451,7 @@ public class Copy
 		return Arrays.stream( array ).reduce( 1, ( l1, l2 ) -> l1 * l2 );
 	}
 
-	final static public void indexToPosition( long index, final long[] dimensions, final long[] position )
+	static public void indexToPosition( long index, final long[] dimensions, final long[] position )
 	{
 		final int maxDim = dimensions.length - 1;
 		for ( int d = 0; d < maxDim; ++d )
@@ -461,6 +461,11 @@ public class Copy
 			index = j;
 		}
 		position[ maxDim ] = index;
+	}
+
+	private static String removeLeadingSlash( final String pathName )
+	{
+		return pathName.startsWith( "/" ) || pathName.startsWith( "\\" ) ? pathName.substring( 1 ) : pathName;
 	}
 
 }
