@@ -56,35 +56,17 @@ public class Copy
 {
 
 	/**
-	 *
-	 * {@Code Exception} to be thrown when a dataset cannot be found at a
-	 * specific location
-	 *
-	 */
-	@SuppressWarnings( "serial" )
-	public static class DatasetDoesNotExistException extends Exception
-	{
-		public DatasetDoesNotExistException( final N5Reader n5, final String dataset )
-		{
-			super( String.format( "Datset %s not found in root %s", dataset, n5 ) );
-		}
-
-	}
-
-	/**
 	 * Create exact copy of entire N5
 	 *
 	 * @param source
 	 *            N5 root to copy from
 	 * @param target
 	 *            N5 root to copy into
-	 * @throws DatasetDoesNotExistException
-	 *             Data set does not exist in {@code source}
 	 * @throws IOException
 	 */
 	public static void copy(
 			final N5Reader source,
-			final N5Writer target ) throws DatasetDoesNotExistException, IOException
+			final N5Writer target ) throws IOException
 	{
 		copy( source, target, "" );
 	}
@@ -99,14 +81,12 @@ public class Copy
 	 * @param from
 	 *            Copy all sub-groups, starting at {@code from} (can be a data
 	 *            set).
-	 * @throws DatasetDoesNotExistException
-	 *             Data set does not exist in {@code source}
 	 * @throws IOException
 	 */
 	public static void copy(
 			final N5Reader source,
 			final N5Writer target,
-			final String from ) throws DatasetDoesNotExistException, IOException
+			final String from ) throws IOException
 	{
 		copy( source, target, from, unchecked( ( ds, attributes ) -> copyWithoutCreation( source, target, ds, attributes ) ) );
 	}
@@ -121,15 +101,13 @@ public class Copy
 	 * @param es
 	 * @param numTasks
 	 * @return
-	 * @throws DatasetDoesNotExistException
-	 *             Data set does not exist in {@code source}
 	 * @throws IOException
 	 */
 	public static List< Future< Void > > copy(
 			final N5Reader source,
 			final N5Writer target,
 			final ExecutorService es,
-			final int numTasks ) throws DatasetDoesNotExistException, IOException
+			final int numTasks ) throws IOException
 	{
 		return copy( source, target, "", es, numTasks );
 	}
@@ -146,8 +124,6 @@ public class Copy
 	 *            set).
 	 * @param es
 	 * @param numTasks
-	 * @throws DatasetDoesNotExistException
-	 *             Data set does not exist in {@code source}
 	 * @throws IOException
 	 */
 	public static List< Future< Void > > copy(
@@ -155,7 +131,7 @@ public class Copy
 			final N5Writer target,
 			final String from,
 			final ExecutorService es,
-			final int numTasks ) throws DatasetDoesNotExistException, IOException
+			final int numTasks ) throws IOException
 	{
 		final List< Future< Void > > futures = new ArrayList<>();
 
@@ -186,15 +162,13 @@ public class Copy
 	 *            Copy all sub-groups, starting at {@code from} (can be a data
 	 *            set).
 	 * @param handler
-	 * @throws DatasetDoesNotExistException
-	 *             Data set does not exist in {@code source}
 	 * @throws IOException
 	 */
 	public static void copy(
 			final N5Reader source,
 			final N5Writer target,
 			final String from,
-			final BiConsumer< String, DatasetAttributes > datasetCopyHandler ) throws DatasetDoesNotExistException, IOException
+			final BiConsumer< String, DatasetAttributes > datasetCopyHandler ) throws IOException
 	{
 		final List< String > groups = listAll( source, from );
 
@@ -226,15 +200,13 @@ public class Copy
 	 *            Data set to be copied
 	 * @param attributes
 	 *            Data set attributes
-	 * @throws DatasetDoesNotExistException
-	 *             Data set does not exist in {@code source}
 	 * @throws IOException
 	 */
 	public static void copyWithoutCreation(
 			final N5Reader source,
 			final N5Writer target,
 			final String dataset,
-			final DatasetAttributes attributes ) throws DatasetDoesNotExistException, IOException
+			final DatasetAttributes attributes ) throws IOException
 	{
 		copyWithoutCreation( source, target, dataset, attributes, 0, numBlocks( attributes ) );
 	}
@@ -256,8 +228,6 @@ public class Copy
 	 *            Data set attributes
 	 * @param startBlock
 	 * @param stopBlock
-	 * @throws DatasetDoesNotExistException
-	 *             Data set does not exist in {@code source}
 	 * @throws IOException
 	 */
 	public static void copyWithoutCreation(
@@ -266,7 +236,7 @@ public class Copy
 			final String dataset,
 			final DatasetAttributes attributes,
 			final long startBlock,
-			final long stopBlock ) throws DatasetDoesNotExistException, IOException
+			final long stopBlock ) throws IOException
 	{
 		final long[] gridDims = attributes.getDimensions().clone();
 		divideInPlace( gridDims, attributes.getBlockSize() );
