@@ -82,7 +82,7 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
 
     ```
     
-    for gzip2 compression:
+    for gzip compression:
     
     ```hexdump
     00000010: 1f 8b 08 00  ....
