@@ -10,7 +10,7 @@ N5 is a library to store large chunked n-dimensional tensors, and arbitrary meta
 
 Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
 
-## Filesystem specification, version 1.0.0
+## Filesystem specification, version 2.0.3-SNAPSHOIT
 
 1. All directories of the file system are N5 groups.
 2. A JSON file `attributes.json` in a directory contains arbitrary attributes.
