@@ -28,9 +28,13 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -66,7 +70,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	public N5FSWriter(final String basePath, final GsonBuilder gsonBuilder) throws IOException {
 
 		super(basePath, gsonBuilder);
-		Files.createDirectories(Paths.get(basePath));
+		createDirectories(Paths.get(basePath));
 		if (!VERSION.equals(getVersion()))
 			setAttribute("/", VERSION_KEY, VERSION.toString());
 	}
@@ -96,7 +100,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	public void createGroup(final String pathName) throws IOException {
 
 		final Path path = Paths.get(basePath, pathName);
-		Files.createDirectories(path);
+		createDirectories(path);
 	}
 
 	@Override
@@ -123,7 +127,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			final DataBlock<T> dataBlock) throws IOException {
 
 		final Path path = Paths.get(basePath, getDataBlockPath(pathName, dataBlock.getGridPosition()).toString());
-		Files.createDirectories(path.getParent());
+		createDirectories(path.getParent());
 		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForWriting(path)) {
 			lockedChannel.getFileChannel().truncate(0);
 			DefaultBlockWriter.writeBlock(Channels.newOutputStream(lockedChannel.getFileChannel()), datasetAttributes, dataBlock);
@@ -161,4 +165,124 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 
 		return !Files.exists(path);
 	}
+
+	/**
+	 * This is a copy of {@link Files#createDirectories(Path, FileAttribute...)}
+	 * that follows symlinks.
+	 *
+	 * Workaround for https://bugs.openjdk.java.net/browse/JDK-8130464
+	 *
+     * Creates a directory by creating all nonexistent parent directories first.
+     * Unlike the {@link #createDirectory createDirectory} method, an exception
+     * is not thrown if the directory could not be created because it already
+     * exists.
+     *
+     * <p> The {@code attrs} parameter is optional {@link FileAttribute
+     * file-attributes} to set atomically when creating the nonexistent
+     * directories. Each file attribute is identified by its {@link
+     * FileAttribute#name name}. If more than one attribute of the same name is
+     * included in the array then all but the last occurrence is ignored.
+     *
+     * <p> If this method fails, then it may do so after creating some, but not
+     * all, of the parent directories.
+     *
+     * @param   dir
+     *          the directory to create
+     *
+     * @param   attrs
+     *          an optional list of file attributes to set atomically when
+     *          creating the directory
+     *
+     * @return  the directory
+     *
+     * @throws  UnsupportedOperationException
+     *          if the array contains an attribute that cannot be set atomically
+     *          when creating the directory
+     * @throws  FileAlreadyExistsException
+     *          if {@code dir} exists but is not a directory <i>(optional specific
+     *          exception)</i>
+     * @throws  IOException
+     *          if an I/O error occurs
+     * @throws  SecurityException
+     *          in the case of the default provider, and a security manager is
+     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
+     *          method is invoked prior to attempting to create a directory and
+     *          its {@link SecurityManager#checkRead(String) checkRead} is
+     *          invoked for each parent directory that is checked. If {@code
+     *          dir} is not an absolute path then its {@link Path#toAbsolutePath
+     *          toAbsolutePath} may need to be invoked to get its absolute path.
+     *          This may invoke the security manager's {@link
+     *          SecurityManager#checkPropertyAccess(String) checkPropertyAccess}
+     *          method to check access to the system property {@code user.dir}
+     */
+    private static Path createDirectories(Path dir, FileAttribute<?>... attrs)
+        throws IOException
+    {
+        // attempt to create the directory
+        try {
+            createAndCheckIsDirectory(dir, attrs);
+            return dir;
+        } catch (FileAlreadyExistsException x) {
+            // file exists and is not a directory
+            throw x;
+        } catch (IOException x) {
+            // parent may not exist or other reason
+        }
+        SecurityException se = null;
+        try {
+            dir = dir.toAbsolutePath();
+        } catch (SecurityException x) {
+            // don't have permission to get absolute path
+            se = x;
+        }
+        // find a decendent that exists
+        Path parent = dir.getParent();
+        while (parent != null) {
+            try {
+            	parent.getFileSystem().provider().checkAccess(parent);
+                break;
+            } catch (NoSuchFileException x) {
+                // does not exist
+            }
+            parent = parent.getParent();
+        }
+        if (parent == null) {
+            // unable to find existing parent
+            if (se == null) {
+                throw new FileSystemException(dir.toString(), null,
+                    "Unable to determine if root directory exists");
+            } else {
+                throw se;
+            }
+        }
+
+        // create directories
+        Path child = parent;
+        for (Path name: parent.relativize(dir)) {
+            child = child.resolve(name);
+            createAndCheckIsDirectory(child, attrs);
+        }
+        return dir;
+    }
+
+    /**
+     * This is a copy of {@link Files#createAndCheckIsDirectory(Path, FileAttribute...)}
+     * that follows symlinks.
+     *
+     * Workaround for https://bugs.openjdk.java.net/browse/JDK-8130464
+     *
+     * Used by createDirectories to attempt to create a directory. A no-op
+     * if the directory already exists.
+     */
+    private static void createAndCheckIsDirectory(Path dir,
+                                                  FileAttribute<?>... attrs)
+        throws IOException
+    {
+        try {
+            Files.createDirectory(dir, attrs);
+        } catch (FileAlreadyExistsException x) {
+            if (!Files.isDirectory(dir))
+                throw x;
+        }
+    }
 }
