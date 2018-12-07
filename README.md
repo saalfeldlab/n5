@@ -1,6 +1,6 @@
 # N5
 
-N5 is a library to store large chunked n-dimensional tensors, and arbitrary meta-data in a hierarchy of groups similar to HDF5.  Other than HDF5, an N5 group is not a single file but simply a directory on the file system.  Meta-data is stored as a JSON file per each group/ directory.  Tensor datasets can be chunked and chunks are stored as individual files.  This enables parallel reading and writing on a cluster.  At this time, N5 supports:
+N5 is a cloud-first library to store large chunked n-dimensional tensors, and arbitrary meta-data in a hierarchy of groups similar to HDF5.  Unlike HDF5, an N5 group is not a single file but simply a directory on the file system (or object store).  Meta-data is stored as a JSON file per each group/ directory.  Tensor datasets can be chunked and chunks are stored as individual files.  This enables parallel reading and writing on a single machine, cluster, or cloud environment without requiring complex concurrency solutions.  At this time, N5 supports:
 
 * arbitrary group hierarchies
 * arbitrary meta-data stored as JSON
