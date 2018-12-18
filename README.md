@@ -6,7 +6,7 @@ N5 is a library to store large chunked n-dimensional tensors, and arbitrary meta
 * arbitrary meta-data stored as JSON
 * chunked n-dimensional tensor datasets
 * value-datatypes: [u]int8, [u]int16, [u]int32, [u]int64, float32, float64
-* compression: raw, gzip, bzip2, xz
+* compression: raw, bzip2, gzip, xz
 
 Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
 
