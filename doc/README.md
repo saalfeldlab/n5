@@ -2,7 +2,7 @@
 
 The N5 API specifies the primitive operations needed to store large chunked n-dimensional tensors, and arbitrary meta-data in a hierarchy of groups similar to HDF5.
 
-Other than HDF5, N5 is not bound to a specific backend.  This repository includes a simple [file-system backend](#file-system-specification-version-203-snapshot).  There are also an [an HDF5 backend](https://github.com/saalfeldlab/n5-hdf5), a [Google Cloud backend](https://github.com/saalfeldlab/n5-google-cloud), and an [AWS-S3 backend](https://github.com/saalfeldlab/n5-aws-s3).
+Other than HDF5, N5 is not bound to a specific backend.  This repository includes a simple [file-system backend](#file-system-specification-version-203-snapshot).  There are also an [HDF5 backend](https://github.com/saalfeldlab/n5-hdf5), a [Google Cloud backend](https://github.com/saalfeldlab/n5-google-cloud), and an [AWS-S3 backend](https://github.com/saalfeldlab/n5-aws-s3).
 
 At this time, N5 supports:
 
