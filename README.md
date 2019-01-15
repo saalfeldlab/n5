@@ -1,9 +1,13 @@
 # N5
 
-N5 is a library to store large chunked n-dimensional tensors, and arbitrary meta-data in a hierarchy of groups similar to HDF5.  Other than HDF5, an N5 group is not a single file but simply a directory on the file system.  Meta-data is stored as a JSON file per each group/ directory.  Tensor datasets can be chunked and chunks are stored as individual files.  This enables parallel reading and writing on a cluster.  At this time, N5 supports:
+The N5 API specifys the primitive operations needed to to store large chunked n-dimensional tensors, and arbitrary meta-data in a hierarchy of groups similar to HDF5.
+
+Other than HDF5, N5 is not bound to a specific backend.  This repository includes a simple file-system based backend.  There are also an [an HDF5 backend](https://github.com/saalfeldlab/n5-hdf5), a [Google Cloud backend](https://github.com/saalfeldlab/n5-google-cloud), and an [AWS-S3 backend](https://github.com/saalfeldlab/n5-aws-s3).
+
+At this time, N5 supports:
 
 * arbitrary group hierarchies
-* arbitrary meta-data stored as JSON
+* arbitrary meta-data (stored as JSON or HDF5 attributes)
 * chunked n-dimensional tensor datasets
 * value-datatypes: [u]int8, [u]int16, [u]int32, [u]int64, float32, float64
 * compression: raw, gzip, bzip2, xz
@@ -11,6 +15,8 @@ N5 is a library to store large chunked n-dimensional tensors, and arbitrary meta
 Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
 
 ## Filesystem specification, version 2.0.3-SNAPSHOT
+
+N5 group is not a single file but simply a directory on the file system.  Meta-data is stored as a JSON file per each group/ directory.  Tensor datasets can be chunked and chunks are stored as individual files.  This enables parallel reading and writing on a cluster.
 
 1. All directories of the file system are N5 groups.
 2. A JSON file `attributes.json` in a directory contains arbitrary attributes.
