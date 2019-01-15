@@ -1,8 +1,8 @@
 # N5
 
-The N5 API specifys the primitive operations needed to to store large chunked n-dimensional tensors, and arbitrary meta-data in a hierarchy of groups similar to HDF5.
+The N5 API specifies the primitive operations needed to store large chunked n-dimensional tensors, and arbitrary meta-data in a hierarchy of groups similar to HDF5.
 
-Other than HDF5, N5 is not bound to a specific backend.  This repository includes a simple file-system based backend.  There are also an [an HDF5 backend](https://github.com/saalfeldlab/n5-hdf5), a [Google Cloud backend](https://github.com/saalfeldlab/n5-google-cloud), and an [AWS-S3 backend](https://github.com/saalfeldlab/n5-aws-s3).
+Other than HDF5, N5 is not bound to a specific backend.  This repository includes a simple [file-system backend](#file-system-specification-version-203-snapshot).  There are also an [an HDF5 backend](https://github.com/saalfeldlab/n5-hdf5), a [Google Cloud backend](https://github.com/saalfeldlab/n5-google-cloud), and an [AWS-S3 backend](https://github.com/saalfeldlab/n5-aws-s3).
 
 At this time, N5 supports:
 
@@ -14,7 +14,7 @@ At this time, N5 supports:
 
 Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
 
-## Filesystem specification, version 2.0.3-SNAPSHOT
+## File-system specification, version 2.0.3-SNAPSHOT
 
 N5 group is not a single file but simply a directory on the file system.  Meta-data is stored as a JSON file per each group/ directory.  Tensor datasets can be chunked and chunks are stored as individual files.  This enables parallel reading and writing on a cluster.
 
