@@ -129,6 +129,10 @@
 			<artifactId>commons-compress</artifactId>
 			<version>1.18</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>

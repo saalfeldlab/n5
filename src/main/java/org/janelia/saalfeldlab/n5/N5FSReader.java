@@ -41,6 +41,8 @@ import java.util.stream.Stream;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Filesystem {@link N5Reader} implementation with version compatibility check.
@@ -180,6 +182,13 @@ public class N5FSReader extends AbstractGsonReader {
 					.map(a -> path.relativize(a).toString())
 					.toArray(n -> new String[n]);
 		}
+	}
+
+	@Override
+	public String toString() {
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+				.append("basePath", basePath)
+				.toString();
 	}
 
 	/**
