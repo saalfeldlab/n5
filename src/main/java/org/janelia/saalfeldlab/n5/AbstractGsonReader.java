@@ -39,6 +39,7 @@ import com.google.gson.JsonElement;
  *
  * @author Stephan Saalfeld
  * @author Igor Pisarev
+ * @author Philipp Hanslovsky
  */
 public abstract class AbstractGsonReader implements GsonAttributesParser, N5Reader {
 
@@ -54,6 +55,7 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
 		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
+		gsonBuilder.disableHtmlEscaping();
 		this.gson = gsonBuilder.create();
 	}
 
