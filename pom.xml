@@ -17,7 +17,7 @@
 
 	<name>N5</name>
 	<description>Not HDF5</description>
-	<url></url>
+	<url>https://github.com/saalfeldlab/n5</url>
 	<inceptionYear>2017</inceptionYear>
 	<organization>
 		<name>Saalfeld Lab</name>
@@ -37,6 +37,23 @@
 		</mailingList>
 	</mailingLists>
 
+	<scm>
+		<connection>scm:git:git://github.com/saalfedllab/n5</connection>
+		<developerConnection>scm:git:git@github.com:saalfeldlab/n5</developerConnection>
+		<tag>HEAD</tag>
+		<url>https://github.com/saalfeldlab/n5</url>
+	</scm>
+
+	<issueManagement>
+		<system>GitHub</system>
+		<url>https://github.com/saalfedlab/n5/issues</url>
+	</issueManagement>
+
+	<ciManagement>
+		<system>Travis CI</system>
+		<url>https://travis-ci.org/saalfeldlab/n5</url>
+	</ciManagement>
+
 	<properties>
 		<package-name>org.janelia.saalfeldlab</package-name>
 
@@ -44,8 +61,6 @@
 		<license.projectName>Not HDF5</license.projectName>
 		<license.organizationName>Saalfeld Lab</license.organizationName>
 		<license.copyrightOwners>Stephan Saalfeld</license.copyrightOwners>
-
-		<enforcer.skip>true</enforcer.skip>
 	</properties>
 
 	<developers>
@@ -64,6 +79,27 @@
 			</roles>
 		</developer>
 	</developers>
+
+	<contributors>
+		<contributor>
+			<name>Stephan Saalfeld</name>
+			<properties>
+				<id>axtimwalde</id>
+			</properties>
+		</contributor>
+		<contributor>
+			<name>Igor Pisarev</name>
+			<properties>
+				<id>igorpisarev</id>
+			</properties>
+		</contributor>
+		<contributor>
+			<name>Neil Thistlethwaite</name>
+		</contributor>
+		<contributor>
+			<name>Andrew Champion</name>
+		</contributor>
+	</contributors>
 
 	<repositories>
 		<repository>
