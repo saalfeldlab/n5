@@ -65,6 +65,7 @@ public abstract class AbstractN5Test {
 				new RawCompression(),
 				new Bzip2Compression(),
 				new GzipCompression(),
+				new GzipCompression(5, true),
 				new Lz4Compression(),
 				new XzCompression()
 			};

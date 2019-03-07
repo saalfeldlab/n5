@@ -32,6 +32,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
 
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
@@ -46,29 +48,46 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	@CompressionParameter
 	private final int level;
 
+	@CompressionParameter
+	private Boolean useZlib;
+
 	private final transient GzipParameters parameters = new GzipParameters();
-
-	public GzipCompression(final int level) {
-
-		this.level = level;
-	}
 
 	public GzipCompression() {
 
 		this(Deflater.DEFAULT_COMPRESSION);
 	}
 
+	public GzipCompression(final int level) {
+
+		this(level, null);
+	}
+
+	public GzipCompression(final int level, final Boolean useZlib) {
+
+		this.level = level;
+		this.useZlib = useZlib;
+	}
+
 	@Override
 	public InputStream getInputStream(final InputStream in) throws IOException {
 
-		return new GzipCompressorInputStream(in);
+		if (useZlib != null && useZlib) {
+			return new InflaterInputStream(in);
+		} else {
+			return new GzipCompressorInputStream(in);
+		}
 	}
 
 	@Override
 	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
-		parameters.setCompressionLevel(level);
-		return new GzipCompressorOutputStream(out, parameters);
+		if (useZlib != null && useZlib) {
+			return new DeflaterOutputStream(out, new Deflater(level));
+		} else {
+			parameters.setCompressionLevel(level);
+			return new GzipCompressorOutputStream(out, parameters);
+		}
 	}
 
 	@Override
