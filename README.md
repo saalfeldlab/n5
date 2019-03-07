@@ -10,7 +10,7 @@ At this time, N5 supports:
 * arbitrary meta-data (stored as JSON or HDF5 attributes)
 * chunked n-dimensional tensor datasets
 * value-datatypes: [u]int8, [u]int16, [u]int32, [u]int64, float32, float64
-* compression: raw, gzip, bzip2, xz
+* compression: raw, bzip2, gzip, lz4, xz
 
 Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
 
