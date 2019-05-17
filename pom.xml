@@ -8,7 +8,7 @@
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
 		<relativePath />
-		<version>23.2.0</version>
+		<version>26.0.0</version>
 	</parent>
 
 	<groupId>org.janelia.saalfeldlab</groupId>
@@ -104,7 +104,7 @@
 	<repositories>
 		<repository>
 			<id>imagej.public</id>
-			<url>https://maven.imagej.net/content/groups/public</url>
+			<url>https://maven.scijava.org/content/groups/public</url>
 		</repository>
 	</repositories>
 
