@@ -65,6 +65,7 @@ public abstract class AbstractN5Test {
 				new RawCompression(),
 				new Bzip2Compression(),
 				new GzipCompression(),
+				new GzipCompression(5, true),
 				new Lz4Compression(),
 				new XzCompression()
 			};
@@ -107,6 +108,8 @@ public abstract class AbstractN5Test {
 	public static void rampDownAfterClass() throws IOException {
 
 		Assert.assertTrue(n5.remove());
+		initialized = false;
+		n5 = null;
 	}
 
 	@Test

@@ -1,22 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
-		<version>19.0.0</version>
 		<relativePath />
+		<version>26.0.0</version>
 	</parent>
 
 	<groupId>org.janelia.saalfeldlab</groupId>
 	<artifactId>n5</artifactId>
-	<version>2.0.2</version>
+	<version>2.0.3-SNAPSHOT</version>
 
 	<name>N5</name>
 	<description>Not HDF5</description>
-	<url></url>
+	<url>https://github.com/saalfeldlab/n5</url>
 	<inceptionYear>2017</inceptionYear>
 	<organization>
 		<name>Saalfeld Lab</name>
@@ -36,6 +37,23 @@
 		</mailingList>
 	</mailingLists>
 
+	<scm>
+		<connection>scm:git:git://github.com/saalfedllab/n5</connection>
+		<developerConnection>scm:git:git@github.com:saalfeldlab/n5</developerConnection>
+		<tag>HEAD</tag>
+		<url>https://github.com/saalfeldlab/n5</url>
+	</scm>
+
+	<issueManagement>
+		<system>GitHub</system>
+		<url>https://github.com/saalfedlab/n5/issues</url>
+	</issueManagement>
+
+	<ciManagement>
+		<system>Travis CI</system>
+		<url>https://travis-ci.org/saalfeldlab/n5</url>
+	</ciManagement>
+
 	<properties>
 		<package-name>org.janelia.saalfeldlab</package-name>
 
@@ -43,8 +61,6 @@
 		<license.projectName>Not HDF5</license.projectName>
 		<license.organizationName>Saalfeld Lab</license.organizationName>
 		<license.copyrightOwners>Stephan Saalfeld</license.copyrightOwners>
-
-		<enforcer.skip>true</enforcer.skip>
 	</properties>
 
 	<developers>
@@ -64,10 +80,31 @@
 		</developer>
 	</developers>
 
+	<contributors>
+		<contributor>
+			<name>Stephan Saalfeld</name>
+			<properties>
+				<id>axtimwalde</id>
+			</properties>
+		</contributor>
+		<contributor>
+			<name>Igor Pisarev</name>
+			<properties>
+				<id>igorpisarev</id>
+			</properties>
+		</contributor>
+		<contributor>
+			<name>Neil Thistlethwaite</name>
+		</contributor>
+		<contributor>
+			<name>Andrew Champion</name>
+		</contributor>
+	</contributors>
+
 	<repositories>
 		<repository>
 			<id>imagej.public</id>
-			<url>https://maven.imagej.net/content/groups/public</url>
+			<url>https://maven.scijava.org/content/groups/public</url>
 		</repository>
 	</repositories>
 
@@ -75,64 +112,58 @@
 		<dependency>
 			<groupId>org.tukaani</groupId>
 			<artifactId>xz</artifactId>
-			<version>1.6</version>
+			<version>1.8</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-compress</artifactId>
-			<version>1.14</version>
-		</dependency>
-		<dependency>
-			<groupId>net.jpountz.lz4</groupId>
-			<artifactId>lz4</artifactId>
-			<version>1.3.0</version>
+			<groupId>org.lz4</groupId>
+			<artifactId>lz4-java</artifactId>
+			<version>1.5.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
-			<version>2.3.1</version>
 		</dependency>
 
 		<!-- Test dependencies -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.9</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>net.imagej</groupId>
 			<artifactId>ij</artifactId>
-			<version>1.50g</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>net.imglib2</groupId>
 			<artifactId>imglib2</artifactId>
-			<version>4.2.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>net.imglib2</groupId>
 			<artifactId>imglib2-ij</artifactId>
-			<version>2.0.0-beta-28</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>cisd</groupId>
 			<artifactId>jhdf5</artifactId>
-			<version>14.12.5</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-collections4</artifactId>
-			<version>4.1</version>
+			<version>4.2</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.scijava</groupId>
 			<artifactId>scijava-common</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-compress</artifactId>
+			<version>1.18</version>
 		</dependency>
 	</dependencies>
 
@@ -153,6 +184,30 @@
 					<configuration>
 						<altDeploymentRepository>internal.repo::default::file://${deploy.path}</altDeploymentRepository>
 					</configuration>
+				</plugin>
+				<plugin>
+					<artifactId>maven-resources-plugin</artifactId>
+					<executions>
+						<execution>
+							<id>copy</id>
+							<phase>compile</phase>
+							<goals>
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${basedir}</outputDirectory>
+								<resources>
+									<resource>
+										<directory>doc</directory>
+										<includes>
+											<include>*.md</include>
+										</includes>
+										<filtering>true</filtering>
+									</resource>
+								</resources>
+							</configuration>
+						</execution>
+					</executions>
 				</plugin>
 			</plugins>
 		</pluginManagement>

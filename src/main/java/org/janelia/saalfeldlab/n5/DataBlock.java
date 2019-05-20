@@ -97,7 +97,7 @@ public interface DataBlock<T> {
 	 * Returns the number of elements in this {@link DataBlock}. This number is
 	 * not necessarily equal {@link #getNumElements(int[])
 	 * getNumElements(getSize())}.
-	 * 
+	 *
 	 * @return
 	 */
 	public int getNumElements();

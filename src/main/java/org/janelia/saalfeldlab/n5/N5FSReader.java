@@ -136,6 +136,14 @@ public class N5FSReader extends AbstractGsonReader {
 		this(basePath, new GsonBuilder());
 	}
 
+	/**
+	 *
+	 * @return N5 base path
+	 */
+	public String getBasePath() {
+		return this.basePath;
+	}
+
 	@Override
 	public boolean exists(final String pathName) {
 
