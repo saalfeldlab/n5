@@ -40,7 +40,7 @@ import java.util.Map;
 public interface N5Writer extends N5Reader {
 
 	/**
-	 * Sets an attribute.
+	 * Sets an attribute.  Setting an attribute to null removes the attribute.
 	 *
 	 * @param pathName group path
 	 * @param key
@@ -56,7 +56,8 @@ public interface N5Writer extends N5Reader {
 	}
 
 	/**
-	 * Sets a map of attributes.
+	 * Sets a map of attributes.  Any attribute with a value null will will be
+	 * removed.
 	 *
 	 * @param pathName group path
 	 * @param attributes
