@@ -78,7 +78,7 @@ public class N5FSReader extends AbstractGsonReader {
 						Thread.sleep(100);
 					} catch (final InterruptedException f) {
 						waiting = false;
-						f.printStackTrace(System.err);
+						Thread.currentThread().interrupt();
 					}
 				} catch (final IOException e) {}
 			}
