@@ -19,7 +19,7 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
 N5 group is not a single file but simply a directory on the file system.  Meta-data is stored as a JSON file per each group/ directory.  Tensor datasets can be chunked and chunks are stored as individual files.  This enables parallel reading and writing on a cluster.
 
 1. All directories of the file system are N5 groups.
-2. A JSON file `attributes.json` in a directory contains arbitrary attributes.
+2. A JSON file `attributes.json` in a directory contains arbitrary attributes.  A group without attributes may not have an `attributes.json` file.
 3. The version of this specification is 1.0.0 and is stored in the "n5" attribute of the root group "/".
 4. A dataset is a group with the mandatory attributes:
    * dimensions (e.g. [100, 200, 300]),
