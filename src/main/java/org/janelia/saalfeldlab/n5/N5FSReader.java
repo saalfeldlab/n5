@@ -238,4 +238,9 @@ public class N5FSReader extends AbstractGsonReader {
 
 		return pathName.startsWith("/") || pathName.startsWith("\\") ? pathName.substring(1) : pathName;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[basePath=%s]", getClass().getSimpleName(), basePath);
+	}
 }
