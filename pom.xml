@@ -38,7 +38,7 @@
 	</mailingLists>
 
 	<scm>
-		<connection>scm:git:git://github.com/saalfedllab/n5</connection>
+		<connection>scm:git:git://github.com/saalfeldlab/n5</connection>
 		<developerConnection>scm:git:git@github.com:saalfeldlab/n5</developerConnection>
 		<tag>HEAD</tag>
 		<url>https://github.com/saalfeldlab/n5</url>
@@ -98,6 +98,12 @@
 		</contributor>
 		<contributor>
 			<name>Andrew Champion</name>
+		</contributor>
+		<contributor>
+			<name>Philipp Hanslovsky</name>
+			<properties>
+				<id>hanslovsky</id>
+			</properties>
 		</contributor>
 	</contributors>
 
