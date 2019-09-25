@@ -2,7 +2,7 @@
 
 The N5 API specifies the primitive operations needed to store large chunked n-dimensional tensors, and arbitrary meta-data in a hierarchy of groups similar to HDF5.
 
-Other than HDF5, N5 is not bound to a specific backend.  This repository includes a simple [file-system backend](#file-system-specification-version-203-snapshot).  There are also an [HDF5 backend](https://github.com/saalfeldlab/n5-hdf5), a [Google Cloud backend](https://github.com/saalfeldlab/n5-google-cloud), and an [AWS-S3 backend](https://github.com/saalfeldlab/n5-aws-s3).
+Other than HDF5, N5 is not bound to a specific backend.  This repository includes a simple [file-system backend](#file-system-specification-version-203-snapshot).  There are also an [HDF5 backend](https://github.com/saalfeldlab/n5-hdf5), a [Zarr backend](https://github.com/saalfeldlab/n5-zarr), a [Google Cloud backend](https://github.com/saalfeldlab/n5-google-cloud), and an [AWS-S3 backend](https://github.com/saalfeldlab/n5-aws-s3).
 
 At this time, N5 supports:
 
@@ -10,7 +10,7 @@ At this time, N5 supports:
 * arbitrary meta-data (stored as JSON or HDF5 attributes)
 * chunked n-dimensional tensor datasets
 * value-datatypes: [u]int8, [u]int16, [u]int32, [u]int64, float32, float64
-* compression: raw, gzip, bzip2, xz
+* compression: raw, gzip, zlib, bzip2, xz, and lz4 are included in this repository, custom compression schemes can be added
 
 Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
 
@@ -36,7 +36,7 @@ N5 group is not a single file but simply a directory on the file system.  Meta-d
      * xz with parameters
        * preset (integer, default 6).
        
-   Custom compression schemes with arbitrary parameters can be added using [compression annotations](#extensible-compression-schemes).
+   Custom compression schemes with arbitrary parameters can be added using [compression annotations](#extensible-compression-schemes), e.g. [N5 Blosc](https://github.com/saalfeldlab/n5-blosc).
 5. Chunks are stored in a directory hierarchy that enumerates their positive integer position in the chunk grid (e.g. `0/4/1/7` for chunk grid position p=(0, 4, 1, 7)).
 6. Datasets are sparse, i.e. there is no guarantee that all chunks of a dataset exist.
 7. Chunks cannot be larger than 2GB (2<sup>31</sup>Bytes).
