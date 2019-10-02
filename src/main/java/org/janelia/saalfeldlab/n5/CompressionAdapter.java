@@ -83,10 +83,10 @@ public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSe
 				clazz = (Class<? extends Compression>)Class.forName(item.className());
 				final String type = clazz.getAnnotation(CompressionType.class).value();
 
-				Constructor<? extends Compression> constructor = clazz.getDeclaredConstructor();
+				final Constructor<? extends Compression> constructor = clazz.getDeclaredConstructor();
 
 				final HashMap<String, Class<?>> parameters = new HashMap<>();
-				ArrayList<Field> fields = getDeclaredFields(clazz);
+				final ArrayList<Field> fields = getDeclaredFields(clazz);
 				for (final Field field : fields) {
 					if (field.getAnnotation(CompressionParameter.class) != null) {
 						parameters.put(field.getName(), field.getType());
@@ -95,26 +95,27 @@ public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSe
 
 				compressionConstructors.put(type, constructor);
 				compressionParameters.put(type, parameters);
-			} catch (final ClassNotFoundException | NoSuchMethodException | ClassCastException e) {
-				e.printStackTrace();
+			} catch (final ClassNotFoundException | NoSuchMethodException | ClassCastException | UnsatisfiedLinkError e) {
+				System.err.println("Compression '" + item.className() + "' could not me registered because:");
+				e.printStackTrace(System.err);
 			}
 		}
 	}
 
 	@Override
-	public JsonElement serialize(Compression compression, Type typeOfSrc, JsonSerializationContext context) {
+	public JsonElement serialize(final Compression compression, final Type typeOfSrc, final JsonSerializationContext context) {
 
 		final String type = compression.getType();
 		final Class<? extends Compression> clazz = compression.getClass();
 
-		JsonObject json = new JsonObject();
+		final JsonObject json = new JsonObject();
 		json.addProperty("type", type);
 
 		final HashMap<String, Class<?>> parameterTypes = compressionParameters.get(type);
 		try {
 			for (final Entry<String, Class<?>> parameterType : parameterTypes.entrySet()) {
 				final String name = parameterType.getKey();
-				Field field = clazz.getDeclaredField(name);
+				final Field field = clazz.getDeclaredField(name);
 				final boolean isAccessible = field.isAccessible();
 				field.setAccessible(true);
 				final Object value = field.get(compression);
@@ -130,7 +131,7 @@ public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSe
 	}
 
 	@Override
-	public Compression deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+	public Compression deserialize(final JsonElement json, final Type typeOfT, final JsonDeserializationContext context)
 			throws JsonParseException {
 
 		final JsonObject jsonObject = json.getAsJsonObject();
@@ -145,7 +146,7 @@ public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSe
 			compression = constructor.newInstance();
 			final Class<? extends Compression> clazz = compression.getClass();
 			final HashMap<String, Class<?>> parameterTypes = compressionParameters.get(type);
-			Field modifiersField = Field.class.getDeclaredField("modifiers");
+			final Field modifiersField = Field.class.getDeclaredField("modifiers");
 			final boolean isModifiersAccessible = modifiersField.isAccessible();
 			modifiersField.setAccessible(true);
 			for (final Entry<String, Class<?>> parameterType : parameterTypes.entrySet()) {
