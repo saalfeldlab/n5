@@ -166,6 +166,16 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		return !Files.exists(path);
 	}
 
+	@Override
+	public boolean deleteBlock(
+			final String pathName,
+			final long[] gridPosition) {
+		return Paths
+				.get(basePath, getDataBlockPath(pathName, gridPosition).toString())
+				.toFile()
+				.delete();
+	}
+
 	/**
 	 * This is a copy of {@link Files#createDirectories(Path, FileAttribute...)}
 	 * that follows symlinks.

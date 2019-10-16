@@ -152,6 +152,16 @@ public class N5FSReader extends AbstractGsonReader {
 	}
 
 	@Override
+	public boolean blockExists(
+			final String pathName,
+			final long[] gridPosition) {
+		return Paths
+				.get(basePath, getDataBlockPath(pathName, gridPosition).toString())
+				.toFile()
+				.exists();
+	}
+
+	@Override
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
 
 		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());

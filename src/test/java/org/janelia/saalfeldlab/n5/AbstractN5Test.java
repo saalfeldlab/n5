@@ -509,4 +509,34 @@ public abstract class AbstractN5Test {
 
 		Assert.assertFalse(N5Reader.VERSION.isCompatible(n5.getVersion()));
 	}
+
+	@Test
+	public void testDelete() throws IOException {
+		final String datasetName = AbstractN5Test.datasetName + "-test-delete";
+		n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT8, new RawCompression());
+		final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+		final long[] position1 = {0, 0, 0};
+		final long[] position2 = {0, 1, 2};
+
+		// no blocks should exist to begin with
+		Assert.assertFalse(n5.blockExists(datasetName, position1));
+		Assert.assertFalse(n5.blockExists(datasetName, position1));
+
+		final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, position1, byteBlock);
+		n5.writeBlock(datasetName, attributes, dataBlock);
+
+		// block should exist at position1 but not at position2
+		Assert.assertTrue(n5.blockExists(datasetName, position1));
+		Assert.assertFalse(n5.blockExists(datasetName, position2));
+
+		// deletion should report true only at first deletion of position1
+		Assert.assertTrue(n5.deleteBlock(datasetName, position1));
+		Assert.assertFalse(n5.deleteBlock(datasetName, position1));
+		Assert.assertFalse(n5.deleteBlock(datasetName, position2));
+
+		// no block should exist anymore
+		Assert.assertFalse(n5.blockExists(datasetName, position1));
+		Assert.assertFalse(n5.blockExists(datasetName, position2));
+	}
+
 }

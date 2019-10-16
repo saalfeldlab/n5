@@ -162,4 +162,20 @@ public interface N5Writer extends N5Reader {
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException;
+
+	/**
+	 * Deletes the block at {@code gridPosition}
+	 *
+	 * @param pathName dataset path
+	 * @param gridPosition position of block to be deleted
+	 * TODO is this exception necessary? Not for N5FS
+	 * @throws IOException
+	 *
+	 * TODO what is a good return value?
+	 * @return true if deletion was successful
+	 *
+	 */
+	boolean deleteBlock(
+			final String pathName,
+			final long[] gridPosition) throws IOException;
 }

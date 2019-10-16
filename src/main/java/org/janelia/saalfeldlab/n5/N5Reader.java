@@ -260,6 +260,19 @@ public interface N5Reader {
 	}
 
 	/**
+	 * Checks if the block at {@code gridPosition} exists
+	 *
+	 * @param pathName dataset path
+	 * @param gridPosition position of block
+	 * @return true if block at {@code gridPosition} exists, false otherwise
+	 * @throws IOException TODO is this exception necessary? Not for N5FS
+	 *
+	 */
+	boolean blockExists(
+			final String pathName,
+			final long[] gridPosition) throws IOException;
+
+	/**
 	 * List all groups (including datasets) in a group.
 	 *
 	 * @param pathName group path
