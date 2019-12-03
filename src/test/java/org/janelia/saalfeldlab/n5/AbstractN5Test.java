@@ -537,8 +537,8 @@ public abstract class AbstractN5Test {
 
 		// deletion should report true only at first deletion of position1
 		Assert.assertTrue(n5.deleteBlock(datasetName, position1));
-		Assert.assertFalse(n5.deleteBlock(datasetName, position1));
-		Assert.assertFalse(n5.deleteBlock(datasetName, position2));
+		Assert.assertTrue(n5.deleteBlock(datasetName, position1));
+		Assert.assertTrue(n5.deleteBlock(datasetName, position2));
 
 		// no block should exist anymore
 		Assert.assertTrue(isNullOrBytesAndAllZeros(n5.readBlock(datasetName, attributes, position1)));
