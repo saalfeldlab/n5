@@ -168,11 +168,10 @@ public interface N5Writer extends N5Reader {
 	 *
 	 * @param pathName dataset path
 	 * @param gridPosition position of block to be deleted
-	 * TODO is this exception necessary? Not for N5FS
 	 * @throws IOException
 	 *
 	 * TODO what is a good return value?
-	 * @return true if deletion was successful
+	 * @return true if block was deleted by this method; false if the block could not be deleted because it did not exist
 	 *
 	 */
 	boolean deleteBlock(

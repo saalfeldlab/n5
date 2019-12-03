@@ -169,11 +169,13 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	@Override
 	public boolean deleteBlock(
 			final String pathName,
-			final long[] gridPosition) {
-		return Paths
-				.get(basePath, getDataBlockPath(pathName, gridPosition).toString())
-				.toFile()
-				.delete();
+			final long[] gridPosition) throws IOException {
+		final Path path = Paths.get(basePath, getDataBlockPath(pathName, gridPosition).toString());
+		if (!Files.exists(path))
+			return false;
+		try (final LockedFileChannel channel = LockedFileChannel.openForWriting(path)) {
+			return Files.deleteIfExists(path);
+		}
 	}
 
 	/**
