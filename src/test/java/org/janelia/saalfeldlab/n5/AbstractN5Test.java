@@ -26,6 +26,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import org.hamcrest.core.IsEqual;
+import org.hamcrest.core.IsInstanceOf;
+import org.hamcrest.core.IsNot;
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -519,15 +522,18 @@ public abstract class AbstractN5Test {
 		final long[] position2 = {0, 1, 2};
 
 		// no blocks should exist to begin with
-		Assert.assertFalse(n5.blockExists(datasetName, position1));
-		Assert.assertFalse(n5.blockExists(datasetName, position1));
+		Assert.assertTrue(isNullOrBytesAndAllZeros(n5.readBlock(datasetName, attributes, position1)));
+		Assert.assertTrue(isNullOrBytesAndAllZeros(n5.readBlock(datasetName, attributes, position2)));
 
 		final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, position1, byteBlock);
 		n5.writeBlock(datasetName, attributes, dataBlock);
 
 		// block should exist at position1 but not at position2
-		Assert.assertTrue(n5.blockExists(datasetName, position1));
-		Assert.assertFalse(n5.blockExists(datasetName, position2));
+		final DataBlock<?> readBlock = n5.readBlock(datasetName, attributes, position1);
+		Assert.assertNotNull(readBlock);
+		Assert.assertThat(readBlock, IsInstanceOf.instanceOf(ByteArrayDataBlock.class));
+		Assert.assertArrayEquals(byteBlock, ((ByteArrayDataBlock) readBlock).getData());
+		Assert.assertTrue(isNullOrBytesAndAllZeros(n5.readBlock(datasetName, attributes, position2)));
 
 		// deletion should report true only at first deletion of position1
 		Assert.assertTrue(n5.deleteBlock(datasetName, position1));
@@ -535,8 +541,26 @@ public abstract class AbstractN5Test {
 		Assert.assertFalse(n5.deleteBlock(datasetName, position2));
 
 		// no block should exist anymore
-		Assert.assertFalse(n5.blockExists(datasetName, position1));
-		Assert.assertFalse(n5.blockExists(datasetName, position2));
+		Assert.assertTrue(isNullOrBytesAndAllZeros(n5.readBlock(datasetName, attributes, position1)));
+		Assert.assertTrue(isNullOrBytesAndAllZeros(n5.readBlock(datasetName, attributes, position2)));
+	}
+
+	// Certain N5 implementations (HDF5) do not necessarily store data as blocks/chunks.
+	// For this test, assume that a non-existing block is returned as all zeros in such
+	// a scenario.
+	private boolean isNullOrBytesAndAllZeros(final DataBlock<?> dataBlock) {
+		if (dataBlock == null)
+			return true;
+
+		final Object data = dataBlock.getData();
+		if (!(data instanceof byte[]))
+			return false;
+
+		for (final byte d : (byte[]) data) {
+			if (d != 0)
+				return false;
+		}
+		return true;
 	}
 
 }
