@@ -522,8 +522,8 @@ public abstract class AbstractN5Test {
 		final long[] position2 = {0, 1, 2};
 
 		// no blocks should exist to begin with
-		Assert.assertTrue(isNullOrBytesAndAllZeros(n5.readBlock(datasetName, attributes, position1)));
-		Assert.assertTrue(isNullOrBytesAndAllZeros(n5.readBlock(datasetName, attributes, position2)));
+		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position1)));
+		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
 
 		final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, position1, byteBlock);
 		n5.writeBlock(datasetName, attributes, dataBlock);
@@ -533,7 +533,7 @@ public abstract class AbstractN5Test {
 		Assert.assertNotNull(readBlock);
 		Assert.assertThat(readBlock, IsInstanceOf.instanceOf(ByteArrayDataBlock.class));
 		Assert.assertArrayEquals(byteBlock, ((ByteArrayDataBlock) readBlock).getData());
-		Assert.assertTrue(isNullOrBytesAndAllZeros(n5.readBlock(datasetName, attributes, position2)));
+		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
 
 		// deletion should report true only at first deletion of position1
 		Assert.assertTrue(n5.deleteBlock(datasetName, position1));
@@ -541,26 +541,10 @@ public abstract class AbstractN5Test {
 		Assert.assertTrue(n5.deleteBlock(datasetName, position2));
 
 		// no block should exist anymore
-		Assert.assertTrue(isNullOrBytesAndAllZeros(n5.readBlock(datasetName, attributes, position1)));
-		Assert.assertTrue(isNullOrBytesAndAllZeros(n5.readBlock(datasetName, attributes, position2)));
+		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position1)));
+		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
 	}
 
-	// Certain N5 implementations (HDF5) do not necessarily store data as blocks/chunks.
-	// For this test, assume that a non-existing block is returned as all zeros in such
-	// a scenario.
-	private boolean isNullOrBytesAndAllZeros(final DataBlock<?> dataBlock) {
-		if (dataBlock == null)
-			return true;
-
-		final Object data = dataBlock.getData();
-		if (!(data instanceof byte[]))
-			return false;
-
-		for (final byte d : (byte[]) data) {
-			if (d != 0)
-				return false;
-		}
-		return true;
-	}
+	protected abstract boolean testDeleteIsBlockDeleted(final DataBlock<?> dataBlock);
 
 }
