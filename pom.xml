@@ -61,6 +61,8 @@
 		<license.projectName>Not HDF5</license.projectName>
 		<license.organizationName>Saalfeld Lab</license.organizationName>
 		<license.copyrightOwners>Stephan Saalfeld</license.copyrightOwners>
+
+		<scijava.jvm.build.version>[1.8.0-101,)</scijava.jvm.build.version>
 	</properties>
 
 	<developers>
