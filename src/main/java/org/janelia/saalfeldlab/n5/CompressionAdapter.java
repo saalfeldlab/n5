@@ -146,24 +146,13 @@ public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSe
 			compression = constructor.newInstance();
 			final Class<? extends Compression> clazz = compression.getClass();
 			final HashMap<String, Class<?>> parameterTypes = compressionParameters.get(type);
-			final Field modifiersField = Field.class.getDeclaredField("modifiers");
-			final boolean isModifiersAccessible = modifiersField.isAccessible();
-			modifiersField.setAccessible(true);
 			for (final Entry<String, Class<?>> parameterType : parameterTypes.entrySet()) {
 				final String name = parameterType.getKey();
 				if (jsonObject.has(name)) {
 					final Object parameter = context.deserialize(jsonObject.get(name), parameterType.getValue());
-					final Field field = clazz.getDeclaredField(name);
-					final boolean isAccessible = field.isAccessible();
-					field.setAccessible(true);
-					final int modifiers = field.getModifiers();
-					modifiersField.setInt(field, modifiers & ~Modifier.FINAL);
-					field.set(compression, parameter);
-					modifiersField.setInt(field, modifiers);
-					field.setAccessible(isAccessible);
+					ReflectionUtils.setFieldValue(compression, name, parameter);
 				}
 			}
-			modifiersField.setAccessible(isModifiersAccessible);
 		} catch (InstantiationException | IllegalAccessException  | IllegalArgumentException | InvocationTargetException | SecurityException | NoSuchFieldException e) {
 			e.printStackTrace(System.err);
 			return null;
