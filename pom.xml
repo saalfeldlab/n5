@@ -55,7 +55,7 @@
 	</ciManagement>
 
 	<properties>
-		<package-name>org.janelia.saalfeldlab</package-name>
+		<package-name>org.janelia.saalfeldlab.n5</package-name>
 
 		<license.licenseName>bsd_2</license.licenseName>
 		<license.projectName>Not HDF5</license.projectName>
