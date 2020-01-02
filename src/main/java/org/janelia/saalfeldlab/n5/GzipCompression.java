@@ -105,18 +105,6 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	private void readObject(final ObjectInputStream in) throws Exception {
 
 		in.defaultReadObject();
-
-		final Field modifiersField = Field.class.getDeclaredField("modifiers");
-		final boolean isModifiersAccessible = modifiersField.isAccessible();
-		modifiersField.setAccessible(true);
-		final Field parametersField = getClass().getDeclaredField("parameters");
-		final boolean isFieldAccessible = parametersField.isAccessible();
-		parametersField.setAccessible(true);
-		final int modifiers = parametersField.getModifiers();
-		modifiersField.setInt(parametersField, modifiers & ~Modifier.FINAL);
-		parametersField.set(this, new GzipParameters());
-		modifiersField.setInt(parametersField, modifiers);
-		parametersField.setAccessible(isFieldAccessible);
-		modifiersField.setAccessible(isModifiersAccessible);
+		ReflectionUtils.setFieldValue(this, "parameters", new GzipParameters());
 	}
 }
