@@ -170,8 +170,9 @@ public interface N5Writer extends N5Reader {
 	 * @param gridPosition position of block to be deleted
 	 * @throws IOException
 	 *
-	 * TODO what is a good return value?
-	 * @return true if block was deleted by this method; false if the block could not be deleted because it did not exist
+	 * @return {@code true} if the block at {@code gridPosition} is "empty" after deletion. The meaning of "empty" is
+	 * implementation dependent. For example "empty" means that no file exists on the file system for the deleted block
+	 * in case of the file system implementation.
 	 *
 	 */
 	boolean deleteBlock(
