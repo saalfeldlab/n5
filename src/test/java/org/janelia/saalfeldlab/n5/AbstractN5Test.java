@@ -55,15 +55,8 @@ public abstract class AbstractN5Test {
 	static private double[] doubleBlock;
 
 	static protected N5Writer n5;
-	static private AbstractN5Test test;
 
 	protected abstract N5Writer createN5Writer() throws IOException;
-	protected void cleanup() throws IOException {}
-
-	public AbstractN5Test() {
-
-		test = this;
-	}
 
 	protected Compression[] getCompressions() {
 
@@ -87,7 +80,6 @@ public abstract class AbstractN5Test {
 			return;
 
 		n5 = createN5Writer();
-		test = this;
 
 		final Random rnd = new Random();
 		byteBlock = new byte[blockSize[0] * blockSize[1] * blockSize[2]];
@@ -115,7 +107,6 @@ public abstract class AbstractN5Test {
 		if (n5 != null) {
 			Assert.assertTrue(n5.remove());
 			n5 = null;
-			test.cleanup();
 		}
 	}
 
