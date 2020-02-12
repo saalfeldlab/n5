@@ -55,7 +55,6 @@ public abstract class AbstractN5Test {
 	static private double[] doubleBlock;
 
 	static protected N5Writer n5;
-	static private boolean initialized = false;
 
 	protected abstract N5Writer createN5Writer() throws IOException;
 
@@ -77,7 +76,7 @@ public abstract class AbstractN5Test {
 	@Before
 	public void setUpOnce() throws IOException {
 
-		if (initialized)
+		if (n5 != null)
 			return;
 
 		n5 = createN5Writer();
@@ -97,8 +96,6 @@ public abstract class AbstractN5Test {
 			floatBlock[i] = Float.intBitsToFloat(rnd.nextInt());
 			doubleBlock[i] = Double.longBitsToDouble(rnd.nextLong());
 		}
-
-		initialized = true;
 	}
 
 	/**
@@ -107,9 +104,10 @@ public abstract class AbstractN5Test {
 	@AfterClass
 	public static void rampDownAfterClass() throws IOException {
 
-		Assert.assertTrue(n5.remove());
-		initialized = false;
-		n5 = null;
+		if (n5 != null) {
+			Assert.assertTrue(n5.remove());
+			n5 = null;
+		}
 	}
 
 	@Test
