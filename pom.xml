@@ -13,7 +13,7 @@
 
 	<groupId>org.janelia.saalfeldlab</groupId>
 	<artifactId>n5</artifactId>
-	<version>2.1.3</version>
+	<version>2.1.4</version>
 
 	<name>N5</name>
 	<description>Not HDF5</description>
@@ -38,7 +38,7 @@
 	</mailingLists>
 
 	<scm>
-		<connection>scm:git:git://github.com/saalfedllab/n5</connection>
+		<connection>scm:git:git://github.com/saalfeldlab/n5</connection>
 		<developerConnection>scm:git:git@github.com:saalfeldlab/n5</developerConnection>
 		<tag>HEAD</tag>
 		<url>https://github.com/saalfeldlab/n5</url>
@@ -55,12 +55,14 @@
 	</ciManagement>
 
 	<properties>
-		<package-name>org.janelia.saalfeldlab</package-name>
+		<package-name>org.janelia.saalfeldlab.n5</package-name>
 
 		<license.licenseName>bsd_2</license.licenseName>
 		<license.projectName>Not HDF5</license.projectName>
 		<license.organizationName>Saalfeld Lab</license.organizationName>
 		<license.copyrightOwners>Stephan Saalfeld</license.copyrightOwners>
+
+		<scijava.jvm.build.version>[1.8.0-101,)</scijava.jvm.build.version>
 	</properties>
 
 	<developers>
@@ -98,6 +100,12 @@
 		</contributor>
 		<contributor>
 			<name>Andrew Champion</name>
+		</contributor>
+		<contributor>
+			<name>Philipp Hanslovsky</name>
+			<properties>
+				<id>hanslovsky</id>
+			</properties>
 		</contributor>
 	</contributors>
 
