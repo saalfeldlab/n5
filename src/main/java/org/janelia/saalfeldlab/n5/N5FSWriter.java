@@ -148,21 +148,13 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			try (final Stream<Path> pathStream = Files.walk(path)) {
 				pathStream.sorted(Comparator.reverseOrder()).forEach(
 						childPath -> {
-							if (Files.isRegularFile(childPath)) {
-								try (final LockedFileChannel channel = LockedFileChannel.openForWriting(childPath)) {
-									Files.delete(childPath);
-								} catch (final IOException e) {
-									e.printStackTrace();
-								}
-							} else
-								try {
-									Files.delete(childPath);
-								} catch (final IOException e) {
-									e.printStackTrace();
-								}
+							try {
+								Files.delete(childPath);
+							} catch (final IOException e) {
+								e.printStackTrace();
+							}
 						});
 			}
-
 		return !Files.exists(path);
 	}
 
