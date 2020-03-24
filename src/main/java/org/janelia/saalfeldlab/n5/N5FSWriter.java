@@ -180,6 +180,18 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		return !Files.exists(path);
 	}
 
+	@Override
+	public boolean deleteBlock(
+			final String pathName,
+			final long[] gridPosition) throws IOException {
+		final Path path = Paths.get(basePath, getDataBlockPath(pathName, gridPosition).toString());
+		if (Files.exists(path))
+			try (final LockedFileChannel channel = LockedFileChannel.openForWriting(path)) {
+				Files.deleteIfExists(path);
+			}
+		return !Files.exists(path);
+	}
+
 	/**
 	 * This is a copy of {@link Files#createDirectories(Path, FileAttribute...)}
 	 * that follows symlinks.

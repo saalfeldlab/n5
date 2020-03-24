@@ -162,4 +162,20 @@ public interface N5Writer extends N5Reader {
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException;
+
+	/**
+	 * Deletes the block at {@code gridPosition}
+	 *
+	 * @param pathName dataset path
+	 * @param gridPosition position of block to be deleted
+	 * @throws IOException
+	 *
+	 * @return {@code true} if the block at {@code gridPosition} is "empty" after deletion. The meaning of "empty" is
+	 * implementation dependent. For example "empty" means that no file exists on the file system for the deleted block
+	 * in case of the file system implementation.
+	 *
+	 */
+	boolean deleteBlock(
+			final String pathName,
+			final long[] gridPosition) throws IOException;
 }
