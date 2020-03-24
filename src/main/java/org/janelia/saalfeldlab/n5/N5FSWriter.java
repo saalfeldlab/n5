@@ -28,6 +28,7 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
@@ -154,15 +155,28 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 								} catch (final IOException e) {
 									e.printStackTrace();
 								}
-							} else
+							} else {
 								try {
 									Files.delete(childPath);
+								} catch (final DirectoryNotEmptyException e) {
+									// Even though childPath should be an empty directory, sometimes the deletion fails on network file system
+									// when lock files are not cleared immediately after the leaves have been removed.
+									try {
+										// wait and reattempt
+										Thread.sleep(100);
+										Files.delete(childPath);
+									} catch (final InterruptedException ex) {
+										e.printStackTrace();
+										Thread.currentThread().interrupt();
+									} catch (final IOException ex) {
+										ex.printStackTrace();
+									}
 								} catch (final IOException e) {
 									e.printStackTrace();
 								}
+							}
 						});
 			}
-
 		return !Files.exists(path);
 	}
 

@@ -49,7 +49,7 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	private final int level;
 
 	@CompressionParameter
-	private Boolean useZlib;
+	private final boolean useZlib;
 
 	private final transient GzipParameters parameters = new GzipParameters();
 
@@ -60,10 +60,10 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 
 	public GzipCompression(final int level) {
 
-		this(level, null);
+		this(level, false);
 	}
 
-	public GzipCompression(final int level, final Boolean useZlib) {
+	public GzipCompression(final int level, final boolean useZlib) {
 
 		this.level = level;
 		this.useZlib = useZlib;
@@ -72,7 +72,7 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	@Override
 	public InputStream getInputStream(final InputStream in) throws IOException {
 
-		if (useZlib != null && useZlib) {
+		if (useZlib) {
 			return new InflaterInputStream(in);
 		} else {
 			return new GzipCompressorInputStream(in);
@@ -82,7 +82,7 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	@Override
 	public OutputStream getOutputStream(final OutputStream out) throws IOException {
 
-		if (useZlib != null && useZlib) {
+		if (useZlib) {
 			return new DeflaterOutputStream(out, new Deflater(level));
 		} else {
 			parameters.setCompressionLevel(level);
@@ -105,18 +105,6 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	private void readObject(final ObjectInputStream in) throws Exception {
 
 		in.defaultReadObject();
-
-		final Field modifiersField = Field.class.getDeclaredField("modifiers");
-		final boolean isModifiersAccessible = modifiersField.isAccessible();
-		modifiersField.setAccessible(true);
-		final Field parametersField = getClass().getDeclaredField("parameters");
-		final boolean isFieldAccessible = parametersField.isAccessible();
-		parametersField.setAccessible(true);
-		final int modifiers = parametersField.getModifiers();
-		modifiersField.setInt(parametersField, modifiers & ~Modifier.FINAL);
-		parametersField.set(this, new GzipParameters());
-		modifiersField.setInt(parametersField, modifiers);
-		parametersField.setAccessible(isFieldAccessible);
-		modifiersField.setAccessible(isModifiersAccessible);
+		ReflectionUtils.setFieldValue(this, "parameters", new GzipParameters());
 	}
 }
