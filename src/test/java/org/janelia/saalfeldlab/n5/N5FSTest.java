@@ -36,9 +36,4 @@ public class N5FSTest extends AbstractN5Test {
 
 		return new N5FSWriter(testDirPath);
 	}
-
-	@Override
-	protected boolean testDeleteIsBlockDeleted(DataBlock<?> dataBlock) {
-		return dataBlock == null;
-	}
 }

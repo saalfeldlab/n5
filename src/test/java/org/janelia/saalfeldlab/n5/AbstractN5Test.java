@@ -543,6 +543,7 @@ public abstract class AbstractN5Test {
 		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
 	}
 
-	protected abstract boolean testDeleteIsBlockDeleted(final DataBlock<?> dataBlock);
-
+	protected boolean testDeleteIsBlockDeleted(final DataBlock<?> dataBlock) {
+		return dataBlock == null;
+	}
 }
