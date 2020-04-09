@@ -16,7 +16,11 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import static org.junit.Assert.fail;
+import org.janelia.saalfeldlab.n5.N5Reader.Version;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -26,11 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import org.janelia.saalfeldlab.n5.N5Reader.Version;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.fail;
 
 /**
  * Abstract base class for testing N5 functionality.
@@ -506,5 +506,41 @@ public abstract class AbstractN5Test {
 		n5.setAttribute("/", N5Reader.VERSION_KEY, new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
 
 		Assert.assertFalse(N5Reader.VERSION.isCompatible(n5.getVersion()));
+	}
+
+	@Test
+	public void testDelete() throws IOException {
+		final String datasetName = AbstractN5Test.datasetName + "-test-delete";
+		n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT8, new RawCompression());
+		final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+		final long[] position1 = {0, 0, 0};
+		final long[] position2 = {0, 1, 2};
+
+		// no blocks should exist to begin with
+		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position1)));
+		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
+
+		final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, position1, byteBlock);
+		n5.writeBlock(datasetName, attributes, dataBlock);
+
+		// block should exist at position1 but not at position2
+		final DataBlock<?> readBlock = n5.readBlock(datasetName, attributes, position1);
+		Assert.assertNotNull(readBlock);
+		Assert.assertTrue(readBlock instanceof ByteArrayDataBlock);
+		Assert.assertArrayEquals(byteBlock, ((ByteArrayDataBlock) readBlock).getData());
+		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
+
+		// deletion should report true in all cases
+		Assert.assertTrue(n5.deleteBlock(datasetName, position1));
+		Assert.assertTrue(n5.deleteBlock(datasetName, position1));
+		Assert.assertTrue(n5.deleteBlock(datasetName, position2));
+
+		// no block should exist anymore
+		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position1)));
+		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
+	}
+
+	protected boolean testDeleteIsBlockDeleted(final DataBlock<?> dataBlock) {
+		return dataBlock == null;
 	}
 }
