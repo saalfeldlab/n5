@@ -16,7 +16,11 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import static org.junit.Assert.fail;
+import org.janelia.saalfeldlab.n5.N5Reader.Version;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -26,14 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import org.hamcrest.core.IsEqual;
-import org.hamcrest.core.IsInstanceOf;
-import org.hamcrest.core.IsNot;
-import org.janelia.saalfeldlab.n5.N5Reader.Version;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.fail;
 
 /**
  * Abstract base class for testing N5 functionality.
@@ -529,7 +526,7 @@ public abstract class AbstractN5Test {
 		// block should exist at position1 but not at position2
 		final DataBlock<?> readBlock = n5.readBlock(datasetName, attributes, position1);
 		Assert.assertNotNull(readBlock);
-		Assert.assertThat(readBlock, IsInstanceOf.instanceOf(ByteArrayDataBlock.class));
+		Assert.assertTrue(readBlock instanceof ByteArrayDataBlock);
 		Assert.assertArrayEquals(byteBlock, ((ByteArrayDataBlock) readBlock).getData());
 		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
 
@@ -543,6 +540,7 @@ public abstract class AbstractN5Test {
 		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
 	}
 
-	protected abstract boolean testDeleteIsBlockDeleted(final DataBlock<?> dataBlock);
-
+	protected boolean testDeleteIsBlockDeleted(final DataBlock<?> dataBlock) {
+		return dataBlock == null;
+	}
 }
