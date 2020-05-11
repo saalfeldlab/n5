@@ -42,7 +42,7 @@ N5 group is not a single file but simply a directory on the file system.  Meta-d
 5. Chunks are stored in a directory hierarchy that enumerates their positive integer position in the chunk grid (e.g. `0/4/1/7` for chunk grid position p=(0, 4, 1, 7)).
 6. Datasets are sparse, i.e. there is no guarantee that all chunks of a dataset exist.
 7. Chunks cannot be larger than 2GB (2<sup>31</sup>Bytes).
-8. All chunks of a chunked dataset have the same size except for end-chunks that may be smaller, therefore
+8. All chunks of a chunked dataset have the same number of array elements except for end-chunks that may be smaller, therefore
 9. Chunks are stored in the following binary format:
     * mode (uint16 big endian, default = 0x0000, varlength = 0x0001)
     * number of dimensions (uint16 big endian)
