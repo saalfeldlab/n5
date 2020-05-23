@@ -95,7 +95,6 @@
 
 	<properties>
 		<package-name>org.janelia.saalfeldlab.n5</package-name>
-
 		<license.licenseName>bsd_2</license.licenseName>
 		<license.projectName>Not HDF5</license.projectName>
 		<license.organizationName>Saalfeld Lab</license.organizationName>
@@ -105,18 +104,23 @@
 
 		<!-- NB: Deploy releases to the SciJava Maven repository. -->
 		<releaseProfiles>deploy-to-scijava</releaseProfiles>
+
+		<xz.version>1.8</xz.version>
+		<lz4-java.version>1.5.0</lz4-java.version>
+		<commons-collections4.version>4.2</commons-collections4.version>
+		<commons-compress.version>1.19</commons-compress.version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.tukaani</groupId>
 			<artifactId>xz</artifactId>
-			<version>1.8</version>
+			<version>${xz.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.lz4</groupId>
 			<artifactId>lz4-java</artifactId>
-			<version>1.5.0</version>
+			<version>${lz4-java.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
@@ -152,7 +156,7 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-collections4</artifactId>
-			<version>4.2</version>
+			<version>${commons-collections4.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -162,7 +166,7 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-compress</artifactId>
-			<version>1.19</version>
+			<version>${commons-compress.version}</version>
 		</dependency>
 	</dependencies>
 
