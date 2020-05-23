@@ -51,7 +51,7 @@
 
 	<ciManagement>
 		<system>Travis CI</system>
-		<url>https://travis-ci.org/saalfeldlab/n5</url>
+		<url>https://travis-ci.com/saalfeldlab/n5</url>
 	</ciManagement>
 
 	<properties>
@@ -63,6 +63,9 @@
 		<license.copyrightOwners>Stephan Saalfeld</license.copyrightOwners>
 
 		<scijava.jvm.build.version>[1.8.0-101,)</scijava.jvm.build.version>
+
+		<!-- NB: Deploy releases to the SciJava Maven repository. -->
+		<releaseProfiles>deploy-to-scijava</releaseProfiles>
 	</properties>
 
 	<developers>
@@ -111,7 +114,7 @@
 
 	<repositories>
 		<repository>
-			<id>imagej.public</id>
+			<id>scijava.public</id>
 			<url>https://maven.scijava.org/content/groups/public</url>
 		</repository>
 	</repositories>
@@ -187,13 +190,6 @@
 					</configuration>
 				</plugin>
 				<plugin>
-					<artifactId>maven-deploy-plugin</artifactId>
-					<version>2.8.1</version>
-					<configuration>
-						<altDeploymentRepository>internal.repo::default::file://${deploy.path}</altDeploymentRepository>
-					</configuration>
-				</plugin>
-				<plugin>
 					<artifactId>maven-resources-plugin</artifactId>
 					<executions>
 						<execution>
@@ -220,12 +216,4 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-
-	<distributionManagement>
-		<repository>
-			<id>local-maven-repo</id>
-			<name>Local Maven Repository</name>
-			<url>file://${deploy.path}</url>
-		</repository>
-	</distributionManagement>
 </project>
