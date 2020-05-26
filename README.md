@@ -39,11 +39,10 @@ N5 group is not a single file but simply a directory on the file system.  Meta-d
        * preset (integer, default 6).
        
    Custom compression schemes with arbitrary parameters can be added using [compression annotations](#extensible-compression-schemes), e.g. [N5 Blosc](https://github.com/saalfeldlab/n5-blosc).
-4. The attribute blockSize defines the spacing of the chunk grid.  The coordinates of the first pixel of each chunk is at chunk grid position &times; blockSize, e.g. pixel position is (0, 28, 8, 63) for chunk grid position `0/4/1/7` at blockSize [6, 7, 8, 9]. 
 5. Chunks are stored in a directory hierarchy that enumerates their positive integer position in the chunk grid (e.g. `0/4/1/7` for chunk grid position p=(0, 4, 1, 7)).
-8. While it is common that all chunks of a chunked dataset have the same chunk size and number of elements except for end-chunks that may be smaller, each chunk can have an arbitrary chunk size and an arbitrary number if elements as defined in the header of the chunk.
 6. Datasets are sparse, i.e. there is no guarantee that all chunks of a dataset exist.
 7. Chunks cannot be larger than 2GB (2<sup>31</sup>Bytes).
+8. All chunks of a chunked dataset have the same size except for end-chunks that may be smaller, therefore
 9. Chunks are stored in the following binary format:
     * mode (uint16 big endian, default = 0x0000, varlength = 0x0001)
     * number of dimensions (uint16 big endian)
