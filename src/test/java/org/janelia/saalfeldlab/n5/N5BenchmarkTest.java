@@ -51,7 +51,7 @@ import net.imglib2.view.Views;
  *
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  */
-public class N5Benchmark {
+public class N5BenchmarkTest {
 
 	@Rule
 	public TemporaryFolder temp = new TemporaryFolder();
