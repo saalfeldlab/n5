@@ -26,10 +26,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import ch.systemsx.cisd.base.mdarray.MDShortArray;
 import ch.systemsx.cisd.hdf5.HDF5Factory;
@@ -53,7 +53,8 @@ import net.imglib2.view.Views;
  */
 public class N5Benchmark {
 
-	private static String testDirPath = System.getProperty("user.home") + "/tmp/n5-benchmark";
+	@Rule
+	public TemporaryFolder temp = new TemporaryFolder();
 
 	private static String datasetName = "/dataset";
 
@@ -73,13 +74,10 @@ public class N5Benchmark {
 	/**
 	 * @throws java.lang.Exception
 	 */
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
+	@Before
+	public void setUp() throws Exception {
 
-		final File testDir = new File(testDirPath);
-		testDir.mkdirs();
-		if (!(testDir.exists() && testDir.isDirectory()))
-			throw new IOException("Could not create benchmark directory for HDF5Utils benchmark.");
+		final File testDir = temp.newFolder();
 
 		data = new short[64 * 64 * 64];
 		final ImagePlus imp = new Opener().openURL("https://imagej.nih.gov/ij/images/t1-head-raw.zip");
@@ -88,23 +86,8 @@ public class N5Benchmark {
 		for (int i = 0; i < data.length; ++i)
 			data[i] = (short)cursor.next().get();
 
-		n5 = new N5FSWriter(testDirPath);
+		n5 = new N5FSWriter(testDir.getAbsolutePath());
 	}
-
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@AfterClass
-	public static void rampDownAfterClass() throws Exception {
-
-		n5.remove("");
-	}
-
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@Before
-	public void setUp() throws Exception {}
 
 	/**
 	 * Generates some files for documentation of the binary format.  Not a test.
@@ -153,19 +136,17 @@ public class N5Benchmark {
 
 			/* TIF blocks */
 			long t = System.currentTimeMillis();
-			final String compressedDatasetName = testDirPath + "/" + datasetName + ".tif";
-			new File(compressedDatasetName).mkdirs();
 			for (int z = 0; z < nBlocks; ++z)
 				for (int y = 0; y < nBlocks; ++y)
 					for (int x = 0; x < nBlocks; ++x) {
 						final ImagePlus impBlock = new ImagePlus("", new ShortProcessor(64, 64 * 64, data, null));
-						IJ.saveAsTiff(impBlock, compressedDatasetName + "/" + x + "-" + y + "-" + z + ".tif");
+						IJ.saveAsTiff(impBlock, temp.getRoot().toPath().resolve(x + "-" + y + "-" + z + ".tif").toString());
 					}
 			System.out.println(String.format("%d : tif : %fs", i, 0.001 * (System.currentTimeMillis() - t)));
 
 			/* HDF5 raw */
 			t = System.currentTimeMillis();
-			String hdf5Name = testDirPath + "/" + datasetName + ".h5";
+			String hdf5Name = temp.getRoot().toPath().resolve("dataset.h5").toString();
 			IHDF5Writer hdf5Writer = HDF5Factory.open(hdf5Name);
 			IHDF5ShortWriter uint16Writer = hdf5Writer.uint16();
 			uint16Writer.createMDArray(
@@ -180,11 +161,10 @@ public class N5Benchmark {
 						uint16Writer.writeMDArrayBlockWithOffset(datasetName, targetCell, new long[]{64 * z, 64 * y, 64 * x});
 					}
 			System.out.println(String.format("%d : hdf5 raw : %fs", i, 0.001 * (System.currentTimeMillis() - t)));
-			new File(hdf5Name).delete();
 
 			/* HDF5 gzip */
 			t = System.currentTimeMillis();
-			hdf5Name = testDirPath + "/" + datasetName + ".gz.h5";
+			hdf5Name = temp.getRoot().toPath().resolve("dataset.gz.h5").toString();
 			hdf5Writer = HDF5Factory.open(hdf5Name);
 			uint16Writer = hdf5Writer.uint16();
 			uint16Writer.createMDArray(
@@ -199,7 +179,6 @@ public class N5Benchmark {
 						uint16Writer.writeMDArrayBlockWithOffset(datasetName, targetCell, new long[]{64 * z, 64 * y, 64 * x});
 					}
 			System.out.println(String.format("%d : hdf5 gzip : %fs", i, 0.001 * (System.currentTimeMillis() - t)));
-			new File(hdf5Name).delete();
 		}
 	}
 
@@ -250,9 +229,7 @@ public class N5Benchmark {
 			/* TIF blocks */
 			futures.clear();
 			t = System.currentTimeMillis();
-			final String compressedDatasetName = testDirPath + "/" + datasetName + ".tif";
 			try {
-				new File(compressedDatasetName).mkdirs();
 				for (int z = 0; z < nBlocks; ++z) {
 					final int fz = z;
 					for (int y = 0; y < nBlocks; ++y) {
@@ -263,7 +240,7 @@ public class N5Benchmark {
 									exec.submit(
 											() -> {
 												final ImagePlus impBlock = new ImagePlus("", new ShortProcessor(64, 64 * 64, data, null));
-												IJ.saveAsTiff(impBlock, compressedDatasetName + "/" + fx + "-" + fy + "-" + fz + ".tif");
+												IJ.saveAsTiff(impBlock, temp.getRoot().toPath().resolve(fx + "-" + fy + "-" + fz + ".tif").toString());
 												return true;
 											}));
 						}
@@ -281,7 +258,7 @@ public class N5Benchmark {
 			futures.clear();
 			t = System.currentTimeMillis();
 			try {
-				final String hdf5Name = testDirPath + "/" + datasetName + ".h5";
+				final String hdf5Name = temp.getRoot().toPath().resolve("dataset.h5").toString();
 				final IHDF5Writer hdf5Writer = HDF5Factory.open( hdf5Name );
 				final IHDF5ShortWriter uint16Writer = hdf5Writer.uint16();
 				uint16Writer.createMDArray(
@@ -310,7 +287,6 @@ public class N5Benchmark {
 
 				hdf5Writer.close();
 				System.out.println(String.format("%d : hdf5 raw : %fs", i, 0.001 * (System.currentTimeMillis() - t)));
-				new File(hdf5Name).delete();
 			} catch (final InterruptedException | ExecutionException e) {
 				fail(e.getMessage());
 			}
@@ -319,7 +295,7 @@ public class N5Benchmark {
 			futures.clear();
 			t = System.currentTimeMillis();
 			try {
-				final String hdf5Name = testDirPath + "/" + datasetName + ".gz.h5";
+				final String hdf5Name = temp.getRoot().toPath().resolve("dataset.gz.h5").toString();
 				final IHDF5Writer hdf5Writer = HDF5Factory.open( hdf5Name );
 				final IHDF5ShortWriter uint16Writer = hdf5Writer.uint16();
 				uint16Writer.createMDArray(
@@ -348,7 +324,6 @@ public class N5Benchmark {
 
 				hdf5Writer.close();
 				System.out.println(String.format("%d : hdf5 gzip : %fs", i, 0.001 * (System.currentTimeMillis() - t)));
-				new File(hdf5Name).delete();
 			} catch (final InterruptedException | ExecutionException e) {
 				fail(e.getMessage());
 			}
