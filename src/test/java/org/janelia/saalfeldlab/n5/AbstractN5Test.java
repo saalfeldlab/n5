@@ -16,11 +16,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import org.janelia.saalfeldlab.n5.N5Reader.Version;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -30,7 +26,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import static org.junit.Assert.fail;
+import org.janelia.saalfeldlab.n5.N5Reader.Version;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Abstract base class for testing N5 functionality.
@@ -47,12 +47,12 @@ public abstract class AbstractN5Test {
 	static protected final long[] dimensions = new long[]{100, 200, 300};
 	static protected final int[] blockSize = new int[]{44, 33, 22};
 
-	static private byte[] byteBlock;
-	static private short[] shortBlock;
-	static private int[] intBlock;
-	static private long[] longBlock;
-	static private float[] floatBlock;
-	static private double[] doubleBlock;
+	static protected byte[] byteBlock;
+	static protected short[] shortBlock;
+	static protected int[] intBlock;
+	static protected long[] longBlock;
+	static protected float[] floatBlock;
+	static protected double[] doubleBlock;
 
 	static protected N5Writer n5;
 
