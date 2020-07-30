@@ -187,7 +187,8 @@ public class N5BenchmarkTest {
 
 		final int nBlocks = 5;
 
-		for (int i = 1; i <= 16; i *= 2 ) {
+		int maxThreads = Math.min(Runtime.getRuntime().availableProcessors(), 16);
+		for (int i = 1; i <= maxThreads; i *= 2 ) {
 
 			System.out.println( i + " threads.");
 
