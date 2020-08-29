@@ -123,15 +123,15 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 
 	@Override
 	public <T> void writeBlock(
+			final DataBlock<T> dataBlock,
 			final String pathName,
-			final DatasetAttributes datasetAttributes,
-			final DataBlock<T> dataBlock) throws IOException {
+			final Compression compression) throws IOException {
 
 		final Path path = Paths.get(basePath, getDataBlockPath(pathName, dataBlock.getGridPosition()).toString());
 		createDirectories(path.getParent());
 		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForWriting(path)) {
 			lockedChannel.getFileChannel().truncate(0);
-			DefaultBlockWriter.writeBlock(Channels.newOutputStream(lockedChannel.getFileChannel()), datasetAttributes, dataBlock);
+			DefaultBlockWriter.writeBlock(Channels.newOutputStream(lockedChannel.getFileChannel()), dataBlock, compression);
 		}
 	}
 
@@ -241,23 +241,23 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
      *          SecurityManager#checkPropertyAccess(String) checkPropertyAccess}
      *          method to check access to the system property {@code user.dir}
      */
-    private static Path createDirectories(Path dir, FileAttribute<?>... attrs)
+    private static Path createDirectories(Path dir, final FileAttribute<?>... attrs)
         throws IOException
     {
         // attempt to create the directory
         try {
             createAndCheckIsDirectory(dir, attrs);
             return dir;
-        } catch (FileAlreadyExistsException x) {
+        } catch (final FileAlreadyExistsException x) {
             // file exists and is not a directory
             throw x;
-        } catch (IOException x) {
+        } catch (final IOException x) {
             // parent may not exist or other reason
         }
         SecurityException se = null;
         try {
             dir = dir.toAbsolutePath();
-        } catch (SecurityException x) {
+        } catch (final SecurityException x) {
             // don't have permission to get absolute path
             se = x;
         }
@@ -267,7 +267,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
             try {
             	parent.getFileSystem().provider().checkAccess(parent);
                 break;
-            } catch (NoSuchFileException x) {
+            } catch (final NoSuchFileException x) {
                 // does not exist
             }
             parent = parent.getParent();
@@ -284,7 +284,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 
         // create directories
         Path child = parent;
-        for (Path name: parent.relativize(dir)) {
+        for (final Path name: parent.relativize(dir)) {
             child = child.resolve(name);
             createAndCheckIsDirectory(child, attrs);
         }
@@ -300,13 +300,13 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
      * Used by createDirectories to attempt to create a directory. A no-op
      * if the directory already exists.
      */
-    private static void createAndCheckIsDirectory(Path dir,
-                                                  FileAttribute<?>... attrs)
+    private static void createAndCheckIsDirectory(final Path dir,
+                                                  final FileAttribute<?>... attrs)
         throws IOException
     {
         try {
             Files.createDirectory(dir, attrs);
-        } catch (FileAlreadyExistsException x) {
+        } catch (final FileAlreadyExistsException x) {
             if (!Files.isDirectory(dir))
                 throw x;
         }
