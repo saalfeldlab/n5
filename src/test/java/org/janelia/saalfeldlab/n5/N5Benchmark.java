@@ -83,7 +83,6 @@ public class N5Benchmark {
 
 		data = new short[64 * 64 * 64];
 		final ImagePlus imp = new Opener().openURL("https://imagej.nih.gov/ij/images/t1-head-raw.zip");
-		@SuppressWarnings("unchecked")
 		final ImagePlusImg<UnsignedShortType, ?> img = (ImagePlusImg<UnsignedShortType, ?>)(Object)ImagePlusImgs.from(imp);
 		final Cursor<UnsignedShortType> cursor = Views.flatIterable(Views.interval(img, new long[]{100, 100, 30}, new long[]{163, 163, 93})).cursor();
 		for (int i = 0; i < data.length; ++i)
@@ -120,7 +119,7 @@ public class N5Benchmark {
 				n5.createDataset(compressedDatasetName, new long[]{1, 2, 3}, new int[]{1, 2, 3}, DataType.UINT16, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(compressedDatasetName);
 				final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(new int[]{1, 2, 3}, new long[]{0, 0, 0}, dataBlockData);
-				n5.writeBlock(dataBlock, compressedDatasetName, attributes.getCompression());
+				n5.writeBlock(compressedDatasetName, attributes, dataBlock);
 			} catch (final IOException e) {
 				fail(e.getMessage());
 			}
@@ -144,7 +143,7 @@ public class N5Benchmark {
 						for (int y = 0; y < nBlocks; ++y)
 							for (int x = 0; x < nBlocks; ++x) {
 								final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(new int[]{64, 64, 64}, new long[]{x, y, z}, data);
-								n5.writeBlock(dataBlock, compressedDatasetName, attributes.getCompression());
+								n5.writeBlock(compressedDatasetName, attributes, dataBlock);
 							}
 				} catch (final IOException e) {
 					fail(e.getMessage());
@@ -233,7 +232,7 @@ public class N5Benchmark {
 										exec.submit(
 												() -> {
 													final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(new int[]{64, 64, 64}, new long[]{fx, fy, fz}, data);
-													n5.writeBlock(dataBlock, compressedDatasetName, attributes.getCompression());
+													n5.writeBlock(compressedDatasetName, attributes, dataBlock);
 													return true;
 												}));
 							}
