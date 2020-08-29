@@ -51,7 +51,8 @@ public enum DataType {
 	INT32("int32", (blockSize, gridPosition, numElements) -> new IntArrayDataBlock(blockSize, gridPosition, new int[numElements])),
 	INT64("int64", (blockSize, gridPosition, numElements) -> new LongArrayDataBlock(blockSize, gridPosition, new long[numElements])),
 	FLOAT32("float32", (blockSize, gridPosition, numElements) -> new FloatArrayDataBlock(blockSize, gridPosition, new float[numElements])),
-	FLOAT64("float64", (blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(blockSize, gridPosition, new double[numElements]));
+	FLOAT64("float64", (blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(blockSize, gridPosition, new double[numElements])),
+	OBJECT("object", (blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(blockSize, gridPosition, new byte[numElements]));
 
 	private final String label;
 
