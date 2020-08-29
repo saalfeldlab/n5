@@ -56,21 +56,21 @@ public interface DefaultBlockWriter extends BlockWriter {
 	 * Writes a {@link DataBlock} into an {@link OutputStream}.
 	 *
 	 * @param out
-	 * @param datasetAttributes
 	 * @param dataBlock
+	 * @param compression
 	 * @throws IOException
 	 */
 	public static <T> void writeBlock(
 			final OutputStream out,
-			final DatasetAttributes datasetAttributes,
-			final DataBlock<T> dataBlock) throws IOException {
+			final DataBlock<T> dataBlock,
+			final Compression compression) throws IOException {
 
 		final DataOutputStream dos = new DataOutputStream(out);
 
 		final int mode = (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize())) ? 0 : 1;
 		dos.writeShort(mode);
 
-		dos.writeShort(datasetAttributes.getNumDimensions());
+		dos.writeShort(dataBlock.getSize().length);
 		for (final int size : dataBlock.getSize())
 			dos.writeInt(size);
 
@@ -79,7 +79,7 @@ public interface DefaultBlockWriter extends BlockWriter {
 
 		dos.flush();
 
-		final BlockWriter writer = datasetAttributes.getCompression().getWriter();
+		final BlockWriter writer = compression.getWriter();
 		writer.write(dataBlock, out);
 	}
 }

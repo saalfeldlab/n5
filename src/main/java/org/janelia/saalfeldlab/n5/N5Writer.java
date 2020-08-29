@@ -25,7 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
 
@@ -153,15 +156,15 @@ public interface N5Writer extends N5Reader {
 	/**
 	 * Writes a {@link DataBlock}.
 	 *
-	 * @param pathName dataset path
-	 * @param datasetAttributes
 	 * @param dataBlock
+	 * @param pathName dataset path
+	 * @param compression
 	 * @throws IOException
 	 */
 	public <T> void writeBlock(
+			final DataBlock<T> dataBlock,
 			final String pathName,
-			final DatasetAttributes datasetAttributes,
-			final DataBlock<T> dataBlock) throws IOException;
+			final Compression compression) throws IOException;
 
 	/**
 	 * Deletes the block at {@code gridPosition}
@@ -178,4 +181,30 @@ public interface N5Writer extends N5Reader {
 	boolean deleteBlock(
 			final String pathName,
 			final long[] gridPosition) throws IOException;
+
+	/**
+	 * Save a {@link Serializable} as an N5 {@link DataBlock} at a given
+	 * offset. The offset is given in {@link DataBlock} grid coordinates.
+	 *
+	 * @param object
+	 * @param dataset
+	 * @param attributes
+	 * @param gridOffset
+	 * @throws IOException
+	 */
+	public default void writeSerializedBlock(
+			final Serializable object,
+			final String dataset,
+			final Compression compression,
+			final long[] gridOffset) throws IOException {
+
+		final int[] blockSize = new int[gridOffset.length];
+		final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
+		try (ObjectOutputStream out = new ObjectOutputStream(byteOutputStream)) {
+			out.writeObject(object);
+		}
+		final byte[] bytes = byteOutputStream.toByteArray();
+		final DataBlock<?> dataBlock = new ByteArrayDataBlock(blockSize, gridOffset, bytes);
+		writeBlock(dataBlock, dataset, compression);
+	}
 }

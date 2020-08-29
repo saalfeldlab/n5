@@ -25,7 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -238,6 +241,31 @@ public interface N5Reader {
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition) throws IOException;
+
+	/**
+	 * Load a {@link DataBlock} as a {@link Serializable}.  The offset is given
+	 * in {@link DataBlock} grid coordinates.
+	 *
+	 * @param dataset
+	 * @param attributes
+	 * @param gridOffset
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 */
+	@SuppressWarnings("unchecked")
+	public default <T> T readSerializedBlock(
+			final String dataset,
+			final DatasetAttributes attributes,
+			final long[] gridOffset) throws IOException, ClassNotFoundException {
+
+
+		final DataBlock<?> block = readBlock(dataset, attributes, gridOffset);
+
+		final ByteArrayInputStream byteArrayInputStream= new ByteArrayInputStream(block.toByteBuffer().array());
+		try (ObjectInputStream in = new ObjectInputStream(byteArrayInputStream)) {
+			return (T)in.readObject();
+		}
+	}
 
 	/**
 	 * Test whether a group or dataset exists.
