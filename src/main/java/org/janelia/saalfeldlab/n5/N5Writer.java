@@ -156,15 +156,16 @@ public interface N5Writer extends N5Reader {
 	/**
 	 * Writes a {@link DataBlock}.
 	 *
-	 * @param dataBlock
 	 * @param pathName dataset path
-	 * @param compression
+	 * @param datasetAttributes
+	 * @param dataBlock
 	 * @throws IOException
 	 */
 	public <T> void writeBlock(
-			final DataBlock<T> dataBlock,
 			final String pathName,
-			final Compression compression) throws IOException;
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T> dataBlock) throws IOException;
+
 
 	/**
 	 * Deletes the block at {@code gridPosition}
@@ -195,16 +196,15 @@ public interface N5Writer extends N5Reader {
 	public default void writeSerializedBlock(
 			final Serializable object,
 			final String dataset,
-			final Compression compression,
+			final DatasetAttributes datasetAttributes,
 			final long[] gridOffset) throws IOException {
 
-		final int[] blockSize = new int[gridOffset.length];
 		final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
 		try (ObjectOutputStream out = new ObjectOutputStream(byteOutputStream)) {
 			out.writeObject(object);
 		}
 		final byte[] bytes = byteOutputStream.toByteArray();
-		final DataBlock<?> dataBlock = new ByteArrayDataBlock(blockSize, gridOffset, bytes);
-		writeBlock(dataBlock, dataset, compression);
+		final DataBlock<?> dataBlock = new ByteArrayDataBlock(null, gridOffset, bytes);
+		writeBlock(dataset, datasetAttributes, dataBlock);
 	}
 }

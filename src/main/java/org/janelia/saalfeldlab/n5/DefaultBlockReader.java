@@ -69,19 +69,23 @@ public interface DefaultBlockReader extends BlockReader {
 
 		final DataInputStream dis = new DataInputStream(in);
 		final short mode = dis.readShort();
-		final int nDim = dis.readShort();
-		final int[] blockSize = new int[nDim];
-		for (int d = 0; d < nDim; ++d)
-			blockSize[d] = dis.readInt();
 		final int numElements;
-		switch (mode) {
-		case 1:
+		final DataBlock<?> dataBlock;
+		if (mode != 2) {
+			final int nDim = dis.readShort();
+			final int[] blockSize = new int[nDim];
+			for (int d = 0; d < nDim; ++d)
+				blockSize[d] = dis.readInt();
+			if (mode == 0) {
+				numElements = DataBlock.getNumElements(blockSize);
+			} else {
+				numElements = dis.readInt();
+			}
+			dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
+		} else {
 			numElements = dis.readInt();
-			break;
-		default:
-			numElements = DataBlock.getNumElements(blockSize);
+			dataBlock = datasetAttributes.getDataType().createDataBlock(null, gridPosition, numElements);
 		}
-		final DataBlock<?> dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
 
 		final BlockReader reader = datasetAttributes.getCompression().getReader();
 		reader.read(dataBlock, in);

@@ -123,15 +123,15 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 
 	@Override
 	public <T> void writeBlock(
-			final DataBlock<T> dataBlock,
 			final String pathName,
-			final Compression compression) throws IOException {
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T> dataBlock) throws IOException {
 
 		final Path path = Paths.get(basePath, getDataBlockPath(pathName, dataBlock.getGridPosition()).toString());
 		createDirectories(path.getParent());
 		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForWriting(path)) {
 			lockedChannel.getFileChannel().truncate(0);
-			DefaultBlockWriter.writeBlock(Channels.newOutputStream(lockedChannel.getFileChannel()), dataBlock, compression);
+			DefaultBlockWriter.writeBlock(Channels.newOutputStream(lockedChannel.getFileChannel()), datasetAttributes, dataBlock);
 		}
 	}
 
