@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -126,5 +127,15 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 
 		final HashMap<String, JsonElement> map = getAttributes(pathName);
 		return GsonAttributesParser.parseAttribute(map, key, clazz, getGson());
+	}
+
+	@Override
+	public <T> T getAttribute(
+			final String pathName,
+			final String key,
+			final Type type) throws IOException {
+
+		final HashMap<String, JsonElement> map = getAttributes(pathName);
+		return GsonAttributesParser.parseAttribute(map, key, type, getGson());
 	}
 }
