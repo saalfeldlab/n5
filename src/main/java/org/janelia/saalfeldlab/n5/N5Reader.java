@@ -29,6 +29,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -218,6 +219,20 @@ public interface N5Reader {
 			final String pathName,
 			final String key,
 			final Class<T> clazz) throws IOException;
+
+	/**
+	 * Reads an attribute.
+	 *
+	 * @param pathName group path
+	 * @param key
+	 * @param type attribute Type (use this for specifying generic types)
+	 * @return
+	 * @throws IOException
+	 */
+	public <T> T getAttribute(
+			final String pathName,
+			final String key,
+			final Type type) throws IOException;
 
 	/**
 	 * Get mandatory dataset attributes.

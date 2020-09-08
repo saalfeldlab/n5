@@ -81,6 +81,28 @@ public interface GsonAttributesParser extends N5Reader {
 	}
 
 	/**
+	 * Parses an attribute from the given attributes map.
+	 *
+	 * @param map
+	 * @param key
+	 * @param type
+	 * @return
+	 * @throws IOException
+	 */
+	public static <T> T parseAttribute(
+			final HashMap<String, JsonElement> map,
+			final String key,
+			final Type type,
+			final Gson gson) throws IOException {
+
+		final JsonElement attribute = map.get(key);
+		if (attribute != null)
+			return gson.fromJson(attribute, type);
+		else
+			return null;
+	}
+
+	/**
 	 * Reads the attributes map from a given {@link Reader}.
 	 *
 	 * @param reader
@@ -168,9 +190,9 @@ public interface GsonAttributesParser extends N5Reader {
 	 * </ul>
 	 */
 	@Override
-	public default Map<String, Class<?>> listAttributes(String pathName) throws IOException {
+	public default Map<String, Class<?>> listAttributes(final String pathName) throws IOException {
 
-		HashMap<String, JsonElement> jsonElementMap = getAttributes(pathName);
+		final HashMap<String, JsonElement> jsonElementMap = getAttributes(pathName);
 		final HashMap<String, Class<?>> attributes = new HashMap<>();
 		jsonElementMap.forEach(
 				(key, jsonElement) -> {
