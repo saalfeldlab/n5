@@ -181,7 +181,7 @@ public interface N5Writer extends N5Reader {
 	 */
 	boolean deleteBlock(
 			final String pathName,
-			final long[] gridPosition) throws IOException;
+			final long... gridPosition) throws IOException;
 
 	/**
 	 * Save a {@link Serializable} as an N5 {@link DataBlock} at a given
@@ -190,21 +190,21 @@ public interface N5Writer extends N5Reader {
 	 * @param object
 	 * @param dataset
 	 * @param attributes
-	 * @param gridOffset
+	 * @param gridPosition
 	 * @throws IOException
 	 */
 	public default void writeSerializedBlock(
 			final Serializable object,
 			final String dataset,
 			final DatasetAttributes datasetAttributes,
-			final long[] gridOffset) throws IOException {
+			final long... gridPosition) throws IOException {
 
 		final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
 		try (ObjectOutputStream out = new ObjectOutputStream(byteOutputStream)) {
 			out.writeObject(object);
 		}
 		final byte[] bytes = byteOutputStream.toByteArray();
-		final DataBlock<?> dataBlock = new ByteArrayDataBlock(null, gridOffset, bytes);
+		final DataBlock<?> dataBlock = new ByteArrayDataBlock(null, gridPosition, bytes);
 		writeBlock(dataset, datasetAttributes, dataBlock);
 	}
 }

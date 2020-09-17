@@ -255,7 +255,7 @@ public interface N5Reader {
 	public DataBlock<?> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
-			final long[] gridPosition) throws IOException;
+			final long... gridPosition) throws IOException;
 
 	/**
 	 * Load a {@link DataBlock} as a {@link Serializable}.  The offset is given
@@ -263,7 +263,7 @@ public interface N5Reader {
 	 *
 	 * @param dataset
 	 * @param attributes
-	 * @param gridOffset
+	 * @param gridPosition
 	 * @throws IOException
 	 * @throws ClassNotFoundException
 	 */
@@ -271,12 +271,14 @@ public interface N5Reader {
 	public default <T> T readSerializedBlock(
 			final String dataset,
 			final DatasetAttributes attributes,
-			final long[] gridOffset) throws IOException, ClassNotFoundException {
+			final long... gridPosition) throws IOException, ClassNotFoundException {
 
 
-		final DataBlock<?> block = readBlock(dataset, attributes, gridOffset);
+		final DataBlock<?> block = readBlock(dataset, attributes, gridPosition);
+		if (block == null)
+			return null;
 
-		final ByteArrayInputStream byteArrayInputStream= new ByteArrayInputStream(block.toByteBuffer().array());
+		final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(block.toByteBuffer().array());
 		try (ObjectInputStream in = new ObjectInputStream(byteArrayInputStream)) {
 			return (T)in.readObject();
 		}
