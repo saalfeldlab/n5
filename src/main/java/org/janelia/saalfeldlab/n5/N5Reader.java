@@ -321,4 +321,14 @@ public interface N5Reader {
 	 * @throws IOException
 	 */
 	public Map<String, Class<?>> listAttributes(final String pathName) throws IOException;
+
+	/**
+	 * Returns the symbol that is used to separate nodes in a group path.
+	 *
+	 * @return
+	 */
+	public default String getGroupSeparator() {
+
+		return "/";
+	}
 }
