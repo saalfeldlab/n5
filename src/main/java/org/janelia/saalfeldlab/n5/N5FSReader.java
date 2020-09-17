@@ -167,7 +167,7 @@ public class N5FSReader extends AbstractGsonReader {
 	public DataBlock<?> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
-			final long[] gridPosition) throws IOException {
+			final long... gridPosition) throws IOException {
 
 		final Path path = Paths.get(basePath, getDataBlockPath(pathName, gridPosition).toString());
 		if (!Files.exists(path))
@@ -206,7 +206,7 @@ public class N5FSReader extends AbstractGsonReader {
 	 */
 	protected static Path getDataBlockPath(
 			final String datasetPathName,
-			final long[] gridPosition) {
+			final long... gridPosition) {
 
 		final String[] pathComponents = new String[gridPosition.length];
 		for (int i = 0; i < pathComponents.length; ++i)
