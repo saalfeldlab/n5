@@ -44,7 +44,7 @@ import org.scijava.util.VersionUtils;
  *
  * @author Stephan Saalfeld
  */
-public interface N5Reader {
+public interface N5Reader extends AutoCloseable {
 
 	static public class Version {
 
@@ -356,4 +356,11 @@ public interface N5Reader {
 
 		return builder.toString();
 	}
+
+	/**
+	 * Default implementation of {@link AutoCloseable#close()} for all
+	 * implementations that do not hold any closable resources.
+	 */
+	@Override
+	public default void close() {}
 }
