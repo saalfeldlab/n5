@@ -373,8 +373,14 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws ExecutionException 
 	 * @throws InterruptedException 
 	 */
-	public default List<String> deepListParallel(final String pathName, final ExecutorService executor ) throws IOException, InterruptedException, ExecutionException
+	public default List<String> deepListParallel(final String pathNameIn, final ExecutorService executor ) throws IOException, InterruptedException, ExecutionException
 	{
+		final String pathName;
+		if( pathNameIn.isEmpty() )
+			pathName = "/";
+		else
+			pathName = pathNameIn;
+
 		List< String > results = Collections.synchronizedList( new ArrayList< String >() );
 		LinkedBlockingQueue< Future< String >> datasetFutures = new LinkedBlockingQueue<>();
 		deepListParallelHelper( this, pathName, executor, datasetFutures );
@@ -384,9 +390,6 @@ public interface N5Reader extends AutoCloseable {
 			String s = datasetFutures.poll().get();
 			if( !s.isEmpty())
 				results.add( s );
-
-			// TODO not so happy with this
-			Thread.sleep( 500 );
 		}
 		return results;
 	}
