@@ -334,8 +334,8 @@ public interface N5Reader extends AutoCloseable {
 		ArrayList< String > datasets = new ArrayList<>();
 
 		final String pathName;
-		if( pathNameIn.isEmpty() )
-			pathName = "/";
+		if( pathNameIn.endsWith( "/" ))
+			pathName = pathNameIn.substring( 0, pathNameIn.length() - 1 );
 		else
 			pathName = pathNameIn;
 
@@ -376,8 +376,8 @@ public interface N5Reader extends AutoCloseable {
 	public default List<String> deepListParallel(final String pathNameIn, final ExecutorService executor ) throws IOException, InterruptedException, ExecutionException
 	{
 		final String pathName;
-		if( pathNameIn.isEmpty() )
-			pathName = "/";
+		if( pathNameIn.endsWith( "/" ))
+			pathName = pathNameIn.substring( 0, pathNameIn.length() - 1 );
 		else
 			pathName = pathNameIn;
 
