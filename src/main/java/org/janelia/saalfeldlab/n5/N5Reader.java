@@ -328,20 +328,17 @@ public interface N5Reader extends AutoCloseable {
 	 * @return list of datasets
 	 * @throws IOException 
 	 */
-	public default List<String> deepList(final String pathNameIn) throws IOException
+	public default List<String> deepList( final String pathName ) throws IOException
 	{
 		ArrayList< String > children = new ArrayList<>();
 		ArrayList< String > datasets = new ArrayList<>();
 
-		final String pathName;
-		if( pathNameIn.endsWith( "/" ))
-			pathName = pathNameIn.substring( 0, pathNameIn.length() - 1 );
-		else
-			pathName = pathNameIn;
-
 		final String[] baseChildren  = list( pathName );
 		for( final String child : baseChildren )
-			children.add( pathName + child );
+			if( pathName.endsWith( "/" ))
+				children.add( pathName + child );
+			else
+				children.add( pathName + "/" + child );
 
 		while( !children.isEmpty() )
 		{
@@ -373,14 +370,8 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws ExecutionException 
 	 * @throws InterruptedException 
 	 */
-	public default List<String> deepListParallel(final String pathNameIn, final ExecutorService executor ) throws IOException, InterruptedException, ExecutionException
+	public default List<String> deepListParallel(final String pathName, final ExecutorService executor ) throws IOException, InterruptedException, ExecutionException
 	{
-		final String pathName;
-		if( pathNameIn.endsWith( "/" ))
-			pathName = pathNameIn.substring( 0, pathNameIn.length() - 1 );
-		else
-			pathName = pathNameIn;
-
 		List< String > results = Collections.synchronizedList( new ArrayList< String >() );
 		LinkedBlockingQueue< Future< String >> datasetFutures = new LinkedBlockingQueue<>();
 		deepListParallelHelper( this, pathName, executor, datasetFutures );
@@ -429,7 +420,13 @@ public interface N5Reader extends AutoCloseable {
 					{
 						for( final String child : children )
 						{
-							deepListParallelHelper( n5, path + "/" + child, executor, datasetFutures );
+							final String fullChildPath;
+							if( path.endsWith( "/" ))
+								fullChildPath = path + child;
+							else
+								fullChildPath = path + "/" + child;
+
+							deepListParallelHelper( n5, fullChildPath, executor, datasetFutures );
 						}
 					}
 				}
