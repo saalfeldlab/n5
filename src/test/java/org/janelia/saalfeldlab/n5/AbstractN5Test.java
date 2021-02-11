@@ -24,8 +24,11 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
 import org.junit.AfterClass;
@@ -482,6 +485,32 @@ public abstract class AbstractN5Test {
 			// test listing the root group ("" and "/" should give identical results)
 			Assert.assertArrayEquals(new String[] {"test"}, n5.list(""));
 			Assert.assertArrayEquals(new String[] {"test"}, n5.list("/"));
+
+
+		} catch (final IOException e) {
+			fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testDeepList() {
+
+		try {
+			n5.remove(groupName);
+			Assert.assertTrue( "deepList empty", n5.deepList("/").isEmpty() );
+
+			n5.createGroup(groupName);
+			for (final String subGroup : subGroupNames)
+				n5.createGroup(groupName + "/" + subGroup);
+
+			Assert.assertTrue( "deepList empty groups no datasets", n5.deepList("/").isEmpty() );
+
+			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
+
+			List< String > datasetList = n5.deepList( "/" );
+			Assert.assertEquals( "deepList size", 1, datasetList.size());
+			Assert.assertEquals( "deepList contents", datasetName, datasetList.get(0));
+
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}

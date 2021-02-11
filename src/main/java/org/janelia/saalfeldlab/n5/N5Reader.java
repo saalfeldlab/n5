@@ -30,7 +30,15 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -312,6 +320,120 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws IOException
 	 */
 	public String[] list(final String pathName) throws IOException;
+
+	/**
+	 * Lists all datasets in the given group and children of this group.
+	 * 
+	 * @param pathNameIn base group path
+	 * @return list of datasets
+	 * @throws IOException 
+	 */
+	public default List<String> deepList(final String pathNameIn) throws IOException
+	{
+		ArrayList< String > children = new ArrayList<>();
+		ArrayList< String > datasets = new ArrayList<>();
+
+		final String pathName;
+		if( pathNameIn.isEmpty() )
+			pathName = "/";
+		else
+			pathName = pathNameIn;
+
+		final String[] baseChildren  = list( pathName );
+		for( final String child : baseChildren )
+			children.add( pathName + child );
+
+		while( !children.isEmpty() )
+		{
+			String elem = children.remove( 0 );
+			if( datasetExists( elem ))
+			{
+				datasets.add( elem );
+			}
+			else
+			{
+				final String[] lsResult = list( elem );
+				for( final String child : lsResult )
+				{
+					children.add( elem + "/" + child );
+				}
+			}
+		}
+		return datasets;
+	}
+
+	/**
+	 * Lists all datasets in the given group and children of this group, in parallel,
+	 * using the given {@link ExecutorService}.
+	 * 
+	 * @param pathName base group path
+	 * @param executor executor service
+	 * @return list of datasets
+	 * @throws IOException 
+	 * @throws ExecutionException 
+	 * @throws InterruptedException 
+	 */
+	public default List<String> deepListParallel(final String pathName, final ExecutorService executor ) throws IOException, InterruptedException, ExecutionException
+	{
+		List< String > results = Collections.synchronizedList( new ArrayList< String >() );
+		LinkedBlockingQueue< Future< String >> datasetFutures = new LinkedBlockingQueue<>();
+		deepListParallelHelper( this, pathName, executor, datasetFutures );
+
+		while( !datasetFutures.isEmpty() )
+		{
+			String s = datasetFutures.poll().get();
+			if( !s.isEmpty())
+				results.add( s );
+
+			// TODO not so happy with this
+			Thread.sleep( 500 );
+		}
+		return results;
+	}
+
+	public static void deepListParallelHelper( 
+			final N5Reader n5,
+			final String path,
+			final ExecutorService executor,
+			LinkedBlockingQueue< Future< String >> datasetFutures )
+	{
+		datasetFutures.add( executor.submit( new Callable<String>()
+		{
+			@Override
+			public String call()
+			{
+				boolean isDataset = false;
+				try
+				{
+					isDataset = n5.datasetExists( path );
+				}
+				catch ( IOException e ) { }
+
+				if ( isDataset )
+				{
+					return path;
+				}
+				else
+				{
+					String[] children = null;
+					try
+					{
+						children = n5.list( path );
+					}
+					catch ( IOException e ) { }
+
+					if( children != null )
+					{
+						for( final String child : children )
+						{
+							deepListParallelHelper( n5, path + "/" + child, executor, datasetFutures );
+						}
+					}
+				}
+				return "";
+			}
+		}));
+	}
 
 	/**
 	 * List all attributes and their class of a group.
