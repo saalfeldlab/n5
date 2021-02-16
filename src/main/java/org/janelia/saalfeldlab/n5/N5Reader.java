@@ -385,7 +385,7 @@ public interface N5Reader extends AutoCloseable {
 		return results;
 	}
 
-	public static void deepListParallelHelper( 
+	static void deepListParallelHelper(
 			final N5Reader n5,
 			final String path,
 			final ExecutorService executor,
