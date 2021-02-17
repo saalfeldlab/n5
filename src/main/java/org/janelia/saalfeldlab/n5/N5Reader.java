@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -108,15 +107,13 @@ public interface N5Reader extends AutoCloseable {
 					else
 						patch = 0;
 					suffix = matcher.group(6);
-				}
-				else {
+				} else {
 					major = 0;
 					minor = 0;
 					patch = 0;
 					suffix = "";
 				}
-			}
-			else {
+			} else {
 				major = 0;
 				minor = 0;
 				patch = 0;
@@ -163,20 +160,20 @@ public interface N5Reader extends AutoCloseable {
 
 			if (other instanceof Version) {
 				final Version otherVersion = (Version)other;
-				return
-						(major == otherVersion.major) &
+				return (major == otherVersion.major) &
 						(minor == otherVersion.minor) &
 						(patch == otherVersion.patch) &
 						(suffix.equals(otherVersion.suffix));
-			}
-			else
+			} else
 				return false;
 		}
 
 		/**
-		 * Returns true if this implementation is compatible with a given version.
+		 * Returns true if this implementation is compatible with a given
+		 * version.
 		 *
-		 * Currently, this means that the version is less than or equal to 1.X.X.
+		 * Currently, this means that the version is less than or equal to
+		 * 1.X.X.
 		 *
 		 * @param version
 		 * @return
@@ -190,7 +187,8 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * SemVer version of this N5 spec.
 	 */
-	public static final Version VERSION = new Version(VersionUtils.getVersionFromPOM(N5Reader.class, "org.janelia.saalfeldlab", "n5"));
+	public static final Version VERSION = new Version(
+			VersionUtils.getVersionFromPOM(N5Reader.class, "org.janelia.saalfeldlab", "n5"));
 
 	/**
 	 * Version attribute key.
@@ -202,7 +200,7 @@ public interface N5Reader extends AutoCloseable {
 	 * attribute of the root group.
 	 *
 	 * If no version is specified or the version string does not conform to
-	 * the SemVer format, 0.0.0 will be returned.  For incomplete versions,
+	 * the SemVer format, 0.0.0 will be returned. For incomplete versions,
 	 * such as 1.2, the missing elements are filled with 0, i.e. 1.2.0 in this
 	 * case.
 	 *
@@ -217,9 +215,11 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Reads an attribute.
 	 *
-	 * @param pathName group path
+	 * @param pathName
+	 *            group path
 	 * @param key
-	 * @param clazz attribute class
+	 * @param clazz
+	 *            attribute class
 	 * @return
 	 * @throws IOException
 	 */
@@ -231,9 +231,11 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Reads an attribute.
 	 *
-	 * @param pathName group path
+	 * @param pathName
+	 *            group path
 	 * @param key
-	 * @param type attribute Type (use this for specifying generic types)
+	 * @param type
+	 *            attribute Type (use this for specifying generic types)
 	 * @return
 	 * @throws IOException
 	 */
@@ -245,8 +247,10 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Get mandatory dataset attributes.
 	 *
-	 * @param pathName dataset path
-	 * @return dataset attributes or null if either dimensions or dataType are not set
+	 * @param pathName
+	 *            dataset path
+	 * @return dataset attributes or null if either dimensions or dataType are
+	 *         not set
 	 * @throws IOException
 	 */
 	public DatasetAttributes getDatasetAttributes(final String pathName) throws IOException;
@@ -254,7 +258,8 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Reads a {@link DataBlock}.
 	 *
-	 * @param pathName dataset path
+	 * @param pathName
+	 *            dataset path
 	 * @param datasetAttributes
 	 * @param gridPosition
 	 * @return
@@ -266,7 +271,7 @@ public interface N5Reader extends AutoCloseable {
 			final long... gridPosition) throws IOException;
 
 	/**
-	 * Load a {@link DataBlock} as a {@link Serializable}.  The offset is given
+	 * Load a {@link DataBlock} as a {@link Serializable}. The offset is given
 	 * in {@link DataBlock} grid coordinates.
 	 *
 	 * @param dataset
@@ -281,7 +286,6 @@ public interface N5Reader extends AutoCloseable {
 			final DatasetAttributes attributes,
 			final long... gridPosition) throws IOException, ClassNotFoundException {
 
-
 		final DataBlock<?> block = readBlock(dataset, attributes, gridPosition);
 		if (block == null)
 			return null;
@@ -295,7 +299,8 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Test whether a group or dataset exists.
 	 *
-	 * @param pathName group path
+	 * @param pathName
+	 *            group path
 	 * @return
 	 */
 	public boolean exists(final String pathName);
@@ -303,7 +308,8 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Test whether a dataset exists.
 	 *
-	 * @param pathName dataset path
+	 * @param pathName
+	 *            dataset path
 	 * @return
 	 * @throws IOException
 	 */
@@ -315,130 +321,130 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * List all groups (including datasets) in a group.
 	 *
-	 * @param pathName group path
+	 * @param pathName
+	 *            group path
 	 * @return
 	 * @throws IOException
 	 */
 	public String[] list(final String pathName) throws IOException;
 
+
 	/**
-	 * Lists all datasets in the given group and children of this group.
-	 * 
-	 * @param pathNameIn base group path
-	 * @return list of datasets
-	 * @throws IOException 
+	 * Recursively list all groups (including datasets) in the given group.
+	 *
+	 * @param pathName
+	 *            base group path
+	 * @return list of groups
+	 * @throws IOException
 	 */
-	public default List<String> deepList( final String pathName ) throws IOException
-	{
-		ArrayList< String > children = new ArrayList<>();
-		ArrayList< String > datasets = new ArrayList<>();
+	public default String[] deepList(final String pathName) throws IOException {
 
-		final String[] baseChildren  = list( pathName );
-		for( final String child : baseChildren )
-			if( pathName.endsWith( "/" ))
-				children.add( pathName + child );
-			else
-				children.add( pathName + "/" + child );
+		final String normalPathName = pathName.replaceAll("(^/*)|(/*$)", "");
 
-		while( !children.isEmpty() )
-		{
-			String elem = children.remove( 0 );
-			if( datasetExists( elem ))
-			{
-				datasets.add( elem );
-			}
-			else
-			{
-				final String[] lsResult = list( elem );
-				for( final String child : lsResult )
-				{
-					children.add( elem + "/" + child );
-				}
-			}
-		}
-		return datasets;
+		final List<String> absolutePaths = deepList(this, normalPathName);
+		return absolutePaths.stream().map(a -> a.replaceFirst(normalPathName + "/", "")).toArray(String[]::new);
 	}
 
 	/**
-	 * Lists all datasets in the given group and children of this group, in parallel,
+	 * Helper method to recursively list all groups.
+	 *
+	 * TODO make private when committing to Java versions >8
+	 */
+	static ArrayList<String> deepList(
+			final N5Reader n5,
+			final String pathName) throws IOException {
+
+		final ArrayList<String> children = new ArrayList<>();
+
+		if (!pathName.isEmpty())
+			children.add(pathName);
+
+		final String[] baseChildren = n5.list(pathName);
+		for (final String child : baseChildren)
+			children.addAll(deepList(n5, pathName + "/" + child));
+
+		return children;
+	}
+
+	/**
+	 * Lists all datasets in the given group and children of this group, in
+	 * parallel,
 	 * using the given {@link ExecutorService}.
-	 * 
-	 * @param pathName base group path
-	 * @param executor executor service
+	 *
+	 * @param pathName
+	 *            base group path
+	 * @param executor
+	 *            executor service
 	 * @return list of datasets
-	 * @throws IOException 
-	 * @throws ExecutionException 
-	 * @throws InterruptedException 
+	 * @throws IOException
+	 * @throws ExecutionException
+	 * @throws InterruptedException
 	 */
-	public default List<String> deepListParallel(final String pathName, final ExecutorService executor ) throws IOException, InterruptedException, ExecutionException
-	{
-		List< String > results = Collections.synchronizedList( new ArrayList< String >() );
-		LinkedBlockingQueue< Future< String >> datasetFutures = new LinkedBlockingQueue<>();
-		deepListParallelHelper( this, pathName, executor, datasetFutures );
+	public default String[] deepListParallel(
+			final String pathName,
+			final ExecutorService executor) throws IOException, InterruptedException, ExecutionException {
 
-		while( !datasetFutures.isEmpty() )
-		{
-			String s = datasetFutures.poll().get();
-			if( !s.isEmpty())
-				results.add( s );
-		}
-		return results;
+		final String normalPathName = pathName.replaceAll("(^/*)|(/*$)", "");
+		final List<String> results = Collections.synchronizedList(new ArrayList<String>());
+		final LinkedBlockingQueue<Future<String>> datasetFutures = new LinkedBlockingQueue<>();
+		deepListParallelHelper(this, normalPathName, executor, datasetFutures);
+
+		datasetFutures.poll().get(); // skip self
+		while (!datasetFutures.isEmpty())
+			results.add(datasetFutures.poll().get().substring(normalPathName.length() + 1));
+
+		return results.stream().toArray(String[]::new);
 	}
 
+	/**
+	 * Helper method for parallel deep listing.  This method is not part of the
+	 * public API and is accessible only because Java 8 does not support
+	 * private interface methods yet.
+	 *
+	 * TODO make private when committing to Java versions >8
+	 *
+	 * @param n5
+	 * @param path
+	 * @param executor
+	 * @param datasetFutures
+	 */
 	static void deepListParallelHelper(
 			final N5Reader n5,
 			final String path,
 			final ExecutorService executor,
-			LinkedBlockingQueue< Future< String >> datasetFutures )
-	{
-		datasetFutures.add( executor.submit( new Callable<String>()
-		{
-			@Override
-			public String call()
-			{
-				boolean isDataset = false;
-				try
-				{
-					isDataset = n5.datasetExists( path );
-				}
-				catch ( IOException e ) { }
+			final LinkedBlockingQueue<Future<String>> datasetFutures) {
 
-				if ( isDataset )
-				{
-					return path;
-				}
-				else
-				{
-					String[] children = null;
-					try
-					{
-						children = n5.list( path );
+		datasetFutures.add(executor.submit(() -> {
+
+			boolean isDataset = false;
+			try {
+				isDataset = n5.datasetExists(path);
+			} catch (final IOException e) {}
+
+			if (!isDataset) {
+				String[] children = null;
+				try {
+					children = n5.list(path);
+					for (final String child : children) {
+						final String fullChildPath;
+						if (path.endsWith("/"))
+							fullChildPath = path + child;
+						else
+							fullChildPath = path + "/" + child;
+
+						deepListParallelHelper(n5, fullChildPath, executor, datasetFutures);
 					}
-					catch ( IOException e ) { }
-
-					if( children != null )
-					{
-						for( final String child : children )
-						{
-							final String fullChildPath;
-							if( path.endsWith( "/" ))
-								fullChildPath = path + child;
-							else
-								fullChildPath = path + "/" + child;
-
-							deepListParallelHelper( n5, fullChildPath, executor, datasetFutures );
-						}
-					}
-				}
-				return "";
+				} catch (final IOException e) {}
 			}
+			return path;
 		}));
 	}
 
 	/**
 	 * List all attributes and their class of a group.
 	 *
-	 * @param pathName group path
+	 * @param pathName
+	 *            group path
 	 * @return
 	 * @throws IOException
 	 */
@@ -456,7 +462,7 @@ public interface N5Reader extends AutoCloseable {
 
 	/**
 	 * Creates a group path by concatenating all nodes with the node separator
-	 * defined by {@link #getGroupSeparator()}.  The string will not have a
+	 * defined by {@link #getGroupSeparator()}. The string will not have a
 	 * leading or trailing node separator symbol.
 	 *
 	 * @param nodes
