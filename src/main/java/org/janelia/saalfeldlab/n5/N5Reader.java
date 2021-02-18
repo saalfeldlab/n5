@@ -160,7 +160,8 @@ public interface N5Reader extends AutoCloseable {
 
 			if (other instanceof Version) {
 				final Version otherVersion = (Version)other;
-				return (major == otherVersion.major) &
+				return
+						(major == otherVersion.major) &
 						(minor == otherVersion.minor) &
 						(patch == otherVersion.patch) &
 						(suffix.equals(otherVersion.suffix));
@@ -187,8 +188,12 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * SemVer version of this N5 spec.
 	 */
-	public static final Version VERSION = new Version(
-			VersionUtils.getVersionFromPOM(N5Reader.class, "org.janelia.saalfeldlab", "n5"));
+	public static final Version VERSION =
+			new Version(
+					VersionUtils.getVersionFromPOM(
+							N5Reader.class,
+							"org.janelia.saalfeldlab",
+							"n5"));
 
 	/**
 	 * Version attribute key.
@@ -339,10 +344,15 @@ public interface N5Reader extends AutoCloseable {
 	 */
 	public default String[] deepList(final String pathName) throws IOException {
 
-		final String normalPathName = pathName.replaceAll("(^/*)|(/*$)", "");
+		final String groupSeparator = getGroupSeparator();
+		final String normalPathName =
+				pathName.replaceAll(
+						"(^" + groupSeparator + "*)|(" + groupSeparator + "*$)",
+						"");
 
 		final List<String> absolutePaths = deepList(this, normalPathName);
-		return absolutePaths.stream().map(a -> a.replaceFirst(normalPathName + "/", "")).toArray(String[]::new);
+		return absolutePaths.stream().map(
+				a -> a.replaceFirst(normalPathName + groupSeparator, "")).toArray(String[]::new);
 	}
 
 	/**
@@ -359,9 +369,10 @@ public interface N5Reader extends AutoCloseable {
 		if (!pathName.isEmpty())
 			children.add(pathName);
 
+		final String groupSeparator = n5.getGroupSeparator();
 		final String[] baseChildren = n5.list(pathName);
 		for (final String child : baseChildren)
-			children.addAll(deepList(n5, pathName + "/" + child));
+			children.addAll(deepList(n5, pathName + groupSeparator + child));
 
 		return children;
 	}
@@ -380,18 +391,20 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws ExecutionException
 	 * @throws InterruptedException
 	 */
-	public default String[] deepListParallel(
+	public default String[] deepList(
 			final String pathName,
 			final ExecutorService executor) throws IOException, InterruptedException, ExecutionException {
 
-		final String normalPathName = pathName.replaceAll("(^/*)|(/*$)", "");
+		final String groupSeparator = getGroupSeparator();
+		final String normalPathName =
+				pathName.replaceAll("(^" + groupSeparator + "*)|(" + groupSeparator + "*$)", "");
 		final List<String> results = Collections.synchronizedList(new ArrayList<String>());
 		final LinkedBlockingQueue<Future<String>> datasetFutures = new LinkedBlockingQueue<>();
-		deepListParallelHelper(this, normalPathName, executor, datasetFutures);
+		deepListHelper(this, normalPathName, executor, datasetFutures);
 
 		datasetFutures.poll().get(); // skip self
 		while (!datasetFutures.isEmpty())
-			results.add(datasetFutures.poll().get().substring(normalPathName.length() + 1));
+			results.add(datasetFutures.poll().get().substring(normalPathName.length() + groupSeparator.length()));
 
 		return results.stream().toArray(String[]::new);
 	}
@@ -408,11 +421,13 @@ public interface N5Reader extends AutoCloseable {
 	 * @param executor
 	 * @param datasetFutures
 	 */
-	static void deepListParallelHelper(
+	static void deepListHelper(
 			final N5Reader n5,
 			final String path,
 			final ExecutorService executor,
 			final LinkedBlockingQueue<Future<String>> datasetFutures) {
+
+		final String groupSeparator = n5.getGroupSeparator();
 
 		datasetFutures.add(executor.submit(() -> {
 
@@ -426,13 +441,8 @@ public interface N5Reader extends AutoCloseable {
 				try {
 					children = n5.list(path);
 					for (final String child : children) {
-						final String fullChildPath;
-						if (path.endsWith("/"))
-							fullChildPath = path + child;
-						else
-							fullChildPath = path + "/" + child;
-
-						deepListParallelHelper(n5, fullChildPath, executor, datasetFutures);
+						final String fullChildPath = path + groupSeparator + child;
+						deepListHelper(n5, fullChildPath, executor, datasetFutures);
 					}
 				} catch (final IOException e) {}
 			}

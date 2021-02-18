@@ -529,17 +529,17 @@ public abstract class AbstractN5Test {
 			Assert.assertTrue("deepList contents", datasetList3.contains(datasetName.replaceFirst(prefix + "/", "")));
 
 			// parallel deepList tests
-			final List<String> datasetListP = Arrays.asList(n5.deepListParallel("/", Executors.newFixedThreadPool(2)));
+			final List<String> datasetListP = Arrays.asList(n5.deepList("/", Executors.newFixedThreadPool(2)));
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetListP.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 			Assert.assertTrue("deepList contents", datasetListP.contains(datasetName.replaceFirst("/", "")));
 
-			final List<String> datasetListP2 = Arrays.asList(n5.deepListParallel("", Executors.newFixedThreadPool(2)));
+			final List<String> datasetListP2 = Arrays.asList(n5.deepList("", Executors.newFixedThreadPool(2)));
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetListP2.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 			Assert.assertTrue("deepList contents", datasetListP2.contains(datasetName.replaceFirst("/", "")));
 
-			final List<String> datasetListP3 = Arrays.asList(n5.deepListParallel(prefix, Executors.newFixedThreadPool(2)));
+			final List<String> datasetListP3 = Arrays.asList(n5.deepList(prefix, Executors.newFixedThreadPool(2)));
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetListP3.contains("group/" + subGroup));
 			Assert.assertTrue("deepList contents", datasetListP3.contains(datasetName.replaceFirst(prefix + "/", "")));
