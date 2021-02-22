@@ -38,6 +38,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -351,12 +353,15 @@ public interface N5Reader extends AutoCloseable {
 						"");
 
 		final List<String> absolutePaths = deepList(this, normalPathName);
-		return absolutePaths.stream().map(
-				a -> a.replaceFirst(normalPathName + groupSeparator, "")).toArray(String[]::new);
+		return absolutePaths.stream()
+				.map(a -> a.replaceFirst(normalPathName + "(" + groupSeparator + "?)", ""))
+				.filter(a -> !a.isEmpty()).toArray(String[]::new);
 	}
 
 	/**
-	 * Helper method to recursively list all groups.
+	 * Helper method to recursively list all groups. This method is not part
+	 * of the public API and is accessible only because Java 8 does not support
+	 * private interface methods yet.
 	 *
 	 * TODO make private when committing to Java versions >8
 	 */
@@ -366,8 +371,7 @@ public interface N5Reader extends AutoCloseable {
 
 		final ArrayList<String> children = new ArrayList<>();
 
-		if (!pathName.isEmpty())
-			children.add(pathName);
+		children.add(pathName);
 
 		final String groupSeparator = n5.getGroupSeparator();
 		final String[] baseChildren = n5.list(pathName);
@@ -501,4 +505,14 @@ public interface N5Reader extends AutoCloseable {
 	 */
 	@Override
 	public default void close() {}
+
+	public static <T> void async(
+			final Supplier<T> request,
+			final Consumer<T> callback,
+			final ExecutorService exec) {
+
+		exec.submit(() -> {
+			callback.accept(request.get());
+		});
+	}
 }

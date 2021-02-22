@@ -501,7 +501,6 @@ public abstract class AbstractN5Test {
 				n5.createGroup(groupName + "/" + subGroup);
 
 			final List<String> groupsList = Arrays.asList(n5.deepList("/"));
-			System.out.println(Arrays.toString(groupsList.toArray()));
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", groupsList.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 
@@ -514,7 +513,6 @@ public abstract class AbstractN5Test {
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetList.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 			Assert.assertTrue("deepList contents", datasetList.contains(datasetName.replaceFirst("/", "")));
-
 
 			final List<String> datasetList2 = Arrays.asList(n5.deepList(""));
 			for (final String subGroup : subGroupNames)
@@ -540,6 +538,7 @@ public abstract class AbstractN5Test {
 			Assert.assertTrue("deepList contents", datasetListP2.contains(datasetName.replaceFirst("/", "")));
 
 			final List<String> datasetListP3 = Arrays.asList(n5.deepList(prefix, Executors.newFixedThreadPool(2)));
+			System.out.println(Arrays.toString(datasetListP2.toArray()));
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetListP3.contains("group/" + subGroup));
 			Assert.assertTrue("deepList contents", datasetListP3.contains(datasetName.replaceFirst(prefix + "/", "")));
