@@ -31,7 +31,6 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -339,6 +338,35 @@ public interface N5Reader extends AutoCloseable {
 
 	/**
 	 * Recursively list all groups (including datasets) in the given group.
+	 * Only paths that satisfy the provided filter will be included, but the
+	 * children of paths that were excluded may be included (filter does not
+	 * apply to the subtree).
+	 *
+	 * @param pathName
+	 *            base group path
+	 * @param filter
+	 *            filter for children to be included
+	 * @return list of groups
+	 * @throws IOException
+	 */
+	public default String[] deepList(
+			final String pathName,
+			final Predicate<String> filter) throws IOException {
+
+		final String groupSeparator = getGroupSeparator();
+		final String normalPathName =
+				pathName.replaceAll(
+						"(^" + groupSeparator + "*)|(" + groupSeparator + "*$)",
+						"");
+
+		final List<String> absolutePaths = deepList(this, normalPathName, filter);
+		return absolutePaths.stream()
+				.map(a -> a.replaceFirst(normalPathName + "(" + groupSeparator + "?)", ""))
+				.filter(a -> !a.isEmpty()).toArray(String[]::new);
+	}
+
+	/**
+	 * Recursively list all groups (including datasets) in the given group.
 	 *
 	 * @param pathName
 	 *            base group path
@@ -347,29 +375,7 @@ public interface N5Reader extends AutoCloseable {
 	 */
 	public default String[] deepList(final String pathName) throws IOException {
 
-		final String groupSeparator = getGroupSeparator();
-		final String normalPathName =
-				pathName.replaceAll(
-						"(^" + groupSeparator + "*)|(" + groupSeparator + "*$)",
-						"");
-
-		final List<String> absolutePaths = deepList(this, normalPathName);
-		return absolutePaths.stream()
-				.map(a -> a.replaceFirst(normalPathName + "(" + groupSeparator + "?)", ""))
-				.filter(a -> !a.isEmpty()).toArray(String[]::new);
-	}
-
-	/**
-	 * Helper method to recursively list all groups. This method is not part
-	 * of the public API and is accessible only because Java 8 does not support
-	 * private interface methods yet.
-	 *
-	 * TODO make private when committing to Java versions >8
-	 */
-	static ArrayList<String> deepList(
-			final N5Reader n5,
-			final String pathName) throws IOException {
-		return deepList( n5, pathName, (x) -> true );
+		return deepList(pathName, a -> true);
 	}
 
 	/**
@@ -386,43 +392,27 @@ public interface N5Reader extends AutoCloseable {
 
 		final ArrayList<String> children = new ArrayList<>();
 
-		children.add(pathName);
+		if (filter.test(pathName)) children.add(pathName);
 
 		final String groupSeparator = n5.getGroupSeparator();
 		final String[] baseChildren = n5.list(pathName);
 		for (final String child : baseChildren)
-			children.addAll(deepList(n5, pathName + groupSeparator + child));
+			children.addAll(deepList(n5, pathName + groupSeparator + child, filter));
 
 		return children;
 	}
 
 	/**
-	 * Lists all datasets in the given group and children of this group, in
-	 * parallel, using the given {@link ExecutorService}.
-	 *
-	 * @param pathName
-	 *            base group path
-	 * @param executor
-	 *            executor service
-	 * @return list of datasets
-	 * @throws IOException
-	 * @throws ExecutionException
-	 * @throws InterruptedException
-	 */
-	public default String[] deepList(
-			final String pathName,
-			final ExecutorService executor) throws IOException, InterruptedException, ExecutionException {
-		return deepList( pathName, x -> true, executor );
-	}
-
-	/**
-	 * Lists all datasets in the given group and children of this group, in
-	 * parallel, using the given {@link ExecutorService}.
+	 * Recursively list all groups (including datasets) in the given group, in
+	 * parallel, using the given {@link ExecutorService}. Only paths that
+	 * satisfy the provided filter will be included, but the children of paths
+	 * that were excluded may be included (filter does not apply to the
+	 * subtree).
 	 *
 	 * @param pathName
 	 *            base group path
 	 * @param filter
-	 *            predicate returning true
+	 *            filter for children to be included
 	 * @param executor
 	 *            executor service
 	 * @return list of datasets
@@ -436,21 +426,39 @@ public interface N5Reader extends AutoCloseable {
 			final ExecutorService executor) throws IOException, InterruptedException, ExecutionException {
 
 		final String groupSeparator = getGroupSeparator();
-		final String normalPathName =
-				pathName.replaceAll("(^" + groupSeparator + "*)|(" + groupSeparator + "*$)", "");
-		final List<String> results = Collections.synchronizedList(new ArrayList<String>());
+		final String normalPathName = pathName.replaceAll("(^" + groupSeparator + "*)|(" + groupSeparator + "*$)", "");
+		final ArrayList<String> results = new ArrayList<String>();
 		final LinkedBlockingQueue<Future<String>> datasetFutures = new LinkedBlockingQueue<>();
-		deepListHelper(this, normalPathName, executor, datasetFutures);
+		deepListHelper(this, normalPathName, filter, executor, datasetFutures);
 
 		datasetFutures.poll().get(); // skip self
-		while (!datasetFutures.isEmpty())
-		{
-			String result = datasetFutures.poll().get().substring(normalPathName.length() + groupSeparator.length());
-			if( filter.test( result ))
-				results.add( result );
+		while (!datasetFutures.isEmpty()) {
+			final String result = datasetFutures.poll().get();
+			if (result != null)
+				results.add(result.substring(normalPathName.length() + groupSeparator.length()));
 		}
 
 		return results.stream().toArray(String[]::new);
+	}
+
+	/**
+	 * Recursively list all groups (including datasets) in the given group, in
+	 * parallel, using the given {@link ExecutorService}.
+	 *
+	 * @param pathName
+	 *            base group path
+	 * @param executor
+	 *            executor service
+	 * @return list of groups
+	 * @throws IOException
+	 * @throws ExecutionException
+	 * @throws InterruptedException
+	 */
+	public default String[] deepList(
+			final String pathName,
+			final ExecutorService executor) throws IOException, InterruptedException, ExecutionException {
+
+		return deepList( pathName, a -> true, executor );
 	}
 
 	/**
@@ -462,12 +470,14 @@ public interface N5Reader extends AutoCloseable {
 	 *
 	 * @param n5
 	 * @param path
+	 * @param filter
 	 * @param executor
 	 * @param datasetFutures
 	 */
 	static void deepListHelper(
 			final N5Reader n5,
 			final String path,
+			final Predicate<String> filter,
 			final ExecutorService executor,
 			final LinkedBlockingQueue<Future<String>> datasetFutures) {
 
@@ -486,11 +496,11 @@ public interface N5Reader extends AutoCloseable {
 					children = n5.list(path);
 					for (final String child : children) {
 						final String fullChildPath = path + groupSeparator + child;
-						deepListHelper(n5, fullChildPath, executor, datasetFutures);
+						deepListHelper(n5, fullChildPath, filter, executor, datasetFutures);
 					}
 				} catch (final IOException e) {}
 			}
-			return path;
+			return filter.test(path) ? path : null;
 		}));
 	}
 
