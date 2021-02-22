@@ -39,6 +39,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -368,6 +369,20 @@ public interface N5Reader extends AutoCloseable {
 	static ArrayList<String> deepList(
 			final N5Reader n5,
 			final String pathName) throws IOException {
+		return deepList( n5, pathName, (x) -> true );
+	}
+
+	/**
+	 * Helper method to recursively list all groups. This method is not part
+	 * of the public API and is accessible only because Java 8 does not support
+	 * private interface methods yet.
+	 *
+	 * TODO make private when committing to Java versions >8
+	 */
+	static ArrayList<String> deepList(
+			final N5Reader n5,
+			final String pathName,
+			final Predicate<String> filter ) throws IOException {
 
 		final ArrayList<String> children = new ArrayList<>();
 
@@ -383,8 +398,7 @@ public interface N5Reader extends AutoCloseable {
 
 	/**
 	 * Lists all datasets in the given group and children of this group, in
-	 * parallel,
-	 * using the given {@link ExecutorService}.
+	 * parallel, using the given {@link ExecutorService}.
 	 *
 	 * @param pathName
 	 *            base group path
@@ -398,6 +412,28 @@ public interface N5Reader extends AutoCloseable {
 	public default String[] deepList(
 			final String pathName,
 			final ExecutorService executor) throws IOException, InterruptedException, ExecutionException {
+		return deepList( pathName, x -> true, executor );
+	}
+
+	/**
+	 * Lists all datasets in the given group and children of this group, in
+	 * parallel, using the given {@link ExecutorService}.
+	 *
+	 * @param pathName
+	 *            base group path
+	 * @param filter
+	 *            predicate returning true
+	 * @param executor
+	 *            executor service
+	 * @return list of datasets
+	 * @throws IOException
+	 * @throws ExecutionException
+	 * @throws InterruptedException
+	 */
+	public default String[] deepList(
+			final String pathName,
+			final Predicate<String> filter,
+			final ExecutorService executor) throws IOException, InterruptedException, ExecutionException {
 
 		final String groupSeparator = getGroupSeparator();
 		final String normalPathName =
@@ -408,7 +444,11 @@ public interface N5Reader extends AutoCloseable {
 
 		datasetFutures.poll().get(); // skip self
 		while (!datasetFutures.isEmpty())
-			results.add(datasetFutures.poll().get().substring(normalPathName.length() + groupSeparator.length()));
+		{
+			String result = datasetFutures.poll().get().substring(normalPathName.length() + groupSeparator.length());
+			if( filter.test( result ))
+				results.add( result );
+		}
 
 		return results.stream().toArray(String[]::new);
 	}
