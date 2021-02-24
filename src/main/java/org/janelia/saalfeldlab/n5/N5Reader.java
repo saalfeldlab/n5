@@ -394,10 +394,12 @@ public interface N5Reader extends AutoCloseable {
 
 		if (filter.test(pathName)) children.add(pathName);
 
-		final String groupSeparator = n5.getGroupSeparator();
-		final String[] baseChildren = n5.list(pathName);
-		for (final String child : baseChildren)
-			children.addAll(deepList(n5, pathName + groupSeparator + child, filter));
+		if (!n5.datasetExists(pathName)) {
+			final String groupSeparator = n5.getGroupSeparator();
+			final String[] baseChildren = n5.list(pathName);
+			for (final String child : baseChildren)
+				children.addAll(deepList(n5, pathName + groupSeparator + child, filter));
+		}
 
 		return children;
 	}
