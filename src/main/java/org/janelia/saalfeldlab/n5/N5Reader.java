@@ -37,9 +37,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -557,14 +555,4 @@ public interface N5Reader extends AutoCloseable {
 	 */
 	@Override
 	public default void close() {}
-
-	public static <T> void async(
-			final Supplier<T> request,
-			final Consumer<T> callback,
-			final ExecutorService exec) {
-
-		exec.submit(() -> {
-			callback.accept(request.get());
-		});
-	}
 }
