@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.function.Predicate;
 
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
 import org.junit.AfterClass;
@@ -52,6 +53,7 @@ public abstract class AbstractN5Test {
 	static protected final String datasetName = "/test/group/dataset";
 	static protected final long[] dimensions = new long[]{100, 200, 300};
 	static protected final int[] blockSize = new int[]{44, 33, 22};
+	static protected final int blockNumElements = 44 * 33 * 22;
 
 	static protected byte[] byteBlock;
 	static protected short[] shortBlock;
@@ -507,17 +509,21 @@ public abstract class AbstractN5Test {
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", Arrays.asList(n5.deepList("")).contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 
-			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
+			DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64, new RawCompression());
+			LongArrayDataBlock dataBlock = new LongArrayDataBlock( blockSize, new long[]{0,0,0}, new long[blockNumElements] );
+			n5.createDataset(datasetName, datasetAttributes );
+			n5.writeBlock(datasetName, datasetAttributes, dataBlock);
 
 			final List<String> datasetList = Arrays.asList(n5.deepList("/"));
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetList.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
-			Assert.assertTrue("deepList contents", datasetList.contains(datasetName.replaceFirst("/", "")));
+			Assert.assertFalse("deepList stops at datasets", datasetList.contains(datasetName + "/0"));
 
 			final List<String> datasetList2 = Arrays.asList(n5.deepList(""));
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetList2.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 			Assert.assertTrue("deepList contents", datasetList2.contains(datasetName.replaceFirst("/", "")));
+			Assert.assertFalse("deepList stops at datasets", datasetList2.contains(datasetName + "/0"));
 
 			final String prefix = "/test";
 			final String suffix = "/group/dataset";
@@ -531,17 +537,39 @@ public abstract class AbstractN5Test {
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetListP.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 			Assert.assertTrue("deepList contents", datasetListP.contains(datasetName.replaceFirst("/", "")));
+			Assert.assertFalse("deepList stops at datasets", datasetListP.contains(datasetName + "/0"));
 
 			final List<String> datasetListP2 = Arrays.asList(n5.deepList("", Executors.newFixedThreadPool(2)));
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetListP2.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 			Assert.assertTrue("deepList contents", datasetListP2.contains(datasetName.replaceFirst("/", "")));
+			Assert.assertFalse("deepList stops at datasets", datasetListP2.contains(datasetName + "/0"));
 
 			final List<String> datasetListP3 = Arrays.asList(n5.deepList(prefix, Executors.newFixedThreadPool(2)));
-			System.out.println(Arrays.toString(datasetListP2.toArray()));
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetListP3.contains("group/" + subGroup));
 			Assert.assertTrue("deepList contents", datasetListP3.contains(datasetName.replaceFirst(prefix + "/", "")));
+			Assert.assertFalse("deepList stops at datasets", datasetListP3.contains(datasetName + "/0"));
+
+			// test filtering
+			Predicate<String> isCalledDataset = d -> { return d.endsWith("/dataset"); };
+			Predicate<String> isBorC = d -> { return d.matches(".*/[bc]$"); };
+
+			final List<String> datasetListFilter1 = Arrays.asList( n5.deepList(prefix, isCalledDataset ));
+			Assert.assertTrue("deepList filter \"dataset\"", 
+				datasetListFilter1.stream().map( x -> prefix + x).allMatch(isCalledDataset));
+
+			final List<String> datasetListFilter2 = Arrays.asList( n5.deepList(prefix, isBorC ));
+			Assert.assertTrue("deepList filter \"b or c\"", 
+				datasetListFilter2.stream().map( x -> prefix + x).allMatch(isBorC));
+
+			final List<String> datasetListFilterP1 = Arrays.asList( n5.deepList(prefix, isCalledDataset, Executors.newFixedThreadPool(2)));
+			Assert.assertTrue("deepList filter \"dataset\"", 
+				datasetListFilterP1.stream().map( x -> prefix + x).allMatch(isCalledDataset));
+
+			final List<String> datasetListFilterP2 = Arrays.asList( n5.deepList(prefix, isBorC, Executors.newFixedThreadPool(2)));
+			Assert.assertTrue("deepList filter \"b or c\"", 
+				datasetListFilterP2.stream().map( x -> prefix + x).allMatch(isBorC));
 
 		} catch (final IOException | InterruptedException | ExecutionException e) {
 			fail(e.getMessage());
