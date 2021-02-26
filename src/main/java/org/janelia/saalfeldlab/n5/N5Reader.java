@@ -357,7 +357,7 @@ public interface N5Reader extends AutoCloseable {
 						"(^" + groupSeparator + "*)|(" + groupSeparator + "*$)",
 						"");
 
-		final List<String> absolutePaths = deepList(this, normalPathName, filter);
+		final List<String> absolutePaths = deepList(this, normalPathName, false, filter);
 		return absolutePaths.stream()
 				.map(a -> a.replaceFirst(normalPathName + "(" + groupSeparator + "?)", ""))
 				.filter(a -> !a.isEmpty()).toArray(String[]::new);
@@ -377,6 +377,48 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
+	 * Recursively list all datasets in the given group.
+	 * Only paths that satisfy the provided filter will be included, but the
+	 * children of paths that were excluded may be included (filter does not
+	 * apply to the subtree).
+	 *
+	 * @param pathName
+	 *            base group path
+	 * @param filter
+	 *            filter for datasets to be included
+	 * @return list of groups
+	 * @throws IOException
+	 */
+	public default String[] deepListDatasets(
+			final String pathName,
+			final Predicate<String> filter) throws IOException {
+
+		final String groupSeparator = getGroupSeparator();
+		final String normalPathName =
+				pathName.replaceAll(
+						"(^" + groupSeparator + "*)|(" + groupSeparator + "*$)",
+						"");
+
+		final List<String> absolutePaths = deepList(this, normalPathName, true, filter);
+		return absolutePaths.stream()
+				.map(a -> a.replaceFirst(normalPathName + "(" + groupSeparator + "?)", ""))
+				.filter(a -> !a.isEmpty()).toArray(String[]::new);
+	}
+
+	/**
+	 * Recursively list all including datasets in the given group.
+	 *
+	 * @param pathName
+	 *            base group path
+	 * @return list of groups
+	 * @throws IOException
+	 */
+	public default String[] deepListDatasets(final String pathName) throws IOException {
+
+		return deepListDatasets(pathName, a -> true);
+	}
+
+	/**
 	 * Helper method to recursively list all groups. This method is not part
 	 * of the public API and is accessible only because Java 8 does not support
 	 * private interface methods yet.
@@ -386,17 +428,20 @@ public interface N5Reader extends AutoCloseable {
 	static ArrayList<String> deepList(
 			final N5Reader n5,
 			final String pathName,
+			final boolean datasetsOnly,
 			final Predicate<String> filter ) throws IOException {
 
 		final ArrayList<String> children = new ArrayList<>();
+		final boolean isDataset = n5.datasetExists(pathName);
 
-		if (filter.test(pathName)) children.add(pathName);
+		final boolean passDatasetTest = datasetsOnly && !isDataset;
+		if (!passDatasetTest && filter.test(pathName)) children.add(pathName);
 
-		if (!n5.datasetExists(pathName)) {
+		if (!isDataset) {
 			final String groupSeparator = n5.getGroupSeparator();
 			final String[] baseChildren = n5.list(pathName);
 			for (final String child : baseChildren)
-				children.addAll(deepList(n5, pathName + groupSeparator + child, filter));
+				children.addAll(deepList(n5, pathName + groupSeparator + child, datasetsOnly, filter));
 		}
 
 		return children;
@@ -429,7 +474,7 @@ public interface N5Reader extends AutoCloseable {
 		final String normalPathName = pathName.replaceAll("(^" + groupSeparator + "*)|(" + groupSeparator + "*$)", "");
 		final ArrayList<String> results = new ArrayList<String>();
 		final LinkedBlockingQueue<Future<String>> datasetFutures = new LinkedBlockingQueue<>();
-		deepListHelper(this, normalPathName, filter, executor, datasetFutures);
+		deepListHelper(this, normalPathName, false, filter, executor, datasetFutures);
 
 		datasetFutures.poll().get(); // skip self
 		while (!datasetFutures.isEmpty()) {
@@ -462,6 +507,65 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
+	 * Recursively list all datasets in the given group, in
+	 * parallel, using the given {@link ExecutorService}. Only paths that
+	 * satisfy the provided filter will be included, but the children of paths
+	 * that were excluded may be included (filter does not apply to the
+	 * subtree).
+	 *
+	 * @param pathName
+	 *            base group path
+	 * @param filter
+	 *            filter for datasets to be included
+	 * @param executor
+	 *            executor service
+	 * @return list of datasets
+	 * @throws IOException
+	 * @throws ExecutionException
+	 * @throws InterruptedException
+	 */
+	public default String[] deepListDatasets(
+			final String pathName,
+			final Predicate<String> filter,
+			final ExecutorService executor) throws IOException, InterruptedException, ExecutionException {
+
+		final String groupSeparator = getGroupSeparator();
+		final String normalPathName = pathName.replaceAll("(^" + groupSeparator + "*)|(" + groupSeparator + "*$)", "");
+		final ArrayList<String> results = new ArrayList<String>();
+		final LinkedBlockingQueue<Future<String>> datasetFutures = new LinkedBlockingQueue<>();
+		deepListHelper(this, normalPathName, true, filter, executor, datasetFutures);
+
+		datasetFutures.poll().get(); // skip self
+		while (!datasetFutures.isEmpty()) {
+			final String result = datasetFutures.poll().get();
+			if (result != null)
+				results.add(result.substring(normalPathName.length() + groupSeparator.length()));
+		}
+
+		return results.stream().toArray(String[]::new);
+	}
+
+	/**
+	 * Recursively list all datasets in the given group, in
+	 * parallel, using the given {@link ExecutorService}.
+	 *
+	 * @param pathName
+	 *            base group path
+	 * @param executor
+	 *            executor service
+	 * @return list of groups
+	 * @throws IOException
+	 * @throws ExecutionException
+	 * @throws InterruptedException
+	 */
+	public default String[] deepListDatasets(
+			final String pathName,
+			final ExecutorService executor) throws IOException, InterruptedException, ExecutionException {
+
+		return deepListDatasets( pathName, a -> true, executor );
+	}
+
+	/**
 	 * Helper method for parallel deep listing.  This method is not part of the
 	 * public API and is accessible only because Java 8 does not support
 	 * private interface methods yet.
@@ -477,6 +581,7 @@ public interface N5Reader extends AutoCloseable {
 	static void deepListHelper(
 			final N5Reader n5,
 			final String path,
+			final boolean datasetsOnly,
 			final Predicate<String> filter,
 			final ExecutorService executor,
 			final LinkedBlockingQueue<Future<String>> datasetFutures) {
@@ -496,11 +601,12 @@ public interface N5Reader extends AutoCloseable {
 					children = n5.list(path);
 					for (final String child : children) {
 						final String fullChildPath = path + groupSeparator + child;
-						deepListHelper(n5, fullChildPath, filter, executor, datasetFutures);
+						deepListHelper(n5, fullChildPath, datasetsOnly, filter, executor, datasetFutures);
 					}
 				} catch (final IOException e) {}
 			}
-			return filter.test(path) ? path : null;
+			final boolean passDatasetTest = datasetsOnly && !isDataset;
+			return !passDatasetTest && filter.test(path) ? path : null;
 		}));
 	}
 

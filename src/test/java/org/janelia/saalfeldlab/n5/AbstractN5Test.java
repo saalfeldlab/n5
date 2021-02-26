@@ -526,7 +526,7 @@ public abstract class AbstractN5Test {
 			Assert.assertFalse("deepList stops at datasets", datasetList2.contains(datasetName + "/0"));
 
 			final String prefix = "/test";
-			final String suffix = "/group/dataset";
+			final String datasetSuffix = "group/dataset";
 			final List<String> datasetList3 = Arrays.asList(n5.deepList(prefix));
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetList3.contains("group/" + subGroup));
@@ -570,6 +570,21 @@ public abstract class AbstractN5Test {
 			final List<String> datasetListFilterP2 = Arrays.asList( n5.deepList(prefix, isBorC, Executors.newFixedThreadPool(2)));
 			Assert.assertTrue("deepList filter \"b or c\"", 
 				datasetListFilterP2.stream().map( x -> prefix + x).allMatch(isBorC));
+
+			// test dataset filtering
+			final List<String> datasetListFilterD = Arrays.asList( n5.deepListDatasets(prefix));
+			Assert.assertTrue("deepListDataset", datasetListFilterD.size()==1 &&
+					(prefix+"/"+datasetListFilterD.get(0)).equals(datasetName));
+
+			final List<String> datasetListFilterDandBC = Arrays.asList( n5.deepListDatasets(prefix, isBorC));
+			Assert.assertTrue("deepListDatasetFilter", datasetListFilterDandBC.size()==0 );
+
+			final List<String> datasetListFilterDP = Arrays.asList( n5.deepListDatasets(prefix, Executors.newFixedThreadPool(2)));
+			Assert.assertTrue("deepListDataset Parallel", datasetListFilterDP.size()==1 &&
+					(prefix+"/"+datasetListFilterDP.get(0)).equals(datasetName));
+
+			final List<String> datasetListFilterDandBCP = Arrays.asList( n5.deepListDatasets(prefix, isBorC, Executors.newFixedThreadPool(2)));
+			Assert.assertTrue("deepListDatasetFilter Parallel", datasetListFilterDandBCP.size()==0 );
 
 		} catch (final IOException | InterruptedException | ExecutionException e) {
 			fail(e.getMessage());
