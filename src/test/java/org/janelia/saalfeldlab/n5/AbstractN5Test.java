@@ -512,8 +512,8 @@ public abstract class AbstractN5Test {
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", Arrays.asList(n5.deepList("")).contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 
-			DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64, new RawCompression());
-			LongArrayDataBlock dataBlock = new LongArrayDataBlock( blockSize, new long[]{0,0,0}, new long[blockNumElements] );
+			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64, new RawCompression());
+			final LongArrayDataBlock dataBlock = new LongArrayDataBlock( blockSize, new long[]{0,0,0}, new long[blockNumElements] );
 			n5.createDataset(datasetName, datasetAttributes );
 			n5.writeBlock(datasetName, datasetAttributes, dataBlock);
 
@@ -555,39 +555,87 @@ public abstract class AbstractN5Test {
 			Assert.assertFalse("deepList stops at datasets", datasetListP3.contains(datasetName + "/0"));
 
 			// test filtering
-			Predicate<String> isCalledDataset = d -> { return d.endsWith("/dataset"); };
-			Predicate<String> isBorC = d -> { return d.matches(".*/[bc]$"); };
+			final Predicate<String> isCalledDataset = d -> {
+				return d.endsWith("/dataset");
+			};
+			final Predicate<String> isBorC = d -> {
+				return d.matches(".*/[bc]$");
+			};
 
-			final List<String> datasetListFilter1 = Arrays.asList( n5.deepList(prefix, isCalledDataset ));
-			Assert.assertTrue("deepList filter \"dataset\"", 
-				datasetListFilter1.stream().map( x -> prefix + x).allMatch(isCalledDataset));
+			final List<String> datasetListFilter1 = Arrays.asList(n5.deepList(prefix, isCalledDataset));
+			Assert.assertTrue(
+					"deepList filter \"dataset\"",
+					datasetListFilter1.stream().map(x -> prefix + x).allMatch(isCalledDataset));
 
-			final List<String> datasetListFilter2 = Arrays.asList( n5.deepList(prefix, isBorC ));
-			Assert.assertTrue("deepList filter \"b or c\"", 
-				datasetListFilter2.stream().map( x -> prefix + x).allMatch(isBorC));
+			final List<String> datasetListFilter2 = Arrays.asList(n5.deepList(prefix, isBorC));
+			Assert.assertTrue(
+					"deepList filter \"b or c\"",
+					datasetListFilter2.stream().map(x -> prefix + x).allMatch(isBorC));
 
-			final List<String> datasetListFilterP1 = Arrays.asList( n5.deepList(prefix, isCalledDataset, Executors.newFixedThreadPool(2)));
-			Assert.assertTrue("deepList filter \"dataset\"", 
-				datasetListFilterP1.stream().map( x -> prefix + x).allMatch(isCalledDataset));
+			final List<String> datasetListFilterP1 =
+					Arrays.asList(n5.deepList(prefix, isCalledDataset, Executors.newFixedThreadPool(2)));
+			Assert.assertTrue(
+					"deepList filter \"dataset\"",
+					datasetListFilterP1.stream().map(x -> prefix + x).allMatch(isCalledDataset));
 
-			final List<String> datasetListFilterP2 = Arrays.asList( n5.deepList(prefix, isBorC, Executors.newFixedThreadPool(2)));
-			Assert.assertTrue("deepList filter \"b or c\"", 
-				datasetListFilterP2.stream().map( x -> prefix + x).allMatch(isBorC));
+			final List<String> datasetListFilterP2 =
+					Arrays.asList(n5.deepList(prefix, isBorC, Executors.newFixedThreadPool(2)));
+			Assert.assertTrue(
+					"deepList filter \"b or c\"",
+					datasetListFilterP2.stream().map(x -> prefix + x).allMatch(isBorC));
 
 			// test dataset filtering
-			final List<String> datasetListFilterD = Arrays.asList( n5.deepListDatasets(prefix));
-			Assert.assertTrue("deepListDataset", datasetListFilterD.size()==1 &&
-					(prefix+"/"+datasetListFilterD.get(0)).equals(datasetName));
+			final List<String> datasetListFilterD = Arrays.asList(n5.deepListDatasets(prefix));
+			Assert.assertTrue(
+					"deepListDataset",
+					datasetListFilterD.size() == 1 && (prefix + "/" + datasetListFilterD.get(0)).equals(datasetName));
+			Assert.assertArrayEquals(
+					datasetListFilterD.toArray(),
+					n5.deepList(
+							prefix,
+							a -> {
+								try { return n5.datasetExists(a); }
+								catch (final IOException e) { return false; }
+							}));
 
-			final List<String> datasetListFilterDandBC = Arrays.asList( n5.deepListDatasets(prefix, isBorC));
-			Assert.assertTrue("deepListDatasetFilter", datasetListFilterDandBC.size()==0 );
+			final List<String> datasetListFilterDandBC = Arrays.asList(n5.deepListDatasets(prefix, isBorC));
+			Assert.assertTrue("deepListDatasetFilter", datasetListFilterDandBC.size() == 0);
+			Assert.assertArrayEquals(
+					datasetListFilterDandBC.toArray(),
+					n5.deepList(
+							prefix,
+							a -> {
+								try { return n5.datasetExists(a) && isBorC.test(a); }
+								catch (final IOException e) { return false; }
+							}));
 
-			final List<String> datasetListFilterDP = Arrays.asList( n5.deepListDatasets(prefix, Executors.newFixedThreadPool(2)));
-			Assert.assertTrue("deepListDataset Parallel", datasetListFilterDP.size()==1 &&
-					(prefix+"/"+datasetListFilterDP.get(0)).equals(datasetName));
+			final List<String> datasetListFilterDP =
+					Arrays.asList(n5.deepListDatasets(prefix, Executors.newFixedThreadPool(2)));
+			Assert.assertTrue(
+					"deepListDataset Parallel",
+					datasetListFilterDP.size() == 1 && (prefix + "/" + datasetListFilterDP.get(0)).equals(datasetName));
+			Assert.assertArrayEquals(
+					datasetListFilterDP.toArray(),
+					n5.deepList(
+							prefix,
+							a -> {
+								try { return n5.datasetExists(a); }
+								catch (final IOException e) { return false; }
+							},
+							Executors.newFixedThreadPool(2)));
 
-			final List<String> datasetListFilterDandBCP = Arrays.asList( n5.deepListDatasets(prefix, isBorC, Executors.newFixedThreadPool(2)));
-			Assert.assertTrue("deepListDatasetFilter Parallel", datasetListFilterDandBCP.size()==0 );
+			final List<String> datasetListFilterDandBCP =
+					Arrays.asList(n5.deepListDatasets(prefix, isBorC, Executors.newFixedThreadPool(2)));
+			Assert.assertTrue("deepListDatasetFilter Parallel", datasetListFilterDandBCP.size() == 0);
+			Assert.assertArrayEquals(
+					datasetListFilterDandBCP.toArray(),
+					n5.deepList(
+							prefix,
+							a -> {
+								try { return n5.datasetExists(a) && isBorC.test(a); }
+								catch (final IOException e) { return false; }
+							},
+							Executors.newFixedThreadPool(2)));
 
 		} catch (final IOException | InterruptedException | ExecutionException e) {
 			fail(e.getMessage());

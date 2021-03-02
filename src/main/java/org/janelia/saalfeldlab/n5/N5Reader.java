@@ -382,6 +382,17 @@ public interface N5Reader extends AutoCloseable {
 	 * children of paths that were excluded may be included (filter does not
 	 * apply to the subtree).
 	 *
+	 * <p>This method delivers the same results as</p>
+	 * <pre>n5.deepList(
+	 *   prefix,
+	 *   a -> {
+	 *     try { return n5.datasetExists(a) && filter.test(a); }
+	 *     catch (final IOException e) { return false; }
+	 *   });</pre>
+	 * <p>but will execute {@link #datasetExists(String)} only once per node.
+	 * This can be relevant for performance on high latency backends such as
+	 * cloud stores.</p>
+	 *
 	 * @param pathName
 	 *            base group path
 	 * @param filter
@@ -407,6 +418,17 @@ public interface N5Reader extends AutoCloseable {
 
 	/**
 	 * Recursively list all including datasets in the given group.
+	 *
+	 * <p>This method delivers the same results as</p>
+	 * <pre>n5.deepList(
+	 *   prefix,
+	 *   a -> {
+	 *     try { return n5.datasetExists(a); }
+	 *     catch (final IOException e) { return false; }
+	 *   });</pre>
+	 * <p>but will execute {@link #datasetExists(String)} only once per node.
+	 * This can be relevant for performance on high latency backends such as
+	 * cloud stores.</p>
 	 *
 	 * @param pathName
 	 *            base group path
@@ -513,6 +535,18 @@ public interface N5Reader extends AutoCloseable {
 	 * that were excluded may be included (filter does not apply to the
 	 * subtree).
 	 *
+	 * <p>This method delivers the same results as</p>
+	 * <pre>n5.deepList(
+	 *   prefix,
+	 *   a -> {
+	 *     try { return n5.datasetExists(a) && filter.test(a); }
+	 *     catch (final IOException e) { return false; }
+	 *   },
+	 *   exec);</pre>
+	 * <p>but will execute {@link #datasetExists(String)} only once per node.
+	 * This can be relevant for performance on high latency backends such as
+	 * cloud stores.</p>
+	 *
 	 * @param pathName
 	 *            base group path
 	 * @param filter
@@ -548,6 +582,18 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Recursively list all datasets in the given group, in
 	 * parallel, using the given {@link ExecutorService}.
+	 *
+	 * <p>This method delivers the same results as</p>
+	 * <pre>n5.deepList(
+	 *   prefix,
+	 *   a -> {
+	 *     try { return n5.datasetExists(a); }
+	 *     catch (final IOException e) { return false; }
+	 *   },
+	 *   exec);</pre>
+	 * <p>but will execute {@link #datasetExists(String)} only once per node.
+	 * This can be relevant for performance on high latency backends such as
+	 * cloud stores.</p>
 	 *
 	 * @param pathName
 	 *            base group path
