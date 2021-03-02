@@ -671,28 +671,44 @@ public abstract class AbstractN5Test {
 		final String datasetName2 = datasetName + "-2";
 		try {
 			n5.createDataset(datasetName2, dimensions, blockSize, DataType.UINT64, new RawCompression());
-			n5.setAttribute(datasetName2, "attr1", new double[] {1, 2, 3});
+			n5.setAttribute(datasetName2, "attr1", new double[] {1.1, 2.1, 3.1});
 			n5.setAttribute(datasetName2, "attr2", new String[] {"a", "b", "c"});
-			n5.setAttribute(datasetName2, "attr3", 1.0);
+			n5.setAttribute(datasetName2, "attr3", 1.1);
 			n5.setAttribute(datasetName2, "attr4", "a");
+			n5.setAttribute(datasetName2, "attr5", new long[] {1, 2, 3});
+			n5.setAttribute(datasetName2, "attr6", 1);
+			n5.setAttribute(datasetName2, "attr7", new double[] {1, 2, 3.1});
+			n5.setAttribute(datasetName2, "attr8", new Object[] {"1", 2, 3.1});
 
 			Map<String, Class<?>> attributesMap = n5.listAttributes(datasetName2);
 			Assert.assertTrue(attributesMap.get("attr1") == double[].class);
 			Assert.assertTrue(attributesMap.get("attr2") == String[].class);
 			Assert.assertTrue(attributesMap.get("attr3") == double.class);
 			Assert.assertTrue(attributesMap.get("attr4") == String.class);
+			Assert.assertTrue(attributesMap.get("attr5") == long[].class);
+			Assert.assertTrue(attributesMap.get("attr6") == long.class);
+			Assert.assertTrue(attributesMap.get("attr7") == double[].class);
+			Assert.assertTrue(attributesMap.get("attr8") == Object[].class);
 
 			n5.createGroup(groupName2);
-			n5.setAttribute(groupName2, "attr1", new double[] {1, 2, 3});
+			n5.setAttribute(groupName2, "attr1", new double[] {1.1, 2.1, 3.1});
 			n5.setAttribute(groupName2, "attr2", new String[] {"a", "b", "c"});
-			n5.setAttribute(groupName2, "attr3", 1.0);
+			n5.setAttribute(groupName2, "attr3", 1.1);
 			n5.setAttribute(groupName2, "attr4", "a");
+			n5.setAttribute(groupName2, "attr5", new long[] {1, 2, 3});
+			n5.setAttribute(groupName2, "attr6", 1);
+			n5.setAttribute(groupName2, "attr7", new double[] {1, 2, 3.1});
+			n5.setAttribute(groupName2, "attr8", new Object[] {"1", 2, 3.1});
 
-			attributesMap = n5.listAttributes(datasetName2);
+			attributesMap = n5.listAttributes(groupName2);
 			Assert.assertTrue(attributesMap.get("attr1") == double[].class);
 			Assert.assertTrue(attributesMap.get("attr2") == String[].class);
 			Assert.assertTrue(attributesMap.get("attr3") == double.class);
 			Assert.assertTrue(attributesMap.get("attr4") == String.class);
+			Assert.assertTrue(attributesMap.get("attr5") == long[].class);
+			Assert.assertTrue(attributesMap.get("attr6") == long.class);
+			Assert.assertTrue(attributesMap.get("attr7") == double[].class);
+			Assert.assertTrue(attributesMap.get("attr8") == Object[].class);
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}

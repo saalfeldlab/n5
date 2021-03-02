@@ -167,9 +167,13 @@ public interface GsonAttributesParser extends N5Reader {
 
 		if (jsonPrimitive.isBoolean())
 			return boolean.class;
-		else if (jsonPrimitive.isNumber())
-			return double.class;
-		else if (jsonPrimitive.isString())
+		else if (jsonPrimitive.isNumber()) {
+			final Number number = jsonPrimitive.getAsNumber();
+			if (number.longValue() == number.doubleValue())
+				return long.class;
+			else
+				return double.class;
+		} else if (jsonPrimitive.isString())
 			return String.class;
 		else return Object.class;
 	}
@@ -203,14 +207,30 @@ public interface GsonAttributesParser extends N5Reader {
 						clazz = classForJsonPrimitive((JsonPrimitive)jsonElement);
 					else if (jsonElement.isJsonArray()) {
 						final JsonArray jsonArray = (JsonArray)jsonElement;
+						Class<?> arrayElementClass = Object.class;
 						if (jsonArray.size() > 0) {
 							final JsonElement firstElement = jsonArray.get(0);
-							if (firstElement.isJsonPrimitive())
-								clazz = Array.newInstance(classForJsonPrimitive((JsonPrimitive)firstElement), 0).getClass();
-							else
-								clazz = Object[].class;
+							if (firstElement.isJsonPrimitive()) {
+								arrayElementClass = classForJsonPrimitive(firstElement.getAsJsonPrimitive());
+								for (int i = 1; i < jsonArray.size() && arrayElementClass != Object.class; ++i) {
+									final JsonElement element = jsonArray.get(i);
+									if (element.isJsonPrimitive()) {
+										final Class<?> nextArrayElementClass = classForJsonPrimitive(element.getAsJsonPrimitive());
+										if (nextArrayElementClass != arrayElementClass)
+											if (nextArrayElementClass == double.class && arrayElementClass == long.class)
+												arrayElementClass = double.class;
+											else {
+												arrayElementClass = Object.class;
+												break;
+											}
+									} else {
+										arrayElementClass = Object.class;
+										break;
+									}
+								}
 							}
-						else
+							clazz = Array.newInstance(arrayElementClass, 0).getClass();
+						} else
 							clazz = Object[].class;
 					}
 					else
