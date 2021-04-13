@@ -42,7 +42,7 @@ import com.google.gson.JsonElement;
  * @author Igor Pisarev
  * @author Philipp Hanslovsky
  */
-public abstract class AbstractGsonReader implements GsonAttributesParser, N5Reader {
+public abstract class AbstractGsonReader implements GsonAttributesParser {
 
 	protected final Gson gson;
 
