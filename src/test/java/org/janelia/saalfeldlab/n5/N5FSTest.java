@@ -34,6 +34,6 @@ public class N5FSTest extends AbstractN5Test {
 	@Override
 	protected N5Writer createN5Writer() throws IOException {
 
-		return new N5FSWriter(testDirPath);
+		return new N5FSWriter(testDirPath, true);
 	}
 }

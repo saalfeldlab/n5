@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017, Stephan Saalfeld
+ * Copyright (c) 2017--2021, Stephan Saalfeld
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -106,6 +106,54 @@ public class N5FSReader extends AbstractGsonReader {
 	 *
 	 * @param basePath N5 base path
 	 * @param gsonBuilder
+	 * @param cacheAttributes cache attributes
+	 *    Setting this to true avoids frequent reading and parsing of JSON
+	 *    encoded attributes, this is most interesting for high latency file
+	 *    systems. Changes of attributes by an independent writer will not be
+	 *    tracked.
+	 *
+	 * @throws IOException
+	 *    if the base path cannot be read or does not exist,
+	 *    if the N5 version of the container is not compatible with this
+	 *    implementation.
+	 */
+	public N5FSReader(final String basePath, final GsonBuilder gsonBuilder, final boolean cacheAttributes) throws IOException {
+
+		super(gsonBuilder, cacheAttributes);
+		this.basePath = basePath;
+		if (exists("/")) {
+			final Version version = getVersion();
+			if (!VERSION.isCompatible(version))
+				throw new IOException("Incompatible version " + version + " (this is " + VERSION + ").");
+		}
+	}
+
+	/**
+	 * Opens an {@link N5FSReader} at a given base path.
+	 *
+	 * @param basePath N5 base path
+	 * @param cacheAttributes cache attributes
+	 *    Setting this to true avoids frequent reading and parsing of JSON
+	 *    encoded attributes, this is most interesting for high latency file
+	 *    systems. Changes of attributes by an independent writer will not be
+	 *    tracked.
+	 *
+	 * @throws IOException
+	 *    if the base path cannot be read or does not exist,
+	 *    if the N5 version of the container is not compatible with this
+	 *    implementation.
+	 */
+	public N5FSReader(final String basePath, final boolean cacheAttributes) throws IOException {
+
+		this(basePath, new GsonBuilder(), cacheAttributes);
+	}
+
+	/**
+	 * Opens an {@link N5FSReader} at a given base path with a custom
+	 * {@link GsonBuilder} to support custom attributes.
+	 *
+	 * @param basePath N5 base path
+	 * @param gsonBuilder
 	 * @throws IOException
 	 *    if the base path cannot be read or does not exist,
 	 *    if the N5 version of the container is not compatible with this
@@ -113,13 +161,7 @@ public class N5FSReader extends AbstractGsonReader {
 	 */
 	public N5FSReader(final String basePath, final GsonBuilder gsonBuilder) throws IOException {
 
-		super(gsonBuilder);
-		this.basePath = basePath;
-		if (exists("/")) {
-			final Version version = getVersion();
-			if (!VERSION.isCompatible(version))
-				throw new IOException("Incompatible version " + version + " (this is " + VERSION + ").");
-		}
+		this(basePath, gsonBuilder, false);
 	}
 
 	/**
@@ -133,7 +175,7 @@ public class N5FSReader extends AbstractGsonReader {
 	 */
 	public N5FSReader(final String basePath) throws IOException {
 
-		this(basePath, new GsonBuilder());
+		this(basePath, new GsonBuilder(), false);
 	}
 
 	/**

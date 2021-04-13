@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017, Stephan Saalfeld
+ * Copyright (c) 2017--2021, Stephan Saalfeld
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,6 +63,65 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	 *
 	 * @param basePath n5 base path
 	 * @param gsonBuilder
+	 * @param cacheAttributes cache attributes
+	 *    Setting this to true avoids frequent reading and parsing of JSON
+	 *    encoded attributes, this is most interesting for high latency file
+	 *    systems. Changes of attributes by an independent writer will not be
+	 *    tracked.
+	 *
+	 * @throws IOException
+	 *    if the base path cannot be written to or cannot be created,
+	 *    if the N5 version of the container is not compatible with this
+	 *    implementation.
+	 */
+	public N5FSWriter(final String basePath, final GsonBuilder gsonBuilder, final boolean cacheAttributes) throws IOException {
+
+		super(basePath, gsonBuilder, cacheAttributes);
+		createDirectories(Paths.get(basePath));
+		if (!VERSION.equals(getVersion()))
+			setAttribute("/", VERSION_KEY, VERSION.toString());
+	}
+
+	/**
+	 * Opens an {@link N5FSWriter} at a given base path.
+	 *
+	 * If the base path does not exist, it will be created.
+	 *
+	 * If the base path exists and if the N5 version of the container is
+	 * compatible with this implementation, the N5 version of this container
+	 * will be set to the current N5 version of this implementation.
+	 *
+	 * @param basePath n5 base path
+	 * @param gsonBuilder
+	 * @param cacheAttributes cache attributes
+	 *    Setting this to true avoids frequent reading and parsing of JSON
+	 *    encoded attributes, this is most interesting for high latency file
+	 *    systems. Changes of attributes by an independent writer will not be
+	 *    tracked.
+	 *
+	 * @throws IOException
+	 *    if the base path cannot be written to or cannot be created,
+	 *    if the N5 version of the container is not compatible with this
+	 *    implementation.
+	 */
+	public N5FSWriter(final String basePath, final boolean cacheAttributes) throws IOException {
+
+		this(basePath, new GsonBuilder(), cacheAttributes);
+	}
+
+	/**
+	 * Opens an {@link N5FSWriter} at a given base path with a custom
+	 * {@link GsonBuilder} to support custom attributes.
+	 *
+	 * If the base path does not exist, it will be created.
+	 *
+	 * If the base path exists and if the N5 version of the container is
+	 * compatible with this implementation, the N5 version of this container
+	 * will be set to the current N5 version of this implementation.
+	 *
+	 * @param basePath n5 base path
+	 * @param gsonBuilder
+	 *
 	 * @throws IOException
 	 *    if the base path cannot be written to or cannot be created,
 	 *    if the N5 version of the container is not compatible with this
@@ -87,6 +146,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	 *
 	 * @param basePath n5 base path
 	 * @param gsonBuilder
+	 *
 	 * @throws IOException
 	 *    if the base path cannot be written to or cannot be created,
 	 *    if the N5 version of the container is not compatible with this
@@ -108,6 +168,13 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	public void setAttributes(
 			final String pathName,
 			final Map<String, ?> attributes) throws IOException {
+
+		if (cacheAttributes) {
+			synchronized (attributesCache) {
+				final HashMap<String, Object> cachedMap = getCachedAttributes(pathName);
+				cachedMap.putAll(attributes);
+			}
+		}
 
 		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());
 		final HashMap<String, JsonElement> map = new HashMap<>();

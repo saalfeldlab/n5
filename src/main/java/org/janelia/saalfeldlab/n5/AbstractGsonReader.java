@@ -46,6 +46,45 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 
 	protected final Gson gson;
 
+	protected final HashMap<String, HashMap<String, Object>> attributesCache = new HashMap<>();
+
+	protected final boolean cacheAttributes;
+
+	/**
+	 * Constructs an {@link AbstractGsonReader} with a custom
+	 * {@link GsonBuilder} to support custom attributes.
+	 *
+	 * @param gsonBuilder
+	 * @param cacheAttributes cache attributes
+	 *    Setting this to true avoids frequent reading and parsing of JSON
+	 *    encoded attributes, this is most interesting for high latency
+	 *    backends. Changes of attributes by an independent writer will not be
+	 *    tracked.
+	 */
+	public AbstractGsonReader(final GsonBuilder gsonBuilder, final boolean cacheAttributes) {
+
+		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
+		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
+		gsonBuilder.disableHtmlEscaping();
+		this.gson = gsonBuilder.create();
+		this.cacheAttributes = cacheAttributes;
+	}
+
+	/**
+	 * Constructs an {@link AbstractGsonReader} with a default
+	 * {@link GsonBuilder}.
+	 *
+	 * @param cacheAttributes cache attributes
+	 *    Setting this to true avoids frequent reading and parsing of JSON
+	 *    encoded attributes, this is most interesting for high latency
+	 *    backends. Changes of attributes by an independent writer will not be
+	 *    tracked.
+		 */
+	public AbstractGsonReader(final boolean cacheAttributes) {
+
+		this(new GsonBuilder(), cacheAttributes);
+	}
+
 	/**
 	 * Constructs an {@link AbstractGsonReader} with a custom
 	 * {@link GsonBuilder} to support custom attributes.
@@ -54,10 +93,7 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 	 */
 	public AbstractGsonReader(final GsonBuilder gsonBuilder) {
 
-		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
-		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
-		gsonBuilder.disableHtmlEscaping();
-		this.gson = gsonBuilder.create();
+		this(gsonBuilder, false);
 	}
 
 	/**
@@ -66,7 +102,7 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 	 */
 	public AbstractGsonReader() {
 
-		this(new GsonBuilder());
+		this(new GsonBuilder(), false);
 	}
 
 	@Override
@@ -78,26 +114,59 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 	@Override
 	public DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
 
-		final HashMap<String, JsonElement> map = getAttributes(pathName);
-		final Gson gson = getGson();
+		final long[] dimensions;
+		final DataType dataType;
+		int[] blockSize;
+		Compression compression;
+		final String compressionVersion0Name;
+		if (cacheAttributes) {
+			final HashMap<String, Object> cachedMap = getCachedAttributes(pathName);
+			if (cachedMap.isEmpty())
+				return null;
 
-		final long[] dimensions = GsonAttributesParser.parseAttribute(map, DatasetAttributes.dimensionsKey, long[].class, gson);
-		if (dimensions == null)
-			return null;
+			dimensions = getAttribute(cachedMap, DatasetAttributes.dimensionsKey, long[].class);
+			if (dimensions == null)
+				return null;
 
-		final DataType dataType = GsonAttributesParser.parseAttribute(map, DatasetAttributes.dataTypeKey, DataType.class, gson);
-		if (dataType == null)
-			return null;
+			dataType = getAttribute(cachedMap, DatasetAttributes.dataTypeKey, DataType.class);
+			if (dataType == null)
+				return null;
 
-		int[] blockSize = GsonAttributesParser.parseAttribute(map, DatasetAttributes.blockSizeKey, int[].class, gson);
+			blockSize = getAttribute(cachedMap, DatasetAttributes.blockSizeKey, int[].class);
+
+			compression = getAttribute(cachedMap, DatasetAttributes.compressionKey, Compression.class);
+
+			/* version 0 */
+			compressionVersion0Name = compression == null
+					? getAttribute(cachedMap, DatasetAttributes.compressionTypeKey, String.class)
+					: null;
+		} else {
+			final HashMap<String, JsonElement> map = getAttributes(pathName);
+
+			dimensions = GsonAttributesParser.parseAttribute(map, DatasetAttributes.dimensionsKey, long[].class, gson);
+			if (dimensions == null)
+				return null;
+
+			dataType = GsonAttributesParser.parseAttribute(map, DatasetAttributes.dataTypeKey, DataType.class, gson);
+			if (dataType == null)
+				return null;
+
+			blockSize = GsonAttributesParser.parseAttribute(map, DatasetAttributes.blockSizeKey, int[].class, gson);
+
+			compression = GsonAttributesParser.parseAttribute(map, DatasetAttributes.compressionKey, Compression.class, gson);
+
+			/* version 0 */
+			compressionVersion0Name = compression == null
+					? GsonAttributesParser.parseAttribute(map, DatasetAttributes.compressionTypeKey, String.class, gson)
+					: null;
+			}
+
 		if (blockSize == null)
 			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
 
-		Compression compression = GsonAttributesParser.parseAttribute(map, DatasetAttributes.compressionKey, Compression.class, gson);
-
 		/* version 0 */
 		if (compression == null) {
-			switch (GsonAttributesParser.parseAttribute(map, DatasetAttributes.compressionTypeKey, String.class, gson)) {
+			switch (compressionVersion0Name) {
 			case "raw":
 				compression = new RawCompression();
 				break;
@@ -119,14 +188,84 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 		return new DatasetAttributes(dimensions, blockSize, dataType, compression);
 	}
 
+	/**
+	 * Get and cache attributes for a group.
+	 *
+	 * @param pathName
+	 * @return
+	 * @throws IOException
+	 */
+	protected HashMap<String, Object> getCachedAttributes(final String pathName) throws IOException {
+
+		HashMap<String, Object> cachedMap = attributesCache.get(pathName);
+		if (cachedMap == null) {
+			final HashMap<String, ?> map = getAttributes(pathName);
+			cachedMap = new HashMap<>();
+			if (map != null)
+				cachedMap.putAll(map);
+
+			synchronized (attributesCache) {
+				attributesCache.put(pathName, cachedMap);
+			}
+		}
+		return cachedMap;
+	}
+
+	@SuppressWarnings("unchecked")
+	protected <T> T getAttribute(
+			final HashMap<String, Object> cachedMap,
+			final String key,
+			final Class<T> clazz) {
+
+		final Object cachedAttribute = cachedMap.get(key);
+		if (cachedAttribute == null)
+			return null;
+		else if (cachedAttribute instanceof JsonElement) {
+			final T attribute = gson.fromJson((JsonElement)cachedAttribute, clazz);
+			synchronized (cachedMap) {
+				cachedMap.put(key, attribute);
+			}
+			return attribute;
+		} else {
+			return (T)cachedAttribute;
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	protected <T> T getAttribute(
+			final HashMap<String, Object> cachedMap,
+			final String key,
+			final Type type) {
+
+		final Object cachedAttribute = cachedMap.get(key);
+		if (cachedAttribute == null)
+			return null;
+		else if (cachedAttribute instanceof JsonElement) {
+			final T attribute = gson.fromJson((JsonElement)cachedAttribute, type);
+			synchronized (cachedMap) {
+				cachedMap.put(key, attribute);
+			}
+			return attribute;
+		} else {
+			return (T)cachedAttribute;
+		}
+	}
+
 	@Override
 	public <T> T getAttribute(
 			final String pathName,
 			final String key,
 			final Class<T> clazz) throws IOException {
 
-		final HashMap<String, JsonElement> map = getAttributes(pathName);
-		return GsonAttributesParser.parseAttribute(map, key, clazz, getGson());
+		if (cacheAttributes) {
+			final HashMap<String, Object> cachedMap = getCachedAttributes(pathName);
+			if (cachedMap.isEmpty())
+				return null;
+			return getAttribute(cachedMap, key, clazz);
+		} else {
+			final HashMap<String, JsonElement> map = getAttributes(pathName);
+			return GsonAttributesParser.parseAttribute(map, key, clazz, getGson());
+		}
 	}
 
 	@Override
@@ -135,7 +274,14 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 			final String key,
 			final Type type) throws IOException {
 
-		final HashMap<String, JsonElement> map = getAttributes(pathName);
-		return GsonAttributesParser.parseAttribute(map, key, type, getGson());
+		if (cacheAttributes) {
+			final HashMap<String, Object> cachedMap = getCachedAttributes(pathName);
+			if (cachedMap.isEmpty())
+				return null;
+			return getAttribute(cachedMap, key, type);
+		} else {
+			final HashMap<String, JsonElement> map = getAttributes(pathName);
+			return GsonAttributesParser.parseAttribute(map, key, type, getGson());
+		}
 	}
 }
