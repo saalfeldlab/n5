@@ -164,17 +164,9 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		createDirectories(path);
 	}
 
-	@Override
-	public void setAttributes(
+	protected void writeAttributes(
 			final String pathName,
 			final Map<String, ?> attributes) throws IOException {
-
-		if (cacheAttributes) {
-			synchronized (attributesCache) {
-				final HashMap<String, Object> cachedMap = getCachedAttributes(pathName);
-				cachedMap.putAll(attributes);
-			}
-		}
 
 		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());
 		final HashMap<String, JsonElement> map = new HashMap<>();
@@ -186,6 +178,24 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			lockedFileChannel.getFileChannel().truncate(0);
 			GsonAttributesParser.writeAttributes(Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), map, getGson());
 		}
+	}
+
+	@Override
+	public void setAttributes(
+			final String pathName,
+			final Map<String, ?> attributes) throws IOException {
+
+		if (cacheAttributes) {
+			final HashMap<String, Object> cachedMap;
+			synchronized (attributesCache) {
+				cachedMap = getCachedAttributes(pathName);
+			}
+			synchronized (cachedMap) {
+				cachedMap.putAll(attributes);
+				writeAttributes(pathName, attributes);
+			}
+		} else
+			writeAttributes(pathName, attributes);
 	}
 
 	@Override
