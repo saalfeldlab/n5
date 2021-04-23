@@ -185,7 +185,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			final String pathName,
 			final Map<String, ?> attributes) throws IOException {
 
-		if (cacheAttributes) {
+		if (cacheMeta) {
 			final HashMap<String, Object> cachedMap;
 			synchronized (attributesCache) {
 				cachedMap = getCachedAttributes(pathName);

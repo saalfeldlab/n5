@@ -32,6 +32,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -41,8 +42,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.stream.Stream;
-
-import org.janelia.saalfeldlab.n5.AbstractGsonReader.N5GroupInfo;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -56,8 +55,14 @@ import com.google.gson.JsonElement;
  * @author Igor Pisarev
  * @author Philipp Hanslovsky
  */
-public class N5FSReader extends AbstractN5FSReader {
+public class AbstractN5FSReader implements GsonAttributesParser {
 
+	/**
+	 * A {@link FileChannel} wrapper that attempts to acquire a lock and waits
+	 * for existing locks to be lifted before returning if the
+	 * {@link FileSystem} supports that.  If the {@link FileSystem} does not
+	 * support locking, it returns immediately.
+	 */
 	protected static class LockedFileChannel implements Closeable {
 
 		private final FileChannel channel;
@@ -105,6 +110,10 @@ public class N5FSReader extends AbstractN5FSReader {
 		}
 	}
 
+	/**
+	 * Data object for caching meta data.  Elements that are null are not yet
+	 * cached.
+	 */
 	protected static class N5GroupInfo {
 
 		public ArrayList<String> children = null;
@@ -113,6 +122,8 @@ public class N5FSReader extends AbstractN5FSReader {
 	}
 
 	protected static final N5GroupInfo noGroup = new N5GroupInfo();
+
+	protected final FileSystem fileSystem;
 
 	protected final Gson gson;
 
@@ -125,9 +136,10 @@ public class N5FSReader extends AbstractN5FSReader {
 	protected final String basePath;
 
 	/**
-	 * Opens an {@link N5FSReader} at a given base path with a custom
+	 * Opens an {@link AbstractN5FSReader} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
+	 * @param fileSystem
 	 * @param basePath N5 base path
 	 * @param gsonBuilder
 	 * @param cacheMeta cache attributes and meta data
@@ -142,70 +154,24 @@ public class N5FSReader extends AbstractN5FSReader {
 	 *    if the N5 version of the container is not compatible with this
 	 *    implementation.
 	 */
-	public N5FSReader(final String basePath, final GsonBuilder gsonBuilder, final boolean cacheMeta) throws IOException {
+	public AbstractN5FSReader(
+			final FileSystem fileSystem,
+			final String basePath,
+			final GsonBuilder gsonBuilder,
+			final boolean cacheMeta) throws IOException {
 
+		this.fileSystem = fileSystem;
+		this.basePath = basePath;
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
 		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
 		gsonBuilder.disableHtmlEscaping();
 		this.gson = gsonBuilder.create();
 		this.cacheMeta = cacheMeta;
-		this.basePath = basePath;
 		if (exists("/")) {
 			final Version version = getVersion();
 			if (!VERSION.isCompatible(version))
 				throw new IOException("Incompatible version " + version + " (this is " + VERSION + ").");
 		}
-	}
-
-	/**
-	 * Opens an {@link N5FSReader} at a given base path.
-	 *
-	 * @param basePath N5 base path
-	 * @param cacheMeta cache attributes and meta data
-	 *    Setting this to true avoids frequent reading and parsing of JSON
-	 *    encoded attributes and other meta data that requires accessing the
-	 *    store. This is most interesting for high latency backends. Changes
-	 *    of cached attributes and meta data by an independent writer will
-	 *    not be tracked.
-	 *
-	 * @throws IOException
-	 *    if the base path cannot be read or does not exist,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
-	 */
-	public N5FSReader(final String basePath, final boolean cacheMeta) throws IOException {
-
-		this(basePath, new GsonBuilder(), cacheMeta);
-	}
-
-	/**
-	 * Opens an {@link N5FSReader} at a given base path with a custom
-	 * {@link GsonBuilder} to support custom attributes.
-	 *
-	 * @param basePath N5 base path
-	 * @param gsonBuilder
-	 * @throws IOException
-	 *    if the base path cannot be read or does not exist,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
-	 */
-	public N5FSReader(final String basePath, final GsonBuilder gsonBuilder) throws IOException {
-
-		this(basePath, gsonBuilder, false);
-	}
-
-	/**
-	 * Opens an {@link N5FSReader} at a given base path.
-	 *
-	 * @param basePath N5 base path
-	 * @throws IOException
-	 *    if the base path cannot be read or does not exist,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
-	 */
-	public N5FSReader(final String basePath) throws IOException {
-
-		this(basePath, new GsonBuilder(), false);
 	}
 
 	@Override
@@ -218,7 +184,6 @@ public class N5FSReader extends AbstractN5FSReader {
 	 *
 	 * @return N5 base path
 	 */
-	@Override
 	public String getBasePath() {
 
 		return this.basePath;
@@ -332,7 +297,6 @@ public class N5FSReader extends AbstractN5FSReader {
 		return cachedMap;
 	}
 
-	@Override
 	@SuppressWarnings("unchecked")
 	protected <T> T getAttribute(
 			final HashMap<String, Object> cachedMap,
@@ -353,7 +317,6 @@ public class N5FSReader extends AbstractN5FSReader {
 		}
 	}
 
-	@Override
 	@SuppressWarnings("unchecked")
 	protected <T> T getAttribute(
 			final HashMap<String, Object> cachedMap,
@@ -411,14 +374,14 @@ public class N5FSReader extends AbstractN5FSReader {
 	@Override
 	public boolean exists(final String pathName) {
 
-		final Path path = Paths.get(basePath, pathName);
+		final Path path = fileSystem.getPath(basePath, pathName);
 		return Files.exists(path) && Files.isDirectory(path);
 	}
 
 	@Override
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
 
-		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());
+		final Path path = getAttributesPath(pathName);
 		if (exists(pathName) && !Files.exists(path))
 			return new HashMap<>();
 
@@ -433,7 +396,7 @@ public class N5FSReader extends AbstractN5FSReader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws IOException {
 
-		final Path path = Paths.get(basePath, getDataBlockPath(pathName, gridPosition).toString());
+		final Path path = getDataBlockPath(pathName, gridPosition);
 		if (!Files.exists(path))
 			return null;
 
@@ -445,7 +408,7 @@ public class N5FSReader extends AbstractN5FSReader {
 	@Override
 	public String[] list(final String pathName) throws IOException {
 
-		final Path path = Paths.get(basePath, pathName);
+		final Path path = fileSystem.getPath(basePath, removeLeadingSlash(pathName));
 		try (final Stream<Path> pathStream = Files.list(path)) {
 			return pathStream
 					.filter(a -> Files.isDirectory(a))
@@ -468,15 +431,16 @@ public class N5FSReader extends AbstractN5FSReader {
 	 * @param gridPosition
 	 * @return
 	 */
-	protected static Path getDataBlockPath(
+	protected Path getDataBlockPath(
 			final String datasetPathName,
 			final long... gridPosition) {
 
-		final String[] pathComponents = new String[gridPosition.length];
-		for (int i = 0; i < pathComponents.length; ++i)
-			pathComponents[i] = Long.toString(gridPosition[i]);
+		final String[] pathComponents = new String[gridPosition.length + 1];
+		pathComponents[0] = removeLeadingSlash(datasetPathName);
+		for (int i = 1; i <= pathComponents.length; ++i)
+			pathComponents[i] = Long.toString(gridPosition[i - 1]);
 
-		return Paths.get(removeLeadingSlash(datasetPathName), pathComponents);
+		return fileSystem.getPath(basePath, pathComponents);
 	}
 
 	/**
@@ -485,9 +449,9 @@ public class N5FSReader extends AbstractN5FSReader {
 	 * @param pathName
 	 * @return
 	 */
-	protected static Path getAttributesPath(final String pathName) {
+	protected Path getAttributesPath(final String pathName) {
 
-		return Paths.get(removeLeadingSlash(pathName), jsonFile);
+		return fileSystem.getPath(basePath, removeLeadingSlash(pathName), jsonFile);
 	}
 
 	/**
@@ -505,6 +469,7 @@ public class N5FSReader extends AbstractN5FSReader {
 
 	@Override
 	public String toString() {
-		return String.format("%s[basePath=%s]", getClass().getSimpleName(), basePath);
+
+		return String.format("%s[fileSystem=%s, basePath=%s]", getClass().getSimpleName(), fileSystem, basePath);
 	}
 }
