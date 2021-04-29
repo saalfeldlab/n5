@@ -121,7 +121,7 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 		public Boolean isDataset = null;
 	}
 
-	protected static final N5GroupInfo noGroup = new N5GroupInfo();
+	protected static final N5GroupInfo emptyGroupInfo = new N5GroupInfo();
 
 	protected final FileSystem fileSystem;
 
@@ -197,8 +197,13 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 		int[] blockSize;
 		Compression compression;
 		final String compressionVersion0Name;
+		final Path path = getAttributesPath(pathName);
 		if (cacheMeta) {
-			final HashMap<String, Object> cachedMap = getCachedAttributes(pathName);
+			final N5GroupInfo info = getCachedN5GroupInfo(path);
+			if (info == emptyGroupInfo)
+				return null;
+
+			final HashMap<String, Object> cachedMap = getCachedAttributes(info);
 			if (cachedMap.isEmpty())
 				return null;
 
@@ -270,15 +275,13 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 	/**
 	 * Get and cache attributes for a group.
 	 *
-	 * @param pathName
+	 * @param info
 	 * @return
 	 * @throws IOException
 	 */
-	@Override
-	protected HashMap<String, Object> getCachedAttributes(final String pathName) throws IOException {
+	protected HashMap<String, Object> getCachedAttributes(final N5GroupInfo info) throws IOException {
 
-		final N5GroupInfo info = metaCache.get(pathName);
-		if (info == noGroup)
+		if (info.attributesCache == emptyGroupInfo)
 			return null;
 		if (info == null) {
 			synchronized (metaCache)
@@ -371,11 +374,42 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 		}
 	}
 
+	protected boolean exists(final Path path) {
+
+		return Files.exists(path) && Files.isDirectory(path);
+	}
+
+	protected N5GroupInfo getCachedN5GroupInfo(final Path path) {
+
+		final String pathName = path.toString();
+		final N5GroupInfo cachedInfo = metaCache.get(pathName);
+		if (cachedInfo == null) {
+
+			/* I do not have a better solution yet to allow parallel
+			 * exists checks for independent paths than to accept the
+			 * same exists check to potentially run multiple times.
+			 */
+			final boolean exists = exists(path);
+
+			synchronized (metaCache) {
+				final N5GroupInfo cachedInfoAgain = metaCache.get(pathName);
+				if (cachedInfoAgain == null) {
+					return metaCache.put(pathName, exists ? new N5GroupInfo() : emptyGroupInfo);
+				} else
+					return cachedInfoAgain;
+			}
+		} else
+			return cachedInfo;
+	}
+
 	@Override
 	public boolean exists(final String pathName) {
 
-		final Path path = fileSystem.getPath(basePath, pathName);
-		return Files.exists(path) && Files.isDirectory(path);
+		final Path path = fileSystem.getPath(basePath, removeLeadingSlash(pathName));
+		if (cacheMeta)
+			return getCachedN5GroupInfo(path) != emptyGroupInfo;
+		else
+			return exists(path);
 	}
 
 	@Override
@@ -422,7 +456,7 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 	 *
 	 * The returned path is
 	 * <pre>
-	 * $datasetPathName/$gridPosition[0]/$gridPosition[1]/.../$gridPosition[n]
+	 * $basePath/datasetPathName/$gridPosition[0]/$gridPosition[1]/.../$gridPosition[n]
 	 * </pre>
 	 *
 	 * This is the file into which the data block will be stored.
