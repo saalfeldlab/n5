@@ -196,13 +196,13 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 		int[] blockSize;
 		Compression compression;
 		final String compressionVersion0Name;
-		final Path path = getGroupPath(pathName);
+		final String normalPathName = removeLeadingSlash(pathName);
 		if (cacheMeta) {
-			final N5GroupInfo info = getCachedN5GroupInfo(path);
+			final N5GroupInfo info = getCachedN5GroupInfo(normalPathName);
 			if (info == emptyGroupInfo)
 				return null;
 
-			final HashMap<String, Object> cachedMap = getCachedAttributes(info, pathName);
+			final HashMap<String, Object> cachedMap = getCachedAttributes(info, normalPathName);
 			if (cachedMap.isEmpty())
 				return null;
 
@@ -224,7 +224,7 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 					? getAttribute(cachedMap, DatasetAttributes.compressionTypeKey, String.class)
 					: null;
 		} else {
-			final HashMap<String, JsonElement> map = getAttributes(pathName);
+			final HashMap<String, JsonElement> map = getAttributes(normalPathName);
 
 			dimensions = GsonAttributesParser.parseAttribute(map, DatasetAttributes.dimensionsKey, long[].class, gson);
 			if (dimensions == null)
@@ -290,13 +290,15 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 	 * done in calling code.
 	 *
 	 * @param info
-	 * @param pathName
+	 * @param pathName normalized group path without leading slash
 	 * @return cached attributes
 	 * 		empty map if the group exists but not attributes are set
 	 * 		null if the group does not exist
 	 * @throws IOException
 	 */
-	protected HashMap<String, Object> getCachedAttributes(final N5GroupInfo info, final String pathName) throws IOException {
+	protected HashMap<String, Object> getCachedAttributes(
+			final N5GroupInfo info,
+			final String pathName) throws IOException {
 
 		HashMap<String, Object> cachedMap = info.attributesCache;
 		if (cachedMap == null) {
@@ -369,17 +371,17 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 			final String key,
 			final Class<T> clazz) throws IOException {
 
+		final String normalPathName = removeLeadingSlash(pathName);
 		if (cacheMeta) {
-			final Path path = getGroupPath(pathName);
-			final N5GroupInfo info = getCachedN5GroupInfo(path);
+			final N5GroupInfo info = getCachedN5GroupInfo(normalPathName);
 			if (info == emptyGroupInfo)
 				return null;
-			final HashMap<String, Object> cachedMap = getCachedAttributes(info, pathName);
+			final HashMap<String, Object> cachedMap = getCachedAttributes(info, normalPathName);
 			if (cachedMap.isEmpty())
 				return null;
 			return getAttribute(cachedMap, key, clazz);
 		} else {
-			final HashMap<String, JsonElement> map = getAttributes(pathName);
+			final HashMap<String, JsonElement> map = getAttributes(normalPathName);
 			return GsonAttributesParser.parseAttribute(map, key, clazz, getGson());
 		}
 	}
@@ -391,8 +393,7 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 			final Type type) throws IOException {
 
 		if (cacheMeta) {
-			final Path path = getGroupPath(pathName);
-			final N5GroupInfo info = getCachedN5GroupInfo(path);
+			final N5GroupInfo info = getCachedN5GroupInfo(pathName);
 			if (info == emptyGroupInfo)
 				return null;
 			final HashMap<String, Object> cachedMap = getCachedAttributes(info, pathName);
@@ -410,9 +411,8 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 		return Files.exists(path) && Files.isDirectory(path);
 	}
 
-	protected N5GroupInfo getCachedN5GroupInfo(final Path path) {
+	protected N5GroupInfo getCachedN5GroupInfo(final String pathName) {
 
-		final String pathName = path.toString();
 		final N5GroupInfo cachedInfo = metaCache.get(pathName);
 		if (cachedInfo == null) {
 
@@ -420,12 +420,14 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 			 * exists checks for independent paths than to accept the
 			 * same exists check to potentially run multiple times.
 			 */
-			final boolean exists = exists(path);
+			final boolean exists = exists(getGroupPath(pathName));
 
 			synchronized (metaCache) {
 				final N5GroupInfo cachedInfoAgain = metaCache.get(pathName);
 				if (cachedInfoAgain == null) {
-					return metaCache.put(pathName, exists ? new N5GroupInfo() : emptyGroupInfo);
+					final N5GroupInfo info = exists ? new N5GroupInfo() : emptyGroupInfo;
+					metaCache.put(pathName, info);
+					return info;
 				} else
 					return cachedInfoAgain;
 			}
@@ -436,17 +438,17 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 	@Override
 	public boolean exists(final String pathName) {
 
-		final Path path = fileSystem.getPath(basePath, removeLeadingSlash(pathName));
+		final String normalPathName = removeLeadingSlash(pathName);
 		if (cacheMeta)
-			return getCachedN5GroupInfo(path) != emptyGroupInfo;
+			return getCachedN5GroupInfo(normalPathName) != emptyGroupInfo;
 		else
-			return exists(path);
+			return exists(getGroupPath(normalPathName));
 	}
 
 	@Override
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
 
-		final Path path = getAttributesPath(pathName);
+		final Path path = getAttributesPath(removeLeadingSlash(pathName));
 		if (exists(pathName) && !Files.exists(path))
 			return new HashMap<>();
 
@@ -461,7 +463,7 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws IOException {
 
-		final Path path = getDataBlockPath(pathName, gridPosition);
+		final Path path = getDataBlockPath(removeLeadingSlash(pathName), gridPosition);
 		if (!Files.exists(path))
 			return null;
 
@@ -473,7 +475,8 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 	@Override
 	public String[] list(final String pathName) throws IOException {
 
-		final Path path = fileSystem.getPath(basePath, removeLeadingSlash(pathName));
+		final String normalPathName = removeLeadingSlash(pathName);
+		final Path path = getGroupPath(normalPathName);
 		try (final Stream<Path> pathStream = Files.list(path)) {
 			return pathStream
 					.filter(a -> Files.isDirectory(a))
@@ -492,7 +495,7 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 	 *
 	 * This is the file into which the data block will be stored.
 	 *
-	 * @param datasetPathName
+	 * @param datasetPathName normalized dataset path without leading slash
 	 * @param gridPosition
 	 * @return
 	 */
@@ -501,8 +504,8 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 			final long... gridPosition) {
 
 		final String[] pathComponents = new String[gridPosition.length + 1];
-		pathComponents[0] = removeLeadingSlash(datasetPathName);
-		for (int i = 1; i <= pathComponents.length; ++i)
+		pathComponents[0] = datasetPathName;
+		for (int i = 1; i < pathComponents.length; ++i)
 			pathComponents[i] = Long.toString(gridPosition[i - 1]);
 
 		return fileSystem.getPath(basePath, pathComponents);
@@ -511,23 +514,23 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 	/**
 	 * Constructs the path for the group or dataset.
 	 *
-	 * @param pathName
+	 * @param pathName normalized group path without leading slash
 	 * @return
 	 */
 	protected Path getGroupPath(final String pathName) {
 
-		return fileSystem.getPath(basePath, removeLeadingSlash(pathName));
+		return fileSystem.getPath(basePath, pathName);
 	}
 
 	/**
 	 * Constructs the path for the attributes file of a group or dataset.
 	 *
-	 * @param pathName
+	 * @param pathName normalized group path without leading slash
 	 * @return
 	 */
 	protected Path getAttributesPath(final String pathName) {
 
-		return fileSystem.getPath(basePath, removeLeadingSlash(pathName), jsonFile);
+		return fileSystem.getPath(basePath, pathName, jsonFile);
 	}
 
 	/**

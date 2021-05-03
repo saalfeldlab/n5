@@ -90,9 +90,9 @@ public class AbstractN5FSWriter extends AbstractN5FSReader implements N5Writer {
 	@Override
 	public void createGroup(final String pathName) throws IOException {
 
-		final Path path = getGroupPath(pathName);
+		final String normalPathName = removeLeadingSlash(pathName);
 		if (cacheMeta) {
-			N5GroupInfo info = getCachedN5GroupInfo(path);
+			N5GroupInfo info = getCachedN5GroupInfo(normalPathName);
 			if (info == emptyGroupInfo) {
 
 				/* The directories may be created multiple times concurrently,
@@ -103,14 +103,15 @@ public class AbstractN5FSWriter extends AbstractN5FSReader implements N5Writer {
 				 * This avoids synchronizing on the cache for independent
 				 * group creation.
 				 */
-				createDirectories(path);
+				createDirectories(getGroupPath(normalPathName));
 				synchronized (metaCache) {
-					info = getCachedN5GroupInfo(path);
+					info = getCachedN5GroupInfo(normalPathName);
 					if (info == emptyGroupInfo)
-						metaCache.put(pathName, new N5GroupInfo());
+						metaCache.put(normalPathName, new N5GroupInfo());
 				}
 			}
-		}
+		} else
+			createDirectories(getGroupPath(normalPathName));
 	}
 
 	/**
@@ -142,25 +143,25 @@ public class AbstractN5FSWriter extends AbstractN5FSReader implements N5Writer {
 			final String pathName,
 			final Map<String, ?> attributes) throws IOException {
 
+		final String normalPathName = removeLeadingSlash(pathName);
 		if (cacheMeta) {
-			final Path path = getGroupPath(pathName);
-			N5GroupInfo info = getCachedN5GroupInfo(path);
+			N5GroupInfo info = getCachedN5GroupInfo(normalPathName);
 			if (info == emptyGroupInfo) {
 				synchronized (metaCache) {
-					info = getCachedN5GroupInfo(path);
+					info = getCachedN5GroupInfo(normalPathName);
 					if (info == emptyGroupInfo) {
 						//createDirectories(path.getParent()); ? or not ?
-						info = metaCache.put(pathName, new N5GroupInfo());
+						info = metaCache.put(normalPathName, new N5GroupInfo());
 					}
 				}
 			}
-			final HashMap<String, Object> cachedMap = getCachedAttributes(info, pathName);
+			final HashMap<String, Object> cachedMap = getCachedAttributes(info, normalPathName);
 			synchronized (cachedMap) {
 				cachedMap.putAll(attributes);
-				writeAttributes(getAttributesPath(pathName), attributes);
+				writeAttributes(getAttributesPath(normalPathName), attributes);
 			}
 		} else
-			writeAttributes(getAttributesPath(pathName), attributes);
+			writeAttributes(getAttributesPath(normalPathName), attributes);
 	}
 
 	@Override
@@ -169,7 +170,7 @@ public class AbstractN5FSWriter extends AbstractN5FSReader implements N5Writer {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		final Path path = getDataBlockPath(pathName, dataBlock.getGridPosition());
+		final Path path = getDataBlockPath(removeLeadingSlash(pathName), dataBlock.getGridPosition());
 		createDirectories(path.getParent());
 		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForWriting(path)) {
 			lockedChannel.getFileChannel().truncate(0);
@@ -183,11 +184,34 @@ public class AbstractN5FSWriter extends AbstractN5FSReader implements N5Writer {
 		return remove("/");
 	}
 
+	protected static void tryDelete(final Path childPath) {
+
+		try {
+			Files.delete(childPath);
+		} catch (final DirectoryNotEmptyException e) {
+			// Even though childPath should be an empty directory, sometimes the deletion fails on network file
+			// when lock files are not cleared immediately after the leaves have been removed.
+			try {
+				// wait and reattempt
+				Thread.sleep(100);
+				Files.delete(childPath);
+			} catch (final InterruptedException ex) {
+				e.printStackTrace();
+				Thread.currentThread().interrupt();
+			} catch (final IOException ex) {
+				ex.printStackTrace();
+			}
+		} catch (final IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	@Override
 	public boolean remove(final String pathName) throws IOException {
 
-		final Path path = getGroupPath(pathName);
-		if (Files.exists(path))
+		final Path path = getGroupPath(removeLeadingSlash(pathName));
+		if (Files.exists(path)) {
+			final Path base = fileSystem.getPath(basePath);
 			try (final Stream<Path> pathStream = Files.walk(path)) {
 				pathStream.sorted(Comparator.reverseOrder()).forEach(
 						childPath -> {
@@ -198,26 +222,17 @@ public class AbstractN5FSWriter extends AbstractN5FSReader implements N5Writer {
 									e.printStackTrace();
 								}
 							} else {
-								try {
-									Files.delete(childPath);
-								} catch (final DirectoryNotEmptyException e) {
-									// Even though childPath should be an empty directory, sometimes the deletion fails on network file system
-									// when lock files are not cleared immediately after the leaves have been removed.
-									try {
-										// wait and reattempt
-										Thread.sleep(100);
-										Files.delete(childPath);
-									} catch (final InterruptedException ex) {
-										e.printStackTrace();
-										Thread.currentThread().interrupt();
-									} catch (final IOException ex) {
-										ex.printStackTrace();
+								if (cacheMeta) {
+									synchronized (metaCache) {
+										metaCache.put(base.relativize(childPath).toString(), emptyGroupInfo);
+										tryDelete(childPath);
 									}
-								} catch (final IOException e) {
-									e.printStackTrace();
+								} else {
+									tryDelete(childPath);
 								}
 							}
 						});
+				}
 			}
 		return !Files.exists(path);
 	}
@@ -227,7 +242,7 @@ public class AbstractN5FSWriter extends AbstractN5FSReader implements N5Writer {
 			final String pathName,
 			final long... gridPosition) throws IOException {
 
-		final Path path = getDataBlockPath(pathName, gridPosition);
+		final Path path = getDataBlockPath(removeLeadingSlash(pathName), gridPosition);
 		if (Files.exists(path))
 			try (final LockedFileChannel channel = LockedFileChannel.openForWriting(path)) {
 				Files.deleteIfExists(path);
