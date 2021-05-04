@@ -25,7 +25,11 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
+
+import org.junit.Test;
 
 /**
  * Initiates testing of the filesystem-based N5 implementation.
@@ -43,6 +47,52 @@ public class N5FSTest extends AbstractN5Test {
 	@Override
 	protected N5Writer createN5Writer() throws IOException {
 
-		return new N5FSWriter(testDirPath, true);
+		return new N5FSWriter(testDirPath, false);
+	}
+
+	@Test
+	public void testCache() {
+
+		final N5Writer n5Writer = n5;
+		try  {
+			n5 = new N5FSWriter(testDirPath + "-cache", true);
+
+			testAttributes();
+			testAttributes();
+
+			testCreateDataset();
+			testCreateDataset();
+
+			testCreateGroup();
+			testCreateGroup();
+
+			testDeepList();
+			testDeepList();
+
+			testVersion();
+			testVersion();
+
+			testExists();
+			testExists();
+
+			testList();
+			testList();
+
+			testDelete();
+			testDelete();
+
+			testListAttributes();
+			testListAttributes();
+
+			testRemove();
+			testRemove();
+
+			n5.remove();
+		} catch (final IOException e) {
+			fail(e.getMessage());
+		} finally {
+			n5.close();
+			n5 = n5Writer;
+		}
 	}
 }

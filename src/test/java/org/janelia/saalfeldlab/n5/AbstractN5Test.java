@@ -463,6 +463,11 @@ public abstract class AbstractN5Test {
 			Assert.assertEquals(new Integer(2), n5.getAttribute(groupName, "key2", new TypeToken<Integer>(){}.getType()));
 			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", new TypeToken<String>(){}.getType()));
 
+			n5.setAttribute(groupName, "key1", null);
+			n5.setAttribute(groupName, "key2", null);
+			n5.setAttribute(groupName, "key3", null);
+			Assert.assertEquals(0, n5.listAttributes(groupName).size());
+
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
@@ -486,11 +491,12 @@ public abstract class AbstractN5Test {
 	public void testList() {
 
 		try {
-			n5.createGroup(groupName);
+			final String testGroupName = groupName + "-test-list";
+			n5.createGroup(testGroupName);
 			for (final String subGroup : subGroupNames)
-				n5.createGroup(groupName + "/" + subGroup);
+				n5.createGroup(testGroupName + "/" + subGroup);
 
-			final String[] groupsList = n5.list(groupName);
+			final String[] groupsList = n5.list(testGroupName);
 			Arrays.sort(groupsList);
 
 			Assert.assertArrayEquals(subGroupNames, groupsList);
@@ -498,7 +504,6 @@ public abstract class AbstractN5Test {
 			// test listing the root group ("" and "/" should give identical results)
 			Assert.assertArrayEquals(new String[] {"test"}, n5.list(""));
 			Assert.assertArrayEquals(new String[] {"test"}, n5.list("/"));
-
 
 		} catch (final IOException e) {
 			fail(e.getMessage());
@@ -510,7 +515,8 @@ public abstract class AbstractN5Test {
 		try {
 
 			// clear container to start
-			n5.remove();
+			for (final String g : n5.list("/"))
+				n5.remove(g);
 
 			n5.createGroup(groupName);
 			for (final String subGroup : subGroupNames)
@@ -737,6 +743,8 @@ public abstract class AbstractN5Test {
 		n5.setAttribute("/", N5Reader.VERSION_KEY, new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
 
 		Assert.assertFalse(N5Reader.VERSION.isCompatible(n5.getVersion()));
+
+		n5.setAttribute("/", N5Reader.VERSION_KEY, N5Reader.VERSION.toString());
 	}
 
 	@Test
