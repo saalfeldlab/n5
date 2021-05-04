@@ -439,14 +439,16 @@ public abstract class AbstractN5Test {
 			newAttributes.put("key3", "value3");
 			n5.setAttributes(groupName, newAttributes);
 			Assert.assertEquals(3, n5.listAttributes(groupName).size());
-			/* class interface */
-			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
-			Assert.assertEquals("value2", n5.getAttribute(groupName, "key2", String.class));
-			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
+
 			/* type interface */
 			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", new TypeToken<String>(){}.getType()));
 			Assert.assertEquals("value2", n5.getAttribute(groupName, "key2", new TypeToken<String>(){}.getType()));
 			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", new TypeToken<String>(){}.getType()));
+
+			/* class interface */
+			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
+			Assert.assertEquals("value2", n5.getAttribute(groupName, "key2", String.class));
+			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
 
 			// test the case where the resulting file becomes shorter
 			n5.setAttribute(groupName, "key1", new Integer(1));

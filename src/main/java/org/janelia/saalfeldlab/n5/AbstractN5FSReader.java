@@ -392,16 +392,17 @@ public class AbstractN5FSReader implements GsonAttributesParser {
 			final String key,
 			final Type type) throws IOException {
 
+		final String normalPathName = removeLeadingSlash(pathName);
 		if (cacheMeta) {
-			final N5GroupInfo info = getCachedN5GroupInfo(pathName);
+			final N5GroupInfo info = getCachedN5GroupInfo(normalPathName);
 			if (info == emptyGroupInfo)
 				return null;
-			final HashMap<String, Object> cachedMap = getCachedAttributes(info, pathName);
+			final HashMap<String, Object> cachedMap = getCachedAttributes(info, normalPathName);
 			if (cachedMap.isEmpty())
 				return null;
 			return getAttribute(cachedMap, key, type);
 		} else {
-			final HashMap<String, JsonElement> map = getAttributes(pathName);
+			final HashMap<String, JsonElement> map = getAttributes(normalPathName);
 			return GsonAttributesParser.parseAttribute(map, key, type, getGson());
 		}
 	}
