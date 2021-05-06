@@ -38,9 +38,10 @@ import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import com.google.gson.Gson;
@@ -116,7 +117,7 @@ public class N5FSReader implements GsonAttributesParser {
 	 */
 	protected static class N5GroupInfo {
 
-		public ArrayList<String> children = null;
+		public HashSet<String> children = null;
 		public HashMap<String, Object> attributesCache = null;
 		public Boolean isDataset = null;
 	}
@@ -600,16 +601,43 @@ public class N5FSReader implements GsonAttributesParser {
 		}
 	}
 
-	@Override
-	public String[] list(final String pathName) throws IOException {
+	protected String[] normalList(final String pathName) throws IOException {
 
-		final String normalPathName = removeLeadingSlash(pathName);
-		final Path path = getGroupPath(normalPathName);
+		final Path path = getGroupPath(pathName);
 		try (final Stream<Path> pathStream = Files.list(path)) {
 			return pathStream
 					.filter(a -> Files.isDirectory(a))
 					.map(a -> path.relativize(a).toString())
 					.toArray(n -> new String[n]);
+		}
+	}
+
+	@Override
+	public String[] list(final String pathName) throws IOException {
+
+		if (cacheMeta) {
+			final N5GroupInfo info = getCachedN5GroupInfo(pathName);
+			if (info == emptyGroupInfo)
+				throw new IOException("Group '" + pathName +"' does not exist.");
+			else {
+				Set<String> children = info.children;
+				final String[] list;
+				if (children == null) {
+					synchronized (info) {
+						children = info.children;
+						if (children == null) {
+							list = normalList(removeLeadingSlash(pathName));
+							info.children = new HashSet<>(Arrays.asList(list));
+						} else
+							list = children.toArray(new String[children.size()]);
+					}
+				} else
+					list = children.toArray(new String[children.size()]);
+
+				return list;
+			}
+		} else {
+			return normalList(removeLeadingSlash(pathName));
 		}
 	}
 
