@@ -66,8 +66,8 @@ public class N5FSTest extends AbstractN5Test {
 			testCreateGroup();
 			testCreateGroup();
 
-			testDeepList();
-			testDeepList();
+//			testDeepList();
+//			testDeepList();
 
 			testVersion();
 			testVersion();
