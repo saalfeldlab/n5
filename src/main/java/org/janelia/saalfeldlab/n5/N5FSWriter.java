@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -214,6 +215,18 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 				if (info == emptyGroupInfo) {
 					info = new N5GroupInfo();
 					metaCache.put(pathName, new N5GroupInfo());
+				}
+			}
+			if (!pathName.equals("")) { // not root
+				final Path parent = getGroupPath(pathName).getParent();
+				final N5GroupInfo parentInfo = getCachedN5GroupInfo(
+						fileSystem.getPath(basePath).relativize(parent).toString()); // group must exist
+				final HashSet<String> children = parentInfo.children;
+				if (children != null) {
+					synchronized (children) {
+						children.add(
+								parent.relativize(fileSystem.getPath(pathName)).toString());
+					}
 				}
 			}
 		}
