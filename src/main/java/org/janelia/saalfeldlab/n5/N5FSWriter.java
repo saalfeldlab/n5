@@ -338,12 +338,6 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		}
 	}
 
-	@Override
-	public boolean remove() throws IOException {
-
-		return remove("/");
-	}
-
 	protected static void tryDelete(final Path childPath) {
 
 		try {
