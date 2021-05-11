@@ -236,7 +236,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	@Override
 	public void createGroup(final String pathName) throws IOException {
 
-		final String normalPathName = removeLeadingSlash(pathName);
+		final String normalPathName = normalize(pathName);
 		if (cacheMeta) {
 			final N5GroupInfo info = createCachedGroup(normalPathName);
 			synchronized (info) {
@@ -252,7 +252,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			final String pathName,
 			final DatasetAttributes datasetAttributes) throws IOException {
 
-		final String normalPathName = removeLeadingSlash(pathName);
+		final String normalPathName = normalize(pathName);
 		if (cacheMeta) {
 			final N5GroupInfo info = createCachedGroup(normalPathName);
 			synchronized (info) {
@@ -330,7 +330,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			final String pathName,
 			final Map<String, ?> attributes) throws IOException {
 
-		final String normalPathName = removeLeadingSlash(pathName);
+		final String normalPathName = normalize(pathName);
 		if (cacheMeta)
 			setCachedAttributes(normalPathName, attributes);
 		else
@@ -343,7 +343,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		final Path path = getDataBlockPath(removeLeadingSlash(pathName), dataBlock.getGridPosition());
+		final Path path = getDataBlockPath(normalize(pathName), dataBlock.getGridPosition());
 		createDirectories(path.getParent());
 		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForWriting(path)) {
 			lockedChannel.getFileChannel().truncate(0);
@@ -376,8 +376,10 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	@Override
 	public boolean remove(final String pathName) throws IOException {
 
-		final Path path = getGroupPath(removeLeadingSlash(pathName));
-		if (Files.exists(path)) {
+		final String normalPathName = normalize(pathName);
+		final Path path = getGroupPath(normalPathName);
+		boolean exists = Files.exists(path);
+		if (exists) {
 			final Path base = fileSystem.getPath(basePath);
 			try (final Stream<Path> pathStream = Files.walk(path)) {
 				pathStream.sorted(Comparator.reverseOrder()).forEach(
@@ -399,9 +401,26 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 								}
 							}
 						});
-				}
 			}
-		return !Files.exists(path);
+			if (cacheMeta) {
+				if (!normalPathName.equals("")) { // not root
+					final Path parent = getGroupPath(normalPathName).getParent();
+					final N5GroupInfo parentInfo = getCachedN5GroupInfo(
+							fileSystem.getPath(basePath).relativize(parent).toString()); // group must exist
+					final HashSet<String> children = parentInfo.children;
+					if (children != null) {
+						synchronized (children) {
+							exists = Files.exists(path);
+							if (exists)
+								children.remove(
+										parent.relativize(fileSystem.getPath(normalPathName)).toString());
+						}
+					}
+				}
+			} else
+				exists = Files.exists(path);
+		}
+		return !exists;
 	}
 
 	@Override
@@ -409,7 +428,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			final String pathName,
 			final long... gridPosition) throws IOException {
 
-		final Path path = getDataBlockPath(removeLeadingSlash(pathName), gridPosition);
+		final Path path = getDataBlockPath(normalize(pathName), gridPosition);
 		if (Files.exists(path))
 			try (final LockedFileChannel channel = LockedFileChannel.openForWriting(path)) {
 				Files.deleteIfExists(path);
