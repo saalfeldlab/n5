@@ -192,13 +192,13 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	/**
 	 * Helper method to create and cache a group.
 	 *
-	 * @param pathName normalized group path without leading slash
+	 * @param normalPathName normalized group path without leading slash
 	 * @return
 	 * @throws IOException
 	 */
-	protected N5GroupInfo createCachedGroup(final String pathName) throws IOException {
+	protected N5GroupInfo createCachedGroup(final String normalPathName) throws IOException {
 
-		N5GroupInfo info = getCachedN5GroupInfo(pathName);
+		N5GroupInfo info = getCachedN5GroupInfo(normalPathName);
 		if (info == emptyGroupInfo) {
 
 			/* The directories may be created multiple times concurrently,
@@ -209,24 +209,29 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			 * This avoids synchronizing on the cache for independent
 			 * group creation.
 			 */
-			createDirectories(getGroupPath(pathName));
+			createDirectories(getGroupPath(normalPathName));
 			synchronized (metaCache) {
-				info = getCachedN5GroupInfo(pathName);
+				info = getCachedN5GroupInfo(normalPathName);
 				if (info == emptyGroupInfo) {
 					info = new N5GroupInfo();
-					metaCache.put(pathName, new N5GroupInfo());
+					metaCache.put(normalPathName, info);
 				}
-			}
-			if (!pathName.equals("")) { // not root
-				final Path parent = getGroupPath(pathName).getParent();
-				final N5GroupInfo parentInfo = getCachedN5GroupInfo(
-						fileSystem.getPath(basePath).relativize(parent).toString()); // group must exist
-				final HashSet<String> children = parentInfo.children;
-				if (children != null) {
-					synchronized (children) {
-						children.add(
-								parent.relativize(fileSystem.getPath(pathName)).toString());
+				for (String childPathName = normalPathName; !childPathName.equals("");) {
+					final Path parent = getGroupPath(childPathName).getParent();
+					final String parentPathName = fileSystem.getPath(basePath).relativize(parent).toString();
+					N5GroupInfo parentInfo = getCachedN5GroupInfo(parentPathName);
+					if (parentInfo == emptyGroupInfo) {
+						parentInfo = new N5GroupInfo();
+						metaCache.put(parentPathName, parentInfo);
 					}
+					final HashSet<String> children = parentInfo.children;
+					if (children != null) {
+						synchronized (children) {
+							children.add(
+									parent.relativize(getGroupPath(childPathName)).toString());
+						}
+					}
+					childPathName = parentPathName;
 				}
 			}
 		}
@@ -289,6 +294,12 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		}
 	}
 
+	/**
+	 * Check for attributes that are required for a group to be a dataset.
+	 *
+	 * @param cachedAttributes
+	 * @return
+	 */
 	protected static boolean hasCachedDatasetAttributes(final Map<String, Object> cachedAttributes) {
 
 		return cachedAttributes.keySet().contains(DatasetAttributes.dimensionsKey) && cachedAttributes.keySet().contains(DatasetAttributes.dataTypeKey);
@@ -298,28 +309,28 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	/**
 	 * Helper method to cache and write attributes.
 	 *
-	 * @param pathName normalized group path without leading slash
+	 * @param normalPathName normalized group path without leading slash
 	 * @param attributes
 	 * @param isDataset
 	 * @return
 	 * @throws IOException
 	 */
 	protected N5GroupInfo setCachedAttributes(
-			final String pathName,
+			final String normalPathName,
 			final Map<String, ?> attributes) throws IOException {
 
-		N5GroupInfo info = getCachedN5GroupInfo(pathName);
+		N5GroupInfo info = getCachedN5GroupInfo(normalPathName);
 		if (info == emptyGroupInfo) {
 			synchronized (metaCache) {
-				info = getCachedN5GroupInfo(pathName);
+				info = getCachedN5GroupInfo(normalPathName);
 				if (info == emptyGroupInfo)
-					throw new IOException("N5 group '" + pathName + "' does not exist. Cannot set attributes.");
+					throw new IOException("N5 group '" + normalPathName + "' does not exist. Cannot set attributes.");
 			}
 		}
-		final HashMap<String, Object> cachedMap = getCachedAttributes(info, pathName);
+		final HashMap<String, Object> cachedMap = getCachedAttributes(info, normalPathName);
 		synchronized (info) {
 			cachedMap.putAll(attributes);
-			writeAttributes(getAttributesPath(pathName), attributes);
+			writeAttributes(getAttributesPath(normalPathName), attributes);
 			info.isDataset = hasCachedDatasetAttributes(cachedMap);
 		}
 		return info;

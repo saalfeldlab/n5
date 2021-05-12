@@ -535,14 +535,17 @@ public abstract class AbstractN5Test {
 			n5.writeBlock(datasetName, datasetAttributes, dataBlock);
 
 			final List<String> datasetList = Arrays.asList(n5.deepList("/"));
+			final N5Writer n5Writer = n5;
+			System.out.println(datasetList);
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetList.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
+			Assert.assertTrue("deepList contents", datasetList.contains(datasetName.replaceFirst("/", "")));
 			Assert.assertFalse("deepList stops at datasets", datasetList.contains(datasetName + "/0"));
 
 			final List<String> datasetList2 = Arrays.asList(n5.deepList(""));
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetList2.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
-//			Assert.assertTrue("deepList contents", datasetList2.contains(datasetName.replaceFirst("/", "")));
+			Assert.assertTrue("deepList contents", datasetList2.contains(datasetName.replaceFirst("/", "")));
 			Assert.assertFalse("deepList stops at datasets", datasetList2.contains(datasetName + "/0"));
 
 			final String prefix = "/test";
@@ -655,6 +658,7 @@ public abstract class AbstractN5Test {
 							Executors.newFixedThreadPool(2)));
 
 		} catch (final IOException | InterruptedException | ExecutionException e) {
+//		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
 	}

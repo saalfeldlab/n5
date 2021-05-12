@@ -515,31 +515,29 @@ public class N5FSReader implements GsonAttributesParser {
 	/**
 	 * Get an existing cached N5 group info object or create it.
 	 *
-	 * @param pathName normalized group path without leading slash
+	 * @param normalPathName normalized group path without leading slash
 	 * @return
 	 */
-	protected N5GroupInfo getCachedN5GroupInfo(final String pathName) {
+	protected N5GroupInfo getCachedN5GroupInfo(final String normalPathName) {
 
-		final N5GroupInfo cachedInfo = metaCache.get(pathName);
-		if (cachedInfo == null) {
+		N5GroupInfo info = metaCache.get(normalPathName);
+		if (info == null) {
 
 			/* I do not have a better solution yet to allow parallel
 			 * exists checks for independent paths than to accept the
 			 * same exists check to potentially run multiple times.
 			 */
-			final boolean exists = exists(getGroupPath(pathName));
+			final boolean exists = exists(getGroupPath(normalPathName));
 
 			synchronized (metaCache) {
-				final N5GroupInfo cachedInfoAgain = metaCache.get(pathName);
-				if (cachedInfoAgain == null) {
-					final N5GroupInfo info = exists ? new N5GroupInfo() : emptyGroupInfo;
-					metaCache.put(pathName, info);
-					return info;
-				} else
-					return cachedInfoAgain;
+				info = metaCache.get(normalPathName);
+				if (info == null) {
+					info = exists ? new N5GroupInfo() : emptyGroupInfo;
+					metaCache.put(normalPathName, info);
+				}
 			}
-		} else
-			return cachedInfo;
+		}
+		return info;
 	}
 
 	@Override
@@ -601,9 +599,15 @@ public class N5FSReader implements GsonAttributesParser {
 		}
 	}
 
-	protected String[] normalList(final String pathName) throws IOException {
+	/**
+	 *
+	 * @param normalPathName normalized path name
+	 * @return
+	 * @throws IOException
+	 */
+	protected String[] normalList(final String normalPathName) throws IOException {
 
-		final Path path = getGroupPath(pathName);
+		final Path path = getGroupPath(normalPathName);
 		try (final Stream<Path> pathStream = Files.list(path)) {
 			return pathStream
 					.filter(a -> Files.isDirectory(a))
@@ -616,7 +620,7 @@ public class N5FSReader implements GsonAttributesParser {
 	public String[] list(final String pathName) throws IOException {
 
 		if (cacheMeta) {
-			final N5GroupInfo info = getCachedN5GroupInfo(pathName);
+			final N5GroupInfo info = getCachedN5GroupInfo(normalize(pathName));
 			if (info == emptyGroupInfo)
 				throw new IOException("Group '" + pathName +"' does not exist.");
 			else {
@@ -651,16 +655,16 @@ public class N5FSReader implements GsonAttributesParser {
 	 *
 	 * This is the file into which the data block will be stored.
 	 *
-	 * @param datasetPathName normalized dataset path without leading slash
+	 * @param normalDatasetPathName normalized dataset path without leading slash
 	 * @param gridPosition
 	 * @return
 	 */
 	protected Path getDataBlockPath(
-			final String datasetPathName,
+			final String normalDatasetPathName,
 			final long... gridPosition) {
 
 		final String[] pathComponents = new String[gridPosition.length + 1];
-		pathComponents[0] = datasetPathName;
+		pathComponents[0] = normalDatasetPathName;
 		for (int i = 1; i < pathComponents.length; ++i)
 			pathComponents[i] = Long.toString(gridPosition[i - 1]);
 
@@ -681,12 +685,12 @@ public class N5FSReader implements GsonAttributesParser {
 	/**
 	 * Constructs the path for the attributes file of a group or dataset.
 	 *
-	 * @param pathName normalized group path without leading slash
+	 * @param normalPathName normalized group path without leading slash
 	 * @return
 	 */
-	protected Path getAttributesPath(final String pathName) {
+	protected Path getAttributesPath(final String normalPathName) {
 
-		return fileSystem.getPath(basePath, pathName, jsonFile);
+		return fileSystem.getPath(basePath, normalPathName, jsonFile);
 	}
 
 	/**
