@@ -27,6 +27,9 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -41,12 +44,17 @@ import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * Filesystem {@link N5Reader} implementation with JSON attributes
@@ -56,7 +64,7 @@ import com.google.gson.JsonElement;
  * @author Igor Pisarev
  * @author Philipp Hanslovsky
  */
-public class N5FSReader implements GsonAttributesParser {
+public class N5FSReader implements N5Reader {
 
 	/**
 	 * A {@link FileChannel} wrapper that attempts to acquire a lock and waits
@@ -249,7 +257,6 @@ public class N5FSReader implements GsonAttributesParser {
 		this(basePath, new GsonBuilder(), false);
 	}
 
-	@Override
 	public Gson getGson() {
 
 		return gson;
@@ -262,6 +269,188 @@ public class N5FSReader implements GsonAttributesParser {
 	public String getBasePath() {
 
 		return this.basePath;
+	}
+
+
+	/**
+	 * Parses an attribute from the given attributes map.
+	 *
+	 * @param map
+	 * @param key
+	 * @param clazz
+	 * @return
+	 * @throws IOException
+	 */
+	protected <T> T parseAttribute(
+			final HashMap<String, JsonElement> map,
+			final String key,
+			final Class<T> clazz) throws IOException {
+
+		final JsonElement attribute = map.get(key);
+		if (attribute != null)
+			return gson.fromJson(attribute, clazz);
+		else
+			return null;
+	}
+
+	/**
+	 * Parses an attribute from the given attributes map.
+	 *
+	 * @param map
+	 * @param key
+	 * @param type
+	 * @return
+	 * @throws IOException
+	 */
+	protected <T> T parseAttribute(
+			final HashMap<String, JsonElement> map,
+			final String key,
+			final Type type) throws IOException {
+
+		final JsonElement attribute = map.get(key);
+		if (attribute != null)
+			return gson.fromJson(attribute, type);
+		else
+			return null;
+	}
+
+	/**
+	 * Reads the attributes map from a given {@link Reader}.
+	 *
+	 * @param reader
+	 * @return
+	 * @throws IOException
+	 */
+	protected HashMap<String, JsonElement> readAttributes(final Reader reader) throws IOException {
+
+		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
+		final HashMap<String, JsonElement> map = gson.fromJson(reader, mapType);
+		return map == null ? new HashMap<>() : map;
+	}
+
+	/**
+	 * Inserts new the JSON export of attributes into the given attributes map.
+	 *
+	 * @param map
+	 * @param attributes
+	 * @param gson
+	 * @throws IOException
+	 */
+	protected void insertAttributes(
+			final HashMap<String, JsonElement> map,
+			final Map<String, ?> attributes) throws IOException {
+
+		for (final Entry<String, ?> entry : attributes.entrySet())
+			map.put(entry.getKey(), gson.toJsonTree(entry.getValue()));
+	}
+
+	/**
+	 * Writes the attributes map to a given {@link Writer}.
+	 *
+	 * @param writer
+	 * @param map
+	 * @throws IOException
+	 */
+	protected void writeAttributes(
+			final Writer writer,
+			final HashMap<String, JsonElement> map) throws IOException {
+
+		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
+		gson.toJson(map, mapType, writer);
+		writer.flush();
+	}
+
+	/**
+	 * Return a reasonable class for a {@link JsonPrimitive}.  Possible return
+	 * types are
+	 * <ul>
+	 * <li>boolean</li>
+	 * <li>double</li>
+	 * <li>long (if the number is an integer)</li>
+	 * <li>String</li>
+	 * <li>Object</li>
+	 * </ul>
+	 *
+	 * @param jsonPrimitive
+	 * @return
+	 */
+	protected static Class<?> classForJsonPrimitive(final JsonPrimitive jsonPrimitive) {
+
+		if (jsonPrimitive.isBoolean())
+			return boolean.class;
+		else if (jsonPrimitive.isNumber()) {
+			final Number number = jsonPrimitive.getAsNumber();
+			if (number.longValue() == number.doubleValue())
+				return long.class;
+			else
+				return double.class;
+		} else if (jsonPrimitive.isString())
+			return String.class;
+		else return Object.class;
+	}
+
+	/**
+	 * Best effort implementation of {@link N5Reader#listAttributes(String)}
+	 * with limited type resolution fromJSON.  Possible return types are
+	 * <ul>
+	 * <li>null</li>
+	 * <li>boolean</li>
+	 * <li>double</li>
+	 * <li>long (if the number is an integer)</li>
+	 * <li>String</li>
+	 * <li>Object</li>
+	 * <li>boolean[]</li>
+	 * <li>double[]</li>
+	 * <li>long[] (if all numbers in the array are integers)</li>
+	 * <li>String[]</li>
+	 * <li>Object[]</li>
+	 * </ul>
+	 */
+	@Override
+	public Map<String, Class<?>> listAttributes(final String pathName) throws IOException {
+
+		final HashMap<String, JsonElement> jsonElementMap = getAttributes(pathName);
+		final HashMap<String, Class<?>> attributes = new HashMap<>();
+		jsonElementMap.forEach(
+				(key, jsonElement) -> {
+					final Class<?> clazz;
+					if (jsonElement.isJsonNull())
+						clazz = null;
+					else if (jsonElement.isJsonPrimitive())
+						clazz = classForJsonPrimitive((JsonPrimitive)jsonElement);
+					else if (jsonElement.isJsonArray()) {
+						final JsonArray jsonArray = (JsonArray)jsonElement;
+						Class<?> arrayElementClass = Object.class;
+						if (jsonArray.size() > 0) {
+							final JsonElement firstElement = jsonArray.get(0);
+							if (firstElement.isJsonPrimitive()) {
+								arrayElementClass = classForJsonPrimitive(firstElement.getAsJsonPrimitive());
+								for (int i = 1; i < jsonArray.size() && arrayElementClass != Object.class; ++i) {
+									final JsonElement element = jsonArray.get(i);
+									if (element.isJsonPrimitive()) {
+										final Class<?> nextArrayElementClass = classForJsonPrimitive(element.getAsJsonPrimitive());
+										if (nextArrayElementClass != arrayElementClass)
+											if (nextArrayElementClass == double.class && arrayElementClass == long.class)
+												arrayElementClass = double.class;
+											else {
+												arrayElementClass = Object.class;
+												break;
+											}
+									} else {
+										arrayElementClass = Object.class;
+										break;
+									}
+								}
+							}
+							clazz = Array.newInstance(arrayElementClass, 0).getClass();
+						} else
+							clazz = Object[].class;
+					}
+					else
+						clazz = Object.class;
+					attributes.put(key, clazz);
+				});
+		return attributes;
 	}
 
 	@Override
@@ -326,21 +515,21 @@ public class N5FSReader implements GsonAttributesParser {
 		} else {
 			final HashMap<String, JsonElement> map = getAttributes(normalPathName);
 
-			dimensions = GsonAttributesParser.parseAttribute(map, DatasetAttributes.dimensionsKey, long[].class, gson);
+			dimensions = parseAttribute(map, DatasetAttributes.dimensionsKey, long[].class);
 			if (dimensions == null)
 				return null;
 
-			dataType = GsonAttributesParser.parseAttribute(map, DatasetAttributes.dataTypeKey, DataType.class, gson);
+			dataType = parseAttribute(map, DatasetAttributes.dataTypeKey, DataType.class);
 			if (dataType == null)
 				return null;
 
-			blockSize = GsonAttributesParser.parseAttribute(map, DatasetAttributes.blockSizeKey, int[].class, gson);
+			blockSize = parseAttribute(map, DatasetAttributes.blockSizeKey, int[].class);
 
-			compression = GsonAttributesParser.parseAttribute(map, DatasetAttributes.compressionKey, Compression.class, gson);
+			compression = parseAttribute(map, DatasetAttributes.compressionKey, Compression.class);
 
 			/* version 0 */
 			compressionVersion0Name = compression == null
-					? GsonAttributesParser.parseAttribute(map, DatasetAttributes.compressionTypeKey, String.class, gson)
+					? parseAttribute(map, DatasetAttributes.compressionTypeKey, String.class)
 					: null;
 			}
 
@@ -377,7 +566,7 @@ public class N5FSReader implements GsonAttributesParser {
 			return new HashMap<>();
 
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForReading(path)) {
-			return GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
+			return readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()));
 		}
 	}
 
@@ -482,7 +671,7 @@ public class N5FSReader implements GsonAttributesParser {
 			return getAttribute(cachedMap, key, clazz);
 		} else {
 			final HashMap<String, JsonElement> map = getAttributes(normalPathName);
-			return GsonAttributesParser.parseAttribute(map, key, clazz, getGson());
+			return parseAttribute(map, key, clazz);
 		}
 	}
 
@@ -503,7 +692,7 @@ public class N5FSReader implements GsonAttributesParser {
 			return getAttribute(cachedMap, key, type);
 		} else {
 			final HashMap<String, JsonElement> map = getAttributes(normalPathName);
-			return GsonAttributesParser.parseAttribute(map, key, type, getGson());
+			return parseAttribute(map, key, type);
 		}
 	}
 
@@ -572,7 +761,13 @@ public class N5FSReader implements GsonAttributesParser {
 		return exists(pathName) && getDatasetAttributes(pathName) != null;
 	}
 
-	@Override
+	/**
+	 * Reads or creates the attributes map of a group or dataset.
+	 *
+	 * @param pathName group path
+	 * @return
+	 * @throws IOException
+	 */
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
 
 		final Path path = getAttributesPath(normalize(pathName));
@@ -580,7 +775,7 @@ public class N5FSReader implements GsonAttributesParser {
 			return new HashMap<>();
 
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForReading(path)) {
-			return GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
+			return readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()));
 		}
 	}
 

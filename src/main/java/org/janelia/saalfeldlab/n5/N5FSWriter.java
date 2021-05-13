@@ -222,6 +222,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 					N5GroupInfo parentInfo = getCachedN5GroupInfo(parentPathName);
 					if (parentInfo == emptyGroupInfo) {
 						parentInfo = new N5GroupInfo();
+						parentInfo.isDataset = false;
 						metaCache.put(parentPathName, parentInfo);
 					}
 					final HashSet<String> children = parentInfo.children;
@@ -286,11 +287,11 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		final HashMap<String, JsonElement> map = new HashMap<>();
 
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path)) {
-			map.putAll(GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson()));
-			GsonAttributesParser.insertAttributes(map, attributes, gson);
+			map.putAll(readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name())));
+			insertAttributes(map, attributes);
 
 			lockedFileChannel.getFileChannel().truncate(0);
-			GsonAttributesParser.writeAttributes(Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), map, getGson());
+			writeAttributes(Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), map);
 		}
 	}
 
