@@ -55,10 +55,10 @@ import com.google.gson.JsonSerializer;
  */
 public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSerializer<Compression> {
 
-	private static final CompressionAdapter instance = new CompressionAdapter();
+	private static CompressionAdapter instance = null;
 
-	private static final HashMap<String, Constructor<? extends Compression>> compressionConstructors = new HashMap<>();
-	private static final HashMap<String, HashMap<String, Class<?>>> compressionParameters = new HashMap<>();
+	private final HashMap<String, Constructor<? extends Compression>> compressionConstructors = new HashMap<>();
+	private final HashMap<String, HashMap<String, Class<?>>> compressionParameters = new HashMap<>();
 
 	private static ArrayList<Field> getDeclaredFields(Class<?> clazz) {
 
@@ -70,35 +70,45 @@ public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSe
 	}
 
 	@SuppressWarnings("unchecked")
+	public static synchronized void update(final boolean override) {
+
+		if (override || instance == null) {
+
+			final CompressionAdapter newInstance = new CompressionAdapter();
+
+			final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+			final Index<CompressionType> annotationIndex = Index.load(CompressionType.class, classLoader);
+			for (final IndexItem<CompressionType> item : annotationIndex) {
+				Class<? extends Compression> clazz;
+				try {
+					clazz = (Class<? extends Compression>)Class.forName(item.className());
+					final String type = clazz.getAnnotation(CompressionType.class).value();
+
+					final Constructor<? extends Compression> constructor = clazz.getDeclaredConstructor();
+
+					final HashMap<String, Class<?>> parameters = new HashMap<>();
+					final ArrayList<Field> fields = getDeclaredFields(clazz);
+					for (final Field field : fields) {
+						if (field.getAnnotation(CompressionParameter.class) != null) {
+							parameters.put(field.getName(), field.getType());
+						}
+					}
+
+					newInstance.compressionConstructors.put(type, constructor);
+					newInstance.compressionParameters.put(type, parameters);
+				} catch (final ClassNotFoundException | NoSuchMethodException | ClassCastException | UnsatisfiedLinkError e) {
+					System.err.println("Compression '" + item.className() + "' could not be registered because:");
+					e.printStackTrace(System.err);
+				}
+			}
+
+			instance = newInstance;
+		}
+	}
+
 	public static void update() {
 
-		compressionParameters.clear();
-
-		final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		final Index<CompressionType> annotationIndex = Index.load(CompressionType.class, classLoader);
-		for (final IndexItem<CompressionType> item : annotationIndex) {
-			Class<? extends Compression> clazz;
-			try {
-				clazz = (Class<? extends Compression>)Class.forName(item.className());
-				final String type = clazz.getAnnotation(CompressionType.class).value();
-
-				final Constructor<? extends Compression> constructor = clazz.getDeclaredConstructor();
-
-				final HashMap<String, Class<?>> parameters = new HashMap<>();
-				final ArrayList<Field> fields = getDeclaredFields(clazz);
-				for (final Field field : fields) {
-					if (field.getAnnotation(CompressionParameter.class) != null) {
-						parameters.put(field.getName(), field.getType());
-					}
-				}
-
-				compressionConstructors.put(type, constructor);
-				compressionParameters.put(type, parameters);
-			} catch (final ClassNotFoundException | NoSuchMethodException | ClassCastException | UnsatisfiedLinkError e) {
-				System.err.println("Compression '" + item.className() + "' could not be registered because:");
-				e.printStackTrace(System.err);
-			}
-		}
+		update(false);
 	}
 
 	@Override
@@ -143,7 +153,6 @@ public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSe
 		final Compression compression;
 		try {
 			compression = constructor.newInstance();
-			final Class<? extends Compression> clazz = compression.getClass();
 			final HashMap<String, Class<?>> parameterTypes = compressionParameters.get(type);
 			for (final Entry<String, Class<?>> parameterType : parameterTypes.entrySet()) {
 				final String name = parameterType.getKey();
@@ -162,7 +171,7 @@ public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSe
 
 	public static CompressionAdapter getJsonAdapter() {
 
-		if (compressionParameters.size() == 0)
+		if (instance == null)
 			update();
 		return instance;
 	}
