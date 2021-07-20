@@ -28,7 +28,19 @@ package org.janelia.saalfeldlab.n5;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.nio.channels.Channels;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import org.janelia.saalfeldlab.n5.N5KeyValueReader.LockedFileChannel;
 import org.junit.Test;
 
 /**
@@ -51,10 +63,162 @@ public class N5FSTest extends AbstractN5Test {
 	}
 
 	@Test
+	public void testReadLock() throws IOException, InterruptedException {
+
+		final Path path = Paths.get(testDirPath, "lock");
+		try {
+			Files.delete(path);
+		} catch (final IOException e) {}
+
+		LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path);
+		lockedFileChannel.close();
+		lockedFileChannel = LockedFileChannel.openForReading(path);
+		System.out.println("locked");
+
+		final ExecutorService exec = Executors.newSingleThreadExecutor();
+		final Future<Void> future = exec.submit(() -> {
+			LockedFileChannel.openForWriting(path).close();
+			return null;
+		});
+
+		try {
+			System.out.println("Trying to acquire locked readable channel...");
+			System.out.println(future.get(3, TimeUnit.SECONDS));
+			fail("Lock broken!");
+		} catch (final TimeoutException e) {
+			System.out.println("Lock held!");
+			future.cancel(true);
+		} catch (final InterruptedException | ExecutionException e) {
+			future.cancel(true);
+			System.out.println("Test was interrupted!");
+		} finally {
+			lockedFileChannel.close();
+			Files.delete(path);
+		}
+
+		exec.shutdownNow();
+	}
+
+
+	@Test
+	public void testWriteLock() throws IOException {
+
+		final Path path = Paths.get(testDirPath, "lock");
+		try {
+			Files.delete(path);
+		} catch (final IOException e) {}
+
+		final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path);
+		System.out.println("locked");
+
+		final ExecutorService exec = Executors.newSingleThreadExecutor();
+		final Future<Void> future = exec.submit(() -> {
+			LockedFileChannel.openForReading(path).close();
+			return null;
+		});
+
+		try {
+			System.out.println("Trying to acquire locked writable channel...");
+			System.out.println(future.get(3, TimeUnit.SECONDS));
+			fail("Lock broken!");
+		} catch (final TimeoutException e) {
+			System.out.println("Lock held!");
+			future.cancel(true);
+		} catch (final InterruptedException | ExecutionException e) {
+			future.cancel(true);
+			System.out.println("Test was interrupted!");
+		} finally {
+			lockedFileChannel.close();
+			Files.delete(path);
+		}
+
+		exec.shutdownNow();
+	}
+
+	@Test
+	public void testLockReleaseByReader() throws IOException {
+
+		final Path path = Paths.get(testDirPath, "lock");
+		try {
+			Files.delete(path);
+		} catch (final IOException e) {}
+
+		final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path);
+		System.out.println("locked");
+
+		Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()).close();
+		System.out.println("reader released");
+
+
+		final ExecutorService exec = Executors.newSingleThreadExecutor();
+		final Future<Void> future = exec.submit(() -> {
+			LockedFileChannel.openForWriting(path).close();
+			return null;
+		});
+
+		try {
+			System.out.println("Trying to acquire locked readable channel...");
+			future.get(3, TimeUnit.SECONDS);
+		} catch (final TimeoutException e) {
+			fail("Lock not released!");
+			future.cancel(true);
+		} catch (final InterruptedException | ExecutionException e) {
+			future.cancel(true);
+			System.out.println("Test was interrupted!");
+		} finally {
+			lockedFileChannel.close();
+			Files.delete(path);
+		}
+
+		System.out.println("Lock was successfully released.");
+
+		exec.shutdownNow();
+	}
+
+	@Test
+	public void testLockReleaseByInputStream() throws IOException {
+
+		final Path path = Paths.get(testDirPath, "lock");
+		try {
+			Files.delete(path);
+		} catch (final IOException e) {}
+
+		final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path);
+		System.out.println("locked");
+
+		Channels.newInputStream(lockedFileChannel.getFileChannel()).close();
+		System.out.println("input stream released");
+
+		final ExecutorService exec = Executors.newSingleThreadExecutor();
+		final Future<Void> future = exec.submit(() -> {
+			LockedFileChannel.openForWriting(path).close();
+			return null;
+		});
+
+		try {
+			System.out.println("Trying to acquire locked readable channel...");
+			future.get(3, TimeUnit.SECONDS);
+		} catch (final TimeoutException e) {
+			fail("Lock not released!");
+			future.cancel(true);
+		} catch (final InterruptedException | ExecutionException e) {
+			future.cancel(true);
+			System.out.println("Test was interrupted!");
+		} finally {
+			lockedFileChannel.close();
+			Files.delete(path);
+		}
+
+		System.out.println("Lock was successfully released.");
+
+		exec.shutdownNow();
+	}
+
+//	@Test
 	public void testCache() {
 
 		final N5Writer n5Writer = n5;
-		try  {
+		try {
 			n5 = new N5FSWriter(testDirPath + "-cache", true);
 
 			testAttributes();

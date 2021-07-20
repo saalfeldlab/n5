@@ -27,23 +27,14 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
 import java.lang.reflect.Array;
 import java.lang.reflect.Type;
-import java.nio.channels.Channels;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Stream;
-
-import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess.LockedFileChannel;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -60,7 +51,7 @@ import com.google.gson.reflect.TypeToken;
  * @author Igor Pisarev
  * @author Philipp Hanslovsky
  */
-public class N5FSReader implements N5Reader {
+public class N5KeyValueReader implements N5Reader {
 
 	/**
 	 * Data object for caching meta data.  Elements that are null are not yet
@@ -88,7 +79,7 @@ public class N5FSReader implements N5Reader {
 	protected final String basePath;
 
 	/**
-	 * Opens an {@link N5FSReader} at a given base path with a custom
+	 * Opens an {@link N5KeyValueReader} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
 	 * @param keyValueAccess
@@ -106,14 +97,14 @@ public class N5FSReader implements N5Reader {
 	 *    if the N5 version of the container is not compatible with this
 	 *    implementation.
 	 */
-	public N5FSReader(
+	public N5KeyValueReader(
 			final KeyValueAccess keyValueAccess,
 			final String basePath,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheMeta) throws IOException {
 
 		this.keyValueAccess = keyValueAccess;
-		this.basePath = basePath;
+		this.basePath = keyValueAccess.normalize(basePath);
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
 		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
 		gsonBuilder.disableHtmlEscaping();
@@ -124,80 +115,6 @@ public class N5FSReader implements N5Reader {
 			if (!VERSION.isCompatible(version))
 				throw new IOException("Incompatible version " + version + " (this is " + VERSION + ").");
 		}
-	}
-
-	/**
-	 * Opens an {@link N5FSReader} at a given base path with a custom
-	 * {@link GsonBuilder} to support custom attributes.
-	 *
-	 * @param basePath N5 base path
-	 * @param gsonBuilder
-	 * @param cacheMeta cache attributes and meta data
-	 *    Setting this to true avoids frequent reading and parsing of JSON
-	 *    encoded attributes and other meta data that requires accessing the
-	 *    store. This is most interesting for high latency backends. Changes
-	 *    of cached attributes and meta data by an independent writer will
-	 *    not be tracked.
-	 *
-	 * @throws IOException
-	 *    if the base path cannot be read or does not exist,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
-	 */
-	public N5FSReader(final String basePath, final GsonBuilder gsonBuilder, final boolean cacheMeta) throws IOException {
-
-		this(FileSystems.getDefault(), basePath, gsonBuilder, cacheMeta);
-	}
-
-	/**
-	 * Opens an {@link N5FSReader} at a given base path.
-	 *
-	 * @param basePath N5 base path
-	 * @param cacheMeta cache attributes and meta data
-	 *    Setting this to true avoids frequent reading and parsing of JSON
-	 *    encoded attributes and other meta data that requires accessing the
-	 *    store. This is most interesting for high latency backends. Changes
-	 *    of cached attributes and meta data by an independent writer will
-	 *    not be tracked.
-	 *
-	 * @throws IOException
-	 *    if the base path cannot be read or does not exist,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
-	 */
-	public N5FSReader(final String basePath, final boolean cacheMeta) throws IOException {
-
-		this(basePath, new GsonBuilder(), cacheMeta);
-	}
-
-	/**
-	 * Opens an {@link N5FSReader} at a given base path with a custom
-	 * {@link GsonBuilder} to support custom attributes.
-	 *
-	 * @param basePath N5 base path
-	 * @param gsonBuilder
-	 * @throws IOException
-	 *    if the base path cannot be read or does not exist,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
-	 */
-	public N5FSReader(final String basePath, final GsonBuilder gsonBuilder) throws IOException {
-
-		this(basePath, gsonBuilder, false);
-	}
-
-	/**
-	 * Opens an {@link N5FSReader} at a given base path.
-	 *
-	 * @param basePath N5 base path
-	 * @throws IOException
-	 *    if the base path cannot be read or does not exist,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
-	 */
-	public N5FSReader(final String basePath) throws IOException {
-
-		this(basePath, new GsonBuilder(), false);
 	}
 
 	public Gson getGson() {
@@ -285,22 +202,6 @@ public class N5FSReader implements N5Reader {
 
 		for (final Entry<String, ?> entry : attributes.entrySet())
 			map.put(entry.getKey(), gson.toJsonTree(entry.getValue()));
-	}
-
-	/**
-	 * Writes the attributes map to a given {@link Writer}.
-	 *
-	 * @param writer
-	 * @param map
-	 * @throws IOException
-	 */
-	protected void writeAttributes(
-			final Writer writer,
-			final HashMap<String, JsonElement> map) throws IOException {
-
-		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
-		gson.toJson(map, mapType, writer);
-		writer.flush();
 	}
 
 	/**
@@ -503,13 +404,13 @@ public class N5FSReader implements N5Reader {
 		return new DatasetAttributes(dimensions, blockSize, dataType, compression);
 	}
 
-	protected HashMap<String, JsonElement> getAttributes(final Path path) throws IOException {
+	protected HashMap<String, JsonElement> readAttributes(final String absoluteNormalPath) throws IOException {
 
-		if (!Files.exists(path))
+		if (!keyValueAccess.exists(absoluteNormalPath))
 			return new HashMap<>();
 
-		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForReading(path)) {
-			return readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()));
+		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(absoluteNormalPath)) {
+			return readAttributes(lockedChannel.newReader());
 		}
 	}
 
@@ -530,16 +431,16 @@ public class N5FSReader implements N5Reader {
 	 */
 	protected HashMap<String, Object> getCachedAttributes(
 			final N5GroupInfo info,
-			final String pathName) throws IOException {
+			final String normalPath) throws IOException {
 
 		HashMap<String, Object> cachedMap = info.attributesCache;
 		if (cachedMap == null) {
 			synchronized (info) {
 				cachedMap = info.attributesCache;
 				if (cachedMap == null) {
-					final Path path = getAttributesPath(pathName);
+					final String absoluteNormalPath = attributesPath(normalPath);
 					cachedMap = new HashMap<>();
-					final HashMap<String, JsonElement> map = getAttributes(path);
+					final HashMap<String, JsonElement> map = readAttributes(absoluteNormalPath);
 					cachedMap.putAll(map);
 					info.attributesCache = cachedMap;
 				}
@@ -639,9 +540,9 @@ public class N5FSReader implements N5Reader {
 		}
 	}
 
-	protected boolean exists(final Path path) {
+	protected boolean groupExists(final String absoluteNormalPath) {
 
-		return Files.exists(path) && Files.isDirectory(path);
+		return keyValueAccess.exists(absoluteNormalPath) && keyValueAccess.isDirectory(absoluteNormalPath);
 	}
 
 	/**
@@ -659,7 +560,7 @@ public class N5FSReader implements N5Reader {
 			 * exists checks for independent paths than to accept the
 			 * same exists check to potentially run multiple times.
 			 */
-			final boolean exists = exists(getGroupPath(normalPathName));
+			final boolean exists = groupExists(groupPath(normalPathName));
 
 			synchronized (metaCache) {
 				info = metaCache.get(normalPathName);
@@ -679,7 +580,7 @@ public class N5FSReader implements N5Reader {
 		if (cacheMeta)
 			return getCachedN5GroupInfo(normalPathName) != emptyGroupInfo;
 		else
-			return exists(getGroupPath(normalPathName));
+			return groupExists(groupPath(normalPathName));
 	}
 
 	@Override
@@ -713,12 +614,12 @@ public class N5FSReader implements N5Reader {
 	 */
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
 
-		final Path path = getAttributesPath(normalize(pathName));
-		if (exists(pathName) && !Files.exists(path))
+		final String path = attributesPath(normalize(pathName));
+		if (exists(pathName) && !keyValueAccess.exists(path))
 			return new HashMap<>();
 
-		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForReading(path)) {
-			return readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()));
+		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(path)) {
+			return readAttributes(lockedChannel.newReader());
 		}
 	}
 
@@ -728,30 +629,24 @@ public class N5FSReader implements N5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws IOException {
 
-		final Path path = getDataBlockPath(normalize(pathName), gridPosition);
-		if (!Files.exists(path))
+		final String path = getDataBlockPath(normalize(pathName), gridPosition);
+		if (!keyValueAccess.exists(path))
 			return null;
 
-		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForReading(path)) {
-			return DefaultBlockReader.readBlock(Channels.newInputStream(lockedChannel.getFileChannel()), datasetAttributes, gridPosition);
+		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(path)) {
+			return DefaultBlockReader.readBlock(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
 		}
 	}
 
 	/**
 	 *
-	 * @param normalPathName normalized path name
+	 * @param normalPath normalized path name
 	 * @return
 	 * @throws IOException
 	 */
-	protected String[] normalList(final String normalPathName) throws IOException {
+	protected String[] normalList(final String normalPath) throws IOException {
 
-		final Path path = getGroupPath(normalPathName);
-		try (final Stream<Path> pathStream = Files.list(path)) {
-			return pathStream
-					.filter(a -> Files.isDirectory(a))
-					.map(a -> path.relativize(a).toString())
-					.toArray(n -> new String[n]);
-		}
+		return keyValueAccess.listDirectories(groupPath(normalPath));
 	}
 
 	@Override
@@ -797,62 +692,60 @@ public class N5FSReader implements N5Reader {
 	 * @param gridPosition
 	 * @return
 	 */
-	protected Path getDataBlockPath(
-			final String normalDatasetPathName,
+	protected String getDataBlockPath(
+			final String normalDatasetPath,
 			final long... gridPosition) {
 
-		final String[] pathComponents = new String[gridPosition.length + 1];
-		pathComponents[0] = normalDatasetPathName;
-		for (int i = 1; i < pathComponents.length; ++i)
-			pathComponents[i] = Long.toString(gridPosition[i - 1]);
+		final StringBuilder builder = new StringBuilder(groupPath(normalDatasetPath));
 
-		return fileSystem.getPath(basePath, pathComponents);
+		for (final long i : gridPosition) {
+			builder.append("/");
+			builder.append(i);
+		}
+
+		return builder.toString();
 	}
 
 	/**
 	 * Constructs the path for the group or dataset.
 	 *
-	 * @param pathName normalized group path without leading slash
+	 * @param normalPath normalized group path without leading slash
 	 * @return
 	 */
-	protected Path getGroupPath(final String pathName) {
+	protected String groupPath(final String normalPath) {
 
-		return fileSystem.getPath(basePath, pathName);
+		return basePath + "/" + normalPath;
 	}
 
 	/**
 	 * Constructs the path for the attributes file of a group or dataset.
 	 *
-	 * @param normalPathName normalized group path without leading slash
+	 * @param normalPath normalized group path without leading slash
 	 * @return
 	 */
-	protected Path getAttributesPath(final String normalPathName) {
+	protected String attributesPath(final String normalPath) {
 
-		return fileSystem.getPath(basePath, normalPathName, jsonFile);
+		return groupPath(normalPath) + "/" + jsonFile;
 	}
 
 	/**
-	 * Removes the leading slash from a given path and returns the corrected path.
-	 * It ensures correctness on both Unix and Windows, otherwise {@code pathName} is treated
-	 * as UNC path on Windows, and {@code Paths.get(pathName, ...)} fails with {@code InvalidPathException}.
+	 * Removes the leading slash from a given path and returns the normalized
+	 * path.  It ensures correctness on both Unix and Windows, otherwise
+	 * {@code pathName} is treated as UNC path on Windows, and
+	 * {@code Paths.get(pathName, ...)} fails with
+	 * {@code InvalidPathException}.
 	 *
-	 * @param pathName
+	 * @param path
 	 * @return
 	 */
-	protected String normalize(final String pathName) {
+	protected String normalize(final String path) {
 
-		return fileSystem.getPath(basePath)
-				.relativize(
-						fileSystem.getPath(
-								basePath,
-								pathName.startsWith("/") || pathName.startsWith("\\") ? pathName.substring(1) : pathName)
-						.normalize())
-				.toString();
+		return keyValueAccess.normalize(path.startsWith("/") || path.startsWith("\\") ? path.substring(1) : path);
 	}
 
 	@Override
 	public String toString() {
 
-		return String.format("%s[fileSystem=%s, basePath=%s]", getClass().getSimpleName(), fileSystem, basePath);
+		return String.format("%s[access=%s, basePath=%s]", getClass().getSimpleName(), keyValueAccess, basePath);
 	}
 }

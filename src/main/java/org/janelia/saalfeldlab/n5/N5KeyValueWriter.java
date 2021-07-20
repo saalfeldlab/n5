@@ -28,10 +28,6 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Type;
-import java.nio.channels.Channels;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -51,10 +47,10 @@ import com.google.gson.reflect.TypeToken;
  *
  * @author Stephan Saalfeld
  */
-public class N5FSWriter extends N5KeyValueReader implements N5Writer {
+public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 
 	/**
-	 * Opens an {@link N5FSWriter} at a given base path with a custom
+	 * Opens an {@link N5KeyValueWriter} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
 	 * If the base path does not exist, it will be created.
@@ -77,116 +73,16 @@ public class N5FSWriter extends N5KeyValueReader implements N5Writer {
 	 *    if the N5 version of the container is not compatible with this
 	 *    implementation.
 	 */
-	public N5FSWriter(
-			final FileSystem fileSystem,
+	public N5KeyValueWriter(
+			final KeyValueAccess keyValueAccess,
 			final String basePath,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheAttributes) throws IOException {
 
-		super(fileSystem, basePath, gsonBuilder, cacheAttributes);
+		super(keyValueAccess, basePath, gsonBuilder, cacheAttributes);
 		createGroup("/");
 		if (!VERSION.equals(getVersion()))
 			setAttribute("/", VERSION_KEY, VERSION.toString());
-	}
-
-	/**
-	 * Opens an {@link N5FSWriter} at a given base path with a custom
-	 * {@link GsonBuilder} to support custom attributes.
-	 *
-	 * If the base path does not exist, it will be created.
-	 *
-	 * If the base path exists and if the N5 version of the container is
-	 * compatible with this implementation, the N5 version of this container
-	 * will be set to the current N5 version of this implementation.
-	 *
-	 * @param basePath n5 base path
-	 * @param gsonBuilder
-	 * @param cacheAttributes cache attributes
-	 *    Setting this to true avoids frequent reading and parsing of JSON
-	 *    encoded attributes, this is most interesting for high latency file
-	 *    systems. Changes of attributes by an independent writer will not be
-	 *    tracked.
-	 *
-	 * @throws IOException
-	 *    if the base path cannot be written to or cannot be created,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
-	 */
-	public N5FSWriter(final String basePath, final GsonBuilder gsonBuilder, final boolean cacheAttributes) throws IOException {
-
-		this(FileSystems.getDefault(), basePath, gsonBuilder, cacheAttributes);
-	}
-
-	/**
-	 * Opens an {@link N5FSWriter} at a given base path.
-	 *
-	 * If the base path does not exist, it will be created.
-	 *
-	 * If the base path exists and if the N5 version of the container is
-	 * compatible with this implementation, the N5 version of this container
-	 * will be set to the current N5 version of this implementation.
-	 *
-	 * @param basePath n5 base path
-	 * @param gsonBuilder
-	 * @param cacheAttributes cache attributes
-	 *    Setting this to true avoids frequent reading and parsing of JSON
-	 *    encoded attributes, this is most interesting for high latency file
-	 *    systems. Changes of attributes by an independent writer will not be
-	 *    tracked.
-	 *
-	 * @throws IOException
-	 *    if the base path cannot be written to or cannot be created,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
-	 */
-	public N5FSWriter(final String basePath, final boolean cacheAttributes) throws IOException {
-
-		this(basePath, new GsonBuilder(), cacheAttributes);
-	}
-
-	/**
-	 * Opens an {@link N5FSWriter} at a given base path with a custom
-	 * {@link GsonBuilder} to support custom attributes.
-	 *
-	 * If the base path does not exist, it will be created.
-	 *
-	 * If the base path exists and if the N5 version of the container is
-	 * compatible with this implementation, the N5 version of this container
-	 * will be set to the current N5 version of this implementation.
-	 *
-	 * @param basePath n5 base path
-	 * @param gsonBuilder
-	 *
-	 * @throws IOException
-	 *    if the base path cannot be written to or cannot be created,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
-	 */
-	public N5FSWriter(final String basePath, final GsonBuilder gsonBuilder) throws IOException {
-
-		this(basePath, gsonBuilder, false);
-	}
-
-	/**
-	 * Opens an {@link N5FSWriter} at a given base path.
-	 *
-	 * If the base path does not exist, it will be created.
-	 *
-	 * If the base path exists and if the N5 version of the container is
-	 * compatible with this implementation, the N5 version of this container
-	 * will be set to the current N5 version of this implementation.
-	 *
-	 * @param basePath n5 base path
-	 * @param gsonBuilder
-	 *
-	 * @throws IOException
-	 *    if the base path cannot be written to or cannot be created,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
-	 */
-	public N5FSWriter(final String basePath) throws IOException {
-
-		this(basePath, new GsonBuilder());
 	}
 
 	/**
@@ -225,7 +121,7 @@ public class N5FSWriter extends N5KeyValueReader implements N5Writer {
 			 * This avoids synchronizing on the cache for independent
 			 * group creation.
 			 */
-			createDirectories(groupPath(normalPathName));
+			keyValueAccess.createDirectories(groupPath(normalPathName));
 			synchronized (metaCache) {
 				info = getCachedN5GroupInfo(normalPathName);
 				if (info == emptyGroupInfo) {
@@ -233,8 +129,7 @@ public class N5FSWriter extends N5KeyValueReader implements N5Writer {
 					metaCache.put(normalPathName, info);
 				}
 				for (String childPathName = normalPathName; !childPathName.equals("");) {
-					final Path parent = groupPath(childPathName).getParent();
-					final String parentPathName = fileSystem.getPath(basePath).relativize(parent).toString();
+					final String parentPathName = keyValueAccess.parent(childPathName);
 					N5GroupInfo parentInfo = getCachedN5GroupInfo(parentPathName);
 					if (parentInfo == emptyGroupInfo) {
 						parentInfo = new N5GroupInfo();
@@ -245,7 +140,7 @@ public class N5FSWriter extends N5KeyValueReader implements N5Writer {
 					if (children != null) {
 						synchronized (children) {
 							children.add(
-									parent.relativize(groupPath(childPathName)).toString());
+									keyValueAccess.relativize(childPathName, parentPathName));
 						}
 					}
 					childPathName = parentPathName;
@@ -266,7 +161,7 @@ public class N5FSWriter extends N5KeyValueReader implements N5Writer {
 					info.isDataset = false;
 			}
 		} else
-			createDirectories(groupPath(normalPathName));
+			keyValueAccess.createDirectories(groupPath(normalPathName));
 	}
 
 	@Override
@@ -297,17 +192,15 @@ public class N5FSWriter extends N5KeyValueReader implements N5Writer {
 	 * @throws IOException
 	 */
 	protected void writeAttributes(
-			final Path path,
+			final String path,
 			final Map<String, ?> attributes) throws IOException {
 
 		final HashMap<String, JsonElement> map = new HashMap<>();
 
-		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path)) {
-			map.putAll(readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name())));
+		try (final LockedChannel lock = keyValueAccess.lockForWriting(path)) {
+			map.putAll(readAttributes(lock.newReader()));
 			insertAttributes(map, attributes);
-
-			lockedFileChannel.getFileChannel().truncate(0);
-			writeAttributes(Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), map);
+			writeAttributes(lock.newWriter(), map);
 		}
 	}
 
@@ -371,11 +264,11 @@ public class N5FSWriter extends N5KeyValueReader implements N5Writer {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		final Path path = getDataBlockPath(normalize(pathName), dataBlock.getGridPosition());
-		createDirectories(path.getParent());
-		try (final LockedFileChannel lockedChannel = LockedFileChannel.openForWriting(path)) {
-			lockedChannel.getFileChannel().truncate(0);
-			DefaultBlockWriter.writeBlock(Channels.newOutputStream(lockedChannel.getFileChannel()), datasetAttributes, dataBlock);
+		final String path = getDataBlockPath(normalize(pathName), dataBlock.getGridPosition());
+		keyValueAccess.createDirectories(keyValueAccess.parent(path));
+		try (final LockedChannel lock = keyValueAccess.lockForWriting(path)) {
+
+			DefaultBlockWriter.writeBlock(lock.newOutputStream(), datasetAttributes, dataBlock);
 		}
 	}
 
@@ -383,9 +276,14 @@ public class N5FSWriter extends N5KeyValueReader implements N5Writer {
 	public boolean remove(final String pathName) throws IOException {
 
 		final String normalPathName = normalize(pathName);
-		final Path path = groupPath(normalPathName);
-		boolean exists = Files.exists(path);
+		final String path = groupPath(normalPathName);
+		boolean exists = keyValueAccess.exists(path);
 		if (exists) {
+
+			keyValueAccess.delete(normalPathName);
+
+
+
 			final Path base = fileSystem.getPath(basePath);
 			try (final Stream<Path> pathStream = Files.walk(path)) {
 				pathStream.sorted(Comparator.reverseOrder()).forEach(
