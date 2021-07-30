@@ -693,10 +693,10 @@ public class N5KeyValueReader implements N5Reader {
 	 * @return
 	 */
 	protected String getDataBlockPath(
-			final String normalDatasetPath,
+			final String normalPath,
 			final long... gridPosition) {
 
-		final StringBuilder builder = new StringBuilder(groupPath(normalDatasetPath));
+		final StringBuilder builder = new StringBuilder(groupPath(normalPath));
 
 		for (final long i : gridPosition) {
 			builder.append("/");
@@ -707,7 +707,8 @@ public class N5KeyValueReader implements N5Reader {
 	}
 
 	/**
-	 * Constructs the path for the group or dataset.
+	 * Constructs the absolute path (in terms of this store) for the group or
+	 * dataset.
 	 *
 	 * @param normalPath normalized group path without leading slash
 	 * @return
@@ -718,7 +719,8 @@ public class N5KeyValueReader implements N5Reader {
 	}
 
 	/**
-	 * Constructs the path for the attributes file of a group or dataset.
+	 * Constructs the absolute path (in terms of this store) for the attributes
+	 * file of a group or dataset.
 	 *
 	 * @param normalPath normalized group path without leading slash
 	 * @return

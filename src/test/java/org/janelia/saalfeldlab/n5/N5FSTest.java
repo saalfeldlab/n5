@@ -28,8 +28,7 @@ package org.janelia.saalfeldlab.n5;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
-import java.nio.channels.Channels;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,18 +39,18 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.janelia.saalfeldlab.n5.N5KeyValueReader.LockedFileChannel;
 import org.junit.Test;
 
 /**
  * Initiates testing of the filesystem-based N5 implementation.
  *
- * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
- * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
+ * @author Stephan Saalfeld
+ * @author Igor Pisarev
  */
 public class N5FSTest extends AbstractN5Test {
 
-	static private String testDirPath = System.getProperty("user.home") + "/tmp/n5-test";
+	private static FileSystemKeyValueAccess access = new FileSystemKeyValueAccess(FileSystems.getDefault());
+	private static String testDirPath = System.getProperty("user.home") + "/tmp/n5-test";
 
 	/**
 	 * @throws IOException
@@ -70,14 +69,14 @@ public class N5FSTest extends AbstractN5Test {
 			Files.delete(path);
 		} catch (final IOException e) {}
 
-		LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path);
-		lockedFileChannel.close();
-		lockedFileChannel = LockedFileChannel.openForReading(path);
+		LockedChannel lock = access.lockForWriting(path);
+		lock.close();
+		lock = access.lockForReading(path);
 		System.out.println("locked");
 
 		final ExecutorService exec = Executors.newSingleThreadExecutor();
 		final Future<Void> future = exec.submit(() -> {
-			LockedFileChannel.openForWriting(path).close();
+			access.lockForWriting(path).close();
 			return null;
 		});
 
@@ -92,7 +91,7 @@ public class N5FSTest extends AbstractN5Test {
 			future.cancel(true);
 			System.out.println("Test was interrupted!");
 		} finally {
-			lockedFileChannel.close();
+			lock.close();
 			Files.delete(path);
 		}
 
@@ -108,12 +107,12 @@ public class N5FSTest extends AbstractN5Test {
 			Files.delete(path);
 		} catch (final IOException e) {}
 
-		final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path);
+		final LockedChannel lock = access.lockForWriting(path);
 		System.out.println("locked");
 
 		final ExecutorService exec = Executors.newSingleThreadExecutor();
 		final Future<Void> future = exec.submit(() -> {
-			LockedFileChannel.openForReading(path).close();
+			access.lockForReading(path).close();
 			return null;
 		});
 
@@ -128,7 +127,7 @@ public class N5FSTest extends AbstractN5Test {
 			future.cancel(true);
 			System.out.println("Test was interrupted!");
 		} finally {
-			lockedFileChannel.close();
+			lock.close();
 			Files.delete(path);
 		}
 
@@ -143,16 +142,16 @@ public class N5FSTest extends AbstractN5Test {
 			Files.delete(path);
 		} catch (final IOException e) {}
 
-		final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path);
+		final LockedChannel lock = access.lockForWriting(path);
 		System.out.println("locked");
 
-		Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()).close();
+		lock.newReader().close();
 		System.out.println("reader released");
 
 
 		final ExecutorService exec = Executors.newSingleThreadExecutor();
 		final Future<Void> future = exec.submit(() -> {
-			LockedFileChannel.openForWriting(path).close();
+			access.lockForWriting(path).close();
 			return null;
 		});
 
@@ -166,7 +165,7 @@ public class N5FSTest extends AbstractN5Test {
 			future.cancel(true);
 			System.out.println("Test was interrupted!");
 		} finally {
-			lockedFileChannel.close();
+			lock.close();
 			Files.delete(path);
 		}
 
@@ -183,15 +182,15 @@ public class N5FSTest extends AbstractN5Test {
 			Files.delete(path);
 		} catch (final IOException e) {}
 
-		final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path);
+		final LockedChannel lock = access.lockForWriting(path);
 		System.out.println("locked");
 
-		Channels.newInputStream(lockedFileChannel.getFileChannel()).close();
+		lock.newInputStream().close();
 		System.out.println("input stream released");
 
 		final ExecutorService exec = Executors.newSingleThreadExecutor();
 		final Future<Void> future = exec.submit(() -> {
-			LockedFileChannel.openForWriting(path).close();
+			access.lockForWriting(path).close();
 			return null;
 		});
 
@@ -205,7 +204,7 @@ public class N5FSTest extends AbstractN5Test {
 			future.cancel(true);
 			System.out.println("Test was interrupted!");
 		} finally {
-			lockedFileChannel.close();
+			lock.close();
 			Files.delete(path);
 		}
 

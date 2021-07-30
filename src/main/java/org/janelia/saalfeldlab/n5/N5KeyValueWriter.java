@@ -28,15 +28,9 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Type;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.stream.Stream;
-
-import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess.LockedFileChannel;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -104,13 +98,13 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	/**
 	 * Helper method to create and cache a group.
 	 *
-	 * @param normalPathName normalized group path without leading slash
+	 * @param normalPath normalized group path without leading slash
 	 * @return
 	 * @throws IOException
 	 */
-	protected N5GroupInfo createCachedGroup(final String normalPathName) throws IOException {
+	protected N5GroupInfo createCachedGroup(final String normalPath) throws IOException {
 
-		N5GroupInfo info = getCachedN5GroupInfo(normalPathName);
+		N5GroupInfo info = getCachedN5GroupInfo(normalPath);
 		if (info == emptyGroupInfo) {
 
 			/* The directories may be created multiple times concurrently,
@@ -121,14 +115,14 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 			 * This avoids synchronizing on the cache for independent
 			 * group creation.
 			 */
-			keyValueAccess.createDirectories(groupPath(normalPathName));
+			keyValueAccess.createDirectories(groupPath(normalPath));
 			synchronized (metaCache) {
-				info = getCachedN5GroupInfo(normalPathName);
+				info = getCachedN5GroupInfo(normalPath);
 				if (info == emptyGroupInfo) {
 					info = new N5GroupInfo();
-					metaCache.put(normalPathName, info);
+					metaCache.put(normalPath, info);
 				}
-				for (String childPathName = normalPathName; !childPathName.equals("");) {
+				for (String childPathName = normalPath; !childPathName.equals("");) {
 					final String parentPathName = keyValueAccess.parent(childPathName);
 					N5GroupInfo parentInfo = getCachedN5GroupInfo(parentPathName);
 					if (parentInfo == emptyGroupInfo) {
@@ -151,34 +145,34 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	}
 
 	@Override
-	public void createGroup(final String pathName) throws IOException {
+	public void createGroup(final String path) throws IOException {
 
-		final String normalPathName = normalize(pathName);
+		final String normalPath = normalize(path);
 		if (cacheMeta) {
-			final N5GroupInfo info = createCachedGroup(normalPathName);
+			final N5GroupInfo info = createCachedGroup(normalPath);
 			synchronized (info) {
 				if (info.isDataset == null)
 					info.isDataset = false;
 			}
 		} else
-			keyValueAccess.createDirectories(groupPath(normalPathName));
+			keyValueAccess.createDirectories(groupPath(normalPath));
 	}
 
 	@Override
 	public void createDataset(
-			final String pathName,
+			final String path,
 			final DatasetAttributes datasetAttributes) throws IOException {
 
-		final String normalPathName = normalize(pathName);
+		final String normalPath = normalize(path);
 		if (cacheMeta) {
-			final N5GroupInfo info = createCachedGroup(normalPathName);
+			final N5GroupInfo info = createCachedGroup(normalPath);
 			synchronized (info) {
-				setDatasetAttributes(normalPathName, datasetAttributes);
+				setDatasetAttributes(normalPath, datasetAttributes);
 				info.isDataset = true;
 			}
 		} else {
-			createGroup(pathName);
-			setDatasetAttributes(normalPathName, datasetAttributes);
+			createGroup(path);
+			setDatasetAttributes(normalPath, datasetAttributes);
 		}
 	}
 
@@ -219,28 +213,28 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	/**
 	 * Helper method to cache and write attributes.
 	 *
-	 * @param normalPathName normalized group path without leading slash
+	 * @param normalPath normalized group path without leading slash
 	 * @param attributes
 	 * @param isDataset
 	 * @return
 	 * @throws IOException
 	 */
 	protected N5GroupInfo setCachedAttributes(
-			final String normalPathName,
+			final String normalPath,
 			final Map<String, ?> attributes) throws IOException {
 
-		N5GroupInfo info = getCachedN5GroupInfo(normalPathName);
+		N5GroupInfo info = getCachedN5GroupInfo(normalPath);
 		if (info == emptyGroupInfo) {
 			synchronized (metaCache) {
-				info = getCachedN5GroupInfo(normalPathName);
+				info = getCachedN5GroupInfo(normalPath);
 				if (info == emptyGroupInfo)
-					throw new IOException("N5 group '" + normalPathName + "' does not exist. Cannot set attributes.");
+					throw new IOException("N5 group '" + normalPath + "' does not exist. Cannot set attributes.");
 			}
 		}
-		final HashMap<String, Object> cachedMap = getCachedAttributes(info, normalPathName);
+		final HashMap<String, Object> cachedMap = getCachedAttributes(info, normalPath);
 		synchronized (info) {
 			cachedMap.putAll(attributes);
-			writeAttributes(attributesPath(normalPathName), attributes);
+			writeAttributes(attributesPath(normalPath), attributes);
 			info.isDataset = hasCachedDatasetAttributes(cachedMap);
 		}
 		return info;
@@ -248,97 +242,80 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 
 	@Override
 	public void setAttributes(
-			final String pathName,
+			final String path,
 			final Map<String, ?> attributes) throws IOException {
 
-		final String normalPathName = normalize(pathName);
+		final String normalPath = normalize(path);
 		if (cacheMeta)
-			setCachedAttributes(normalPathName, attributes);
+			setCachedAttributes(normalPath, attributes);
 		else
-			writeAttributes(attributesPath(normalPathName), attributes);
+			writeAttributes(attributesPath(normalPath), attributes);
 	}
 
 	@Override
 	public <T> void writeBlock(
-			final String pathName,
+			final String path,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		final String path = getDataBlockPath(normalize(pathName), dataBlock.getGridPosition());
-		keyValueAccess.createDirectories(keyValueAccess.parent(path));
-		try (final LockedChannel lock = keyValueAccess.lockForWriting(path)) {
+		final String blockPath = getDataBlockPath(normalize(path), dataBlock.getGridPosition());
+		keyValueAccess.createDirectories(keyValueAccess.parent(blockPath));
+		try (final LockedChannel lock = keyValueAccess.lockForWriting(blockPath)) {
 
 			DefaultBlockWriter.writeBlock(lock.newOutputStream(), datasetAttributes, dataBlock);
 		}
 	}
 
 	@Override
-	public boolean remove(final String pathName) throws IOException {
+	public boolean remove(final String path) throws IOException {
 
-		final String normalPathName = normalize(pathName);
-		final String path = groupPath(normalPathName);
-		boolean exists = keyValueAccess.exists(path);
-		if (exists) {
+		final String normalPath = normalize(path);
+		final String groupPath = groupPath(normalPath);
+		if (cacheMeta) {
+			synchronized (metaCache) {
+				if (keyValueAccess.exists(groupPath)) {
+					keyValueAccess.delete(groupPath);
 
-			keyValueAccess.delete(normalPathName);
+					/* cache nonexistence for all prior children */
+					for (final String key : metaCache.keySet()) {
+						if (key.startsWith(normalPath))
+							metaCache.put(normalPath, emptyGroupInfo);
+					}
 
-
-
-			final Path base = fileSystem.getPath(basePath);
-			try (final Stream<Path> pathStream = Files.walk(path)) {
-				pathStream.sorted(Comparator.reverseOrder()).forEach(
-						childPath -> {
-							if (Files.isRegularFile(childPath)) {
-								try (final LockedFileChannel channel = LockedFileChannel.openForWriting(childPath)) {
-									Files.delete(childPath);
-								} catch (final IOException e) {
-									e.printStackTrace();
-								}
-							} else {
-								if (cacheMeta) {
-									synchronized (metaCache) {
-										metaCache.put(base.relativize(childPath).toString(), emptyGroupInfo);
-										tryDelete(childPath);
-									}
-								} else {
-									tryDelete(childPath);
-								}
+					/* remove child from parent */
+					final String parentPath = keyValueAccess.parent(normalPath);
+					final N5GroupInfo parent = metaCache.get(parentPath);
+					if (parent != null) {
+						final HashSet<String> children = parent.children;
+						if (children != null) {
+							synchronized (children) {
+								children.remove(keyValueAccess.relativize(normalPath, parentPath));
 							}
-						});
-			}
-			if (cacheMeta) {
-				if (!normalPathName.equals("")) { // not root
-					final Path parent = groupPath(normalPathName).getParent();
-					final N5GroupInfo parentInfo = getCachedN5GroupInfo(
-							fileSystem.getPath(basePath).relativize(parent).toString()); // group must exist
-					final HashSet<String> children = parentInfo.children;
-					if (children != null) {
-						synchronized (children) {
-							exists = Files.exists(path);
-							if (exists)
-								children.remove(
-										parent.relativize(fileSystem.getPath(normalPathName)).toString());
 						}
 					}
 				}
-			} else
-				exists = Files.exists(path);
+			}
+		} else {
+			if (keyValueAccess.exists(groupPath))
+				keyValueAccess.delete(groupPath);
 		}
-		return !exists;
+
+		/* an IOException should have occurred if anything had failed midway */
+		return true;
 	}
 
 	@Override
 	public boolean deleteBlock(
-			final String pathName,
+			final String path,
 			final long... gridPosition) throws IOException {
 
-		final Path path = getDataBlockPath(normalize(pathName), gridPosition);
-		if (Files.exists(path))
-			try (final LockedFileChannel channel = LockedFileChannel.openForWriting(path)) {
-				Files.deleteIfExists(path);
+		final String blockPath = getDataBlockPath(normalize(path), gridPosition);
+		if (keyValueAccess.exists(blockPath))
+			try (final LockedChannel channel = keyValueAccess.lockForWriting(blockPath)) {
+				keyValueAccess.delete(blockPath);
 			}
-		return !Files.exists(path);
+
+		/* an IOException should have occurred if anything had failed midway */
+		return true;
 	}
-
-
 }

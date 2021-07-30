@@ -163,8 +163,7 @@ public interface KeyValueAccess {
 	public void createDirectories(final String normalPath) throws IOException;
 
 	/**
-	 * Delete this path.  This is only for empty leaves of the tree, not
-	 * expected to work recursively.
+	 * Delete a path.  If the path is a directory, delete it recursively.
 	 *
 	 * @param normalPath is expected to be in normalized form, no further
 	 * 		efforts are made to normalize it.

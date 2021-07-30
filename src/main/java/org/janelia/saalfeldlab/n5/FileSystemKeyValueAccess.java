@@ -45,6 +45,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.stream.Stream;
 
 /**
@@ -256,41 +257,43 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public void delete(final String normalPath) throws IOException {
 
 		final Path path = fileSystem.getPath(normalPath);
-		try (final Stream<Path> pathStream = Files.walk(path)) {
-			pathStream.sorted(Comparator.reverseOrder()).forEach(
-					childPath -> {
-						if (Files.isRegularFile(childPath)) {
-							try (final LockedChannel channel = lockForWriting(childPath)) {
-								Files.delete(childPath);
-							} catch (final IOException e) {
-								e.printStackTrace();
-							}
-						} else {
-							tryDelete(childPath);
+		if (Files.isRegularFile(path)) {
+			try (final LockedChannel channel = lockForWriting(path)) {
+				Files.delete(path);
+			}
+		} else {
+			try (final Stream<Path> pathStream = Files.walk(path)) {
+				for (final Iterator<Path> i = pathStream.sorted(Comparator.reverseOrder()).iterator(); i.hasNext();) {
+					final Path childPath = i.next();
+					if (Files.isRegularFile(childPath)) {
+						try (final LockedChannel channel = lockForWriting(childPath)) {
+							Files.delete(childPath);
 						}
-					});
+					} else {
+						tryDelete(childPath);
+					}
+				}
+			}
 		}
 	}
 
-	protected static void tryDelete(final Path childPath) {
+	protected static void tryDelete(final Path path) throws IOException {
 
 		try {
-			Files.delete(childPath);
+			Files.delete(path);
 		} catch (final DirectoryNotEmptyException e) {
-			// Even though childPath should be an empty directory, sometimes the deletion fails on network file
-			// when lock files are not cleared immediately after the leaves have been removed.
+			/* Even though path is expected to be an empty directory, sometimes
+			 * deletion fails on network filesystems when lock files are not
+			 * cleared immediately after the leaves have been removed.
+			 */
 			try {
-				// wait and reattempt
+				/* wait and reattempt */
 				Thread.sleep(100);
-				Files.delete(childPath);
+				Files.delete(path);
 			} catch (final InterruptedException ex) {
 				e.printStackTrace();
 				Thread.currentThread().interrupt();
-			} catch (final IOException ex) {
-				ex.printStackTrace();
 			}
-		} catch (final IOException e) {
-			e.printStackTrace();
 		}
 	}
 
