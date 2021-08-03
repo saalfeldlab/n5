@@ -536,7 +536,7 @@ public abstract class AbstractN5Test {
 
 			final List<String> datasetList = Arrays.asList(n5.deepList("/"));
 			final N5Writer n5Writer = n5;
-			System.out.println(datasetList);
+
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetList.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 			Assert.assertTrue("deepList contents", datasetList.contains(datasetName.replaceFirst("/", "")));
@@ -740,7 +740,7 @@ public abstract class AbstractN5Test {
 
 		final Version n5Version = n5.getVersion();
 
-		System.out.println(n5Version);
+//		System.out.println(n5Version);
 
 		Assert.assertTrue(n5Version.equals(N5Reader.VERSION));
 
@@ -784,6 +784,7 @@ public abstract class AbstractN5Test {
 	}
 
 	protected boolean testDeleteIsBlockDeleted(final DataBlock<?> dataBlock) {
+
 		return dataBlock == null;
 	}
 }

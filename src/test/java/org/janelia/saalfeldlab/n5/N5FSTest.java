@@ -50,7 +50,7 @@ import org.junit.Test;
 public class N5FSTest extends AbstractN5Test {
 
 	private static FileSystemKeyValueAccess access = new FileSystemKeyValueAccess(FileSystems.getDefault());
-	private static String testDirPath = System.getProperty("user.home") + "/tmp/n5-test";
+	private static String testDirPath = System.getProperty("user.home") + "/tmp/n5-test.n5";
 
 	/**
 	 * @throws IOException
@@ -61,7 +61,7 @@ public class N5FSTest extends AbstractN5Test {
 		return new N5FSWriter(testDirPath, false);
 	}
 
-	@Test
+//	@Test
 	public void testReadLock() throws IOException, InterruptedException {
 
 		final Path path = Paths.get(testDirPath, "lock");
@@ -99,7 +99,7 @@ public class N5FSTest extends AbstractN5Test {
 	}
 
 
-	@Test
+//	@Test
 	public void testWriteLock() throws IOException {
 
 		final Path path = Paths.get(testDirPath, "lock");
@@ -137,17 +137,16 @@ public class N5FSTest extends AbstractN5Test {
 	@Test
 	public void testLockReleaseByReader() throws IOException {
 
+		System.out.println("Testing lock release by Reader.");
+
 		final Path path = Paths.get(testDirPath, "lock");
 		try {
 			Files.delete(path);
 		} catch (final IOException e) {}
 
 		final LockedChannel lock = access.lockForWriting(path);
-		System.out.println("locked");
 
 		lock.newReader().close();
-		System.out.println("reader released");
-
 
 		final ExecutorService exec = Executors.newSingleThreadExecutor();
 		final Future<Void> future = exec.submit(() -> {
@@ -156,20 +155,17 @@ public class N5FSTest extends AbstractN5Test {
 		});
 
 		try {
-			System.out.println("Trying to acquire locked readable channel...");
 			future.get(3, TimeUnit.SECONDS);
 		} catch (final TimeoutException e) {
-			fail("Lock not released!");
+			fail("... lock not released!");
 			future.cancel(true);
 		} catch (final InterruptedException | ExecutionException e) {
 			future.cancel(true);
-			System.out.println("Test was interrupted!");
+			System.out.println("... test interrupted!");
 		} finally {
 			lock.close();
 			Files.delete(path);
 		}
-
-		System.out.println("Lock was successfully released.");
 
 		exec.shutdownNow();
 	}
@@ -177,16 +173,16 @@ public class N5FSTest extends AbstractN5Test {
 	@Test
 	public void testLockReleaseByInputStream() throws IOException {
 
+		System.out.println("Testing lock release by InputStream.");
+
 		final Path path = Paths.get(testDirPath, "lock");
 		try {
 			Files.delete(path);
 		} catch (final IOException e) {}
 
 		final LockedChannel lock = access.lockForWriting(path);
-		System.out.println("locked");
 
 		lock.newInputStream().close();
-		System.out.println("input stream released");
 
 		final ExecutorService exec = Executors.newSingleThreadExecutor();
 		final Future<Void> future = exec.submit(() -> {
@@ -195,25 +191,22 @@ public class N5FSTest extends AbstractN5Test {
 		});
 
 		try {
-			System.out.println("Trying to acquire locked readable channel...");
 			future.get(3, TimeUnit.SECONDS);
 		} catch (final TimeoutException e) {
-			fail("Lock not released!");
+			fail("... lock not released!");
 			future.cancel(true);
 		} catch (final InterruptedException | ExecutionException e) {
 			future.cancel(true);
-			System.out.println("Test was interrupted!");
+			System.out.println("... test interrupted!");
 		} finally {
 			lock.close();
 			Files.delete(path);
 		}
 
-		System.out.println("Lock was successfully released.");
-
 		exec.shutdownNow();
 	}
 
-//	@Test
+	@Test
 	public void testCache() {
 
 		final N5Writer n5Writer = n5;

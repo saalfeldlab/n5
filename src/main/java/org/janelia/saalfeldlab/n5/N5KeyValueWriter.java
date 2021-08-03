@@ -122,8 +122,10 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 					info = new N5GroupInfo();
 					metaCache.put(normalPath, info);
 				}
-				for (String childPathName = normalPath; !childPathName.equals("");) {
+				for (String childPathName = normalPath; !(childPathName == null || childPathName.equals(""));) {
 					final String parentPathName = keyValueAccess.parent(childPathName);
+					if (parentPathName == null)
+						break;
 					N5GroupInfo parentInfo = getCachedN5GroupInfo(parentPathName);
 					if (parentInfo == emptyGroupInfo) {
 						parentInfo = new N5GroupInfo();
@@ -279,7 +281,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 					/* cache nonexistence for all prior children */
 					for (final String key : metaCache.keySet()) {
 						if (key.startsWith(normalPath))
-							metaCache.put(normalPath, emptyGroupInfo);
+							metaCache.put(key, emptyGroupInfo);
 					}
 
 					/* remove child from parent */
@@ -311,9 +313,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 
 		final String blockPath = getDataBlockPath(normalize(path), gridPosition);
 		if (keyValueAccess.exists(blockPath))
-			try (final LockedChannel channel = keyValueAccess.lockForWriting(blockPath)) {
-				keyValueAccess.delete(blockPath);
-			}
+			keyValueAccess.delete(blockPath);
 
 		/* an IOException should have occurred if anything had failed midway */
 		return true;

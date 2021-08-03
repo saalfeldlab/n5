@@ -257,21 +257,21 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public void delete(final String normalPath) throws IOException {
 
 		final Path path = fileSystem.getPath(normalPath);
-		if (Files.isRegularFile(path)) {
+
+		if (Files.isRegularFile(path))
 			try (final LockedChannel channel = lockForWriting(path)) {
 				Files.delete(path);
 			}
-		} else {
+		else {
 			try (final Stream<Path> pathStream = Files.walk(path)) {
 				for (final Iterator<Path> i = pathStream.sorted(Comparator.reverseOrder()).iterator(); i.hasNext();) {
 					final Path childPath = i.next();
-					if (Files.isRegularFile(childPath)) {
+					if (Files.isRegularFile(childPath))
 						try (final LockedChannel channel = lockForWriting(childPath)) {
 							Files.delete(childPath);
 						}
-					} else {
+					else
 						tryDelete(childPath);
-					}
 				}
 			}
 		}
