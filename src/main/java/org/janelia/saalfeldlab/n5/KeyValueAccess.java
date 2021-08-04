@@ -47,6 +47,14 @@ public interface KeyValueAccess {
 	public String[] components(final String path);
 
 	/**
+	 * Compose a path from components.
+	 *
+	 * @param components
+	 * @return
+	 */
+	public String compose(final String... components);
+
+	/**
 	 * Get the parent of a path string.
 	 *
 	 * @param path

@@ -696,14 +696,14 @@ public class N5KeyValueReader implements N5Reader {
 			final String normalPath,
 			final long... gridPosition) {
 
-		final StringBuilder builder = new StringBuilder(groupPath(normalPath));
+		final String[] components = new String[gridPosition.length + 2];
+		components[0] = basePath;
+		components[1] = normalPath;
+		int i = 1;
+		for (final long p : gridPosition)
+			components[++i] = Long.toString(p);
 
-		for (final long i : gridPosition) {
-			builder.append("/");
-			builder.append(i);
-		}
-
-		return builder.toString();
+		return keyValueAccess.compose(components);
 	}
 
 	/**
@@ -715,7 +715,7 @@ public class N5KeyValueReader implements N5Reader {
 	 */
 	protected String groupPath(final String normalPath) {
 
-		return basePath + "/" + normalPath;
+		return keyValueAccess.compose(basePath, normalPath);
 	}
 
 	/**
@@ -727,7 +727,7 @@ public class N5KeyValueReader implements N5Reader {
 	 */
 	protected String attributesPath(final String normalPath) {
 
-		return groupPath(normalPath) + "/" + jsonFile;
+		return keyValueAccess.compose(basePath, normalPath, jsonFile);
 	}
 
 	/**

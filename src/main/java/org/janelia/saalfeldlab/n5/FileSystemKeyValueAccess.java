@@ -44,6 +44,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.stream.Stream;
@@ -245,6 +246,16 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public String normalize(final String path) {
 
 		return fileSystem.getPath(path).normalize().toString();
+	}
+
+	@Override
+	public String compose(final String... components) {
+
+		if (components == null || components.length == 0)
+			return null;
+		if (components.length == 1)
+			return fileSystem.getPath(components[0]).toString();
+		return fileSystem.getPath(components[0], Arrays.copyOfRange(components, 1, components.length)).toString();
 	}
 
 	@Override
