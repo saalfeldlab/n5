@@ -261,7 +261,6 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 			final DataBlock<T> dataBlock) throws IOException {
 
 		final String blockPath = getDataBlockPath(normalize(path), dataBlock.getGridPosition());
-		keyValueAccess.createDirectories(keyValueAccess.parent(blockPath));
 		try (final LockedChannel lock = keyValueAccess.lockForWriting(blockPath)) {
 
 			DefaultBlockWriter.writeBlock(lock.newOutputStream(), datasetAttributes, dataBlock);

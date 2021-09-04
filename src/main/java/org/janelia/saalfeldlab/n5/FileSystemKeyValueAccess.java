@@ -75,8 +75,22 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		protected LockedFileChannel(final Path path, final boolean readOnly) throws IOException {
 
-			final OpenOption[] options = readOnly ? new OpenOption[]{StandardOpenOption.READ} : new OpenOption[]{StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE};
-			channel = FileChannel.open(path, options);
+			final OpenOption[] options;
+			if (readOnly) {
+				options = new OpenOption[]{StandardOpenOption.READ};
+				channel = FileChannel.open(path, options);
+			} else {
+				options = new OpenOption[]{StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE};
+				FileChannel tryChannel = null;
+				try {
+					tryChannel = FileChannel.open(path, options);
+				} catch (final NoSuchFileException e) {
+					createDirectories(path.getParent());
+					tryChannel = FileChannel.open(path, options);
+				} finally {
+					channel = tryChannel;
+				}
+			}
 
 			for (boolean waiting = true; waiting;) {
 				waiting = false;

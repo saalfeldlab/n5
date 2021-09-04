@@ -125,8 +125,9 @@ public interface KeyValueAccess {
 	public LockedChannel lockForReading(final String normalPath) throws IOException;
 
 	/**
-	 * Create an exclusive lock on a path for writing.  This isn't meant to be
-	 * kept around.  Create, use, [auto]close, e.g.
+	 * Create an exclusive lock on a path for writing.  If the file doesn't
+	 * exist yet, it will be created, including all directories leading up to
+	 * it.  This lock isn't meant to be kept around.  Create, use, [auto]close, e.g.
 	 * <code>
 	 * try (final lock = store.lockForWriting()) {
 	 *   ...
