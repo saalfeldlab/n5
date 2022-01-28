@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
-		<version>30.0.0</version>
+		<version>31.1.0</version>
 		<relativePath />
 	</parent>
 
@@ -102,6 +102,7 @@
 
 		<!-- NB: Deploy releases to the SciJava Maven repository. -->
 		<releaseProfiles>deploy-to-scijava</releaseProfiles>
+		<cisd.jhdf5.version>19.04.0</cisd.jhdf5.version>
 
 		<commons-collections4.version>4.2</commons-collections4.version>
 	</properties>
@@ -144,6 +145,7 @@
 		<dependency>
 			<groupId>cisd</groupId>
 			<artifactId>jhdf5</artifactId>
+			<version>${cisd.jhdf5.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
