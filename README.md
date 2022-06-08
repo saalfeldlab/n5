@@ -1,4 +1,4 @@
-# N5 [![Build Status](https://travis-ci.com/saalfeldlab/n5.svg?branch=master)](https://travis-ci.com/saalfeldlab/n5) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6578231.svg)](https://doi.org/10.5281/zenodo.6578231)
+# N5 [![Build Status](https://travis-ci.com/saalfeldlab/n5.svg?branch=master)](https://travis-ci.com/saalfeldlab/n5)
 
 The N5 API specifies the primitive operations needed to store large chunked n-dimensional tensors, and arbitrary meta-data in a hierarchy of groups similar to HDF5.
 
