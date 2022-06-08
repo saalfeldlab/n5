@@ -54,12 +54,14 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	/**
 	 * Opens an {@link N5FSWriter} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
-	 *
+	 * <p>
 	 * If the base path does not exist, it will be created.
-	 *
+	 * </p>
+	 * <p>
 	 * If the base path exists and if the N5 version of the container is
 	 * compatible with this implementation, the N5 version of this container
 	 * will be set to the current N5 version of this implementation.
+	 * </p>
 	 *
 	 * @param basePath n5 base path
 	 * @param gsonBuilder
@@ -78,15 +80,16 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 
 	/**
 	 * Opens an {@link N5FSWriter} at a given base path.
-	 *
+	 * <p>
 	 * If the base path does not exist, it will be created.
-	 *
+	 * </p>
+	 * <p>
 	 * If the base path exists and if the N5 version of the container is
 	 * compatible with this implementation, the N5 version of this container
 	 * will be set to the current N5 version of this implementation.
+	 * </p>
 	 *
 	 * @param basePath n5 base path
-	 * @param gsonBuilder
 	 * @throws IOException
 	 *    if the base path cannot be written to or cannot be created,
 	 *    if the N5 version of the container is not compatible with this
