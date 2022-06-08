@@ -35,7 +35,7 @@ import java.util.HashMap;
  * <li>long[] : dimensions</li>
  * <li>int[] : blockSize</li>
  * <li>{@link DataType} : dataType</li>
- * <li>{@link CompressionScheme} : compressionType</li>
+ * <li>{@link Compression} : compression</li>
  * </ol>
  *
  * @author Stephan Saalfeld
