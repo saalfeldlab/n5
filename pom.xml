@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
-		<version>30.0.0</version>
+		<version>31.1.0</version>
 		<relativePath />
 	</parent>
 
@@ -104,6 +104,9 @@
 		<releaseProfiles>deploy-to-scijava</releaseProfiles>
 
 		<commons-collections4.version>4.2</commons-collections4.version>
+
+		<maven-enforcer-plugin.version>3.0.0-M3</maven-enforcer-plugin.version>
+		<jacoco-maven-plugin.version>0.8.6</jacoco-maven-plugin.version>
 
 		<n5-spec.version>2.6.1</n5-spec.version>
 	</properties>
