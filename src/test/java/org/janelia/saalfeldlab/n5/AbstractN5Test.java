@@ -18,6 +18,7 @@ package org.janelia.saalfeldlab.n5;
 
 import static org.junit.Assert.fail;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -129,7 +130,14 @@ public abstract class AbstractN5Test {
 
 		final Path groupPath = Paths.get(groupName);
 		for (int i = 0; i < groupPath.getNameCount(); ++i)
-			if (!n5.exists(groupPath.subpath(0, i + 1).toString()))
+			//replace backslashes in case of windows
+			if (
+				!n5.exists(
+					groupPath.subpath(0, i + 1)
+					.toString()
+					.replace(File.separatorChar, '/')
+				)
+			)
 				fail("Group does not exist");
 	}
 
@@ -499,6 +507,7 @@ public abstract class AbstractN5Test {
 		try {
 
 			// clear container to start
+			// breaks with n5-hdf5
 			n5.remove();
 
 			n5.createGroup(groupName);
@@ -676,7 +685,7 @@ public abstract class AbstractN5Test {
 			n5.setAttribute(datasetName2, "attr3", 1.1);
 			n5.setAttribute(datasetName2, "attr4", "a");
 			n5.setAttribute(datasetName2, "attr5", new long[] {1, 2, 3});
-			n5.setAttribute(datasetName2, "attr6", 1);
+			n5.setAttribute(datasetName2, "attr6", 1L);
 			n5.setAttribute(datasetName2, "attr7", new double[] {1, 2, 3.1});
 			n5.setAttribute(datasetName2, "attr8", new Object[] {"1", 2, 3.1});
 
@@ -688,7 +697,10 @@ public abstract class AbstractN5Test {
 			Assert.assertTrue(attributesMap.get("attr5") == long[].class);
 			Assert.assertTrue(attributesMap.get("attr6") == long.class);
 			Assert.assertTrue(attributesMap.get("attr7") == double[].class);
-			Assert.assertTrue(attributesMap.get("attr8") == Object[].class);
+			Assert.assertTrue(
+				attributesMap.get("attr8") == Object[].class ||
+				attributesMap.get("attr8") == String.class
+			);
 
 			n5.createGroup(groupName2);
 			n5.setAttribute(groupName2, "attr1", new double[] {1.1, 2.1, 3.1});
@@ -696,7 +708,7 @@ public abstract class AbstractN5Test {
 			n5.setAttribute(groupName2, "attr3", 1.1);
 			n5.setAttribute(groupName2, "attr4", "a");
 			n5.setAttribute(groupName2, "attr5", new long[] {1, 2, 3});
-			n5.setAttribute(groupName2, "attr6", 1);
+			n5.setAttribute(groupName2, "attr6", 1L);
 			n5.setAttribute(groupName2, "attr7", new double[] {1, 2, 3.1});
 			n5.setAttribute(groupName2, "attr8", new Object[] {"1", 2, 3.1});
 
@@ -708,7 +720,10 @@ public abstract class AbstractN5Test {
 			Assert.assertTrue(attributesMap.get("attr5") == long[].class);
 			Assert.assertTrue(attributesMap.get("attr6") == long.class);
 			Assert.assertTrue(attributesMap.get("attr7") == double[].class);
-			Assert.assertTrue(attributesMap.get("attr8") == Object[].class);
+			Assert.assertTrue(
+				attributesMap.get("attr8") == Object[].class ||
+				attributesMap.get("attr8") == String.class
+			);
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
