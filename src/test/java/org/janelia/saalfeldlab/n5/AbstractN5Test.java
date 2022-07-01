@@ -131,13 +131,9 @@ public abstract class AbstractN5Test {
 		final Path groupPath = Paths.get(groupName);
 		for (int i = 0; i < groupPath.getNameCount(); ++i)
 			//replace backslashes in case of windows
-			if (
-				!n5.exists(
-					groupPath.subpath(0, i + 1)
+			if (!n5.exists(groupPath.subpath(0, i + 1)
 					.toString()
-					.replace(File.separatorChar, '/')
-				)
-			)
+					.replace(File.separatorChar, '/')))
 				fail("Group does not exist");
 	}
 
