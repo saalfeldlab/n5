@@ -75,7 +75,7 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 		if (useZlib) {
 			return new InflaterInputStream(in);
 		} else {
-			return new GzipCompressorInputStream(in);
+			return new GzipCompressorInputStream(in,true);
 		}
 	}
 
