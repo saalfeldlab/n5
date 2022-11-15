@@ -138,4 +138,24 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 		final HashMap<String, JsonElement> map = getAttributes(pathName);
 		return GsonAttributesParser.parseAttribute(map, key, type, getGson());
 	}
+
+	@Override
+	public <T> T getAttributeURL(
+			final String context,
+			final String url,
+			final Class<T> clazz) throws IOException {
+
+		// TODO implement me
+		return null;
+	}
+
+	@Override
+	public <T> T getAttributeURL(
+			final String context,
+			final String url,
+			final Type type) throws IOException {
+
+		// TODO implement me
+		return null;
+	}
 }
