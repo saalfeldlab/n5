@@ -140,19 +140,16 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 	}
 
 	@Override
-	public <T> T getAttributeURL(
-			final String context,
-			final String url,
+	public <T> T getAttribute(
+			final N5URL url,
 			final Class<T> clazz) throws IOException {
 
-		// TODO implement me
 		return null;
 	}
 
 	@Override
-	public <T> T getAttributeURL(
-			final String context,
-			final String url,
+	public <T> T getAttribute(
+			final N5URL url,
 			final Type type) throws IOException {
 
 		// TODO implement me

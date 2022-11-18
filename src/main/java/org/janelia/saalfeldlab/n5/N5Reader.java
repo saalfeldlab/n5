@@ -260,9 +260,8 @@ public interface N5Reader extends AutoCloseable {
 	 * @return
 	 * @throws IOException
 	 */
-	public <T> T getAttributeURL(
-			final String context,
-			final String url,
+	public <T> T getAttribute(
+			final N5URL url,
 			final Class<T> clazz) throws IOException;
 
 	/**
@@ -276,9 +275,8 @@ public interface N5Reader extends AutoCloseable {
 	 * @return
 	 * @throws IOException
 	 */
-	public <T> T getAttributeURL(
-			final String context,
-			final String url,
+	public <T> T getAttribute(
+			final N5URL url,
 			final Type type) throws IOException;
 
 	/**
