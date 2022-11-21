@@ -1,16 +1,16 @@
 /**
  * Copyright (c) 2017, Stephan Saalfeld
  * All rights reserved.
- *
+ * <p>
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * <p>
  * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
+ * this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * <p>
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -25,14 +25,28 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.HashMap;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+
+import java.io.IOException;
+import java.io.PipedReader;
+import java.io.PipedWriter;
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Abstract base class implementing {@link N5Reader} with JSON attributes
@@ -43,6 +57,8 @@ import com.google.gson.JsonElement;
  * @author Philipp Hanslovsky
  */
 public abstract class AbstractGsonReader implements GsonAttributesParser, N5Reader {
+
+	private static final Pattern ARRAY_INDEX = Pattern.compile("\\[([0-9]+)]");
 
 	protected final Gson gson;
 
@@ -144,7 +160,145 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 			final N5URL url,
 			final Class<T> clazz) throws IOException {
 
-		return null;
+		Type mapType = new TypeToken<Map<String, Object>>() {
+
+		}.getType();
+		TypeAdapter<JsonElement> jsonElementTypeAdapter = gson.getAdapter(JsonElement.class);
+		HashMap<String, JsonElement> map = getAttributes(url.resolveDataset());
+
+		final String attributePath = url.resolveAttribute();
+		JsonElement json = null;
+		for (final String pathPart : attributePath.split("/")) {
+			if (pathPart.isEmpty())
+				continue;
+			if (map.containsKey(pathPart)) {
+				json = map.get(pathPart);
+			} else if (json instanceof JsonObject && json.getAsJsonObject().get(pathPart) != null) {
+				json = json.getAsJsonObject().get(pathPart);
+			} else {
+				final Matcher matcher = ARRAY_INDEX.matcher(pathPart);
+				if (json != null && json.isJsonArray() && matcher.matches()) {
+					final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
+					json = json.getAsJsonArray().get(index);
+				}
+			}
+		}
+		if (json == null && clazz.isAssignableFrom(HashMap.class)) {
+			/* reconstruct the tree to parse as Object */
+			final PipedWriter writer = new PipedWriter();
+			//TODO: writer blocks if there is not enough space for new content. What do we want to do here?
+			final PipedReader in = new PipedReader(writer, 1000);
+
+			final JsonWriter out = new JsonWriter(writer);
+			out.beginObject();
+			for (Map.Entry<String, JsonElement> entry : map.entrySet()) {
+				String k = entry.getKey();
+				JsonElement val = entry.getValue();
+				out.name(k);
+				jsonElementTypeAdapter.write(out, val);
+			}
+			out.endObject();
+
+			Map<String, Object> retMap = gson.fromJson(new JsonReader(in), mapType);
+
+			return (T)retMap;
+		}
+		if (json instanceof JsonArray) {
+			final JsonArray array = json.getAsJsonArray();
+			if (clazz == boolean[].class) {
+				final boolean[] retArray = new boolean[array.size()];
+				for (int i = 0; i < array.size(); i++) {
+					final Boolean value = gson.fromJson(array.get(i), boolean.class);
+					retArray[i] = value;
+				}
+				return (T)retArray;
+			} else if (clazz == Number[].class) {
+				final Number[] retArray = new Number[array.size()];
+				for (int i = 0; i < array.size(); i++) {
+					final Number value = gson.fromJson(array.get(i), Number.class);
+					retArray[i] = value;
+				}
+				return (T)retArray;
+			} else if (clazz == String[].class) {
+				final String[] retArray = new String[array.size()];
+				for (int i = 0; i < array.size(); i++) {
+					final String value = gson.fromJson(array.get(i), String.class);
+					retArray[i] = value;
+				}
+				return (T)retArray;
+			} else if (clazz == double[].class) {
+				final double[] retArray = new double[array.size()];
+				for (int i = 0; i < array.size(); i++) {
+					final double value = gson.fromJson(array.get(i), double.class);
+					retArray[i] = value;
+				}
+				return (T)retArray;
+			} else if (clazz == BigDecimal[].class) {
+				final BigDecimal[] retArray = new BigDecimal[array.size()];
+				for (int i = 0; i < array.size(); i++) {
+					final BigDecimal value = gson.fromJson(array.get(i), BigDecimal.class);
+					retArray[i] = value;
+				}
+				return (T)retArray;
+			} else if (clazz == BigInteger[].class) {
+				final BigInteger[] retArray = new BigInteger[array.size()];
+				for (int i = 0; i < array.size(); i++) {
+					final BigInteger value = gson.fromJson(array.get(i), BigInteger.class);
+					retArray[i] = value;
+				}
+				return (T)retArray;
+			} else if (clazz == float[].class) {
+				final float[] retArray = new float[array.size()];
+				for (int i = 0; i < array.size(); i++) {
+					final float value = gson.fromJson(array.get(i), float.class);
+					retArray[i] = value;
+				}
+				return (T)retArray;
+			} else if (clazz == long[].class) {
+				final long[] retArray = new long[array.size()];
+				for (int i = 0; i < array.size(); i++) {
+					final long value = gson.fromJson(array.get(i), long.class);
+					retArray[i] = value;
+				}
+				return (T)retArray;
+			} else if (clazz == short[].class) {
+				final short[] retArray = new short[array.size()];
+				for (int i = 0; i < array.size(); i++) {
+					final short value = gson.fromJson(array.get(i), short.class);
+					retArray[i] = value;
+				}
+				return (T)retArray;
+			} else if (clazz == int[].class) {
+				final int[] retArray = new int[array.size()];
+				for (int i = 0; i < array.size(); i++) {
+					final int value = gson.fromJson(array.get(i), int.class);
+					retArray[i] = value;
+				}
+				return (T)retArray;
+			} else if (clazz == byte[].class) {
+				final byte[] retArray = new byte[array.size()];
+				for (int i = 0; i < array.size(); i++) {
+					final byte value = gson.fromJson(array.get(i), byte.class);
+					retArray[i] = value;
+				}
+				return (T)retArray;
+			} else if (clazz == char[].class) {
+				final char[] retArray = new char[array.size()];
+				for (int i = 0; i < array.size(); i++) {
+					final char value = gson.fromJson(array.get(i), char.class);
+					retArray[i] = value;
+				}
+				return (T)retArray;
+			}
+		}
+
+		try {
+			return gson.fromJson(json, clazz);
+		} catch (
+				JsonSyntaxException e) {
+			return null;
+		}
+
 	}
 
 	@Override
@@ -152,7 +306,6 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 			final N5URL url,
 			final Type type) throws IOException {
 
-		// TODO implement me
 		return null;
 	}
 }
