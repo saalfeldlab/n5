@@ -8,9 +8,11 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.NoSuchFileException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -157,6 +159,24 @@ public class UrlAttributeTest
 		assertEquals( testObjDoubles.name, doubles.name );
 		assertEquals( testObjDoubles.type, doubles.type );
 		assertArrayEquals( testObjDoubles.t(), doubles.t(), 1e-9 );
+
+		final TestDoubles[] doubleArray = n5.getAttribute( new N5URL( "?objs#array" ), TestDoubles[].class );
+		final TestDoubles doubles1 = new TestDoubles("doubles", "doubles1", new double[]{ 5.7, 4.5, 3.4 });
+		final TestDoubles doubles2 = new TestDoubles("doubles", "doubles2", new double[]{ 5.8, 4.6, 3.5 });
+		final TestDoubles doubles3 = new TestDoubles("doubles", "doubles3", new double[]{ 5.9, 4.7, 3.6 });
+		final TestDoubles doubles4 = new TestDoubles("doubles", "doubles4", new double[]{ 5.10, 4.8, 3.7 });
+		final TestDoubles[] expectedDoubles = new TestDoubles[] {doubles1, doubles2, doubles3, doubles4};
+		assertArrayEquals(expectedDoubles, doubleArray);
+
+		final String[] stringArray = n5.getAttribute( new N5URL( "?objs#String" ), String[].class );
+		final String[] expectedString = new String[] {"This", "is", "a", "test"};
+
+		final Integer[] integerArray = n5.getAttribute( new N5URL( "?objs#Integer" ), Integer[].class );
+		final Integer[] expectedInteger = new Integer[] {1,2,3,4};
+
+		final int[] intArray = n5.getAttribute( new N5URL( "?objs#int" ), int[].class );
+		final int[] expectedInt = new int[] {1,2,3,4};
+		assertArrayEquals(expectedInt, intArray);
 	}
 
 	private <K,V> boolean mapsEqual( Map<K,V> a, Map<K,V> b )
@@ -186,6 +206,17 @@ public class UrlAttributeTest
 			this.t = t;
 		}
 		public T t() { return t; }
+
+		@Override public boolean equals(Object obj) {
+
+			if (obj.getClass() == this.getClass()) {
+				final TestObject<?> otherTestObject = (TestObject<?>)obj;
+				return Objects.equals(name, otherTestObject.name)
+						&& Objects.equals(type, otherTestObject.type)
+						&& Objects.equals(t, otherTestObject.t);
+			}
+			return false;
+		}
 	}
 
 	private static class TestDoubles extends TestObject< double[] >
@@ -193,6 +224,17 @@ public class UrlAttributeTest
 		public TestDoubles( String type, String name, double[] t )
 		{
 			super( type, name, t );
+		}
+
+		@Override public boolean equals(Object obj) {
+
+			if (obj.getClass() == this.getClass()) {
+				final TestDoubles otherTestObject = (TestDoubles)obj;
+				return Objects.equals(name, otherTestObject.name)
+						&& Objects.equals(type, otherTestObject.type)
+						&& Arrays.equals(t, otherTestObject.t);
+			}
+			return false;
 		}
 	}
 
@@ -202,6 +244,17 @@ public class UrlAttributeTest
 		{
 			super( type, name, t );
 		}
+		@Override public boolean equals(Object obj) {
+
+			if (obj.getClass() == this.getClass()) {
+				final TestInts otherTestObject = (TestInts)obj;
+				return Objects.equals(name, otherTestObject.name)
+						&& Objects.equals(type, otherTestObject.type)
+						&& Arrays.equals(t, otherTestObject.t);
+			}
+			return false;
+		}
+
 	}
 
 }

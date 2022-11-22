@@ -39,6 +39,7 @@ import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.io.PipedReader;
 import java.io.PipedWriter;
+import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -158,8 +159,9 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 	@Override
 	public <T> T getAttribute(
 			final N5URL url,
-			final Class<T> clazz) throws IOException {
+			final Type type) throws IOException {
 
+		final Class<?> clazz = (type instanceof Class<?>) ? ((Class<?>)type) : null;
 		Type mapType = new TypeToken<Map<String, Object>>() {
 
 		}.getType();
@@ -183,7 +185,8 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 				}
 			}
 		}
-		if (json == null && clazz.isAssignableFrom(HashMap.class)) {
+		if (json == null && clazz != null && clazz.isAssignableFrom(HashMap.class)) {
+			//NOTE: Would not need to do this if we could get the root `JsonElement` attribute, instead of just the `Map<String, JsonElement`
 			/* reconstruct the tree to parse as Object */
 			final PipedWriter writer = new PipedWriter();
 			//TODO: writer blocks if there is not enough space for new content. What do we want to do here?
@@ -200,112 +203,103 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 			out.endObject();
 
 			Map<String, Object> retMap = gson.fromJson(new JsonReader(in), mapType);
-
 			return (T)retMap;
 		}
 		if (json instanceof JsonArray) {
 			final JsonArray array = json.getAsJsonArray();
-			if (clazz == boolean[].class) {
-				final boolean[] retArray = new boolean[array.size()];
-				for (int i = 0; i < array.size(); i++) {
-					final Boolean value = gson.fromJson(array.get(i), boolean.class);
-					retArray[i] = value;
-				}
-				return (T)retArray;
-			} else if (clazz == Number[].class) {
-				final Number[] retArray = new Number[array.size()];
-				for (int i = 0; i < array.size(); i++) {
-					final Number value = gson.fromJson(array.get(i), Number.class);
-					retArray[i] = value;
-				}
-				return (T)retArray;
-			} else if (clazz == String[].class) {
-				final String[] retArray = new String[array.size()];
-				for (int i = 0; i < array.size(); i++) {
-					final String value = gson.fromJson(array.get(i), String.class);
-					retArray[i] = value;
-				}
-				return (T)retArray;
-			} else if (clazz == double[].class) {
-				final double[] retArray = new double[array.size()];
-				for (int i = 0; i < array.size(); i++) {
-					final double value = gson.fromJson(array.get(i), double.class);
-					retArray[i] = value;
-				}
-				return (T)retArray;
-			} else if (clazz == BigDecimal[].class) {
-				final BigDecimal[] retArray = new BigDecimal[array.size()];
-				for (int i = 0; i < array.size(); i++) {
-					final BigDecimal value = gson.fromJson(array.get(i), BigDecimal.class);
-					retArray[i] = value;
-				}
-				return (T)retArray;
-			} else if (clazz == BigInteger[].class) {
-				final BigInteger[] retArray = new BigInteger[array.size()];
-				for (int i = 0; i < array.size(); i++) {
-					final BigInteger value = gson.fromJson(array.get(i), BigInteger.class);
-					retArray[i] = value;
-				}
-				return (T)retArray;
-			} else if (clazz == float[].class) {
-				final float[] retArray = new float[array.size()];
-				for (int i = 0; i < array.size(); i++) {
-					final float value = gson.fromJson(array.get(i), float.class);
-					retArray[i] = value;
-				}
-				return (T)retArray;
-			} else if (clazz == long[].class) {
-				final long[] retArray = new long[array.size()];
-				for (int i = 0; i < array.size(); i++) {
-					final long value = gson.fromJson(array.get(i), long.class);
-					retArray[i] = value;
-				}
-				return (T)retArray;
-			} else if (clazz == short[].class) {
-				final short[] retArray = new short[array.size()];
-				for (int i = 0; i < array.size(); i++) {
-					final short value = gson.fromJson(array.get(i), short.class);
-					retArray[i] = value;
-				}
-				return (T)retArray;
-			} else if (clazz == int[].class) {
-				final int[] retArray = new int[array.size()];
-				for (int i = 0; i < array.size(); i++) {
-					final int value = gson.fromJson(array.get(i), int.class);
-					retArray[i] = value;
-				}
-				return (T)retArray;
-			} else if (clazz == byte[].class) {
-				final byte[] retArray = new byte[array.size()];
-				for (int i = 0; i < array.size(); i++) {
-					final byte value = gson.fromJson(array.get(i), byte.class);
-					retArray[i] = value;
-				}
-				return (T)retArray;
-			} else if (clazz == char[].class) {
-				final char[] retArray = new char[array.size()];
-				for (int i = 0; i < array.size(); i++) {
-					final char value = gson.fromJson(array.get(i), char.class);
-					retArray[i] = value;
-				}
-				return (T)retArray;
-			}
+			T retArray = getJsonAsArray(array, type);
+			if (retArray != null)
+				return retArray;
 		}
-
 		try {
-			return gson.fromJson(json, clazz);
+			return gson.fromJson(json, type);
 		} catch (
 				JsonSyntaxException e) {
 			return null;
 		}
-
 	}
 
 	@Override
 	public <T> T getAttribute(
 			final N5URL url,
-			final Type type) throws IOException {
+			final Class<T> clazz) throws IOException {
 
+		return getAttribute(url, (Type)clazz);
+	}
+
+	private <T> T getJsonAsArray(JsonArray array, Class<T> clazz) {
+		return getJsonAsArray(array, (Type)clazz);
+	}
+
+	private <T> T getJsonAsArray(JsonArray array, Type type) {
+
+
+		final Class<?> clazz = (type instanceof Class<?>) ? ((Class<?>)type) : null;
+
+		if (type == boolean[].class) {
+			final boolean[] retArray = new boolean[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final Boolean value = gson.fromJson(array.get(i), boolean.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == double[].class) {
+			final double[] retArray = new double[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final double value = gson.fromJson(array.get(i), double.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == float[].class) {
+			final float[] retArray = new float[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final float value = gson.fromJson(array.get(i), float.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == long[].class) {
+			final long[] retArray = new long[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final long value = gson.fromJson(array.get(i), long.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == short[].class) {
+			final short[] retArray = new short[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final short value = gson.fromJson(array.get(i), short.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == int[].class) {
+			final int[] retArray = new int[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final int value = gson.fromJson(array.get(i), int.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == byte[].class) {
+			final byte[] retArray = new byte[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final byte value = gson.fromJson(array.get(i), byte.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == char[].class) {
+			final char[] retArray = new char[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final char value = gson.fromJson(array.get(i), char.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if(clazz != null && clazz.isArray()) {
+			final Class<?> componentCls = clazz.getComponentType();
+			final Object[] clsArray = (Object[] )Array.newInstance(componentCls, array.size());
+			for (int i = 0; i < array.size(); i++) {
+				clsArray[i] = gson.fromJson(array.get(i), componentCls);
+			}
+			return (T)clsArray;
+		}
 		return null;
 	}
 }
