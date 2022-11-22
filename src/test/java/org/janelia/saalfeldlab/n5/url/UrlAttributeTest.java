@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5.url;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -29,6 +30,9 @@ public class UrlAttributeTest
 	HashMap<String,String> obj;
 	Set<String> rootKeys;
 
+	TestInts testObjInts;
+	TestDoubles testObjDoubles;
+
 	@Before
 	public void before()
 	{
@@ -48,6 +52,9 @@ public class UrlAttributeTest
 		{
 			e.printStackTrace();
 		}
+
+		testObjInts = new TestInts( "ints", "intsName", new int[] { 5, 4, 3 } );
+		testObjDoubles = new TestDoubles( "doubles", "doublesName", new double[] { 5.5, 4.4, 3.3 } );
 	}
 
 	@SuppressWarnings("unchecked")
@@ -138,6 +145,20 @@ public class UrlAttributeTest
 		assertEquals("name of aaa from aaa", aaa, n5.getAttribute(aaaUrl.getRelative("?./#name"), String.class));
 	}
 
+	@Test
+	public void testPathObject() throws IOException, URISyntaxException
+	{
+		final TestInts ints = n5.getAttribute( new N5URL( "?objs#intsKey" ), TestInts.class );
+		assertEquals( testObjInts.name, ints.name );
+		assertEquals( testObjInts.type, ints.type );
+		assertArrayEquals( testObjInts.t(), ints.t() );
+
+		final TestDoubles doubles = n5.getAttribute( new N5URL( "?objs#doublesKey" ), TestDoubles.class );
+		assertEquals( testObjDoubles.name, doubles.name );
+		assertEquals( testObjDoubles.type, doubles.type );
+		assertArrayEquals( testObjDoubles.t(), doubles.t(), 1e-9 );
+	}
+
 	private <K,V> boolean mapsEqual( Map<K,V> a, Map<K,V> b )
 	{
 		if( ! a.keySet().equals( b.keySet() ))
@@ -150,6 +171,37 @@ public class UrlAttributeTest
 		}
 
 		return true;
+	}
+
+	private static class TestObject< T >
+	{
+		String type;
+		String name;
+		T t;
+
+		public TestObject( String type, String name, T t )
+		{
+			this.name = name;
+			this.type = type;
+			this.t = t;
+		}
+		public T t() { return t; }
+	}
+
+	private static class TestDoubles extends TestObject< double[] >
+	{
+		public TestDoubles( String type, String name, double[] t )
+		{
+			super( type, name, t );
+		}
+	}
+
+	private static class TestInts extends TestObject< int[] >
+	{
+		public TestInts( String type, String name, int[] t )
+		{
+			super( type, name, t );
+		}
 	}
 
 }

@@ -1,0 +1,12 @@
+{
+  "intsKey": {
+    "type": "ints",
+    "name": "intsName",
+    "t": [ 5, 4, 3 ]
+  },
+  "doublesKey": {
+    "type": "doubles",
+    "name": "doublesName",
+    "t": [ 5.5, 4.4, 3.3 ]
+  }
+}
