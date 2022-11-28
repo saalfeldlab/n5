@@ -250,36 +250,6 @@ public interface N5Reader extends AutoCloseable {
 			final Type type) throws IOException;
 
 	/**
-	 * Reads an attribute.
-	 *
-	 * @param context
-	 *            the context
-	 * @param url
-	 * @param clazz
-	 *            attribute class
-	 * @return
-	 * @throws IOException
-	 */
-	public <T> T getAttribute(
-			final N5URL url,
-			final Class<T> clazz) throws IOException;
-
-	/**
-	 * Reads an attribute.
-	 *
-	 * @param context
-	 *            the context
-	 * @param url the url
-	 * @param type
-	 *            attribute Type (use this for specifying generic types)
-	 * @return
-	 * @throws IOException
-	 */
-	public <T> T getAttribute(
-			final N5URL url,
-			final Type type) throws IOException;
-
-	/**
 	 * Get mandatory dataset attributes.
 	 *
 	 * @param pathName
