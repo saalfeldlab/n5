@@ -41,8 +41,7 @@ import java.io.PipedReader;
 import java.io.PipedWriter;
 import java.lang.reflect.Array;
 import java.lang.reflect.Type;
-import java.math.BigDecimal;
-import java.math.BigInteger;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -142,8 +141,18 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 			final String key,
 			final Class<T> clazz) throws IOException {
 
-		final HashMap<String, JsonElement> map = getAttributes(pathName);
-		return GsonAttributesParser.parseAttribute(map, key, clazz, getGson());
+		// final HashMap<String, JsonElement> map = getAttributes(pathName);
+		try
+		{
+
+			final String dataset = pathName != null ? "?" + pathName : "?";
+			final String fragment = key != null ? "#" + key : "#";
+			return getAttribute( new N5URL( dataset + fragment  ), clazz );
+		}
+		catch ( URISyntaxException e )
+		{
+			throw new IOException( e );
+		}
 	}
 
 	@Override
@@ -152,12 +161,19 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 			final String key,
 			final Type type) throws IOException {
 
-		final HashMap<String, JsonElement> map = getAttributes(pathName);
-		return GsonAttributesParser.parseAttribute(map, key, type, getGson());
+		try
+		{
+			final String dataset = pathName != null ? "?" + pathName : "?";
+			final String fragment = key != null ? "#" + key : "#";
+			return getAttribute( new N5URL( dataset + fragment  ), type );
+		}
+		catch ( URISyntaxException e )
+		{
+			throw new IOException( e );
+		}
 	}
 
-	@Override
-	public <T> T getAttribute(
+	private <T> T getAttribute(
 			final N5URL url,
 			final Type type) throws IOException {
 
@@ -219,8 +235,7 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 		}
 	}
 
-	@Override
-	public <T> T getAttribute(
+	private <T> T getAttribute(
 			final N5URL url,
 			final Class<T> clazz) throws IOException {
 
