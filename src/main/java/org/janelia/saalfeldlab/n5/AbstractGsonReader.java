@@ -162,7 +162,7 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 
 		final Class<?> clazz = (type instanceof Class<?>) ? ((Class<?>)type) : null;
 		final String attributePath = url.resolveAttribute();
-		JsonElement json = getAttributesJson(url.resolveDataset());
+		JsonElement json = getAttributesJson(url.resolveGroup());
 		for (final String pathPart : attributePath.split("/")) {
 			if (pathPart.isEmpty())
 				continue;

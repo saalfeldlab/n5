@@ -43,9 +43,9 @@ public class N5URL {
 		return group;
 	}
 
-	public String resolveDataset() {
+	public String resolveGroup() {
 
-		return resolveDatasetPath( getGroupPath() == null ? "" : getGroupPath() );
+		return resolveGroupPath( getGroupPath() == null ? "" : getGroupPath() );
 	}
 
 	public String getAttributePath() {
@@ -63,12 +63,12 @@ public class N5URL {
 		return scheme == null ? "" : scheme + "://";
 	}
 
-	private String getLocationPart() {
+	private String getContainerPart() {
 
 		return container;
 	}
 
-	private String getDatasetPart() {
+	private String getGroupPart() {
 
 		return group == null ? "" : "?" + group;
 	}
@@ -80,7 +80,7 @@ public class N5URL {
 
 	@Override public String toString() {
 
-		return getLocationPart() + getDatasetPart() + getAttributePart();
+		return getContainerPart() + getGroupPart() + getAttributePart();
 	}
 
 	private String getSchemeSpecificPartWithoutQuery() {
@@ -107,7 +107,7 @@ public class N5URL {
 			newUri
 					.append(relativeUri.getAuthority())
 					.append(relativeUri.getPath())
-					.append(relative.getDatasetPart())
+					.append(relative.getGroupPart())
 					.append(relative.getAttributePart());
 			return new N5URL(newUri.toString());
 		}
@@ -125,7 +125,7 @@ public class N5URL {
 			}
 			newUri
 					.append(path)
-					.append(relative.getDatasetPart())
+					.append(relative.getGroupPart())
 					.append(relative.getAttributePart());
 			return new N5URL(newUri.toString());
 		}
@@ -134,15 +134,15 @@ public class N5URL {
 		final String query = relativeUri.getQuery();
 		if (query != null) {
 			if (query.charAt(0) != '/' && thisUri.getQuery() != null) {
-				newUri.append(this.getDatasetPart()).append('/');
+				newUri.append(this.getGroupPart()).append('/');
 				newUri.append(relativeUri.getQuery());
 			} else {
-				newUri.append(relative.getDatasetPart());
+				newUri.append(relative.getGroupPart());
 			}
 			newUri.append(relative.getAttributePart());
 			return new N5URL(newUri.toString());
 		}
-		newUri.append(this.getDatasetPart());
+		newUri.append(this.getGroupPart());
 
 		final String fragment = relativeUri.getFragment();
 		if (fragment != null) {
@@ -169,7 +169,7 @@ public class N5URL {
 		return resolveRelative(new N5URL(relative));
 	}
 
-	public static String resolveDatasetPath(String path) {
+	public static String resolveGroupPath(String path) {
 		final char[] pathChars = path.toCharArray();
 
 		final List<String> tokens = new ArrayList<>();
