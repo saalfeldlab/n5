@@ -330,4 +330,11 @@ public class N5URL {
 		}
 		return n5Uri;
 	}
+
+	public static N5URL from(String container, String group, String attribute) throws URISyntaxException {
+		final String containerPart = container != null ? container : "";
+		final String groupPart = group != null ? "?" + group : "?";
+		final String attributePart = attribute != null ? "#" + attribute : "#";
+		return new N5URL(containerPart + groupPart + attributePart);
+	}
 }

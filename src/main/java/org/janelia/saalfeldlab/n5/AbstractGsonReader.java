@@ -31,10 +31,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.TypeAdapter;
 import com.google.gson.reflect.TypeToken;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
 
 import java.io.IOException;
 import java.io.PipedReader;
@@ -141,17 +138,10 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 			final String key,
 			final Class<T> clazz) throws IOException {
 
-		// final HashMap<String, JsonElement> map = getAttributes(pathName);
-		try
-		{
-
-			final String dataset = pathName != null ? "?" + pathName : "?";
-			final String fragment = key != null ? "#" + key : "#";
-			return getAttribute( new N5URL( dataset + fragment  ), clazz );
-		}
-		catch ( URISyntaxException e )
-		{
-			throw new IOException( e );
+		try {
+			return getAttribute(N5URL.from(null, pathName, key), clazz);
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
 		}
 	}
 
@@ -161,15 +151,10 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 			final String key,
 			final Type type) throws IOException {
 
-		try
-		{
-			final String dataset = pathName != null ? "?" + pathName : "?";
-			final String fragment = key != null ? "#" + key : "#";
-			return getAttribute( new N5URL( dataset + fragment  ), type );
-		}
-		catch ( URISyntaxException e )
-		{
-			throw new IOException( e );
+		try {
+			return getAttribute(N5URL.from(null, pathName, key), type);
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
 		}
 	}
 
@@ -313,6 +298,7 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 			for (int i = 0; i < array.size(); i++) {
 				clsArray[i] = gson.fromJson(array.get(i), componentCls);
 			}
+			//noinspection unchecked
 			return (T)clsArray;
 		}
 		return null;
