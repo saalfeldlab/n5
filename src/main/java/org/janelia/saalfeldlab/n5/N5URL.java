@@ -98,7 +98,7 @@ public class N5URL {
 		final String path = uri.getPath();
 		if (!path.isEmpty()) {
 			final char char0 = path.charAt(0);
-			final boolean isAbsolute = char0 == '/' || (path.length() >= 2 && path.charAt(1) == ':' && char0 >= 'A' && char0 <= 'Z');
+			return char0 == '/' || (path.length() >= 2 && path.charAt(1) == ':' && char0 >= 'A' && char0 <= 'Z');
 		}
 		return false;
 	}
