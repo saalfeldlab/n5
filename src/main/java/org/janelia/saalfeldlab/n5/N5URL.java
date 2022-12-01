@@ -88,6 +88,16 @@ public class N5URL {
 		return uri.getSchemeSpecificPart().replace("?" + uri.getQuery(), "");
 	}
 
+	public boolean isAbsolute() {
+
+		final String path = uri.getPath();
+		if (!path.isEmpty()) {
+			final char char0 = path.charAt(0);
+			final boolean isAbsolute = char0 == '/' || (path.length() >= 2 && path.charAt(1) == ':' && char0 >= 'A' && char0 <= 'Z');
+		}
+		return false;
+	}
+
 	public N5URL resolve(N5URL relative) throws URISyntaxException {
 
 		final URI thisUri = uri;
