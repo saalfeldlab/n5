@@ -25,6 +25,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import com.google.gson.JsonObject;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.Channels;
@@ -160,6 +161,18 @@ public class N5FSReader extends AbstractGsonReader {
 
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForReading(path)) {
 			return GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
+		}
+	}
+
+	@Override
+	public JsonObject getAttributesJson(final String pathName) throws IOException {
+
+		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());
+		if (exists(pathName) && !Files.exists(path))
+			return null;
+
+		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForReading(path)) {
+			return GsonAttributesParser.readAttributesJson(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
 		}
 	}
 

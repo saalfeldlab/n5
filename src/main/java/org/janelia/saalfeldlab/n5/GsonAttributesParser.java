@@ -25,6 +25,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -57,6 +58,15 @@ public interface GsonAttributesParser extends N5Reader {
 	 * @throws IOException
 	 */
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException;
+
+	/**
+	 * Reads the attributes a group or dataset.
+	 *
+	 * @param pathName group path
+	 * @return the root {@link JsonObject} of the attributes
+	 * @throws IOException
+	 */
+	public JsonObject getAttributesJson(final String pathName) throws IOException;
 
 	/**
 	 * Parses an attribute from the given attributes map.
@@ -114,6 +124,19 @@ public interface GsonAttributesParser extends N5Reader {
 		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
 		final HashMap<String, JsonElement> map = gson.fromJson(reader, mapType);
 		return map == null ? new HashMap<>() : map;
+	}
+
+	/**
+	 * Reads the attributes json from a given {@link Reader}.
+	 *
+	 * @param reader
+	 * @return the root {@link JsonObject} of the attributes
+	 * @throws IOException
+	 */
+	public static JsonObject readAttributesJson(final Reader reader, final Gson gson) throws IOException {
+
+		final JsonObject json = gson.fromJson(reader, JsonObject.class);
+		return json;
 	}
 
 	/**
