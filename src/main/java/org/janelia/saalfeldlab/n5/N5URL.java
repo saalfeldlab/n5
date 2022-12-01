@@ -50,7 +50,7 @@ public class N5URL {
 
 	public String normalizeGroupPath() {
 
-		return normalizeGroupPath( getGroupPath() == null ? "" : getGroupPath() );
+		return normalizePath(getGroupPath());
 	}
 
 	public String getAttributePath() {
@@ -60,7 +60,7 @@ public class N5URL {
 
 	public String normalizeAttributePath() {
 
-		return normalizeAttributePath( getAttributePath() == null ? "" : getAttributePath() );
+		return normalizeAttributePath(getAttributePath());
 	}
 
 	private String getSchemePart() {
@@ -131,11 +131,9 @@ public class N5URL {
 			newUri.append("//").append(thisAuthority);
 		}
 
-		if (!relativeUri.getPath().isEmpty()) {
-			final String path = relativeUri.getPath();
-			final char char0 = path.charAt(0);
-			final boolean isAbsolute = char0 == '/' || (path.length() >= 2 && path.charAt(1) == ':' && char0 >= 'A' && char0 <= 'Z');
-			if (!isAbsolute) {
+		final String path = relativeUri.getPath();
+		if (!path.isEmpty()) {
+			if (!relative.isAbsolute()) {
 				newUri.append(thisUri.getPath()).append('/');
 			}
 			newUri
@@ -184,7 +182,9 @@ public class N5URL {
 		return resolve(new N5URL(relative));
 	}
 
-	public static String normalizeGroupPath(String path) {
+	public static String normalizePath(String path) {
+
+		path = path == null ? "" : path;
 		final char[] pathChars = path.toCharArray();
 
 		final List<String> tokens = new ArrayList<>();
@@ -223,14 +223,15 @@ public class N5URL {
 			}
 		}
 		final String lastToken = curToken.toString();
-		if ( !lastToken.isEmpty() ) {
-			if (lastToken.equals( ".." )) {
-				tokens.remove( tokens.size() - 1 );
+		if (!lastToken.isEmpty()) {
+			if (lastToken.equals("..")) {
+				tokens.remove(tokens.size() - 1);
 			} else {
-				tokens.add( lastToken );
+				tokens.add(lastToken);
 			}
 		}
-		if (tokens.isEmpty()) return "";
+		if (tokens.isEmpty())
+			return "";
 		String root = "";
 		if (tokens.get(0).equals("/")) {
 			tokens.remove(0);
@@ -238,11 +239,12 @@ public class N5URL {
 		}
 		return root + tokens.stream()
 				.filter(it -> !it.equals("."))
-				.filter(it ->!it.isEmpty())
-				.reduce((l,r) -> l + "/" + r).orElse( "" );
+				.filter(it -> !it.isEmpty())
+				.reduce((l, r) -> l + "/" + r).orElse("");
 	}
 
 	public static String normalizeAttributePath(String path) {
+
 		final char[] pathChars = path.toCharArray();
 
 		final List<String> tokens = new ArrayList<>();
@@ -262,7 +264,7 @@ public class N5URL {
 				if (character == '/' && tokens.isEmpty() && curToken.length() == 0) {
 					/* If we are root, and the first token, then add the '/' */
 					curToken.append(character);
-				} else  if (character == ']') {
+				} else if (character == ']') {
 					/* If ']' add before terminating the token */
 					curToken.append(character);
 				}
@@ -289,14 +291,15 @@ public class N5URL {
 			}
 		}
 		final String lastToken = curToken.toString();
-		if ( !lastToken.isEmpty() ) {
-			if (lastToken.equals( ".." )) {
-				tokens.remove( tokens.size() - 1 );
+		if (!lastToken.isEmpty()) {
+			if (lastToken.equals("..")) {
+				tokens.remove(tokens.size() - 1);
 			} else {
-				tokens.add( lastToken );
+				tokens.add(lastToken);
 			}
 		}
-		if (tokens.isEmpty()) return "";
+		if (tokens.isEmpty())
+			return "";
 		String root = "";
 		if (tokens.get(0).equals("/")) {
 			tokens.remove(0);
@@ -304,8 +307,8 @@ public class N5URL {
 		}
 		return root + tokens.stream()
 				.filter(it -> !it.equals("."))
-				.filter(it ->!it.isEmpty())
-				.reduce((l,r) -> l + "/" + r).orElse( "" );
+				.filter(it -> !it.isEmpty())
+				.reduce((l, r) -> l + "/" + r).orElse("");
 	}
 
 	public static URI encodeAsUri(String uri) throws URISyntaxException {
@@ -327,7 +330,7 @@ public class N5URL {
 		}
 		/* Edge case to handle when uriWithoutFragment is empty */
 		final URI _n5Uri;
-		if (uriWithoutFragment.length() == 0 && fragment != null && fragment.length() > 0 ) {
+		if (uriWithoutFragment.length() == 0 && fragment != null && fragment.length() > 0) {
 			_n5Uri = new URI("N5Internal", "//STAND_IN", fragment);
 		} else {
 			_n5Uri = new URI("N5Internal", uriWithoutFragment, fragment);
@@ -347,6 +350,7 @@ public class N5URL {
 	}
 
 	public static N5URL from(String container, String group, String attribute) throws URISyntaxException {
+
 		final String containerPart = container != null ? container : "";
 		final String groupPart = group != null ? "?" + group : "?";
 		final String attributePart = attribute != null ? "#" + attribute : "#";
