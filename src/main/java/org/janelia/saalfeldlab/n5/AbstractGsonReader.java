@@ -34,8 +34,6 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
-import java.io.PipedReader;
-import java.io.PipedWriter;
 import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.net.URISyntaxException;
@@ -163,20 +161,12 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 			final Type type) throws IOException {
 
 		final Class<?> clazz = (type instanceof Class<?>) ? ((Class<?>)type) : null;
-		Type mapType = new TypeToken<Map<String, Object>>() {
-
-		}.getType();
-		TypeAdapter<JsonElement> jsonElementTypeAdapter = gson.getAdapter(JsonElement.class);
-		HashMap<String, JsonElement> map = getAttributes(url.resolveDataset());
-
 		final String attributePath = url.resolveAttribute();
-		JsonElement json = null;
+		JsonElement json = getAttributesJson(url.resolveDataset());
 		for (final String pathPart : attributePath.split("/")) {
 			if (pathPart.isEmpty())
 				continue;
-			if (map.containsKey(pathPart)) {
-				json = map.get(pathPart);
-			} else if (json instanceof JsonObject && json.getAsJsonObject().get(pathPart) != null) {
+			if (json instanceof JsonObject && json.getAsJsonObject().get(pathPart) != null) {
 				json = json.getAsJsonObject().get(pathPart);
 			} else {
 				final Matcher matcher = ARRAY_INDEX.matcher(pathPart);
@@ -186,24 +176,10 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 				}
 			}
 		}
-		if (json == null && clazz != null && clazz.isAssignableFrom(HashMap.class)) {
-			//NOTE: Would not need to do this if we could get the root `JsonElement` attribute, instead of just the `Map<String, JsonElement`
-			/* reconstruct the tree to parse as Object */
-			final PipedWriter writer = new PipedWriter();
-			//TODO: writer blocks if there is not enough space for new content. What do we want to do here?
-			final PipedReader in = new PipedReader(writer, 1000);
-
-			final JsonWriter out = new JsonWriter(writer);
-			out.beginObject();
-			for (Map.Entry<String, JsonElement> entry : map.entrySet()) {
-				String k = entry.getKey();
-				JsonElement val = entry.getValue();
-				out.name(k);
-				jsonElementTypeAdapter.write(out, val);
-			}
-			out.endObject();
-
-			Map<String, Object> retMap = gson.fromJson(new JsonReader(in), mapType);
+		if (clazz != null && clazz.isAssignableFrom(HashMap.class)) {
+			Type mapType = new TypeToken<Map<String, Object>>() {}.getType();
+			Map<String, Object> retMap = gson.fromJson(json, mapType);
+			//noinspection unchecked
 			return (T)retMap;
 		}
 		if (json instanceof JsonArray) {
@@ -228,11 +204,11 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 	}
 
 	private <T> T getJsonAsArray(JsonArray array, Class<T> clazz) {
+
 		return getJsonAsArray(array, (Type)clazz);
 	}
 
 	private <T> T getJsonAsArray(JsonArray array, Type type) {
-
 
 		final Class<?> clazz = (type instanceof Class<?>) ? ((Class<?>)type) : null;
 
@@ -292,9 +268,9 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 				retArray[i] = value;
 			}
 			return (T)retArray;
-		} else if(clazz != null && clazz.isArray()) {
+		} else if (clazz != null && clazz.isArray()) {
 			final Class<?> componentCls = clazz.getComponentType();
-			final Object[] clsArray = (Object[] )Array.newInstance(componentCls, array.size());
+			final Object[] clsArray = (Object[])Array.newInstance(componentCls, array.size());
 			for (int i = 0; i < array.size(); i++) {
 				clsArray[i] = gson.fromJson(array.get(i), componentCls);
 			}
