@@ -43,6 +43,11 @@ public class N5URL {
 		return group;
 	}
 
+	public String normalizeContainerPath() {
+
+		return normalizePath(getContainerPath());
+	}
+
 	public String normalizeGroupPath() {
 
 		return normalizeGroupPath( getGroupPath() == null ? "" : getGroupPath() );
