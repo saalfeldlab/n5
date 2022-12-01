@@ -43,9 +43,9 @@ public class N5URL {
 		return group;
 	}
 
-	public String resolveGroup() {
+	public String normalizeGroupPath() {
 
-		return resolveGroupPath( getGroupPath() == null ? "" : getGroupPath() );
+		return normalizeGroupPath( getGroupPath() == null ? "" : getGroupPath() );
 	}
 
 	public String getAttributePath() {
@@ -53,9 +53,9 @@ public class N5URL {
 		return attribute;
 	}
 
-	public String resolveAttribute() {
+	public String normalizeAttributePath() {
 
-		return resolveAttributePath( getAttributePath() == null ? "" : getAttributePath() );
+		return normalizeAttributePath( getAttributePath() == null ? "" : getAttributePath() );
 	}
 
 	private String getSchemePart() {
@@ -88,7 +88,7 @@ public class N5URL {
 		return uri.getSchemeSpecificPart().replace("?" + uri.getQuery(), "");
 	}
 
-	public N5URL resolveRelative(N5URL relative) throws URISyntaxException {
+	public N5URL resolve(N5URL relative) throws URISyntaxException {
 
 		final URI thisUri = uri;
 		final URI relativeUri = relative.uri;
@@ -159,17 +159,17 @@ public class N5URL {
 		return new N5URL(newUri.toString());
 	}
 
-	public N5URL resolveRelative(URI relative) throws URISyntaxException {
+	public N5URL resolve(URI relative) throws URISyntaxException {
 
-		return resolveRelative(new N5URL(relative));
+		return resolve(new N5URL(relative));
 	}
 
-	public N5URL resolveRelative(String relative) throws URISyntaxException {
+	public N5URL resolve(String relative) throws URISyntaxException {
 
-		return resolveRelative(new N5URL(relative));
+		return resolve(new N5URL(relative));
 	}
 
-	public static String resolveGroupPath(String path) {
+	public static String normalizeGroupPath(String path) {
 		final char[] pathChars = path.toCharArray();
 
 		final List<String> tokens = new ArrayList<>();
@@ -227,7 +227,7 @@ public class N5URL {
 				.reduce((l,r) -> l + "/" + r).orElse( "" );
 	}
 
-	public static String resolveAttributePath(String path) {
+	public static String normalizeAttributePath(String path) {
 		final char[] pathChars = path.toCharArray();
 
 		final List<String> tokens = new ArrayList<>();

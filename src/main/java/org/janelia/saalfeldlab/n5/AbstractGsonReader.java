@@ -161,8 +161,8 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 			final Type type) throws IOException {
 
 		final Class<?> clazz = (type instanceof Class<?>) ? ((Class<?>)type) : null;
-		final String attributePath = url.resolveAttribute();
-		JsonElement json = getAttributesJson(url.resolveGroup());
+		final String attributePath = url.normalizeAttributePath();
+		JsonElement json = getAttributesJson(url.normalizeGroupPath());
 		for (final String pathPart : attributePath.split("/")) {
 			if (pathPart.isEmpty())
 				continue;
