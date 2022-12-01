@@ -120,28 +120,28 @@ public class UrlAttributeTest
 		// name of a
 		assertEquals( "name of a from root", a, getAttribute( n5, "?/a#name", String.class ) );
 		assertEquals( "name of a from root", a, getAttribute( n5, new N5URL( "?a#name" ), String.class ) );
-		assertEquals( "name of a from a", a, getAttribute( n5, aUrl.getRelative( new N5URL( "?/a#name" ) ), String.class ) );
-		assertEquals( "name of a from aa", a, getAttribute( n5, aaUrl.getRelative( "?..#name" ), String.class ) );
-		assertEquals( "name of a from aaa", a, getAttribute( n5, aaaUrl.getRelative( new N5URL( "?../..#name" ) ), String.class ) );
+		assertEquals( "name of a from a", a, getAttribute( n5, aUrl.resolveRelative( new N5URL( "?/a#name" ) ), String.class ) );
+		assertEquals( "name of a from aa", a, getAttribute( n5, aaUrl.resolveRelative( "?..#name" ), String.class ) );
+		assertEquals( "name of a from aaa", a, getAttribute( n5, aaaUrl.resolveRelative( new N5URL( "?../..#name" ) ), String.class ) );
 
 		// name of aa
 		assertEquals( "name of aa from root", aa, getAttribute( n5, new N5URL( "?/a/aa#name" ), String.class ) );
 		assertEquals( "name of aa from root", aa, getAttribute( n5, new N5URL( "?a/aa#name" ), String.class ) );
-		assertEquals( "name of aa from a", aa, getAttribute( n5, aUrl.getRelative( "?aa#name" ), String.class ) );
+		assertEquals( "name of aa from a", aa, getAttribute( n5, aUrl.resolveRelative( "?aa#name" ), String.class ) );
 
-		assertEquals( "name of aa from aa", aa, getAttribute( n5, aaUrl.getRelative( "?./#name" ), String.class ) );
+		assertEquals( "name of aa from aa", aa, getAttribute( n5, aaUrl.resolveRelative( "?./#name" ), String.class ) );
 
-		assertEquals( "name of aa from aa", aa, getAttribute( n5, aaUrl.getRelative( "#name" ), String.class ) );
-		assertEquals( "name of aa from aaa", aa, getAttribute( n5, aaaUrl.getRelative( "?..#name" ), String.class ) );
+		assertEquals( "name of aa from aa", aa, getAttribute( n5, aaUrl.resolveRelative( "#name" ), String.class ) );
+		assertEquals( "name of aa from aaa", aa, getAttribute( n5, aaaUrl.resolveRelative( "?..#name" ), String.class ) );
 
 		// name of aaa
 		assertEquals( "name of aaa from root", aaa, getAttribute( n5, new N5URL( "?/a/aa/aaa#name" ), String.class ) );
 		assertEquals( "name of aaa from root", aaa, getAttribute( n5, new N5URL( "?a/aa/aaa#name" ), String.class ) );
-		assertEquals( "name of aaa from a", aaa, getAttribute( n5, aUrl.getRelative( "?aa/aaa#name" ), String.class ) );
-		assertEquals( "name of aaa from aa", aaa, getAttribute( n5, aaUrl.getRelative( "?aaa#name" ), String.class ) );
-		assertEquals( "name of aaa from aaa", aaa, getAttribute( n5, aaaUrl.getRelative( "#name" ), String.class ) );
+		assertEquals( "name of aaa from a", aaa, getAttribute( n5, aUrl.resolveRelative( "?aa/aaa#name" ), String.class ) );
+		assertEquals( "name of aaa from aa", aaa, getAttribute( n5, aaUrl.resolveRelative( "?aaa#name" ), String.class ) );
+		assertEquals( "name of aaa from aaa", aaa, getAttribute( n5, aaaUrl.resolveRelative( "#name" ), String.class ) );
 
-		assertEquals( "name of aaa from aaa", aaa, getAttribute( n5, aaaUrl.getRelative( "?./#name" ), String.class ) );
+		assertEquals( "name of aaa from aaa", aaa, getAttribute( n5, aaaUrl.resolveRelative( "?./#name" ), String.class ) );
 	}
 
 	private < T > T getAttribute( final N5Reader n5, final String url1, Class< T > clazz ) throws URISyntaxException, IOException
@@ -151,7 +151,7 @@ public class UrlAttributeTest
 
 	private < T > T getAttribute( final N5Reader n5, final String url1, final String url2, Class< T > clazz ) throws URISyntaxException, IOException
 	{
-		final N5URL n5URL = url2 == null ? new N5URL( url1 ) : new N5URL( url1 ).getRelative( url2 );
+		final N5URL n5URL = url2 == null ? new N5URL( url1 ) : new N5URL( url1 ).resolveRelative( url2 );
 		return getAttribute( n5, n5URL, clazz );
 	}
 
@@ -162,8 +162,8 @@ public class UrlAttributeTest
 
 	private < T > T getAttribute( final N5Reader n5, final N5URL url1, final String url2, Class< T > clazz ) throws URISyntaxException, IOException
 	{
-		final N5URL n5URL = url2 == null ? url1 : url1.getRelative( url2 );
-		return n5.getAttribute( n5URL.getDataset(), n5URL.getAttribute(), clazz );
+		final N5URL n5URL = url2 == null ? url1 : url1.resolveRelative( url2 );
+		return n5.getAttribute( n5URL.getGroupPath(), n5URL.getAttributePath(), clazz );
 	}
 
 	@Test

@@ -37,27 +37,27 @@ public class N5URLTest {
 
 		assertEquals(
 				"/a/b/c/d?e#f",
-				new N5URL("/a/b/c").getRelative("d?e#f").toString());
+				new N5URL("/a/b/c").resolveRelative("d?e#f").toString());
 		assertEquals(
 				"/d?e#f",
-				new N5URL("/a/b/c").getRelative("/d?e#f").toString());
+				new N5URL("/a/b/c").resolveRelative("/d?e#f").toString());
 		assertEquals(
 				"file:/a/b/c",
-				new N5URL("s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5").getRelative("file:/a/b/c").toString());
+				new N5URL("s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5").resolveRelative("file:/a/b/c").toString());
 		assertEquals(
 				"s3://janelia-cosem-datasets/a/b/c",
-				new N5URL("s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5").getRelative("/a/b/c").toString());
+				new N5URL("s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5").resolveRelative("/a/b/c").toString());
 		assertEquals(
 				"s3://janelia-cosem-datasets/a/b/c?d/e#f/g",
-				new N5URL("s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5").getRelative("/a/b/c?d/e#f/g").toString());
+				new N5URL("s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5").resolveRelative("/a/b/c?d/e#f/g").toString());
 		assertEquals(
 				"s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5/a/b/c?d/e#f/g",
-				new N5URL("s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5").getRelative("a/b/c?d/e#f/g").toString());
+				new N5URL("s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5").resolveRelative("a/b/c?d/e#f/g").toString());
 		assertEquals(
 				"s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5?d/e#f/g",
-				new N5URL("s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5").getRelative("?d/e#f/g").toString());
+				new N5URL("s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5").resolveRelative("?d/e#f/g").toString());
 		assertEquals(
 				"s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5#f/g",
-				new N5URL("s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5").getRelative("#f/g").toString());
+				new N5URL("s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5").resolveRelative("#f/g").toString());
 	}
 }

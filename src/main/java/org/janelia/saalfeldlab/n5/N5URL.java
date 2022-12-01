@@ -10,8 +10,8 @@ public class N5URL {
 
 	final URI uri;
 	private final String scheme;
-	private final String location;
-	private final String dataset;
+	private final String container;
+	private final String group;
 	private final String attribute;
 
 	public N5URL(String uri) throws URISyntaxException {
@@ -25,37 +25,37 @@ public class N5URL {
 		scheme = uri.getScheme() == null ? null : uri.getScheme();
 		final String schemeSpecificPartWithoutQuery = getSchemeSpecificPartWithoutQuery();
 		if (uri.getScheme() == null) {
-			location = schemeSpecificPartWithoutQuery.replaceFirst("//", "");
+			container = schemeSpecificPartWithoutQuery.replaceFirst("//", "");
 		} else {
-			location = uri.getScheme() + ":" + schemeSpecificPartWithoutQuery;
+			container = uri.getScheme() + ":" + schemeSpecificPartWithoutQuery;
 		}
-		dataset = uri.getQuery();
+		group = uri.getQuery();
 		attribute = uri.getFragment();
 	}
 
-	public String getLocation() {
+	public String getContainerPath() {
 
-		return location;
+		return container;
 	}
 
-	public String getDataset() {
+	public String getGroupPath() {
 
-		return dataset;
+		return group;
 	}
 
 	public String resolveDataset() {
 
-		return resolveDatasetPath( getDataset() == null ? "" : getDataset() );
+		return resolveDatasetPath( getGroupPath() == null ? "" : getGroupPath() );
 	}
 
-	public String getAttribute() {
+	public String getAttributePath() {
 
 		return attribute;
 	}
 
 	public String resolveAttribute() {
 
-		return resolveAttributePath( getAttribute() == null ? "" : getAttribute() );
+		return resolveAttributePath( getAttributePath() == null ? "" : getAttributePath() );
 	}
 
 	private String getSchemePart() {
@@ -65,12 +65,12 @@ public class N5URL {
 
 	private String getLocationPart() {
 
-		return location;
+		return container;
 	}
 
 	private String getDatasetPart() {
 
-		return dataset == null ? "" : "?" + dataset;
+		return group == null ? "" : "?" + group;
 	}
 
 	private String getAttributePart() {
@@ -88,7 +88,7 @@ public class N5URL {
 		return uri.getSchemeSpecificPart().replace("?" + uri.getQuery(), "");
 	}
 
-	public N5URL getRelative(N5URL relative) throws URISyntaxException {
+	public N5URL resolveRelative(N5URL relative) throws URISyntaxException {
 
 		final URI thisUri = uri;
 		final URI relativeUri = relative.uri;
@@ -159,14 +159,14 @@ public class N5URL {
 		return new N5URL(newUri.toString());
 	}
 
-	public N5URL getRelative(URI relative) throws URISyntaxException {
+	public N5URL resolveRelative(URI relative) throws URISyntaxException {
 
-		return getRelative(new N5URL(relative));
+		return resolveRelative(new N5URL(relative));
 	}
 
-	public N5URL getRelative(String relative) throws URISyntaxException {
+	public N5URL resolveRelative(String relative) throws URISyntaxException {
 
-		return getRelative(new N5URL(relative));
+		return resolveRelative(new N5URL(relative));
 	}
 
 	public static String resolveDatasetPath(String path) {
