@@ -247,7 +247,7 @@ public class UrlAttributeTest
 		}
 	}
 
-	private static class TestDoubles extends TestObject< double[] >
+	public static class TestDoubles extends TestObject< double[] >
 	{
 		public TestDoubles( String type, String name, double[] t )
 		{
