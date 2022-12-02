@@ -41,7 +41,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Abstract base class implementing {@link N5Reader} with JSON attributes
@@ -52,8 +51,6 @@ import java.util.regex.Pattern;
  * @author Philipp Hanslovsky
  */
 public abstract class AbstractGsonReader implements GsonAttributesParser, N5Reader {
-
-	private static final Pattern ARRAY_INDEX = Pattern.compile("\\[([0-9]+)]");
 
 	protected final Gson gson;
 
@@ -169,7 +166,7 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 			if (json instanceof JsonObject && json.getAsJsonObject().get(pathPart) != null) {
 				json = json.getAsJsonObject().get(pathPart);
 			} else {
-				final Matcher matcher = ARRAY_INDEX.matcher(pathPart);
+				final Matcher matcher = N5URL.ARRAY_INDEX.matcher(pathPart);
 				if (json != null && json.isJsonArray() && matcher.matches()) {
 					final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
 					json = json.getAsJsonArray().get(index);

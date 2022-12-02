@@ -8,6 +8,7 @@ import java.util.Objects;
 
 public class N5URL {
 
+	static final Pattern ARRAY_INDEX = Pattern.compile("\\[([0-9]+)]");
 	final URI uri;
 	private final String scheme;
 	private final String container;
