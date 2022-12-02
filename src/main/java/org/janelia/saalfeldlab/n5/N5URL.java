@@ -1,10 +1,18 @@
 package org.janelia.saalfeldlab.n5;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class N5URL {
 
@@ -62,6 +70,54 @@ public class N5URL {
 	public String normalizeAttributePath() {
 
 		return normalizeAttributePath(getAttributePath());
+	}
+
+	public ArrayList<N5UrlAttributePathToken> getAttributePathTokens(Gson gson) {
+		return getAttributePathTokens(gson, null);
+	}
+	public <T> ArrayList<N5UrlAttributePathToken> getAttributePathTokens(Gson gson, T value) {
+
+		final String[] attributePaths = normalizeAttributePath().replaceAll("^/", "").split("/");
+
+		if (attributePaths.length == 0) {
+			return new ArrayList<>();
+		} else if ( attributePaths.length == 1 && attributePaths[0].isEmpty()) {
+			final N5UrlAttributePathLeaf<?> leaf = new N5UrlAttributePathLeaf(gson, value);
+			final ArrayList<N5UrlAttributePathToken> tokens = new ArrayList<>();
+			tokens.add(leaf);
+			return tokens;
+		}
+		final ArrayList<N5UrlAttributePathToken> n5UrlAttributePathTokens = new ArrayList<>();
+		for (int i = 0; i < attributePaths.length; i++) {
+			final String pathToken = attributePaths[i];
+			final Matcher matcher = ARRAY_INDEX.matcher(pathToken);
+			final N5UrlAttributePathToken newToken;
+			if (matcher.matches()) {
+				final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
+				newToken = new N5UrlAttributePathArray(gson, index);
+				n5UrlAttributePathTokens.add(newToken);
+			} else {
+				newToken = new N5UrlAttributePathObject(gson, pathToken);
+				n5UrlAttributePathTokens.add(newToken);
+			}
+
+			if (i > 0) {
+				final N5UrlAttributePathToken parent = n5UrlAttributePathTokens.get(i - 1);
+				parent.setChild(newToken);
+			}
+		}
+
+		if (value != null) {
+			final N5UrlAttributePathLeaf<?> leaf = new N5UrlAttributePathLeaf(gson, value);
+			/* get last token, if present */
+			if (n5UrlAttributePathTokens.size() >= 1) {
+				final N5UrlAttributePathToken lastToken = n5UrlAttributePathTokens.get(n5UrlAttributePathTokens.size() - 1);
+				lastToken.setChild(leaf);
+			}
+			n5UrlAttributePathTokens.add(leaf);
+		}
+
+		return n5UrlAttributePathTokens;
 	}
 
 	private String getSchemePart() {
@@ -348,6 +404,205 @@ public class N5URL {
 			}
 		}
 		return n5Uri;
+	}
+
+	public static N5UrlAttributePathToken getAttributePathToken(Gson gson, String attributePathToken) {
+
+		final Matcher matcher = ARRAY_INDEX.matcher(attributePathToken);
+		if (matcher.matches()) {
+			final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
+
+			return new N5UrlAttributePathArray(gson, index);
+		} else {
+			return new N5UrlAttributePathObject(gson, attributePathToken);
+		}
+	}
+
+	public static abstract class N5UrlAttributePathToken {
+
+		protected final Gson gson;
+
+		protected JsonElement parent;
+		protected N5UrlAttributePathToken child;
+
+		public N5UrlAttributePathToken(Gson gson) {
+
+			this.gson = gson;
+		}
+
+		public void setChild(N5UrlAttributePathToken child) {
+
+			this.child = child;
+		}
+
+		public abstract boolean canNavigate(JsonElement json);
+
+		public abstract JsonElement navigateJsonElement(JsonElement json);
+
+		public abstract JsonElement createJsonElement(JsonElement json);
+
+		public abstract JsonElement writeLeaf(JsonElement json);
+
+		public JsonElement getParent() {
+
+			return parent;
+		}
+	}
+
+	public static class N5UrlAttributePathObject extends N5UrlAttributePathToken {
+
+		public final String key;
+
+		public N5UrlAttributePathObject(Gson gson, String key) {
+
+			super(gson);
+			this.key = key;
+		}
+
+		@Override public boolean canNavigate(JsonElement json) {
+			if (json == null) {
+				return false;
+			}
+			return json.isJsonObject() && json.getAsJsonObject().has(key);
+		}
+
+		@Override public JsonElement navigateJsonElement(JsonElement json) {
+
+			return json.getAsJsonObject().get(key);
+		}
+
+		@Override public JsonElement createJsonElement(JsonElement json) {
+
+			final JsonObject object;
+			if (json == null) {
+				object = new JsonObject();
+			} else {
+				object = json.getAsJsonObject();
+			}
+			parent = object;
+
+			final JsonElement newJsonElement;
+			if (child instanceof N5UrlAttributePathArray) {
+				newJsonElement = new JsonArray();
+				object.add(key, newJsonElement);
+			} else if (child instanceof N5UrlAttributePathObject) {
+				newJsonElement = new JsonObject();
+				object.add(key, newJsonElement);
+			} else {
+				newJsonElement = new JsonObject();
+				writeLeaf(object);
+			}
+			return newJsonElement;
+		}
+
+		@Override public JsonElement writeLeaf(JsonElement json) {
+
+			final N5UrlAttributePathLeaf<?> leaf = ((N5UrlAttributePathLeaf<?>)child);
+			final JsonElement leafJson = leaf.createJsonElement(null);
+			json.getAsJsonObject().add(key, leafJson);
+			return leafJson;
+		}
+	}
+
+	public static class N5UrlAttributePathArray extends N5UrlAttributePathToken {
+
+		private final int index;
+
+		public N5UrlAttributePathArray(Gson gson, int index) {
+
+			super(gson);
+			this.index = index;
+		}
+
+		@Override public boolean canNavigate(JsonElement json) {
+			if (json == null) {
+				return false;
+			}
+
+			return json.isJsonArray() && json.getAsJsonArray().size() > index;
+		}
+
+		@Override public JsonElement navigateJsonElement(JsonElement json) {
+
+			return json.getAsJsonArray().get(index);
+		}
+
+		@Override public JsonElement createJsonElement(JsonElement json) {
+
+			final JsonArray array;
+			if (json == null) {
+				array = new JsonArray();
+			} else {
+				array = json.getAsJsonArray();
+			}
+			parent = array;
+
+			for (int i = array.size(); i <= index; i++) {
+				array.add(JsonNull.INSTANCE);
+			}
+			final JsonElement newJsonElement;
+			if (child instanceof N5UrlAttributePathArray) {
+				newJsonElement = new JsonArray();
+				array.set(index, newJsonElement);
+			} else if (child instanceof N5UrlAttributePathObject) {
+				newJsonElement = new JsonObject();
+				array.set(index, newJsonElement);
+			} else {
+				newJsonElement = child.createJsonElement(null);
+				array.set(index, newJsonElement);
+			}
+			return newJsonElement;
+		}
+
+		@Override public JsonElement writeLeaf(JsonElement json) {
+
+			final N5UrlAttributePathLeaf<?> leaf = ((N5UrlAttributePathLeaf<?>)child);
+			final JsonElement leafJson = leaf.createJsonElement(null);
+			final JsonArray array = json.getAsJsonArray();
+
+			for (int i = array.size(); i <= index; i++) {
+				array.add(JsonNull.INSTANCE);
+			}
+
+			array.set(index, leafJson);
+			return leafJson;
+		}
+	}
+
+	public static class N5UrlAttributePathLeaf<T> extends N5UrlAttributePathToken {
+
+		private final T value;
+
+		public N5UrlAttributePathLeaf(Gson gson, T value) {
+
+			super(gson);
+			this.value = value;
+		}
+
+		@Override public boolean canNavigate(JsonElement json) {
+
+			return false;
+		}
+
+		@Override public JsonElement navigateJsonElement(JsonElement json) {
+
+			throw new UnsupportedOperationException("Cannot Navigate from a leaf ");
+		}
+
+		@Override public JsonElement createJsonElement(JsonElement json) {
+			/* Leaf is weird. It is never added manually, also via the previous path token.
+			* HOWEVER, when there is no path token, and the leaf is the root, than it is called manually,
+			* and we wish to be our own parent (i.e. the root of the json tree). */
+			parent = gson.toJsonTree(value);
+			return parent;
+		}
+
+		@Override public JsonElement writeLeaf(JsonElement json) {
+			/* Practically, this method doesn't mean much when you are a leaf. */
+			return createJsonElement(null);
+		}
+
+
 	}
 
 	public static N5URL from(String container, String group, String attribute) throws URISyntaxException {

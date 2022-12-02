@@ -25,7 +25,12 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+
 import java.io.IOException;
+import java.io.Writer;
+import java.net.URISyntaxException;
 import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryNotEmptyException;
@@ -38,6 +43,7 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -86,7 +92,6 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	 * will be set to the current N5 version of this implementation.
 	 *
 	 * @param basePath n5 base path
-	 * @param gsonBuilder
 	 * @throws IOException
 	 *    if the base path cannot be written to or cannot be created,
 	 *    if the N5 version of the container is not compatible with this
@@ -102,6 +107,48 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 
 		final Path path = Paths.get(basePath, pathName);
 		createDirectories(path);
+	}
+
+	@Override public <T> void setAttribute(String pathName, String key, T attribute) throws IOException {
+
+		final N5URL attributeUrl;
+		try {
+			attributeUrl = N5URL.from(null, pathName, key);
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
+		}
+
+		final String groupPath = attributeUrl.normalizeGroupPath();
+		final String attributePath = attributeUrl.getAttributePath();
+
+		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());
+		createDirectories(path.getParent());
+
+		JsonElement attributesRoot = getAttributesJson(pathName);
+		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path)) {
+			JsonElement json = attributesRoot;
+			final Gson gson = getGson();
+			final List<N5URL.N5UrlAttributePathToken> attributePathTokens = attributeUrl.getAttributePathTokens(gson, attribute);
+			for (N5URL.N5UrlAttributePathToken token : attributePathTokens) {
+				if (token.canNavigate(json) && !(token.child instanceof N5URL.N5UrlAttributePathLeaf<?>)) {
+					json = token.navigateJsonElement(json);
+					if (token.child instanceof N5URL.N5UrlAttributePathLeaf<?>) {
+						token.writeLeaf(json);
+					}
+				} else {
+					json = token.createJsonElement(json);
+				}
+				if (attributesRoot == null) {
+					assert token.getParent() != null;
+					attributesRoot = token.getParent();
+				}
+			}
+
+			lockedFileChannel.getFileChannel().truncate(0);
+			final Writer writer = Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name());
+			gson.toJson(attributesRoot, writer);
+			writer.flush();
+		}
 	}
 
 	@Override
@@ -199,7 +246,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 	 * Workaround for https://bugs.openjdk.java.net/browse/JDK-8130464
 	 *
      * Creates a directory by creating all nonexistent parent directories first.
-     * Unlike the {@link #createDirectory createDirectory} method, an exception
+     * Unlike the {@link Files#createDirectory(Path, FileAttribute[])}} method, an exception
      * is not thrown if the directory could not be created because it already
      * exists.
      *
