@@ -63,10 +63,10 @@ public interface GsonAttributesParser extends N5Reader {
 	 * Reads the attributes a group or dataset.
 	 *
 	 * @param pathName group path
-	 * @return the root {@link JsonObject} of the attributes
+	 * @return the root {@link JsonElement} of the attributes
 	 * @throws IOException
 	 */
-	public JsonObject getAttributesJson(final String pathName) throws IOException;
+	public JsonElement getAttributesJson(final String pathName) throws IOException;
 
 	/**
 	 * Parses an attribute from the given attributes map.
@@ -133,9 +133,9 @@ public interface GsonAttributesParser extends N5Reader {
 	 * @return the root {@link JsonObject} of the attributes
 	 * @throws IOException
 	 */
-	public static JsonObject readAttributesJson(final Reader reader, final Gson gson) throws IOException {
+	public static JsonElement readAttributesJson(final Reader reader, final Gson gson) throws IOException {
 
-		final JsonObject json = gson.fromJson(reader, JsonObject.class);
+		final JsonElement json = gson.fromJson(reader, JsonElement.class);
 		return json;
 	}
 

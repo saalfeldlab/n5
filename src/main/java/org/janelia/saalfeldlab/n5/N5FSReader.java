@@ -165,7 +165,7 @@ public class N5FSReader extends AbstractGsonReader {
 	}
 
 	@Override
-	public JsonObject getAttributesJson(final String pathName) throws IOException {
+	public JsonElement getAttributesJson(final String pathName) throws IOException {
 
 		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());
 		if (exists(pathName) && !Files.exists(path))
