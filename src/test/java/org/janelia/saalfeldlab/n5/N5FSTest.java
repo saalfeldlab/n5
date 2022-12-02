@@ -26,7 +26,15 @@ import java.io.IOException;
  */
 public class N5FSTest extends AbstractN5Test {
 
-	static private String testDirPath = System.getProperty("user.home") + "/tmp/n5-test";
+	static private String testDirPath;
+
+	static {
+		try {
+			testDirPath = Files.createTempDirectory("n5-test-").toFile().getCanonicalPath();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	/**
 	 * @throws IOException
