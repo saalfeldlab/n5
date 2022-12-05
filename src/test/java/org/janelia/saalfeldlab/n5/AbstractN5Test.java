@@ -18,7 +18,11 @@ package org.janelia.saalfeldlab.n5;
 
 import static org.junit.Assert.fail;
 
+import com.google.gson.JsonNull;
+import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -762,5 +766,157 @@ public abstract class AbstractN5Test {
 
 	protected boolean testDeleteIsBlockDeleted(final DataBlock<?> dataBlock) {
 		return dataBlock == null;
+	}
+
+	public class TestData<T> {
+
+		public String groupPath;
+		public String attributePath;
+		public T attributeValue;
+		public Class<T> attributeClass;
+
+		public TestData(String groupPath, String key, T attributeValue) {
+
+			this.groupPath = groupPath;
+			this.attributePath = key;
+			this.attributeValue = attributeValue;
+			this.attributeClass = (Class<T>)attributeValue.getClass();
+		}
+	}
+
+	protected void addAndTest(ArrayList<TestData<?>> existingTests, TestData<?> testData) {
+		/* test a new value on existing path */
+		try {
+			n5.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
+			Assert.assertEquals(testData.attributeValue, n5.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
+			Assert.assertEquals(testData.attributeValue,
+					n5.getAttribute(testData.groupPath, testData.attributePath, TypeToken.get(testData.attributeClass).getType()));
+
+			/* previous values should still be there, but we remove first if the test we just added overwrites. */
+			existingTests.removeIf(test -> {
+				try {
+					final String normalizedTestKey = N5URL.from(null, "", test.attributePath).normalizeAttributePath().replaceAll("^/", "");
+					final String normalizedTestDataKey = N5URL.from(null, "", testData.attributePath).normalizeAttributePath().replaceAll("^/", "");
+					return normalizedTestKey.equals(normalizedTestDataKey);
+				} catch (URISyntaxException e) {
+					throw new RuntimeException(e);
+				}
+			});
+			for (TestData<?> test : existingTests) {
+				Assert.assertEquals(test.attributeValue, n5.getAttribute(test.groupPath, test.attributePath, test.attributeClass));
+				Assert.assertEquals(test.attributeValue, n5.getAttribute(test.groupPath, test.attributePath, TypeToken.get(test.attributeClass).getType()));
+			}
+			existingTests.add(testData);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Test
+	public void testAttributePaths() throws IOException {
+
+		String testGroup = "test";
+		n5.createGroup(testGroup);
+
+		final ArrayList<TestData<?>> existingTests = new ArrayList<>();
+
+		/* Test a new value by path */
+		addAndTest(existingTests, new TestData<>(testGroup, "/a/b/c/key1", "value1"));
+		/* test a new value on existing path */
+		addAndTest(existingTests, new TestData<>(testGroup, "/a/b/key2", "value2"));
+		/* test replacing an existing value */
+		addAndTest(existingTests, new TestData<>(testGroup, "/a/b/c/key1", "new_value1"));
+
+		/* Test a new value with arrays */
+		addAndTest(existingTests, new TestData<>(testGroup, "/array[0]/b/c/key1", "array_value1"));
+		/* test replacing an existing value */
+		addAndTest(existingTests, new TestData<>(testGroup, "/array[0]/b/c/key1", "new_array_value1"));
+		/* test a new value on existing path with arrays */
+		addAndTest(existingTests, new TestData<>(testGroup, "/array[0]/d[3]/key2", "array_value2"));
+		/* test a new value on existing path with nested arrays */
+		addAndTest(existingTests, new TestData<>(testGroup, "/array[1][2]/[3]key2", "array2_value2"));
+		/* test with syntax variants */
+		addAndTest(existingTests, new TestData<>(testGroup, "/array[1][2]/[3]key2", "array3_value3"));
+		addAndTest(existingTests, new TestData<>(testGroup, "array[1]/[2][3]/key2", "array3_value4"));
+		addAndTest(existingTests, new TestData<>(testGroup, "/array/[1]/[2]/[3]/key2", "array3_value5"));
+
+		/* Non String tests */
+
+		addAndTest(existingTests, new TestData<>(testGroup, "/an/integer/test", 1));
+		addAndTest(existingTests, new TestData<>(testGroup, "/a/double/test", 1.0));
+		addAndTest(existingTests, new TestData<>(testGroup, "/a/float/test", 1.0F));
+		final TestData<Boolean> booleanTest = new TestData<>(testGroup, "/a/boolean/test", true);
+		addAndTest(existingTests, booleanTest);
+
+		/* overwrite structure*/
+		existingTests.remove(booleanTest);
+		addAndTest(existingTests, new TestData<>(testGroup, "/a/boolean[2]/test", true));
+
+		/* Fill an array with number */
+		addAndTest(existingTests, new TestData<>(testGroup, "/filled/double_array[5]", 5.0));
+		addAndTest(existingTests, new TestData<>(testGroup, "/filled/double_array[1]", 1.0));
+		addAndTest(existingTests, new TestData<>(testGroup, "/filled/double_array[2]", 2.0));
+
+		addAndTest(existingTests, new TestData<>(testGroup, "/filled/double_array[4]", 4.0));
+		addAndTest(existingTests, new TestData<>(testGroup, "/filled/double_array[0]", 0.0));
+
+		/* We intentionally skipped index 3, it should be `0` */
+		Assert.assertEquals((Integer)0, n5.getAttribute(testGroup, "/filled/double_array[3]", Integer.class));
+
+		/* Fill an array with Object */
+		addAndTest(existingTests, new TestData<>(testGroup, "/filled/string_array[5]", "f"));
+		addAndTest(existingTests, new TestData<>(testGroup, "/filled/string_array[1]", "b"));
+		addAndTest(existingTests, new TestData<>(testGroup, "/filled/string_array[2]", "c"));
+
+		addAndTest(existingTests, new TestData<>(testGroup, "/filled/string_array[4]", "e"));
+		addAndTest(existingTests, new TestData<>(testGroup, "/filled/string_array[0]", "a"));
+
+		/* We intentionally skipped index 3, it should be null */
+		Assert.assertNull( n5.getAttribute( testGroup, "/filled/double_array[3]", JsonNull.class ) );
+
+		n5.remove(testGroup);
+	}
+
+	@Test
+	public void testRootLeaves() throws IOException {
+		//TODO: Currently, this fails if you try to overwrite an existing root; should we support that?
+		// In general, the current situation is such that you can only replace leaf nodes;
+
+
+		/* Test with new root's each time */
+		final ArrayList<TestData<?>> tests = new ArrayList<>();
+		tests.add(new TestData<>(groupName, "", "empty_root"));
+		tests.add(new TestData<>(groupName, "/", "replace_empty_root"));
+		tests.add(new TestData<>(groupName, "[0]", "array_root"));
+
+		for (TestData<?> testData : tests) {
+			final File tmpFile = Files.createTempDirectory( "root-leaf-test-" ).toFile();
+			tmpFile.deleteOnExit();
+			final String canonicalPath = tmpFile.getCanonicalPath();
+			try (final N5FSWriter writer = new N5FSWriter(canonicalPath)) {
+				writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
+				Assert.assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
+				Assert.assertEquals(testData.attributeValue,
+						writer.getAttribute(testData.groupPath, testData.attributePath, TypeToken.get(testData.attributeClass).getType()));
+			}
+		}
+
+		/* Test with replacing the root */
+		tests.clear();
+		tests.add(new TestData<>(groupName, "", "empty_root"));
+		tests.add(new TestData<>(groupName, "/", "replace_empty_root"));
+		tests.add(new TestData<>(groupName, "[0]", "array_root"));
+
+		final File tmpFile = Files.createTempDirectory( "reuse-root-leaf-test-" ).toFile();
+		tmpFile.deleteOnExit();
+		final String canonicalPath = tmpFile.getCanonicalPath();
+		try (final N5FSWriter writer = new N5FSWriter(canonicalPath)) {
+			for (TestData<?> testData : tests) {
+				writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
+				Assert.assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
+				Assert.assertEquals(testData.attributeValue,
+						writer.getAttribute(testData.groupPath, testData.attributePath, TypeToken.get(testData.attributeClass).getType()));
+			}
+		}
 	}
 }

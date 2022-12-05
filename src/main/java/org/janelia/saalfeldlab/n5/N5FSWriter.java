@@ -25,12 +25,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
 import java.io.IOException;
-import java.io.Writer;
-import java.net.URISyntaxException;
 import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryNotEmptyException;
@@ -43,12 +40,10 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
 
 /**
  * Filesystem {@link N5Writer} implementation with version compatibility check.
