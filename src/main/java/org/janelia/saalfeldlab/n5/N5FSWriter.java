@@ -111,43 +111,13 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 
 	@Override public <T> void setAttribute(String pathName, String key, T attribute) throws IOException {
 
-		final N5URL attributeUrl;
-		try {
-			attributeUrl = N5URL.from(null, pathName, key);
-		} catch (URISyntaxException e) {
-			throw new IOException(e);
-		}
-
-		final String groupPath = attributeUrl.normalizeGroupPath();
-		final String attributePath = attributeUrl.getAttributePath();
-
 		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());
 		createDirectories(path.getParent());
-
 		JsonElement attributesRoot = getAttributesJson(pathName);
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path)) {
-			JsonElement json = attributesRoot;
-			final Gson gson = getGson();
-			final List<N5URL.N5UrlAttributePathToken> attributePathTokens = attributeUrl.getAttributePathTokens(gson, attribute);
-			for (N5URL.N5UrlAttributePathToken token : attributePathTokens) {
-				if (token.canNavigate(json) && !(token.child instanceof N5URL.N5UrlAttributePathLeaf<?>)) {
-					json = token.navigateJsonElement(json);
-					if (token.child instanceof N5URL.N5UrlAttributePathLeaf<?>) {
-						token.writeLeaf(json);
-					}
-				} else {
-					json = token.createJsonElement(json);
-				}
-				if (attributesRoot == null) {
-					assert token.getParent() != null;
-					attributesRoot = token.getParent();
-				}
-			}
-
+			final String attributePath = N5URL.normalizeAttributePath(key);
 			lockedFileChannel.getFileChannel().truncate(0);
-			final Writer writer = Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name());
-			gson.toJson(attributesRoot, writer);
-			writer.flush();
+			GsonAttributesParser.writeAttribute(Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), attributesRoot, attributePath, attribute, getGson());
 		}
 	}
 

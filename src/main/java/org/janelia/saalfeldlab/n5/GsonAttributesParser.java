@@ -32,6 +32,7 @@ import java.io.Writer;
 import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -171,6 +172,132 @@ public interface GsonAttributesParser extends N5Reader {
 		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
 		gson.toJson(map, mapType, writer);
 		writer.flush();
+	}
+
+	public static <T> void writeAttribute(
+			final Writer writer,
+			JsonElement root,
+			final String attributePath,
+			final T attribute,
+			final Gson gson) throws IOException {
+
+
+		JsonElement parent = null;
+		JsonElement json = root;
+		final List<N5URL.N5UrlAttributePathToken> attributePathTokens = N5URL.getAttributePathTokens(gson, attributePath, attribute);
+		for (N5URL.N5UrlAttributePathToken token : attributePathTokens) {
+			/* The json is incompatible if it needs to be replaced; json == null is NOT incompatible.
+			* The two cases are if either the JsonElement is different than expected, or we are a leaf
+			* with no parent, in which case we always clear the existing root/json if any exists. */
+			if (token.jsonIncompatible(json) || (token instanceof N5URL.N5UrlAttributePathLeaf<?> && parent == null) ) {
+				if (parent == null) {
+					/* We are replacing the root, so just set the root to null, and continue */
+					root = null;
+					json = null;
+				} else {
+					json = token.replaceJsonElement(parent);
+				}
+			}
+
+			/* If we can dive into this jsonElement for the current token, do so,
+			*  Otherwise, create the element */
+			if (token.canNavigate(json) && !(token.child instanceof N5URL.N5UrlAttributePathLeaf<?>)) {
+				parent = json;
+				json = token.navigateJsonElement(json);
+				if (token.child instanceof N5URL.N5UrlAttributePathLeaf<?>) {
+					token.writeLeaf(json);
+				}
+			} else {
+				parent = json;
+				json = token.createJsonElement(json);
+				/* If the root is null, we need to set it based on the newly created element */
+				if (root == null) {
+					if (token instanceof N5URL.N5UrlAttributePathLeaf<?> ) {
+						/* if it's a leaf, we are the root*/
+						root = json;
+					} else {
+						/* Otherwise, creating the element will have specified the root, and we can grab it now. */
+						assert token.getRoot() != null;
+						root = token.getRoot();
+						parent = root;
+					}
+				}
+			}
+		}
+		gson.toJson(root, writer);
+		writer.flush();
+	}
+
+	static  <T> T getJsonAsArray(Gson gson, JsonArray array, Type type) {
+
+		final Class<?> clazz = (type instanceof Class<?>) ? ((Class<?>)type) : null;
+
+		if (type == boolean[].class) {
+			final boolean[] retArray = new boolean[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final Boolean value = gson.fromJson(array.get(i), boolean.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == double[].class) {
+			final double[] retArray = new double[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final double value = gson.fromJson(array.get(i), double.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == float[].class) {
+			final float[] retArray = new float[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final float value = gson.fromJson(array.get(i), float.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == long[].class) {
+			final long[] retArray = new long[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final long value = gson.fromJson(array.get(i), long.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == short[].class) {
+			final short[] retArray = new short[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final short value = gson.fromJson(array.get(i), short.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == int[].class) {
+			final int[] retArray = new int[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final int value = gson.fromJson(array.get(i), int.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == byte[].class) {
+			final byte[] retArray = new byte[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final byte value = gson.fromJson(array.get(i), byte.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == char[].class) {
+			final char[] retArray = new char[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final char value = gson.fromJson(array.get(i), char.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (clazz != null && clazz.isArray()) {
+			final Class<?> componentCls = clazz.getComponentType();
+			final Object[] clsArray = (Object[])Array.newInstance(componentCls, array.size());
+			for (int i = 0; i < array.size(); i++) {
+				clsArray[i] = gson.fromJson(array.get(i), componentCls);
+			}
+			//noinspection unchecked
+			return (T)clsArray;
+		}
+		return null;
 	}
 
 	/**
