@@ -27,10 +27,7 @@ package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
@@ -38,8 +35,6 @@ import java.lang.reflect.Type;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
 
 /**
  * Abstract base class implementing {@link N5Reader} with JSON attributes
@@ -140,48 +135,16 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 			final String pathName,
 			final String key,
 			final Type type) throws IOException {
-
 		final String normalizedGroupPath;
 		final String normalizedAttributePath;
 		try {
-			final N5URL n5url = N5URL.from(null, pathName, key);
+			final N5URL n5url = N5URL.from(null, pathName, key );
 			normalizedGroupPath = n5url.normalizeGroupPath();
 			normalizedAttributePath = n5url.normalizeAttributePath();
 		} catch (URISyntaxException e) {
 			throw new IOException(e);
 		}
-		final Class<?> clazz = (type instanceof Class<?>) ? ((Class<?>)type) : null;
-		JsonElement json = getAttributesJson(normalizedGroupPath);
-		for (final String pathPart : normalizedAttributePath.split("/")) {
-			if (pathPart.isEmpty())
-				continue;
-			if (json instanceof JsonObject && json.getAsJsonObject().get(pathPart) != null) {
-				json = json.getAsJsonObject().get(pathPart);
-			} else {
-				final Matcher matcher = N5URL.ARRAY_INDEX.matcher(pathPart);
-				if (json != null && json.isJsonArray() && matcher.matches()) {
-					final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
-					json = json.getAsJsonArray().get(index);
-				}
-			}
-		}
-		if (clazz != null && clazz.isAssignableFrom(HashMap.class)) {
-			Type mapType = new TypeToken<Map<String, Object>>() {}.getType();
-			Map<String, Object> retMap = gson.fromJson(json, mapType);
-			//noinspection unchecked
-			return (T)retMap;
-		}
-		if (json instanceof JsonArray) {
-			final JsonArray array = json.getAsJsonArray();
-			T retArray = GsonAttributesParser.getJsonAsArray(gson, array, type);
-			if (retArray != null)
-				return retArray;
-		}
-		try {
-			return gson.fromJson(json, type);
-		} catch (
-				JsonSyntaxException e) {
-			return null;
-		}
+		return GsonAttributesParser.readAttribute( getAttributesJson( normalizedGroupPath ), normalizedAttributePath, type,  gson);
 	}
+
 }

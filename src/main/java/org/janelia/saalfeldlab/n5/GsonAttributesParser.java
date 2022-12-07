@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -41,6 +42,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
+import java.util.regex.Matcher;
 
 /**
  * {@link N5Reader} for JSON attributes parsed by {@link Gson}.
@@ -140,6 +142,47 @@ public interface GsonAttributesParser extends N5Reader {
 		return json;
 	}
 
+	static < T > T readAttribute( final JsonElement root, final String normalizedAttributePath, final Class<T> cls, final Gson gson ) {
+
+		return readAttribute(root, normalizedAttributePath, TypeToken.get( cls ).getType(), gson );
+	}
+	static < T > T readAttribute( final JsonElement root, final String normalizedAttributePath, final Type type, final Gson gson ) {
+		final Class<?> clazz = ( type instanceof Class<?>) ? ((Class<?>) type ) : null;
+		JsonElement json = root;
+		for (final String pathPart : normalizedAttributePath.split("/")) {
+			if (pathPart.isEmpty())
+				continue;
+			if (json instanceof JsonObject && json.getAsJsonObject().get(pathPart) != null) {
+				json = json.getAsJsonObject().get(pathPart);
+			} else {
+				final Matcher matcher = N5URL.ARRAY_INDEX.matcher(pathPart);
+				if (json != null && json.isJsonArray() && matcher.matches()) {
+					final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
+					json = json.getAsJsonArray().get(index);
+				}
+			}
+		}
+		if (clazz != null && clazz.isAssignableFrom(HashMap.class)) {
+			Type mapType = new TypeToken<Map<String, Object>>() {}.getType();
+			Map<String, Object> retMap = gson.fromJson(json, mapType);
+			//noinspection unchecked
+			return ( T ) retMap;
+		}
+		if (json instanceof JsonArray) {
+			final JsonArray array = json.getAsJsonArray();
+			T retArray = GsonAttributesParser.getJsonAsArray(gson, array, type );
+			if (retArray != null)
+				return retArray;
+		}
+		try {
+			return gson.fromJson( json, type );
+		} catch ( JsonSyntaxException e) {
+			if (type == String.class)
+				return (T) gson.toJson(json);
+			return null;
+		}
+	}
+
 	/**
 	 * Inserts new the JSON export of attributes into the given attributes map.
 	 *
@@ -181,14 +224,20 @@ public interface GsonAttributesParser extends N5Reader {
 			final T attribute,
 			final Gson gson) throws IOException {
 
+		root = insertAttribute(root, attributePath, attribute, gson);
+		gson.toJson(root, writer);
+		writer.flush();
+	}
+
+	public static <T> JsonElement insertAttribute(JsonElement root, String attributePath, T attribute, Gson gson) {
 
 		JsonElement parent = null;
 		JsonElement json = root;
 		final List<N5URL.N5UrlAttributePathToken> attributePathTokens = N5URL.getAttributePathTokens(gson, attributePath, attribute);
 		for (N5URL.N5UrlAttributePathToken token : attributePathTokens) {
 			/* The json is incompatible if it needs to be replaced; json == null is NOT incompatible.
-			* The two cases are if either the JsonElement is different than expected, or we are a leaf
-			* with no parent, in which case we always clear the existing root/json if any exists. */
+			 * The two cases are if either the JsonElement is different than expected, or we are a leaf
+			 * with no parent, in which case we always clear the existing root/json if any exists. */
 			if (token.jsonIncompatible(json) || (token instanceof N5URL.N5UrlAttributePathLeaf<?> && parent == null) ) {
 				if (parent == null) {
 					/* We are replacing the root, so just set the root to null, and continue */
@@ -200,7 +249,7 @@ public interface GsonAttributesParser extends N5Reader {
 			}
 
 			/* If we can dive into this jsonElement for the current token, do so,
-			*  Otherwise, create the element */
+			 *  Otherwise, create the element */
 			if (token.canNavigate(json) && !(token.child instanceof N5URL.N5UrlAttributePathLeaf<?>)) {
 				parent = json;
 				json = token.navigateJsonElement(json);
@@ -224,10 +273,12 @@ public interface GsonAttributesParser extends N5Reader {
 				}
 			}
 		}
-		gson.toJson(root, writer);
-		writer.flush();
+		return root;
 	}
 
+	static  <T> T getJsonAsArray(Gson gson, JsonArray array, Class<T> cls) {
+		return getJsonAsArray( gson, array, TypeToken.get( cls ).getType() );
+	}
 	static  <T> T getJsonAsArray(Gson gson, JsonArray array, Type type) {
 
 		final Class<?> clazz = (type instanceof Class<?>) ? ((Class<?>)type) : null;
