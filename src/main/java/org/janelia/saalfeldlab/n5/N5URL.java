@@ -470,6 +470,11 @@ public class N5URL {
 			this.key = key;
 		}
 
+		public String getKey()
+		{
+			return key;
+		}
+
 		@Override public boolean jsonIncompatible(JsonElement json) {
 
 			return json != null && !json.isJsonObject();
