@@ -30,6 +30,9 @@ public class N5URLTest {
 			assertEquals("let's/try/a/real/case/with spaces", N5URL.normalizeAttributePath("let's/try/a/real/case/with spaces/"));
 			assertEquals("let's/try/a/real/case/with spaces", N5URL.normalizeAttributePath("let's/try/a/real/////case////with spaces/"));
 			assertThrows( IndexOutOfBoundsException.class, () -> N5URL.normalizeAttributePath("../first/relative/../not/allowed"));
+
+			String normalizedPath = N5URL.normalizeAttributePath("let's/try/a/real/////case////with spaces/");
+			assertEquals("Normalizing a normal path should be the identity", normalizedPath, N5URL.normalizeAttributePath(normalizedPath));
 	}
 
 	@Test
