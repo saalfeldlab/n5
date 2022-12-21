@@ -28,6 +28,7 @@ package org.janelia.saalfeldlab.n5;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
@@ -135,6 +136,18 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 			final String pathName,
 			final String key,
 			final Type type) throws IOException {
+		/* Short Circuit if the key exists exactly as is */
+		final HashMap<String, JsonElement> attributes = getAttributes(pathName);
+		if (attributes.containsKey(key)) {
+			try {
+				return gson.fromJson(attributes.get(key), type);
+			} catch (JsonSyntaxException e) {
+				/* This can happen for example when you have an attribute object with the exact key, but ALSO
+				* have a structured json path that you want to query. In this case, it will fail here if the types are different
+				* but we may want it to continue to try below. */
+			}
+		}
+
 		final String normalizedGroupPath;
 		final String normalizedAttributePath;
 		try {
