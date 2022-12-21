@@ -43,44 +43,86 @@ public class N5URL {
 		attribute = uri.getFragment();
 	}
 
+	/**
+	 * @return the container path
+	 */
 	public String getContainerPath() {
 
 		return container;
 	}
 
+	/**
+	 * @return the group path, or root ("/") if none was provided
+	 */
 	public String getGroupPath() {
 
 		return group != null ? group : "/";
 	}
 
+	/**
+	 * @return the normalized container path
+	 */
 	public String normalizeContainerPath() {
 
 		return normalizePath(getContainerPath());
 	}
 
+	/**
+	 * @return the normalized group path
+	 */
 	public String normalizeGroupPath() {
 
 		return normalizePath(getGroupPath());
 	}
 
+	/**
+	 * @return the attribute path, or root ("/") if none was provided
+	 */
 	public String getAttributePath() {
 
 		return attribute != null ? attribute : "/";
 	}
 
+	/**
+	 * @return the normalized attribute path
+	 */
 	public String normalizeAttributePath() {
 
 		return normalizeAttributePath(getAttributePath());
 	}
 
+	/**
+	 *
+	 * Parse this {@link N5URL} as a list of {@link N5UrlAttributePathToken}.
+	 *
+	 * @see N5URL#getAttributePathTokens(Gson, String, Object)
+	 */
 	public ArrayList<N5UrlAttributePathToken> getAttributePathTokens(Gson gson) {
 		return getAttributePathTokens(gson, null);
 	}
+
+	/**
+	 *
+	 * Parse this {@link N5URL} as a list of {@link N5UrlAttributePathToken}.
+	 *
+	 * @see N5URL#getAttributePathTokens(Gson, String, Object)
+	 */
 	public <T> ArrayList<N5UrlAttributePathToken> getAttributePathTokens(Gson gson, T value) {
 
 		return N5URL.getAttributePathTokens(gson, normalizeAttributePath(), value);
 	}
 
+	/**
+	 * Parses the {@link String normalizedAttributePath} to a list of {@link N5UrlAttributePathToken}.
+	 * This is useful for traversing or constructing a json representation of the provided {@link String normalizedAttributePath}.
+	 * Note that {@link String normalizedAttributePath} should be normalized prior to generating this list
+	 *
+	 * @param gson used to parse {@link T value}
+	 * @param normalizedAttributePath to parse into {@link N5UrlAttributePathToken N5UrlAttributePathTokens}
+	 * @param value to be stored in the last {@link N5UrlAttributePathToken}
+	 * @param <T> type of the value representing the last {@link N5UrlAttributePathToken}
+	 * @return a list of {@link N5UrlAttributePathToken N5AttributePathTokens}
+	 */
 	public static <T> ArrayList<N5UrlAttributePathToken> getAttributePathTokens(Gson gson, String normalizedAttributePath, T value) {
 
 		final String[] attributePaths = normalizedAttributePath.replaceAll("^/", "").split("/");
@@ -157,6 +199,12 @@ public class N5URL {
 		return uri.getSchemeSpecificPart().replace("?" + uri.getQuery(), "");
 	}
 
+	/**
+	 * N5URL is always considered absolute if a scheme is provided.
+	 * If no scheme is provided, the N5URL is absolute if it starts with either "/" or "[A-Z]:"
+	 *
+	 * @return if the path for this N5URL is absolute
+	 */
 	public boolean isAbsolute() {
 
 		if (scheme != null) return true;
@@ -168,7 +216,15 @@ public class N5URL {
 		return false;
 	}
 
-	public N5URL resolve(N5URL relative) throws URISyntaxException {
+	/**
+	 * Generate a new N5URL which is the result of resolving {@link N5URL relativeN5Url} to this {@link N5URL}.
+	 * If relativeN5Url is not relative to this N5URL, then the resulting N5URL is equivalent to relativeN5Url.
+	 *
+	 * @param relativeN5Url N5URL to resolve against ourselves
+	 * @return the result of the resolution.
+	 * @throws URISyntaxException
+	 */
+	public N5URL resolve(N5URL relativeN5Url) throws URISyntaxException {
 
 		final URI thisUri = uri;
 		final URI relativeUri = relativeN5Url.uri;
@@ -237,16 +293,38 @@ public class N5URL {
 		return new N5URL(newUri.toString());
 	}
 
-	public N5URL resolve(URI relative) throws URISyntaxException {
+	/**
+	 * Generate a new N5URL which is the result of resolving {@link URI relativeUri} to this {@link N5URL}.
+	 * If relativeUri is not relative to this N5URL, then the resulting N5URL is equivalent to relativeUri.
+	 *
+	 * @param relativeUri URI to resolve against ourselves
+	 * @return the result of the resolution.
+	 * @throws URISyntaxException
+	 */
+	public N5URL resolve(URI relativeUri) throws URISyntaxException {
 
-		return resolve(new N5URL(relative));
+		return resolve(new N5URL(relativeUri));
 	}
 
-	public N5URL resolve(String relative) throws URISyntaxException {
+	/**
+	 * Generate a new N5URL which is the result of resolving {@link String relativeString} to this {@link N5URL}
+	 * If relativeString is not relative to this N5URL, then the resulting N5URL is equivalent to relativeString.
+	 *
+	 * @param relativeString String to resolve against ourselves
+	 * @return the result of the resolution.
+	 * @throws URISyntaxException
+	 */
+	public N5URL resolve(String relativeString) throws URISyntaxException {
 
-		return resolve(new N5URL(relative));
+		return resolve(new N5URL(relativeString));
 	}
 
+	/**
+	 * Normalize a path, resulting in removal of redundant "/", "./", and resolution of relative "../".
+	 *
+	 * @param path to normalize
+	 * @return the normalized path
+	 */
 	public static String normalizePath(String path) {
 
 		path = path == null ? "" : path;
@@ -308,9 +386,43 @@ public class N5URL {
 				.reduce((l, r) -> l + "/" + r).orElse("");
 	}
 
-	public static String normalizeAttributePath(String path) {
+	/**
+	 * Normalize the {@link String attributePath}.
+	 *<p>
+	 * Attribute paths have a few of special characters:
+	 * <ul>
+	 * 	<li>"." which represents the current element </li>
+	 * 	<li>".." which represent the previous elemnt </li>
+	 * 	<li>"/" which is used to separate elements in the json tree </li>
+	 * 	<li>[N] where N is an integer, refer to an index in the previous element in the tree; the previous element must be an array. </li>
+	 * 		Note: [N] also separates the previous and following elements, regardless of whether it is preceded by "/" or not.
+	 * </ul>
+	 * 	<p>
+	 * When normalizing:
+	 * <ul>
+	 * 	<li>"/" are added before and after any indexing brackets [N] </li>
+	 * 	<li>any redundant "/" are removed </li>
+	 * 	<li>any relative ".." and "." are resolved </li>
+	 * </ul>
+	 *
+	 * Examples of valid attribute paths, and their normalizations
+	 * <ul>
+	 * 	<li>/a/b/c -> /a/b/c</li>
+	 * 	<li>/a/b/c/ -> /a/b/c</li>
+	 * 	<li>///a///b///c -> /a/b/c</li>
+	 * 	<li>/a/././b/c -> /a/b/c</li>
+	 * 	<li>/a/b[1]c -> /a/b/[1]/c</li>
+	 * 	<li>/a/b/[1]c -> /a/b/[1]/c</li>
+	 * 	<li>/a/b[1]/c -> /a/b/[1]/c</li>
+	 * 	<li>/a/b[1]/c/.. -> /a/b/[1]</li>
+	 * </ul>
+	 *
+	 * @param attributePath to normalize
+	 * @return the normalized attribute path
+	 */
+	public static String normalizeAttributePath(String attributePath) {
 
-		final char[] pathChars = path.toCharArray();
+		final char[] pathChars = attributePath.toCharArray();
 
 		final List<String> tokens = new ArrayList<>();
 		StringBuilder curToken = new StringBuilder();
@@ -659,6 +771,15 @@ public class N5URL {
 
 	}
 
+	/**
+	 * Generate an {@link N5URL} from a container, group, and attribute
+	 *
+	 * @param container of the N5Url
+	 * @param group of the N5Url
+	 * @param attribute of the N5Url
+	 * @return the {@link N5URL}
+	 * @throws URISyntaxException
+	 */
 	public static N5URL from(String container, String group, String attribute) throws URISyntaxException {
 
 		final String containerPart = container != null ? container : "";
