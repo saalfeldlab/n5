@@ -918,10 +918,10 @@ public abstract class AbstractN5Test {
 		tests.add(new TestData<>(groupName, "[0]", "array_root"));
 
 		for (TestData<?> testData : tests) {
-			final File tmpFile = Files.createTempDirectory( "root-leaf-test-" ).toFile();
+			final File tmpFile = Files.createTempDirectory("root-leaf-test-").toFile();
 			tmpFile.deleteOnExit();
 			final String canonicalPath = tmpFile.getCanonicalPath();
-			try (final N5FSWriter writer = new N5FSWriter(canonicalPath)) {
+			try (final N5Writer writer = createN5Writer(canonicalPath)) {
 				writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
 				Assert.assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
 				Assert.assertEquals(testData.attributeValue,
@@ -929,21 +929,46 @@ public abstract class AbstractN5Test {
 			}
 		}
 
-		/* Test with replacing the root */
+		/* Test with replacing an existing root-leaf */
 		tests.clear();
 		tests.add(new TestData<>(groupName, "", "empty_root"));
 		tests.add(new TestData<>(groupName, "/", "replace_empty_root"));
 		tests.add(new TestData<>(groupName, "[0]", "array_root"));
 
-		final File tmpFile = Files.createTempDirectory( "reuse-root-leaf-test-" ).toFile();
+		final File tmpFile = Files.createTempDirectory("reuse-root-leaf-test-").toFile();
 		tmpFile.deleteOnExit();
 		final String canonicalPath = tmpFile.getCanonicalPath();
-		try (final N5FSWriter writer = new N5FSWriter(canonicalPath)) {
+		try (final N5Writer writer = createN5Writer(canonicalPath)) {
 			for (TestData<?> testData : tests) {
 				writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
 				Assert.assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
 				Assert.assertEquals(testData.attributeValue,
 						writer.getAttribute(testData.groupPath, testData.attributePath, TypeToken.get(testData.attributeClass).getType()));
+			}
+		}
+
+		/* Test with replacing an existing root non-leaf*/
+		tests.clear();
+		final TestData<Integer> rootAsObject = new TestData<>(groupName, "/some/non/leaf[3]/structure", 100);
+		final TestData<Integer> rootAsPrimitive = new TestData<>(groupName, "", 200);
+		final TestData<Integer> rootAsArray = new TestData<>(groupName, "/", 300);
+		tests.add(rootAsPrimitive);
+		tests.add(rootAsArray);
+		final File tmpFile2 = Files.createTempDirectory("reuse-root-leaf-test-").toFile();
+		tmpFile2.deleteOnExit();
+		final String canonicalPath2 = tmpFile2.getCanonicalPath();
+		try (final N5Writer writer = createN5Writer(canonicalPath2)) {
+			for (TestData<?> test : tests) {
+				/* Set the root as Object*/
+				writer.setAttribute(rootAsObject.groupPath, rootAsObject.attributePath, rootAsObject.attributeValue);
+				Assert.assertEquals(rootAsObject.attributeValue, writer.getAttribute(rootAsObject.groupPath, rootAsObject.attributePath, rootAsObject.attributeClass));
+
+				/* Override the root with something else */
+				writer.setAttribute(test.groupPath, test.attributePath, test.attributeValue);
+				/* Verify original root is gone */
+				Assert.assertNull(writer.getAttribute(rootAsObject.groupPath, rootAsObject.attributePath, rootAsObject.attributeClass));
+				/* verify new root exists */
+				Assert.assertEquals(test.attributeValue, writer.getAttribute(test.groupPath, test.attributePath, test.attributeClass));
 			}
 		}
 	}
