@@ -74,6 +74,8 @@ public abstract class AbstractN5Test {
 
 	protected abstract N5Writer createN5Writer() throws IOException;
 
+	protected abstract N5Writer createN5Writer(String location) throws IOException;
+
 	protected Compression[] getCompressions() {
 
 		return new Compression[] {
