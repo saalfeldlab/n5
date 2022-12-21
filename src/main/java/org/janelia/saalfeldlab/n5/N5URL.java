@@ -573,7 +573,7 @@ public class N5URL {
 
 			if (child instanceof N5UrlAttributePathLeaf<?>) {
 				final N5UrlAttributePathLeaf< ? > leaf = ( N5UrlAttributePathLeaf< ? > ) child;
-				if (leaf.value instanceof Number) {
+				if (leaf.value instanceof Number || (leaf.value instanceof JsonPrimitive && ((JsonPrimitive)leaf.value).isNumber())) {
 					fillArrayValue = new JsonPrimitive( 0 );
 				}
 			}
