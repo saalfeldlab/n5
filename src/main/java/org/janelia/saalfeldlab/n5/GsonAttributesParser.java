@@ -220,20 +220,20 @@ public interface GsonAttributesParser extends N5Reader {
 	public static <T> void writeAttribute(
 			final Writer writer,
 			JsonElement root,
-			final String attributePath,
+			final String normalizedAttributePath,
 			final T attribute,
 			final Gson gson) throws IOException {
 
-		root = insertAttribute(root, attributePath, attribute, gson);
+		root = insertAttribute(root, normalizedAttributePath, attribute, gson);
 		gson.toJson(root, writer);
 		writer.flush();
 	}
 
-	public static <T> JsonElement insertAttribute(JsonElement root, String attributePath, T attribute, Gson gson) {
+	public static <T> JsonElement insertAttribute(JsonElement root, String normalizedAttributePath, T attribute, Gson gson) {
 
 		JsonElement parent = null;
 		JsonElement json = root;
-		final List<N5URL.N5UrlAttributePathToken> attributePathTokens = N5URL.getAttributePathTokens(gson, attributePath, attribute);
+		final List<N5URL.N5UrlAttributePathToken> attributePathTokens = N5URL.getAttributePathTokens(gson, normalizedAttributePath, attribute);
 		for (N5URL.N5UrlAttributePathToken token : attributePathTokens) {
 			/* The json is incompatible if it needs to be replaced; json == null is NOT incompatible.
 			 * The two cases are if either the JsonElement is different than expected, or we are a leaf

@@ -81,9 +81,9 @@ public class N5URL {
 		return N5URL.getAttributePathTokens(gson, normalizeAttributePath(), value);
 	}
 
-	public static <T> ArrayList<N5UrlAttributePathToken> getAttributePathTokens(Gson gson, String attributePath, T value) {
+	public static <T> ArrayList<N5UrlAttributePathToken> getAttributePathTokens(Gson gson, String normalizedAttributePath, T value) {
 
-		final String[] attributePaths = attributePath.replaceAll("^/", "").split("/");
+		final String[] attributePaths = normalizedAttributePath.replaceAll("^/", "").split("/");
 
 		if (attributePaths.length == 0) {
 			return new ArrayList<>();
