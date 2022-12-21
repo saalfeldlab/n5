@@ -159,6 +159,7 @@ public class N5URL {
 
 	public boolean isAbsolute() {
 
+		if (scheme != null) return true;
 		final String path = uri.getPath();
 		if (!path.isEmpty()) {
 			final char char0 = path.charAt(0);
