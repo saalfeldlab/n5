@@ -171,12 +171,12 @@ public class N5URL {
 	public N5URL resolve(N5URL relative) throws URISyntaxException {
 
 		final URI thisUri = uri;
-		final URI relativeUri = relative.uri;
+		final URI relativeUri = relativeN5Url.uri;
 
 		final StringBuilder newUri = new StringBuilder();
 
 		if (relativeUri.getScheme() != null) {
-			return relative;
+			return relativeN5Url;
 		}
 		final String thisScheme = thisUri.getScheme();
 		if (thisScheme != null) {
@@ -187,8 +187,8 @@ public class N5URL {
 			newUri
 					.append(relativeUri.getAuthority())
 					.append(relativeUri.getPath())
-					.append(relative.getGroupPart())
-					.append(relative.getAttributePart());
+					.append(relativeN5Url.getGroupPart())
+					.append(relativeN5Url.getAttributePart());
 			return new N5URL(newUri.toString());
 		}
 		final String thisAuthority = thisUri.getAuthority();
@@ -198,13 +198,13 @@ public class N5URL {
 
 		final String path = relativeUri.getPath();
 		if (!path.isEmpty()) {
-			if (!relative.isAbsolute()) {
+			if (!relativeN5Url.isAbsolute()) {
 				newUri.append(thisUri.getPath()).append('/');
 			}
 			newUri
 					.append(path)
-					.append(relative.getGroupPart())
-					.append(relative.getAttributePart());
+					.append(relativeN5Url.getGroupPart())
+					.append(relativeN5Url.getAttributePart());
 			return new N5URL(newUri.toString());
 		}
 		newUri.append(thisUri.getPath());
@@ -215,9 +215,9 @@ public class N5URL {
 				newUri.append(this.getGroupPart()).append('/');
 				newUri.append(relativeUri.getQuery());
 			} else {
-				newUri.append(relative.getGroupPart());
+				newUri.append(relativeN5Url.getGroupPart());
 			}
-			newUri.append(relative.getAttributePart());
+			newUri.append(relativeN5Url.getAttributePart());
 			return new N5URL(newUri.toString());
 		}
 		newUri.append(this.getGroupPart());
@@ -227,7 +227,7 @@ public class N5URL {
 			if (fragment.charAt(0) != '/' && thisUri.getFragment() != null) {
 				newUri.append(this.getAttributePart()).append('/');
 			} else {
-				newUri.append(relative.getAttributePart());
+				newUri.append(relativeN5Url.getAttributePart());
 			}
 
 			return new N5URL(newUri.toString());
@@ -376,7 +376,7 @@ public class N5URL {
 				.reduce((l, r) -> l + "/" + r).orElse("");
 	}
 
-	public static URI encodeAsUri(String uri) throws URISyntaxException {
+	private static URI encodeAsUri(String uri) throws URISyntaxException {
 
 		if (uri.trim().length() == 0) {
 			return new URI(uri);
