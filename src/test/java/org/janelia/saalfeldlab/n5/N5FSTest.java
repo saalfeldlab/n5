@@ -31,23 +31,23 @@ import java.util.ArrayList;
  */
 public class N5FSTest extends AbstractN5Test {
 
-	static private String testDirPath;
-
-	static {
-		try {
-			testDirPath = Files.createTempDirectory("n5-test-").toFile().getCanonicalPath();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 	/**
 	 * @throws IOException
 	 */
 	@Override
 	protected N5Writer createN5Writer() throws IOException {
+		String testDirPath;
+		try {
+			testDirPath = Files.createTempDirectory("n5-test-").toFile().getCanonicalPath();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		return createN5Writer(testDirPath);
+	}
 
-		return new N5FSWriter(testDirPath);
+	@Override
+	protected N5Writer createN5Writer(String location) throws IOException {
+		return new N5FSWriter(location);
 	}
 
 	@Test

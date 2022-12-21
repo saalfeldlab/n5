@@ -19,6 +19,7 @@ package org.janelia.saalfeldlab.n5;
 import static org.junit.Assert.fail;
 
 import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -42,6 +43,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.gson.reflect.TypeToken;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * Abstract base class for testing N5 functionality.
