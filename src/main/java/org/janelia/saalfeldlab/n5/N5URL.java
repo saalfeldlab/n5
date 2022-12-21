@@ -50,7 +50,7 @@ public class N5URL {
 
 	public String getGroupPath() {
 
-		return group;
+		return group != null ? group : "/";
 	}
 
 	public String normalizeContainerPath() {
@@ -65,7 +65,7 @@ public class N5URL {
 
 	public String getAttributePath() {
 
-		return attribute;
+		return attribute != null ? attribute : "/";
 	}
 
 	public String normalizeAttributePath() {
