@@ -5,7 +5,9 @@ import org.junit.Test;
 import java.net.URISyntaxException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 public class N5URLTest {
 	@Test
@@ -33,6 +35,21 @@ public class N5URLTest {
 
 			String normalizedPath = N5URL.normalizeAttributePath("let's/try/a/real/////case////with spaces/");
 			assertEquals("Normalizing a normal path should be the identity", normalizedPath, N5URL.normalizeAttributePath(normalizedPath));
+	}
+
+	@Test
+	public void testIsAbsolute() throws URISyntaxException {
+		/* Always true if scheme provided */
+		assertTrue(new N5URL("file:///a/b/c").isAbsolute());
+		assertTrue(new N5URL("file://C:\\\\a\\\\b\\\\c").isAbsolute());
+
+		/* Unix Paths*/
+		assertTrue(new N5URL("/a/b/c").isAbsolute());
+		assertFalse(new N5URL("a/b/c").isAbsolute());
+
+		/* Windows Paths*/
+		assertTrue(new N5URL("C:\\\\a\\\\b\\\\c").isAbsolute());
+		assertFalse(new N5URL("a\\\\b\\\\c").isAbsolute());
 	}
 
 	@Test
