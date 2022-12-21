@@ -124,8 +124,11 @@ public interface GsonAttributesParser extends N5Reader {
 	 */
 	public static HashMap<String, JsonElement> readAttributes(final Reader reader, final Gson gson) throws IOException {
 
+		/* Handle that case where the attributes.json file is valid json, but not a JsonObject, but returning an empty map. */
+		final JsonElement attributes = readAttributesJson(reader, gson);
+		if (attributes == null || !attributes.isJsonObject()) return new HashMap<>();
 		final Type mapType = new TypeToken<HashMap<String, JsonElement>>(){}.getType();
-		final HashMap<String, JsonElement> map = gson.fromJson(reader, mapType);
+		final HashMap<String, JsonElement> map = gson.fromJson(attributes, mapType);
 		return map == null ? new HashMap<>() : map;
 	}
 
@@ -159,6 +162,8 @@ public interface GsonAttributesParser extends N5Reader {
 				if (json != null && json.isJsonArray() && matcher.matches()) {
 					final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
 					json = json.getAsJsonArray().get(index);
+				} else {
+					return null;
 				}
 			}
 		}
