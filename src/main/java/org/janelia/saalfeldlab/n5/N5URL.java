@@ -488,7 +488,16 @@ public class N5URL {
 				.reduce((l, r) -> l + "/" + r).orElse("");
 	}
 
-	private static URI encodeAsUri(String uri) throws URISyntaxException {
+	/**
+	 * Encode the inpurt {@link String uri} so that illegal characters are properly escaped prior to generating the resulting {@link URI}.
+	 *
+	 * @param uri to encode
+	 *
+	 * @return the {@link URI} created from encoding the {@link String uri}
+	 *
+	 * @throws URISyntaxException if {@link String uri} is not valid
+	 */
+	public static URI encodeAsUri(String uri) throws URISyntaxException {
 
 		if (uri.trim().length() == 0) {
 			return new URI(uri);
