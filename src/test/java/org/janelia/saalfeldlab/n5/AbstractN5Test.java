@@ -509,7 +509,8 @@ public abstract class AbstractN5Test {
 		try {
 
 			// clear container to start
-			n5.remove();
+			for (final String g : n5.list("/"))
+				n5.remove(g);
 
 			n5.createGroup(groupName);
 			for (final String subGroup : subGroupNames)

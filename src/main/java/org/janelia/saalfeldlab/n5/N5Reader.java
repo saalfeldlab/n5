@@ -47,9 +47,8 @@ import org.scijava.util.VersionUtils;
  * A simple structured container for hierarchies of chunked
  * n-dimensional datasets and attributes.
  *
- * {@linkplain https://github.com/axtimwalde/n5}
- *
  * @author Stephan Saalfeld
+ * @see "https://github.com/axtimwalde/n5"
  */
 public interface N5Reader extends AutoCloseable {
 
@@ -82,10 +81,10 @@ public interface N5Reader extends AutoCloseable {
 
 		/**
 		 * Creates a version from a SemVer compatible version string.
-		 *
+		 * <p>
 		 * If the version string is null or not a SemVer version, this
 		 * version will be "0.0.0"
-		 *
+		 * </p>
 		 * @param versionString
 		 */
 		public Version(final String versionString) {
@@ -383,12 +382,14 @@ public interface N5Reader extends AutoCloseable {
 	 * apply to the subtree).
 	 *
 	 * <p>This method delivers the same results as</p>
-	 * <pre>n5.deepList(
+	 * <pre>{@code
+	 * n5.deepList(
 	 *   prefix,
 	 *   a -> {
 	 *     try { return n5.datasetExists(a) && filter.test(a); }
 	 *     catch (final IOException e) { return false; }
-	 *   });</pre>
+	 *   });
+	 * }</pre>
 	 * <p>but will execute {@link #datasetExists(String)} only once per node.
 	 * This can be relevant for performance on high latency backends such as
 	 * cloud stores.</p>
@@ -420,12 +421,14 @@ public interface N5Reader extends AutoCloseable {
 	 * Recursively list all including datasets in the given group.
 	 *
 	 * <p>This method delivers the same results as</p>
-	 * <pre>n5.deepList(
+	 * <pre>{@code
+	 * n5.deepList(
 	 *   prefix,
 	 *   a -> {
 	 *     try { return n5.datasetExists(a); }
 	 *     catch (final IOException e) { return false; }
-	 *   });</pre>
+	 *   });
+	 * }</pre>
 	 * <p>but will execute {@link #datasetExists(String)} only once per node.
 	 * This can be relevant for performance on high latency backends such as
 	 * cloud stores.</p>
@@ -445,7 +448,7 @@ public interface N5Reader extends AutoCloseable {
 	 * of the public API and is accessible only because Java 8 does not support
 	 * private interface methods yet.
 	 *
-	 * TODO make private when committing to Java versions >8
+	 * TODO make private when committing to Java versions newer than 8
 	 */
 	static ArrayList<String> deepList(
 			final N5Reader n5,
@@ -536,13 +539,15 @@ public interface N5Reader extends AutoCloseable {
 	 * subtree).
 	 *
 	 * <p>This method delivers the same results as</p>
-	 * <pre>n5.deepList(
+	 * <pre>{@code
+	 * n5.deepList(
 	 *   prefix,
 	 *   a -> {
 	 *     try { return n5.datasetExists(a) && filter.test(a); }
 	 *     catch (final IOException e) { return false; }
 	 *   },
-	 *   exec);</pre>
+	 *   exec);
+	 * }</pre>
 	 * <p>but will execute {@link #datasetExists(String)} only once per node.
 	 * This can be relevant for performance on high latency backends such as
 	 * cloud stores.</p>
@@ -584,13 +589,15 @@ public interface N5Reader extends AutoCloseable {
 	 * parallel, using the given {@link ExecutorService}.
 	 *
 	 * <p>This method delivers the same results as</p>
-	 * <pre>n5.deepList(
+	 * <pre>{@code
+	 * n5.deepList(
 	 *   prefix,
 	 *   a -> {
 	 *     try { return n5.datasetExists(a); }
 	 *     catch (final IOException e) { return false; }
 	 *   },
-	 *   exec);</pre>
+	 *   exec);
+	 * }</pre>
 	 * <p>but will execute {@link #datasetExists(String)} only once per node.
 	 * This can be relevant for performance on high latency backends such as
 	 * cloud stores.</p>
@@ -616,7 +623,7 @@ public interface N5Reader extends AutoCloseable {
 	 * public API and is accessible only because Java 8 does not support
 	 * private interface methods yet.
 	 *
-	 * TODO make private when committing to Java versions >8
+	 * TODO make private when committing to Java versions newer than 8
 	 *
 	 * @param n5
 	 * @param path
