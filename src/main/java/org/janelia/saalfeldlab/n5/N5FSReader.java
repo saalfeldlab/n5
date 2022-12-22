@@ -28,6 +28,8 @@ package org.janelia.saalfeldlab.n5;
 import com.google.gson.JsonObject;
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
@@ -120,6 +122,8 @@ public class N5FSReader extends AbstractGsonReader {
 			final Version version = getVersion();
 			if (!VERSION.isCompatible(version))
 				throw new IOException("Incompatible version " + version + " (this is " + VERSION + ").");
+		} else {
+			throw new IOException("Base Path for N5Reader does not exist: " + basePath);
 		}
 	}
 
