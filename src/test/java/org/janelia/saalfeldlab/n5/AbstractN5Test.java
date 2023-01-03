@@ -144,27 +144,21 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testCreateDataset() {
+	public void testCreateDataset() throws IOException {
 
-		try {
-			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
-		} catch (final IOException e) {
-			fail(e.getMessage());
+		final DatasetAttributes info;
+		try (N5Writer writer = createN5Writer()) {
+			writer.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
+
+			if (!writer.exists(datasetName))
+				fail("Dataset does not exist");
+
+			info = writer.getDatasetAttributes(datasetName);
 		}
-
-		if (!n5.exists(datasetName))
-			fail("Dataset does not exist");
-
-		try {
-			final DatasetAttributes info = n5.getDatasetAttributes(datasetName);
-			Assert.assertArrayEquals(dimensions, info.getDimensions());
-			Assert.assertArrayEquals(blockSize, info.getBlockSize());
-			Assert.assertEquals(DataType.UINT64, info.getDataType());
-			Assert.assertEquals(RawCompression.class, info.getCompression().getClass());
-		} catch (final IOException e) {
-			fail("Dataset info cannot be opened");
-			e.printStackTrace();
-		}
+		Assert.assertArrayEquals(dimensions, info.getDimensions());
+		Assert.assertArrayEquals(blockSize, info.getBlockSize());
+		Assert.assertEquals(DataType.UINT64, info.getDataType());
+		Assert.assertTrue(info.getCompression() instanceof RawCompression);
 	}
 
 	@Test
