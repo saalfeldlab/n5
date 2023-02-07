@@ -501,7 +501,10 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testDeepList() throws IOException, ExecutionException, InterruptedException {
 
-		try (N5Writer writer = createN5Writer()) {
+		final File tmpFile = Files.createTempDirectory("deeplist-test-").toFile();
+		tmpFile.deleteOnExit();
+		final String canonicalPath = tmpFile.getCanonicalPath();
+		try (final N5Writer writer = createN5Writer(canonicalPath)) {
 
 			writer.createGroup(groupName);
 			for (final String subGroup : subGroupNames)
@@ -722,9 +725,14 @@ public abstract class AbstractN5Test {
 
 		Assert.assertTrue(n5Version.equals(N5Reader.VERSION));
 
-		n5.setAttribute("/", N5Reader.VERSION_KEY, new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
 
-		Assert.assertFalse(N5Reader.VERSION.isCompatible(n5.getVersion()));
+		final File tmpFile = Files.createTempDirectory("aws-version-test-").toFile();
+		tmpFile.deleteOnExit();
+		final String canonicalPath = tmpFile.getCanonicalPath();
+		try (N5Writer writer = createN5Writer(canonicalPath)) {
+			writer.setAttribute("/", N5Reader.VERSION_KEY, new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
+			Assert.assertFalse(N5Reader.VERSION.isCompatible(writer.getVersion()));
+		}
 	}
 
 	@Test
@@ -896,9 +904,6 @@ public abstract class AbstractN5Test {
 
 	@Test
 	public void testRootLeaves() throws IOException {
-		//TODO: Currently, this fails if you try to overwrite an existing root; should we support that?
-		// In general, the current situation is such that you can only replace leaf nodes;
-
 
 		/* Test with new root's each time */
 		final ArrayList<TestData<?>> tests = new ArrayList<>();
