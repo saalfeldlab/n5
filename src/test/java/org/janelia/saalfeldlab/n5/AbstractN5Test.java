@@ -53,7 +53,7 @@ public abstract class AbstractN5Test {
 	static protected final String datasetName = "/test/group/dataset";
 	static protected final long[] dimensions = new long[]{100, 200, 300};
 	static protected final int[] blockSize = new int[]{44, 33, 22};
-	static protected final int blockNumElements = 44 * 33 * 22;
+	static protected final int blockNumElements = blockSize[0] * blockSize[1] * blockSize[2];
 
 	static protected byte[] byteBlock;
 	static protected short[] shortBlock;
@@ -90,14 +90,14 @@ public abstract class AbstractN5Test {
 		n5 = createN5Writer();
 
 		final Random rnd = new Random();
-		byteBlock = new byte[blockSize[0] * blockSize[1] * blockSize[2]];
-		shortBlock = new short[blockSize[0] * blockSize[1] * blockSize[2]];
-		intBlock = new int[blockSize[0] * blockSize[1] * blockSize[2]];
-		longBlock = new long[blockSize[0] * blockSize[1] * blockSize[2]];
-		floatBlock = new float[blockSize[0] * blockSize[1] * blockSize[2]];
-		doubleBlock = new double[blockSize[0] * blockSize[1] * blockSize[2]];
+		byteBlock = new byte[blockNumElements];
+		shortBlock = new short[blockNumElements];
+		intBlock = new int[blockNumElements];
+		longBlock = new long[blockNumElements];
+		floatBlock = new float[blockNumElements];
+		doubleBlock = new double[blockNumElements];
 		rnd.nextBytes(byteBlock);
-		for(int i = 0; i < floatBlock.length; ++i) {
+		for(int i = 0; i < blockNumElements; ++i) {
 			shortBlock[i] = (short)rnd.nextInt();
 			intBlock[i] = rnd.nextInt();
 			longBlock[i] = rnd.nextLong();
@@ -129,8 +129,7 @@ public abstract class AbstractN5Test {
 
 		final Path groupPath = Paths.get(groupName);
 		for (int i = 0; i < groupPath.getNameCount(); ++i)
-			if (!n5.exists(groupPath.subpath(0, i + 1).toString()))
-				fail("Group does not exist");
+			Assert.assertTrue("Group does not exist", n5.exists(groupPath.subpath(0, i + 1).toString()));
 	}
 
 	@Test
@@ -142,8 +141,7 @@ public abstract class AbstractN5Test {
 			fail(e.getMessage());
 		}
 
-		if (!n5.exists(datasetName))
-			fail("Dataset does not exist");
+		Assert.assertTrue("Dataset does not exist", n5.exists(datasetName));
 
 		try {
 			final DatasetAttributes info = n5.getDatasetAttributes(datasetName);
@@ -467,8 +465,7 @@ public abstract class AbstractN5Test {
 			fail(e.getMessage());
 		}
 
-		if (n5.exists(groupName))
-			fail("Group still exists");
+		Assert.assertFalse("Group still exists", n5.exists(groupName));
 	}
 
 	@Test
@@ -682,14 +679,14 @@ public abstract class AbstractN5Test {
 			n5.setAttribute(datasetName2, "attr8", new Object[] {"1", 2, 3.1});
 
 			Map<String, Class<?>> attributesMap = n5.listAttributes(datasetName2);
-			Assert.assertTrue(attributesMap.get("attr1") == double[].class);
-			Assert.assertTrue(attributesMap.get("attr2") == String[].class);
-			Assert.assertTrue(attributesMap.get("attr3") == double.class);
-			Assert.assertTrue(attributesMap.get("attr4") == String.class);
-			Assert.assertTrue(attributesMap.get("attr5") == long[].class);
-			Assert.assertTrue(attributesMap.get("attr6") == long.class);
-			Assert.assertTrue(attributesMap.get("attr7") == double[].class);
-			Assert.assertTrue(attributesMap.get("attr8") == Object[].class);
+			Assert.assertEquals(attributesMap.get("attr1"), double[].class);
+			Assert.assertEquals(attributesMap.get("attr2"), String[].class);
+			Assert.assertEquals(attributesMap.get("attr3"), double.class);
+			Assert.assertEquals(attributesMap.get("attr4"), String.class);
+			Assert.assertEquals(attributesMap.get("attr5"), long[].class);
+			Assert.assertEquals(attributesMap.get("attr6"), long.class);
+			Assert.assertEquals(attributesMap.get("attr7"), double[].class);
+			Assert.assertEquals(attributesMap.get("attr8"), Object[].class);
 
 			n5.createGroup(groupName2);
 			n5.setAttribute(groupName2, "attr1", new double[] {1.1, 2.1, 3.1});
@@ -702,14 +699,14 @@ public abstract class AbstractN5Test {
 			n5.setAttribute(groupName2, "attr8", new Object[] {"1", 2, 3.1});
 
 			attributesMap = n5.listAttributes(groupName2);
-			Assert.assertTrue(attributesMap.get("attr1") == double[].class);
-			Assert.assertTrue(attributesMap.get("attr2") == String[].class);
-			Assert.assertTrue(attributesMap.get("attr3") == double.class);
-			Assert.assertTrue(attributesMap.get("attr4") == String.class);
-			Assert.assertTrue(attributesMap.get("attr5") == long[].class);
-			Assert.assertTrue(attributesMap.get("attr6") == long.class);
-			Assert.assertTrue(attributesMap.get("attr7") == double[].class);
-			Assert.assertTrue(attributesMap.get("attr8") == Object[].class);
+			Assert.assertEquals(attributesMap.get("attr1"), double[].class);
+			Assert.assertEquals(attributesMap.get("attr2"), String[].class);
+			Assert.assertEquals(attributesMap.get("attr3"), double.class);
+			Assert.assertEquals(attributesMap.get("attr4"), String.class);
+			Assert.assertEquals(attributesMap.get("attr5"), long[].class);
+			Assert.assertEquals(attributesMap.get("attr6"), long.class);
+			Assert.assertEquals(attributesMap.get("attr7"), double[].class);
+			Assert.assertEquals(attributesMap.get("attr8"), Object[].class);
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
