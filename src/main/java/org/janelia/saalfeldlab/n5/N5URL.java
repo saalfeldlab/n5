@@ -1,17 +1,13 @@
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-
-import com.google.gson.JsonPrimitive;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -93,80 +89,55 @@ public class N5URL {
 
 	/**
 	 *
-	 * Parse this {@link N5URL} as a list of {@link N5UrlAttributePathToken}.
+	 * Parse this {@link N5URL} as a {@link LinkedAttributePathToken}.
 	 *
-	 * @see N5URL#getAttributePathTokens(Gson, String, Object)
+	 * @see N5URL#getAttributePathTokens(String)
 	 */
-	public ArrayList<N5UrlAttributePathToken> getAttributePathTokens(Gson gson) {
-		return getAttributePathTokens(gson, null);
+	public LinkedAttributePathToken<?> getAttributePathTokens() {
+		return getAttributePathTokens(normalizeAttributePath());
 	}
 
 	/**
-	 *
-	 * Parse this {@link N5URL} as a list of {@link N5UrlAttributePathToken}.
-	 *
-	 * @see N5URL#getAttributePathTokens(Gson, String, Object)
-	 */
-	public <T> ArrayList<N5UrlAttributePathToken> getAttributePathTokens(Gson gson, T value) {
-
-		return N5URL.getAttributePathTokens(gson, normalizeAttributePath(), value);
-	}
-
-	/**
-	 * Parses the {@link String normalizedAttributePath} to a list of {@link N5UrlAttributePathToken}.
+	 * Parses the {@link String normalizedAttributePath} to a list of {@link LinkedAttributePathToken}.
 	 * This is useful for traversing or constructing a json representation of the provided {@link String normalizedAttributePath}.
 	 * Note that {@link String normalizedAttributePath} should be normalized prior to generating this list
 	 *
-	 * @param gson used to parse {@link T value}
-	 * @param normalizedAttributePath to parse into {@link N5UrlAttributePathToken N5UrlAttributePathTokens}
-	 * @param value to be stored in the last {@link N5UrlAttributePathToken}
-	 * @param <T> type of the value representing the last {@link N5UrlAttributePathToken}
-	 * @return a list of {@link N5UrlAttributePathToken N5AttributePathTokens}
+	 * @param normalizedAttributePath to parse into {@link LinkedAttributePathToken}s
+	 * @return the head of the {@link LinkedAttributePathToken}s
 	 */
-	public static <T> ArrayList<N5UrlAttributePathToken> getAttributePathTokens(Gson gson, String normalizedAttributePath, T value) {
+	public static LinkedAttributePathToken<?> getAttributePathTokens(String normalizedAttributePath) {
 
-		final String[] attributePaths = normalizedAttributePath.replaceAll("^/", "").split("/");
+		final String[] attributePathParts = normalizedAttributePath.replaceAll("^/", "").split("/");
 
-		if (attributePaths.length == 0) {
-			return new ArrayList<>();
-		} else if ( attributePaths.length == 1 && attributePaths[0].isEmpty()) {
-			final N5UrlAttributePathLeaf<?> leaf = new N5UrlAttributePathLeaf<>(gson, value);
-			final ArrayList<N5UrlAttributePathToken> tokens = new ArrayList<>();
-			tokens.add(leaf);
-			return tokens;
-		}
-		final ArrayList<N5UrlAttributePathToken> n5UrlAttributePathTokens = new ArrayList<>();
-		for (int i = 0; i < attributePaths.length; i++) {
-			final String pathToken = attributePaths[i];
-			final Matcher matcher = ARRAY_INDEX.matcher(pathToken);
-			final N5UrlAttributePathToken newToken;
+		if (attributePathParts.length == 0 || Arrays.stream(attributePathParts).allMatch(String::isEmpty))
+			return null;
+
+		final AtomicReference<LinkedAttributePathToken<?>> firstTokenRef = new AtomicReference<>();
+		final AtomicReference<LinkedAttributePathToken<?>> currentTokenRef = new AtomicReference<>();
+		final Consumer<LinkedAttributePathToken<?>> updateCurrentToken = (newToken) -> {
+			if (firstTokenRef.get() == null) {
+				firstTokenRef.set(newToken);
+				currentTokenRef.set(firstTokenRef.get());
+			} else {
+				final LinkedAttributePathToken<?> currentToken = currentTokenRef.get();
+				currentToken.childToken = newToken;
+				currentTokenRef.set(newToken);
+			}
+		};
+
+		for (final String pathPart : attributePathParts) {
+			final Matcher matcher = ARRAY_INDEX.matcher(pathPart);
+			final LinkedAttributePathToken<?> newToken;
 			if (matcher.matches()) {
 				final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
-				newToken = new N5UrlAttributePathArray(gson, index);
-				n5UrlAttributePathTokens.add(newToken);
+				newToken = new LinkedAttributePathToken.ArrayAttributeToken(index);
 			} else {
-				newToken = new N5UrlAttributePathObject(gson, pathToken);
-				n5UrlAttributePathTokens.add(newToken);
+				newToken = new LinkedAttributePathToken.ObjectAttributeToken(pathPart);
 			}
-
-			if (i > 0) {
-				final N5UrlAttributePathToken parent = n5UrlAttributePathTokens.get(i - 1);
-				parent.setChild(newToken);
-				newToken.setParent(parent);
-			}
+			updateCurrentToken.accept(newToken);
 		}
 
-		if (value != null) {
-			final N5UrlAttributePathLeaf<?> leaf = new N5UrlAttributePathLeaf<>(gson, value);
-			/* get last token, if present */
-			if (n5UrlAttributePathTokens.size() >= 1) {
-				final N5UrlAttributePathToken lastToken = n5UrlAttributePathTokens.get(n5UrlAttributePathTokens.size() - 1);
-				lastToken.setChild(leaf);
-				leaf.setParent(lastToken);
-			}
-			n5UrlAttributePathTokens.add(leaf);
-		}
-		return n5UrlAttributePathTokens;
+		return firstTokenRef.get();
 	}
 
 	private String getSchemePart() {
@@ -196,6 +167,7 @@ public class N5URL {
 
 	private String getSchemeSpecificPartWithoutQuery() {
 
+		/* Why not substring "?"?*/
 		return uri.getSchemeSpecificPart().replace("?" + uri.getQuery(), "");
 	}
 
@@ -443,7 +415,7 @@ public class N5URL {
 					curToken.append(character);
 				} else if (character == ']') {
 					/* If ']' add before terminating the token */
-					curToken.append(character);
+					curToken.append(']');
 				}
 
 				/* The current token is complete, add it to the list, if it isn't empty */
@@ -533,251 +505,6 @@ public class N5URL {
 			}
 		}
 		return n5Uri;
-	}
-	public static abstract class N5UrlAttributePathToken {
-
-		protected final Gson gson;
-
-		protected JsonElement root;
-
-		protected N5UrlAttributePathToken parent;
-		protected N5UrlAttributePathToken child;
-
-		public N5UrlAttributePathToken(Gson gson) {
-
-			this.gson = gson;
-		}
-
-		public void setChild(N5UrlAttributePathToken child) {
-
-			this.child = child;
-		}
-
-		public void setParent(N5UrlAttributePathToken parent) {
-
-			this.parent = parent;
-		}
-
-		public JsonElement getRoot() {
-
-			return this.root;
-		}
-
-		public abstract boolean canNavigate(JsonElement json);
-
-		public abstract JsonElement navigateJsonElement(JsonElement json);
-
-		public JsonElement replaceJsonElement(JsonElement jsonParent) {
-
-			parent.removeJsonElement(jsonParent);
-			return parent.createJsonElement(jsonParent);
-		}
-
-		public abstract JsonElement createJsonElement(JsonElement json);
-
-		public abstract void writeLeaf(JsonElement json);
-
-		protected abstract void removeJsonElement(JsonElement jsonParent);
-
-		public abstract boolean jsonIncompatible(JsonElement json);
-	}
-
-	public static class N5UrlAttributePathObject extends N5UrlAttributePathToken {
-
-		public final String key;
-
-		public N5UrlAttributePathObject(Gson gson, String key) {
-
-			super(gson);
-			this.key = key;
-		}
-
-		public String getKey()
-		{
-			return key;
-		}
-
-		@Override public boolean jsonIncompatible(JsonElement json) {
-
-			return json != null && !json.isJsonObject();
-		}
-
-		@Override public boolean canNavigate(JsonElement json) {
-			if (json == null) {
-				return false;
-			}
-			return json.isJsonObject() && json.getAsJsonObject().has(key);
-		}
-
-		@Override public JsonElement navigateJsonElement(JsonElement json) {
-
-			return json.getAsJsonObject().get(key);
-		}
-
-		@Override protected void removeJsonElement(JsonElement jsonParent) {
-			jsonParent.getAsJsonObject().remove(key);
-		}
-
-		@Override public JsonElement createJsonElement(JsonElement json) {
-			final JsonObject object;
-			if (json == null) {
-				object = new JsonObject();
-				root = object;
-			} else {
-				object = json.getAsJsonObject();
-			}
-
-			final JsonElement newJsonElement;
-			if (child instanceof N5UrlAttributePathArray) {
-				newJsonElement = new JsonArray();
-				object.add(key, newJsonElement);
-			} else if (child instanceof N5UrlAttributePathObject) {
-				newJsonElement = new JsonObject();
-				object.add(key, newJsonElement);
-			} else {
-				newJsonElement = new JsonObject();
-				writeLeaf(object);
-			}
-			return newJsonElement;
-		}
-
-		@Override public void writeLeaf(JsonElement json) {
-
-			final N5UrlAttributePathLeaf<?> leaf = ((N5UrlAttributePathLeaf<?>)child);
-			final JsonElement leafJson = leaf.createJsonElement(null);
-			json.getAsJsonObject().add(key, leafJson);
-		}
-	}
-
-	public static class N5UrlAttributePathArray extends N5UrlAttributePathToken {
-
-		@Override public boolean jsonIncompatible(JsonElement json) {
-
-			return json!= null && !json.isJsonArray();
-		}
-
-		@Override protected void removeJsonElement(JsonElement jsonParent) {
-			jsonParent.getAsJsonArray().set(index, JsonNull.INSTANCE);
-		}
-
-		private final int index;
-
-		public N5UrlAttributePathArray(Gson gson, int index) {
-
-			super(gson);
-			this.index = index;
-		}
-
-		@Override public boolean canNavigate(JsonElement json) {
-			if (json == null) {
-				return false;
-			}
-
-			return json.isJsonArray() && json.getAsJsonArray().size() > index;
-		}
-
-		@Override public JsonElement navigateJsonElement(JsonElement json) {
-
-			return json.getAsJsonArray().get(index);
-		}
-
-		@Override public JsonElement createJsonElement(JsonElement json) {
-
-			final JsonArray array;
-			if (json == null) {
-				array = new JsonArray();
-				root = array;
-			} else {
-				array = json.getAsJsonArray();
-			}
-
-			JsonElement fillArrayValue = JsonNull.INSTANCE;
-
-			if (child instanceof N5UrlAttributePathLeaf<?>) {
-				final N5UrlAttributePathLeaf< ? > leaf = ( N5UrlAttributePathLeaf< ? > ) child;
-				if (leaf.value instanceof Number || (leaf.value instanceof JsonPrimitive && ((JsonPrimitive)leaf.value).isNumber())) {
-					fillArrayValue = new JsonPrimitive( 0 );
-				}
-			}
-
-			for (int i = array.size(); i <= index; i++) {
-				array.add(fillArrayValue);
-			}
-			final JsonElement newJsonElement;
-			if (child instanceof N5UrlAttributePathArray) {
-				newJsonElement = new JsonArray();
-				array.set(index, newJsonElement);
-			} else if (child instanceof N5UrlAttributePathObject) {
-				newJsonElement = new JsonObject();
-				array.set(index, newJsonElement);
-			} else {
-				newJsonElement = child.createJsonElement(null);
-				array.set(index, newJsonElement);
-			}
-			return newJsonElement;
-		}
-
-		@Override public void writeLeaf(JsonElement json) {
-
-			final N5UrlAttributePathLeaf<?> leaf = ((N5UrlAttributePathLeaf<?>)child);
-			final JsonElement leafJson = leaf.createJsonElement(null);
-			final JsonArray array = json.getAsJsonArray();
-
-			for (int i = array.size(); i <= index; i++) {
-				array.add(JsonNull.INSTANCE);
-			}
-
-			array.set(index, leafJson);
-		}
-	}
-
-	public static class N5UrlAttributePathLeaf<T> extends N5UrlAttributePathToken {
-
-		private final T value;
-
-		public N5UrlAttributePathLeaf(Gson gson, T value) {
-
-			super(gson);
-			this.value = value;
-		}
-
-		@Override public boolean canNavigate(JsonElement json) {
-
-			return false;
-		}
-
-		@Override public boolean jsonIncompatible(JsonElement json) {
-
-			return false;
-		}
-
-		@Override public JsonElement navigateJsonElement(JsonElement json) {
-
-			throw new UnsupportedOperationException("Cannot Navigate from a leaf ");
-		}
-
-		@Override protected void removeJsonElement(JsonElement jsonParent) {
-			throw new UnsupportedOperationException("Leaf Removal Unnecessary, leaves should alway be overwritable");
-
-		}
-
-		@Override public JsonElement createJsonElement(JsonElement json) {
-			/* Leaf is weird. It is never added manually, also via the previous path token.
-			* HOWEVER, when there is no path token, and the leaf is the root, than it is called manually,
-			* and we wish to be our own parent (i.e. the root of the json tree). */
-			final JsonElement leaf = gson.toJsonTree(value);
-			if (json == null) {
-				root = leaf;
-			}
-			return leaf;
-		}
-
-		@Override public void writeLeaf(JsonElement json) {
-			/* Practically, this method doesn't mean much when you are a leaf.
-			* It's primarily meant to have the parent write their children, if their child is a leaf.  */
-		}
-
-
 	}
 
 	/**

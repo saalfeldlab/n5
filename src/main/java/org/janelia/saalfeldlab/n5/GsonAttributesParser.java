@@ -33,7 +33,6 @@ import java.io.Writer;
 import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -161,7 +160,11 @@ public interface GsonAttributesParser extends N5Reader {
 				final Matcher matcher = N5URL.ARRAY_INDEX.matcher(pathPart);
 				if (json != null && json.isJsonArray() && matcher.matches()) {
 					final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
-					json = json.getAsJsonArray().get(index);
+					final JsonArray jsonArray = json.getAsJsonArray();
+					if (index >= jsonArray.size()) {
+						return null;
+					}
+					json = jsonArray.get(index);
 				} else {
 					return null;
 				}
@@ -236,47 +239,25 @@ public interface GsonAttributesParser extends N5Reader {
 
 	public static <T> JsonElement insertAttribute(JsonElement root, String normalizedAttributePath, T attribute, Gson gson) {
 
-		JsonElement parent = null;
+		LinkedAttributePathToken<?> pathToken = N5URL.getAttributePathTokens(normalizedAttributePath);
+		/* No path to traverse or build; just write the value */
+		if (pathToken == null)
+			return gson.toJsonTree(attribute);
+
 		JsonElement json = root;
-		final List<N5URL.N5UrlAttributePathToken> attributePathTokens = N5URL.getAttributePathTokens(gson, normalizedAttributePath, attribute);
-		for (N5URL.N5UrlAttributePathToken token : attributePathTokens) {
-			/* The json is incompatible if it needs to be replaced; json == null is NOT incompatible.
-			 * The two cases are if either the JsonElement is different than expected, or we are a leaf
-			 * with no parent, in which case we always clear the existing root/json if any exists. */
-			if (token.jsonIncompatible(json) || (token instanceof N5URL.N5UrlAttributePathLeaf<?> && parent == null) ) {
-				if (parent == null) {
-					/* We are replacing the root, so just set the root to null, and continue */
-					root = null;
-					json = null;
-				} else {
-					json = token.replaceJsonElement(parent);
-				}
+		while (pathToken != null) {
+
+			JsonElement parent = pathToken.setAndCreateParentElement(json);
+
+			/* We may need to create or override the existing root if it is non-existent or incompatible. */
+			final boolean rootOverriden = json == root && parent != json;
+			if (root == null || rootOverriden) {
+				root = parent;
 			}
 
-			/* If we can dive into this jsonElement for the current token, do so,
-			 *  Otherwise, create the element */
-			if (token.canNavigate(json) && !(token.child instanceof N5URL.N5UrlAttributePathLeaf<?>)) {
-				parent = json;
-				json = token.navigateJsonElement(json);
-				if (token.child instanceof N5URL.N5UrlAttributePathLeaf<?>) {
-					token.writeLeaf(json);
-				}
-			} else {
-				parent = json;
-				json = token.createJsonElement(json);
-				/* If the root is null, we need to set it based on the newly created element */
-				if (root == null) {
-					if (token instanceof N5URL.N5UrlAttributePathLeaf<?> ) {
-						/* if it's a leaf, we are the root*/
-						root = json;
-					} else {
-						/* Otherwise, creating the element will have specified the root, and we can grab it now. */
-						assert token.getRoot() != null;
-						root = token.getRoot();
-						parent = root;
-					}
-				}
-			}
+			json = pathToken.writeChild(gson, attribute);
+
+			pathToken = pathToken.next();
 		}
 		return root;
 	}
