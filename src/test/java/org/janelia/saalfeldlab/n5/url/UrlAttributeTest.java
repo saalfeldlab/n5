@@ -10,7 +10,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.janelia.saalfeldlab.n5.N5FSReader;
+
+import org.janelia.saalfeldlab.n5.N5FSWriter;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5URL;
 import org.junit.Assert;
@@ -42,7 +43,7 @@ public class UrlAttributeTest
 	{
 		try
 		{
-			n5 = new N5FSReader( "src/test/resources/url/urlAttributes.n5" );
+			n5 = new N5FSWriter( "src/test/resources/url/urlAttributes.n5" );
 			rootContext = "";
 			list = new int[] { 0, 1, 2, 3 };
 
@@ -67,10 +68,11 @@ public class UrlAttributeTest
 	{
 		// get
 		Map< String, Object > everything = getAttribute( n5, new N5URL( "" ), Map.class );
-		assertEquals( "empty url", "2.5.1", ( String ) everything.get( "n5" ) );
+		final String version = N5Reader.VERSION.toString();
+		assertEquals( "empty url", version, ( String ) everything.get( "n5" ) );
 
 		Map< String, Object > everything2 = getAttribute( n5, new N5URL( "#/" ), Map.class );
-		assertEquals( "root attribute", "2.5.1", ( String ) everything2.get( "n5" ) );
+		assertEquals( "root attribute", version, ( String ) everything2.get( "n5" ) );
 
 		assertEquals( "url to attribute", "bar", getAttribute( n5, new N5URL( "#foo" ), String.class ) );
 		assertEquals( "url to attribute absolute", "bar", getAttribute( n5, new N5URL( "#/foo" ), String.class ) );
@@ -85,6 +87,9 @@ public class UrlAttributeTest
 		assertEquals( "?.#foo", "bar", getAttribute( n5, new N5URL( "?.#foo" ), String.class ) );
 		assertEquals( "?/a/..#foo", "bar", getAttribute( n5, new N5URL( "?/a/..#foo" ), String.class ) );
 		assertEquals( "?/a/../.#foo", "bar", getAttribute( n5, new N5URL( "?/a/../.#foo" ), String.class ) );
+
+		/* whitespace-encoding-necesary, fragment-only test*/
+		assertEquals( "#f o o", "b a r", getAttribute( n5, new N5URL( "#f o o" ), String.class ) );
 
 		Assert.assertArrayEquals( "url list", list, getAttribute( n5, new N5URL( "#list" ), int[].class ) );
 
@@ -142,6 +147,12 @@ public class UrlAttributeTest
 		assertEquals( "name of aaa from aaa", aaa, getAttribute( n5, aaaUrl.resolve( "#name" ), String.class ) );
 
 		assertEquals( "name of aaa from aaa", aaa, getAttribute( n5, aaaUrl.resolve( "?./#name" ), String.class ) );
+
+		assertEquals( "nested list 1", (Integer)1, getAttribute( n5, new N5URL( "#nestedList[0][0][0]" ), Integer.class ) );
+		assertEquals( "nested list 1", (Integer)1, getAttribute( n5, new N5URL( "#/nestedList/[0][0][0]" ), Integer.class ) );
+		assertEquals( "nested list 1", (Integer)1, getAttribute( n5, new N5URL( "#nestedList//[0]/[0]///[0]" ), Integer.class ) );
+		assertEquals( "nested list 1", (Integer)1, getAttribute( n5, new N5URL( "#/nestedList[0]//[0][0]" ), Integer.class ) );
+
 	}
 
 	private < T > T getAttribute( final N5Reader n5, final String url1, Class< T > clazz ) throws URISyntaxException, IOException
