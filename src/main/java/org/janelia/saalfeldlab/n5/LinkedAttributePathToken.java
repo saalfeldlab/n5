@@ -11,48 +11,60 @@ import java.util.Iterator;
 
 public abstract class LinkedAttributePathToken<T extends JsonElement> implements Iterator<LinkedAttributePathToken<?>> {
 
+	/**
+	 * The JsonElement which contains the mapping that this token represents.
+	 */
 	protected T parentJson;
+
+	/**
+	 * The token representing the subsequent path element.
+	 */
 	protected LinkedAttributePathToken<?> childToken;
 
-	public void setChildToken(LinkedAttributePathToken<?> childToken) {
-
-		this.childToken = childToken;
-	}
-
-	public T getParentJson() {
-
-		return parentJson;
-	}
-
+	/**
+	 * @return a reference object of type {@link T}
+	 */
 	public abstract T getJsonType();
 
-	public abstract boolean canNavigate(JsonElement parent);
-
+	/**
+	 * This method will retgurn the child element, if the {@link #parentJson} contains a child that
+	 * is valid for this token. If the {@link #parentJson} does not have a child, this method will
+	 * create it. If the {@link #parentJson} does have a child, but it is not {@link #jsonCompatible(JsonElement)}
+	 * with our {@link #childToken}, then this method will also create a new (compatible) child, and replace
+	 * the existing incompatible child.
+	 *
+	 * @return the resulting child element
+	 */
 	public abstract JsonElement getOrCreateChildElement();
 
+	/**
+	 * This method will write into {@link #parentJson} the subsequent {@link JsonElement}.
+	 * <br>
+	 * The written JsonElement will EITHER be:
+	 * <ul>
+	 *     <li>The result of serializing {@code value} ( if {@link #childToken} is {@code null} )</li>
+	 *     <li>The {@link JsonElement} which represents our {@link #childToken} (See {@link #getOrCreateChildElement()} )</li>
+	 * </ul>
+	 *
+	 * @param gson  instance used to serialize {@code value }
+	 * @param value to write
+	 * @return the object that was written.
+	 */
 	public JsonElement writeChild(Gson gson, Object value) {
 
 		if (childToken != null)
 			/* If we have a child, get/create it and set current json element to it */
 			return getOrCreateChildElement();
-		else
+		else {
 			/* We are done, no token remaining */
-			return writeJsonElement(gson, value);
-	}
-
-	public JsonElement writeJsonElement(Gson gson, Object value) {
-
-		if (hasNext()) {
-			writeChildElement();
-		} else {
 			writeValue(gson, value);
+			return getChildElement();
 		}
-		return getChildElement();
 	}
 
 	/**
 	 * Check if the provided {@code json} is compatible with this token.
-	 * <p>
+	 * <br>
 	 * Compatibility means thath the provided {@code JsonElement} does not
 	 * explicitly conflict with this token. That means that {@code null} is
 	 * always compatible. The only real incompatibility is when the {@code JsonElement}
@@ -67,28 +79,58 @@ public abstract class LinkedAttributePathToken<T extends JsonElement> implements
 		return json == null || json.getClass() == getJsonType().getClass();
 	}
 
+	/**
+	 * Write {@code value} into {@link #parentJson}.
+	 * <br>
+	 * Should only be called when {@link #childToken} is null (i.e. this is the last token in the attribute path).
+	 *
+	 * @param gson instance used to serialize {@code value}
+	 * @param value to serialize
+	 */
 	protected abstract void writeValue(Gson gson, Object value);
 
+	/**
+	 * Write the {@link JsonElement} the corresponds to {@link #childToken} into {@link #parentJson}.
+	 */
 	protected abstract void writeChildElement();
 
+	/**
+	 * @return the element that is represented by {@link #childToken} if present.
+	 */
 	protected abstract JsonElement getChildElement();
 
+	/**
+	 * If {@code json} is compatible with the type or token that we are, then set {@link #parentJson} to {@code json}.
+	 * <br>
+	 * However, if {@code json} is either {@code null} or not {@link #jsonCompatible(JsonElement)} then
+	 * {@link #parentJson} will be set to a new instance of {@link T}.
+	 *
+	 * @param json to attempt to set to {@link #parentJson}
+	 * @return the value set to {@link #parentJson}.
+	 */
 	protected JsonElement setAndCreateParentElement(JsonElement json) {
+
 		if (json == null || !jsonCompatible(json)) {
 			//noinspection unchecked
-			parentJson = (T) getJsonType().deepCopy();
+			parentJson = (T)getJsonType().deepCopy();
 		} else {
 			//noinspection unchecked
-			parentJson = (T) json;
+			parentJson = (T)json;
 		}
 		return parentJson;
 	}
 
+	/**
+	 * @return if we have a {@link #childToken}.
+	 */
 	@Override public boolean hasNext() {
 
 		return childToken != null;
 	}
 
+	/**
+	 * @return {@link #childToken}
+	 */
 	@Override public LinkedAttributePathToken<?> next() {
 
 		return childToken;
@@ -98,13 +140,16 @@ public abstract class LinkedAttributePathToken<T extends JsonElement> implements
 
 		private static final JsonObject JSON_OBJECT = new JsonObject();
 
-		public final String key;
+		private final String key;
 
 		public ObjectAttributeToken(String key) {
 
 			this.key = key;
 		}
 
+		/**
+		 * @return the {@link #key} this token maps it's {@link #getChildElement()} to.
+		 */
 		public String getKey() {
 
 			return key;
@@ -118,11 +163,6 @@ public abstract class LinkedAttributePathToken<T extends JsonElement> implements
 		@Override public JsonObject getJsonType() {
 
 			return JSON_OBJECT;
-		}
-
-		@Override public boolean canNavigate(JsonElement json) {
-
-			return json != null && json.isJsonObject() && json.getAsJsonObject().has(key);
 		}
 
 		@Override public JsonElement getOrCreateChildElement() {
@@ -164,6 +204,9 @@ public abstract class LinkedAttributePathToken<T extends JsonElement> implements
 			this.index = index;
 		}
 
+		/**
+		 * @return the {@link #index} this token maps it's {@link #getChildElement()} to.
+		 */
 		public int getIndex() {
 
 			return index;
@@ -179,16 +222,7 @@ public abstract class LinkedAttributePathToken<T extends JsonElement> implements
 			return JSON_ARRAY;
 		}
 
-		@Override public boolean canNavigate(JsonElement parent) {
-
-			return parent != null && parent.isJsonArray() && parent.getAsJsonArray().size() > index;
-		}
-
 		@Override public JsonElement getOrCreateChildElement() {
-
-			/* Two cases which required writing the child:
-			* 	- The child element doesn't exist (in this case, there is nothing at the specified index).
-			*	- The child element is incompatible with the child token (replaces the existing child element). */
 			if (index >= parentJson.size() || childToken != null && !childToken.jsonCompatible(parentJson.get(index)))
 				writeChildElement();
 
@@ -243,7 +277,6 @@ public abstract class LinkedAttributePathToken<T extends JsonElement> implements
 		 *     <li>is a {@code Number}, or;</li>
 		 *     <li>is a {@link JsonPrimitive} where {@link JsonPrimitive#isNumber()}</li>
 		 * </ul>
-		 *
 		 *
 		 * @param value we wish to check if represents a {@link Number} or not.
 		 * @return true if {@code value} represents a {@link Number}
