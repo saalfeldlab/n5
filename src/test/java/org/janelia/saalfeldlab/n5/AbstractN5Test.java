@@ -45,7 +45,9 @@ import org.junit.Test;
 import com.google.gson.reflect.TypeToken;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 
 /**
  * Abstract base class for testing N5 functionality.
@@ -53,6 +55,8 @@ import static org.junit.Assert.assertNull;
  *
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
+ * @author John Bogovic &lt;bogovicj@janelia.hhmi.org&gt;
+ * @author Caleb Hulbert &lt;hulbertc@janelia.hhmi.org&gt;
  */
 public abstract class AbstractN5Test {
 
@@ -75,6 +79,8 @@ public abstract class AbstractN5Test {
 	protected abstract N5Writer createN5Writer() throws IOException;
 
 	protected abstract N5Writer createN5Writer(String location) throws IOException;
+
+	protected abstract N5Reader createN5Reader(String location) throws IOException;
 
 	protected Compression[] getCompressions() {
 
@@ -721,17 +727,51 @@ public abstract class AbstractN5Test {
 
 		final Version n5Version = n5.getVersion();
 
-		System.out.println(n5Version);
-
 		Assert.assertTrue(n5Version.equals(N5Reader.VERSION));
 
-
-		final File tmpFile = Files.createTempDirectory("aws-version-test-").toFile();
+		final File tmpFile = Files.createTempDirectory("version-test-").toFile();
 		tmpFile.deleteOnExit();
 		final String canonicalPath = tmpFile.getCanonicalPath();
 		try (N5Writer writer = createN5Writer(canonicalPath)) {
 			writer.setAttribute("/", N5Reader.VERSION_KEY, new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
 			Assert.assertFalse(N5Reader.VERSION.isCompatible(writer.getVersion()));
+		}
+	}
+
+	@Test
+	public void testReaderCreation() throws IOException
+	{
+		final File tmpFile = Files.createTempDirectory("reader-create-test-").toFile();
+		tmpFile.deleteOnExit();
+		final String canonicalPath = tmpFile.getCanonicalPath();
+		try (N5Writer writer = createN5Writer(canonicalPath)) {
+
+			final N5Reader n5r = createN5Reader( canonicalPath );
+			assertNotNull( n5r );
+
+			// existing directory without attributes is okay
+			writer.createGroup( "noAttrs" );
+			final N5Reader na = createN5Reader( canonicalPath + "/noAttrs" );
+			assertNotNull( na );
+
+			// existing directory without attributes is okay
+			writer.createGroup( "withAttrs" );
+			writer.setAttribute( "withAttrs", "mystring", "ms" );
+			final N5Reader wa = createN5Reader( canonicalPath + "/withAttrs" );
+			assertNotNull( wa );
+
+			// non-existent directory should fail
+			assertThrows( "Non-existant directory throws error", IOException.class,
+					() -> {
+						createN5Reader( canonicalPath + "/nonExistant" );
+					} );
+
+			// existing directory with incompatible version should fail
+			writer.setAttribute("/", N5Reader.VERSION_KEY, new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
+			assertThrows( "Incompatible version throws error", IOException.class,
+					() -> {
+						createN5Reader(canonicalPath);
+					} );
 		}
 	}
 
