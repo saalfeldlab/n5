@@ -88,12 +88,12 @@ public class N5URL {
 	}
 
 	/**
-	 *
 	 * Parse this {@link N5URL} as a {@link LinkedAttributePathToken}.
 	 *
 	 * @see N5URL#getAttributePathTokens(String)
 	 */
 	public LinkedAttributePathToken<?> getAttributePathTokens() {
+
 		return getAttributePathTokens(normalizeAttributePath());
 	}
 
@@ -107,7 +107,11 @@ public class N5URL {
 	 */
 	public static LinkedAttributePathToken<?> getAttributePathTokens(String normalizedAttributePath) {
 
-		final String[] attributePathParts = normalizedAttributePath.replaceAll("^/", "").split("/");
+		final String[] attributePathParts = Arrays.stream(normalizedAttributePath
+						.replaceAll("^/", "")
+						.split("(?<!\\\\)/"))
+				.map(it -> it.replaceAll("\\\\/", "/").replaceAll("\\\\\\[", "["))
+				.toArray(String[]::new);
 
 		if (attributePathParts.length == 0 || Arrays.stream(attributePathParts).allMatch(String::isEmpty))
 			return null;
@@ -179,7 +183,8 @@ public class N5URL {
 	 */
 	public boolean isAbsolute() {
 
-		if (scheme != null) return true;
+		if (scheme != null)
+			return true;
 		final String path = uri.getPath();
 		if (!path.isEmpty()) {
 			final char char0 = path.charAt(0);
@@ -360,7 +365,7 @@ public class N5URL {
 
 	/**
 	 * Normalize the {@link String attributePath}.
-	 *<p>
+	 * <p>
 	 * Attribute paths have a few of special characters:
 	 * <ul>
 	 * 	<li>"." which represents the current element </li>
@@ -368,6 +373,9 @@ public class N5URL {
 	 * 	<li>"/" which is used to separate elements in the json tree </li>
 	 * 	<li>[N] where N is an integer, refer to an index in the previous element in the tree; the previous element must be an array. </li>
 	 * 		Note: [N] also separates the previous and following elements, regardless of whether it is preceded by "/" or not.
+	 * 	<li>"\" which is an escape character, which indicates the subquent '/' or '[N]' should not be interpreted as a path delimeter,
+	 * 	but as part of the current path name. </li>
+	 *
 	 * </ul>
 	 * 	<p>
 	 * When normalizing:
@@ -376,7 +384,7 @@ public class N5URL {
 	 * 	<li>any redundant "/" are removed </li>
 	 * 	<li>any relative ".." and "." are resolved </li>
 	 * </ul>
-	 *
+	 * <p>
 	 * Examples of valid attribute paths, and their normalizations
 	 * <ul>
 	 * 	<li>/a/b/c -> /a/b/c</li>
@@ -394,79 +402,28 @@ public class N5URL {
 	 */
 	public static String normalizeAttributePath(String attributePath) {
 
-		final char[] pathChars = attributePath.toCharArray();
+		final String attrPathPlusFirstIndexSeparator = attributePath.replaceAll("^(?<array>\\[[0-9]+])", "${array}/");
+		final String attrPathPlusIndexSeparators = attrPathPlusFirstIndexSeparator.replaceAll("((?<prev>[^\\\\])(?<!^)(?<array>\\[[0-9]+]))",
+				"${prev}/${array}/");
+		final String attrPathRemoveMultipleSeparators = attrPathPlusIndexSeparators.replaceAll("(?<slash>/)/+", "${slash}");
+		final String attrPathNoDot = attrPathRemoveMultipleSeparators.replaceAll("((?<!(\\\\|\\.))\\./(\\.$)?|[^^]/\\.$|(^|(?<=^/))\\.$)", "");
+		final String normalizedAttributePath = attrPathNoDot.replaceAll("(?<nonSlash>[^(^|\\\\)])/$", "${nonSlash}");
 
-		final List<String> tokens = new ArrayList<>();
-		StringBuilder curToken = new StringBuilder();
-		boolean escape = false;
-		for (final char character : pathChars) {
-			/* Skip if we last saw escape*/
-			if (escape) {
-				escape = false;
-				curToken.append(character);
-				continue;
-			}
-			/* Check if we are escape character */
-			if (character == '\\') {
-				escape = true;
-			} else if (character == '/' || character == '[' || character == ']') {
-				if (character == '/' && tokens.isEmpty() && curToken.length() == 0) {
-					/* If we are root, and the first token, then add the '/' */
-					curToken.append(character);
-				} else if (character == ']') {
-					/* If ']' add before terminating the token */
-					curToken.append(']');
-				}
-
-				/* The current token is complete, add it to the list, if it isn't empty */
-				final String newToken = curToken.toString();
-				if (!newToken.isEmpty()) {
-					/* If our token is '..' then remove the last token instead of adding a new one */
-					if (newToken.equals("..")) {
-						tokens.remove(tokens.size() - 1);
-					} else {
-						tokens.add(newToken);
-					}
-				}
-				/* reset for the next token */
-				curToken.setLength(0);
-
-				/* if '[' add to the start of the next token */
-				if (character == '[') {
-					curToken.append('[');
-				}
-			} else {
-				curToken.append(character);
-			}
+		final Pattern relativePathPattern = Pattern.compile("[^(/|\\.\\.)]+/\\.\\./?");
+		int prevStringLenth = 0;
+		String resolvedAttributePath = normalizedAttributePath;
+		while (prevStringLenth != resolvedAttributePath.length()) {
+			prevStringLenth = resolvedAttributePath.length();
+			resolvedAttributePath = relativePathPattern.matcher(resolvedAttributePath).replaceAll("");
 		}
-		final String lastToken = curToken.toString();
-		if (!lastToken.isEmpty()) {
-			if (lastToken.equals("..")) {
-				tokens.remove(tokens.size() - 1);
-			} else {
-				tokens.add(lastToken);
-			}
-		}
-		if (tokens.isEmpty())
-			return "";
-		String root = "";
-		if (tokens.get(0).equals("/")) {
-			tokens.remove(0);
-			root = "/";
-		}
-		return root + tokens.stream()
-				.filter(it -> !it.equals("."))
-				.filter(it -> !it.isEmpty())
-				.reduce((l, r) -> l + "/" + r).orElse("");
+		return resolvedAttributePath;
 	}
 
 	/**
 	 * Encode the inpurt {@link String uri} so that illegal characters are properly escaped prior to generating the resulting {@link URI}.
 	 *
 	 * @param uri to encode
-	 *
 	 * @return the {@link URI} created from encoding the {@link String uri}
-	 *
 	 * @throws URISyntaxException if {@link String uri} is not valid
 	 */
 	public static URI encodeAsUri(String uri) throws URISyntaxException {
@@ -511,7 +468,7 @@ public class N5URL {
 	 * Generate an {@link N5URL} from a container, group, and attribute
 	 *
 	 * @param container of the N5Url
-	 * @param group of the N5Url
+	 * @param group     of the N5Url
 	 * @param attribute of the N5Url
 	 * @return the {@link N5URL}
 	 * @throws URISyntaxException

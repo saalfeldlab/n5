@@ -6,7 +6,6 @@ import java.net.URISyntaxException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 public class N5URLTest {
@@ -21,6 +20,7 @@ public class N5URLTest {
 			assertEquals("/", N5URL.normalizeAttributePath("/a/../b/../c/d/../.."));
 			assertEquals("/", N5URL.normalizeAttributePath("/a/../b/../c/d/../.."));
 			assertEquals("/", N5URL.normalizeAttributePath("/./././././"));
+			assertEquals("/", N5URL.normalizeAttributePath("/./././././."));
 			assertEquals("", N5URL.normalizeAttributePath("./././././"));
 
 			assertEquals("/a/[0]/b/[0]", N5URL.normalizeAttributePath("/a/[0]/b[0]/"));
@@ -29,12 +29,32 @@ public class N5URLTest {
 			assertEquals("/a/[0]", N5URL.normalizeAttributePath("/a[0]/"));
 			assertEquals("/[0]/b", N5URL.normalizeAttributePath("/[0]b/"));
 
+			assertEquals("[b]", N5URL.normalizeAttributePath("[b]"));
+			assertEquals("a[b]c", N5URL.normalizeAttributePath("a[b]c"));
+			assertEquals("a[bc", N5URL.normalizeAttributePath("a[bc"));
+			assertEquals("ab]c", N5URL.normalizeAttributePath("ab]c"));
+			assertEquals("a[b00]c", N5URL.normalizeAttributePath("a[b00]c"));
+
 			assertEquals("let's/try/a/real/case/with spaces", N5URL.normalizeAttributePath("let's/try/a/real/case/with spaces/"));
 			assertEquals("let's/try/a/real/case/with spaces", N5URL.normalizeAttributePath("let's/try/a/real/////case////with spaces/"));
-			assertThrows( IndexOutOfBoundsException.class, () -> N5URL.normalizeAttributePath("../first/relative/../not/allowed"));
+			assertEquals( "../first/relative/a/wd/.w/asd", N5URL.normalizeAttributePath("../first/relative/test/../a/b/.././wd///.w/asd"));
+			assertEquals( "../", N5URL.normalizeAttributePath("../result/../only/../single/.."));
+			assertEquals( "../..", N5URL.normalizeAttributePath("../result/../multiple/../.."));
 
-			String normalizedPath = N5URL.normalizeAttributePath("let's/try/a/real/////case////with spaces/");
+			String normalizedPath = N5URL.normalizeAttributePath("let's/try/a/some/////with/ /	//white spaces/");
 			assertEquals("Normalizing a normal path should be the identity", normalizedPath, N5URL.normalizeAttributePath(normalizedPath));
+	}
+
+	@Test
+	public void testEscapedAttributePaths() {
+		assertEquals("\\/a\\/b\\/c\\/d\\/e", N5URL.normalizeAttributePath("\\/a\\/b\\/c\\/d\\/e"));
+		assertEquals("/a\\\\/b/c", N5URL.normalizeAttributePath("/a\\\\/b/c"));
+		assertEquals("a[b]\\[10]", N5URL.normalizeAttributePath("a[b]\\[10]"));
+		assertEquals("\\[10]", N5URL.normalizeAttributePath("\\[10]"));
+		assertEquals("a/[0]/\\[10]b", N5URL.normalizeAttributePath("a[0]\\[10]b"));
+		assertEquals("[\\[10]\\[20]]", N5URL.normalizeAttributePath("[\\[10]\\[20]]"));
+		assertEquals("[\\[10]/[20]/]", N5URL.normalizeAttributePath("[\\[10][20]]"));
+		assertEquals("\\/", N5URL.normalizeAttributePath("\\/"));
 	}
 
 	@Test
