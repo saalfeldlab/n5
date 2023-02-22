@@ -107,11 +107,7 @@ public class N5URL {
 	 */
 	public static LinkedAttributePathToken<?> getAttributePathTokens(String normalizedAttributePath) {
 
-		final String[] attributePathParts = Arrays.stream(normalizedAttributePath
-						.replaceAll("^/", "")
-						.split("(?<!\\\\)/"))
-				.map(it -> it.replaceAll("\\\\/", "/").replaceAll("\\\\\\[", "["))
-				.toArray(String[]::new);
+		final String[] attributePathParts = normalizedAttributePath.replaceAll("^/", "").split("(?<!\\\\)/");
 
 		if (attributePathParts.length == 0 || Arrays.stream(attributePathParts).allMatch(String::isEmpty))
 			return null;
@@ -136,7 +132,8 @@ public class N5URL {
 				final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
 				newToken = new LinkedAttributePathToken.ArrayAttributeToken(index);
 			} else {
-				newToken = new LinkedAttributePathToken.ObjectAttributeToken(pathPart);
+				final String pathPartUnEscaped = pathPart.replaceAll("\\\\/", "/").replaceAll("\\\\\\[", "[");
+				newToken = new LinkedAttributePathToken.ObjectAttributeToken(pathPartUnEscaped);
 			}
 			updateCurrentToken.accept(newToken);
 		}
