@@ -28,14 +28,13 @@ package org.janelia.saalfeldlab.n5;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.URISyntaxException;
 import java.util.Arrays;
-import java.util.HashMap;
 
 /**
  * Abstract base class implementing {@link N5Reader} with JSON attributes
@@ -81,26 +80,31 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 	@Override
 	public DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
 
-		final HashMap<String, JsonElement> map = getAttributes(pathName);
+		final JsonElement root = getAttributes(pathName);
 		final Gson gson = getGson();
 
-		final long[] dimensions = GsonAttributesParser.parseAttribute(map, DatasetAttributes.dimensionsKey, long[].class, gson);
+		if (root == null || !root.isJsonObject())
+			return null;
+
+		final JsonObject rootObject = root.getAsJsonObject();
+
+		final long[] dimensions = GsonAttributesParser.readAttribute(rootObject, DatasetAttributes.dimensionsKey, long[].class, gson);
 		if (dimensions == null)
 			return null;
 
-		final DataType dataType = GsonAttributesParser.parseAttribute(map, DatasetAttributes.dataTypeKey, DataType.class, gson);
+		final DataType dataType = GsonAttributesParser.readAttribute(rootObject, DatasetAttributes.dataTypeKey, DataType.class, gson);
 		if (dataType == null)
 			return null;
 
-		int[] blockSize = GsonAttributesParser.parseAttribute(map, DatasetAttributes.blockSizeKey, int[].class, gson);
+		int[] blockSize = GsonAttributesParser.readAttribute(rootObject, DatasetAttributes.blockSizeKey, int[].class, gson);
 		if (blockSize == null)
 			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
 
-		Compression compression = GsonAttributesParser.parseAttribute(map, DatasetAttributes.compressionKey, Compression.class, gson);
+		Compression compression = GsonAttributesParser.readAttribute(rootObject, DatasetAttributes.compressionKey, Compression.class, gson);
 
 		/* version 0 */
 		if (compression == null) {
-			switch (GsonAttributesParser.parseAttribute(map, DatasetAttributes.compressionTypeKey, String.class, gson)) {
+			switch (GsonAttributesParser.readAttribute(rootObject, DatasetAttributes.compressionTypeKey, String.class, gson)) {
 			case "raw":
 				compression = new RawCompression();
 				break;
@@ -136,17 +140,6 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 			final String pathName,
 			final String key,
 			final Type type) throws IOException {
-		/* Short Circuit if the key exists exactly as is */
-		final HashMap<String, JsonElement> attributes = getAttributes(pathName);
-		if (attributes.containsKey(key)) {
-			try {
-				return gson.fromJson(attributes.get(key), type);
-			} catch (JsonSyntaxException e) {
-				/* This can happen for example when you have an attribute object with the exact key, but ALSO
-				* have a structured json path that you want to query. In this case, it will fail here if the types are different
-				* but we may want it to continue to try below. */
-			}
-		}
 
 		final String normalizedGroupPath;
 		final String normalizedAttributePath;
@@ -157,7 +150,7 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 		} catch (URISyntaxException e) {
 			throw new IOException(e);
 		}
-		return GsonAttributesParser.readAttribute( getAttributesJson( normalizedGroupPath ), normalizedAttributePath, type,  gson);
+		return GsonAttributesParser.readAttribute( getAttributes( normalizedGroupPath ), normalizedAttributePath, type,  gson);
 	}
 
 }

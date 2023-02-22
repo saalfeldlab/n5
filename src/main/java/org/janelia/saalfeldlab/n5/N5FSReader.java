@@ -25,11 +25,8 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.JsonObject;
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
@@ -39,7 +36,6 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
 import java.util.stream.Stream;
 
 import com.google.gson.GsonBuilder;
@@ -157,26 +153,14 @@ public class N5FSReader extends AbstractGsonReader {
 	}
 
 	@Override
-	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException {
-
-		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());
-		if (exists(pathName) && !Files.exists(path))
-			return new HashMap<>();
-
-		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForReading(path)) {
-			return GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
-		}
-	}
-
-	@Override
-	public JsonElement getAttributesJson(final String pathName) throws IOException {
+	public JsonElement getAttributes(final String pathName) throws IOException {
 
 		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());
 		if (exists(pathName) && !Files.exists(path))
 			return null;
 
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForReading(path)) {
-			return GsonAttributesParser.readAttributesJson(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
+			return GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
 		}
 	}
 

@@ -917,20 +917,21 @@ public abstract class AbstractN5Test {
 		/* We intentionally skipped index 3, it should be null */
 		Assert.assertNull( n5.getAttribute( testGroup, "/filled/double_array[3]", JsonNull.class ) );
 
-		/* Lastly, we wish to ensure that adding via a map does NOT interpret the json path structure, but rather it adds the keys opaquely*/
+		/* Lastly, we wish to ensure that escaping does NOT interpret the json path structure, but rather it adds the keys opaquely*/
 		final HashMap<String, Object> testAttributes = new HashMap<>();
-		testAttributes.put("/z/y/x", 10);
-		testAttributes.put("q/r/t", 11);
-		testAttributes.put("/l/m[10]/n", 12);
-		testAttributes.put("/", 13);
+		testAttributes.put("\\/z\\/y\\/x", 10);
+		testAttributes.put("q\\/r\\/t", 11);
+		testAttributes.put("\\/l\\/m\\[10]\\/n", 12);
+		testAttributes.put("\\/", 13);
 		/* intentionally the same as above, but this time it should be added as an opaque key*/
-		testAttributes.put("/a/b/key2", "value2");
+		testAttributes.put("\\/a\\/b/key2", "value2");
 		n5.setAttributes(testGroup, testAttributes);
 
-		assertEquals((Integer)10, n5.getAttribute(testGroup, "/z/y/x", Integer.class));
-		assertEquals((Integer)11, n5.getAttribute(testGroup, "q/r/t", Integer.class));
-		assertEquals((Integer)12, n5.getAttribute(testGroup, "/l/m[10]/n", Integer.class));
-		assertEquals((Integer)13, n5.getAttribute(testGroup, "/", Integer.class));
+		assertEquals((Integer)10, n5.getAttribute(testGroup, "\\/z\\/y\\/x", Integer.class));
+		assertEquals((Integer)11, n5.getAttribute(testGroup, "q\\/r\\/t", Integer.class));
+		assertEquals((Integer)12, n5.getAttribute(testGroup, "\\/l\\/m\\[10]\\/n", Integer.class));
+		assertEquals((Integer)13, n5.getAttribute(testGroup, "\\/", Integer.class));
+
 		/* We are passing a different type for the same key ("/").
 		 * This means it will try ot grab the exact match first, but then fail, and continuat on
 		 * to try and grab the value as a json structure. I should grab the root, and match the empty string case */
