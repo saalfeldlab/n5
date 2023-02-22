@@ -484,19 +484,19 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testList() {
 
-		try {
-			n5.createGroup(groupName);
+		try( final N5Writer listN5 = createN5Writer()) {
+			listN5.createGroup(groupName);
 			for (final String subGroup : subGroupNames)
-				n5.createGroup(groupName + "/" + subGroup);
+				listN5.createGroup(groupName + "/" + subGroup);
 
-			final String[] groupsList = n5.list(groupName);
+			final String[] groupsList = listN5.list(groupName);
 			Arrays.sort(groupsList);
 
 			Assert.assertArrayEquals(subGroupNames, groupsList);
 
 			// test listing the root group ("" and "/" should give identical results)
-			Assert.assertArrayEquals(new String[] {"test"}, n5.list(""));
-			Assert.assertArrayEquals(new String[] {"test"}, n5.list("/"));
+			Assert.assertArrayEquals(new String[] {"test"}, listN5.list(""));
+			Assert.assertArrayEquals(new String[] {"test"}, listN5.list("/"));
 
 
 		} catch (final IOException e) {
@@ -941,6 +941,100 @@ public abstract class AbstractN5Test {
 		assertNull(n5.getAttribute(testGroup, "/this/key/does/not/exist", Object.class));
 
 		n5.remove(testGroup);
+	}
+
+
+	@Test
+	public void testAttributePathEscaping() throws IOException {
+
+		final JsonObject emptyObj = new JsonObject();
+		final String empty = "{}";
+
+		final String slashKey = "/";
+		final String abcdefKey = "abc/def";
+		final String zeroKey = "[0]";
+		final String bracketsKey = "]] [] [[";
+		final String doubleBracketsKey = "[[2][33]]";
+		final String doubleBackslashKey = "\\\\";
+
+		final String dataString = "dataString";
+		final String rootSlash = jsonKeyVal( slashKey, dataString );
+		final String abcdef = jsonKeyVal( abcdefKey, dataString );
+		final String zero = jsonKeyVal( zeroKey, dataString );
+		final String brackets = jsonKeyVal( bracketsKey, dataString );
+		final String doubleBrackets = jsonKeyVal( doubleBracketsKey, dataString );
+		final String doubleBackslash = jsonKeyVal( doubleBackslashKey, dataString );
+
+		// "/" as key
+		String grp = "a";
+		n5.createGroup( grp );
+		n5.setAttribute( grp, "\\/", dataString );
+		assertEquals( dataString, n5.getAttribute( grp, "\\/", String.class ) );
+		String jsonContents = readAttributesAsString( grp );
+		assertEquals( rootSlash, jsonContents );
+
+		// "abc/def" as key
+		grp = "b";
+		n5.createGroup( grp );
+		n5.setAttribute( grp, "abc\\/def", dataString );
+		assertEquals( dataString, n5.getAttribute( grp, "abc\\/def", String.class ) );
+		jsonContents = readAttributesAsString( grp );
+		assertEquals( abcdef, jsonContents );
+
+		// "[0]"  as a key
+		grp = "c";
+		n5.createGroup( grp );
+		n5.setAttribute( grp, "\\[0]", dataString );
+		assertEquals( dataString, n5.getAttribute( grp, "\\[0]", String.class ) );
+		jsonContents = readAttributesAsString( grp );
+		assertEquals( zero, jsonContents );
+
+		// "]] [] [["  as a key
+		grp = "d";
+		n5.createGroup( grp );
+		n5.setAttribute( grp, bracketsKey, dataString );
+		assertEquals( dataString, n5.getAttribute( grp, bracketsKey, String.class ) );
+		jsonContents = readAttributesAsString( grp );
+		assertEquals( brackets, jsonContents );
+
+		// "[[2][33]]"  as a key FIXME: What to do about escaping inside square brackets?
+		grp = "e";
+		n5.createGroup( grp );
+		n5.setAttribute( grp, "[\\[2]\\[33]]", dataString );
+		assertEquals( dataString, n5.getAttribute( grp, "[\\[2]\\[33]]", String.class ) );
+		jsonContents = readAttributesAsString( grp );
+		assertEquals( doubleBrackets, jsonContents );
+
+		// "\\" as key FIXME: Do we allow escaping escape characters? They shouldn't need to be, can just add normally if not escaping anything
+		grp = "f";
+		n5.createGroup( grp );
+		n5.setAttribute( grp, "\\\\\\\\", dataString );
+		assertEquals( dataString, n5.getAttribute( grp, "\\\\\\\\", String.class ) );
+		jsonContents = readAttributesAsString( grp );
+		assertEquals( doubleBackslash, jsonContents );
+
+		// clear
+		n5.setAttribute( grp, "/", emptyObj );
+		jsonContents = readAttributesAsString( grp );
+		assertEquals( empty, jsonContents );
+	}
+
+	/*
+	 * For readability above
+	 */
+	private String jsonKeyVal( String key, String val ) {
+
+		return String.format( "{\"%s\":\"%s\"}", key, val );
+	}
+
+	private String readAttributesAsString( final String group ) {
+
+		final String basePath = ((N5FSWriter)n5).getBasePath();
+		try
+		{
+			return new String( Files.readAllBytes( Paths.get( basePath, group, "attributes.json" )));
+		} catch ( IOException e ) { }
+		return null;
 	}
 
 	@Test
