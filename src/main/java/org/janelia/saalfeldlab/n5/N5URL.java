@@ -1,7 +1,14 @@
 package org.janelia.saalfeldlab.n5;
 
+import sun.nio.cs.ThreadLocalCoders;
+
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CoderResult;
+import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +43,7 @@ public class N5URL {
 			container = uri.getScheme() + ":" + schemeSpecificPartWithoutQuery;
 		}
 		group = uri.getQuery();
-		attribute = uri.getFragment();
+		attribute = decodeFragment(uri.getRawFragment());
 	}
 
 	/**
@@ -476,5 +483,99 @@ public class N5URL {
 		final String groupPart = group != null ? "?" + group : "?";
 		final String attributePart = attribute != null ? "#" + attribute : "#";
 		return new N5URL(containerPart + groupPart + attributePart);
+	}
+
+	/**
+	 * Intentionally copied from {@link URI} for internal use
+	 *
+	 * @see URI#decode(char)
+	 */
+	private static int decode(char c) {
+
+		if ((c >= '0') && (c <= '9'))
+			return c - '0';
+		if ((c >= 'a') && (c <= 'f'))
+			return c - 'a' + 10;
+		if ((c >= 'A') && (c <= 'F'))
+			return c - 'A' + 10;
+		assert false;
+		return -1;
+	}
+
+	/**
+	 * Intentionally copied from {@link URI} for internal use
+	 *
+	 * @see URI#decode(char, char)
+	 */
+	private static byte decode(char c1, char c2) {
+
+		return (byte)(((decode(c1) & 0xf) << 4)
+				| ((decode(c2) & 0xf) << 0));
+	}
+
+	/**
+	 * Modifier from {@link URI#decode(String)} to ignore the listed Exception, where it doesn't decode escape values inside square braces.
+	 * <p>
+	 * As an example of the origin implement, a backslash inside a square brace would be encoded to "[%5C]", and
+	 * when calling {@code decode("[%5C]")} it would not decode to "[\]" since the encode escape sequence is inside square braces.
+	 * <p>
+	 * We keep all the decoding logic in this modified version, EXCEPT, that we don't check for and ignore encoded sequences inside square braces.
+	 * <p>
+	 * Thus, {@code decode("[%5C]")} -> "[\]".
+	 *
+	 * @see URI#decode(char, char)
+	 */
+	private static String decodeFragment(String rawFragment) {
+
+		if (rawFragment == null)
+			return rawFragment;
+		int n = rawFragment.length();
+		if (n == 0)
+			return rawFragment;
+		if (rawFragment.indexOf('%') < 0)
+			return rawFragment;
+
+		StringBuffer sb = new StringBuffer(n);
+		ByteBuffer bb = ByteBuffer.allocate(n);
+		CharBuffer cb = CharBuffer.allocate(n);
+		CharsetDecoder dec = ThreadLocalCoders.decoderFor("UTF-8")
+				.onMalformedInput(CodingErrorAction.REPLACE)
+				.onUnmappableCharacter(CodingErrorAction.REPLACE);
+
+		// This is not horribly efficient, but it will do for now
+		char c = rawFragment.charAt(0);
+		boolean betweenBrackets = false;
+
+		for (int i = 0; i < n; ) {
+			assert c == rawFragment.charAt(i);    // Loop invariant
+			if (c != '%') {
+				sb.append(c);
+				if (++i >= n)
+					break;
+				c = rawFragment.charAt(i);
+				continue;
+			}
+			bb.clear();
+			int ui = i;
+			for (; ; ) {
+				assert (n - i >= 2);
+				bb.put(decode(rawFragment.charAt(++i), rawFragment.charAt(++i)));
+				if (++i >= n)
+					break;
+				c = rawFragment.charAt(i);
+				if (c != '%')
+					break;
+			}
+			bb.flip();
+			cb.clear();
+			dec.reset();
+			CoderResult cr = dec.decode(bb, cb, true);
+			assert cr.isUnderflow();
+			cr = dec.flush(cb);
+			assert cr.isUnderflow();
+			sb.append(cb.flip().toString());
+		}
+
+		return sb.toString();
 	}
 }
