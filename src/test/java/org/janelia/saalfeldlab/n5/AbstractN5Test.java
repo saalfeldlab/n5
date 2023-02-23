@@ -969,7 +969,7 @@ public abstract class AbstractN5Test {
 		final String zeroKey = "[0]";
 		final String bracketsKey = "]] [] [[";
 		final String doubleBracketsKey = "[[2][33]]";
-		final String doubleBackslashKey = "\\\\";
+		final String doubleBackslashKey = "\\\\\\\\"; //Evaluates to `\\` through java and json
 
 		final String dataString = "dataString";
 		final String rootSlash = jsonKeyVal( slashKey, dataString );
@@ -1019,11 +1019,11 @@ public abstract class AbstractN5Test {
 		jsonContents = readAttributesAsString( grp );
 		assertEquals( doubleBrackets, jsonContents );
 
-		// "\\" as key FIXME: Do we allow escaping escape characters? They shouldn't need to be, can just add normally if not escaping anything
+		// "\\" as key
 		grp = "f";
 		n5.createGroup( grp );
-		n5.setAttribute( grp, "\\\\\\\\", dataString );
-		assertEquals( dataString, n5.getAttribute( grp, "\\\\\\\\", String.class ) );
+		n5.setAttribute( grp, "\\\\", dataString );
+		assertEquals( dataString, n5.getAttribute( grp, "\\\\", String.class ) );
 		jsonContents = readAttributesAsString( grp );
 		assertEquals( doubleBackslash, jsonContents );
 
