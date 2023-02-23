@@ -882,6 +882,20 @@ public abstract class AbstractN5Test {
 		addAndTest(existingTests, new TestData<>(testGroup, "/array[1][2]/[3]key2", "array3_value3"));
 		addAndTest(existingTests, new TestData<>(testGroup, "array[1]/[2][3]/key2", "array3_value4"));
 		addAndTest(existingTests, new TestData<>(testGroup, "/array/[1]/[2]/[3]/key2", "array3_value5"));
+		/* test with whitespace*/
+		addAndTest(existingTests, new TestData<>(testGroup, " ", "space"));
+		addAndTest(existingTests, new TestData<>(testGroup, "\n", "newline"));
+		addAndTest(existingTests, new TestData<>(testGroup, "\t", "tab"));
+		addAndTest(existingTests, new TestData<>(testGroup, "\r\n", "windows_newline"));
+		addAndTest(existingTests, new TestData<>(testGroup, " \n\t \t \n \r\n\r\n", "mixed"));
+		/* test URI encoded characters inside square braces */
+		addAndTest(existingTests, new TestData<>(testGroup, "[ ]", "space"));
+		addAndTest(existingTests, new TestData<>(testGroup, "[\n]", "newline"));
+		addAndTest(existingTests, new TestData<>(testGroup, "[\t]", "tab"));
+		addAndTest(existingTests, new TestData<>(testGroup, "[\r\n]", "windows_newline"));
+		addAndTest(existingTests, new TestData<>(testGroup, "[ ][\n][\t][ \t \n \r\n][\r\n]", "mixed"));
+		addAndTest(existingTests, new TestData<>(testGroup, "[ ][\\n][\\t][ \\t \\n \\r\\n][\\r\\n]", "mixed"));
+		addAndTest(existingTests, new TestData<>(testGroup, "[\\]", "backslash"));
 
 		/* Non String tests */
 
