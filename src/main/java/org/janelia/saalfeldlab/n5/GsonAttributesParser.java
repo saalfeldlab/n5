@@ -81,49 +81,165 @@ public interface GsonAttributesParser extends N5Reader {
 
 	static <T> T readAttribute(final JsonElement root, final String normalizedAttributePath, final Type type, final Gson gson) {
 
+		final JsonElement attribute = getAttribute(root, normalizedAttributePath);
+		return parseAttributeElement(attribute, gson, type);
+	}
+
+	/**
+	 * Deserialize the {@code attribute} as {@link Type type} {@link T}.
+	 *
+	 * @param attribute to deserialize as {@link Type type}
+	 * @param gson used to deserialize {@code attribute}
+	 * @param type to desrialize {@code attribute} as
+	 * @param <T> return type represented by {@link Type type}
+	 * @return the deserialized attribute object, or {@code null} if {@code attribute} cannot deserialize to {@link T}
+	 */
+	static <T> T parseAttributeElement(JsonElement attribute, Gson gson, Type type) {
+
+		if (attribute == null)
+			return null;
+
 		final Class<?> clazz = (type instanceof Class<?>) ? ((Class<?>)type) : null;
-		JsonElement json = root;
-		for (final String pathPart : normalizedAttributePath.split("(?<!\\\\)/")) {
-			if (pathPart.isEmpty())
-				continue;
-			final String pathPartWithoutEscapeCharacters = pathPart.replaceAll("\\\\/", "/").replaceAll("\\\\\\[", "[");
-			if (json instanceof JsonObject && json.getAsJsonObject().get(pathPartWithoutEscapeCharacters) != null) {
-				json = json.getAsJsonObject().get(pathPartWithoutEscapeCharacters);
-			} else {
-				final Matcher matcher = N5URL.ARRAY_INDEX.matcher(pathPart);
-				if (json != null && json.isJsonArray() && matcher.matches()) {
-					final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
-					final JsonArray jsonArray = json.getAsJsonArray();
-					if (index >= jsonArray.size()) {
-						return null;
-					}
-					json = jsonArray.get(index);
-				} else {
-					return null;
-				}
-			}
-		}
 		if (clazz != null && clazz.isAssignableFrom(HashMap.class)) {
 			Type mapType = new TypeToken<Map<String, Object>>() {
 
 			}.getType();
-			Map<String, Object> retMap = gson.fromJson(json, mapType);
+			Map<String, Object> retMap = gson.fromJson(attribute, mapType);
 			//noinspection unchecked
 			return (T)retMap;
 		}
-		if (json instanceof JsonArray) {
-			final JsonArray array = json.getAsJsonArray();
+		if (attribute instanceof JsonArray) {
+			final JsonArray array = attribute.getAsJsonArray();
 			T retArray = GsonAttributesParser.getJsonAsArray(gson, array, type);
 			if (retArray != null)
 				return retArray;
 		}
 		try {
-			return gson.fromJson(json, type);
+			return gson.fromJson(attribute, type);
 		} catch (JsonSyntaxException e) {
 			if (type == String.class)
-				return (T)gson.toJson(json);
+				return (T)gson.toJson(attribute);
 			return null;
 		}
+	}
+
+	/**
+	 * If there is an attribute in {@code root} such that it can be parsed and desrialized as {@link T},
+	 * then remove it from {@code root}, write {@code root} to the {@code writer}, and return the removed attribute.
+	 * <p>
+	 * If there is an attribute at the location specified by {@code normalizedAttributePath} but it cannot be deserialized to {@link T}, then it is not removed.
+	 *
+	 * If nothing is removed, then {@ecode root} is not writen to the {@code writer}.
+	 *
+	 * @param writer to write the modified {@code root} to after removal of the attribute
+	 * @param root to remove the attribute from
+	 * @param normalizedAttributePath to the attribute location
+	 * @param cls of the attribute to remove
+	 * @param gson to deserialize the attribute with
+	 * @param <T> of the removed attribute
+	 * @return the removed attribute, or null if nothing removed
+	 * @throws IOException
+	 */
+	static <T> T removeAttribute(
+			final Writer writer,
+			JsonElement root,
+			final String normalizedAttributePath,
+			final Class<T> cls,
+			final Gson gson) throws IOException {
+
+		final T removed = removeAttribute(root, normalizedAttributePath, cls, gson);
+		//TODO: test how to remove `null` attribute
+		if (removed != null ) {
+			writeAttributes(writer, root, gson);
+		}
+		return removed;
+	}
+
+	/**
+	 * If there is an attribute in {@code root} such that it can be parsed and desrialized as {@link T},
+	 * then remove it from {@code root} and return the removed attribute.
+	 * <p>
+	 * If there is an attribute at the location specified by {@code normalizedAttributePath} but it cannot be deserialized to {@link T}, then it is not removed.
+	 *
+	 * @param root to remove the attribute from
+	 * @param normalizedAttributePath to the attribute location
+	 * @param cls of the attribute to remove
+	 * @param gson to deserialize the attribute with
+	 * @param <T> of the removed attribute
+	 * @return the removed attribute, or null if nothing removed
+	 */
+	static <T> T removeAttribute(final JsonElement root, final String normalizedAttributePath, final Class<T> cls, final Gson gson) {
+		final T attribute = readAttribute(root, normalizedAttributePath, cls, gson);
+		if (attribute != null) {
+			removeAttribute(root, normalizedAttributePath);
+		}
+		return attribute;
+	}
+
+	/**
+	 * Removes the JsonElement at {@code normalizedAttributePath} from {@code root} if present.
+	 *
+	 * @param root to remove the attribute from
+	 * @param normalizedAttributePath to the attribute location
+	 * @return the removed {@link JsonElement}, or null if nothing removed.
+	 */
+	static JsonElement removeAttribute(JsonElement root, String normalizedAttributePath) {
+		return getAttribute(root, normalizedAttributePath, true);
+	}
+
+	/**
+	 * Return the attribute at {@code normalizedAttributePath} as a {@link JsonElement}.
+	 * Does not attempt to parse the attribute.
+	 *
+	 * @param root to search for the {@link JsonElement} at location {@code normalizedAttributePath}
+	 * @param normalizedAttributePath to the attribute
+	 * @return the attribute as a {@link JsonElement}.
+	 */
+	static JsonElement getAttribute(JsonElement root, String normalizedAttributePath) {
+		return getAttribute(root, normalizedAttributePath, false);
+	}
+
+	/**
+	 * Return the attribute at {@code normalizedAttributePath} as a {@link JsonElement}. If {@code remove}, remove the attribute from {@code root}.
+	 * Does not attempt to parse the attribute.
+	 *
+	 * @param root to search for the {@link JsonElement} at location {@code normalizedAttributePath}
+	 * @param normalizedAttributePath to the attribute
+	 * @param remove the attribute {code @JsonElement} after finding it.
+	 * @return the attribute as a {@link JsonElement}.
+	 */
+	static JsonElement getAttribute(JsonElement root, String normalizedAttributePath, boolean remove) {
+
+		for (final String pathPart : normalizedAttributePath.split("(?<!\\\\)/")) {
+			if (pathPart.isEmpty())
+				continue;
+			final String pathPartWithoutEscapeCharacters = pathPart
+					.replaceAll("\\\\/", "/")
+					.replaceAll("\\\\\\[", "[");
+			if (root instanceof JsonObject && root.getAsJsonObject().get(pathPartWithoutEscapeCharacters) != null) {
+				final JsonObject jsonObject = root.getAsJsonObject();
+				root = jsonObject.get(pathPartWithoutEscapeCharacters);
+				if (remove) {
+					jsonObject.remove(pathPartWithoutEscapeCharacters);
+				}
+			} else {
+				final Matcher matcher = N5URL.ARRAY_INDEX.matcher(pathPart);
+				if (root != null && root.isJsonArray() && matcher.matches()) {
+					final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
+					final JsonArray jsonArray = root.getAsJsonArray();
+					if (index >= jsonArray.size()) {
+						return null;
+					}
+					root = jsonArray.get(index);
+					if (remove) {
+						jsonArray.remove(index);
+					}
+				} else {
+					return null;
+				}
+			}
+		}
+		return root;
 	}
 
 	/**
