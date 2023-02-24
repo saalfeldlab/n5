@@ -191,7 +191,7 @@ public abstract class AbstractN5Test {
 		final long[] dimensions = new long[]{3, 2};
 		final int[] blockSize = new int[]{2, 2};
 
-		// test dataset; all characters are valid UTF8!
+		// test dataset; all characters are valid UTF8 but may have different numbers of bytes!
 		final String[] stringBlock = new String[]{"", "a", "bc", "de", "fgh", ":-þ"};
 
 		for (final Compression compression : getCompressions()) {

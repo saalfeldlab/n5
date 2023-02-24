@@ -42,13 +42,12 @@ public class VLenStringDataBlock extends AbstractDataBlock<String[]> {
         actualData = data;
 
         final byte[] nullSequence = NULLCHAR.getBytes(ENCODING);
-        final int nullSequenceLength = nullSequence.length;
         final ByteArrayOutputStream stream = new ByteArrayOutputStream();
 
         for (String str : data) {
             final byte[] strSequence = str.getBytes(ENCODING);
             stream.write(strSequence, 0, strSequence.length);
-            stream.write(nullSequence, 0, nullSequenceLength);
+            stream.write(nullSequence, 0, nullSequence.length);
         }
         serializedData = stream.toByteArray();
     }
