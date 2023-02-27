@@ -406,14 +406,19 @@ public class N5URL {
 	 */
 	public static String normalizeAttributePath(String attributePath) {
 
+		/* Add separator after arrays at the beginning `[10]b` -> `[10]/b`*/
 		final String attrPathPlusFirstIndexSeparator = attributePath.replaceAll("^(?<array>\\[[0-9]+])", "${array}/");
-		final String attrPathPlusIndexSeparators = attrPathPlusFirstIndexSeparator.replaceAll("((?<prev>[^\\\\])(?<!^)(?<array>\\[[0-9]+]))",
-				"${prev}/${array}/");
-		final String attrPathRemoveMultipleSeparators = attrPathPlusIndexSeparators.replaceAll("(?<slash>/)/+", "${slash}");
-		final String attrPathNoDot = attrPathRemoveMultipleSeparators.replaceAll("((?<!(\\\\|\\.))\\./(\\.$)?|[^^]/\\.$|(^|(?<=^/))\\.$)", "");
-		final String normalizedAttributePath = attrPathNoDot.replaceAll("(?<nonSlash>[^(^|\\\\)])/$", "${nonSlash}");
+		/* Add separator before and after arrays not at the beginning `a[10]b` -> `a/[10]/b`*/
+ 		final String attrPathPlusIndexSeparators = attrPathPlusFirstIndexSeparator.replaceAll("((?<!(^|\\\\))(?<array>\\[[0-9]+]))", "/${array}/");
+		/* remove redundant separators `a///b` -> `a/b`*/
+		final String attrPathRemoveMultipleSeparators = attrPathPlusIndexSeparators.replaceAll("(?<=/)/+", "");
+		/* remove redundant paths `a/./b` -> `a/b``*/
+		final String attrPathNoDot = attrPathRemoveMultipleSeparators.replaceAll("(?<=(/|^))(\\./)+|((/|(?<=/))\\.)$", "");
+		/* remove trailing separator `a/b/c/` -> `a/b/c` */
+		final String normalizedAttributePath = attrPathNoDot.replaceAll("(?<!(^|\\\\))/$", "");
 
-		final Pattern relativePathPattern = Pattern.compile("[^(/|\\.\\.)]+/\\.\\./?");
+		/* iteratively resolve relative paths `a/../b` -> b*/
+		final Pattern relativePathPattern = Pattern.compile("(?<=(/|^))[^/]+(?<!(/|(/|^)\\.\\.))/\\.\\./?");
 		int prevStringLenth = 0;
 		String resolvedAttributePath = normalizedAttributePath;
 		while (prevStringLenth != resolvedAttributePath.length()) {
