@@ -148,11 +148,33 @@ public interface GsonAttributesParser extends N5Reader {
 			final Gson gson) throws IOException {
 
 		final T removed = removeAttribute(root, normalizedAttributePath, cls, gson);
-		//TODO: test how to remove `null` attribute
 		if (removed != null ) {
 			writeAttributes(writer, root, gson);
 		}
 		return removed;
+	}
+
+	/**
+	 * If there is an attribute in {@code root} at location {@code normalizedAttributePath} then remove it from {@code root}..
+	 *
+	 * @param writer to write the modified {@code root} to after removal of the attribute
+	 * @param root to remove the attribute from
+	 * @param normalizedAttributePath to the attribute location
+	 * @param gson to deserialize the attribute with
+	 * @return if the attribute was removed or not
+	 */
+	static boolean removeAttribute(
+			final Writer writer,
+			final JsonElement root,
+			final String normalizedAttributePath,
+			final Gson gson) throws IOException {
+		final JsonElement removed = removeAttribute(root, normalizedAttributePath, JsonElement.class, gson);
+		//TODO: test how to remove `null` attribute
+		if (removed != null ) {
+			writeAttributes(writer, root, gson);
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -210,7 +232,9 @@ public interface GsonAttributesParser extends N5Reader {
 	 */
 	static JsonElement getAttribute(JsonElement root, String normalizedAttributePath, boolean remove) {
 
-		for (final String pathPart : normalizedAttributePath.split("(?<!\\\\)/")) {
+		final String[] pathParts = normalizedAttributePath.split("(?<!\\\\)/");
+		for (int i = 0; i < pathParts.length; i++) {
+			final String pathPart = pathParts[i];
 			if (pathPart.isEmpty())
 				continue;
 			final String pathPartWithoutEscapeCharacters = pathPart
@@ -219,7 +243,7 @@ public interface GsonAttributesParser extends N5Reader {
 			if (root instanceof JsonObject && root.getAsJsonObject().get(pathPartWithoutEscapeCharacters) != null) {
 				final JsonObject jsonObject = root.getAsJsonObject();
 				root = jsonObject.get(pathPartWithoutEscapeCharacters);
-				if (remove) {
+				if (remove && i == pathParts.length - 1) {
 					jsonObject.remove(pathPartWithoutEscapeCharacters);
 				}
 			} else {
@@ -231,7 +255,7 @@ public interface GsonAttributesParser extends N5Reader {
 						return null;
 					}
 					root = jsonArray.get(index);
-					if (remove) {
+					if (remove && i == pathParts.length - 1) {
 						jsonArray.remove(index);
 					}
 				} else {

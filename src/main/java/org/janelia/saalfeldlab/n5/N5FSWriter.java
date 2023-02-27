@@ -28,6 +28,7 @@ package org.janelia.saalfeldlab.n5;
 import com.google.gson.JsonElement;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryNotEmptyException;
@@ -39,6 +40,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -141,6 +143,73 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 
 			lockedFileChannel.getFileChannel().truncate(0);
 			GsonAttributesParser.writeAttributes(Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), newRoot, getGson());
+		}
+	}
+
+
+	@Override public boolean removeAttribute(String pathName, String key) throws IOException {
+
+		if (!exists(pathName))
+			return false;
+
+		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());
+		JsonElement attributesRoot = getAttributes(pathName);
+		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path)) {
+			final String attributePath = N5URL.normalizeAttributePath(key);
+			lockedFileChannel.getFileChannel().truncate(0);
+			return GsonAttributesParser.removeAttribute(Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), attributesRoot, attributePath, getGson());
+		}
+	}
+
+	@Override public <T> T removeAttribute(String pathName, String key, Class<T> cls) throws IOException {
+
+		if (!exists(pathName))
+			return null;
+
+		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());
+		JsonElement attributesRoot = getAttributes(pathName);
+		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path)) {
+			final String attributePath = N5URL.normalizeAttributePath(key);
+
+			final T removed = GsonAttributesParser.removeAttribute(attributesRoot, attributePath, cls, gson);
+			if (removed != null ) {
+				lockedFileChannel.getFileChannel().truncate(0);
+				final Writer writer = Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name());
+				GsonAttributesParser.writeAttributes(writer, attributesRoot, gson);
+			}
+			return removed;
+		}
+	}
+
+	@Override
+	public boolean removeAttributes(
+			final String pathName,
+			final List<String> attributes) throws IOException {
+
+		if(!exists(pathName))
+			return false;
+
+		final Path path = Paths.get(basePath, getAttributesPath(pathName).toString());
+		JsonObject newRoot = new JsonObject();
+
+		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path)) {
+			final JsonElement oldRoot = GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
+			if (oldRoot != null && oldRoot.isJsonObject())
+				newRoot = oldRoot.getAsJsonObject();
+
+
+			boolean removed = false;
+			for (String attribute : attributes) {
+				final String attributePath = N5URL.normalizeAttributePath(attribute);
+				removed |= GsonAttributesParser.removeAttribute(newRoot, attributePath) != null;
+			}
+			if (removed) {
+				lockedFileChannel.getFileChannel().truncate(0);
+				final Writer writer = Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name());
+				GsonAttributesParser.writeAttributes(writer, newRoot, getGson());
+			}
+
+			return removed;
 		}
 	}
 
