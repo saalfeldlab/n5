@@ -16,6 +16,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import com.google.gson.GsonBuilder;
 import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
 import org.junit.Test;
 
@@ -46,13 +47,13 @@ public class N5FSTest extends AbstractN5Test {
 	}
 
 	@Override
-	protected N5Writer createN5Writer(String location) throws IOException {
-		return new N5FSWriter(location);
+	protected N5Writer createN5Writer(String location, GsonBuilder gson) throws IOException {
+		return new N5FSWriter(location, gson);
 	}
 
 	@Override
-	protected N5Reader createN5Reader(String location) throws IOException {
-		return new N5FSReader(location);
+	protected N5Reader createN5Reader(String location, GsonBuilder gson) throws IOException {
+		return new N5FSReader(location, gson);
 	}
 
 	@Test

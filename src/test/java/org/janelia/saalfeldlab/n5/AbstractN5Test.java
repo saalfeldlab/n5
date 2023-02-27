@@ -16,8 +16,13 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import java.io.File;
@@ -78,9 +83,16 @@ public abstract class AbstractN5Test {
 
 	protected abstract N5Writer createN5Writer() throws IOException;
 
-	protected abstract N5Writer createN5Writer(String location) throws IOException;
+	protected N5Writer createN5Writer(String location) throws IOException {
 
-	protected abstract N5Reader createN5Reader(String location) throws IOException;
+		return createN5Writer(location, new GsonBuilder());
+	}
+	protected abstract N5Writer createN5Writer(String location, GsonBuilder gson) throws IOException;
+
+	protected N5Reader createN5Reader(String location) throws IOException {
+		return createN5Reader(location, new GsonBuilder());
+	}
+	protected abstract N5Reader createN5Reader(String location, GsonBuilder gson) throws IOException;
 
 	protected Compression[] getCompressions() {
 
@@ -461,9 +473,208 @@ public abstract class AbstractN5Test {
 			Assert.assertEquals(new Integer(1), n5.getAttribute(groupName, "key1", new TypeToken<Integer>(){}.getType()));
 			Assert.assertEquals(new Integer(2), n5.getAttribute(groupName, "key2", new TypeToken<Integer>(){}.getType()));
 			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", new TypeToken<String>(){}.getType()));
-
 		} catch (final IOException e) {
 			fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void testNullAttributes() throws IOException {
+		File tmpFile = Files.createTempDirectory("nulls-test-").toFile();
+		tmpFile.deleteOnExit();
+		String canonicalPath = tmpFile.getCanonicalPath();
+		/* serializeNulls*/
+		try (N5Writer writer = createN5Writer(canonicalPath, new GsonBuilder().serializeNulls())) {
+
+			writer.setAttribute(groupName, "nullValue", null);
+			assertEquals(null, writer.getAttribute(groupName, "nullValue", Object.class));
+			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "nullValue", JsonElement.class));
+			final HashMap<String, Object> nulls = new HashMap<>();
+			nulls.put("anotherNullValue", null);
+			nulls.put("structured/nullValue", null);
+			nulls.put("implicitNulls[3]", null);
+			writer.setAttributes(groupName, nulls);
+
+			assertEquals(null, writer.getAttribute(groupName, "anotherNullValue", Object.class));
+			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "anotherNullValue", JsonElement.class));
+
+			assertEquals(null, writer.getAttribute(groupName, "structured/nullValue", Object.class));
+			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "structured/nullValue", JsonElement.class));
+
+			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[3]", Object.class));
+			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "implicitNulls[3]", JsonElement.class));
+
+			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[1]", Object.class));
+			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "implicitNulls[1]", JsonElement.class));
+
+			/* Negative test; a value that truly doesn't exist will still return `null` but will also return `null` when querying as a `JsonElement` */
+			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[10]", Object.class));
+			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[10]", JsonElement.class));
+
+			assertEquals(null, writer.getAttribute(groupName, "keyDoesn'tExist", Object.class));
+			assertEquals(null, writer.getAttribute(groupName, "keyDoesn'tExist", JsonElement.class));
+
+			/* check existing value gets overwritten */
+			writer.setAttribute(groupName, "existingValue", 1);
+			assertEquals((Integer)1, writer.getAttribute(groupName, "existingValue", Integer.class));
+			writer.setAttribute(groupName, "existingValue", null);
+			assertEquals(null, writer.getAttribute(groupName, "existingValue", Integer.class));
+			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "existingValue", JsonElement.class));
+		}
+
+
+		tmpFile = Files.createTempDirectory("nulls-test-").toFile();
+		tmpFile.deleteOnExit();
+		canonicalPath = tmpFile.getCanonicalPath();
+		/* without serializeNulls*/
+		try (N5Writer writer = createN5Writer(canonicalPath, new GsonBuilder())) {
+
+			writer.setAttribute(groupName, "nullValue", null);
+			assertEquals(null, writer.getAttribute(groupName, "nullValue", Object.class));
+			assertEquals(null, writer.getAttribute(groupName, "nullValue", JsonElement.class));
+			final HashMap<String, Object> nulls = new HashMap<>();
+			nulls.put("anotherNullValue", null);
+			nulls.put("structured/nullValue", null);
+			nulls.put("implicitNulls[3]", null);
+			writer.setAttributes(groupName, nulls);
+
+			assertEquals(null, writer.getAttribute(groupName, "anotherNullValue", Object.class));
+			assertEquals(null, writer.getAttribute(groupName, "anotherNullValue", JsonElement.class));
+
+			assertEquals(null, writer.getAttribute(groupName, "structured/nullValue", Object.class));
+			assertEquals(null, writer.getAttribute(groupName, "structured/nullValue", JsonElement.class));
+
+			/* Arrays are still filled with `null`, regardless of `serializeNulls()`*/
+			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[3]", Object.class));
+			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "implicitNulls[3]", JsonElement.class));
+
+			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[1]", Object.class));
+			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "implicitNulls[1]", JsonElement.class));
+
+			/* Negative test; a value that truly doesn't exist will still return `null` but will also return `null` when querying as a `JsonElement` */
+			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[10]", Object.class));
+			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[10]", JsonElement.class));
+
+			assertEquals(null, writer.getAttribute(groupName, "keyDoesn'tExist", Object.class));
+			assertEquals(null, writer.getAttribute(groupName, "keyDoesn'tExist", JsonElement.class));
+
+			/* check existing value gets overwritten */
+			writer.setAttribute(groupName, "existingValue", 1);
+			assertEquals((Integer)1, writer.getAttribute(groupName, "existingValue", Integer.class));
+			writer.setAttribute(groupName, "existingValue", null);
+			assertEquals(null, writer.getAttribute(groupName, "existingValue", Integer.class));
+			assertEquals(null, writer.getAttribute(groupName, "existingValue", JsonElement.class));
+		}
+	}
+
+	@Test
+	public void testRemoveAttributes() throws IOException {
+		final File tmpFile = Files.createTempDirectory("nulls-test-").toFile();
+		tmpFile.deleteOnExit();
+		final String canonicalPath = tmpFile.getCanonicalPath();
+		try (N5Writer writer = createN5Writer(canonicalPath, new GsonBuilder().serializeNulls())) {
+
+			writer.setAttribute("", "a/b/c", 100);
+			assertEquals((Integer)100, writer.getAttribute("", "a/b/c", Integer.class));
+			/* Remove Test without Type */
+			assertTrue(writer.removeAttribute("", "a/b/c"));
+			assertNull(writer.getAttribute("", "a/b/c", Integer.class));
+
+			writer.setAttribute("", "a/b/c", 100);
+			assertEquals((Integer)100, writer.getAttribute("", "a/b/c", Integer.class));
+			/* Remove Test with correct Type */
+			assertEquals((Integer)100, writer.removeAttribute("", "a/b/c", Integer.class));
+			assertNull(writer.getAttribute("", "a/b/c", Integer.class));
+
+			writer.setAttribute("", "a/b/c", 100);
+			assertEquals((Integer)100, writer.getAttribute("", "a/b/c", Integer.class));
+			/* Remove Test with incorrect Type */
+			assertNull(writer.removeAttribute("", "a/b/c", Boolean.class));
+			final Integer abcInteger = writer.removeAttribute("", "a/b/c", Integer.class);
+			assertEquals((Integer)100, abcInteger);
+			assertNull(writer.getAttribute("", "a/b/c", Integer.class));
+
+			writer.setAttribute("", "a/b/c", 100);
+			assertEquals((Integer)100, writer.getAttribute("", "a/b/c", Integer.class));
+			/* Remove Test with non-leaf */
+			assertTrue(writer.removeAttribute("", "a/b"));
+			assertNull(writer.getAttribute("", "a/b/c", Integer.class));
+			assertNull(writer.getAttribute("", "a/b", JsonObject.class));
+
+			writer.setAttribute("", "a\\b\\c/b\\[10]\\c/c", 100);
+			assertEquals((Integer)100, writer.getAttribute("", "a\\b\\c/b\\[10]\\c/c", Integer.class));
+			/* Remove Test with escape-requiring key  */
+			assertTrue(writer.removeAttribute("", "a\\b\\c/b\\[10]\\c/c"));
+			assertNull(writer.getAttribute("", "a\\b\\c/b\\[10]\\c/c", Integer.class));
+
+			writer.setAttribute("", "a/b[9]", 10);
+			assertEquals((Integer)10, writer.getAttribute("", "a/b[9]", Integer.class));
+			assertEquals((Integer)0, writer.getAttribute("", "a/b[8]", Integer.class));
+			/*Remove test with arrays */
+			assertTrue(writer.removeAttribute("", "a/b[5]"));
+			assertEquals(9, writer.getAttribute("", "a/b", JsonArray.class).size());
+			assertEquals((Integer)0, writer.getAttribute("", "a/b[5]", Integer.class));
+			assertEquals((Integer)10, writer.getAttribute("", "a/b[8]", Integer.class));
+			assertTrue(writer.removeAttribute("", "a/b[8]"));
+			assertEquals(8, writer.getAttribute("", "a/b", JsonArray.class).size());
+			assertNull(writer.getAttribute("", "a/b[8]", Integer.class));
+			assertTrue(writer.removeAttribute("", "a/b"));
+			assertNull(writer.getAttribute("", "a/b[9]", Integer.class));
+			assertNull(writer.getAttribute("", "a/b", Integer.class));
+
+			/* ensure old remove behavior no longer works (i.e. set to null no longer should remove) */
+			writer.setAttribute("", "a/b/c", 100);
+			assertEquals((Integer)100, writer.getAttribute("", "a/b/c", Integer.class));
+			writer.setAttribute("", "a/b/c", null);
+			assertEquals(JsonNull.INSTANCE, writer.getAttribute("", "a/b/c", JsonNull.class));
+			writer.removeAttribute("", "a/b/c");
+			assertNull(writer.getAttribute("", "a/b/c", JsonNull.class));
+
+			/* remove multiple, all present */
+			writer.setAttribute("", "a/b/c", 100);
+			writer.setAttribute("", "a/b/d", "test");
+			writer.setAttribute("", "a/c[9]", 10);
+			writer.setAttribute("", "a/c[5]", 5);
+
+			assertTrue(writer.removeAttributes("", Arrays.asList("a/b/c", "a/b/d", "a/c[5]")));
+			assertNull(writer.getAttribute("", "a/b/c", Integer.class));
+			assertNull(writer.getAttribute("", "a/b/d", String.class));
+			assertEquals(9, writer.getAttribute("", "a/c", JsonArray.class).size());
+			assertEquals((Integer)10, writer.getAttribute("", "a/c[8]", Integer.class));
+			assertEquals((Integer)0, writer.getAttribute("", "a/c[5]", Integer.class));
+
+			/* remove multiple, any  present */
+			writer.setAttribute("", "a/b/c", 100);
+			writer.setAttribute("", "a/b/d", "test");
+			writer.setAttribute("", "a/c[9]", 10);
+			writer.setAttribute("", "a/c[5]", 5);
+
+			assertTrue(writer.removeAttributes("", Arrays.asList("a/b/c", "a/b/d", "a/x[5]")));
+			assertNull(writer.getAttribute("", "a/b/c", Integer.class));
+			assertNull(writer.getAttribute("", "a/b/d", String.class));
+			assertEquals(10, writer.getAttribute("", "a/c", JsonArray.class).size());
+			assertEquals((Integer)10, writer.getAttribute("", "a/c[9]", Integer.class));
+			assertEquals((Integer)5, writer.getAttribute("", "a/c[5]", Integer.class));
+
+			/* remove multiple, none  present */
+			writer.setAttribute("", "a/b/c", 100);
+			writer.setAttribute("", "a/b/d", "test");
+			writer.setAttribute("", "a/c[9]", 10);
+			writer.setAttribute("", "a/c[5]", 5);
+
+			assertFalse(writer.removeAttributes("", Arrays.asList("X/b/c", "Z/b/d", "a/x[5]")));
+			assertEquals((Integer)100, writer.getAttribute("", "a/b/c", Integer.class));
+			assertEquals("test", writer.getAttribute("", "a/b/d", String.class));
+			assertEquals(10, writer.getAttribute("", "a/c", JsonArray.class).size());
+			assertEquals((Integer)10, writer.getAttribute("", "a/c[9]", Integer.class));
+			assertEquals((Integer)5, writer.getAttribute("", "a/c[5]", Integer.class));
+
+			/* Test path normalization */
+			writer.setAttribute("", "a/b/c", 100);
+			assertEquals((Integer)100, writer.getAttribute("", "a/b/c", Integer.class));
+			assertEquals((Integer)100, writer.removeAttribute("", "a////b/x/../c", Integer.class));
+			assertNull(writer.getAttribute("", "a/b/c", Integer.class));
+
 		}
 	}
 
@@ -531,13 +742,13 @@ public abstract class AbstractN5Test {
 			final List<String> datasetList = Arrays.asList(writer.deepList("/"));
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetList.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
-			Assert.assertFalse("deepList stops at datasets", datasetList.contains(datasetName + "/0"));
+			assertFalse("deepList stops at datasets", datasetList.contains(datasetName + "/0"));
 
 			final List<String> datasetList2 = Arrays.asList(writer.deepList(""));
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetList2.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 			Assert.assertTrue("deepList contents", datasetList2.contains(datasetName.replaceFirst("/", "")));
-			Assert.assertFalse("deepList stops at datasets", datasetList2.contains(datasetName + "/0"));
+			assertFalse("deepList stops at datasets", datasetList2.contains(datasetName + "/0"));
 
 			final String prefix = "/test";
 			final String datasetSuffix = "group/dataset";
@@ -551,19 +762,19 @@ public abstract class AbstractN5Test {
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetListP.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 			Assert.assertTrue("deepList contents", datasetListP.contains(datasetName.replaceFirst("/", "")));
-			Assert.assertFalse("deepList stops at datasets", datasetListP.contains(datasetName + "/0"));
+			assertFalse("deepList stops at datasets", datasetListP.contains(datasetName + "/0"));
 
 			final List<String> datasetListP2 = Arrays.asList(writer.deepList("", Executors.newFixedThreadPool(2)));
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetListP2.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 			Assert.assertTrue("deepList contents", datasetListP2.contains(datasetName.replaceFirst("/", "")));
-			Assert.assertFalse("deepList stops at datasets", datasetListP2.contains(datasetName + "/0"));
+			assertFalse("deepList stops at datasets", datasetListP2.contains(datasetName + "/0"));
 
 			final List<String> datasetListP3 = Arrays.asList(writer.deepList(prefix, Executors.newFixedThreadPool(2)));
 			for (final String subGroup : subGroupNames)
 				Assert.assertTrue("deepList contents", datasetListP3.contains("group/" + subGroup));
 			Assert.assertTrue("deepList contents", datasetListP3.contains(datasetName.replaceFirst(prefix + "/", "")));
-			Assert.assertFalse("deepList stops at datasets", datasetListP3.contains(datasetName + "/0"));
+			assertFalse("deepList stops at datasets", datasetListP3.contains(datasetName + "/0"));
 
 			// test filtering
 			final Predicate<String> isCalledDataset = d -> {
@@ -663,10 +874,10 @@ public abstract class AbstractN5Test {
 
 			n5.createGroup(groupName2);
 			Assert.assertTrue(n5.exists(groupName2));
-			Assert.assertFalse(n5.datasetExists(groupName2));
+			assertFalse(n5.datasetExists(groupName2));
 
-			Assert.assertFalse(n5.exists(notExists));
-			Assert.assertFalse(n5.datasetExists(notExists));
+			assertFalse(n5.exists(notExists));
+			assertFalse(n5.datasetExists(notExists));
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
@@ -734,7 +945,7 @@ public abstract class AbstractN5Test {
 		final String canonicalPath = tmpFile.getCanonicalPath();
 		try (N5Writer writer = createN5Writer(canonicalPath)) {
 			writer.setAttribute("/", N5Reader.VERSION_KEY, new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
-			Assert.assertFalse(N5Reader.VERSION.isCompatible(writer.getVersion()));
+			assertFalse(N5Reader.VERSION.isCompatible(writer.getVersion()));
 		}
 	}
 
