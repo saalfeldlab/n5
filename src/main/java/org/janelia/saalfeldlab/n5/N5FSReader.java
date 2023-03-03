@@ -36,8 +36,11 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Stream;
 
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 
@@ -46,7 +49,7 @@ import com.google.gson.JsonElement;
  *
  * @author Stephan Saalfeld
  */
-public class N5FSReader extends AbstractGsonReader {
+public class N5FSReader implements GsonN5Reader, GsonAttributesParser {
 
 	protected static class LockedFileChannel implements Closeable {
 
@@ -99,6 +102,8 @@ public class N5FSReader extends AbstractGsonReader {
 
 	protected final String basePath;
 
+	protected final Gson gson;
+
 	/**
 	 * Opens an {@link N5FSReader} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
@@ -112,7 +117,7 @@ public class N5FSReader extends AbstractGsonReader {
 	 */
 	public N5FSReader(final String basePath, final GsonBuilder gsonBuilder) throws IOException {
 
-		super(gsonBuilder);
+		this.gson = GsonN5Reader.registerGson(gsonBuilder);
 		this.basePath = basePath;
 		if (exists("/")) {
 			final Version version = getVersion();
@@ -135,6 +140,17 @@ public class N5FSReader extends AbstractGsonReader {
 	public N5FSReader(final String basePath) throws IOException {
 
 		this(basePath, new GsonBuilder());
+	}
+
+	@Override public Gson getGson() {
+
+		return gson;
+	}
+
+	@Deprecated
+	public HashMap<String, JsonElement> getAttributesMap(String pathName) throws IOException {
+
+		return GsonAttributesParser.super.getAttributesMap(getAttributes(pathName));
 	}
 
 	/**
@@ -160,8 +176,14 @@ public class N5FSReader extends AbstractGsonReader {
 			return null;
 
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForReading(path)) {
-			return GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
+			return GsonN5Reader.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
 		}
+	}
+
+	@Override
+	public Map<String, Class<?>> listAttributes(String pathName) throws IOException {
+
+		return GsonN5Reader.listAttributes(getAttributes(pathName));
 	}
 
 	@Override

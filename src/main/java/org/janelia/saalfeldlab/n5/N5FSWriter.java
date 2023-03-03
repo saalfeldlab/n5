@@ -52,7 +52,7 @@ import com.google.gson.JsonObject;
  *
  * @author Stephan Saalfeld
  */
-public class N5FSWriter extends N5FSReader implements N5Writer {
+public class N5FSWriter extends N5FSReader implements GsonN5Writer {
 
 	/**
 	 * Opens an {@link N5FSWriter} at a given base path with a custom
@@ -117,7 +117,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path)) {
 			final String attributePath = N5URL.normalizeAttributePath(key);
 			lockedFileChannel.getFileChannel().truncate(0);
-			GsonAttributesParser.writeAttribute(Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), attributesRoot, attributePath, attribute, getGson());
+			GsonN5Writer.writeAttribute(Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), attributesRoot, attributePath, attribute, getGson());
 		}
 	}
 
@@ -130,7 +130,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		JsonObject newRoot = new JsonObject();
 
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path)) {
-			final JsonElement oldRoot = GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
+			final JsonElement oldRoot = GsonN5Reader.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
 			if (oldRoot != null && oldRoot.isJsonObject())
 				newRoot = oldRoot.getAsJsonObject();
 
@@ -138,11 +138,11 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			for (Map.Entry<String, ?> attrPathValue : attributes.entrySet()) {
 				final String attributePath = N5URL.normalizeAttributePath(attrPathValue.getKey());
 				final Object attributeValue = attrPathValue.getValue();
-				GsonAttributesParser.insertAttribute(newRoot, attributePath, attributeValue, gson);
+				GsonN5Writer.insertAttribute(newRoot, attributePath, attributeValue, gson);
 			}
 
 			lockedFileChannel.getFileChannel().truncate(0);
-			GsonAttributesParser.writeAttributes(Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), newRoot, getGson());
+			GsonN5Writer.writeAttributes(Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), newRoot, getGson());
 		}
 	}
 
@@ -157,7 +157,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path)) {
 			final String attributePath = N5URL.normalizeAttributePath(key);
 			lockedFileChannel.getFileChannel().truncate(0);
-			return GsonAttributesParser.removeAttribute(Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), attributesRoot, attributePath, getGson());
+			return GsonN5Writer.removeAttribute(Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), attributesRoot, attributePath, getGson());
 		}
 	}
 
@@ -171,11 +171,11 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path)) {
 			final String attributePath = N5URL.normalizeAttributePath(key);
 
-			final T removed = GsonAttributesParser.removeAttribute(attributesRoot, attributePath, cls, gson);
+			final T removed = GsonN5Writer.removeAttribute(attributesRoot, attributePath, cls, gson);
 			if (removed != null ) {
 				lockedFileChannel.getFileChannel().truncate(0);
 				final Writer writer = Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name());
-				GsonAttributesParser.writeAttributes(writer, attributesRoot, gson);
+				GsonN5Writer.writeAttributes(writer, attributesRoot, gson);
 			}
 			return removed;
 		}
@@ -193,7 +193,7 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 		JsonObject newRoot = new JsonObject();
 
 		try (final LockedFileChannel lockedFileChannel = LockedFileChannel.openForWriting(path)) {
-			final JsonElement oldRoot = GsonAttributesParser.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
+			final JsonElement oldRoot = GsonN5Reader.readAttributes(Channels.newReader(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name()), getGson());
 			if (oldRoot != null && oldRoot.isJsonObject())
 				newRoot = oldRoot.getAsJsonObject();
 
@@ -201,12 +201,12 @@ public class N5FSWriter extends N5FSReader implements N5Writer {
 			boolean removed = false;
 			for (String attribute : attributes) {
 				final String attributePath = N5URL.normalizeAttributePath(attribute);
-				removed |= GsonAttributesParser.removeAttribute(newRoot, attributePath) != null;
+				removed |= GsonN5Writer.removeAttribute(newRoot, attributePath) != null;
 			}
 			if (removed) {
 				lockedFileChannel.getFileChannel().truncate(0);
 				final Writer writer = Channels.newWriter(lockedFileChannel.getFileChannel(), StandardCharsets.UTF_8.name());
-				GsonAttributesParser.writeAttributes(writer, newRoot, getGson());
+				GsonN5Writer.writeAttributes(writer, newRoot, getGson());
 			}
 
 			return removed;
