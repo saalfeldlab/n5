@@ -1,4 +1,4 @@
-# N5 [![Build Status](https://travis-ci.com/saalfeldlab/n5.svg?branch=master)](https://travis-ci.com/saalfeldlab/n5)
+# N5 [![Build Status](https://travis-ci.com/saalfeldlab/n5.svg?branch=master)](https://travis-ci.com/saalfeldlab/n5) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6578231.svg)](https://doi.org/10.5281/zenodo.6578231)
 
 The N5 API specifies the primitive operations needed to store large chunked n-dimensional tensors, and arbitrary meta-data in a hierarchy of groups similar to HDF5.
 
@@ -16,7 +16,7 @@ Chunked datasets can be sparse, i.e. empty chunks do not need to be stored.
 
 ## File-system specification
 
-*version 2.6.1*
+*version 2.5.2-SNAPSHOT*
 
 N5 group is not a single file but simply a directory on the file system.  Meta-data is stored as a JSON file per each group/ directory.  Tensor datasets can be chunked and chunks are stored as individual files.  This enables parallel reading and writing on a cluster.
 

@@ -49,7 +49,7 @@ public class N5FSWriter extends N5KeyValueWriter {
 	 *
 	 * @param basePath n5 base path
 	 * @param gsonBuilder
-	 * @param cacheMeta cache attributes and meta data
+	 * @param cacheAttributes cache attributes and meta data
 	 *    Setting this to true avoids frequent reading and parsing of JSON
 	 *    encoded attributes and other meta data that requires accessing the
 	 *    store. This is most interesting for high latency backends. Changes
@@ -80,8 +80,7 @@ public class N5FSWriter extends N5KeyValueWriter {
 	 * will be set to the current N5 version of this implementation.
 	 *
 	 * @param basePath n5 base path
-	 * @param gsonBuilder
-	 * @param cacheMeta cache attributes and meta data
+	 * @param cacheAttributes cache attributes and meta data
 	 *    Setting this to true avoids frequent reading and parsing of JSON
 	 *    encoded attributes and other meta data that requires accessing the
 	 *    store. This is most interesting for high latency backends. Changes
@@ -101,12 +100,14 @@ public class N5FSWriter extends N5KeyValueWriter {
 	/**
 	 * Opens an {@link N5FSWriter} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
-	 *
+	 * <p>
 	 * If the base path does not exist, it will be created.
-	 *
+	 * </p>
+	 * <p>
 	 * If the base path exists and if the N5 version of the container is
 	 * compatible with this implementation, the N5 version of this container
 	 * will be set to the current N5 version of this implementation.
+	 * </p>
 	 *
 	 * @param basePath n5 base path
 	 * @param gsonBuilder
@@ -123,15 +124,16 @@ public class N5FSWriter extends N5KeyValueWriter {
 
 	/**
 	 * Opens an {@link N5FSWriter} at a given base path.
-	 *
+	 * <p>
 	 * If the base path does not exist, it will be created.
-	 *
+	 * </p>
+	 * <p>
 	 * If the base path exists and if the N5 version of the container is
 	 * compatible with this implementation, the N5 version of this container
 	 * will be set to the current N5 version of this implementation.
+	 * </p>
 	 *
 	 * @param basePath n5 base path
-	 * @param gsonBuilder
 	 *
 	 * @throws IOException
 	 *    if the base path cannot be written to or cannot be created,

@@ -89,8 +89,8 @@
 		<url>https://github.com/saalfedlab/n5/issues</url>
 	</issueManagement>
 	<ciManagement>
-		<system>Travis CI</system>
-		<url>https://travis-ci.com/saalfeldlab/n5</url>
+		<system>GitHub Actions</system>
+		<url>https://github.com/saalfeldlab/n5/actions</url>
 	</ciManagement>
 
 	<properties>
@@ -101,7 +101,8 @@
 		<license.copyrightOwners>Stephan Saalfeld</license.copyrightOwners>
 
 		<!-- NB: Deploy releases to the SciJava Maven repository. -->
-		<releaseProfiles>deploy-to-scijava</releaseProfiles>
+		<releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
+		<cisd.jhdf5.version>19.04.0</cisd.jhdf5.version>
 
 		<commons-collections4.version>4.2</commons-collections4.version>
 
@@ -149,6 +150,7 @@
 		<dependency>
 			<groupId>cisd</groupId>
 			<artifactId>jhdf5</artifactId>
+			<version>${cisd.jhdf5.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

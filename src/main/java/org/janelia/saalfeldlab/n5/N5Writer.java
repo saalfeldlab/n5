@@ -36,9 +36,8 @@ import java.util.Map;
  * A simple structured container API for hierarchies of chunked
  * n-dimensional datasets and attributes.
  *
- * {@linkplain https://github.com/axtimwalde/n5}
- *
  * @author Stephan Saalfeld
+ * @see "https://github.com/axtimwalde/n5"
  */
 public interface N5Writer extends N5Reader {
 
@@ -192,7 +191,7 @@ public interface N5Writer extends N5Reader {
 	 *
 	 * @param object
 	 * @param dataset
-	 * @param attributes
+	 * @param datasetAttributes
 	 * @param gridPosition
 	 * @throws IOException
 	 */
