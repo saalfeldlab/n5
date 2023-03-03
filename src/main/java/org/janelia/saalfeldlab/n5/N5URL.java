@@ -406,21 +406,33 @@ public class N5URL {
 	 */
 	public static String normalizeAttributePath(String attributePath) {
 
+		/* Short circuit if there are no non-escaped `/` or array indices (e.g. [N] where N is a non-negative integer) */
+		if (!attributePath.matches(".*((?<!\\\\)(/|\\[[0-9]+])).*")) {
+			return attributePath;
+		}
+
 		/* Add separator after arrays at the beginning `[10]b` -> `[10]/b`*/
 		final String attrPathPlusFirstIndexSeparator = attributePath.replaceAll("^(?<array>\\[[0-9]+])", "${array}/");
 		/* Add separator before and after arrays not at the beginning `a[10]b` -> `a/[10]/b`*/
- 		final String attrPathPlusIndexSeparators = attrPathPlusFirstIndexSeparator.replaceAll("((?<!(^|\\\\))(?<array>\\[[0-9]+]))", "/${array}/");
-		/* remove redundant separators `a///b` -> `a/b`*/
-		final String attrPathRemoveMultipleSeparators = attrPathPlusIndexSeparators.replaceAll("(?<=/)/+", "");
-		/* remove redundant paths `a/./b` -> `a/b``*/
-		final String attrPathNoDot = attrPathRemoveMultipleSeparators.replaceAll("(?<=(/|^))(\\./)+|((/|(?<=/))\\.)$", "");
-		/* remove trailing separator `a/b/c/` -> `a/b/c` */
-		final String normalizedAttributePath = attrPathNoDot.replaceAll("(?<!(^|\\\\))/$", "");
+		final String attrPathPlusIndexSeparators = attrPathPlusFirstIndexSeparator.replaceAll("((?<!(^|\\\\))(?<array>\\[[0-9]+]))", "/${array}/");
 
-		/* iteratively resolve relative paths `a/../b` -> b*/
-		final Pattern relativePathPattern = Pattern.compile("(?<=(/|^))[^/]+(?<!(/|(/|^)\\.\\.))/\\.\\./?");
+		/*
+		 *	The following has 4 possible matches, in each case it removes the match:
+		 * 		The first 3 remove redundant separators of the form:
+		 * 		1.`a///b` 	->	 `a/b`			:	(?<=/)/+
+		 * 		2.`a/./b` 	->	 `a/b`			:	(?<=(/|^))(\./)+
+		 * 		3.`a/b/` 	->	 `a/b`			:	((/|(?<=/))\.)$
+		 * 		The last resolves relative paths:
+		 * 		4. `a/../b` 	->	 `a/b` 		:	(?<!(^|\\))/$|(?<=(/|^))[^/]+(?<!(/|(/|^)\.\.))/\.\./?
+		 *
+		 * 	This is run iteratively, since earlier removals may cause later removals to be valid,
+		 * 		as well as the need to match once per relative `../` pattern.
+		 */
+		final Pattern relativePathPattern = Pattern.compile(
+				"((?<=/)/+|(?<=(/|^))(\\./)+|((/|(?<=/))\\.)$|(?<!(^|\\\\))/$|(?<=(/|^))[^/]+(?<!(/|(/|^)\\.\\.))/\\.\\./?)");
 		int prevStringLenth = 0;
-		String resolvedAttributePath = normalizedAttributePath;
+//		String resolvedAttributePath = attrPathRemoveRedundantSeparators;
+		String resolvedAttributePath = attrPathPlusIndexSeparators;
 		while (prevStringLenth != resolvedAttributePath.length()) {
 			prevStringLenth = resolvedAttributePath.length();
 			resolvedAttributePath = relativePathPattern.matcher(resolvedAttributePath).replaceAll("");
