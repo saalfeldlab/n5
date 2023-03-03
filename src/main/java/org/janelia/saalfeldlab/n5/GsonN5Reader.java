@@ -1,0 +1,425 @@
+/**
+ * Copyright (c) 2017, Stephan Saalfeld
+ * All rights reserved.
+ * <p>
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * <p>
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * <p>
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+package org.janelia.saalfeldlab.n5;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.lang.reflect.Array;
+import java.lang.reflect.Type;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+
+/**
+ * {@link N5Reader} for JSON attributes parsed by {@link Gson}.
+ *
+ * @author Stephan Saalfeld
+ */
+public interface GsonN5Reader extends N5Reader {
+
+	Gson getGson();
+
+	/**
+	 * Reads the attributes a group or dataset.
+	 *
+	 * @param pathName group path
+	 * @return the root {@link JsonElement} of the attributes
+	 * @throws IOException
+	 */
+	JsonElement getAttributes(final String pathName) throws IOException;
+
+	@Override
+	default <T> T getAttribute(
+			final String pathName,
+			final String key,
+			final Class<T> clazz) throws IOException {
+
+		return getAttribute(pathName, key, TypeToken.get(clazz).getType());
+	}
+
+	@Override
+	default <T> T getAttribute(
+			final String pathName,
+			final String key,
+			final Type type) throws IOException {
+
+		final String normalizedGroupPath;
+		final String normalizedAttributePath;
+		try {
+			final N5URL n5url = N5URL.from(null, pathName, key );
+			normalizedGroupPath = n5url.normalizeGroupPath();
+			normalizedAttributePath = n5url.normalizeAttributePath();
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
+		}
+		return GsonN5Reader.readAttribute( getAttributes( normalizedGroupPath ), normalizedAttributePath, type,  getGson());
+	}
+
+	@Override
+	default Map<String, Class<?>> listAttributes(String pathName) throws IOException {
+
+		return listAttributes(getAttributes(pathName));
+	}
+
+
+	@Override
+	default DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
+
+		final JsonElement root = getAttributes(pathName);
+		final Gson gson = getGson();
+
+		if (root == null || !root.isJsonObject())
+			return null;
+
+		final JsonObject rootObject = root.getAsJsonObject();
+
+		final long[] dimensions = GsonN5Reader.readAttribute(rootObject, DatasetAttributes.dimensionsKey, long[].class, gson);
+		if (dimensions == null)
+			return null;
+
+		final DataType dataType = GsonN5Reader.readAttribute(rootObject, DatasetAttributes.dataTypeKey, DataType.class, gson);
+		if (dataType == null)
+			return null;
+
+		int[] blockSize = GsonN5Reader.readAttribute(rootObject, DatasetAttributes.blockSizeKey, int[].class, gson);
+		if (blockSize == null)
+			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
+
+		Compression compression = GsonN5Reader.readAttribute(rootObject, DatasetAttributes.compressionKey, Compression.class, gson);
+
+		/* version 0 */
+		if (compression == null) {
+			switch (GsonN5Reader.readAttribute(rootObject, DatasetAttributes.compressionTypeKey, String.class, gson)) {
+			case "raw":
+				compression = new RawCompression();
+				break;
+			case "gzip":
+				compression = new GzipCompression();
+				break;
+			case "bzip2":
+				compression = new Bzip2Compression();
+				break;
+			case "lz4":
+				compression = new Lz4Compression();
+				break;
+			case "xz":
+				compression = new XzCompression();
+				break;
+			}
+		}
+
+		return new DatasetAttributes(dimensions, blockSize, dataType, compression);
+	}
+
+
+	static Gson registerGson(final GsonBuilder gsonBuilder) {
+		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
+		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
+		gsonBuilder.disableHtmlEscaping();
+		return gsonBuilder.create();
+	}
+
+	/**
+	 * Reads the attributes json from a given {@link Reader}.
+	 *
+	 * @param reader
+	 * @return the root {@link JsonObject} of the attributes
+	 * @throws IOException
+	 */
+	static JsonElement readAttributes(final Reader reader, final Gson gson) throws IOException {
+
+		final JsonElement json = gson.fromJson(reader, JsonElement.class);
+		return json;
+	}
+
+	static <T> T readAttribute(final JsonElement root, final String normalizedAttributePath, final Class<T> cls, final Gson gson) {
+
+		return readAttribute(root, normalizedAttributePath, TypeToken.get(cls).getType(), gson);
+	}
+
+	static <T> T readAttribute(final JsonElement root, final String normalizedAttributePath, final Type type, final Gson gson) {
+
+		final JsonElement attribute = getAttribute(root, normalizedAttributePath);
+		return parseAttributeElement(attribute, gson, type);
+	}
+
+	/**
+	 * Deserialize the {@code attribute} as {@link Type type} {@link T}.
+	 *
+	 * @param attribute to deserialize as {@link Type type}
+	 * @param gson      used to deserialize {@code attribute}
+	 * @param type      to desrialize {@code attribute} as
+	 * @param <T>       return type represented by {@link Type type}
+	 * @return the deserialized attribute object, or {@code null} if {@code attribute} cannot deserialize to {@link T}
+	 */
+	static <T> T parseAttributeElement(JsonElement attribute, Gson gson, Type type) {
+
+		if (attribute == null)
+			return null;
+
+		final Class<?> clazz = (type instanceof Class<?>) ? ((Class<?>)type) : null;
+		if (clazz != null && clazz.isAssignableFrom(HashMap.class)) {
+			Type mapType = new TypeToken<Map<String, Object>>() {
+
+			}.getType();
+			Map<String, Object> retMap = gson.fromJson(attribute, mapType);
+			//noinspection unchecked
+			return (T)retMap;
+		}
+		if (attribute instanceof JsonArray) {
+			final JsonArray array = attribute.getAsJsonArray();
+			T retArray = GsonN5Reader.getJsonAsArray(gson, array, type);
+			if (retArray != null)
+				return retArray;
+		}
+		try {
+			return gson.fromJson(attribute, type);
+		} catch (JsonSyntaxException e) {
+			if (type == String.class)
+				return (T)gson.toJson(attribute);
+			return null;
+		}
+	}
+
+	/**
+	 * Return the attribute at {@code normalizedAttributePath} as a {@link JsonElement}.
+	 * Does not attempt to parse the attribute.
+	 *
+	 * @param root                    to search for the {@link JsonElement} at location {@code normalizedAttributePath}
+	 * @param normalizedAttributePath to the attribute
+	 * @return the attribute as a {@link JsonElement}.
+	 */
+	static JsonElement getAttribute(JsonElement root, String normalizedAttributePath) {
+
+		final String[] pathParts = normalizedAttributePath.split("(?<!\\\\)/");
+		for (int i = 0; i < pathParts.length; i++) {
+			final String pathPart = pathParts[i];
+			if (pathPart.isEmpty())
+				continue;
+			final String pathPartWithoutEscapeCharacters = pathPart
+					.replaceAll("\\\\/", "/")
+					.replaceAll("\\\\\\[", "[");
+			if (root instanceof JsonObject && root.getAsJsonObject().get(pathPartWithoutEscapeCharacters) != null) {
+				final JsonObject jsonObject = root.getAsJsonObject();
+				root = jsonObject.get(pathPartWithoutEscapeCharacters);
+			} else {
+				final Matcher matcher = N5URL.ARRAY_INDEX.matcher(pathPart);
+				if (root != null && root.isJsonArray() && matcher.matches()) {
+					final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
+					final JsonArray jsonArray = root.getAsJsonArray();
+					if (index >= jsonArray.size()) {
+						return null;
+					}
+					root = jsonArray.get(index);
+				} else {
+					return null;
+				}
+			}
+		}
+		return root;
+	}
+
+	/**
+	 * Best effort implementation of {@link N5Reader#listAttributes(String)}
+	 * with limited type resolution.  Possible return types are
+	 * <ul>
+	 * <li>null</li>
+	 * <li>boolean</li>
+	 * <li>double</li>
+	 * <li>String</li>
+	 * <li>Object</li>
+	 * <li>boolean[]</li>
+	 * <li>double[]</li>
+	 * <li>String[]</li>
+	 * <li>Object[]</li>
+	 * </ul>
+	 */
+	static Map<String, Class<?>> listAttributes(JsonElement root) throws IOException {
+
+		if (root != null && !root.isJsonObject()) {
+			return null;
+		}
+
+		final HashMap<String, Class<?>> attributes = new HashMap<>();
+		root.getAsJsonObject().entrySet().forEach(entry -> {
+			final Class<?> clazz;
+			final String key = entry.getKey();
+			final JsonElement jsonElement = entry.getValue();
+			if (jsonElement.isJsonNull())
+				clazz = null;
+			else if (jsonElement.isJsonPrimitive())
+				clazz = classForJsonPrimitive((JsonPrimitive)jsonElement);
+			else if (jsonElement.isJsonArray()) {
+				final JsonArray jsonArray = (JsonArray)jsonElement;
+				Class<?> arrayElementClass = Object.class;
+				if (jsonArray.size() > 0) {
+					final JsonElement firstElement = jsonArray.get(0);
+					if (firstElement.isJsonPrimitive()) {
+						arrayElementClass = classForJsonPrimitive(firstElement.getAsJsonPrimitive());
+						for (int i = 1; i < jsonArray.size() && arrayElementClass != Object.class; ++i) {
+							final JsonElement element = jsonArray.get(i);
+							if (element.isJsonPrimitive()) {
+								final Class<?> nextArrayElementClass = classForJsonPrimitive(element.getAsJsonPrimitive());
+								if (nextArrayElementClass != arrayElementClass)
+									if (nextArrayElementClass == double.class && arrayElementClass == long.class)
+										arrayElementClass = double.class;
+									else {
+										arrayElementClass = Object.class;
+										break;
+									}
+							} else {
+								arrayElementClass = Object.class;
+								break;
+							}
+						}
+					}
+					clazz = Array.newInstance(arrayElementClass, 0).getClass();
+				} else
+					clazz = Object[].class;
+			} else
+				clazz = Object.class;
+			attributes.put(key, clazz);
+		});
+		return attributes;
+	}
+
+	static <T> T getJsonAsArray(Gson gson, JsonArray array, Class<T> cls) {
+
+		return getJsonAsArray(gson, array, TypeToken.get(cls).getType());
+	}
+
+	static <T> T getJsonAsArray(Gson gson, JsonArray array, Type type) {
+
+		final Class<?> clazz = (type instanceof Class<?>) ? ((Class<?>)type) : null;
+
+		if (type == boolean[].class) {
+			final boolean[] retArray = new boolean[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final Boolean value = gson.fromJson(array.get(i), boolean.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == double[].class) {
+			final double[] retArray = new double[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final double value = gson.fromJson(array.get(i), double.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == float[].class) {
+			final float[] retArray = new float[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final float value = gson.fromJson(array.get(i), float.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == long[].class) {
+			final long[] retArray = new long[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final long value = gson.fromJson(array.get(i), long.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == short[].class) {
+			final short[] retArray = new short[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final short value = gson.fromJson(array.get(i), short.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == int[].class) {
+			final int[] retArray = new int[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final int value = gson.fromJson(array.get(i), int.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == byte[].class) {
+			final byte[] retArray = new byte[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final byte value = gson.fromJson(array.get(i), byte.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (type == char[].class) {
+			final char[] retArray = new char[array.size()];
+			for (int i = 0; i < array.size(); i++) {
+				final char value = gson.fromJson(array.get(i), char.class);
+				retArray[i] = value;
+			}
+			return (T)retArray;
+		} else if (clazz != null && clazz.isArray()) {
+			final Class<?> componentCls = clazz.getComponentType();
+			final Object[] clsArray = (Object[])Array.newInstance(componentCls, array.size());
+			for (int i = 0; i < array.size(); i++) {
+				clsArray[i] = gson.fromJson(array.get(i), componentCls);
+			}
+			//noinspection unchecked
+			return (T)clsArray;
+		}
+		return null;
+	}
+
+	/**
+	 * Return a reasonable class for a {@link JsonPrimitive}.  Possible return
+	 * types are
+	 * <ul>
+	 * <li>boolean</li>
+	 * <li>double</li>
+	 * <li>String</li>
+	 * <li>Object</li>
+	 * </ul>
+	 *
+	 * @param jsonPrimitive
+	 * @return
+	 */
+	static Class<?> classForJsonPrimitive(final JsonPrimitive jsonPrimitive) {
+
+		if (jsonPrimitive.isBoolean())
+			return boolean.class;
+		else if (jsonPrimitive.isNumber()) {
+			final Number number = jsonPrimitive.getAsNumber();
+			if (number.longValue() == number.doubleValue())
+				return long.class;
+			else
+				return double.class;
+		} else if (jsonPrimitive.isString())
+			return String.class;
+		else
+			return Object.class;
+	}
+}
