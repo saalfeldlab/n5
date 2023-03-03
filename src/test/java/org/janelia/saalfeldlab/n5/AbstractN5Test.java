@@ -693,9 +693,12 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testList() {
+	public void testList() throws IOException {
 
-		try( final N5Writer listN5 = createN5Writer()) {
+		final File tmpFile = Files.createTempDirectory("list-test-").toFile();
+		tmpFile.deleteOnExit();
+		final String canonicalPath = tmpFile.getCanonicalPath();
+		try (final N5Writer listN5 = createN5Writer(canonicalPath)) {
 			listN5.createGroup(groupName);
 			for (final String subGroup : subGroupNames)
 				listN5.createGroup(groupName + "/" + subGroup);
@@ -957,31 +960,38 @@ public abstract class AbstractN5Test {
 		final String canonicalPath = tmpFile.getCanonicalPath();
 		try (N5Writer writer = createN5Writer(canonicalPath)) {
 
-			final N5Reader n5r = createN5Reader( canonicalPath );
-			assertNotNull( n5r );
+			final N5Reader n5r = createN5Reader(canonicalPath);
+			assertNotNull(n5r);
 
-			// existing directory without attributes is okay
-			writer.createGroup( "noAttrs" );
-			final N5Reader na = createN5Reader( canonicalPath + "/noAttrs" );
-			assertNotNull( na );
+			// existing directory without attributes is okay;
+			// Remove and create to remove attributes store
+			writer.remove("/");
+			writer.createGroup("/");
+			final N5Reader na = createN5Reader(canonicalPath);
+			assertNotNull(na);
 
-			// existing directory without attributes is okay
-			writer.createGroup( "withAttrs" );
-			writer.setAttribute( "withAttrs", "mystring", "ms" );
-			final N5Reader wa = createN5Reader( canonicalPath + "/withAttrs" );
+			// existing location with attributes, but no version
+			writer.remove("/");
+			writer.createGroup("/");
+			writer.setAttribute( "/", "mystring", "ms" );
+			final N5Reader wa = createN5Reader( canonicalPath);
 			assertNotNull( wa );
 
-			// non-existent directory should fail
-			assertThrows( "Non-existant directory throws error", IOException.class,
-					() -> {
-						createN5Reader( canonicalPath + "/nonExistant" );
-					} );
-
 			// existing directory with incompatible version should fail
+			writer.remove("/");
+			writer.createGroup("/");
 			writer.setAttribute("/", N5Reader.VERSION_KEY, new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
 			assertThrows( "Incompatible version throws error", IOException.class,
 					() -> {
 						createN5Reader(canonicalPath);
+					} );
+
+			// non-existent directory should fail
+			writer.remove("/");
+			assertThrows( "Non-existant location throws error", IOException.class,
+					() -> {
+						final N5Reader test = createN5Reader(canonicalPath);
+						test.list("/");
 					} );
 		}
 	}
@@ -1195,7 +1205,7 @@ public abstract class AbstractN5Test {
 		n5.createGroup( grp );
 		n5.setAttribute( grp, "\\/", dataString );
 		assertEquals( dataString, n5.getAttribute( grp, "\\/", String.class ) );
-		String jsonContents = readAttributesAsString( grp );
+		String jsonContents = n5.getAttribute( grp , "/", String.class);
 		assertEquals( rootSlash, jsonContents );
 
 		// "abc/def" as key
@@ -1203,7 +1213,7 @@ public abstract class AbstractN5Test {
 		n5.createGroup( grp );
 		n5.setAttribute( grp, "abc\\/def", dataString );
 		assertEquals( dataString, n5.getAttribute( grp, "abc\\/def", String.class ) );
-		jsonContents = readAttributesAsString( grp );
+		jsonContents = n5.getAttribute( grp , "/", String.class);
 		assertEquals( abcdef, jsonContents );
 
 		// "[0]"  as a key
@@ -1211,7 +1221,7 @@ public abstract class AbstractN5Test {
 		n5.createGroup( grp );
 		n5.setAttribute( grp, "\\[0]", dataString );
 		assertEquals( dataString, n5.getAttribute( grp, "\\[0]", String.class ) );
-		jsonContents = readAttributesAsString( grp );
+		jsonContents = n5.getAttribute( grp , "/", String.class);
 		assertEquals( zero, jsonContents );
 
 		// "]] [] [["  as a key
@@ -1219,7 +1229,7 @@ public abstract class AbstractN5Test {
 		n5.createGroup( grp );
 		n5.setAttribute( grp, bracketsKey, dataString );
 		assertEquals( dataString, n5.getAttribute( grp, bracketsKey, String.class ) );
-		jsonContents = readAttributesAsString( grp );
+		jsonContents = n5.getAttribute( grp , "/", String.class);
 		assertEquals( brackets, jsonContents );
 
 		// "[[2][33]]"  as a key FIXME: What to do about escaping inside square brackets?
@@ -1227,7 +1237,7 @@ public abstract class AbstractN5Test {
 		n5.createGroup( grp );
 		n5.setAttribute( grp, "[\\[2]\\[33]]", dataString );
 		assertEquals( dataString, n5.getAttribute( grp, "[\\[2]\\[33]]", String.class ) );
-		jsonContents = readAttributesAsString( grp );
+		jsonContents = n5.getAttribute( grp , "/", String.class);
 		assertEquals( doubleBrackets, jsonContents );
 
 		// "\\" as key
@@ -1235,12 +1245,12 @@ public abstract class AbstractN5Test {
 		n5.createGroup( grp );
 		n5.setAttribute( grp, "\\\\", dataString );
 		assertEquals( dataString, n5.getAttribute( grp, "\\\\", String.class ) );
-		jsonContents = readAttributesAsString( grp );
+		jsonContents = n5.getAttribute( grp , "/", String.class);
 		assertEquals( doubleBackslash, jsonContents );
 
 		// clear
 		n5.setAttribute( grp, "/", emptyObj );
-		jsonContents = readAttributesAsString( grp );
+		jsonContents = n5.getAttribute( grp , "/", String.class);
 		assertEquals( empty, jsonContents );
 	}
 

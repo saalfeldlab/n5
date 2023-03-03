@@ -50,7 +50,7 @@ public class N5URLTest {
 		assertEquals("let's/try/a/real/case/with spaces", N5URL.normalizeAttributePath("let's/try/a/real/case/with spaces/"));
 		assertEquals("let's/try/a/real/case/with spaces", N5URL.normalizeAttributePath("let's/try/a/real/////case////with spaces/"));
 		assertEquals("../first/relative/a/wd/.w/asd", N5URL.normalizeAttributePath("../first/relative/test/../a/b/.././wd///.w/asd"));
-		assertEquals("../", N5URL.normalizeAttributePath("../result/../only/../single/.."));
+		assertEquals("..", N5URL.normalizeAttributePath("../result/../only/../single/.."));
 		assertEquals("../..", N5URL.normalizeAttributePath("../result/../multiple/../.."));
 
 		String normalizedPath = N5URL.normalizeAttributePath("let's/try/a/some/////with/ /	//white spaces/");
