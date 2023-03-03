@@ -35,6 +35,8 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Abstract base class implementing {@link N5Reader} with JSON attributes
@@ -43,7 +45,9 @@ import java.util.Arrays;
  * @author Stephan Saalfeld
  * @author Igor Pisarev
  * @author Philipp Hanslovsky
+ * @author Caleb Hulbert
  */
+@Deprecated
 public abstract class AbstractGsonReader implements GsonAttributesParser, N5Reader {
 
 	protected final Gson gson;
@@ -54,6 +58,7 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 	 *
 	 * @param gsonBuilder
 	 */
+	@Deprecated
 	public AbstractGsonReader(final GsonBuilder gsonBuilder) {
 
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
@@ -66,18 +71,21 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 	 * Constructs an {@link AbstractGsonReader} with a default
 	 * {@link GsonBuilder}.
 	 */
+	@Deprecated
 	public AbstractGsonReader() {
 
 		this(new GsonBuilder());
 	}
 
 	@Override
+	@Deprecated
 	public Gson getGson() {
 
 		return gson;
 	}
 
 	@Override
+	@Deprecated
 	public DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
 
 		final JsonElement root = getAttributes(pathName);
@@ -88,23 +96,23 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 
 		final JsonObject rootObject = root.getAsJsonObject();
 
-		final long[] dimensions = GsonAttributesParser.readAttribute(rootObject, DatasetAttributes.dimensionsKey, long[].class, gson);
+		final long[] dimensions = GsonN5Reader.readAttribute(rootObject, DatasetAttributes.dimensionsKey, long[].class, gson);
 		if (dimensions == null)
 			return null;
 
-		final DataType dataType = GsonAttributesParser.readAttribute(rootObject, DatasetAttributes.dataTypeKey, DataType.class, gson);
+		final DataType dataType = GsonN5Reader.readAttribute(rootObject, DatasetAttributes.dataTypeKey, DataType.class, gson);
 		if (dataType == null)
 			return null;
 
-		int[] blockSize = GsonAttributesParser.readAttribute(rootObject, DatasetAttributes.blockSizeKey, int[].class, gson);
+		int[] blockSize = GsonN5Reader.readAttribute(rootObject, DatasetAttributes.blockSizeKey, int[].class, gson);
 		if (blockSize == null)
 			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
 
-		Compression compression = GsonAttributesParser.readAttribute(rootObject, DatasetAttributes.compressionKey, Compression.class, gson);
+		Compression compression = GsonN5Reader.readAttribute(rootObject, DatasetAttributes.compressionKey, Compression.class, gson);
 
 		/* version 0 */
 		if (compression == null) {
-			switch (GsonAttributesParser.readAttribute(rootObject, DatasetAttributes.compressionTypeKey, String.class, gson)) {
+			switch (GsonN5Reader.readAttribute(rootObject, DatasetAttributes.compressionTypeKey, String.class, gson)) {
 			case "raw":
 				compression = new RawCompression();
 				break;
@@ -127,6 +135,7 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 	}
 
 	@Override
+	@Deprecated
 	public <T> T getAttribute(
 			final String pathName,
 			final String key,
@@ -136,6 +145,7 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 	}
 
 	@Override
+	@Deprecated
 	public <T> T getAttribute(
 			final String pathName,
 			final String key,
@@ -144,13 +154,24 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 		final String normalizedGroupPath;
 		final String normalizedAttributePath;
 		try {
-			final N5URL n5url = N5URL.from(null, pathName, key );
+			final N5URL n5url = N5URL.from(null, pathName, key);
 			normalizedGroupPath = n5url.normalizeGroupPath();
 			normalizedAttributePath = n5url.normalizeAttributePath();
 		} catch (URISyntaxException e) {
 			throw new IOException(e);
 		}
-		return GsonAttributesParser.readAttribute( getAttributes( normalizedGroupPath ), normalizedAttributePath, type,  gson);
+		return GsonN5Reader.readAttribute(getAttributes(normalizedGroupPath), normalizedAttributePath, type, gson);
+	}
+	@Deprecated
+	public HashMap<String, JsonElement> getAttributesMap(String pathName) throws IOException {
+
+		return GsonAttributesParser.super.getAttributesMap(getAttributes(pathName));
 	}
 
+	@Override
+	@Deprecated
+	public Map<String, Class<?>> listAttributes(String pathName) throws IOException {
+
+		return GsonN5Reader.listAttributes(getAttributes(pathName));
+	}
 }
