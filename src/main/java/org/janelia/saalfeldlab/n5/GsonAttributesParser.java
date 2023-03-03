@@ -50,6 +50,19 @@ import java.util.regex.Matcher;
  */
 public interface GsonAttributesParser extends N5Reader {
 
+	default HashMap<String, JsonElement> getAttributesMap(JsonElement root) {
+
+		final HashMap<String, JsonElement> attributeMap = new HashMap<>();
+		if (root == null || !root.isJsonObject()) {
+			return attributeMap;
+		}
+
+		for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject().entrySet()) {
+			attributeMap.put(entry.getKey(), entry.getValue());
+		}
+		return attributeMap;
+	}
+
 	public Gson getGson();
 
 	/**
