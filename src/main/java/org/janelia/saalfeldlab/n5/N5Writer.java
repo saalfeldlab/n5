@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,7 +43,7 @@ import java.util.Map;
 public interface N5Writer extends N5Reader {
 
 	/**
-	 * Sets an attribute.  Setting an attribute to null removes the attribute.
+	 * Sets an attribute.
 	 *
 	 * @param pathName group path
 	 * @param key
@@ -58,8 +59,7 @@ public interface N5Writer extends N5Reader {
 	}
 
 	/**
-	 * Sets a map of attributes.  Any attribute with a value null will will be
-	 * removed.
+	 * Sets a map of attributes.
 	 *
 	 * @param pathName group path
 	 * @param attributes
@@ -68,6 +68,44 @@ public interface N5Writer extends N5Reader {
 	public void setAttributes(
 			final String pathName,
 			final Map<String, ?> attributes) throws IOException;
+
+	/**
+	 * Remove the attribute from group {@code pathName} with key {@code key}.
+	 *
+	 * @param pathName group path
+	 * @param key of attribute to remove
+	 * @return true if attribute removed, else false
+	 * @throws IOException
+	 */
+	boolean removeAttribute(String pathName, String key) throws IOException;
+
+	/**
+	 * Remove the attribute from group {@code pathName} with key {@code key} and type {@link T}.
+	 * <p>
+	 * If an attribute at {@code pathName} and {@code key} exists, but is not of type {@link T}, it is not removed.
+	 *
+	 * @param pathName group path
+	 * @param key of attribute to remove
+	 * @param cls of the attribute to remove
+	 * @param <T> of the attribute
+	 * @return the removed attribute, as {@link T}, or {@code null} if no matching attribute
+	 * @throws IOException
+	 */
+	<T> T removeAttribute(String pathName, String key, Class<T> cls) throws IOException;
+
+	/**
+	 * Remove attributes as provided by {@code attributes}.
+	 * <p>
+	 * If any element of {@code attributes} does not exist, it wil be ignored.
+	 * If at least one attribute from {@code attributes} is removed, this will return {@code true}.
+	 *
+	 *
+	 * @param pathName group path
+	 * @param attributes to remove
+	 * @return true if any of the listed attributes were removed
+	 * @throws IOException
+	 */
+	boolean removeAttributes( String pathName, List<String> attributes) throws IOException;
 
 	/**
 	 * Sets mandatory dataset attributes.

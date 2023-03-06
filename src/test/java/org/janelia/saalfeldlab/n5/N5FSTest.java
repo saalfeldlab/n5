@@ -27,11 +27,14 @@ package org.janelia.saalfeldlab.n5;
 
 import static org.junit.Assert.fail;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,7 +42,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.commons.io.FileUtils;
+import org.junit.AfterClass;
 import org.junit.Test;
+import com.google.gson.GsonBuilder;
+import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
+
+import java.util.ArrayList;
 
 /**
  * Initiates testing of the filesystem-based N5 implementation.
@@ -49,17 +58,73 @@ import org.junit.Test;
  */
 public class N5FSTest extends AbstractN5Test {
 
+	protected static Set<String> tmpFiles = new HashSet<>();
 	private static FileSystemKeyValueAccess access = new FileSystemKeyValueAccess(FileSystems.getDefault());
-	private static String testDirPath = System.getProperty("user.home") + "/tmp/n5-test.n5";
+	private static String testDirPath = createTempN5DirectoryPath();
+
+	@AfterClass
+	public static void cleanup() {
+
+		for (String tmpFile : tmpFiles) {
+			try{
+				FileUtils.deleteDirectory(new File(tmpFile));
+			} catch (Exception e) { }
+		}
+	}
 
 	/**
 	 * @throws IOException
 	 */
 	@Override
 	protected N5Writer createN5Writer() throws IOException {
-
-		return new N5FSWriter(testDirPath, false);
+		return new N5FSWriter(createTempN5DirectoryPath(), false);
 	}
+
+	protected static String createTempN5DirectoryPath()  {
+		try {
+			final File tmpFile = Files.createTempDirectory("n5-test-").toFile();
+			tmpFile.deleteOnExit();
+			final String tmpPath = tmpFile.getCanonicalPath();
+			tmpFiles.add(tmpPath);
+			return tmpPath;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+
+	@Override
+	protected N5Writer createN5Writer(String location, GsonBuilder gson) throws IOException {
+		if (!new File(location).exists()) {
+			tmpFiles.add(location);
+		}
+		return new N5FSWriter(location, gson);
+	}
+
+	@Override
+	protected N5Reader createN5Reader(String location, GsonBuilder gson) throws IOException {
+		return new N5FSReader(location, gson);
+	}
+
+	@Test
+	public void customObjectTest() throws IOException {
+
+		final String testGroup = "test";
+		final ArrayList<TestData<?>> existingTests = new ArrayList<>();
+
+		final UrlAttributeTest.TestDoubles doubles1 = new UrlAttributeTest.TestDoubles("doubles", "doubles1", new double[]{5.7, 4.5, 3.4});
+		final UrlAttributeTest.TestDoubles doubles2 = new UrlAttributeTest.TestDoubles("doubles", "doubles2", new double[]{5.8, 4.6, 3.5});
+		final UrlAttributeTest.TestDoubles doubles3 = new UrlAttributeTest.TestDoubles("doubles", "doubles3", new double[]{5.9, 4.7, 3.6});
+		final UrlAttributeTest.TestDoubles doubles4 = new UrlAttributeTest.TestDoubles("doubles", "doubles4", new double[]{5.10, 4.8, 3.7});
+		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[1]", doubles1));
+		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[2]", doubles2));
+		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[3]", doubles3));
+		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[4]", doubles4));
+
+		/* Test overwrite custom */
+		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[1]", doubles4));
+	}
+
 
 //	@Test
 	public void testReadLock() throws IOException, InterruptedException {
@@ -204,51 +269,5 @@ public class N5FSTest extends AbstractN5Test {
 		}
 
 		exec.shutdownNow();
-	}
-
-	@Test
-	public void testCache() {
-
-		final N5Writer n5Writer = n5;
-		try {
-			n5 = new N5FSWriter(testDirPath + "-cache", true);
-
-			testAttributes();
-			testAttributes();
-
-			testCreateDataset();
-			testCreateDataset();
-
-			testCreateGroup();
-			testCreateGroup();
-
-			testDeepList();
-			testDeepList();
-
-			testVersion();
-			testVersion();
-
-			testExists();
-			testExists();
-
-			testList();
-			testList();
-
-			testDelete();
-			testDelete();
-
-			testListAttributes();
-			testListAttributes();
-
-			testRemove();
-			testRemove();
-
-			n5.remove();
-		} catch (final IOException e) {
-			fail(e.getMessage());
-		} finally {
-			n5.close();
-			n5 = n5Writer;
-		}
 	}
 }

@@ -25,17 +25,17 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import com.google.gson.GsonBuilder;
+
 import java.io.IOException;
 import java.nio.file.FileSystems;
-
-import com.google.gson.GsonBuilder;
 
 /**
  * Filesystem {@link N5Writer} implementation with version compatibility check.
  *
  * @author Stephan Saalfeld
  */
-public class N5FSWriter extends N5KeyValueWriter {
+public class N5FSWriter extends N5KeyValueWriter implements GsonN5Writer {
 
 	/**
 	 * Opens an {@link N5FSWriter} at a given base path with a custom

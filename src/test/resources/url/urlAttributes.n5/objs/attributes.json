@@ -1,0 +1,37 @@
+{
+  "intsKey": {
+    "type": "ints",
+    "name": "intsName",
+    "t": [ 5, 4, 3 ]
+  },
+  "doublesKey": {
+    "type": "doubles",
+    "name": "doublesName",
+    "t": [ 5.5, 4.4, 3.3 ]
+  },
+  "int": [1, 2,3,4],
+  "Integer": [1, 2,3,4],
+  "String": ["This", "is", "a", "test"],
+  "array": [
+    {
+      "type": "doubles",
+      "name": "doubles1",
+      "t": [ 5.7, 4.5, 3.4 ]
+    },
+    {
+      "type": "doubles",
+      "name": "doubles2",
+      "t": [ 5.8, 4.6, 3.5 ]
+    },
+    {
+      "type": "doubles",
+      "name": "doubles3",
+      "t": [ 5.9, 4.7, 3.6 ]
+    },
+    {
+      "type": "doubles",
+      "name": "doubles4",
+      "t": [ 5.10, 4.8, 3.7 ]
+    }
+  ]
+}

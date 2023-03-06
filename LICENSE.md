@@ -1,6 +1,6 @@
 ## BSD 2-Clause License
 
-Copyright (c) 2017-2022, Stephan Saalfeld
+Copyright (c) 2017-2023, Stephan Saalfeld
 
 All rights reserved.
 
