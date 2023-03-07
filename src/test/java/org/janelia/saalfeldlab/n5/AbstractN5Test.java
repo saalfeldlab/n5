@@ -187,11 +187,9 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testWriteReadStringBlock() {
 
-		final DataType dataType = DataType.VLENSTRING;
-		final long[] dimensions = new long[]{3, 2};
-		final int[] blockSize = new int[]{2, 2};
-
 		// test dataset; all characters are valid UTF8 but may have different numbers of bytes!
+		final DataType dataType = DataType.VLENSTRING;
+		final int[] blockSize = new int[]{3, 2, 1};
 		final String[] stringBlock = new String[]{"", "a", "bc", "de", "fgh", ":-þ"};
 
 		for (final Compression compression : getCompressions()) {
@@ -200,10 +198,10 @@ public abstract class AbstractN5Test {
 			try {
 				n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
-				final VLenStringDataBlock dataBlock = new VLenStringDataBlock(blockSize, new long[]{0, 0, 0}, stringBlock);
+				final VLenStringDataBlock dataBlock = new VLenStringDataBlock(blockSize, new long[]{0L, 0L, 0L}, stringBlock);
 				n5.writeBlock(datasetName, attributes, dataBlock);
 
-				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0L, 0L, 0L});
 
 				Assert.assertArrayEquals(stringBlock, (String[])loadedDataBlock.getData());
 
