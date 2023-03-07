@@ -905,12 +905,12 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testExists() {
+	public void testExists() throws IOException {
 
 		final String groupName2 = groupName + "-2";
 		final String datasetName2 = datasetName + "-2";
 		final String notExists = groupName + "-notexists";
-		try {
+		try (N5Writer n5 = createN5Writer()){
 			n5.createDataset(datasetName2, dimensions, blockSize, DataType.UINT64, new RawCompression());
 			Assert.assertTrue(n5.exists(datasetName2));
 			Assert.assertTrue(n5.datasetExists(datasetName2));
@@ -921,8 +921,7 @@ public abstract class AbstractN5Test {
 
 			assertFalse(n5.exists(notExists));
 			assertFalse(n5.datasetExists(notExists));
-		} catch (final IOException e) {
-			fail(e.getMessage());
+
 		}
 	}
 
@@ -1243,58 +1242,62 @@ public abstract class AbstractN5Test {
 		final String doubleBrackets = jsonKeyVal(doubleBracketsKey, dataString);
 		final String doubleBackslash = jsonKeyVal(doubleBackslashKey, dataString);
 
-		// "/" as key
-		String grp = "a";
-		n5.createGroup(grp);
-		n5.setAttribute(grp, "\\/", dataString);
-		assertEquals(dataString, n5.getAttribute(grp, "\\/", String.class));
-		String jsonContents = n5.getAttribute(grp, "/", String.class);
-		assertEquals(rootSlash, jsonContents);
+		try (N5Writer n5 = createN5Writer()) {
 
-		// "abc/def" as key
-		grp = "b";
-		n5.createGroup(grp);
-		n5.setAttribute(grp, "abc\\/def", dataString);
-		assertEquals(dataString, n5.getAttribute(grp, "abc\\/def", String.class));
-		jsonContents = n5.getAttribute(grp, "/", String.class);
-		assertEquals(abcdef, jsonContents);
+			// "/" as key
+			String grp = "a";
+			n5.createGroup(grp);
+			n5.setAttribute(grp, "\\/", dataString);
+			assertEquals(dataString, n5.getAttribute(grp, "\\/", String.class));
+			String jsonContents = n5.getAttribute(grp, "/", String.class);
+			assertEquals(rootSlash, jsonContents);
 
-		// "[0]"  as a key
-		grp = "c";
-		n5.createGroup(grp);
-		n5.setAttribute(grp, "\\[0]", dataString);
-		assertEquals(dataString, n5.getAttribute(grp, "\\[0]", String.class));
-		jsonContents = n5.getAttribute(grp, "/", String.class);
-		assertEquals(zero, jsonContents);
+			// "abc/def" as key
+			grp = "b";
+			n5.createGroup(grp);
+			n5.setAttribute(grp, "abc\\/def", dataString);
+			assertEquals(dataString, n5.getAttribute(grp, "abc\\/def", String.class));
+			jsonContents = n5.getAttribute(grp, "/", String.class);
+			assertEquals(abcdef, jsonContents);
 
-		// "]] [] [["  as a key
-		grp = "d";
-		n5.createGroup(grp);
-		n5.setAttribute(grp, bracketsKey, dataString);
-		assertEquals(dataString, n5.getAttribute(grp, bracketsKey, String.class));
-		jsonContents = n5.getAttribute(grp, "/", String.class);
-		assertEquals(brackets, jsonContents);
+			// "[0]"  as a key
+			grp = "c";
+			n5.createGroup(grp);
+			n5.setAttribute(grp, "\\[0]", dataString);
+			assertEquals(dataString, n5.getAttribute(grp, "\\[0]", String.class));
+			jsonContents = n5.getAttribute(grp, "/", String.class);
+			assertEquals(zero, jsonContents);
 
-		// "[[2][33]]"
-		grp = "e";
-		n5.createGroup(grp);
-		n5.setAttribute(grp, "[\\[2]\\[33]]", dataString);
-		assertEquals(dataString, n5.getAttribute(grp, "[\\[2]\\[33]]", String.class));
-		jsonContents = n5.getAttribute(grp, "/", String.class);
-		assertEquals(doubleBrackets, jsonContents);
+			// "]] [] [["  as a key
+			grp = "d";
+			n5.createGroup(grp);
+			n5.setAttribute(grp, bracketsKey, dataString);
+			assertEquals(dataString, n5.getAttribute(grp, bracketsKey, String.class));
+			jsonContents = n5.getAttribute(grp, "/", String.class);
+			assertEquals(brackets, jsonContents);
 
-		// "\\" as key
-		grp = "f";
-		n5.createGroup(grp);
-		n5.setAttribute(grp, "\\\\", dataString);
-		assertEquals(dataString, n5.getAttribute(grp, "\\\\", String.class));
-		jsonContents = n5.getAttribute(grp, "/", String.class);
-		assertEquals(doubleBackslash, jsonContents);
+			// "[[2][33]]"
+			grp = "e";
+			n5.createGroup(grp);
+			n5.setAttribute(grp, "[\\[2]\\[33]]", dataString);
+			assertEquals(dataString, n5.getAttribute(grp, "[\\[2]\\[33]]", String.class));
+			jsonContents = n5.getAttribute(grp, "/", String.class);
+			assertEquals(doubleBrackets, jsonContents);
 
-		// clear
-		n5.setAttribute(grp, "/", emptyObj);
-		jsonContents = n5.getAttribute(grp, "/", String.class);
-		assertEquals(empty, jsonContents);
+			// "\\" as key
+			grp = "f";
+			n5.createGroup(grp);
+			n5.setAttribute(grp, "\\\\", dataString);
+			assertEquals(dataString, n5.getAttribute(grp, "\\\\", String.class));
+			jsonContents = n5.getAttribute(grp, "/", String.class);
+			assertEquals(doubleBackslash, jsonContents);
+
+			// clear
+			n5.setAttribute(grp, "/", emptyObj);
+			jsonContents = n5.getAttribute(grp, "/", String.class);
+			assertEquals(empty, jsonContents);
+
+		}
 	}
 
 	/*
