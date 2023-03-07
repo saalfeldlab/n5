@@ -375,8 +375,10 @@ public class N5URL {
 	 * 	<li>"." which represents the current element </li>
 	 * 	<li>".." which represent the previous elemnt </li>
 	 * 	<li>"/" which is used to separate elements in the json tree </li>
-	 * 	<li>[N] where N is an integer, refer to an index in the previous element in the tree; the previous element must be an array. </li>
+	 * 	<li>[N] where N is an integer, refer to an index in the previous element in the tree; the previous element must be an array.
+	 * 	<p>
 	 * 		Note: [N] also separates the previous and following elements, regardless of whether it is preceded by "/" or not.
+	 * 	</li>
 	 * 	<li>"\" which is an escape character, which indicates the subquent '/' or '[N]' should not be interpreted as a path delimeter,
 	 * 	but as part of the current path name. </li>
 	 *
@@ -391,14 +393,14 @@ public class N5URL {
 	 * <p>
 	 * Examples of valid attribute paths, and their normalizations
 	 * <ul>
-	 * 	<li>/a/b/c -> /a/b/c</li>
-	 * 	<li>/a/b/c/ -> /a/b/c</li>
-	 * 	<li>///a///b///c -> /a/b/c</li>
-	 * 	<li>/a/././b/c -> /a/b/c</li>
-	 * 	<li>/a/b[1]c -> /a/b/[1]/c</li>
-	 * 	<li>/a/b/[1]c -> /a/b/[1]/c</li>
-	 * 	<li>/a/b[1]/c -> /a/b/[1]/c</li>
-	 * 	<li>/a/b[1]/c/.. -> /a/b/[1]</li>
+	 * 	<li>/a/b/c becomes /a/b/c</li>
+	 * 	<li>/a/b/c/ becomes /a/b/c</li>
+	 * 	<li>///a///b///c becomes /a/b/c</li>
+	 * 	<li>/a/././b/c becomes /a/b/c</li>
+	 * 	<li>/a/b[1]c becomes /a/b/[1]/c</li>
+	 * 	<li>/a/b/[1]c becomes /a/b/[1]/c</li>
+	 * 	<li>/a/b[1]/c becomes /a/b/[1]/c</li>
+	 * 	<li>/a/b[1]/c/.. becomes /a/b/[1]</li>
 	 * </ul>
 	 *
 	 * @param attributePath to normalize

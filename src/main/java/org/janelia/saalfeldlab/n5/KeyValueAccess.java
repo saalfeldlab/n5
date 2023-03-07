@@ -166,7 +166,6 @@ public interface KeyValueAccess {
 	 *
 	 * @param normalPath is expected to be in normalized form, no further
 	 * 		efforts are made to normalize it.
-	 * @return
 	 * @throws IOException
 	 */
 	public void createDirectories(final String normalPath) throws IOException;
@@ -176,7 +175,6 @@ public interface KeyValueAccess {
 	 *
 	 * @param normalPath is expected to be in normalized form, no further
 	 * 		efforts are made to normalize it.
-	 * @return
 	 */
 	public void delete(final String normalPath) throws IOException;
 }

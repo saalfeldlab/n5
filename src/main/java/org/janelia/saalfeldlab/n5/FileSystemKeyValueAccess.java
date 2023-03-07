@@ -329,7 +329,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	 * Workaround for https://bugs.openjdk.java.net/browse/JDK-8130464
 	 *
      * Creates a directory by creating all nonexistent parent directories first.
-     * Unlike the {@link #createDirectory createDirectory} method, an exception
+     * Unlike the {@link Files#createDirectories} method, an exception
      * is not thrown if the directory could not be created because it already
      * exists.
      *
