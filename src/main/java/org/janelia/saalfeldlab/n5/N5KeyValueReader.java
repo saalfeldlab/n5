@@ -123,23 +123,6 @@ public class N5KeyValueReader implements GsonN5Reader {
 	}
 
 	/**
-	 * Reads the attributes at a given {@code normalAttributesPath}.
-	 *
-	 * @param normalAttributesPath normalized path of attributes location
-	 * @return the attribute root JsonElement
-	 * @throws IOException if unable to read the {@code normalAttributePath}
-	 */
-	protected JsonElement readAttributes(final String normalAttributesPath) throws IOException {
-
-		if (!keyValueAccess.exists(normalAttributesPath))
-			return null;
-
-		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(normalAttributesPath)) {
-			return readAttributes(lockedChannel.newReader());
-		}
-	}
-
-	/**
 	 * Reads the attributes from a given {@link Reader}.
 	 *
 	 * @param reader containing attriubtes
@@ -212,40 +195,6 @@ public class N5KeyValueReader implements GsonN5Reader {
 	protected JsonElement getCachedAttributes(final String normalPath) {
 
 		return metaCache.get(normalPath).attributesCache;
-	}
-
-	/**
-	 * Cache and return attributes for a group identified by an info object and a
-	 * pathName.
-	 * <p>
-	 * This helper method does not intelligently handle the case that the group
-	 * does not exist (as indicated by info == emptyGroupInfo) which should be
-	 * done in calling code.
-	 *
-	 * @param info
-	 * @param normalPath normalized group path without leading slash
-	 * @return cached attributes
-	 * empty map if the group exists but not attributes are set
-	 * null if the group does not exist
-	 * @throws IOException
-	 */
-	protected JsonElement cacheAttributes(
-			final N5GroupInfo info,
-			final String normalPath
-	) throws IOException {
-
-		JsonElement metadataCache = info.attributesCache;
-		if (metadataCache == null) {
-			synchronized (info) {
-				metadataCache = info.attributesCache;
-				if (metadataCache == null) {
-					final String absoluteNormalPath = attributesPath(normalPath);
-					metadataCache = readAttributes(absoluteNormalPath);
-					info.attributesCache = metadataCache;
-				}
-			}
-		}
-		return metadataCache;
 	}
 
 	@Override
