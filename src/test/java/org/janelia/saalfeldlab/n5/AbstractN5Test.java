@@ -1108,11 +1108,16 @@ public abstract class AbstractN5Test {
 				throw new RuntimeException(e);
 			}
 		});
+		runTests(writer, existingTests);
+		existingTests.add(testData);
+	}
+
+	protected static void runTests(N5Writer writer, ArrayList<TestData<?>> existingTests) throws IOException {
+
 		for (TestData<?> test : existingTests) {
 			Assert.assertEquals(test.attributeValue, writer.getAttribute(test.groupPath, test.attributePath, test.attributeClass));
 			Assert.assertEquals(test.attributeValue, writer.getAttribute(test.groupPath, test.attributePath, TypeToken.get(test.attributeClass).getType()));
 		}
-		existingTests.add(testData);
 	}
 
 	@Test
