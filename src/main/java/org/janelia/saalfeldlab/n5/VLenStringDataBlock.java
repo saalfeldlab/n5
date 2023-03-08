@@ -40,14 +40,13 @@ public class VLenStringDataBlock extends AbstractDataBlock<String[]> {
     public VLenStringDataBlock(final int[] size, final long[] gridPosition, final String[] data) {
         super(size, gridPosition, new String[0]);
         actualData = data;
-
-        final String flattenedArray = String.join(NULLCHAR, data) + NULLCHAR;
-        serializedData = flattenedArray.getBytes(ENCODING);
+        serializedData = serialize(data);
     }
 
     public VLenStringDataBlock(final int[] size, final long[] gridPosition, final byte[] data) {
         super(size, gridPosition, new String[0]);
         serializedData = data;
+        actualData = deserialize(data);
     }
 
     @Override
@@ -59,9 +58,17 @@ public class VLenStringDataBlock extends AbstractDataBlock<String[]> {
     public void readData(final ByteBuffer buffer) {
         if (buffer.array() != serializedData)
             buffer.get(serializedData);
+        actualData = deserialize(buffer.array());
+    }
 
-        final String rawChars = new String(buffer.array(), ENCODING);
-        actualData = rawChars.split(NULLCHAR);
+    static protected byte[] serialize(String[] strings) {
+        final String flattenedArray = String.join(NULLCHAR, strings) + NULLCHAR;
+        return flattenedArray.getBytes(ENCODING);
+    }
+
+    static protected String[] deserialize(byte[] rawBytes) {
+        final String rawChars = new String(rawBytes, ENCODING);
+        return rawChars.split(NULLCHAR);
     }
 
     @Override
