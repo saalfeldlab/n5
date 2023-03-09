@@ -32,10 +32,10 @@ import java.nio.charset.StandardCharsets;
 
 public class VLenStringDataBlock extends AbstractDataBlock<String[]> {
 
-    private static final Charset ENCODING = StandardCharsets.UTF_8;
-    private static final String NULLCHAR = "\0";
-    private byte[] serializedData;
-    private String[] actualData;
+    protected static final Charset ENCODING = StandardCharsets.UTF_8;
+    protected static final String NULLCHAR = "\0";
+    protected byte[] serializedData;
+    protected String[] actualData;
 
     public VLenStringDataBlock(final int[] size, final long[] gridPosition, final String[] data) {
         super(size, gridPosition, new String[0]);
