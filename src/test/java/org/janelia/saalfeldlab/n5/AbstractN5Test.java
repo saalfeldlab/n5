@@ -443,7 +443,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testAttributes() {
+	public void testAttributes() throws IOException {
 
 		try (final N5Writer n5 = createN5Writer()) {
 			n5.createGroup(groupName);
@@ -501,9 +501,6 @@ public abstract class AbstractN5Test {
 			n5.setAttribute(groupName, "key2", null);
 			n5.setAttribute(groupName, "key3", null);
 			Assert.assertEquals(0, n5.listAttributes(groupName).size());
-
-		} catch (final IOException e) {
-			fail(e.getMessage());
 		}
 	}
 
@@ -1198,8 +1195,7 @@ public abstract class AbstractN5Test {
 			/* We intentionally skipped index 3, it should be null */
 			Assert.assertNull(writer.getAttribute(testGroup, "/filled/double_array[3]", JsonNull.class));
 
-			/* Lastly, we wish to ensure that escaping does NOT interpret the json path structure, but rather it adds the keys opaquely*/
-
+			/* Ensure that escaping does NOT interpret the json path structure, but rather it adds the keys opaquely*/
 			final HashMap<String, Object> testAttributes = new HashMap<>();
 			testAttributes.put("\\/z\\/y\\/x", 10);
 			testAttributes.put("q\\/r\\/t", 11);
@@ -1219,7 +1215,7 @@ public abstract class AbstractN5Test {
 			 * to try and grab the value as a json structure. I should grab the root, and match the empty string case */
 			assertEquals(writer.getAttribute(testGroup, "", JsonObject.class), writer.getAttribute(testGroup, "/", JsonObject.class));
 
-			/* Lastly, ensure grabing nonsence results in an exception */
+			/* Lastly, ensure grabing nonsense results in an exception */
 			assertNull(writer.getAttribute(testGroup, "/this/key/does/not/exist", Object.class));
 
 			writer.remove(testGroup);
@@ -1324,7 +1320,36 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testRootLeaves() throws IOException {
+	public void
+	testRootLeaves() throws IOException {
+
+		/* Test retrieving non-JsonObject root leaves */
+		try (final N5Writer n5 = createN5Writer()) {
+			n5.setAttribute(groupName, "/", "String");
+
+			final JsonElement stringPrimitive =  n5.getAttribute(groupName, "/", JsonElement.class);
+			assertTrue(stringPrimitive.isJsonPrimitive());
+			assertEquals("String", stringPrimitive.getAsString());
+			n5.setAttribute(groupName, "/", 0);
+			final JsonElement intPrimitive =  n5.getAttribute(groupName, "/", JsonElement.class);
+			assertTrue(intPrimitive.isJsonPrimitive());
+			assertEquals(0, intPrimitive.getAsInt());
+			n5.setAttribute(groupName, "/", true);
+			final JsonElement booleanPrimitive =  n5.getAttribute(groupName, "/", JsonElement.class);
+			assertTrue(booleanPrimitive.isJsonPrimitive());
+			assertEquals(true, booleanPrimitive.getAsBoolean());
+			n5.setAttribute(groupName, "/",  null);
+			final JsonElement jsonNull =  n5.getAttribute(groupName, "/", JsonElement.class);
+			assertTrue(jsonNull.isJsonNull());
+			assertEquals(JsonNull.INSTANCE, jsonNull);
+			n5.setAttribute(groupName, "[5]",  "array");
+			final JsonElement rootJsonArray =  n5.getAttribute(groupName, "/", JsonElement.class);
+			assertTrue(rootJsonArray.isJsonArray());
+			final JsonArray rootArray = rootJsonArray.getAsJsonArray();
+			assertEquals("array", rootArray.get(5).getAsString());
+			assertEquals(JsonNull.INSTANCE, rootArray.get(3));
+			assertThrows(IndexOutOfBoundsException.class, () -> rootArray.get(10));
+		}
 
 		/* Test with new root's each time */
 		final ArrayList<TestData<?>> tests = new ArrayList<>();
