@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 
 public class N5URL {
 
-	static final Pattern ARRAY_INDEX = Pattern.compile("\\[([0-9]+)]");
+	public static final Pattern ARRAY_INDEX = Pattern.compile("\\[([0-9]+)]");
 	final URI uri;
 	private final String scheme;
 	private final String container;
