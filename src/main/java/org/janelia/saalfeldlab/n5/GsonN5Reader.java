@@ -270,7 +270,7 @@ public interface GsonN5Reader extends N5Reader {
 	 */
 	static Map<String, Class<?>> listAttributes(JsonElement root) throws IOException {
 
-		if (root != null && !root.isJsonObject()) {
+		if (root == null || !root.isJsonObject()) {
 			return null;
 		}
 
