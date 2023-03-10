@@ -33,8 +33,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -58,9 +56,8 @@ import java.util.ArrayList;
  */
 public class N5FSTest extends AbstractN5Test {
 
-	protected static Set<String> tmpFiles = new HashSet<>();
 	private static FileSystemKeyValueAccess access = new FileSystemKeyValueAccess(FileSystems.getDefault());
-	private static String testDirPath = createTempN5DirectoryPath();
+	private static String testDirPath = tempN5PathName();
 
 	@AfterClass
 	public static void cleanup() {
@@ -77,20 +74,10 @@ public class N5FSTest extends AbstractN5Test {
 	 */
 	@Override
 	protected N5Writer createN5Writer() throws IOException {
-		return new N5FSWriter(createTempN5DirectoryPath(), false);
+		return new N5FSWriter(tempN5PathName(), false);
 	}
 
-	protected static String createTempN5DirectoryPath()  {
-		try {
-			final File tmpFile = Files.createTempDirectory("n5-test-").toFile();
-			tmpFile.deleteOnExit();
-			final String tmpPath = tmpFile.getCanonicalPath();
-			tmpFiles.add(tmpPath);
-			return tmpPath;
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
+
 
 
 	@Override

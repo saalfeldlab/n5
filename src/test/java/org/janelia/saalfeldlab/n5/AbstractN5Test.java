@@ -46,9 +46,11 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
@@ -92,7 +94,14 @@ public abstract class AbstractN5Test {
 
 	protected N5Writer createN5Writer(String location) throws IOException {
 
-		return createN5Writer(location, new GsonBuilder());
+		final Path testN5Path  = Paths.get(location);
+		final boolean existsBefore = testN5Path.toFile().exists();
+		final N5Writer n5Writer = createN5Writer(location, new GsonBuilder());
+		final boolean existsAfter = testN5Path.toFile().exists();
+		if (!existsBefore && existsAfter) {
+			tmpFiles.add(location);
+		}
+		return n5Writer;
 	}
 
 	protected abstract N5Writer createN5Writer(String location, GsonBuilder gson) throws IOException;
@@ -114,6 +123,19 @@ public abstract class AbstractN5Test {
 				new Lz4Compression(),
 				new XzCompression()
 		};
+	}
+
+	protected static Set<String> tmpFiles = new HashSet<>();
+	protected static String tempN5PathName()  {
+		try {
+			final File tmpFile = Files.createTempDirectory("n5-test-").toFile();
+			tmpFile.deleteOnExit();
+			final String tmpPath = tmpFile.getCanonicalPath();
+			tmpFiles.add(tmpPath);
+			return tmpPath;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**
@@ -507,11 +529,8 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testNullAttributes() throws IOException {
 
-		File tmpFile = Files.createTempDirectory("nulls-test-").toFile();
-		tmpFile.delete();
-		String canonicalPath = tmpFile.getCanonicalPath();
 		/* serializeNulls*/
-		try (N5Writer writer = createN5Writer(canonicalPath, new GsonBuilder().serializeNulls())) {
+		try (N5Writer writer = createN5Writer(tempN5PathName(), new GsonBuilder().serializeNulls())) {
 
 			writer.setAttribute(groupName, "nullValue", null);
 			assertEquals(null, writer.getAttribute(groupName, "nullValue", Object.class));
@@ -549,11 +568,8 @@ public abstract class AbstractN5Test {
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "existingValue", JsonElement.class));
 		}
 
-		tmpFile = Files.createTempDirectory("nulls-test-").toFile();
-		tmpFile.delete();
-		canonicalPath = tmpFile.getCanonicalPath();
 		/* without serializeNulls*/
-		try (N5Writer writer = createN5Writer(canonicalPath, new GsonBuilder())) {
+		try (N5Writer writer = createN5Writer()) {
 
 			writer.setAttribute(groupName, "nullValue", null);
 			assertEquals(null, writer.getAttribute(groupName, "nullValue", Object.class));
@@ -596,10 +612,7 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testRemoveAttributes() throws IOException {
 
-		final File tmpFile = Files.createTempDirectory("nulls-test-").toFile();
-		tmpFile.delete();
-		final String canonicalPath = tmpFile.getCanonicalPath();
-		try (N5Writer writer = createN5Writer(canonicalPath, new GsonBuilder().serializeNulls())) {
+		try (N5Writer writer = createN5Writer(tempN5PathName(), new GsonBuilder().serializeNulls())) {
 
 			writer.setAttribute("", "a/b/c", 100);
 			assertEquals((Integer)100, writer.getAttribute("", "a/b/c", Integer.class));
@@ -721,10 +734,7 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testList() throws IOException {
 
-		final File tmpFile = Files.createTempDirectory("list-test-").toFile();
-		tmpFile.delete();
-		final String canonicalPath = tmpFile.getCanonicalPath();
-		try (final N5Writer listN5 = createN5Writer(canonicalPath)) {
+		try (final N5Writer listN5 = createN5Writer()) {
 			listN5.createGroup(groupName);
 			for (final String subGroup : subGroupNames)
 				listN5.createGroup(groupName + "/" + subGroup);
@@ -985,6 +995,8 @@ public abstract class AbstractN5Test {
 			writer.setAttribute("/", N5Reader.VERSION_KEY, incompatibleVersion.toString());
 			final Version version = writer.getVersion();
 			assertFalse(N5Reader.VERSION.isCompatible(version));
+			final Version compatibleVersion = new Version(N5Reader.VERSION.getMajor(), N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch());
+			writer.setAttribute("/", N5Reader.VERSION_KEY, compatibleVersion.toString());
 		}
 
 	}
@@ -992,9 +1004,7 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testReaderCreation() throws IOException {
 
-		final File tmpFile = Files.createTempDirectory("reader-create-test-").toFile();
-		tmpFile.delete();
-		final String canonicalPath = tmpFile.getCanonicalPath();
+		final String canonicalPath = tempN5PathName();
 		try (N5Writer writer = createN5Writer(canonicalPath)) {
 
 			final N5Reader n5r = createN5Reader(canonicalPath);
@@ -1358,10 +1368,7 @@ public abstract class AbstractN5Test {
 		tests.add(new TestData<>(groupName, "[0]", "array_root"));
 
 		for (TestData<?> testData : tests) {
-			final File tmpFile = Files.createTempDirectory("root-leaf-test-").toFile();
-			tmpFile.delete();
-			final String canonicalPath = tmpFile.getCanonicalPath();
-			try (final N5Writer writer = createN5Writer(canonicalPath)) {
+			try (final N5Writer writer = createN5Writer()) {
 				writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
 				Assert.assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
 				Assert.assertEquals(testData.attributeValue,
@@ -1375,10 +1382,7 @@ public abstract class AbstractN5Test {
 		tests.add(new TestData<>(groupName, "/", "replace_empty_root"));
 		tests.add(new TestData<>(groupName, "[0]", "array_root"));
 
-		final File tmpFile = Files.createTempDirectory("reuse-root-leaf-test-").toFile();
-		tmpFile.delete();
-		final String canonicalPath = tmpFile.getCanonicalPath();
-		try (final N5Writer writer = createN5Writer(canonicalPath)) {
+		try (final N5Writer writer = createN5Writer()) {
 			for (TestData<?> testData : tests) {
 				writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
 				Assert.assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
@@ -1394,10 +1398,7 @@ public abstract class AbstractN5Test {
 		final TestData<Integer> rootAsArray = new TestData<>(groupName, "/", 300);
 		tests.add(rootAsPrimitive);
 		tests.add(rootAsArray);
-		final File tmpFile2 = Files.createTempDirectory("reuse-root-leaf-test-").toFile();
-		tmpFile2.delete();
-		final String canonicalPath2 = tmpFile2.getCanonicalPath();
-		try (final N5Writer writer = createN5Writer(canonicalPath2)) {
+		try (final N5Writer writer = createN5Writer()) {
 			for (TestData<?> test : tests) {
 				/* Set the root as Object*/
 				writer.setAttribute(rootAsObject.groupPath, rootAsObject.attributePath, rootAsObject.attributeValue);

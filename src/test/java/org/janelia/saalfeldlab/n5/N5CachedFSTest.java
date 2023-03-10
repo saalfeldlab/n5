@@ -14,7 +14,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 	@Override protected N5Writer createN5Writer() throws IOException {
 
-		return new N5FSWriter(createTempN5DirectoryPath(), true);
+		return new N5FSWriter(tempN5PathName(), true);
 	}
 
 	@Override protected N5Writer createN5Writer(String location, GsonBuilder gson) throws IOException {
@@ -50,7 +50,7 @@ public class N5CachedFSTest extends N5FSTest {
 			runTests(n5, tests);
 		}
 
-		try (N5KeyValueWriter n5 = new N5FSWriter(createTempN5DirectoryPath(), false)) {
+		try (N5KeyValueWriter n5 = new N5FSWriter(tempN5PathName(), false)) {
 			final String cachedGroup = "cachedGroup";
 			final String attributesPath = n5.attributesPath(cachedGroup);
 
