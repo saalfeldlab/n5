@@ -74,7 +74,7 @@ public interface KeyValueAccess {
 	/**
 	 * Normalize a path to canonical form.  All paths pointing to the same
 	 * location return the same output.  This is most important for cached
-	 * data pointing getting the same key.
+	 * data pointing at the same location getting the same key.
 	 *
 	 * @param path
 	 * @return
@@ -162,7 +162,10 @@ public interface KeyValueAccess {
 	public String[] list(final String normalPath) throws IOException;
 
 	/**
-	 * Create a director and all parent paths along the way.
+	 * Create a directory and all parent paths along the way.  The directory
+	 * and parent paths are discoverable.  On a filesystem, this usually means
+	 * that the directories exist, on a key value store that is unaware of
+	 * directories, this may be implemented as creating an object for each path.
 	 *
 	 * @param normalPath is expected to be in normalized form, no further
 	 * 		efforts are made to normalize it.
