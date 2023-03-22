@@ -1,11 +1,10 @@
 package org.janelia.saalfeldlab.n5;
 
-import sun.nio.cs.ThreadLocalCoders;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
@@ -20,6 +19,7 @@ import java.util.regex.Pattern;
 
 public class N5URL {
 
+	private static final Charset UTF8 = Charset.forName("UTF-8");
 	public static final Pattern ARRAY_INDEX = Pattern.compile("\\[([0-9]+)]");
 	final URI uri;
 	private final String scheme;
@@ -27,12 +27,12 @@ public class N5URL {
 	private final String group;
 	private final String attribute;
 
-	public N5URL(String uri) throws URISyntaxException {
+	public N5URL(final String uri) throws URISyntaxException {
 
 		this(encodeAsUri(uri));
 	}
 
-	public N5URL(URI uri) {
+	public N5URL(final URI uri) {
 
 		this.uri = uri;
 		scheme = uri.getScheme() == null ? null : uri.getScheme();
@@ -112,7 +112,7 @@ public class N5URL {
 	 * @param normalizedAttributePath to parse into {@link LinkedAttributePathToken}s
 	 * @return the head of the {@link LinkedAttributePathToken}s
 	 */
-	public static LinkedAttributePathToken<?> getAttributePathTokens(String normalizedAttributePath) {
+	public static LinkedAttributePathToken<?> getAttributePathTokens(final String normalizedAttributePath) {
 
 		final String[] attributePathParts = normalizedAttributePath.replaceAll("^/", "").split("(?<!\\\\)/");
 
@@ -205,7 +205,7 @@ public class N5URL {
 	 * @return the result of the resolution.
 	 * @throws URISyntaxException
 	 */
-	public N5URL resolve(N5URL relativeN5Url) throws URISyntaxException {
+	public N5URL resolve(final N5URL relativeN5Url) throws URISyntaxException {
 
 		final URI thisUri = uri;
 		final URI relativeUri = relativeN5Url.uri;
@@ -282,7 +282,7 @@ public class N5URL {
 	 * @return the result of the resolution.
 	 * @throws URISyntaxException
 	 */
-	public N5URL resolve(URI relativeUri) throws URISyntaxException {
+	public N5URL resolve(final URI relativeUri) throws URISyntaxException {
 
 		return resolve(new N5URL(relativeUri));
 	}
@@ -295,7 +295,7 @@ public class N5URL {
 	 * @return the result of the resolution.
 	 * @throws URISyntaxException
 	 */
-	public N5URL resolve(String relativeString) throws URISyntaxException {
+	public N5URL resolve(final String relativeString) throws URISyntaxException {
 
 		return resolve(new N5URL(relativeString));
 	}
@@ -312,7 +312,7 @@ public class N5URL {
 		final char[] pathChars = path.toCharArray();
 
 		final List<String> tokens = new ArrayList<>();
-		StringBuilder curToken = new StringBuilder();
+		final StringBuilder curToken = new StringBuilder();
 		boolean escape = false;
 		for (final char character : pathChars) {
 			/* Skip if we last saw escape*/
@@ -406,7 +406,7 @@ public class N5URL {
 	 * @param attributePath to normalize
 	 * @return the normalized attribute path
 	 */
-	public static String normalizeAttributePath(String attributePath) {
+	public static String normalizeAttributePath(final String attributePath) {
 
 		/* Short circuit if there are no non-escaped `/` or array indices (e.g. [N] where N is a non-negative integer) */
 		if (!attributePath.matches(".*((?<!\\\\)(/|\\[[0-9]+])).*")) {
@@ -449,7 +449,7 @@ public class N5URL {
 	 * @return the {@link URI} created from encoding the {@link String uri}
 	 * @throws URISyntaxException if {@link String uri} is not valid
 	 */
-	public static URI encodeAsUri(String uri) throws URISyntaxException {
+	public static URI encodeAsUri(final String uri) throws URISyntaxException {
 
 		if (uri.trim().length() == 0) {
 			return new URI(uri);
@@ -496,7 +496,7 @@ public class N5URL {
 	 * @return the {@link N5URL}
 	 * @throws URISyntaxException
 	 */
-	public static N5URL from(String container, String group, String attribute) throws URISyntaxException {
+	public static N5URL from(final String container, final String group, final String attribute) throws URISyntaxException {
 
 		final String containerPart = container != null ? container : "";
 		final String groupPart = group != null ? "?" + group : "?";
@@ -509,7 +509,7 @@ public class N5URL {
 	 *
 	 * @see URI#decode(char)
 	 */
-	private static int decode(char c) {
+	private static int decode(final char c) {
 
 		if ((c >= '0') && (c <= '9'))
 			return c - '0';
@@ -526,7 +526,7 @@ public class N5URL {
 	 *
 	 * @see URI#decode(char, char)
 	 */
-	private static byte decode(char c1, char c2) {
+	private static byte decode(final char c1, final char c2) {
 
 		return (byte)(((decode(c1) & 0xf) << 4)
 				| ((decode(c2) & 0xf) << 0));
@@ -544,26 +544,26 @@ public class N5URL {
 	 *
 	 * @see URI#decode(char, char)
 	 */
-	private static String decodeFragment(String rawFragment) {
+	private static String decodeFragment(final String rawFragment) {
 
 		if (rawFragment == null)
 			return rawFragment;
-		int n = rawFragment.length();
+		final int n = rawFragment.length();
 		if (n == 0)
 			return rawFragment;
 		if (rawFragment.indexOf('%') < 0)
 			return rawFragment;
 
-		StringBuffer sb = new StringBuffer(n);
-		ByteBuffer bb = ByteBuffer.allocate(n);
-		CharBuffer cb = CharBuffer.allocate(n);
-		CharsetDecoder dec = ThreadLocalCoders.decoderFor("UTF-8")
+		final StringBuffer sb = new StringBuffer(n);
+		final ByteBuffer bb = ByteBuffer.allocate(n);
+		final CharBuffer cb = CharBuffer.allocate(n);
+
+		final CharsetDecoder dec = UTF8.newDecoder()
 				.onMalformedInput(CodingErrorAction.REPLACE)
 				.onUnmappableCharacter(CodingErrorAction.REPLACE);
 
 		// This is not horribly efficient, but it will do for now
 		char c = rawFragment.charAt(0);
-		boolean betweenBrackets = false;
 
 		for (int i = 0; i < n; ) {
 			assert c == rawFragment.charAt(i);    // Loop invariant
@@ -575,7 +575,6 @@ public class N5URL {
 				continue;
 			}
 			bb.clear();
-			int ui = i;
 			for (; ; ) {
 				assert (n - i >= 2);
 				bb.put(decode(rawFragment.charAt(++i), rawFragment.charAt(++i)));
