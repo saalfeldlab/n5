@@ -254,9 +254,10 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 	@Override public boolean removeAttribute(String pathName, String key) throws IOException {
 
 		final String normalPath = normalize(pathName);
+		final String absoluteNormalPath = keyValueAccess.compose(basePath, normalPath);
 		final String normalKey = N5URL.normalizeAttributePath(key);
 
-		if (!keyValueAccess.exists(normalPath))
+		if (!keyValueAccess.exists(absoluteNormalPath))
 			return false;
 
 		final JsonElement attributes = getAttributes(normalPath);

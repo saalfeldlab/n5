@@ -715,6 +715,10 @@ public abstract class AbstractN5Test {
 			assertEquals((Integer)100, writer.removeAttribute("", "a////b/x/../c", Integer.class));
 			assertNull(writer.getAttribute("", "a/b/c", Integer.class));
 
+			writer.createGroup("foo");
+			writer.setAttribute("foo", "a", 100);
+			writer.removeAttribute("foo", "a");
+			assertNull(writer.getAttribute("foo", "a", Integer.class));
 		}
 	}
 
