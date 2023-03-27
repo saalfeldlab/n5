@@ -194,6 +194,17 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
+	public void testSetAttributeDoesntCreateGroup() throws IOException {
+
+		try (final N5Writer writer = createN5Writer()) {
+			final String testGroup = "/group/should/not/exit";
+			assertFalse(writer.exists(testGroup));
+			assertThrows(IOException.class, () -> writer.setAttribute(testGroup, "test", "test"));
+			assertFalse(writer.exists(testGroup));
+		}
+	}
+
+	@Test
 	public void testCreateDataset() throws IOException {
 
 		final DatasetAttributes info;
@@ -532,6 +543,7 @@ public abstract class AbstractN5Test {
 		/* serializeNulls*/
 		try (N5Writer writer = createN5Writer(tempN5PathName(), new GsonBuilder().serializeNulls())) {
 
+			writer.createGroup(groupName);
 			writer.setAttribute(groupName, "nullValue", null);
 			assertEquals(null, writer.getAttribute(groupName, "nullValue", Object.class));
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "nullValue", JsonElement.class));
@@ -571,6 +583,7 @@ public abstract class AbstractN5Test {
 		/* without serializeNulls*/
 		try (N5Writer writer = createN5Writer()) {
 
+			writer.createGroup(groupName);
 			writer.setAttribute(groupName, "nullValue", null);
 			assertEquals(null, writer.getAttribute(groupName, "nullValue", Object.class));
 			assertEquals(null, writer.getAttribute(groupName, "nullValue", JsonElement.class));
@@ -1338,6 +1351,7 @@ public abstract class AbstractN5Test {
 
 		/* Test retrieving non-JsonObject root leaves */
 		try (final N5Writer n5 = createN5Writer()) {
+			n5.createGroup(groupName);
 			n5.setAttribute(groupName, "/", "String");
 
 			final JsonElement stringPrimitive =  n5.getAttribute(groupName, "/", JsonElement.class);
@@ -1372,6 +1386,7 @@ public abstract class AbstractN5Test {
 
 		for (TestData<?> testData : tests) {
 			try (final N5Writer writer = createN5Writer()) {
+				writer.createGroup(testData.groupPath);
 				writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
 				Assert.assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
 				Assert.assertEquals(testData.attributeValue,
@@ -1386,6 +1401,7 @@ public abstract class AbstractN5Test {
 		tests.add(new TestData<>(groupName, "[0]", "array_root"));
 
 		try (final N5Writer writer = createN5Writer()) {
+			writer.createGroup(groupName);
 			for (TestData<?> testData : tests) {
 				writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
 				Assert.assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
@@ -1402,6 +1418,7 @@ public abstract class AbstractN5Test {
 		tests.add(rootAsPrimitive);
 		tests.add(rootAsArray);
 		try (final N5Writer writer = createN5Writer()) {
+			writer.createGroup(groupName);
 			for (TestData<?> test : tests) {
 				/* Set the root as Object*/
 				writer.setAttribute(rootAsObject.groupPath, rootAsObject.attributePath, rootAsObject.attributeValue);

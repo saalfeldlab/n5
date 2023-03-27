@@ -203,7 +203,6 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 			final Map<String, ?> attributes) throws IOException {
 
 		if (!attributes.isEmpty()) {
-			createGroup(normalGroupPath);
 			final JsonElement existingAttributes = getAttributes(normalGroupPath);
 			JsonElement newAttributes =
 					existingAttributes != null && existingAttributes.isJsonObject() ? existingAttributes.getAsJsonObject() : new JsonObject();
