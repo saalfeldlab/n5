@@ -236,7 +236,6 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 
 		N5GroupInfo info = getCachedN5GroupInfo(normalPath);
 		if (info == emptyGroupInfo) {
-			createGroup(normalPath);
 			synchronized (metaCache) {
 				info = getCachedN5GroupInfo(normalPath);
 				if (info == emptyGroupInfo)
