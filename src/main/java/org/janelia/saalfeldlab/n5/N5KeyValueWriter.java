@@ -27,6 +27,7 @@ package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
 import java.io.IOException;
@@ -259,6 +260,11 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 
 		if (!keyValueAccess.exists(absoluteNormalPath))
 			return false;
+
+		if (key.equals("/")) {
+			writeAttributes(normalPath, JsonNull.INSTANCE);
+			return true;
+		}
 
 		final JsonElement attributes = getAttributes(normalPath);
 		if (GsonN5Writer.removeAttribute(attributes, normalKey) != null) {
