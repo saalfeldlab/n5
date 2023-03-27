@@ -1041,36 +1041,32 @@ public abstract class AbstractN5Test {
 
 			// existing directory without attributes is okay;
 			// Remove and create to remove attributes store
-			writer.remove("/");
-			writer.createGroup("/");
+			writer.removeAttribute("/", "/");
 			final N5Reader na = createN5Reader(canonicalPath);
 			assertNotNull(na);
 
 			// existing location with attributes, but no version
-			writer.remove("/");
-			writer.createGroup("/");
+			writer.removeAttribute("/", "/");
 			writer.setAttribute("/", "mystring", "ms");
 			final N5Reader wa = createN5Reader(canonicalPath);
 			assertNotNull(wa);
 
 			// existing directory with incompatible version should fail
-			writer.remove("/");
-			writer.createGroup("/");
+			writer.removeAttribute("/", "/");
 			writer.setAttribute("/", N5Reader.VERSION_KEY,
 					new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
 			assertThrows("Incompatible version throws error", IOException.class,
 					() -> {
 						createN5Reader(canonicalPath);
 					});
-
-			// non-existent directory should fail
-			writer.remove("/");
-			assertThrows("Non-existant location throws error", IOException.class,
-					() -> {
-						final N5Reader test = createN5Reader(canonicalPath);
-						test.list("/");
-					});
+			writer.remove();
 		}
+		// non-existent group should fail
+		assertThrows("Non-existant location throws error", IOException.class,
+				() -> {
+					final N5Reader test = createN5Reader(canonicalPath);
+					test.list("/");
+				});
 	}
 
 	@Test
