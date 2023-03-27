@@ -72,10 +72,17 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 			final GsonBuilder gsonBuilder,
 			final boolean cacheAttributes) throws IOException {
 
-		super(keyValueAccess, basePath, gsonBuilder, cacheAttributes);
+		super(keyValueAccess, createDirectories(keyValueAccess, basePath), gsonBuilder, cacheAttributes);
 		createGroup("/");
 		if (!VERSION.equals(getVersion()))
 			setAttribute("/", VERSION_KEY, VERSION.toString());
+	}
+
+	private static String createDirectories(KeyValueAccess keyValueAccess, String basePath) throws IOException {
+
+		final String normBasePath = keyValueAccess.normalize(basePath);
+		keyValueAccess.createDirectories(normBasePath);
+		return normBasePath;
 	}
 
 	/**

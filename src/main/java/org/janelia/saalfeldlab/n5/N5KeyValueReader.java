@@ -105,6 +105,8 @@ public class N5KeyValueReader implements GsonN5Reader {
 			final Version version = getVersion();
 			if (!VERSION.isCompatible(version))
 				throw new IOException("Incompatible version " + version + " (this is " + VERSION + ").");
+		} else {
+			throw new IOException("basePath " + basePath + " does not exist. ");
 		}
 	}
 
