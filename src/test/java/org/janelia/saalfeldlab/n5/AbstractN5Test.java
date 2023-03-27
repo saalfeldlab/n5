@@ -736,7 +736,19 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testRemove() throws IOException {
+	public void testRemoveContainer() throws IOException {
+
+		final String location = tempN5PathName();
+		try (final N5Writer n5 = createN5Writer(location)) {
+			assertNotNull(createN5Reader(location));
+			n5.remove();
+			assertThrows(Exception.class, () -> createN5Reader(location));
+		}
+		assertThrows(Exception.class, () -> createN5Reader(location));
+	}
+
+	@Test
+	public void testRemoveGroup() throws IOException {
 
 		try (final N5Writer n5 = createN5Writer()) {
 			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
