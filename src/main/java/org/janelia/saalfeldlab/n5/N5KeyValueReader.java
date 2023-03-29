@@ -108,7 +108,8 @@ public class N5KeyValueReader implements GsonN5Reader {
 		}
 	}
 
-	@Override public Gson getGson() {
+	@Override
+	public Gson getGson() {
 
 		return gson;
 	}
@@ -217,8 +218,7 @@ public class N5KeyValueReader implements GsonN5Reader {
 
 	private <T> T getCachedAttribute(String normalPathName, String normalKey, Class<T> clazz) throws IOException {
 
-		return getCachedAttribute(normalPathName, normalKey, (Type)clazz);
-
+		return getCachedAttribute(normalPathName, normalKey, (Type) clazz);
 	}
 
 	private <T> T getCachedAttribute(String normalPathName, String normalKey, Type type) throws IOException {
@@ -438,7 +438,6 @@ public class N5KeyValueReader implements GsonN5Reader {
 
 		return keyValueAccess.compose(basePath, normalPath, jsonFile);
 	}
-
 
 	@Override
 	public String toString() {
