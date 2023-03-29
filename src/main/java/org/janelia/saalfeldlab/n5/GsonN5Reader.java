@@ -145,6 +145,22 @@ public interface GsonN5Reader extends N5Reader {
 		return new DatasetAttributes(dimensions, blockSize, dataType, compression);
 	}
 
+	public abstract KeyValueAccess getKeyValueAccess();
+
+	/**
+	 * Removes the leading slash from a given path and returns the normalized
+	 * path.  It ensures correctness on both Unix and Windows, otherwise
+	 * {@code pathName} is treated as UNC path on Windows, and
+	 * {@code Paths.get(pathName, ...)} fails with
+	 * {@code InvalidPathException}.
+	 *
+	 * @param path
+	 * @return the normalized path, without leading slash
+	 */
+	public default String normalize(final String path) {
+
+		return getKeyValueAccess().normalize(path.startsWith("/") || path.startsWith("\\") ? path.substring(1) : path);
+	}
 
 	static Gson registerGson(final GsonBuilder gsonBuilder) {
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());

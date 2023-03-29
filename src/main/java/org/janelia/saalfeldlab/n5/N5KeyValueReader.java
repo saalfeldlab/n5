@@ -114,6 +114,11 @@ public class N5KeyValueReader implements GsonN5Reader {
 	}
 
 	@Override
+	public KeyValueAccess getKeyValueAccess() {
+		return keyValueAccess;
+	}
+
+	@Override
 	public String getBasePath() {
 
 		return this.basePath;
@@ -434,20 +439,6 @@ public class N5KeyValueReader implements GsonN5Reader {
 		return keyValueAccess.compose(basePath, normalPath, jsonFile);
 	}
 
-	/**
-	 * Removes the leading slash from a given path and returns the normalized
-	 * path.  It ensures correctness on both Unix and Windows, otherwise
-	 * {@code pathName} is treated as UNC path on Windows, and
-	 * {@code Paths.get(pathName, ...)} fails with
-	 * {@code InvalidPathException}.
-	 *
-	 * @param path
-	 * @return the normalized path, without leading slash
-	 */
-	protected String normalize(final String path) {
-
-		return keyValueAccess.normalize(path.startsWith("/") || path.startsWith("\\") ? path.substring(1) : path);
-	}
 
 	@Override
 	public String toString() {
