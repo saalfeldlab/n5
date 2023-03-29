@@ -210,6 +210,13 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
+	 * Returns a String representation of the path to the root of the container.
+	 *
+	 * @return the base path
+	 */
+	public String getBasePath();
+
+	/**
 	 * Reads an attribute.
 	 *
 	 * @param pathName

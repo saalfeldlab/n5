@@ -113,10 +113,7 @@ public class N5KeyValueReader implements GsonN5Reader {
 		return gson;
 	}
 
-	/**
-	 *
-	 * @return N5 base path
-	 */
+	@Override
 	public String getBasePath() {
 
 		return this.basePath;
