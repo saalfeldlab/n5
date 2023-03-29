@@ -94,13 +94,12 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 		N5GroupInfo info = getCachedN5GroupInfo(normalPath);
 		if (info == emptyGroupInfo) {
 
-			/* The directories may be created multiple times concurrently,
-			 * but a new cache entry is inserted only if none has been
-			 * inserted in the meantime (because that may already include
-			 * more cached data).
+			/*
+			 * The directories may be created multiple times concurrently, but a new cache
+			 * entry is inserted only if none has been inserted in the meantime (because
+			 * that may already include more cached data).
 			 *
-			 * This avoids synchronizing on the cache for independent
-			 * group creation.
+			 * This avoids synchronizing on the cache for independent group creation.
 			 */
 			keyValueAccess.createDirectories(groupPath(normalPath));
 			synchronized (metaCache) {
@@ -131,8 +130,25 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 					childPathName = parentPathName;
 				}
 			}
+
+			/*
+			 * initialize after updating the cache so that the correct N5GroupInfo instance
+			 * can be updated if necessary.
+			 */
+			initializeGroup(normalPath);
 		}
 		return info;
+	}
+
+	/**
+	 * Performs any necessary initialization to ensure the key given by the argument {@code normalPath}
+	 * is a valid group. Called by {@link createGroup}.
+	 *
+	 * @param normalPath the group path.
+	 */
+	protected void initializeGroup( final String normalPath )
+	{
+		// Nothing to do here, but other implementations (e.g. zarr) use this.
 	}
 
 	@Override
@@ -146,7 +162,10 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 					info.isDataset = false;
 			}
 		} else
+		{
 			keyValueAccess.createDirectories(groupPath(normalPath));
+			initializeGroup(normalPath);
+		}
 	}
 
 	@Override
