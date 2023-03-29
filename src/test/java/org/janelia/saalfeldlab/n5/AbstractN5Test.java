@@ -194,6 +194,17 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
+	public void testSetAttributeDoesntCreateGroup() throws IOException {
+
+		try (final N5Writer writer = createN5Writer()) {
+			final String testGroup = "/group/should/not/exit";
+			assertFalse(writer.exists(testGroup));
+			assertThrows(IOException.class, () -> writer.setAttribute(testGroup, "test", "test"));
+			assertFalse(writer.exists(testGroup));
+		}
+	}
+
+	@Test
 	public void testCreateDataset() throws IOException {
 
 		final DatasetAttributes info;
@@ -532,6 +543,7 @@ public abstract class AbstractN5Test {
 		/* serializeNulls*/
 		try (N5Writer writer = createN5Writer(tempN5PathName(), new GsonBuilder().serializeNulls())) {
 
+			writer.createGroup(groupName);
 			writer.setAttribute(groupName, "nullValue", null);
 			assertEquals(null, writer.getAttribute(groupName, "nullValue", Object.class));
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "nullValue", JsonElement.class));
@@ -571,6 +583,7 @@ public abstract class AbstractN5Test {
 		/* without serializeNulls*/
 		try (N5Writer writer = createN5Writer()) {
 
+			writer.createGroup(groupName);
 			writer.setAttribute(groupName, "nullValue", null);
 			assertEquals(null, writer.getAttribute(groupName, "nullValue", Object.class));
 			assertEquals(null, writer.getAttribute(groupName, "nullValue", JsonElement.class));
@@ -723,7 +736,19 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testRemove() throws IOException {
+	public void testRemoveContainer() throws IOException {
+
+		final String location = tempN5PathName();
+		try (final N5Writer n5 = createN5Writer(location)) {
+			assertNotNull(createN5Reader(location));
+			n5.remove();
+			assertThrows(Exception.class, () -> createN5Reader(location));
+		}
+		assertThrows(Exception.class, () -> createN5Reader(location));
+	}
+
+	@Test
+	public void testRemoveGroup() throws IOException {
 
 		try (final N5Writer n5 = createN5Writer()) {
 			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
@@ -1016,36 +1041,32 @@ public abstract class AbstractN5Test {
 
 			// existing directory without attributes is okay;
 			// Remove and create to remove attributes store
-			writer.remove("/");
-			writer.createGroup("/");
+			writer.removeAttribute("/", "/");
 			final N5Reader na = createN5Reader(canonicalPath);
 			assertNotNull(na);
 
 			// existing location with attributes, but no version
-			writer.remove("/");
-			writer.createGroup("/");
+			writer.removeAttribute("/", "/");
 			writer.setAttribute("/", "mystring", "ms");
 			final N5Reader wa = createN5Reader(canonicalPath);
 			assertNotNull(wa);
 
 			// existing directory with incompatible version should fail
-			writer.remove("/");
-			writer.createGroup("/");
+			writer.removeAttribute("/", "/");
 			writer.setAttribute("/", N5Reader.VERSION_KEY,
 					new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
 			assertThrows("Incompatible version throws error", IOException.class,
 					() -> {
 						createN5Reader(canonicalPath);
 					});
-
-			// non-existent directory should fail
-			writer.remove("/");
-			assertThrows("Non-existant location throws error", IOException.class,
-					() -> {
-						final N5Reader test = createN5Reader(canonicalPath);
-						test.list("/");
-					});
+			writer.remove();
 		}
+		// non-existent group should fail
+		assertThrows("Non-existant location throws error", IOException.class,
+				() -> {
+					final N5Reader test = createN5Reader(canonicalPath);
+					test.list("/");
+				});
 	}
 
 	@Test
@@ -1338,6 +1359,7 @@ public abstract class AbstractN5Test {
 
 		/* Test retrieving non-JsonObject root leaves */
 		try (final N5Writer n5 = createN5Writer()) {
+			n5.createGroup(groupName);
 			n5.setAttribute(groupName, "/", "String");
 
 			final JsonElement stringPrimitive =  n5.getAttribute(groupName, "/", JsonElement.class);
@@ -1372,6 +1394,7 @@ public abstract class AbstractN5Test {
 
 		for (TestData<?> testData : tests) {
 			try (final N5Writer writer = createN5Writer()) {
+				writer.createGroup(testData.groupPath);
 				writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
 				Assert.assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
 				Assert.assertEquals(testData.attributeValue,
@@ -1386,6 +1409,7 @@ public abstract class AbstractN5Test {
 		tests.add(new TestData<>(groupName, "[0]", "array_root"));
 
 		try (final N5Writer writer = createN5Writer()) {
+			writer.createGroup(groupName);
 			for (TestData<?> testData : tests) {
 				writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
 				Assert.assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
@@ -1402,6 +1426,7 @@ public abstract class AbstractN5Test {
 		tests.add(rootAsPrimitive);
 		tests.add(rootAsArray);
 		try (final N5Writer writer = createN5Writer()) {
+			writer.createGroup(groupName);
 			for (TestData<?> test : tests) {
 				/* Set the root as Object*/
 				writer.setAttribute(rootAsObject.groupPath, rootAsObject.attributePath, rootAsObject.attributeValue);

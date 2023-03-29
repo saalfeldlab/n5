@@ -533,9 +533,9 @@ public class N5URL {
 	}
 
 	/**
-	 * Modifier from {@link URI#decode(String)} to ignore the listed Exception, where it doesn't decode escape values inside square braces.
+	 * Modified from {@link URI#decode(String)} to ignore the listed exception, where it doesn't decode escape values inside square braces.
 	 * <p>
-	 * As an example of the origin implement, a backslash inside a square brace would be encoded to "[%5C]", and
+	 * As an example of the original implementation, a backslash inside a square brace would be encoded to "[%5C]", and
 	 * when calling {@code decode("[%5C]")} it would not decode to "[\]" since the encode escape sequence is inside square braces.
 	 * <p>
 	 * We keep all the decoding logic in this modified version, EXCEPT, that we don't check for and ignore encoded sequences inside square braces.
@@ -591,7 +591,7 @@ public class N5URL {
 			assert cr.isUnderflow();
 			cr = dec.flush(cb);
 			assert cr.isUnderflow();
-			sb.append(cb.flip().toString());
+			sb.append(cb.flip());
 		}
 
 		return sb.toString();

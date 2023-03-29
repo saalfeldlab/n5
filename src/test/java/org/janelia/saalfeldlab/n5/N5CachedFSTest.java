@@ -42,6 +42,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 
 			final ArrayList<TestData<?>> tests = new ArrayList<>();
+			n5.createGroup(cachedGroup);
 			addAndTest(n5, tests, new TestData<>(cachedGroup, "a/b/c", 100));
 			addAndTest(n5, tests, new TestData<>(cachedGroup, "a/a[5]", "asdf"));
 			addAndTest(n5, tests, new TestData<>(cachedGroup, "a/a[2]", 0));
@@ -55,6 +56,7 @@ public class N5CachedFSTest extends N5FSTest {
 			final String attributesPath = n5.attributesPath(cachedGroup);
 
 			final ArrayList<TestData<?>> tests = new ArrayList<>();
+			n5.createGroup(cachedGroup);
 			addAndTest(n5, tests, new TestData<>(cachedGroup, "a/b/c", 100));
 			addAndTest(n5, tests, new TestData<>(cachedGroup, "a/a[5]", "asdf"));
 			addAndTest(n5, tests, new TestData<>(cachedGroup, "a/a[2]", 0));

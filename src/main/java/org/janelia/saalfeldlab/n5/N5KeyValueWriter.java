@@ -27,6 +27,7 @@ package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
 import java.io.IOException;
@@ -71,7 +72,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 			final GsonBuilder gsonBuilder,
 			final boolean cacheAttributes) throws IOException {
 
-		super(keyValueAccess, basePath, gsonBuilder, cacheAttributes);
+		super(keyValueAccess, createDirectories(keyValueAccess, basePath), gsonBuilder, cacheAttributes);
 		createGroup("/");
 		setVersion("/");
 	}
@@ -80,6 +81,13 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 	{
 		if (!VERSION.equals(getVersion()))
 			setAttribute("/", VERSION_KEY, VERSION.toString());
+	}
+
+	private static String createDirectories(KeyValueAccess keyValueAccess, String basePath) throws IOException {
+
+		final String normBasePath = keyValueAccess.normalize(basePath);
+		keyValueAccess.createDirectories(normBasePath);
+		return normBasePath;
 	}
 
 	/**
@@ -219,7 +227,6 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 			final Map<String, ?> attributes) throws IOException {
 
 		if (!attributes.isEmpty()) {
-			createGroup(normalGroupPath);
 			final JsonElement existingAttributes = getAttributes(normalGroupPath);
 			JsonElement newAttributes =
 					existingAttributes != null && existingAttributes.isJsonObject() ? existingAttributes.getAsJsonObject() : new JsonObject();
@@ -253,7 +260,6 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 
 		N5GroupInfo info = getCachedN5GroupInfo(normalPath);
 		if (info == emptyGroupInfo) {
-			createGroup(normalPath);
 			synchronized (metaCache) {
 				info = getCachedN5GroupInfo(normalPath);
 				if (info == emptyGroupInfo)
@@ -283,6 +289,11 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 
 		if (!keyValueAccess.exists(absoluteNormalPath))
 			return false;
+
+		if (key.equals("/")) {
+			writeAttributes(normalPath, JsonNull.INSTANCE);
+			return true;
+		}
 
 		final JsonElement attributes = getAttributes(normalPath);
 		if (GsonN5Writer.removeAttribute(attributes, normalKey) != null) {

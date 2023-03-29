@@ -103,6 +103,7 @@ public class N5FSTest extends AbstractN5Test {
 		final UrlAttributeTest.TestDoubles doubles2 = new UrlAttributeTest.TestDoubles("doubles", "doubles2", new double[]{5.8, 4.6, 3.5});
 		final UrlAttributeTest.TestDoubles doubles3 = new UrlAttributeTest.TestDoubles("doubles", "doubles3", new double[]{5.9, 4.7, 3.6});
 		final UrlAttributeTest.TestDoubles doubles4 = new UrlAttributeTest.TestDoubles("doubles", "doubles4", new double[]{5.10, 4.8, 3.7});
+		n5.createGroup(testGroup);
 		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[1]", doubles1));
 		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[2]", doubles2));
 		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[3]", doubles3));
