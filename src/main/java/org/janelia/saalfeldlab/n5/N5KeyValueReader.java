@@ -286,7 +286,11 @@ public class N5KeyValueReader implements GsonN5Reader {
 		if (cacheMeta)
 			return getCachedN5GroupInfo(normalPathName) != emptyGroupInfo;
 		else
-			return groupExists(groupPath(normalPathName));
+			try {
+				return groupExists(groupPath(normalPathName)) || datasetExists(normalPathName);
+			} catch (IOException e) {
+				return false;
+			}
 	}
 
 	@Override
@@ -302,7 +306,8 @@ public class N5KeyValueReader implements GsonN5Reader {
 					return info.isDataset;
 			}
 		}
-		return exists(pathName) && getDatasetAttributes(pathName) != null;
+		// for n5, every dataset must be a group
+		return groupExists(groupPath(pathName)) && getDatasetAttributes(pathName) != null;
 	}
 
 	/**

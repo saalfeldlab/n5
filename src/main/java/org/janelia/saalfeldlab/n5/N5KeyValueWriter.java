@@ -72,7 +72,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 			final GsonBuilder gsonBuilder,
 			final boolean cacheAttributes) throws IOException {
 
-		super(keyValueAccess, createDirectories(keyValueAccess, basePath), gsonBuilder, cacheAttributes);
+		super(keyValueAccess, initializeContainer(keyValueAccess, basePath), gsonBuilder, cacheAttributes);
 		createGroup("/");
 		setVersion("/");
 	}
@@ -83,7 +83,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 			setAttribute("/", VERSION_KEY, VERSION.toString());
 	}
 
-	private static String createDirectories(KeyValueAccess keyValueAccess, String basePath) throws IOException {
+	protected static String initializeContainer(KeyValueAccess keyValueAccess, String basePath) throws IOException {
 
 		final String normBasePath = keyValueAccess.normalize(basePath);
 		keyValueAccess.createDirectories(normBasePath);
@@ -275,6 +275,9 @@ public class N5KeyValueWriter extends N5KeyValueReader implements GsonN5Writer {
 			final Map<String, ?> attributes) throws IOException {
 
 		final String normalPath = normalize(path);
+		if( !exists(normalPath))
+			throw new IOException("" + normalPath + " is not a group or dataset.");
+
 		if (cacheMeta)
 			setCachedAttributes(normalPath, attributes);
 		else
