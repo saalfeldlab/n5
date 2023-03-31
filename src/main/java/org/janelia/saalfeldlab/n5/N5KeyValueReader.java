@@ -37,6 +37,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import org.janelia.saalfeldlab.n5.N5Reader.Version;
+
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
  * attributes parsed with {@link Gson}.
@@ -101,13 +103,12 @@ public class N5KeyValueReader implements GsonN5Reader {
 		this.basePath = keyValueAccess.normalize(basePath);
 		this.gson = GsonN5Reader.registerGson(gsonBuilder);
 		this.cacheMeta = cacheMeta;
-		if (exists("/")) {
-			final Version version = getVersion();
-			if (!VERSION.isCompatible(version))
-				throw new IOException("Incompatible version " + version + " (this is " + VERSION + ").");
-		} else {
-			throw new IOException("basePath " + basePath + " does not exist. ");
-		}
+
+		/* Existence checks, if any, go in subclasses */
+		/* Check that version (if there is one) is compatible. */
+		final Version version = getVersion();
+		if (!VERSION.isCompatible(version))
+			throw new IOException("Incompatible version " + version + " (this is " + VERSION + ").");
 	}
 
 	@Override
