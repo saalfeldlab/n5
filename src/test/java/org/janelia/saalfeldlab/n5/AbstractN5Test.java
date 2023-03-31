@@ -1024,6 +1024,9 @@ public abstract class AbstractN5Test {
 			writer.setAttribute("/", N5Reader.VERSION_KEY, incompatibleVersion.toString());
 			final Version version = writer.getVersion();
 			assertFalse(N5Reader.VERSION.isCompatible(version));
+
+			assertThrows(IOException.class, () -> createN5Writer( writer.getBasePath() ));
+
 			final Version compatibleVersion = new Version(N5Reader.VERSION.getMajor(), N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch());
 			writer.setAttribute("/", N5Reader.VERSION_KEY, compatibleVersion.toString());
 		}
