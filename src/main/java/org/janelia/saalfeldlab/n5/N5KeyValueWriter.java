@@ -53,37 +53,41 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	 * will be set to the current N5 version of this implementation.
 	 *
 	 * @param keyValueAccess
-	 * @param basePath n5 base path
+	 * @param basePath
+	 *            n5 base path
 	 * @param gsonBuilder
-	 * @param cacheAttributes cache attributes
-	 *    Setting this to true avoids frequent reading and parsing of JSON
-	 *    encoded attributes, this is most interesting for high latency file
-	 *    systems. Changes of attributes by an independent writer will not be
-	 *    tracked.
+	 * @param cacheAttributes
+	 *            Setting this to true avoids frequent reading and parsing of
+	 *            JSON encoded attributes, this is most interesting for high
+	 *            latency file systems. Changes of attributes by an independent
+	 *            writer will not be tracked.
 	 *
 	 * @throws IOException
-	 *    if the base path cannot be written to or cannot be created,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
+	 *             if the base path cannot be written to or cannot be created,
+	 *             if the N5 version of the container is not compatible with
+	 *             this implementation.
 	 */
 	public N5KeyValueWriter(
 			final KeyValueAccess keyValueAccess,
 			final String basePath,
 			final GsonBuilder gsonBuilder,
-			final boolean cacheAttributes) throws IOException {
+			final boolean cacheAttributes)
+			throws IOException {
 
 		super(keyValueAccess, initializeContainer(keyValueAccess, basePath), gsonBuilder, cacheAttributes);
 		createGroup("/");
 		setVersion("/");
 	}
 
-	protected void setVersion( final String path ) throws IOException
-	{
+	protected void setVersion(final String path) throws IOException {
+
 		if (!VERSION.equals(getVersion()))
 			setAttribute("/", VERSION_KEY, VERSION.toString());
 	}
 
-	protected static String initializeContainer(final KeyValueAccess keyValueAccess, final String basePath) throws IOException {
+	protected static String initializeContainer(
+			final KeyValueAccess keyValueAccess,
+			final String basePath) throws IOException {
 
 		final String normBasePath = keyValueAccess.normalize(basePath);
 		keyValueAccess.createDirectories(normBasePath);
@@ -93,7 +97,8 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	/**
 	 * Helper method to create and cache a group.
 	 *
-	 * @param normalPath normalized group path without leading slash
+	 * @param normalPath
+	 *            normalized group path without leading slash
 	 * @return
 	 * @throws IOException
 	 */
@@ -103,11 +108,12 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 		if (info == emptyGroupInfo) {
 
 			/*
-			 * The directories may be created multiple times concurrently, but a new cache
-			 * entry is inserted only if none has been inserted in the meantime (because
-			 * that may already include more cached data).
+			 * The directories may be created multiple times concurrently, but a
+			 * new cache entry is inserted only if none has been inserted in the
+			 * meantime (because that may already include more cached data).
 			 *
-			 * This avoids synchronizing on the cache for independent group creation.
+			 * This avoids synchronizing on the cache for independent group
+			 * creation.
 			 */
 			keyValueAccess.createDirectories(groupPath(normalPath));
 			synchronized (metaCache) {
@@ -116,7 +122,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 					info = new N5GroupInfo();
 					metaCache.put(normalPath, info);
 				}
-				for (String childPathName = normalPath; !(childPathName == null || childPathName.equals("")); ) {
+				for (String childPathName = normalPath; !(childPathName == null || childPathName.equals(""));) {
 					final String parentPathName = keyValueAccess.parent(childPathName);
 					if (parentPathName == null)
 						break;
@@ -131,8 +137,9 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 						children = new HashSet<>();
 					}
 					synchronized (children) {
-						children.add(
-								keyValueAccess.relativize(childPathName, parentPathName));
+						children
+								.add(
+										keyValueAccess.relativize(childPathName, parentPathName));
 						parentInfo.children = children;
 					}
 					childPathName = parentPathName;
@@ -140,8 +147,8 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 			}
 
 			/*
-			 * initialize after updating the cache so that the correct N5GroupInfo instance
-			 * can be updated if necessary.
+			 * initialize after updating the cache so that the correct
+			 * N5GroupInfo instance can be updated if necessary.
 			 */
 			initializeGroup(normalPath);
 		}
@@ -149,13 +156,15 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	}
 
 	/**
-	 * Performs any necessary initialization to ensure the key given by the argument {@code normalPath}
-	 * is a valid group. Called by {@link createGroup}.
+	 * Performs any necessary initialization to ensure the key given by the
+	 * argument {@code normalPath} is a valid group. Called by
+	 * {@link createGroup}.
 	 *
-	 * @param normalPath the group path.
+	 * @param normalPath
+	 *            the group path.
 	 */
-	protected void initializeGroup( final String normalPath )
-	{
+	protected void initializeGroup(final String normalPath) {
+
 		// Nothing to do here, but other implementations (e.g. zarr) use this.
 	}
 
@@ -169,8 +178,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 				if (info.isDataset == null)
 					info.isDataset = false;
 			}
-		} else
-		{
+		} else {
 			keyValueAccess.createDirectories(groupPath(normalPath));
 			initializeGroup(normalPath);
 		}
@@ -195,13 +203,16 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	}
 
 	/**
-	 * Helper method that reads an existing JsonElement representing the root attributes for {@code normalGroupPath},
-	 * inserts and overrides the provided attributes, and writes them back into
-	 * the attributes store.
+	 * Helper method that reads an existing JsonElement representing the root
+	 * attributes for {@code normalGroupPath}, inserts and overrides the
+	 * provided attributes, and writes them back into the attributes store.
 	 *
-	 * @param normalGroupPath to write the attributes to
-	 * @param attributes to write
-	 * @throws IOException if unable to read the attributes at {@code normalGroupPath}
+	 * @param normalGroupPath
+	 *            to write the attributes to
+	 * @param attributes
+	 *            to write
+	 * @throws IOException
+	 *             if unable to read the attributes at {@code normalGroupPath}
 	 *
 	 * @TODO consider cache (or you read the attributes twice?)
 	 */
@@ -210,7 +221,8 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 			final JsonElement attributes) throws IOException {
 
 		try (final LockedChannel lock = keyValueAccess.lockForWriting(attributesPath(normalGroupPath))) {
-			final JsonElement root = GsonUtils.insertAttribute(GsonUtils.readAttributes(lock.newReader(), gson), "/", attributes, gson);
+			final JsonElement root = GsonUtils
+					.insertAttribute(GsonUtils.readAttributes(lock.newReader(), gson), "/", attributes, gson);
 			GsonUtils.writeAttributes(lock.newWriter(), root, gson);
 		}
 	}
@@ -220,9 +232,12 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	 * inserts and overrides the provided attributes, and writes them back into
 	 * the attributes store.
 	 *
-	 * @param normalGroupPath to write the attributes to
-	 * @param attributes to write
-	 * @throws IOException if unable to read the attributes at {@code normalGroupPath}
+	 * @param normalGroupPath
+	 *            to write the attributes to
+	 * @param attributes
+	 *            to write
+	 * @throws IOException
+	 *             if unable to read the attributes at {@code normalGroupPath}
 	 */
 	protected void writeAttributes(
 			final String normalGroupPath,
@@ -230,8 +245,9 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 
 		if (!attributes.isEmpty()) {
 			final JsonElement existingAttributes = getAttributes(normalGroupPath);
-			JsonElement newAttributes =
-					existingAttributes != null && existingAttributes.isJsonObject() ? existingAttributes.getAsJsonObject() : new JsonObject();
+			JsonElement newAttributes = existingAttributes != null && existingAttributes.isJsonObject()
+					? existingAttributes.getAsJsonObject()
+					: new JsonObject();
 			newAttributes = GsonUtils.insertAttributes(newAttributes, attributes, gson);
 			writeAttributes(normalGroupPath, newAttributes);
 		}
@@ -240,17 +256,23 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	/**
 	 * Helper method to cache and write attributes.
 	 *
-	 * @param normalPath normalized group path without leading slash
+	 * @param normalPath
+	 *            normalized group path without leading slash
 	 * @param attributes
 	 * @return
 	 * @throws IOException
 	 */
-	protected N5GroupInfo setCachedAttributes(final String normalPath, final Map<String, ?> attributes) throws IOException {
+	protected N5GroupInfo setCachedAttributes(
+			final String normalPath,
+			final Map<String, ?> attributes) throws IOException {
 
 		final N5GroupInfo info = getN5GroupInfo(normalPath);
 		final JsonElement metadata = getAttributes(normalPath);
 		synchronized (info) {
-			/* Necessary ensure `nulls` are treated consistently regardless of reading from the cache or not */
+			/*
+			 * Necessary ensure `nulls` are treated consistently regardless of
+			 * reading from the cache or not
+			 */
 			info.attributesCache = gson.toJsonTree(GsonUtils.insertAttributes(metadata, attributes, gson));
 			writeAttributes(normalPath, info.attributesCache);
 			info.isDataset = hasDatasetAttributes(info.attributesCache);
@@ -277,7 +299,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 			final Map<String, ?> attributes) throws IOException {
 
 		final String normalPath = keyValueAccess.normalize(path);
-		if( !exists(normalPath))
+		if (!exists(normalPath))
 			throw new IOException("" + normalPath + " is not a group or dataset.");
 
 		if (cacheMeta)
@@ -286,7 +308,8 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 			writeAttributes(normalPath, attributes);
 	}
 
-	@Override public boolean removeAttribute(final String pathName, final String key) throws IOException {
+	@Override
+	public boolean removeAttribute(final String pathName, final String key) throws IOException {
 
 		final String normalPath = keyValueAccess.normalize(pathName);
 		final String absoluteNormalPath = keyValueAccess.compose(basePath, normalPath);
@@ -308,7 +331,8 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 		return false;
 	}
 
-	@Override public <T> T removeAttribute(final String pathName, final String key, final Class<T> cls) throws IOException {
+	@Override
+	public <T> T removeAttribute(final String pathName, final String key, final Class<T> cls) throws IOException {
 
 		final String normalPath = keyValueAccess.normalize(pathName);
 		final String normalKey = N5URL.normalizeAttributePath(key);
@@ -321,7 +345,8 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 		return obj;
 	}
 
-	@Override public boolean removeAttributes(final String pathName, final List<String> attributes) throws IOException {
+	@Override
+	public boolean removeAttributes(final String pathName, final List<String> attributes) throws IOException {
 
 		final String normalPath = keyValueAccess.normalize(pathName);
 		boolean removed = false;
