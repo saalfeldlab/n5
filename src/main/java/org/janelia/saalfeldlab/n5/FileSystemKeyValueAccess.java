@@ -256,10 +256,20 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		return basePath.relativize(fileSystem.getPath(path)).toString();
 	}
 
+	/**
+	 * Removes the leading slash from a given path and returns the normalized
+	 * path.  It ensures correctness on both Unix and Windows, otherwise
+	 * {@code pathName} is treated as UNC path on Windows, and
+	 * {@code Paths.get(pathName, ...)} fails with
+	 * {@code InvalidPathException}.
+	 *
+	 * @param path
+	 * @return the normalized path, without leading slash
+	 */
 	@Override
 	public String normalize(final String path) {
 
-		return fileSystem.getPath(path).normalize().toString();
+		return fileSystem.getPath(path.startsWith("/") || path.startsWith("\\") ? path.substring(1) : path).normalize().toString();
 	}
 
 	@Override
