@@ -214,7 +214,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	 * @throws IOException
 	 *             if unable to read the attributes at {@code normalGroupPath}
 	 *
-	 * @TODO consider cache (or you read the attributes twice?)
+	 * TODO consider cache (or you read the attributes twice?)
 	 */
 	protected void writeAttributes(
 			final String normalGroupPath,

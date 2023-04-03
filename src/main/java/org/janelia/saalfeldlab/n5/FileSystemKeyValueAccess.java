@@ -431,8 +431,8 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
     }
 
 	/**
-	 * This is a copy of
-	 * {@link Files#createAndCheckIsDirectory(Path, FileAttribute...)} that
+	 * This is a copy of a previous
+	 * Files#createAndCheckIsDirectory(Path, FileAttribute...) method that
 	 * follows symlinks.
 	 *
 	 * Workaround for https://bugs.openjdk.java.net/browse/JDK-8130464
