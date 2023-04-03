@@ -25,19 +25,17 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-
 import java.io.IOException;
-import java.io.Reader;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
-import org.janelia.saalfeldlab.n5.N5Reader.Version;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
@@ -47,7 +45,7 @@ import org.janelia.saalfeldlab.n5.N5Reader.Version;
  * @author Igor Pisarev
  * @author Philipp Hanslovsky
  */
-public class N5KeyValueReader implements GsonN5Reader {
+public class N5KeyValueReader implements N5Reader {
 
 	/**
 	 * Data object for caching meta data.  Elements that are null are not yet
@@ -101,7 +99,7 @@ public class N5KeyValueReader implements GsonN5Reader {
 
 		this.keyValueAccess = keyValueAccess;
 		this.basePath = keyValueAccess.normalize(basePath);
-		this.gson = GsonN5Reader.registerGson(gsonBuilder);
+		this.gson = GsonUtils.registerGson(gsonBuilder);
 		this.cacheMeta = cacheMeta;
 
 		/* Existence checks, if any, go in subclasses */
@@ -111,13 +109,17 @@ public class N5KeyValueReader implements GsonN5Reader {
 			throw new IOException("Incompatible version " + version + " (this is " + VERSION + ").");
 	}
 
-	@Override
 	public Gson getGson() {
 
 		return gson;
 	}
 
 	@Override
+	public Map<String, Class<?>> listAttributes(final String pathName) throws IOException {
+
+		return GsonUtils.listAttributes(getAttributes(pathName));
+	}
+
 	public KeyValueAccess getKeyValueAccess() {
 		return keyValueAccess;
 	}
@@ -128,22 +130,10 @@ public class N5KeyValueReader implements GsonN5Reader {
 		return this.basePath;
 	}
 
-	/**
-	 * Reads the attributes from a given {@link Reader}.
-	 *
-	 * @param reader containing attriubtes
-	 * @return the attributes root JsonElement
-	 * @throws IOException if unable to read from the {@code reader}
-	 */
-	protected JsonElement readAttributes(final Reader reader) throws IOException {
-
-		return GsonN5Reader.readAttributes(reader, gson);
-	}
-
 	@Override
 	public DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
 
-		final String normalPath = normalize(pathName);
+		final String normalPath = keyValueAccess.normalize(pathName);
 		N5GroupInfo info = null;
 		if (cacheMeta) {
 			info = getCachedN5GroupInfo(normalPath);
@@ -153,13 +143,13 @@ public class N5KeyValueReader implements GsonN5Reader {
 
 		final JsonElement attributes = getAttributes(normalPath);
 
-		final long[] dimensions = GsonN5Reader.readAttribute(attributes, DatasetAttributes.dimensionsKey, long[].class, gson);
+		final long[] dimensions = GsonUtils.readAttribute(attributes, DatasetAttributes.dimensionsKey, long[].class, gson);
 		if (dimensions == null) {
 			setGroupInfoIsDataset(info, false);
 			return null;
 		}
 
-		final DataType dataType = GsonN5Reader.readAttribute(attributes, DatasetAttributes.dataTypeKey, DataType.class, gson);
+		final DataType dataType = GsonUtils.readAttribute(attributes, DatasetAttributes.dataTypeKey, DataType.class, gson);
 		if (dataType == null) {
 			setGroupInfoIsDataset(info, false);
 			return null;
@@ -167,21 +157,20 @@ public class N5KeyValueReader implements GsonN5Reader {
 
 		setGroupInfoIsDataset(info, true);
 
-		final int[] blockSize = GsonN5Reader.readAttribute(attributes, DatasetAttributes.blockSizeKey, int[].class, gson);
+		final int[] blockSize = GsonUtils.readAttribute(attributes, DatasetAttributes.blockSizeKey, int[].class, gson);
 
-		final Compression compression = GsonN5Reader.readAttribute(attributes, DatasetAttributes.compressionKey, Compression.class, gson);
+		final Compression compression = GsonUtils.readAttribute(attributes, DatasetAttributes.compressionKey, Compression.class, gson);
 
 		/* version 0 */
 		final String compressionVersion0Name = compression
 				== null
-				? GsonN5Reader.readAttribute(attributes, DatasetAttributes.compressionTypeKey, String.class, gson)
+				? GsonUtils.readAttribute(attributes, DatasetAttributes.compressionTypeKey, String.class, gson)
 				: null;
 
 		return createDatasetAttributes(dimensions, dataType, blockSize, compression, compressionVersion0Name);
-
 	}
 
-	private void setGroupInfoIsDataset(N5GroupInfo info, boolean normalPathName) {
+	private void setGroupInfoIsDataset(final N5GroupInfo info, final boolean normalPathName) {
 		if (info == null)
 			return;
 		synchronized (info) {
@@ -209,27 +198,27 @@ public class N5KeyValueReader implements GsonN5Reader {
 			final String key,
 			final Class<T> clazz) throws IOException {
 
-		final String normalPathName = normalize(pathName);
+		final String normalPathName = keyValueAccess.normalize(pathName);
 		final String normalizedAttributePath = N5URL.normalizeAttributePath(key);
 
 		if (cacheMeta) {
 			return getCachedAttribute(normalPathName, normalizedAttributePath, clazz);
 		} else {
-			return GsonN5Reader.readAttribute(getAttributes(normalPathName), normalizedAttributePath, clazz, gson);
+			return GsonUtils.readAttribute(getAttributes(normalPathName), normalizedAttributePath, clazz, gson);
 		}
 	}
 
-	private <T> T getCachedAttribute(String normalPathName, String normalKey, Class<T> clazz) throws IOException {
+	private <T> T getCachedAttribute(final String normalPathName, final String normalKey, final Class<T> clazz) throws IOException {
 
 		return getCachedAttribute(normalPathName, normalKey, (Type) clazz);
 	}
 
-	private <T> T getCachedAttribute(String normalPathName, String normalKey, Type type) throws IOException {
+	private <T> T getCachedAttribute(final String normalPathName, final String normalKey, final Type type) throws IOException {
 
 		final N5GroupInfo info = getCachedN5GroupInfo(normalPathName);
 		if (info == emptyGroupInfo)
 			return null;
-		return GsonN5Reader.readAttribute(getAttributes(normalPathName), N5URL.normalizeAttributePath(normalKey), type, gson);
+		return GsonUtils.readAttribute(getAttributes(normalPathName), N5URL.normalizeAttributePath(normalKey), type, gson);
 	}
 
 	@Override
@@ -238,12 +227,12 @@ public class N5KeyValueReader implements GsonN5Reader {
 			final String key,
 			final Type type) throws IOException {
 
-		final String normalPathName = normalize(pathName);
+		final String normalPathName = keyValueAccess.normalize(pathName);
 		final String normalizedAttributePath = N5URL.normalizeAttributePath(key);
 		if (cacheMeta) {
 			return getCachedAttribute(normalPathName, key, type);
 		} else {
-			return GsonN5Reader.readAttribute(getAttributes(normalPathName), normalizedAttributePath, type, gson);
+			return GsonUtils.readAttribute(getAttributes(normalPathName), normalizedAttributePath, type, gson);
 		}
 	}
 
@@ -283,13 +272,13 @@ public class N5KeyValueReader implements GsonN5Reader {
 	@Override
 	public boolean exists(final String pathName) {
 
-		final String normalPathName = normalize(pathName);
+		final String normalPathName = keyValueAccess.normalize(pathName);
 		if (cacheMeta)
 			return getCachedN5GroupInfo(normalPathName) != emptyGroupInfo;
 		else
 			try {
 				return groupExists(groupPath(normalPathName)) || datasetExists(normalPathName);
-			} catch (IOException e) {
+			} catch (final IOException e) {
 				return false;
 			}
 	}
@@ -298,7 +287,7 @@ public class N5KeyValueReader implements GsonN5Reader {
 	public boolean datasetExists(final String pathName) throws IOException {
 
 		if (cacheMeta) {
-			final String normalPathName = normalize(pathName);
+			final String normalPathName = keyValueAccess.normalize(pathName);
 			final N5GroupInfo info = getCachedN5GroupInfo(normalPathName);
 			if (info == emptyGroupInfo)
 				return false;
@@ -318,9 +307,9 @@ public class N5KeyValueReader implements GsonN5Reader {
 	 * @return
 	 * @throws IOException
 	 */
-	@Override public JsonElement getAttributes(final String pathName) throws IOException {
+	public JsonElement getAttributes(final String pathName) throws IOException {
 
-		final String groupPath = normalize(pathName);
+		final String groupPath = keyValueAccess.normalize(pathName);
 		final String attributesPath = attributesPath(groupPath);
 
 		/* If cached, return the cache*/
@@ -334,7 +323,7 @@ public class N5KeyValueReader implements GsonN5Reader {
 			return null;
 
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(attributesPath)) {
-			final JsonElement attributes = readAttributes(lockedChannel.newReader());
+			final JsonElement attributes = GsonUtils.readAttributes(lockedChannel.newReader(), gson);
 			/* If we are reading from the access, update the cache*/
 			groupInfo.attributesCache = attributes;
 			return attributes;
@@ -347,7 +336,7 @@ public class N5KeyValueReader implements GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws IOException {
 
-		final String path = getDataBlockPath(normalize(pathName), gridPosition);
+		final String path = getDataBlockPath(keyValueAccess.normalize(pathName), gridPosition);
 		if (!keyValueAccess.exists(path))
 			return null;
 
@@ -369,7 +358,7 @@ public class N5KeyValueReader implements GsonN5Reader {
 	@Override
 	public String[] list(final String pathName) throws IOException {
 
-		final String normalPath = normalize(pathName);
+		final String normalPath = keyValueAccess.normalize(pathName);
 		if (cacheMeta) {
 			return getCachedList(normalPath);
 		} else {
@@ -377,7 +366,7 @@ public class N5KeyValueReader implements GsonN5Reader {
 		}
 	}
 
-	private String[] getCachedList(String normalPath) throws IOException {
+	private String[] getCachedList(final String normalPath) throws IOException {
 
 		final N5GroupInfo info = getCachedN5GroupInfo(normalPath);
 		if (info == emptyGroupInfo)

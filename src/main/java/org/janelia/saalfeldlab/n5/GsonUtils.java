@@ -25,6 +25,15 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.lang.reflect.Array;
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -34,133 +43,12 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.lang.reflect.Array;
-import java.lang.reflect.Type;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-
 /**
  * {@link N5Reader} for JSON attributes parsed by {@link Gson}.
  *
  * @author Stephan Saalfeld
  */
-public interface GsonN5Reader extends N5Reader {
-
-	Gson getGson();
-
-	/**
-	 * Reads the attributes a group or dataset.
-	 *
-	 * @param pathName group path
-	 * @return the root {@link JsonElement} of the attributes
-	 * @throws IOException
-	 */
-	JsonElement getAttributes(final String pathName) throws IOException;
-
-	@Override
-	default <T> T getAttribute(
-			final String pathName,
-			final String key,
-			final Class<T> clazz) throws IOException {
-
-		return getAttribute(pathName, key, TypeToken.get(clazz).getType());
-	}
-
-	@Override
-	default <T> T getAttribute(
-			final String pathName,
-			final String key,
-			final Type type) throws IOException {
-
-		final String normalizedGroupPath;
-		final String normalizedAttributePath;
-		try {
-			final N5URL n5url = N5URL.from(null, pathName, key );
-			normalizedGroupPath = n5url.normalizeGroupPath();
-			normalizedAttributePath = n5url.normalizeAttributePath();
-		} catch (URISyntaxException e) {
-			throw new IOException(e);
-		}
-		return GsonN5Reader.readAttribute( getAttributes( normalizedGroupPath ), normalizedAttributePath, type,  getGson());
-	}
-
-	@Override
-	default Map<String, Class<?>> listAttributes(String pathName) throws IOException {
-
-		return listAttributes(getAttributes(pathName));
-	}
-
-
-	@Override
-	default DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
-
-		final JsonElement root = getAttributes(pathName);
-		final Gson gson = getGson();
-
-		if (root == null || !root.isJsonObject())
-			return null;
-
-		final JsonObject rootObject = root.getAsJsonObject();
-
-		final long[] dimensions = GsonN5Reader.readAttribute(rootObject, DatasetAttributes.dimensionsKey, long[].class, gson);
-		if (dimensions == null)
-			return null;
-
-		final DataType dataType = GsonN5Reader.readAttribute(rootObject, DatasetAttributes.dataTypeKey, DataType.class, gson);
-		if (dataType == null)
-			return null;
-
-		int[] blockSize = GsonN5Reader.readAttribute(rootObject, DatasetAttributes.blockSizeKey, int[].class, gson);
-		if (blockSize == null)
-			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
-
-		Compression compression = GsonN5Reader.readAttribute(rootObject, DatasetAttributes.compressionKey, Compression.class, gson);
-
-		/* version 0 */
-		if (compression == null) {
-			switch (GsonN5Reader.readAttribute(rootObject, DatasetAttributes.compressionTypeKey, String.class, gson)) {
-			case "raw":
-				compression = new RawCompression();
-				break;
-			case "gzip":
-				compression = new GzipCompression();
-				break;
-			case "bzip2":
-				compression = new Bzip2Compression();
-				break;
-			case "lz4":
-				compression = new Lz4Compression();
-				break;
-			case "xz":
-				compression = new XzCompression();
-				break;
-			}
-		}
-
-		return new DatasetAttributes(dimensions, blockSize, dataType, compression);
-	}
-
-	public abstract KeyValueAccess getKeyValueAccess();
-
-	/**
-	 * Removes the leading slash from a given path and returns the normalized
-	 * path.  It ensures correctness on both Unix and Windows, otherwise
-	 * {@code pathName} is treated as UNC path on Windows, and
-	 * {@code Paths.get(pathName, ...)} fails with
-	 * {@code InvalidPathException}.
-	 *
-	 * @param path
-	 * @return the normalized path, without leading slash
-	 */
-	public default String normalize(final String path) {
-
-		return getKeyValueAccess().normalize(path.startsWith("/") || path.startsWith("\\") ? path.substring(1) : path);
-	}
+public interface GsonUtils {
 
 	static Gson registerGson(final GsonBuilder gsonBuilder) {
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
@@ -202,29 +90,29 @@ public interface GsonN5Reader extends N5Reader {
 	 * @param <T>       return type represented by {@link Type type}
 	 * @return the deserialized attribute object, or {@code null} if {@code attribute} cannot deserialize to {@link T}
 	 */
-	static <T> T parseAttributeElement(JsonElement attribute, Gson gson, Type type) {
+	static <T> T parseAttributeElement(final JsonElement attribute, final Gson gson, final Type type) {
 
 		if (attribute == null)
 			return null;
 
 		final Class<?> clazz = (type instanceof Class<?>) ? ((Class<?>)type) : null;
 		if (clazz != null && clazz.isAssignableFrom(HashMap.class)) {
-			Type mapType = new TypeToken<Map<String, Object>>() {
+			final Type mapType = new TypeToken<Map<String, Object>>() {
 
 			}.getType();
-			Map<String, Object> retMap = gson.fromJson(attribute, mapType);
+			final Map<String, Object> retMap = gson.fromJson(attribute, mapType);
 			//noinspection unchecked
 			return (T)retMap;
 		}
 		if (attribute instanceof JsonArray) {
 			final JsonArray array = attribute.getAsJsonArray();
-			T retArray = GsonN5Reader.getJsonAsArray(gson, array, type);
+			final T retArray = GsonUtils.getJsonAsArray(gson, array, type);
 			if (retArray != null)
 				return retArray;
 		}
 		try {
 			return gson.fromJson(attribute, type);
-		} catch (JsonSyntaxException e) {
+		} catch (final JsonSyntaxException e) {
 			if (type == String.class)
 				return (T)gson.toJson(attribute);
 			return null;
@@ -239,7 +127,7 @@ public interface GsonN5Reader extends N5Reader {
 	 * @param normalizedAttributePath to the attribute
 	 * @return the attribute as a {@link JsonElement}.
 	 */
-	static JsonElement getAttribute(JsonElement root, String normalizedAttributePath) {
+	static JsonElement getAttribute(JsonElement root, final String normalizedAttributePath) {
 
 		final String[] pathParts = normalizedAttributePath.split("(?<!\\\\)/");
 		for (int i = 0; i < pathParts.length; i++) {
@@ -284,7 +172,7 @@ public interface GsonN5Reader extends N5Reader {
 	 * <li>Object[]</li>
 	 * </ul>
 	 */
-	static Map<String, Class<?>> listAttributes(JsonElement root) throws IOException {
+	static Map<String, Class<?>> listAttributes(final JsonElement root) throws IOException {
 
 		if (root == null || !root.isJsonObject()) {
 			return null;
@@ -333,12 +221,12 @@ public interface GsonN5Reader extends N5Reader {
 		return attributes;
 	}
 
-	static <T> T getJsonAsArray(Gson gson, JsonArray array, Class<T> cls) {
+	static <T> T getJsonAsArray(final Gson gson, final JsonArray array, final Class<T> cls) {
 
 		return getJsonAsArray(gson, array, TypeToken.get(cls).getType());
 	}
 
-	static <T> T getJsonAsArray(Gson gson, JsonArray array, Type type) {
+	static <T> T getJsonAsArray(final Gson gson, final JsonArray array, final Type type) {
 
 		final Class<?> clazz = (type instanceof Class<?>) ? ((Class<?>)type) : null;
 
@@ -437,5 +325,198 @@ public interface GsonN5Reader extends N5Reader {
 			return String.class;
 		else
 			return Object.class;
+	}
+
+	/**
+	 * If there is an attribute in {@code root} such that it can be parsed and desrialized as {@link T},
+	 * then remove it from {@code root}, write {@code root} to the {@code writer}, and return the removed attribute.
+	 * <p>
+	 * If there is an attribute at the location specified by {@code normalizedAttributePath} but it cannot be deserialized to {@link T}, then it is not removed.
+	 * <p>
+	 * If nothing is removed, then {@code root} is not writen to the {@code writer}.
+	 *
+	 * @param writer                  to write the modified {@code root} to after removal of the attribute
+	 * @param root                    to remove the attribute from
+	 * @param normalizedAttributePath to the attribute location
+	 * @param cls                     of the attribute to remove
+	 * @param gson                    to deserialize the attribute with
+	 * @param <T>                     of the removed attribute
+	 * @return the removed attribute, or null if nothing removed
+	 * @throws IOException
+	 */
+	static <T> T removeAttribute(
+			final Writer writer,
+			final JsonElement root,
+			final String normalizedAttributePath,
+			final Class<T> cls,
+			final Gson gson) throws IOException {
+
+		final T removed = removeAttribute(root, normalizedAttributePath, cls, gson);
+		if (removed != null) {
+			writeAttributes(writer, root, gson);
+		}
+		return removed;
+	}
+
+	/**
+	 * If there is an attribute in {@code root} at location {@code normalizedAttributePath} then remove it from {@code root}..
+	 *
+	 * @param writer                  to write the modified {@code root} to after removal of the attribute
+	 * @param root                    to remove the attribute from
+	 * @param normalizedAttributePath to the attribute location
+	 * @param gson                    to deserialize the attribute with
+	 * @return if the attribute was removed or not
+	 */
+	static boolean removeAttribute(
+			final Writer writer,
+			final JsonElement root,
+			final String normalizedAttributePath,
+			final Gson gson) throws IOException {
+
+		final JsonElement removed = removeAttribute(root, normalizedAttributePath, JsonElement.class, gson);
+		if (removed != null) {
+			writeAttributes(writer, root, gson);
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * If there is an attribute in {@code root} such that it can be parsed and desrialized as {@link T},
+	 * then remove it from {@code root} and return the removed attribute.
+	 * <p>
+	 * If there is an attribute at the location specified by {@code normalizedAttributePath} but it cannot be deserialized to {@link T}, then it is not removed.
+	 *
+	 * @param root                    to remove the attribute from
+	 * @param normalizedAttributePath to the attribute location
+	 * @param cls                     of the attribute to remove
+	 * @param gson                    to deserialize the attribute with
+	 * @param <T>                     of the removed attribute
+	 * @return the removed attribute, or null if nothing removed
+	 */
+	static <T> T removeAttribute(final JsonElement root, final String normalizedAttributePath, final Class<T> cls, final Gson gson) {
+
+		final T attribute = GsonUtils.readAttribute(root, normalizedAttributePath, cls, gson);
+		if (attribute != null) {
+			removeAttribute(root, normalizedAttributePath);
+		}
+		return attribute;
+	}
+
+	/**
+	 * Remove and return the attribute at {@code normalizedAttributePath} as a {@link JsonElement}.
+	 * Does not attempt to parse the attribute.
+	 *
+	 * @param root                    to search for the {@link JsonElement} at location {@code normalizedAttributePath}
+	 * @param normalizedAttributePath to the attribute
+	 * @return the attribute as a {@link JsonElement}.
+	 */
+	static JsonElement removeAttribute(JsonElement root, final String normalizedAttributePath) {
+
+		final String[] pathParts = normalizedAttributePath.split("(?<!\\\\)/");
+		for (int i = 0; i < pathParts.length; i++) {
+			final String pathPart = pathParts[i];
+			if (pathPart.isEmpty())
+				continue;
+			final String pathPartWithoutEscapeCharacters = pathPart
+					.replaceAll("\\\\/", "/")
+					.replaceAll("\\\\\\[", "[");
+			if (root instanceof JsonObject && root.getAsJsonObject().get(pathPartWithoutEscapeCharacters) != null) {
+				final JsonObject jsonObject = root.getAsJsonObject();
+				root = jsonObject.get(pathPartWithoutEscapeCharacters);
+				if (i == pathParts.length - 1) {
+					jsonObject.remove(pathPartWithoutEscapeCharacters);
+				}
+			} else {
+				final Matcher matcher = N5URL.ARRAY_INDEX.matcher(pathPart);
+				if (root != null && root.isJsonArray() && matcher.matches()) {
+					final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
+					final JsonArray jsonArray = root.getAsJsonArray();
+					if (index >= jsonArray.size()) {
+						return null;
+					}
+					root = jsonArray.get(index);
+					if (i == pathParts.length - 1) {
+						jsonArray.remove(index);
+					}
+				} else {
+					return null;
+				}
+			}
+		}
+		return root;
+	}
+
+	/**
+	 * Inserts {@code attribute} into {@code root} at location {@code normalizedAttributePath} and write the resulting {@code root}.
+	 * <p>
+	 * If {@code root} is not a {@link JsonObject}, then it is overwritten with an object containing {@code "normalizedAttributePath": attribute }
+	 *
+	 * @param writer
+	 * @param root
+	 * @param normalizedAttributePath
+	 * @param attribute
+	 * @param gson
+	 * @throws IOException
+	 */
+	static <T> void writeAttribute(
+			final Writer writer,
+			JsonElement root,
+			final String normalizedAttributePath,
+			final T attribute,
+			final Gson gson) throws IOException {
+
+		root = insertAttribute(root, normalizedAttributePath, attribute, gson);
+		writeAttributes(writer, root, gson);
+	}
+
+	/**
+	 * Writes the attributes JsonElemnt to a given {@link Writer}.
+	 * This will overwrite any existing attributes.
+	 *
+	 * @param writer
+	 * @param root
+	 * @throws IOException
+	 */
+	static <T> void writeAttributes(
+			final Writer writer,
+			final JsonElement root,
+			final Gson gson) throws IOException {
+
+		gson.toJson(root, writer);
+		writer.flush();
+	}
+
+	static JsonElement insertAttributes(JsonElement root, final Map<String, ?> attributes, final Gson gson) {
+
+		for (final Map.Entry<String, ?> attribute : attributes.entrySet()) {
+			root = insertAttribute(root, N5URL.normalizeAttributePath(attribute.getKey()), attribute.getValue(), gson);
+		}
+		return root;
+	}
+
+	static <T> JsonElement insertAttribute(JsonElement root, final String normalizedAttributePath, final T attribute, final Gson gson) {
+
+		LinkedAttributePathToken<?> pathToken = N5URL.getAttributePathTokens(normalizedAttributePath);
+		/* No path to traverse or build; just write the value */
+		if (pathToken == null)
+			return gson.toJsonTree(attribute);
+
+		JsonElement json = root;
+		while (pathToken != null) {
+
+			final JsonElement parent = pathToken.setAndCreateParentElement(json);
+
+			/* We may need to create or override the existing root if it is non-existent or incompatible. */
+			final boolean rootOverriden = json == root && parent != json;
+			if (root == null || rootOverriden) {
+				root = parent;
+			}
+
+			json = pathToken.writeChild(gson, attribute);
+
+			pathToken = pathToken.next();
+		}
+		return root;
 	}
 }
