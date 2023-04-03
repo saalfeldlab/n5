@@ -50,7 +50,7 @@ import java.util.regex.Pattern;
  */
 public interface N5Reader extends AutoCloseable {
 
-	static public class Version {
+	public static class Version {
 
 		private final int major;
 		private final int minor;
@@ -204,7 +204,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @return
 	 * @throws IOException
 	 */
-	public default Version getVersion() throws IOException {
+	default Version getVersion() throws IOException {
 
 		return new Version(getAttribute("/", VERSION_KEY, String.class));
 	}
@@ -214,7 +214,7 @@ public interface N5Reader extends AutoCloseable {
 	 *
 	 * @return the base path
 	 */
-	public String getBasePath();
+	String getBasePath();
 
 	/**
 	 * Reads an attribute.
@@ -227,7 +227,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @return
 	 * @throws IOException
 	 */
-	public <T> T getAttribute(
+	<T> T getAttribute(
 			final String pathName,
 			final String key,
 			final Class<T> clazz) throws IOException;
@@ -243,7 +243,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @return
 	 * @throws IOException
 	 */
-	public <T> T getAttribute(
+	<T> T getAttribute(
 			final String pathName,
 			final String key,
 			final Type type) throws IOException;
@@ -257,7 +257,7 @@ public interface N5Reader extends AutoCloseable {
 	 *         not set
 	 * @throws IOException
 	 */
-	public DatasetAttributes getDatasetAttributes(final String pathName) throws IOException;
+	DatasetAttributes getDatasetAttributes(final String pathName) throws IOException;
 
 	/**
 	 * Reads a {@link DataBlock}.
@@ -269,7 +269,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @return
 	 * @throws IOException
 	 */
-	public DataBlock<?> readBlock(
+	DataBlock<?> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws IOException;
@@ -285,7 +285,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws ClassNotFoundException
 	 */
 	@SuppressWarnings("unchecked")
-	public default <T> T readSerializedBlock(
+	default <T> T readSerializedBlock(
 			final String dataset,
 			final DatasetAttributes attributes,
 			final long... gridPosition) throws IOException, ClassNotFoundException {
@@ -307,7 +307,7 @@ public interface N5Reader extends AutoCloseable {
 	 *            group path
 	 * @return
 	 */
-	public boolean exists(final String pathName);
+	boolean exists(final String pathName);
 
 	/**
 	 * Test whether a dataset exists.
@@ -317,7 +317,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @return
 	 * @throws IOException
 	 */
-	public default boolean datasetExists(final String pathName) throws IOException {
+	default boolean datasetExists(final String pathName) throws IOException {
 
 		return exists(pathName) && getDatasetAttributes(pathName) != null;
 	}
@@ -330,7 +330,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @return
 	 * @throws IOException
 	 */
-	public String[] list(final String pathName) throws IOException;
+	String[] list(final String pathName) throws IOException;
 
 
 	/**
@@ -346,7 +346,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @return list of groups
 	 * @throws IOException
 	 */
-	public default String[] deepList(
+	default String[] deepList(
 			final String pathName,
 			final Predicate<String> filter) throws IOException {
 
@@ -370,7 +370,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @return list of groups
 	 * @throws IOException
 	 */
-	public default String[] deepList(final String pathName) throws IOException {
+	default String[] deepList(final String pathName) throws IOException {
 
 		return deepList(pathName, a -> true);
 	}
@@ -401,7 +401,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @return list of groups
 	 * @throws IOException
 	 */
-	public default String[] deepListDatasets(
+	default String[] deepListDatasets(
 			final String pathName,
 			final Predicate<String> filter) throws IOException {
 
@@ -438,7 +438,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @return list of groups
 	 * @throws IOException
 	 */
-	public default String[] deepListDatasets(final String pathName) throws IOException {
+	default String[] deepListDatasets(final String pathName) throws IOException {
 
 		return deepListDatasets(pathName, a -> true);
 	}
@@ -490,7 +490,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws ExecutionException
 	 * @throws InterruptedException
 	 */
-	public default String[] deepList(
+	default String[] deepList(
 			final String pathName,
 			final Predicate<String> filter,
 			final ExecutorService executor) throws IOException, InterruptedException, ExecutionException {
@@ -524,7 +524,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws ExecutionException
 	 * @throws InterruptedException
 	 */
-	public default String[] deepList(
+	default String[] deepList(
 			final String pathName,
 			final ExecutorService executor) throws IOException, InterruptedException, ExecutionException {
 
@@ -563,7 +563,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws ExecutionException
 	 * @throws InterruptedException
 	 */
-	public default String[] deepListDatasets(
+	default String[] deepListDatasets(
 			final String pathName,
 			final Predicate<String> filter,
 			final ExecutorService executor) throws IOException, InterruptedException, ExecutionException {
@@ -611,7 +611,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws ExecutionException
 	 * @throws InterruptedException
 	 */
-	public default String[] deepListDatasets(
+	default String[] deepListDatasets(
 			final String pathName,
 			final ExecutorService executor) throws IOException, InterruptedException, ExecutionException {
 
@@ -671,14 +671,14 @@ public interface N5Reader extends AutoCloseable {
 	 * @return
 	 * @throws IOException
 	 */
-	public Map<String, Class<?>> listAttributes(final String pathName) throws IOException;
+	Map<String, Class<?>> listAttributes(final String pathName) throws IOException;
 
 	/**
 	 * Returns the symbol that is used to separate nodes in a group path.
 	 *
 	 * @return
 	 */
-	public default String getGroupSeparator() {
+	default String getGroupSeparator() {
 
 		return "/";
 	}
@@ -691,7 +691,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @param nodes
 	 * @return
 	 */
-	public default String groupPath(final String... nodes) {
+	default String groupPath(final String... nodes) {
 
 		if (nodes == null || nodes.length == 0)
 			return "";
@@ -713,5 +713,5 @@ public interface N5Reader extends AutoCloseable {
 	 * implementations that do not hold any closable resources.
 	 */
 	@Override
-	public default void close() {}
+	default void close() {}
 }

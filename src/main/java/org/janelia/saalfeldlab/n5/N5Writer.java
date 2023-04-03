@@ -50,7 +50,7 @@ public interface N5Writer extends N5Reader {
 	 * @param attribute
 	 * @throws IOException
 	 */
-	public default <T> void setAttribute(
+	default <T> void setAttribute(
 			final String pathName,
 			final String key,
 			final T attribute) throws IOException {
@@ -65,7 +65,7 @@ public interface N5Writer extends N5Reader {
 	 * @param attributes
 	 * @throws IOException
 	 */
-	public void setAttributes(
+	void setAttributes(
 			final String pathName,
 			final Map<String, ?> attributes) throws IOException;
 
@@ -86,12 +86,12 @@ public interface N5Writer extends N5Reader {
 	 *
 	 * @param pathName group path
 	 * @param key of attribute to remove
-	 * @param cls of the attribute to remove
+	 * @param clazz of the attribute to remove
 	 * @param <T> of the attribute
 	 * @return the removed attribute, as {@link T}, or {@code null} if no matching attribute
 	 * @throws IOException
 	 */
-	<T> T removeAttribute(String pathName, String key, Class<T> cls) throws IOException;
+	<T> T removeAttribute(String pathName, String key, Class<T> clazz) throws IOException;
 
 	/**
 	 * Remove attributes as provided by {@code attributes}.
@@ -114,7 +114,7 @@ public interface N5Writer extends N5Reader {
 	 * @param datasetAttributes
 	 * @throws IOException
 	 */
-	public default void setDatasetAttributes(
+	default void setDatasetAttributes(
 			final String pathName,
 			final DatasetAttributes datasetAttributes) throws IOException {
 
@@ -127,7 +127,7 @@ public interface N5Writer extends N5Reader {
 	 * @param pathName
 	 * @throws IOException
 	 */
-	public void createGroup(final String pathName) throws IOException;
+	void createGroup(final String pathName) throws IOException;
 
 	/**
 	 * Removes a group or dataset (directory and all contained files).
@@ -144,7 +144,7 @@ public interface N5Writer extends N5Reader {
 	 * @return true if removal was successful, false otherwise
 	 * @throws IOException
 	 */
-	public boolean remove(final String pathName) throws IOException;
+	boolean remove(final String pathName) throws IOException;
 
 	/**
 	 * Removes the N5 container.
@@ -152,7 +152,7 @@ public interface N5Writer extends N5Reader {
 	 * @return true if removal was successful, false otherwise
 	 * @throws IOException
 	 */
-	public default boolean remove() throws IOException {
+	default boolean remove() throws IOException {
 
 		return remove("/");
 	}
@@ -165,7 +165,7 @@ public interface N5Writer extends N5Reader {
 	 * @param datasetAttributes
 	 * @throws IOException
 	 */
-	public default void createDataset(
+	default void createDataset(
 			final String pathName,
 			final DatasetAttributes datasetAttributes) throws IOException {
 
@@ -183,7 +183,7 @@ public interface N5Writer extends N5Reader {
 	 * @param dataType
 	 * @throws IOException
 	 */
-	public default void createDataset(
+	default void createDataset(
 			final String pathName,
 			final long[] dimensions,
 			final int[] blockSize,
@@ -201,7 +201,7 @@ public interface N5Writer extends N5Reader {
 	 * @param dataBlock
 	 * @throws IOException
 	 */
-	public <T> void writeBlock(
+	<T> void writeBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException;
@@ -233,7 +233,7 @@ public interface N5Writer extends N5Reader {
 	 * @param gridPosition
 	 * @throws IOException
 	 */
-	public default void writeSerializedBlock(
+	default void writeSerializedBlock(
 			final Serializable object,
 			final String dataset,
 			final DatasetAttributes datasetAttributes,
