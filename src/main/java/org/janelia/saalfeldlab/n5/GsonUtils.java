@@ -116,6 +116,8 @@ public interface GsonUtils {
 			if (type == String.class)
 				return (T)gson.toJson(attribute);
 			return null;
+		} catch ( final NumberFormatException nfe ) {
+			return null;
 		}
 	}
 

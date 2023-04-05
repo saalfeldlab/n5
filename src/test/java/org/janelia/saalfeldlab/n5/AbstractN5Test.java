@@ -476,6 +476,82 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
+	public void testAttributeParsingPrimitive() throws IOException {
+
+		try (final N5Writer n5 = createN5Writer()) {
+
+			n5.createGroup(groupName);
+
+			/* Test parsing of int, int[], double, double[], String, and String[] types
+			 *
+			 *	All types should be parseable as JsonElements
+			 *
+			 *	ints should be parseable as doubles and Strings
+			 *	doubles should be parseable as doubles and Strings
+			 *	Strings sould be parsable as Strings
+			 *
+			 *	int[]s should be parseable as double[]s and String[]s
+			 *	double[]s should be parseable as double[]s and String[]s
+			 *	String[]s should be parsable as String[]s
+			 */
+
+			n5.setAttribute(groupName, "key", "value");
+			Assert.assertNull(n5.getAttribute(groupName, "key", Integer.class ));
+			Assert.assertNull(n5.getAttribute(groupName, "key", int[].class ));
+			Assert.assertNull(n5.getAttribute(groupName, "key", Double.class ));
+			Assert.assertNull(n5.getAttribute(groupName, "key", double[].class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", String.class ));
+			Assert.assertNull(n5.getAttribute(groupName, "key", String[].class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+
+			n5.setAttribute(groupName, "key", new String[]{"value" });
+			Assert.assertNull(n5.getAttribute(groupName, "key", Integer.class ));
+			Assert.assertNull(n5.getAttribute(groupName, "key", int[].class ));
+			Assert.assertNull(n5.getAttribute(groupName, "key", Double.class ));
+			Assert.assertNull(n5.getAttribute(groupName, "key", double[].class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", String.class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", String[].class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+
+			n5.setAttribute(groupName, "key", 1);
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", Integer.class ));
+			Assert.assertNull(n5.getAttribute(groupName, "key", int[].class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", Double.class ));
+			Assert.assertNull(n5.getAttribute(groupName, "key", double[].class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", String.class ));
+			Assert.assertNull(n5.getAttribute(groupName, "key", String[].class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+
+			n5.setAttribute(groupName, "key", new int[]{2, 3});
+			Assert.assertNull(n5.getAttribute(groupName, "key", Integer.class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", int[].class ));
+			Assert.assertNull(n5.getAttribute(groupName, "key", Double.class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", double[].class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", String.class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", String[].class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+
+			n5.setAttribute(groupName, "key", 0.1);
+//			Assert.assertNull(n5.getAttribute(groupName, "key", Integer.class )); // TODO returns 0, is this right
+			Assert.assertNull(n5.getAttribute(groupName, "key", int[].class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", Double.class ));
+			Assert.assertNull(n5.getAttribute(groupName, "key", double[].class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", String.class ));
+			Assert.assertNull(n5.getAttribute(groupName, "key", String[].class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+
+			n5.setAttribute(groupName, "key", new double[]{0.2, 0.3});
+			Assert.assertNull(n5.getAttribute(groupName, "key", Integer.class ));
+//			Assert.assertNull(n5.getAttribute(groupName, "key", int[].class )); // TODO returns not null, is this right?
+			Assert.assertNull(n5.getAttribute(groupName, "key", Double.class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", double[].class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", String.class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", String[].class ));
+			Assert.assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+		}
+	}
+
+	@Test
 	public void testAttributes() throws IOException {
 
 		try (final N5Writer n5 = createN5Writer()) {
