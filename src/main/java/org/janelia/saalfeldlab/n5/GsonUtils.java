@@ -106,9 +106,17 @@ public interface GsonUtils {
 		}
 		if (attribute instanceof JsonArray) {
 			final JsonArray array = attribute.getAsJsonArray();
-			final T retArray = GsonUtils.getJsonAsArray(gson, array, type);
-			if (retArray != null)
-				return retArray;
+			try {
+				final T retArray = GsonUtils.getJsonAsArray(gson, array, type);
+				if (retArray != null)
+					return retArray;
+			} catch (final JsonSyntaxException e) {
+				if (type == String.class)
+					return (T)gson.toJson(attribute);
+				return null;
+			} catch ( final NumberFormatException nfe ) {
+				return null;
+			}
 		}
 		try {
 			return gson.fromJson(attribute, type);
