@@ -1,16 +1,16 @@
 /**
  * Copyright (c) 2017--2021, Stephan Saalfeld
  * All rights reserved.
- *
+ * <p>
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * <p>
  * 1. Redistributions of source code must retain the above copyright notice,
  * this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  * this list of conditions and the following disclaimer in the documentation
  * and/or other materials provided with the distribution.
- *
+ * <p>
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -45,9 +45,9 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	/**
 	 * Opens an {@link N5KeyValueWriter} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
-	 *
+	 * <p>
 	 * If the base path does not exist, it will be created.
-	 *
+	 * <p>
 	 * If the base path exists and if the N5 version of the container is
 	 * compatible with this implementation, the N5 version of this container
 	 * will be set to the current N5 version of this implementation.
@@ -157,8 +157,8 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 
 	/**
 	 * Performs any necessary initialization to ensure the key given by the
-	 * argument {@code normalPath} is a valid group. Called by
-	 * {@link createGroup}.
+	 * argument {@code normalPath} is a valid group after creation. Called by
+	 * {@link #createGroup(String)}.
 	 *
 	 * @param normalPath
 	 *            the group path.

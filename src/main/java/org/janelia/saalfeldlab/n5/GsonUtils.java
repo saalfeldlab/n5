@@ -51,6 +51,7 @@ import com.google.gson.reflect.TypeToken;
 public interface GsonUtils {
 
 	static Gson registerGson(final GsonBuilder gsonBuilder) {
+
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
 		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
 		gsonBuilder.disableHtmlEscaping();
