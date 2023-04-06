@@ -133,7 +133,7 @@ public class N5KeyValueReader implements N5Reader {
 	@Override
 	public DatasetAttributes getDatasetAttributes(final String pathName) throws IOException {
 
-		final String normalPath = keyValueAccess.normalize(pathName);
+		final String normalPath = N5URL.normalizeGroupPath(pathName);
 		N5GroupInfo info = null;
 		if (cacheMeta) {
 			info = getCachedN5GroupInfo(normalPath);
@@ -198,7 +198,7 @@ public class N5KeyValueReader implements N5Reader {
 			final String key,
 			final Class<T> clazz) throws IOException {
 
-		final String normalPathName = keyValueAccess.normalize(pathName);
+		final String normalPathName = N5URL.normalizeGroupPath(pathName);
 		final String normalizedAttributePath = N5URL.normalizeAttributePath(key);
 
 		if (cacheMeta) {
@@ -227,7 +227,7 @@ public class N5KeyValueReader implements N5Reader {
 			final String key,
 			final Type type) throws IOException {
 
-		final String normalPathName = keyValueAccess.normalize(pathName);
+		final String normalPathName = N5URL.normalizeGroupPath(pathName);
 		final String normalizedAttributePath = N5URL.normalizeAttributePath(key);
 		if (cacheMeta) {
 			return getCachedAttribute(normalPathName, key, type);
@@ -272,7 +272,7 @@ public class N5KeyValueReader implements N5Reader {
 	@Override
 	public boolean exists(final String pathName) {
 
-		final String normalPathName = keyValueAccess.normalize(pathName);
+		final String normalPathName = N5URL.normalizeGroupPath(pathName);
 		if (cacheMeta)
 			return getCachedN5GroupInfo(normalPathName) != emptyGroupInfo;
 		else
@@ -287,7 +287,7 @@ public class N5KeyValueReader implements N5Reader {
 	public boolean datasetExists(final String pathName) throws IOException {
 
 		if (cacheMeta) {
-			final String normalPathName = keyValueAccess.normalize(pathName);
+			final String normalPathName = N5URL.normalizeGroupPath(pathName);
 			final N5GroupInfo info = getCachedN5GroupInfo(normalPathName);
 			if (info == emptyGroupInfo)
 				return false;
@@ -309,7 +309,7 @@ public class N5KeyValueReader implements N5Reader {
 	 */
 	public JsonElement getAttributes(final String pathName) throws IOException {
 
-		final String groupPath = keyValueAccess.normalize(pathName);
+		final String groupPath = N5URL.normalizeGroupPath(pathName);
 		final String attributesPath = attributesPath(groupPath);
 
 		/* If cached, return the cache*/
@@ -336,7 +336,7 @@ public class N5KeyValueReader implements N5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws IOException {
 
-		final String path = getDataBlockPath(keyValueAccess.normalize(pathName), gridPosition);
+		final String path = getDataBlockPath(N5URL.normalizeGroupPath(pathName), gridPosition);
 		if (!keyValueAccess.exists(path))
 			return null;
 
@@ -358,7 +358,7 @@ public class N5KeyValueReader implements N5Reader {
 	@Override
 	public String[] list(final String pathName) throws IOException {
 
-		final String normalPath = keyValueAccess.normalize(pathName);
+		final String normalPath = N5URL.normalizeGroupPath(pathName);
 		if (cacheMeta) {
 			return getCachedList(normalPath);
 		} else {

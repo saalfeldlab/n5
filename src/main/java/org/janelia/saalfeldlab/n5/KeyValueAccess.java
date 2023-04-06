@@ -73,8 +73,7 @@ public interface KeyValueAccess {
 
 	/**
 	 * Normalize a path to canonical form.  All paths pointing to the same
-	 * location return the same output.  This is most important for cached
-	 * data pointing at the same location getting the same key.
+	 * location return the same output.
 	 *
 	 * @param path
 	 * @return

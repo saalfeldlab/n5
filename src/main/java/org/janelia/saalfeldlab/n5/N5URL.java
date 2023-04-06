@@ -75,7 +75,7 @@ public class N5URL {
 	 */
 	public String normalizeGroupPath() {
 
-		return normalizePath(getGroupPath());
+		return normalizeGroupPath(getGroupPath());
 	}
 
 	/**
@@ -365,6 +365,24 @@ public class N5URL {
 				.filter(it -> !it.equals("."))
 				.filter(it -> !it.isEmpty())
 				.reduce((l, r) -> l + "/" + r).orElse("");
+	}
+
+	/**
+	 * Normalize a group path relative to a container's root, resulting in removal of redundant "/", "./", resolution of relative "../",
+	 * and removal of leading slashes.
+	 *
+	 * @param path to normalize
+	 * @return the normalized path
+	 */
+	public static String normalizeGroupPath( final String path ) {
+
+		/* Alternatively, could do something like the below in every KeyValueReader implementation
+		 *
+		 * return keyValueAccess.relativize( N5URL.normalizeGroupPath(path), basePath);
+		 *
+		 * has to be in the implementations, since KeyValueAccess doesn't have a basePath.
+		 */
+		return normalizePath(path.startsWith("/") || path.startsWith("\\") ? path.substring(1) : path);
 	}
 
 	/**
