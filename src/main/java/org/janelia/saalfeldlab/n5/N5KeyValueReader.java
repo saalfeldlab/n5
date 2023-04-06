@@ -143,23 +143,26 @@ public class N5KeyValueReader implements N5Reader {
 
 		final JsonElement attributes = getAttributes(normalPath);
 
-		final long[] dimensions = GsonUtils.readAttribute(attributes, DatasetAttributes.dimensionsKey, long[].class, gson);
+		final String normalPath = N5URL.normalizeGroupPath(pathName);
+		final JsonElement attributes = normalGetAttributes(normalPath);
+		return createDatasetAttributes(attributes);
+	}
+
+	private DatasetAttributes createDatasetAttributes(JsonElement attributes) {
+
+		final long[] dimensions = GsonUtils.readAttribute(attributes, DatasetAttributes.DIMENSIONS_KEY, long[].class, gson);
 		if (dimensions == null) {
-			setGroupInfoIsDataset(info, false);
 			return null;
 		}
 
-		final DataType dataType = GsonUtils.readAttribute(attributes, DatasetAttributes.dataTypeKey, DataType.class, gson);
+		final DataType dataType = GsonUtils.readAttribute(attributes, DatasetAttributes.DATA_TYPE_KEY, DataType.class, gson);
 		if (dataType == null) {
-			setGroupInfoIsDataset(info, false);
 			return null;
 		}
 
-		setGroupInfoIsDataset(info, true);
+		final int[] blockSize = GsonUtils.readAttribute(attributes, DatasetAttributes.BLOCK_SIZE_KEY, int[].class, gson);
 
-		final int[] blockSize = GsonUtils.readAttribute(attributes, DatasetAttributes.blockSizeKey, int[].class, gson);
-
-		final Compression compression = GsonUtils.readAttribute(attributes, DatasetAttributes.compressionKey, Compression.class, gson);
+		final Compression compression = GsonUtils.readAttribute(attributes, DatasetAttributes.COMPRESSION_KEY, Compression.class, gson);
 
 		/* version 0 */
 		final String compressionVersion0Name = compression
@@ -480,7 +483,7 @@ public class N5KeyValueReader implements N5Reader {
 	 * Check for attributes that are required for a group to be a dataset.
 	 *
 	 * @param attributes to check for dataset attributes
-	 * @return if {@link DatasetAttributes#dimensionsKey} and {@link DatasetAttributes#dataTypeKey} are present
+	 * @return if {@link DatasetAttributes#DIMENSIONS_KEY} and {@link DatasetAttributes#DATA_TYPE_KEY} are present
 	 */
 	protected static boolean hasDatasetAttributes(final JsonElement attributes) {
 
@@ -489,6 +492,6 @@ public class N5KeyValueReader implements N5Reader {
 		}
 
 		final JsonObject metadataCache = attributes.getAsJsonObject();
-		return metadataCache.has(DatasetAttributes.dimensionsKey) && metadataCache.has(DatasetAttributes.dataTypeKey);
+		return metadataCache.has(DatasetAttributes.DIMENSIONS_KEY) && metadataCache.has(DatasetAttributes.DATA_TYPE_KEY);
 	}
 }

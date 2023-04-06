@@ -45,10 +45,10 @@ public class DatasetAttributes implements Serializable {
 
 	private static final long serialVersionUID = -4521467080388947553L;
 
-	protected static final String dimensionsKey = "dimensions";
-	protected static final String blockSizeKey = "blockSize";
-	protected static final String dataTypeKey = "dataType";
-	protected static final String compressionKey = "compression";
+	public static final String DIMENSIONS_KEY = "dimensions";
+	public static final String BLOCK_SIZE_KEY = "blockSize";
+	public static final String DATA_TYPE_KEY = "dataType";
+	public static final String COMPRESSION_KEY = "compression";
 
 	/* version 0 */
 	protected static final String compressionTypeKey = "compressionType";
@@ -98,10 +98,10 @@ public class DatasetAttributes implements Serializable {
 	public HashMap<String, Object> asMap() {
 
 		final HashMap<String, Object> map = new HashMap<>();
-		map.put(dimensionsKey, dimensions);
-		map.put(blockSizeKey, blockSize);
-		map.put(dataTypeKey, dataType);
-		map.put(compressionKey, compression);
+		map.put(DIMENSIONS_KEY, dimensions);
+		map.put(BLOCK_SIZE_KEY, blockSize);
+		map.put(DATA_TYPE_KEY, dataType);
+		map.put(COMPRESSION_KEY, compression);
 		return map;
 	}
 }

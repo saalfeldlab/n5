@@ -86,19 +86,19 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 		final HashMap<String, JsonElement> map = getAttributes(pathName);
 		final Gson gson = getGson();
 
-		final long[] dimensions = GsonAttributesParser.parseAttribute(map, DatasetAttributes.dimensionsKey, long[].class, gson);
+		final long[] dimensions = GsonAttributesParser.parseAttribute(map, DatasetAttributes.DIMENSIONS_KEY, long[].class, gson);
 		if (dimensions == null)
 			return null;
 
-		final DataType dataType = GsonAttributesParser.parseAttribute(map, DatasetAttributes.dataTypeKey, DataType.class, gson);
+		final DataType dataType = GsonAttributesParser.parseAttribute(map, DatasetAttributes.DATA_TYPE_KEY, DataType.class, gson);
 		if (dataType == null)
 			return null;
 
-		int[] blockSize = GsonAttributesParser.parseAttribute(map, DatasetAttributes.blockSizeKey, int[].class, gson);
+		int[] blockSize = GsonAttributesParser.parseAttribute(map, DatasetAttributes.BLOCK_SIZE_KEY, int[].class, gson);
 		if (blockSize == null)
 			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
 
-		Compression compression = GsonAttributesParser.parseAttribute(map, DatasetAttributes.compressionKey, Compression.class, gson);
+		Compression compression = GsonAttributesParser.parseAttribute(map, DatasetAttributes.COMPRESSION_KEY, Compression.class, gson);
 
 		/* version 0 */
 		if (compression == null) {
