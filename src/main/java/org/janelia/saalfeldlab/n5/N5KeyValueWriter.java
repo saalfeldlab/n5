@@ -111,12 +111,12 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	@Override
 	public void createGroup(final String path) throws IOException {
 
-		final String normalPath = keyValueAccess.normalize(path);
+		final String normalPath = N5URL.normalizeGroupPath(path);
 		keyValueAccess.createDirectories(groupPath(normalPath));
 		if (cacheMeta) {
 			final String[] pathParts = keyValueAccess.components(normalPath);
 			if (pathParts.length > 1) {
-				String parent = keyValueAccess.normalize("/");
+				String parent = N5URL.normalizeGroupPath("/");
 				for (String child : pathParts) {
 					final String childPath = keyValueAccess.compose(parent, child);
 					cache.addChild(parent, child);
@@ -132,7 +132,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 			final String path,
 			final DatasetAttributes datasetAttributes) throws IOException {
 
-		final String normalPath = keyValueAccess.normalize(path);
+		final String normalPath = N5URL.normalizeGroupPath(path);
 		createGroup(path);
 		setDatasetAttributes(normalPath, datasetAttributes);
 	}
@@ -212,7 +212,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 			final String path,
 			final Map<String, ?> attributes) throws IOException {
 
-		final String normalPath = keyValueAccess.normalize(path);
+		final String normalPath = N5URL.normalizeGroupPath(path);
 		if (!exists(normalPath))
 			throw new N5Exception.N5IOException("" + normalPath + " is not a group or dataset.");
 
@@ -222,7 +222,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	@Override
 	public boolean removeAttribute(final String pathName, final String key) throws IOException {
 
-		final String normalPath = keyValueAccess.normalize(pathName);
+		final String normalPath = N5URL.normalizeGroupPath(pathName);
 		final String absoluteNormalPath = keyValueAccess.compose(basePath, normalPath);
 		final String normalKey = N5URL.normalizeAttributePath(key);
 
@@ -245,7 +245,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	@Override
 	public <T> T removeAttribute(final String pathName, final String key, final Class<T> cls) throws IOException {
 
-		final String normalPath = keyValueAccess.normalize(pathName);
+		final String normalPath = N5URL.normalizeGroupPath(pathName);
 		final String normalKey = N5URL.normalizeAttributePath(key);
 
 		final JsonElement attributes = getAttributes(normalPath);
@@ -259,7 +259,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	@Override
 	public boolean removeAttributes(final String pathName, final List<String> attributes) throws IOException {
 
-		final String normalPath = keyValueAccess.normalize(pathName);
+		final String normalPath = N5URL.normalizeGroupPath(pathName);
 		boolean removed = false;
 		for (final String attribute : attributes) {
 			final String normalKey = N5URL.normalizeAttributePath(attribute);
@@ -274,7 +274,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		final String blockPath = getDataBlockPath(keyValueAccess.normalize(path), dataBlock.getGridPosition());
+		final String blockPath = getDataBlockPath(N5URL.normalizeGroupPath(path), dataBlock.getGridPosition());
 		try (final LockedChannel lock = keyValueAccess.lockForWriting(blockPath)) {
 
 			DefaultBlockWriter.writeBlock(lock.newOutputStream(), datasetAttributes, dataBlock);
@@ -284,7 +284,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	@Override
 	public boolean remove(final String path) throws IOException {
 
-		final String normalPath = keyValueAccess.normalize(path);
+		final String normalPath = N5URL.normalizeGroupPath(path);
 		final String groupPath = groupPath(normalPath);
 		if (keyValueAccess.exists(groupPath))
 			keyValueAccess.delete(groupPath);
@@ -292,7 +292,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 			final String[] pathParts = keyValueAccess.components(normalPath);
 			final String parent;
 			if (pathParts.length <= 1) {
-				parent = keyValueAccess.normalize("/");
+				parent = N5URL.normalizeGroupPath("/");
 			} else {
 				final int parentPathLength = pathParts.length - 1;
 				parent = keyValueAccess.compose(Arrays.copyOf(pathParts, parentPathLength));
@@ -309,7 +309,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 			final String path,
 			final long... gridPosition) throws IOException {
 
-		final String blockPath = getDataBlockPath(keyValueAccess.normalize(path), gridPosition);
+		final String blockPath = getDataBlockPath(N5URL.normalizeGroupPath(path), gridPosition);
 		if (keyValueAccess.exists(blockPath))
 			keyValueAccess.delete(blockPath);
 
