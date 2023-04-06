@@ -26,7 +26,6 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +33,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
+import java.util.Arrays;
 
 /**
  * Filesystem {@link N5Writer} implementation with version compatibility check.
@@ -95,67 +96,6 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	}
 
 	/**
-	 * Helper method to create and cache a group.
-	 *
-	 * @param normalPath
-	 *            normalized group path without leading slash
-	 * @return
-	 * @throws IOException
-	 */
-	protected N5GroupInfo createCachedGroup(final String normalPath) throws IOException {
-
-		N5GroupInfo info = getCachedN5GroupInfo(normalPath);
-		if (info == emptyGroupInfo) {
-
-			/*
-			 * The directories may be created multiple times concurrently, but a
-			 * new cache entry is inserted only if none has been inserted in the
-			 * meantime (because that may already include more cached data).
-			 *
-			 * This avoids synchronizing on the cache for independent group
-			 * creation.
-			 */
-			keyValueAccess.createDirectories(groupPath(normalPath));
-			synchronized (metaCache) {
-				info = getCachedN5GroupInfo(normalPath);
-				if (info == emptyGroupInfo) {
-					info = new N5GroupInfo();
-					metaCache.put(normalPath, info);
-				}
-				for (String childPathName = normalPath; !(childPathName == null || childPathName.equals(""));) {
-					final String parentPathName = keyValueAccess.parent(childPathName);
-					if (parentPathName == null)
-						break;
-					N5GroupInfo parentInfo = getCachedN5GroupInfo(parentPathName);
-					if (parentInfo == emptyGroupInfo) {
-						parentInfo = new N5GroupInfo();
-						parentInfo.isDataset = false;
-						metaCache.put(parentPathName, parentInfo);
-					}
-					HashSet<String> children = parentInfo.children;
-					if (children == null) {
-						children = new HashSet<>();
-					}
-					synchronized (children) {
-						children
-								.add(
-										keyValueAccess.relativize(childPathName, parentPathName));
-						parentInfo.children = children;
-					}
-					childPathName = parentPathName;
-				}
-			}
-
-			/*
-			 * initialize after updating the cache so that the correct
-			 * N5GroupInfo instance can be updated if necessary.
-			 */
-			initializeGroup(normalPath);
-		}
-		return info;
-	}
-
-	/**
 	 * Performs any necessary initialization to ensure the key given by the
 	 * argument {@code normalPath} is a valid group after creation. Called by
 	 * {@link #createGroup(String)}.
@@ -172,16 +112,19 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	public void createGroup(final String path) throws IOException {
 
 		final String normalPath = keyValueAccess.normalize(path);
+		keyValueAccess.createDirectories(groupPath(normalPath));
 		if (cacheMeta) {
-			final N5GroupInfo info = createCachedGroup(normalPath);
-			synchronized (info) {
-				if (info.isDataset == null)
-					info.isDataset = false;
+			final String[] pathParts = keyValueAccess.components(normalPath);
+			if (pathParts.length > 1) {
+				String parent = keyValueAccess.normalize("/");
+				for (String child : pathParts) {
+					final String childPath = keyValueAccess.compose(parent, child);
+					cache.addChild(parent, child);
+					parent = childPath;
+				}
 			}
-		} else {
-			keyValueAccess.createDirectories(groupPath(normalPath));
-			initializeGroup(normalPath);
 		}
+		initializeGroup(normalPath);
 	}
 
 	@Override
@@ -190,16 +133,8 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 			final DatasetAttributes datasetAttributes) throws IOException {
 
 		final String normalPath = keyValueAccess.normalize(path);
-		if (cacheMeta) {
-			final N5GroupInfo info = createCachedGroup(normalPath);
-			synchronized (info) {
-				setDatasetAttributes(normalPath, datasetAttributes);
-				info.isDataset = true;
-			}
-		} else {
-			createGroup(path);
-			setDatasetAttributes(normalPath, datasetAttributes);
-		}
+		createGroup(path);
+		setDatasetAttributes(normalPath, datasetAttributes);
 	}
 
 	/**
@@ -220,11 +155,9 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 			final String normalGroupPath,
 			final JsonElement attributes) throws IOException {
 
-		try (final LockedChannel lock = keyValueAccess.lockForWriting(attributesPath(normalGroupPath))) {
-			final JsonElement root = GsonUtils
-					.insertAttribute(GsonUtils.readAttributes(lock.newReader(), gson), "/", attributes, gson);
-			GsonUtils.writeAttributes(lock.newWriter(), root, gson);
-		}
+		JsonElement root = getAttributes(normalGroupPath);
+		root = GsonUtils.insertAttribute(root, "/", attributes, gson);
+		writeAndCacheAttributes(normalGroupPath, root);
 	}
 
 	/**
@@ -243,54 +176,35 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 			final String normalGroupPath,
 			final Map<String, ?> attributes) throws IOException {
 
-		if (!attributes.isEmpty()) {
-			final JsonElement existingAttributes = getAttributes(normalGroupPath);
-			JsonElement newAttributes = existingAttributes != null && existingAttributes.isJsonObject()
+		if (attributes != null && !attributes.isEmpty()) {
+			JsonElement existingAttributes = getAttributes(normalGroupPath);
+			existingAttributes = existingAttributes != null && existingAttributes.isJsonObject()
 					? existingAttributes.getAsJsonObject()
 					: new JsonObject();
-			newAttributes = GsonUtils.insertAttributes(newAttributes, attributes, gson);
-			writeAttributes(normalGroupPath, newAttributes);
+			JsonElement newAttributes = GsonUtils.insertAttributes(existingAttributes, attributes, gson);
+			writeAndCacheAttributes(normalGroupPath, newAttributes);
 		}
 	}
 
-	/**
-	 * Helper method to cache and write attributes.
-	 *
-	 * @param normalPath
-	 *            normalized group path without leading slash
-	 * @param attributes
-	 * @return
-	 * @throws IOException
-	 */
-	protected N5GroupInfo setCachedAttributes(
-			final String normalPath,
-			final Map<String, ?> attributes) throws IOException {
+	private void writeAndCacheAttributes(final String normalGroupPath, final JsonElement attributes) throws IOException {
 
-		final N5GroupInfo info = getN5GroupInfo(normalPath);
-		final JsonElement metadata = getAttributes(normalPath);
-		synchronized (info) {
-			/*
-			 * Necessary ensure `nulls` are treated consistently regardless of
-			 * reading from the cache or not
-			 */
-			info.attributesCache = gson.toJsonTree(GsonUtils.insertAttributes(metadata, attributes, gson));
-			writeAttributes(normalPath, info.attributesCache);
-			info.isDataset = hasDatasetAttributes(info.attributesCache);
+		try (final LockedChannel lock = keyValueAccess.lockForWriting(attributesPath(normalGroupPath))) {
+			GsonUtils.writeAttributes(lock.newWriter(), attributes, gson);
 		}
-		return info;
-	}
-
-	private N5GroupInfo getN5GroupInfo(final String normalPath) throws IOException {
-
-		N5GroupInfo info = getCachedN5GroupInfo(normalPath);
-		if (info == emptyGroupInfo) {
-			synchronized (metaCache) {
-				info = getCachedN5GroupInfo(normalPath);
-				if (info == emptyGroupInfo)
-					throw new IOException("N5 group '" + normalPath + "' does not exist. Cannot set attributes.");
+		if (cacheMeta) {
+			JsonElement nullRespectingAttributes = attributes;
+			/* Gson only filters out nulls when you write the JsonElement. This means it doesn't filter them out when caching.
+			* To handle this, we explicitly writer the existing JsonElement to a new JsonElement.
+			* The output is identical to the input if:
+			* 	- serializeNulls is true
+			* 	- no null values are present
+			* 	- cacheing is turned off */
+			if (!gson.serializeNulls()) {
+				nullRespectingAttributes = gson.toJsonTree(attributes);
 			}
+			/* Update the cache, and write to the writer */
+			cache.updateCacheInfo(normalGroupPath, N5JsonCache.jsonFile, nullRespectingAttributes);
 		}
-		return info;
 	}
 
 	@Override
@@ -302,10 +216,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 		if (!exists(normalPath))
 			throw new N5Exception.N5IOException("" + normalPath + " is not a group or dataset.");
 
-		if (cacheMeta)
-			setCachedAttributes(normalPath, attributes);
-		else
-			writeAttributes(normalPath, attributes);
+		writeAttributes(normalPath, attributes);
 	}
 
 	@Override
@@ -375,42 +286,22 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 
 		final String normalPath = keyValueAccess.normalize(path);
 		final String groupPath = groupPath(normalPath);
+		if (keyValueAccess.exists(groupPath))
+			keyValueAccess.delete(groupPath);
 		if (cacheMeta) {
-			removeCachedGroup(normalPath, groupPath);
-		} else {
-			if (keyValueAccess.exists(groupPath))
-				keyValueAccess.delete(groupPath);
+			final String[] pathParts = keyValueAccess.components(normalPath);
+			final String parent;
+			if (pathParts.length <= 1) {
+				parent = keyValueAccess.normalize("/");
+			} else {
+				final int parentPathLength = pathParts.length - 1;
+				parent = keyValueAccess.compose(Arrays.copyOf(pathParts, parentPathLength));
+			}
+			cache.removeCache(parent, normalPath);
 		}
 
 		/* an IOException should have occurred if anything had failed midway */
 		return true;
-	}
-
-	private void removeCachedGroup(final String normalPath, final String groupPath) throws IOException {
-
-		synchronized (metaCache) {
-			if (keyValueAccess.exists(groupPath)) {
-				keyValueAccess.delete(groupPath);
-
-				/* cache nonexistence for all prior children */
-				for (final String key : metaCache.keySet()) {
-					if (key.startsWith(normalPath))
-						metaCache.put(key, emptyGroupInfo);
-				}
-
-				/* remove child from parent */
-				final String parentPath = keyValueAccess.parent(normalPath);
-				final N5GroupInfo parent = metaCache.get(parentPath);
-				if (parent != null) {
-					final HashSet<String> children = parent.children;
-					if (children != null) {
-						synchronized (children) {
-							children.remove(keyValueAccess.relativize(normalPath, parentPath));
-						}
-					}
-				}
-			}
-		}
 	}
 
 	@Override
