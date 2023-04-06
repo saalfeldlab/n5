@@ -75,7 +75,7 @@ public class N5URL {
 	 */
 	public String normalizeGroupPath() {
 
-		return normalizePath(getGroupPath());
+		return normalizeGroupPath(getGroupPath());
 	}
 
 	/**
@@ -368,6 +368,24 @@ public class N5URL {
 	}
 
 	/**
+	 * Normalize a group path relative to a container's root, resulting in removal of redundant "/", "./", resolution of relative "../",
+	 * and removal of leading slashes.
+	 *
+	 * @param path to normalize
+	 * @return the normalized path
+	 */
+	public static String normalizeGroupPath( final String path ) {
+
+		/* Alternatively, could do something like the below in every KeyValueReader implementation
+		 *
+		 * return keyValueAccess.relativize( N5URL.normalizeGroupPath(path), basePath);
+		 *
+		 * has to be in the implementations, since KeyValueAccess doesn't have a basePath.
+		 */
+		return normalizePath(path.startsWith("/") || path.startsWith("\\") ? path.substring(1) : path);
+	}
+
+	/**
 	 * Normalize the {@link String attributePath}.
 	 * <p>
 	 * Attribute paths have a few of special characters:
@@ -433,7 +451,6 @@ public class N5URL {
 		final Pattern relativePathPattern = Pattern.compile(
 				"((?<=/)/+|(?<=(/|^))(\\./)+|((/|(?<=/))\\.)$|(?<!(^|\\\\))/$|(?<=(/|^))[^/]+(?<!(/|(/|^)\\.\\.))/\\.\\./?)");
 		int prevStringLenth = 0;
-//		String resolvedAttributePath = attrPathRemoveRedundantSeparators;
 		String resolvedAttributePath = attrPathPlusIndexSeparators;
 		while (prevStringLenth != resolvedAttributePath.length()) {
 			prevStringLenth = resolvedAttributePath.length();
