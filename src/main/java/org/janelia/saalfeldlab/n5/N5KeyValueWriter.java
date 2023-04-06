@@ -300,7 +300,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 
 		final String normalPath = keyValueAccess.normalize(path);
 		if (!exists(normalPath))
-			throw new IOException("" + normalPath + " is not a group or dataset.");
+			throw new N5Exception.N5IOException("" + normalPath + " is not a group or dataset.");
 
 		if (cacheMeta)
 			setCachedAttributes(normalPath, attributes);

@@ -199,7 +199,7 @@ public abstract class AbstractN5Test {
 		try (final N5Writer writer = createN5Writer()) {
 			final String testGroup = "/group/should/not/exit";
 			assertFalse(writer.exists(testGroup));
-			assertThrows(IOException.class, () -> writer.setAttribute(testGroup, "test", "test"));
+			assertThrows(N5Exception.N5IOException.class, () -> writer.setAttribute(testGroup, "test", "test"));
 			assertFalse(writer.exists(testGroup));
 		}
 	}
@@ -1101,7 +1101,7 @@ public abstract class AbstractN5Test {
 			final Version version = writer.getVersion();
 			assertFalse(N5Reader.VERSION.isCompatible(version));
 
-			assertThrows(IOException.class, () -> createN5Writer( writer.getBasePath() ));
+			assertThrows(N5Exception.N5IOException.class, () -> createN5Writer( writer.getBasePath() ));
 
 			final Version compatibleVersion = new Version(N5Reader.VERSION.getMajor(), N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch());
 			writer.setAttribute("/", N5Reader.VERSION_KEY, compatibleVersion.toString());
@@ -1134,14 +1134,14 @@ public abstract class AbstractN5Test {
 			writer.removeAttribute("/", "/");
 			writer.setAttribute("/", N5Reader.VERSION_KEY,
 					new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
-			assertThrows("Incompatible version throws error", IOException.class,
+			assertThrows("Incompatible version throws error", N5Exception.N5IOException.class,
 					() -> {
 						createN5Reader(canonicalPath);
 					});
 			writer.remove();
 		}
 		// non-existent group should fail
-		assertThrows("Non-existant location throws error", IOException.class,
+		assertThrows("Non-existant location throws error", N5Exception.N5IOException.class,
 				() -> {
 					final N5Reader test = createN5Reader(canonicalPath);
 					test.list("/");

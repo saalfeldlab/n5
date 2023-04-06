@@ -106,7 +106,7 @@ public class N5KeyValueReader implements N5Reader {
 		/* Check that version (if there is one) is compatible. */
 		final Version version = getVersion();
 		if (!VERSION.isCompatible(version))
-			throw new IOException("Incompatible version " + version + " (this is " + VERSION + ").");
+			throw new N5Exception.N5IOException("Incompatible version " + version + " (this is " + VERSION + ").");
 	}
 
 	public Gson getGson() {
@@ -284,7 +284,7 @@ public class N5KeyValueReader implements N5Reader {
 	}
 
 	@Override
-	public boolean datasetExists(final String pathName) throws IOException {
+	public boolean datasetExists(final String pathName) throws N5Exception.N5IOException {
 
 		if (cacheMeta) {
 			final String normalPathName = keyValueAccess.normalize(pathName);
@@ -323,10 +323,9 @@ public class N5KeyValueReader implements N5Reader {
 			return null;
 
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(attributesPath)) {
-			final JsonElement attributes = GsonUtils.readAttributes(lockedChannel.newReader(), gson);
-			/* If we are reading from the access, update the cache*/
-			groupInfo.attributesCache = attributes;
-			return attributes;
+			return GsonUtils.readAttributes(lockedChannel.newReader(), gson);
+		} catch (IOException e) {
+			throw new N5Exception.N5IOException("Cannot open lock for Reading", e);
 		}
 	}
 

@@ -182,7 +182,7 @@ public interface GsonUtils {
 	 * <li>Object[]</li>
 	 * </ul>
 	 */
-	static Map<String, Class<?>> listAttributes(final JsonElement root) throws IOException {
+	static Map<String, Class<?>> listAttributes(final JsonElement root) throws N5Exception.N5IOException {
 
 		if (root == null || !root.isJsonObject()) {
 			return null;

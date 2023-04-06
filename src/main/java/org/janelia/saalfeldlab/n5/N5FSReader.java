@@ -68,7 +68,7 @@ public class N5FSReader extends N5KeyValueReader {
 				cacheMeta);
 
 		if( !exists("/"))
-			throw new IOException("No container exists at " + basePath );
+			throw new N5Exception.N5IOException("No container exists at " + basePath );
 	}
 
 	/**
