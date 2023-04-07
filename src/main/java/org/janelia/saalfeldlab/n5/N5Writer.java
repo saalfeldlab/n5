@@ -169,8 +169,9 @@ public interface N5Writer extends N5Reader {
 			final String pathName,
 			final DatasetAttributes datasetAttributes) throws IOException {
 
-		createGroup(pathName);
-		setDatasetAttributes(pathName, datasetAttributes);
+		final String normalPath = N5URL.normalizeGroupPath(pathName);
+		createGroup(normalPath);
+		setDatasetAttributes(normalPath, datasetAttributes);
 	}
 
 	/**
