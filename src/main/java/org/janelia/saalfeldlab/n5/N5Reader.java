@@ -684,29 +684,13 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Creates a group path by concatenating all nodes with the node separator
-	 * defined by {@link #getGroupSeparator()}. The string will not have a
-	 * leading or trailing node separator symbol.
-	 *
+	 * Returns an absolute path to a group by concatenating all nodes with the node separator
+	 * defined by {@link #getGroupSeparator()}.
 	 * @param nodes
 	 * @return
 	 */
-	default String groupPath(final String... nodes) {
+	String groupPath(final String... nodes);
 
-		if (nodes == null || nodes.length == 0)
-			return "";
-
-		final String groupSeparator = getGroupSeparator();
-		final StringBuilder builder = new StringBuilder(nodes[0]);
-
-		for (int i = 1; i < nodes.length; ++i) {
-
-			builder.append(groupSeparator);
-			builder.append(nodes[i]);
-		}
-
-		return builder.toString();
-	}
 
 	/**
 	 * Default implementation of {@link AutoCloseable#close()} for all
