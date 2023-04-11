@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -353,6 +354,14 @@ public class N5KeyValueReader implements N5Reader {
 	protected String groupPath(final String normalGroupPath) {
 
 		return keyValueAccess.compose(basePath, normalGroupPath);
+	}
+
+	@Override
+	public String groupPath(String... nodes) {
+
+		// alternatively call compose twice, once with this functions inputs, then pass the result to the other groupPath method 
+		// this impl assumes streams and array building are less expensive than keyValueAccess composition (may not always be true)
+		return keyValueAccess.compose(Stream.concat(Stream.of(basePath), Arrays.stream(nodes)).toArray(String[]::new));
 	}
 
 	/**
