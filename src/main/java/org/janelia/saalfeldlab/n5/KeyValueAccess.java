@@ -106,7 +106,7 @@ public interface KeyValueAccess {
 	 * 		efforts are made to normalize it.
 	 * @return true if the path is a file
 	 */
-	public boolean isFile(String normalPath);
+	public boolean isFile(String normalPath); // TODO: Looks un-used. Remove?
 
 	/**
 	 * Create a lock on a path for reading.  This isn't meant to be kept
@@ -159,7 +159,7 @@ public interface KeyValueAccess {
 	 * @return the the child paths
 	 * @throws IOException the exception
 	 */
-	public String[] list(final String normalPath) throws IOException;
+	public String[] list(final String normalPath) throws IOException; // TODO: Looks un-used. Remove?
 
 	/**
 	 * Create a directory and all parent paths along the way.  The directory
