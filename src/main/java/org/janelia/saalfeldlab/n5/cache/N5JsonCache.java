@@ -152,6 +152,7 @@ public class N5JsonCache {
 			}
 			cacheInfo.isGroup = getIsGroup.apply(normalPathKey);
 			cacheInfo.isDataset = getIsDataset.apply(normalPathKey);
+			cacheInfo.attributesCache.put(normalCacheKey, readBackingAttributes.apply(normalPathKey, normalCacheKey));
 			addChild(cacheInfo, normalPathKey);
 		}
 		synchronized (containerPathToCache) {
@@ -165,7 +166,7 @@ public class N5JsonCache {
 		Collections.addAll(cacheInfo.children, children);
 	}
 
-	private void addNewCacheInfo(String normalPathKey) {
+	private N5CacheInfo addNewCacheInfo(String normalPathKey) {
 
 		final N5CacheInfo cacheInfo;
 		if (!getExists.apply(normalPathKey)) {
@@ -179,6 +180,7 @@ public class N5JsonCache {
 		synchronized (containerPathToCache) {
 			containerPathToCache.put(normalPathKey, cacheInfo);
 		}
+		return cacheInfo;
 	}
 
 	public void updateCacheInfo(final String normalPathKey, final String normalCacheKey) {
@@ -218,6 +220,33 @@ public class N5JsonCache {
 			cacheInfo.children.clear();
 			addChild(cacheInfo, normalPathKey);
 		}
+
+		synchronized (containerPathToCache) {
+			containerPathToCache.put(normalPathKey, cacheInfo);
+		}
+	}
+
+	public void setCacheInfo( final String normalPathKey, final String normalCacheKey, final JsonElement attributes, final boolean isGroup, final boolean isDataset ) {
+
+		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
+		if (cacheInfo == null )
+			cacheInfo = addNewCacheInfo(normalPathKey);
+
+		cacheInfo.isGroup = isGroup;
+		cacheInfo.isDataset = isDataset;
+		cacheInfo.attributesCache.put( normalCacheKey, attributes );
+		synchronized (containerPathToCache) {
+			containerPathToCache.put(normalPathKey, cacheInfo);
+		}
+	}
+
+	public void setCacheAttributes( final String normalPathKey, final String normalCacheKey, final JsonElement attributes ) {
+
+		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
+		if (cacheInfo == null )
+			cacheInfo = addNewCacheInfo(normalPathKey);
+
+		cacheInfo.attributesCache.put( normalCacheKey, attributes );
 		synchronized (containerPathToCache) {
 			containerPathToCache.put(normalPathKey, cacheInfo);
 		}
