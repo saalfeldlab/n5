@@ -89,7 +89,7 @@ public interface DataBlock<T> {
 	 * modifying the data object of this data block after calling this method
 	 * may or may not change the content of the {@link ByteBuffer}.
 	 *
-	 * @param buffer
+	 * @param buffer the byte buffer
 	 */
 	public void readData(final ByteBuffer buffer);
 

@@ -65,11 +65,12 @@ public class N5KeyValueReader implements N5Reader {
 
 	/**
 	 * Opens an {@link N5KeyValueReader} at a given base path with a custom
-	 * {@link GsonBuilder} to support custom attributes.
+	 * {@link GsonBuilder} to support custom attributes. Storage is managed by 
+	 * the given {@link KeyValueAccess}.
 	 *
-	 * @param keyValueAccess
+	 * @param keyValueAccess the key value access
 	 * @param basePath N5 base path
-	 * @param gsonBuilder
+	 * @param gsonBuilder the gson builder
 	 * @param cacheMeta cache attributes and meta data
 	 *    Setting this to true avoids frequent reading and parsing of JSON
 	 *    encoded attributes and other meta data that requires accessing the

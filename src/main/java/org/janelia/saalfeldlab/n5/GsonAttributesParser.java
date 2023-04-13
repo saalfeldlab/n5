@@ -67,6 +67,8 @@ public interface GsonAttributesParser extends N5Reader {
 	 * @param map the attributes map
 	 * @param key the key
 	 * @param clazz the class
+	 * @param gson the gson
+	 * @param <T> the attribute type
 	 * @return the attribute
 	 * @throws IOException the exception
 	 */
@@ -90,6 +92,8 @@ public interface GsonAttributesParser extends N5Reader {
 	 * @param map the attributes map
 	 * @param key the key
 	 * @param type the type 
+	 * @param gson the gson
+	 * @param <T> the attribute type
 	 * @return the attribute
 	 * @throws IOException the exception
 	 */
@@ -111,6 +115,7 @@ public interface GsonAttributesParser extends N5Reader {
 	 * Reads the attributes map from a given {@link Reader}.
 	 *
 	 * @param reader the reader
+	 * @param gson the gson
 	 * @return the attributes map
 	 * @throws IOException the exception
 	 */
@@ -145,6 +150,7 @@ public interface GsonAttributesParser extends N5Reader {
 	 *
 	 * @param writer the writer
 	 * @param map the attributes map
+	 * @param gson the gson
 	 * @throws IOException the exception
 	 */
 	@Deprecated

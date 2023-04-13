@@ -83,7 +83,7 @@ public interface N5Reader extends AutoCloseable {
 		 * If the version string is null or not a SemVer version, this
 		 * version will be "0.0.0"
 		 * </p>
-		 * @param versionString
+		 * @param versionString the string representation of the version
 		 */
 		public Version(final String versionString) {
 
@@ -278,7 +278,9 @@ public interface N5Reader extends AutoCloseable {
 	 *
 	 * @param dataset      the dataset path
 	 * @param attributes   the dataset attributes
+	 * @param <T> 		   the data block type
 	 * @param gridPosition the grid position
+	 * @return the data block
 	 * @throws IOException            the io exception
 	 * @throws ClassNotFoundException the class not found exception
 	 */
@@ -455,6 +457,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @param datasetsOnly true if only dataset paths should be returned
 	 * @param filter a dataset filter
 	 * @return the list of all children
+	 * @throws IOException the exception
 	 */
 	static ArrayList<String> deepList(
 			final N5Reader n5,
@@ -532,36 +535,36 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Recursively list all datasets in the given group, in
-	 * parallel, using the given {@link ExecutorService}. Only paths that
-	 * satisfy the provided filter will be included, but the children of paths
-	 * that were excluded may be included (filter does not apply to the
-	 * subtree).
+	 * Recursively list all datasets in the given group, in parallel, using the
+	 * given {@link ExecutorService}. Only paths that satisfy the provided filter
+	 * will be included, but the children of paths that were excluded may be
+	 * included (filter does not apply to the subtree).
 	 *
-	 * <p>This method delivers the same results as</p>
+	 * <p>
+	 * This method delivers the same results as
+	 * </p>
+	 * 
 	 * <pre>{@code
-	 * n5.deepList(
-	 *   prefix,
-	 *   a -> {
-	 *     try { return n5.datasetExists(a) && filter.test(a); }
-	 *     catch (final IOException e) { return false; }
-	 *   },
-	 *   exec);
+	 * n5.deepList(prefix, a -> {
+	 * 	try {
+	 * 		return n5.datasetExists(a) && filter.test(a);
+	 * 	} catch (final IOException e) {
+	 * 		return false;
+	 * 	}
+	 * }, exec);
 	 * }</pre>
-	 * <p>but will execute {@link #datasetExists(String)} only once per node.
-	 * This can be relevant for performance on high latency backends such as
-	 * cloud stores.</p>
+	 * <p>
+	 * but will execute {@link #datasetExists(String)} only once per node. This can
+	 * be relevant for performance on high latency backends such as cloud stores.
+	 * </p>
 	 *
-	 * @param pathName
-	 *            base group path
-	 * @param filter
-	 *            filter for datasets to be included
-	 * @param executor
-	 *            executor service
+	 * @param pathName base group path
+	 * @param filter   filter for datasets to be included
+	 * @param executor executor service
 	 * @return list of datasets
-	 * @throws IOException
-	 * @throws ExecutionException
-	 * @throws InterruptedException
+	 * @throws IOException          the io exception
+	 * @throws ExecutionException   the execution exception
+	 * @throws InterruptedException the interrupted exception
 	 */
 	default String[] deepListDatasets(
 			final String pathName,
@@ -585,31 +588,33 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Recursively list all datasets in the given group, in
-	 * parallel, using the given {@link ExecutorService}.
+	 * Recursively list all datasets in the given group, in parallel, using the
+	 * given {@link ExecutorService}.
 	 *
-	 * <p>This method delivers the same results as</p>
+	 * <p>
+	 * This method delivers the same results as
+	 * </p>
+	 * 
 	 * <pre>{@code
-	 * n5.deepList(
-	 *   prefix,
-	 *   a -> {
-	 *     try { return n5.datasetExists(a); }
-	 *     catch (final IOException e) { return false; }
-	 *   },
-	 *   exec);
+	 * n5.deepList(prefix, a -> {
+	 * 	try {
+	 * 		return n5.datasetExists(a);
+	 * 	} catch (final IOException e) {
+	 * 		return false;
+	 * 	}
+	 * }, exec);
 	 * }</pre>
-	 * <p>but will execute {@link #datasetExists(String)} only once per node.
-	 * This can be relevant for performance on high latency backends such as
-	 * cloud stores.</p>
+	 * <p>
+	 * but will execute {@link #datasetExists(String)} only once per node. This can
+	 * be relevant for performance on high latency backends such as cloud stores.
+	 * </p>
 	 *
-	 * @param pathName
-	 *            base group path
-	 * @param executor
-	 *            executor service
+	 * @param pathName base group path
+	 * @param executor executor service
 	 * @return list of groups
-	 * @throws IOException
-	 * @throws ExecutionException
-	 * @throws InterruptedException
+	 * @throws IOException          the io exception
+	 * @throws ExecutionException   the execution exception
+	 * @throws InterruptedException the interrupted exception
 	 */
 	default String[] deepListDatasets(
 			final String pathName,

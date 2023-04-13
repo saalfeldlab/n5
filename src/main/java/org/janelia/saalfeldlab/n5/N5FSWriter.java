@@ -48,7 +48,7 @@ public class N5FSWriter extends N5KeyValueWriter implements N5Writer {
 	 * will be set to the current N5 version of this implementation.
 	 *
 	 * @param basePath n5 base path
-	 * @param gsonBuilder
+	 * @param gsonBuilder the gson builder
 	 * @param cacheAttributes cache attributes and meta data
 	 *    Setting this to true avoids frequent reading and parsing of JSON
 	 *    encoded attributes and other meta data that requires accessing the
@@ -110,7 +110,7 @@ public class N5FSWriter extends N5KeyValueWriter implements N5Writer {
 	 * </p>
 	 *
 	 * @param basePath n5 base path
-	 * @param gsonBuilder
+	 * @param gsonBuilder the gson builder
 	 *
 	 * @throws IOException
 	 *    if the base path cannot be written to or cannot be created,

@@ -47,7 +47,8 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 
 	/**
 	 * Opens an {@link N5KeyValueWriter} at a given base path with a custom
-	 * {@link GsonBuilder} to support custom attributes.
+	 * {@link GsonBuilder} to support custom attributes. Storage is managed by 
+	 * the given {@link KeyValueAccess}.
 	 * <p>
 	 * If the base path does not exist, it will be created.
 	 * <p>
@@ -55,10 +56,10 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	 * compatible with this implementation, the N5 version of this container
 	 * will be set to the current N5 version of this implementation.
 	 *
-	 * @param keyValueAccess
+	 * @param keyValueAccess the key value access
 	 * @param basePath
 	 *            n5 base path
-	 * @param gsonBuilder
+	 * @param gsonBuilder the gson builder
 	 * @param cacheAttributes
 	 *            Setting this to true avoids frequent reading and parsing of
 	 *            JSON encoded attributes, this is most interesting for high
