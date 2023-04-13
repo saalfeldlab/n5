@@ -183,6 +183,9 @@ public interface GsonUtils {
 	 * <li>String[]</li>
 	 * <li>Object[]</li>
 	 * </ul>
+	 * 
+	 * @param root the json element
+	 * @return the attribute map
 	 */
 	static Map<String, Class<?>> listAttributes(final JsonElement root) throws N5Exception.N5IOException {
 
@@ -464,11 +467,12 @@ public interface GsonUtils {
 	 * <p>
 	 * If {@code root} is not a {@link JsonObject}, then it is overwritten with an object containing {@code "normalizedAttributePath": attribute }
 	 *
-	 * @param writer
-	 * @param root
-	 * @param normalizedAttributePath
-	 * @param attribute
-	 * @param gson
+	 * @param writer the writer
+	 * @param root the root json element
+	 * @param normalizedAttributePath the attribute path
+	 * @param attribute the attribute
+	 * @param gson the gson
+	 * @param <T> the attribute type
 	 * @throws IOException the exception
 	 */
 	static <T> void writeAttribute(
@@ -486,8 +490,10 @@ public interface GsonUtils {
 	 * Writes the attributes JsonElemnt to a given {@link Writer}.
 	 * This will overwrite any existing attributes.
 	 *
-	 * @param writer
-	 * @param root
+	 * @param writer the writer
+	 * @param root the root json element
+	 * @param gson the gson
+	 * @param <T> the attribute type
 	 * @throws IOException the exception
 	 */
 	static <T> void writeAttributes(

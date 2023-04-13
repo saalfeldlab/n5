@@ -46,7 +46,7 @@ public class N5FSReader extends N5KeyValueReader {
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
 	 * @param basePath N5 base path
-	 * @param gsonBuilder
+	 * @param gsonBuilder the gson builder
 	 * @param cacheMeta cache attributes and meta data
 	 *    Setting this to true avoids frequent reading and parsing of JSON
 	 *    encoded attributes and other meta data that requires accessing the
@@ -97,7 +97,7 @@ public class N5FSReader extends N5KeyValueReader {
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
 	 * @param basePath N5 base path
-	 * @param gsonBuilder
+	 * @param gsonBuilder the gson builder
 	 * @throws IOException
 	 *    if the base path cannot be read or does not exist,
 	 *    if the N5 version of the container is not compatible with this

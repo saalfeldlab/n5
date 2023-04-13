@@ -294,7 +294,7 @@ public class N5KeyValueReader implements N5Reader {
 	/**
 	 * @param normalPath normalized path name
 	 * @return the normalized groups in {@code normalPath}
-	 * @throws IOException
+	 * @throws N5Exception.N5IOException the exception
 	 */
 	protected String[] normalList(final String normalPath) throws N5Exception.N5IOException {
 

@@ -175,13 +175,14 @@ public interface N5Writer extends N5Reader {
 	}
 
 	/**
-	 * Creates a dataset. This does not create any data but the path and
-	 * mandatory attributes only.
+	 * Creates a dataset. This does not create any data but the path and mandatory
+	 * attributes only.
 	 *
-	 * @param pathName dataset path
-	 * @param dimensions the dataset dimensions
-	 * @param blockSize the block size
-	 * @param dataType the data type
+	 * @param pathName    dataset path
+	 * @param dimensions  the dataset dimensions
+	 * @param blockSize   the block size
+	 * @param dataType    the data type
+	 * @param compression the compression
 	 * @throws IOException the exception
 	 */
 	default void createDataset(
@@ -197,9 +198,10 @@ public interface N5Writer extends N5Reader {
 	/**
 	 * Writes a {@link DataBlock}.
 	 *
-	 * @param pathName dataset path
+	 * @param pathName          dataset path
 	 * @param datasetAttributes the dataset attributes
-	 * @param dataBlock the data block
+	 * @param dataBlock         the data block
+	 * @param <T>               the data block data type
 	 * @throws IOException the exception
 	 */
 	<T> void writeBlock(
@@ -211,13 +213,14 @@ public interface N5Writer extends N5Reader {
 	/**
 	 * Deletes the block at {@code gridPosition}
 	 *
-	 * @param pathName dataset path
+	 * @param pathName     dataset path
 	 * @param gridPosition position of block to be deleted
 	 * @throws IOException the exception
 	 *
-	 * @return {@code true} if the block at {@code gridPosition} is "empty" after deletion. The meaning of "empty" is
-	 * implementation dependent. For example "empty" means that no file exists on the file system for the deleted block
-	 * in case of the file system implementation.
+	 * @return {@code true} if the block at {@code gridPosition} is "empty" after
+	 *         deletion. The meaning of "empty" is implementation dependent. For
+	 *         example "empty" means that no file exists on the file system for the
+	 *         deleted block in case of the file system implementation.
 	 *
 	 */
 	boolean deleteBlock(
@@ -225,13 +228,13 @@ public interface N5Writer extends N5Reader {
 			final long... gridPosition) throws IOException;
 
 	/**
-	 * Save a {@link Serializable} as an N5 {@link DataBlock} at a given
-	 * offset. The offset is given in {@link DataBlock} grid coordinates.
+	 * Save a {@link Serializable} as an N5 {@link DataBlock} at a given offset. The
+	 * offset is given in {@link DataBlock} grid coordinates.
 	 *
-	 * @param object the object to serialize
-	 * @param dataset the dataset path
+	 * @param object            the object to serialize
+	 * @param dataset           the dataset path
 	 * @param datasetAttributes the dataset attributes
-	 * @param gridPosition the grid position
+	 * @param gridPosition      the grid position
 	 * @throws IOException the exception
 	 */
 	default void writeSerializedBlock(

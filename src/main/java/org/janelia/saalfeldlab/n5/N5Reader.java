@@ -624,17 +624,18 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Helper method for parallel deep listing.  This method is not part of the
-	 * public API and is accessible only because Java 8 does not support
-	 * private interface methods yet.
+	 * Helper method for parallel deep listing. This method is not part of the
+	 * public API and is accessible only because Java 8 does not support private
+	 * interface methods yet.
 	 *
 	 * TODO make private when committing to Java versions newer than 8
 	 *
-	 * @param n5
-	 * @param path
-	 * @param filter
-	 * @param executor
-	 * @param datasetFutures
+	 * @param n5             the n5 reader
+	 * @param path           the base path
+	 * @param datasetsOnly   true if only dataset paths should be returned
+	 * @param filter         filter for datasets to be included
+	 * @param executor       the executor service
+	 * @param datasetFutures result futures
 	 */
 	static void deepListHelper(
 			final N5Reader n5,
