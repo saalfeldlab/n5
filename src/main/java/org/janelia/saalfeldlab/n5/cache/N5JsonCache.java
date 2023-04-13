@@ -13,7 +13,6 @@ public class N5JsonCache {
 	public static final N5CacheInfo emptyCacheInfo = new N5CacheInfo();
 	public static final String jsonFile = "attributes.json";
 
-
 	/**
 	 * Data object for caching meta data.  Elements that are null are not yet
 	 * cached.

@@ -61,9 +61,9 @@ public interface GsonUtils {
 	/**
 	 * Reads the attributes json from a given {@link Reader}.
 	 *
-	 * @param reader
+	 * @param reader the reader
 	 * @return the root {@link JsonObject} of the attributes
-	 * @throws IOException
+	 * @throws IOException the exception
 	 */
 	static JsonElement readAttributes(final Reader reader, final Gson gson) throws IOException {
 
@@ -83,13 +83,13 @@ public interface GsonUtils {
 	}
 
 	/**
-	 * Deserialize the {@code attribute} as {@link Type type} {@link T}.
+	 * Deserialize the {@code attribute} as {@link Type type} {@code T}.
 	 *
 	 * @param attribute to deserialize as {@link Type type}
 	 * @param gson      used to deserialize {@code attribute}
 	 * @param type      to desrialize {@code attribute} as
 	 * @param <T>       return type represented by {@link Type type}
-	 * @return the deserialized attribute object, or {@code null} if {@code attribute} cannot deserialize to {@link T}
+	 * @return the deserialized attribute object, or {@code null} if {@code attribute} cannot deserialize to {@code T}
 	 */
 	static <T> T parseAttributeElement(final JsonElement attribute, final Gson gson, final Type type) {
 
@@ -131,10 +131,11 @@ public interface GsonUtils {
 	}
 
 	/**
-	 * Return the attribute at {@code normalizedAttributePath} as a {@link JsonElement}.
-	 * Does not attempt to parse the attribute.
+	 * Return the attribute at {@code normalizedAttributePath} as a
+	 * {@link JsonElement}. Does not attempt to parse the attribute.
 	 *
-	 * @param root                    to search for the {@link JsonElement} at location {@code normalizedAttributePath}
+	 * @param root                    to search for the {@link JsonElement} at
+	 *                                location {@code normalizedAttributePath}
 	 * @param normalizedAttributePath to the attribute
 	 * @return the attribute as a {@link JsonElement}.
 	 */
@@ -319,8 +320,8 @@ public interface GsonUtils {
 	 * <li>Object</li>
 	 * </ul>
 	 *
-	 * @param jsonPrimitive
-	 * @return
+	 * @param jsonPrimitive the json primitive
+	 * @return the class
 	 */
 	static Class<?> classForJsonPrimitive(final JsonPrimitive jsonPrimitive) {
 
@@ -339,12 +340,12 @@ public interface GsonUtils {
 	}
 
 	/**
-	 * If there is an attribute in {@code root} such that it can be parsed and desrialized as {@link T},
+	 * If there is an attribute in {@code root} such that it can be parsed and deserialized as {@code T},
 	 * then remove it from {@code root}, write {@code root} to the {@code writer}, and return the removed attribute.
 	 * <p>
-	 * If there is an attribute at the location specified by {@code normalizedAttributePath} but it cannot be deserialized to {@link T}, then it is not removed.
+	 * If there is an attribute at the location specified by {@code normalizedAttributePath} but it cannot be deserialized to {@code T}, then it is not removed.
 	 * <p>
-	 * If nothing is removed, then {@code root} is not writen to the {@code writer}.
+	 * If nothing is removed, then {@code root} is not written to the {@code writer}.
 	 *
 	 * @param writer                  to write the modified {@code root} to after removal of the attribute
 	 * @param root                    to remove the attribute from
@@ -353,7 +354,7 @@ public interface GsonUtils {
 	 * @param gson                    to deserialize the attribute with
 	 * @param <T>                     of the removed attribute
 	 * @return the removed attribute, or null if nothing removed
-	 * @throws IOException
+	 * @throws IOException the exception
 	 */
 	static <T> T removeAttribute(
 			final Writer writer,
@@ -393,10 +394,10 @@ public interface GsonUtils {
 	}
 
 	/**
-	 * If there is an attribute in {@code root} such that it can be parsed and desrialized as {@link T},
+	 * If there is an attribute in {@code root} such that it can be parsed and desrialized as {@code T},
 	 * then remove it from {@code root} and return the removed attribute.
 	 * <p>
-	 * If there is an attribute at the location specified by {@code normalizedAttributePath} but it cannot be deserialized to {@link T}, then it is not removed.
+	 * If there is an attribute at the location specified by {@code normalizedAttributePath} but it cannot be deserialized to {@code T}, then it is not removed.
 	 *
 	 * @param root                    to remove the attribute from
 	 * @param normalizedAttributePath to the attribute location
@@ -468,7 +469,7 @@ public interface GsonUtils {
 	 * @param normalizedAttributePath
 	 * @param attribute
 	 * @param gson
-	 * @throws IOException
+	 * @throws IOException the exception
 	 */
 	static <T> void writeAttribute(
 			final Writer writer,
@@ -487,7 +488,7 @@ public interface GsonUtils {
 	 *
 	 * @param writer
 	 * @param root
-	 * @throws IOException
+	 * @throws IOException the exception
 	 */
 	static <T> void writeAttributes(
 			final Writer writer,

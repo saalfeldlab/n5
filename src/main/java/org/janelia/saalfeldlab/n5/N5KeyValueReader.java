@@ -244,8 +244,8 @@ public class N5KeyValueReader implements N5Reader {
 	 * Reads or creates the attributes map of a group or dataset.
 	 *
 	 * @param pathName group path
-	 * @return
-	 * @throws IOException
+	 * @return the json element
+	 * @throws IOException the exception
 	 */
 	public JsonElement getAttributes(final String pathName) throws IOException {
 
@@ -327,8 +327,8 @@ public class N5KeyValueReader implements N5Reader {
 	 * This is the file into which the data block will be stored.
 	 *
 	 * @param normalPath normalized dataset path
-	 * @param gridPosition
-	 * @return
+	 * @param gridPosition the grid position
+	 * @return the block path
 	 */
 	protected String getDataBlockPath(
 			final String normalPath,

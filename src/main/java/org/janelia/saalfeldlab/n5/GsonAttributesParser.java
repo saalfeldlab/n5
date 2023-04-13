@@ -55,8 +55,8 @@ public interface GsonAttributesParser extends N5Reader {
 	 * Reads or creates the attributes map of a group or dataset.
 	 *
 	 * @param pathName group path
-	 * @return
-	 * @throws IOException
+	 * @return the attributes
+	 * @throws IOException the exception
 	 */
 	@Deprecated
 	public HashMap<String, JsonElement> getAttributes(final String pathName) throws IOException;
@@ -64,11 +64,11 @@ public interface GsonAttributesParser extends N5Reader {
 	/**
 	 * Parses an attribute from the given attributes map.
 	 *
-	 * @param map
-	 * @param key
-	 * @param clazz
-	 * @return
-	 * @throws IOException
+	 * @param map the attributes map
+	 * @param key the key
+	 * @param clazz the class
+	 * @return the attribute
+	 * @throws IOException the exception
 	 */
 	@Deprecated
 	public static <T> T parseAttribute(
@@ -87,11 +87,11 @@ public interface GsonAttributesParser extends N5Reader {
 	/**
 	 * Parses an attribute from the given attributes map.
 	 *
-	 * @param map
-	 * @param key
-	 * @param type
-	 * @return
-	 * @throws IOException
+	 * @param map the attributes map
+	 * @param key the key
+	 * @param type the type 
+	 * @return the attribute
+	 * @throws IOException the exception
 	 */
 	@Deprecated
 	public static <T> T parseAttribute(
@@ -110,9 +110,9 @@ public interface GsonAttributesParser extends N5Reader {
 	/**
 	 * Reads the attributes map from a given {@link Reader}.
 	 *
-	 * @param reader
-	 * @return
-	 * @throws IOException
+	 * @param reader the reader
+	 * @return the attributes map
+	 * @throws IOException the exception
 	 */
 	@Deprecated
 	public static HashMap<String, JsonElement> readAttributes(final Reader reader, final Gson gson) throws IOException {
@@ -125,10 +125,10 @@ public interface GsonAttributesParser extends N5Reader {
 	/**
 	 * Inserts new the JSON export of attributes into the given attributes map.
 	 *
-	 * @param map
-	 * @param attributes
-	 * @param gson
-	 * @throws IOException
+	 * @param map the target attributes map to be edited
+	 * @param attributes the source attributes map
+	 * @param gson the gson
+	 * @throws IOException the exception
 	 */
 	@Deprecated
 	public static void insertAttributes(
@@ -143,9 +143,9 @@ public interface GsonAttributesParser extends N5Reader {
 	/**
 	 * Writes the attributes map to a given {@link Writer}.
 	 *
-	 * @param writer
-	 * @param map
-	 * @throws IOException
+	 * @param writer the writer
+	 * @param map the attributes map
+	 * @throws IOException the exception
 	 */
 	@Deprecated
 	public static void writeAttributes(
@@ -168,8 +168,8 @@ public interface GsonAttributesParser extends N5Reader {
 	 * <li>Object</li>
 	 * </ul>
 	 *
-	 * @param jsonPrimitive
-	 * @return
+	 * @param jsonPrimitive the json
+	 * @return the class
 	 */
 	@Deprecated
 	public static Class<?> classForJsonPrimitive(final JsonPrimitive jsonPrimitive) {
@@ -201,6 +201,9 @@ public interface GsonAttributesParser extends N5Reader {
 	 * <li>String[]</li>
 	 * <li>Object[]</li>
 	 * </ul>
+	 * 
+	 * @param pathName the path
+	 * @return the attributes map
 	 */
 	@Override
 	@Deprecated

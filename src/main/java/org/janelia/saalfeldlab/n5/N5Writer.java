@@ -46,9 +46,10 @@ public interface N5Writer extends N5Reader {
 	 * Sets an attribute.
 	 *
 	 * @param pathName group path
-	 * @param key
-	 * @param attribute
-	 * @throws IOException
+	 * @param key the key
+	 * @param attribute the attribute
+	 * @param <T> the attribute type type
+	 * @throws IOException the exception
 	 */
 	default <T> void setAttribute(
 			final String pathName,
@@ -62,8 +63,8 @@ public interface N5Writer extends N5Reader {
 	 * Sets a map of attributes.
 	 *
 	 * @param pathName group path
-	 * @param attributes
-	 * @throws IOException
+	 * @param attributes the attribute map
+	 * @throws IOException the exception
 	 */
 	void setAttributes(
 			final String pathName,
@@ -75,35 +76,35 @@ public interface N5Writer extends N5Reader {
 	 * @param pathName group path
 	 * @param key of attribute to remove
 	 * @return true if attribute removed, else false
-	 * @throws IOException
+	 * @throws IOException the exception
 	 */
 	boolean removeAttribute(String pathName, String key) throws IOException;
 
 	/**
-	 * Remove the attribute from group {@code pathName} with key {@code key} and type {@link T}.
+	 * Remove the attribute from group {@code pathName} with key {@code key} and type {@code T}.
 	 * <p>
-	 * If an attribute at {@code pathName} and {@code key} exists, but is not of type {@link T}, it is not removed.
+	 * If an attribute at {@code pathName} and {@code key} exists, but is not of type {@code T}, it is not removed.
 	 *
 	 * @param pathName group path
 	 * @param key of attribute to remove
 	 * @param clazz of the attribute to remove
 	 * @param <T> of the attribute
-	 * @return the removed attribute, as {@link T}, or {@code null} if no matching attribute
-	 * @throws IOException
+	 * @return the removed attribute, as {@code T}, or {@code null} if no matching attribute
+	 * @throws IOException the exception
 	 */
 	<T> T removeAttribute(String pathName, String key, Class<T> clazz) throws IOException;
 
 	/**
 	 * Remove attributes as provided by {@code attributes}.
 	 * <p>
-	 * If any element of {@code attributes} does not exist, it wil be ignored.
+	 * If any element of {@code attributes} does not exist, it will be ignored.
 	 * If at least one attribute from {@code attributes} is removed, this will return {@code true}.
 	 *
 	 *
 	 * @param pathName group path
 	 * @param attributes to remove
 	 * @return true if any of the listed attributes were removed
-	 * @throws IOException
+	 * @throws IOException the exception
 	 */
 	boolean removeAttributes( String pathName, List<String> attributes) throws IOException;
 
@@ -111,8 +112,8 @@ public interface N5Writer extends N5Reader {
 	 * Sets mandatory dataset attributes.
 	 *
 	 * @param pathName dataset path
-	 * @param datasetAttributes
-	 * @throws IOException
+	 * @param datasetAttributes the dataset attributse
+	 * @throws IOException the exception
 	 */
 	default void setDatasetAttributes(
 			final String pathName,
@@ -124,8 +125,8 @@ public interface N5Writer extends N5Reader {
 	/**
 	 * Creates a group (directory)
 	 *
-	 * @param pathName
-	 * @throws IOException
+	 * @param pathName the path
+	 * @throws IOException the exception
 	 */
 	void createGroup(final String pathName) throws IOException;
 
@@ -142,7 +143,7 @@ public interface N5Writer extends N5Reader {
 	 *
 	 * @param pathName group path
 	 * @return true if removal was successful, false otherwise
-	 * @throws IOException
+	 * @throws IOException the exception
 	 */
 	boolean remove(final String pathName) throws IOException;
 
@@ -150,7 +151,7 @@ public interface N5Writer extends N5Reader {
 	 * Removes the N5 container.
 	 *
 	 * @return true if removal was successful, false otherwise
-	 * @throws IOException
+	 * @throws IOException the exception
 	 */
 	default boolean remove() throws IOException {
 
@@ -162,8 +163,8 @@ public interface N5Writer extends N5Reader {
 	 * mandatory attributes only.
 	 *
 	 * @param pathName dataset path
-	 * @param datasetAttributes
-	 * @throws IOException
+	 * @param datasetAttributes the dataset attributes
+	 * @throws IOException the exception
 	 */
 	default void createDataset(
 			final String pathName,
@@ -174,14 +175,14 @@ public interface N5Writer extends N5Reader {
 	}
 
 	/**
-	 * Creates a dataset.  This does not create any data but the path and
+	 * Creates a dataset. This does not create any data but the path and
 	 * mandatory attributes only.
 	 *
 	 * @param pathName dataset path
-	 * @param dimensions
-	 * @param blockSize
-	 * @param dataType
-	 * @throws IOException
+	 * @param dimensions the dataset dimensions
+	 * @param blockSize the block size
+	 * @param dataType the data type
+	 * @throws IOException the exception
 	 */
 	default void createDataset(
 			final String pathName,
@@ -197,9 +198,9 @@ public interface N5Writer extends N5Reader {
 	 * Writes a {@link DataBlock}.
 	 *
 	 * @param pathName dataset path
-	 * @param datasetAttributes
-	 * @param dataBlock
-	 * @throws IOException
+	 * @param datasetAttributes the dataset attributes
+	 * @param dataBlock the data block
+	 * @throws IOException the exception
 	 */
 	<T> void writeBlock(
 			final String pathName,
@@ -212,7 +213,7 @@ public interface N5Writer extends N5Reader {
 	 *
 	 * @param pathName dataset path
 	 * @param gridPosition position of block to be deleted
-	 * @throws IOException
+	 * @throws IOException the exception
 	 *
 	 * @return {@code true} if the block at {@code gridPosition} is "empty" after deletion. The meaning of "empty" is
 	 * implementation dependent. For example "empty" means that no file exists on the file system for the deleted block
@@ -227,11 +228,11 @@ public interface N5Writer extends N5Reader {
 	 * Save a {@link Serializable} as an N5 {@link DataBlock} at a given
 	 * offset. The offset is given in {@link DataBlock} grid coordinates.
 	 *
-	 * @param object
-	 * @param dataset
-	 * @param datasetAttributes
-	 * @param gridPosition
-	 * @throws IOException
+	 * @param object the object to serialize
+	 * @param dataset the dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param gridPosition the grid position
+	 * @throws IOException the exception
 	 */
 	default void writeSerializedBlock(
 			final Serializable object,
