@@ -43,28 +43,28 @@ public interface LockedChannel extends Closeable {
 	/**
 	 * Create a UTF-8 {@link Reader}.
 	 *
-	 * @return
-	 * @throws IOException
+	 * @return the reader
+	 * @throws IOException the exception
 	 */
 	public Reader newReader() throws IOException;
 
 	/**
 	 * Create a new {@link InputStream}.
 	 *
-	 * @return
-	 * @throws IOException
+	 * @return the reader
+	 * @throws IOException the exception
 	 */
 	public InputStream newInputStream() throws IOException;
 
 	/**
 	 * Create a new UTF-8 {@link Writer}.
-	 * @return
+	 * @return the writer
 	 */
 	public Writer newWriter() throws IOException;
 
 	/**
 	 * Create a new {@link OutputStream}.
-	 * @return
+	 * @return the output stream
 	 */
 	public OutputStream newOutputStream() throws IOException;
 }

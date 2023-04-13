@@ -89,7 +89,7 @@ public interface DataBlock<T> {
 	 * modifying the data object of this data block after calling this method
 	 * may or may not change the content of the {@link ByteBuffer}.
 	 *
-	 * @param buffer
+	 * @param buffer the byte buffer
 	 */
 	public void readData(final ByteBuffer buffer);
 
@@ -98,15 +98,15 @@ public interface DataBlock<T> {
 	 * not necessarily equal {@link #getNumElements(int[])
 	 * getNumElements(getSize())}.
 	 *
-	 * @return
+	 * @return the number of elements
 	 */
 	public int getNumElements();
 
 	/**
 	 * Returns the number of elements in a box of given size.
 	 *
-	 * @param size
-	 * @return
+	 * @param size the size
+	 * @return the number of elements
 	 */
 	public static int getNumElements(final int[] size) {
 		int n = size[0];

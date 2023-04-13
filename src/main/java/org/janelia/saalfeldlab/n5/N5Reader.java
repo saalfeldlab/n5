@@ -83,7 +83,7 @@ public interface N5Reader extends AutoCloseable {
 		 * If the version string is null or not a SemVer version, this
 		 * version will be "0.0.0"
 		 * </p>
-		 * @param versionString
+		 * @param versionString the string representation of the version
 		 */
 		public Version(final String versionString) {
 
@@ -173,8 +173,8 @@ public interface N5Reader extends AutoCloseable {
 		 * Currently, this means that the version is less than or equal to
 		 * 1.X.X.
 		 *
-		 * @param version
-		 * @return
+		 * @param version the version
+		 * @return true if this version is compatible
 		 */
 		public boolean isCompatible(final Version version) {
 
@@ -201,8 +201,8 @@ public interface N5Reader extends AutoCloseable {
 	 * such as 1.2, the missing elements are filled with 0, i.e. 1.2.0 in this
 	 * case.
 	 *
-	 * @return
-	 * @throws IOException
+	 * @return the version
+	 * @throws IOException the exception
 	 */
 	default Version getVersion() throws IOException {
 
@@ -219,13 +219,12 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Reads an attribute.
 	 *
-	 * @param pathName
-	 *            group path
-	 * @param key
-	 * @param clazz
-	 *            attribute class
-	 * @return
-	 * @throws IOException
+	 * @param pathName group path
+	 * @param key      the key
+	 * @param clazz    attribute class
+	 * @param <T>      the attribute type
+	 * @return the attribute
+	 * @throws IOException the exception
 	 */
 	<T> T getAttribute(
 			final String pathName,
@@ -237,11 +236,12 @@ public interface N5Reader extends AutoCloseable {
 	 *
 	 * @param pathName
 	 *            group path
-	 * @param key
+	 * @param key the key
 	 * @param type
 	 *            attribute Type (use this for specifying generic types)
-	 * @return
-	 * @throws IOException
+	 * @param <T>      the attribute type
+	 * @return the attribute 
+	 * @throws IOException the exception
 	 */
 	<T> T getAttribute(
 			final String pathName,
@@ -251,23 +251,21 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Get mandatory dataset attributes.
 	 *
-	 * @param pathName
-	 *            dataset path
-	 * @return dataset attributes or null if either dimensions or dataType are
-	 *         not set
-	 * @throws IOException
+	 * @param pathName dataset path
+	 * @return dataset attributes or null if either dimensions or dataType are not
+	 *         set
+	 * @throws IOException the exception
 	 */
 	DatasetAttributes getDatasetAttributes(final String pathName) throws IOException;
 
 	/**
 	 * Reads a {@link DataBlock}.
 	 *
-	 * @param pathName
-	 *            dataset path
-	 * @param datasetAttributes
-	 * @param gridPosition
-	 * @return
-	 * @throws IOException
+	 * @param pathName          dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param gridPosition      the grid position
+	 * @return the data block
+	 * @throws IOException the exception
 	 */
 	DataBlock<?> readBlock(
 			final String pathName,
@@ -275,14 +273,16 @@ public interface N5Reader extends AutoCloseable {
 			final long... gridPosition) throws IOException;
 
 	/**
-	 * Load a {@link DataBlock} as a {@link Serializable}. The offset is given
-	 * in {@link DataBlock} grid coordinates.
+	 * Load a {@link DataBlock} as a {@link Serializable}. The offset is given in
+	 * {@link DataBlock} grid coordinates.
 	 *
-	 * @param dataset
-	 * @param attributes
-	 * @param gridPosition
-	 * @throws IOException
-	 * @throws ClassNotFoundException
+	 * @param dataset      the dataset path
+	 * @param attributes   the dataset attributes
+	 * @param <T> 		   the data block type
+	 * @param gridPosition the grid position
+	 * @return the data block
+	 * @throws IOException            the io exception
+	 * @throws ClassNotFoundException the class not found exception
 	 */
 	@SuppressWarnings("unchecked")
 	default <T> T readSerializedBlock(
@@ -301,21 +301,19 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Test whether a group or dataset exists.
+	 * Test whether a group or dataset exists at a given path.
 	 *
-	 * @param pathName
-	 *            group path
-	 * @return
+	 * @param pathName group path
+	 * @return true if the path exists
 	 */
 	boolean exists(final String pathName);
 
 	/**
 	 * Test whether a dataset exists.
 	 *
-	 * @param pathName
-	 *            dataset path
-	 * @return
-	 * @throws IOException
+	 * @param pathName dataset path
+	 * @return true if a dataset exists
+	 * @throws IOException the exception
 	 */
 	default boolean datasetExists(final String pathName) throws IOException {
 
@@ -325,10 +323,9 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * List all groups (including datasets) in a group.
 	 *
-	 * @param pathName
-	 *            group path
-	 * @return
-	 * @throws IOException
+	 * @param pathName group path
+	 * @return list of children
+	 * @throws IOException the exception
 	 */
 	String[] list(final String pathName) throws IOException;
 
@@ -344,7 +341,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @param filter
 	 *            filter for children to be included
 	 * @return list of groups
-	 * @throws IOException
+	 * @throws IOException the exception
 	 */
 	default String[] deepList(
 			final String pathName,
@@ -365,10 +362,9 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Recursively list all groups (including datasets) in the given group.
 	 *
-	 * @param pathName
-	 *            base group path
+	 * @param pathName base group path
 	 * @return list of groups
-	 * @throws IOException
+	 * @throws IOException the exception
 	 */
 	default String[] deepList(final String pathName) throws IOException {
 
@@ -376,30 +372,32 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Recursively list all datasets in the given group.
-	 * Only paths that satisfy the provided filter will be included, but the
-	 * children of paths that were excluded may be included (filter does not
-	 * apply to the subtree).
+	 * Recursively list all datasets in the given group. Only paths that satisfy the
+	 * provided filter will be included, but the children of paths that were
+	 * excluded may be included (filter does not apply to the subtree).
 	 *
-	 * <p>This method delivers the same results as</p>
+	 * <p>
+	 * This method delivers the same results as
+	 * </p>
+	 * 
 	 * <pre>{@code
-	 * n5.deepList(
-	 *   prefix,
-	 *   a -> {
-	 *     try { return n5.datasetExists(a) && filter.test(a); }
-	 *     catch (final IOException e) { return false; }
-	 *   });
+	 * n5.deepList(prefix, a -> {
+	 * 	try {
+	 * 		return n5.datasetExists(a) && filter.test(a);
+	 * 	} catch (final IOException e) {
+	 * 		return false;
+	 * 	}
+	 * });
 	 * }</pre>
-	 * <p>but will execute {@link #datasetExists(String)} only once per node.
-	 * This can be relevant for performance on high latency backends such as
-	 * cloud stores.</p>
+	 * <p>
+	 * but will execute {@link #datasetExists(String)} only once per node. This can
+	 * be relevant for performance on high latency backends such as cloud stores.
+	 * </p>
 	 *
-	 * @param pathName
-	 *            base group path
-	 * @param filter
-	 *            filter for datasets to be included
+	 * @param pathName base group path
+	 * @param filter   filter for datasets to be included
 	 * @return list of groups
-	 * @throws IOException
+	 * @throws IOException the exception
 	 */
 	default String[] deepListDatasets(
 			final String pathName,
@@ -420,23 +418,27 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Recursively list all including datasets in the given group.
 	 *
-	 * <p>This method delivers the same results as</p>
+	 * <p>
+	 * This method delivers the same results as
+	 * </p>
+	 * 
 	 * <pre>{@code
-	 * n5.deepList(
-	 *   prefix,
-	 *   a -> {
-	 *     try { return n5.datasetExists(a); }
-	 *     catch (final IOException e) { return false; }
-	 *   });
+	 * n5.deepList(prefix, a -> {
+	 * 	try {
+	 * 		return n5.datasetExists(a);
+	 * 	} catch (final IOException e) {
+	 * 		return false;
+	 * 	}
+	 * });
 	 * }</pre>
-	 * <p>but will execute {@link #datasetExists(String)} only once per node.
-	 * This can be relevant for performance on high latency backends such as
-	 * cloud stores.</p>
+	 * <p>
+	 * but will execute {@link #datasetExists(String)} only once per node. This can
+	 * be relevant for performance on high latency backends such as cloud stores.
+	 * </p>
 	 *
-	 * @param pathName
-	 *            base group path
+	 * @param pathName base group path
 	 * @return list of groups
-	 * @throws IOException
+	 * @throws IOException the exception
 	 */
 	default String[] deepListDatasets(final String pathName) throws IOException {
 
@@ -449,6 +451,13 @@ public interface N5Reader extends AutoCloseable {
 	 * private interface methods yet.
 	 *
 	 * TODO make private when committing to Java versions newer than 8
+	 * 
+	 * @param n5 the n5 reader
+	 * @param pathName the base group path
+	 * @param datasetsOnly true if only dataset paths should be returned
+	 * @param filter a dataset filter
+	 * @return the list of all children
+	 * @throws IOException the exception
 	 */
 	static ArrayList<String> deepList(
 			final N5Reader n5,
@@ -474,21 +483,17 @@ public interface N5Reader extends AutoCloseable {
 
 	/**
 	 * Recursively list all groups (including datasets) in the given group, in
-	 * parallel, using the given {@link ExecutorService}. Only paths that
-	 * satisfy the provided filter will be included, but the children of paths
-	 * that were excluded may be included (filter does not apply to the
-	 * subtree).
+	 * parallel, using the given {@link ExecutorService}. Only paths that satisfy
+	 * the provided filter will be included, but the children of paths that were
+	 * excluded may be included (filter does not apply to the subtree).
 	 *
-	 * @param pathName
-	 *            base group path
-	 * @param filter
-	 *            filter for children to be included
-	 * @param executor
-	 *            executor service
+	 * @param pathName base group path
+	 * @param filter   filter for children to be included
+	 * @param executor executor service
 	 * @return list of datasets
-	 * @throws IOException
-	 * @throws ExecutionException
-	 * @throws InterruptedException
+	 * @throws IOException          the io exception
+	 * @throws ExecutionException   the execution exception
+	 * @throws InterruptedException the interrupted exception
 	 */
 	default String[] deepList(
 			final String pathName,
@@ -515,14 +520,12 @@ public interface N5Reader extends AutoCloseable {
 	 * Recursively list all groups (including datasets) in the given group, in
 	 * parallel, using the given {@link ExecutorService}.
 	 *
-	 * @param pathName
-	 *            base group path
-	 * @param executor
-	 *            executor service
+	 * @param pathName base group path
+	 * @param executor executor service
 	 * @return list of groups
-	 * @throws IOException
-	 * @throws ExecutionException
-	 * @throws InterruptedException
+	 * @throws IOException          the io exception
+	 * @throws ExecutionException   the execution exception
+	 * @throws InterruptedException the interrupted exception
 	 */
 	default String[] deepList(
 			final String pathName,
@@ -532,36 +535,36 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Recursively list all datasets in the given group, in
-	 * parallel, using the given {@link ExecutorService}. Only paths that
-	 * satisfy the provided filter will be included, but the children of paths
-	 * that were excluded may be included (filter does not apply to the
-	 * subtree).
+	 * Recursively list all datasets in the given group, in parallel, using the
+	 * given {@link ExecutorService}. Only paths that satisfy the provided filter
+	 * will be included, but the children of paths that were excluded may be
+	 * included (filter does not apply to the subtree).
 	 *
-	 * <p>This method delivers the same results as</p>
+	 * <p>
+	 * This method delivers the same results as
+	 * </p>
+	 * 
 	 * <pre>{@code
-	 * n5.deepList(
-	 *   prefix,
-	 *   a -> {
-	 *     try { return n5.datasetExists(a) && filter.test(a); }
-	 *     catch (final IOException e) { return false; }
-	 *   },
-	 *   exec);
+	 * n5.deepList(prefix, a -> {
+	 * 	try {
+	 * 		return n5.datasetExists(a) && filter.test(a);
+	 * 	} catch (final IOException e) {
+	 * 		return false;
+	 * 	}
+	 * }, exec);
 	 * }</pre>
-	 * <p>but will execute {@link #datasetExists(String)} only once per node.
-	 * This can be relevant for performance on high latency backends such as
-	 * cloud stores.</p>
+	 * <p>
+	 * but will execute {@link #datasetExists(String)} only once per node. This can
+	 * be relevant for performance on high latency backends such as cloud stores.
+	 * </p>
 	 *
-	 * @param pathName
-	 *            base group path
-	 * @param filter
-	 *            filter for datasets to be included
-	 * @param executor
-	 *            executor service
+	 * @param pathName base group path
+	 * @param filter   filter for datasets to be included
+	 * @param executor executor service
 	 * @return list of datasets
-	 * @throws IOException
-	 * @throws ExecutionException
-	 * @throws InterruptedException
+	 * @throws IOException          the io exception
+	 * @throws ExecutionException   the execution exception
+	 * @throws InterruptedException the interrupted exception
 	 */
 	default String[] deepListDatasets(
 			final String pathName,
@@ -585,31 +588,33 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Recursively list all datasets in the given group, in
-	 * parallel, using the given {@link ExecutorService}.
+	 * Recursively list all datasets in the given group, in parallel, using the
+	 * given {@link ExecutorService}.
 	 *
-	 * <p>This method delivers the same results as</p>
+	 * <p>
+	 * This method delivers the same results as
+	 * </p>
+	 * 
 	 * <pre>{@code
-	 * n5.deepList(
-	 *   prefix,
-	 *   a -> {
-	 *     try { return n5.datasetExists(a); }
-	 *     catch (final IOException e) { return false; }
-	 *   },
-	 *   exec);
+	 * n5.deepList(prefix, a -> {
+	 * 	try {
+	 * 		return n5.datasetExists(a);
+	 * 	} catch (final IOException e) {
+	 * 		return false;
+	 * 	}
+	 * }, exec);
 	 * }</pre>
-	 * <p>but will execute {@link #datasetExists(String)} only once per node.
-	 * This can be relevant for performance on high latency backends such as
-	 * cloud stores.</p>
+	 * <p>
+	 * but will execute {@link #datasetExists(String)} only once per node. This can
+	 * be relevant for performance on high latency backends such as cloud stores.
+	 * </p>
 	 *
-	 * @param pathName
-	 *            base group path
-	 * @param executor
-	 *            executor service
+	 * @param pathName base group path
+	 * @param executor executor service
 	 * @return list of groups
-	 * @throws IOException
-	 * @throws ExecutionException
-	 * @throws InterruptedException
+	 * @throws IOException          the io exception
+	 * @throws ExecutionException   the execution exception
+	 * @throws InterruptedException the interrupted exception
 	 */
 	default String[] deepListDatasets(
 			final String pathName,
@@ -619,17 +624,18 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Helper method for parallel deep listing.  This method is not part of the
-	 * public API and is accessible only because Java 8 does not support
-	 * private interface methods yet.
+	 * Helper method for parallel deep listing. This method is not part of the
+	 * public API and is accessible only because Java 8 does not support private
+	 * interface methods yet.
 	 *
 	 * TODO make private when committing to Java versions newer than 8
 	 *
-	 * @param n5
-	 * @param path
-	 * @param filter
-	 * @param executor
-	 * @param datasetFutures
+	 * @param n5             the n5 reader
+	 * @param path           the base path
+	 * @param datasetsOnly   true if only dataset paths should be returned
+	 * @param filter         filter for datasets to be included
+	 * @param executor       the executor service
+	 * @param datasetFutures result futures
 	 */
 	static void deepListHelper(
 			final N5Reader n5,
@@ -666,17 +672,16 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * List all attributes and their class of a group.
 	 *
-	 * @param pathName
-	 *            group path
-	 * @return
-	 * @throws IOException
+	 * @param pathName group path
+	 * @return the attribute map
+	 * @throws IOException the exception
 	 */
 	Map<String, Class<?>> listAttributes(final String pathName) throws IOException;
 
 	/**
 	 * Returns the symbol that is used to separate nodes in a group path.
 	 *
-	 * @return
+	 * @return the group separator
 	 */
 	default String getGroupSeparator() {
 
@@ -684,29 +689,13 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Creates a group path by concatenating all nodes with the node separator
-	 * defined by {@link #getGroupSeparator()}. The string will not have a
-	 * leading or trailing node separator symbol.
-	 *
-	 * @param nodes
-	 * @return
+	 * Returns an absolute path to a group by concatenating all nodes with the node separator
+	 * defined by {@link #getGroupSeparator()}.
+	 * @param nodes the group components 
+	 * @return the absolute group path
 	 */
-	default String groupPath(final String... nodes) {
+	String groupPath(final String... nodes);
 
-		if (nodes == null || nodes.length == 0)
-			return "";
-
-		final String groupSeparator = getGroupSeparator();
-		final StringBuilder builder = new StringBuilder(nodes[0]);
-
-		for (int i = 1; i < nodes.length; ++i) {
-
-			builder.append(groupSeparator);
-			builder.append(nodes[i]);
-		}
-
-		return builder.toString();
-	}
 
 	/**
 	 * Default implementation of {@link AutoCloseable#close()} for all

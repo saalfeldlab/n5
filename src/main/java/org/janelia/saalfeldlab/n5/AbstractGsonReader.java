@@ -51,7 +51,7 @@ public abstract class AbstractGsonReader implements GsonAttributesParser, N5Read
 	 * Constructs an {@link AbstractGsonReader} with a custom
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
-	 * @param gsonBuilder
+	 * @param gsonBuilder the gson builder
 	 */
 	@Deprecated
 	public AbstractGsonReader(final GsonBuilder gsonBuilder) {

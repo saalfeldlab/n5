@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -64,11 +65,12 @@ public class N5KeyValueReader implements N5Reader {
 
 	/**
 	 * Opens an {@link N5KeyValueReader} at a given base path with a custom
-	 * {@link GsonBuilder} to support custom attributes.
+	 * {@link GsonBuilder} to support custom attributes. Storage is managed by 
+	 * the given {@link KeyValueAccess}.
 	 *
-	 * @param keyValueAccess
+	 * @param keyValueAccess the key value access
 	 * @param basePath N5 base path
-	 * @param gsonBuilder
+	 * @param gsonBuilder the gson builder
 	 * @param cacheMeta cache attributes and meta data
 	 *    Setting this to true avoids frequent reading and parsing of JSON
 	 *    encoded attributes and other meta data that requires accessing the
@@ -243,8 +245,8 @@ public class N5KeyValueReader implements N5Reader {
 	 * Reads or creates the attributes map of a group or dataset.
 	 *
 	 * @param pathName group path
-	 * @return
-	 * @throws IOException
+	 * @return the json element
+	 * @throws IOException the exception
 	 */
 	public JsonElement getAttributes(final String pathName) throws IOException {
 
@@ -292,7 +294,7 @@ public class N5KeyValueReader implements N5Reader {
 	/**
 	 * @param normalPath normalized path name
 	 * @return the normalized groups in {@code normalPath}
-	 * @throws IOException
+	 * @throws N5Exception.N5IOException the exception
 	 */
 	protected String[] normalList(final String normalPath) throws N5Exception.N5IOException {
 
@@ -326,8 +328,8 @@ public class N5KeyValueReader implements N5Reader {
 	 * This is the file into which the data block will be stored.
 	 *
 	 * @param normalPath normalized dataset path
-	 * @param gridPosition
-	 * @return
+	 * @param gridPosition the grid position
+	 * @return the block path
 	 */
 	protected String getDataBlockPath(
 			final String normalPath,
@@ -353,6 +355,14 @@ public class N5KeyValueReader implements N5Reader {
 	protected String groupPath(final String normalGroupPath) {
 
 		return keyValueAccess.compose(basePath, normalGroupPath);
+	}
+
+	@Override
+	public String groupPath(String... nodes) {
+
+		// alternatively call compose twice, once with this functions inputs, then pass the result to the other groupPath method 
+		// this impl assumes streams and array building are less expensive than keyValueAccess composition (may not always be true)
+		return keyValueAccess.compose(Stream.concat(Stream.of(basePath), Arrays.stream(nodes)).toArray(String[]::new));
 	}
 
 	/**

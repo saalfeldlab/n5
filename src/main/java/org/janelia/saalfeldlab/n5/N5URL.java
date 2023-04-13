@@ -98,6 +98,7 @@ public class N5URL {
 	 * Parse this {@link N5URL} as a {@link LinkedAttributePathToken}.
 	 *
 	 * @see N5URL#getAttributePathTokens(String)
+	 * @return the linked attribute path token
 	 */
 	public LinkedAttributePathToken<?> getAttributePathTokens() {
 
@@ -203,7 +204,7 @@ public class N5URL {
 	 *
 	 * @param relativeN5Url N5URL to resolve against ourselves
 	 * @return the result of the resolution.
-	 * @throws URISyntaxException
+	 * @throws URISyntaxException if the uri is malformed
 	 */
 	public N5URL resolve(final N5URL relativeN5Url) throws URISyntaxException {
 
@@ -280,7 +281,7 @@ public class N5URL {
 	 *
 	 * @param relativeUri URI to resolve against ourselves
 	 * @return the result of the resolution.
-	 * @throws URISyntaxException
+	 * @throws URISyntaxException if the uri is malformed
 	 */
 	public N5URL resolve(final URI relativeUri) throws URISyntaxException {
 
@@ -293,7 +294,7 @@ public class N5URL {
 	 *
 	 * @param relativeString String to resolve against ourselves
 	 * @return the result of the resolution.
-	 * @throws URISyntaxException
+	 * @throws URISyntaxException if the uri is malformed
 	 */
 	public N5URL resolve(final String relativeString) throws URISyntaxException {
 
@@ -511,7 +512,7 @@ public class N5URL {
 	 * @param group     of the N5Url
 	 * @param attribute of the N5Url
 	 * @return the {@link N5URL}
-	 * @throws URISyntaxException
+	 * @throws URISyntaxException if the uri is malformed
 	 */
 	public static N5URL from(final String container, final String group, final String attribute) throws URISyntaxException {
 

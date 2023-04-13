@@ -81,10 +81,10 @@ public enum DataType {
 	/**
 	 * Factory for {@link DataBlock DataBlocks}.
 	 *
-	 * @param blockSize
-	 * @param gridPosition
-	 * @param numElements not necessarily one element per block element
-	 * @return
+	 * @param blockSize the block size
+	 * @param gridPosition the grid position
+	 * @param numElements the number of elements (not necessarily one element per block element)
+	 * @return the data block
 	 */
 	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition, final int numElements) {
 
@@ -95,9 +95,9 @@ public enum DataType {
 	 * Factory for {@link DataBlock DataBlocks} with one data element for each
 	 * block element (e.g. pixel image).
 	 *
-	 * @param blockSize
-	 * @param gridPosition
-	 * @return
+	 * @param blockSize the block size
+	 * @param gridPosition the grid position
+	 * @return the data block
 	 */
 	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition) {
 

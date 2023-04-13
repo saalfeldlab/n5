@@ -28,7 +28,7 @@ package org.janelia.saalfeldlab.n5;
 /**
  * Abstract base class for {@link DataBlock} implementations.
  *
- * @param <T>
+ * @param <T> the block data type
  *
  * @author Stephan Saalfeld
  */

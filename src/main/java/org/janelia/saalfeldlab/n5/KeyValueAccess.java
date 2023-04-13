@@ -41,33 +41,33 @@ public interface KeyValueAccess {
 	/**
 	 * Split a path string into its components.
 	 *
-	 * @param path
-	 * @return
+	 * @param path the path
+	 * @return the path components
 	 */
 	public String[] components(final String path);
 
 	/**
 	 * Compose a path from components.
 	 *
-	 * @param components
-	 * @return
+	 * @param components the path components
+	 * @return the path
 	 */
 	public String compose(final String... components);
 
 	/**
 	 * Get the parent of a path string.
 	 *
-	 * @param path
-	 * @return null if the path has no parent
+	 * @param path the path
+	 * @return the parent path or null if the path has no parent
 	 */
 	public String parent(final String path);
 
 	/**
 	 * Relativize path relative to base.
 	 *
-	 * @param path
-	 * @param base
-	 * @return null if the path has no parent
+	 * @param path the path
+	 * @param base the base path
+	 * @return the result or null if the path has no parent
 	 */
 	public String relativize(final String path, final String base);
 
@@ -76,8 +76,8 @@ public interface KeyValueAccess {
 	 * location return the same output.  This is most important for cached
 	 * data pointing at the same location getting the same key.
 	 *
-	 * @param path
-	 * @return
+	 * @param path the path
+	 * @return the normalized path
 	 */
 	public String normalize(final String path);
 
@@ -86,7 +86,7 @@ public interface KeyValueAccess {
 	 *
 	 * @param normalPath is expected to be in normalized form, no further
 	 * 		efforts are made to normalize it.
-	 * @return
+	 * @return true if the path exists
 	 */
 	public boolean exists(final String normalPath);
 
@@ -95,7 +95,7 @@ public interface KeyValueAccess {
 	 *
 	 * @param normalPath is expected to be in normalized form, no further
 	 * 		efforts are made to normalize it.
-	 * @return
+	 * @return true if the path is a directory
 	 */
 	public boolean isDirectory(String normalPath);
 
@@ -104,7 +104,7 @@ public interface KeyValueAccess {
 	 *
 	 * @param normalPath is expected to be in normalized form, no further
 	 * 		efforts are made to normalize it.
-	 * @return
+	 * @return true if the path is a file
 	 */
 	public boolean isFile(String normalPath);
 
@@ -119,8 +119,8 @@ public interface KeyValueAccess {
 	 *
 	 * @param normalPath is expected to be in normalized form, no further
 	 * 		efforts are made to normalize it.
-	 * @return
-	 * @throws IOException
+	 * @return the locked channel
+	 * @throws IOException the exception
 	 */
 	public LockedChannel lockForReading(final String normalPath) throws IOException;
 
@@ -136,8 +136,8 @@ public interface KeyValueAccess {
 	 *
 	 * @param normalPath is expected to be in normalized form, no further
 	 * 		efforts are made to normalize it.
-	 * @return
-	 * @throws IOException
+	 * @return the locked channel
+	 * @throws IOException the exception
 	 */
 	public LockedChannel lockForWriting(final String normalPath) throws IOException;
 
@@ -146,8 +146,8 @@ public interface KeyValueAccess {
 	 *
 	 * @param normalPath is expected to be in normalized form, no further
 	 * 		efforts are made to normalize it.
-	 * @return
-	 * @throws IOException
+	 * @return the directories
+	 * @throws IOException the exception
 	 */
 	public String[] listDirectories(final String normalPath) throws IOException;
 
@@ -156,8 +156,8 @@ public interface KeyValueAccess {
 	 *
 	 * @param normalPath is expected to be in normalized form, no further
 	 * 		efforts are made to normalize it.
-	 * @return
-	 * @throws IOException
+	 * @return the the child paths
+	 * @throws IOException the exception
 	 */
 	public String[] list(final String normalPath) throws IOException;
 
@@ -169,7 +169,7 @@ public interface KeyValueAccess {
 	 *
 	 * @param normalPath is expected to be in normalized form, no further
 	 * 		efforts are made to normalize it.
-	 * @throws IOException
+	 * @throws IOException the exception
 	 */
 	public void createDirectories(final String normalPath) throws IOException;
 

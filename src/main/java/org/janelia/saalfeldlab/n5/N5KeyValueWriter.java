@@ -25,19 +25,22 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 /**
- * Filesystem {@link N5Writer} implementation with version compatibility check.
+ * {@link N5Writer} implementation through a {@link KeyValueAccess} with version compatibility check.
+ * JSON attributes are parsed and written with {@link Gson}.
  *
  * @author Stephan Saalfeld
  */
@@ -45,7 +48,8 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 
 	/**
 	 * Opens an {@link N5KeyValueWriter} at a given base path with a custom
-	 * {@link GsonBuilder} to support custom attributes.
+	 * {@link GsonBuilder} to support custom attributes. Storage is managed by 
+	 * the given {@link KeyValueAccess}.
 	 * <p>
 	 * If the base path does not exist, it will be created.
 	 * <p>
@@ -53,16 +57,20 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	 * compatible with this implementation, the N5 version of this container
 	 * will be set to the current N5 version of this implementation.
 	 *
-	 * @param keyValueAccess
-	 * @param basePath        n5 base path
-	 * @param gsonBuilder
-	 * @param cacheAttributes Setting this to true avoids frequent reading and parsing of
-	 *                        JSON encoded attributes, this is most interesting for high
-	 *                        latency file systems. Changes of attributes by an independent
-	 *                        writer will not be tracked.
-	 * @throws IOException if the base path cannot be written to or cannot be created,
-	 *                     if the N5 version of the container is not compatible with
-	 *                     this implementation.
+	 * @param keyValueAccess the key value access
+	 * @param basePath
+	 *            n5 base path
+	 * @param gsonBuilder the gson builder
+	 * @param cacheAttributes
+	 *            Setting this to true avoids frequent reading and parsing of
+	 *            JSON encoded attributes, this is most interesting for high
+	 *            latency file systems. Changes of attributes by an independent
+	 *            writer will not be tracked.
+	 *
+	 * @throws IOException
+	 *             if the base path cannot be written to or cannot be created,
+	 *             if the N5 version of the container is not compatible with
+	 *             this implementation.
 	 */
 	public N5KeyValueWriter(
 			final KeyValueAccess keyValueAccess,

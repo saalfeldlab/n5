@@ -55,10 +55,11 @@ public interface DefaultBlockWriter extends BlockWriter {
 	/**
 	 * Writes a {@link DataBlock} into an {@link OutputStream}.
 	 *
-	 * @param out
-	 * @param datasetAttributes
-	 * @param dataBlock
-	 * @throws IOException
+	 * @param out               the output stream
+	 * @param datasetAttributes the dataset attributes
+	 * @param dataBlock         the data block
+	 * @param <T>               the block data type
+	 * @throws IOException the exception
 	 */
 	public static <T> void writeBlock(
 			final OutputStream out,

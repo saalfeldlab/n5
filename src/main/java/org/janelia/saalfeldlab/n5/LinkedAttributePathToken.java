@@ -22,7 +22,7 @@ public abstract class LinkedAttributePathToken<T extends JsonElement> implements
 	protected LinkedAttributePathToken<?> childToken;
 
 	/**
-	 * @return a reference object of type {@link T}
+	 * @return a reference object of type {@code T}
 	 */
 	public abstract T getJsonType();
 
@@ -103,7 +103,7 @@ public abstract class LinkedAttributePathToken<T extends JsonElement> implements
 	 * If {@code json} is compatible with the type or token that we are, then set {@link #parentJson} to {@code json}.
 	 * <br>
 	 * However, if {@code json} is either {@code null} or not {@link #jsonCompatible(JsonElement)} then
-	 * {@link #parentJson} will be set to a new instance of {@link T}.
+	 * {@link #parentJson} will be set to a new instance of {@code T}.
 	 *
 	 * @param json to attempt to set to {@link #parentJson}
 	 * @return the value set to {@link #parentJson}.
