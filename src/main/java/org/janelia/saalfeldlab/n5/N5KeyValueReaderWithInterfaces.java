@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
@@ -106,13 +107,20 @@ public class N5KeyValueReaderWithInterfaces implements CachedGsonKeyValueReader 
 		return this.basePath;
 	}
 
-	@Override public boolean cacheMeta() {
+	@Override
+	public boolean cacheMeta() {
 
 		return cacheMeta;
 	}
 
-	@Override public N5JsonCache getCache() {
+	@Override
+	public N5JsonCache getCache() {
 
 		return this.cache;
+	}
+
+	@Override
+	public String groupPath(String... nodes) {
+		return keyValueAccess.compose(Stream.concat(Stream.of(basePath), Arrays.stream(nodes)).toArray(String[]::new));
 	}
 }
