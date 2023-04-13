@@ -79,24 +79,19 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 			final boolean cacheAttributes)
 			throws IOException {
 
-		super(keyValueAccess, initializeContainer(keyValueAccess, basePath), gsonBuilder, cacheAttributes);
+		super(false, keyValueAccess, basePath, gsonBuilder, cacheAttributes);
 		createGroup("/");
 		setVersion("/");
 	}
 
 	protected void setVersion(final String path) throws IOException {
 
-		if (!VERSION.equals(getVersion()))
+		final Version version = getVersion();
+		if (!VERSION.isCompatible(version))
+			throw new N5Exception.N5IOException("Incompatible version " + version + " (this is " + VERSION + ").");
+
+		if (!VERSION.equals(version))
 			setAttribute("/", VERSION_KEY, VERSION.toString());
-	}
-
-	protected static String initializeContainer(
-			final KeyValueAccess keyValueAccess,
-			final String basePath) throws IOException {
-
-		final String normBasePath = keyValueAccess.normalize(basePath);
-		keyValueAccess.createDirectories(normBasePath);
-		return normBasePath;
 	}
 
 	/**
