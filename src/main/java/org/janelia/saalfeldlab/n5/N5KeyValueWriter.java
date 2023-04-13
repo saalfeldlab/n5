@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -37,7 +38,8 @@ import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 import java.util.Arrays;
 
 /**
- * Filesystem {@link N5Writer} implementation with version compatibility check.
+ * {@link N5Writer} implementation through a {@link KeyValueAccess} with version compatibility check.
+ * JSON attributes are parsed and written with {@link Gson}.
  *
  * @author Stephan Saalfeld
  */
