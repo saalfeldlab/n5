@@ -88,16 +88,28 @@ public class N5KeyValueReader implements N5Reader {
 			final GsonBuilder gsonBuilder,
 			final boolean cacheMeta) throws IOException {
 
+		this(true, keyValueAccess, basePath, gsonBuilder, cacheMeta);
+	}
+
+	protected N5KeyValueReader(
+			final boolean checkVersion,
+			final KeyValueAccess keyValueAccess,
+			final String basePath,
+			final GsonBuilder gsonBuilder,
+			final boolean cacheMeta) throws IOException {
+
 		this.keyValueAccess = keyValueAccess;
 		this.basePath = keyValueAccess.normalize(basePath);
 		this.gson = GsonUtils.registerGson(gsonBuilder);
 		this.cacheMeta = cacheMeta;
 
-		/* Existence checks, if any, go in subclasses */
-		/* Check that version (if there is one) is compatible. */
-		final Version version = getVersion();
-		if (!VERSION.isCompatible(version))
-			throw new N5Exception.N5IOException("Incompatible version " + version + " (this is " + VERSION + ").");
+		if( checkVersion ) {
+			/* Existence checks, if any, go in subclasses */
+			/* Check that version (if there is one) is compatible. */
+			final Version version = getVersion();
+			if (!VERSION.isCompatible(version))
+				throw new N5Exception.N5IOException("Incompatible version " + version + " (this is " + VERSION + ").");
+		}
 	}
 
 	public Gson getGson() {
