@@ -136,9 +136,13 @@ public interface GsonKeyValueReader extends N5Reader {
 	default JsonElement getAttributes(final String pathName) throws N5Exception.N5IOException {
 
 		final String groupPath = N5URL.normalizeGroupPath(pathName);
+		final String absoluteGroupPath = getKeyValueAccess().compose( getBasePath(), groupPath );
 		final String attributesPath = attributesPath(groupPath);
-		if (!exists(groupPath))
+
+		// calling exists can result in a stackoverflowerror when caching
+		if (!getKeyValueAccess().exists(absoluteGroupPath))
 			throw new N5Exception.N5IOException("Group " + groupPath + " does not exist");
+
 		if (!getKeyValueAccess().exists(attributesPath))
 			return null;
 

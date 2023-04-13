@@ -25,10 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 
 import java.io.IOException;
@@ -45,8 +45,12 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 
 	default void setVersion(final String path) throws IOException {
 
-		if (!VERSION.equals(getVersion()))
-			setAttribute("/", VERSION_KEY, VERSION.toString());
+		final Version version = getVersion();
+		if (!VERSION.isCompatible(version))
+			throw new N5Exception.N5IOException("Incompatible version " + version + " (this is " + VERSION + ").");
+
+		if (!VERSION.equals(version))
+			setAttribute("/", VERSION_KEY, VERSION.toString());;
 	}
 
 	static String initializeContainer(

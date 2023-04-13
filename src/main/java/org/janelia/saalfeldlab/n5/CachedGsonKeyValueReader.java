@@ -32,7 +32,6 @@ import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.Arrays;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
@@ -48,9 +47,9 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
 
 		return new N5JsonCache(
 				(groupPath, cacheKey) -> GsonKeyValueReader.super.getAttributes(groupPath),
-				GsonKeyValueReader.super::exists,
-				GsonKeyValueReader.super::exists,
-				GsonKeyValueReader.super::datasetExists,
+				this::normalExists,
+				this::normalGroupExists,
+				this::normalDatasetExists,
 				GsonKeyValueReader.super::list
 		);
 	}
@@ -64,7 +63,10 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
 
 		final String normalPath = N5URL.normalizeGroupPath(pathName);
 		final JsonElement attributes;
-		if (cacheMeta() && getCache().isDataset(normalPath)) {
+
+		// TODO the isDataset check results in unexpected behavior: breaks the cacheGroupDatasetTest test
+//		if (cacheMeta() && getCache().isDataset(normalPath)) {
+		if (cacheMeta()) {
 			attributes = getCache().getAttributes(normalPath, N5JsonCache.jsonFile);
 		} else {
 			attributes = GsonKeyValueReader.super.getAttributes(normalPath);
@@ -122,8 +124,29 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
 		if (cacheMeta())
 			return getCache().exists(normalPathName);
 		else {
-			return GsonKeyValueReader.super.exists(normalPathName);
+			return normalExists(normalPathName);
 		}
+	}
+
+	default boolean normalExists(final String pathName) {
+
+		final String normalPathName = N5URL.normalizeGroupPath(pathName);
+		return getKeyValueAccess().exists(groupPath(normalPathName)) || normalDatasetExists(normalPathName);
+	}
+
+	default boolean groupExists(final String pathName) {
+
+		final String normalPathName = N5URL.normalizeGroupPath(pathName);
+		if (cacheMeta())
+			return getCache().isGroup(normalPathName);
+		else {
+			return normalGroupExists(normalPathName);
+		}
+	}
+
+	default boolean normalGroupExists(final String pathName) {
+
+		return GsonKeyValueReader.super.groupExists(pathName);
 	}
 
 	@Override
@@ -133,7 +156,12 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
 			final String normalPathName = N5URL.normalizeGroupPath(pathName);
 			return getCache().isDataset(normalPathName);
 		}
-		return GsonKeyValueReader.super.datasetExists(pathName);
+		return normalDatasetExists(pathName);
+	}
+
+	default boolean normalDatasetExists(final String pathName) throws N5Exception.N5IOException {
+
+		return normalGroupExists(groupPath(pathName)) && normalGetDatasetAttributes(pathName) != null;
 	}
 
 	/**

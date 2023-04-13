@@ -1,12 +1,12 @@
 package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.GsonBuilder;
-import org.junit.Assert;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -26,7 +26,12 @@ public class N5CachedFSTest extends N5FSTest {
 	@Override
 	protected N5Writer createN5Writer(final String location) throws IOException {
 
-		return new N5FSWriter(location, true);
+		return createN5Writer(location, true);
+	}
+
+	protected N5Writer createN5Writer(final String location, final boolean cache ) throws IOException {
+
+		return new N5FSWriter(location, cache);
 	}
 
 	@Override
@@ -38,10 +43,9 @@ public class N5CachedFSTest extends N5FSTest {
 		return new N5FSWriter(location, gson, true);
 	}
 
-	@Override
-	protected N5Reader createN5Reader(final String location, final GsonBuilder gson) throws IOException {
+	protected N5Reader createN5Reader(final String location, final GsonBuilder gson, final boolean cache) throws IOException {
 
-		return new N5FSReader(location, gson, true);
+		return new N5FSReader(location, gson, cache);
 	}
 
 	@Test
@@ -49,7 +53,8 @@ public class N5CachedFSTest extends N5FSTest {
 		/* Test the cache by setting many attributes, then manually deleting the underlying file.
 		* The only possible way for the test to succeed is if it never again attempts to read the file, and relies on the cache. */
 
-		try (N5KeyValueWriter n5 = (N5KeyValueWriter) createN5Writer()) {
+//		try (N5KeyValueWriter n5 = (N5KeyValueWriter) createN5Writer()) {
+		try (N5KeyValueWriterWithInterfaces n5 = (N5KeyValueWriterWithInterfaces) createN5Writer()) {
 			final String cachedGroup = "cachedGroup";
 			final String attributesPath = n5.attributesPath(cachedGroup);
 
@@ -64,7 +69,8 @@ public class N5CachedFSTest extends N5FSTest {
 			runTests(n5, tests);
 		}
 
-		try (N5KeyValueWriter n5 = new N5FSWriter(tempN5PathName(), false)) {
+//		try (N5KeyValueWriter n5 = new N5FSWriter(tempN5PathName(), false)) {
+		try (N5KeyValueWriterWithInterfaces n5 = (N5KeyValueWriterWithInterfaces)createN5Writer(tempN5PathName(), false)) {
 			final String cachedGroup = "cachedGroup";
 			final String attributesPath = n5.attributesPath(cachedGroup);
 
@@ -75,7 +81,7 @@ public class N5CachedFSTest extends N5FSTest {
 			addAndTest(n5, tests, new TestData<>(cachedGroup, "a/a[2]", 0));
 
 			Files.delete(Paths.get(attributesPath));
-			Assert.assertThrows(AssertionError.class, () -> runTests(n5, tests));
+			assertThrows(AssertionError.class, () -> runTests(n5, tests));
 		}
 	}
 
@@ -86,8 +92,8 @@ public class N5CachedFSTest extends N5FSTest {
 		final String groupName = "gg";
 
 		final String tmpPath = tempN5PathName();
-		try (N5KeyValueWriter w1 = (N5KeyValueWriter) createN5Writer(tmpPath);
-				N5KeyValueWriter w2 = (N5KeyValueWriter) createN5Writer(tmpPath);) {
+		try (N5KeyValueWriterWithInterfaces w1 = (N5KeyValueWriterWithInterfaces) createN5Writer(tmpPath);
+				N5KeyValueWriterWithInterfaces w2 = (N5KeyValueWriterWithInterfaces) createN5Writer(tmpPath);) {
 
 			// create a group, both writers know it exists
 			w1.createGroup(groupName);

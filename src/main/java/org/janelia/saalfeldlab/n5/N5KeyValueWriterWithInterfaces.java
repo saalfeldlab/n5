@@ -26,15 +26,8 @@
 package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Filesystem {@link N5Writer} implementation with version compatibility check.
@@ -71,7 +64,7 @@ public class N5KeyValueWriterWithInterfaces extends N5KeyValueReaderWithInterfac
 			final boolean cacheAttributes)
 			throws IOException {
 
-		super(keyValueAccess, GsonKeyValueWriter.initializeContainer(keyValueAccess, basePath), gsonBuilder, cacheAttributes);
+		super(false, keyValueAccess, basePath, gsonBuilder, cacheAttributes);
 		createGroup("/");
 		setVersion("/");
 	}
