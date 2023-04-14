@@ -12,40 +12,41 @@ public class N5CacheTest {
 	public void cacheBackingTest() {
 
 		final DummyBackingStorage backingStorage = new DummyBackingStorage();
+
 		final N5JsonCache cache = new N5JsonCache(backingStorage::backingAttrs, backingStorage::exists,
 				backingStorage::isGroup, backingStorage::isDataset, backingStorage::list);
 
 		// check existance, ensure backing storage is only called once
 		assertEquals(0, backingStorage.existsCallCount);
-		cache.exists("a");
+		cache.exists("a","face");
 		assertEquals(1, backingStorage.existsCallCount);
-		cache.exists("a");
+		cache.exists("a","face");
 		assertEquals(1, backingStorage.existsCallCount);
 
 		// check existance of new group, ensure backing storage is only called one more time
-		cache.exists("b");
+		cache.exists("b","face");
 		assertEquals(2, backingStorage.existsCallCount);
-		cache.exists("b");
+		cache.exists("b","face");
 		assertEquals(2, backingStorage.existsCallCount);
 
 		// check isDataset, ensure backing storage is only called when expected
 		// isDataset is called by exists, so should have been called twice here
 		assertEquals(2, backingStorage.isDatasetCallCount);
-		cache.isDataset("a");
+		cache.isDataset("a", "face");
 		assertEquals(2, backingStorage.isDatasetCallCount);
 
 		assertEquals(2, backingStorage.isDatasetCallCount);
-		cache.isDataset("b");
+		cache.isDataset("b", "face");
 		assertEquals(2, backingStorage.isDatasetCallCount);
 
 		// check isGroup, ensure backing storage is only called when expected
 		// isGroup is called by exists, so should have been called twice here
 		assertEquals(2, backingStorage.isGroupCallCount);
-		cache.isDataset("a");
+		cache.isDataset("a", "face");
 		assertEquals(2, backingStorage.isGroupCallCount);
 
 		assertEquals(2, backingStorage.isGroupCallCount);
-		cache.isDataset("b");
+		cache.isDataset("b", "face");
 		assertEquals(2, backingStorage.isGroupCallCount);
 
 		// similarly check list, ensure backing storage is only called when expected
@@ -60,24 +61,28 @@ public class N5CacheTest {
 
 		// finally check getAttributes
 		// it is not called by exists (since it needs the cache key)
-		assertEquals(0, backingStorage.attrCallCount);
-		cache.getAttributes("a", "foo");
-		assertEquals(1, backingStorage.attrCallCount);
-		cache.getAttributes("a", "foo");
-		assertEquals(1, backingStorage.attrCallCount);
-		cache.getAttributes("a", "bar");
 		assertEquals(2, backingStorage.attrCallCount);
+		cache.getAttributes("a", "foo");
+		assertEquals(3, backingStorage.attrCallCount);
+		cache.getAttributes("a", "foo");
+		assertEquals(3, backingStorage.attrCallCount);
 		cache.getAttributes("a", "bar");
-		assertEquals(2, backingStorage.attrCallCount);
+		assertEquals(4, backingStorage.attrCallCount);
+		cache.getAttributes("a", "bar");
+		assertEquals(4, backingStorage.attrCallCount);
+		cache.getAttributes("a", "face");
+		assertEquals(4, backingStorage.attrCallCount);
 
 		cache.getAttributes("b", "foo");
-		assertEquals(3, backingStorage.attrCallCount);
+		assertEquals(5, backingStorage.attrCallCount);
 		cache.getAttributes("b", "foo");
-		assertEquals(3, backingStorage.attrCallCount);
+		assertEquals(5, backingStorage.attrCallCount);
 		cache.getAttributes("b", "bar");
-		assertEquals(4, backingStorage.attrCallCount);
+		assertEquals(6, backingStorage.attrCallCount);
 		cache.getAttributes("b", "bar");
-		assertEquals(4, backingStorage.attrCallCount);
+		assertEquals(6, backingStorage.attrCallCount);
+		cache.getAttributes("b", "face");
+		assertEquals(6, backingStorage.attrCallCount);
 
 	}
 

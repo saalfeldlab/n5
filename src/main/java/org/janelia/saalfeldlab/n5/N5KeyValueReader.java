@@ -139,7 +139,7 @@ public class N5KeyValueReader implements N5Reader {
 
 		final String normalPath = N5URL.normalizeGroupPath(pathName);
 		final JsonElement attributes;
-		if (cacheMeta && cache.isDataset(normalPath)) {
+		if (cacheMeta && cache.isDataset(normalPath, N5JsonCache.jsonFile)) {
 			attributes = cache.getAttributes(normalPath, N5JsonCache.jsonFile);
 		} else {
 			attributes = getAttributes(normalPath);
@@ -225,7 +225,7 @@ public class N5KeyValueReader implements N5Reader {
 
 		final String normalPathName = N5URL.normalizeGroupPath(pathName);
 		if (cacheMeta)
-			return cache.exists(normalPathName);
+			return cache.exists(normalPathName, N5JsonCache.jsonFile);
 		else {
 			return normalExists(normalPathName);
 		}
@@ -241,7 +241,7 @@ public class N5KeyValueReader implements N5Reader {
 
 		if (cacheMeta) {
 			final String normalPathName = N5URL.normalizeGroupPath(pathName);
-			return cache.isDataset(normalPathName);
+			return cache.isDataset(normalPathName, N5JsonCache.jsonFile);
 		}
 		return normalDatasetExists(pathName);
 	}

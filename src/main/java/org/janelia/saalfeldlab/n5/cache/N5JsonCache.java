@@ -89,29 +89,29 @@ public class N5JsonCache {
 		return getCacheInfo(normalPathKey).getCache(normalCacheKey);
 	}
 
-	public boolean isDataset(final String normalPathKey) {
+	public boolean isDataset(final String normalPathKey, final String normalCacheKey) {
 
 		final N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
-			addNewCacheInfo(normalPathKey);
+			addNewCacheInfo(normalPathKey, normalCacheKey);
 		}
 		return getCacheInfo(normalPathKey).isDataset;
 	}
 
-	public boolean isGroup(final String normalPathKey) {
+	public boolean isGroup(final String normalPathKey, final String normalCacheKey) {
 
 		final N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
-			addNewCacheInfo(normalPathKey);
+			addNewCacheInfo(normalPathKey, normalCacheKey);
 		}
 		return getCacheInfo(normalPathKey).isGroup;
 	}
 
-	public boolean exists(final String normalPathKey) {
+	public boolean exists(final String normalPathKey, final String normalCacheKey ) {
 
 		final N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
-			addNewCacheInfo(normalPathKey);
+			addNewCacheInfo(normalPathKey, normalCacheKey );
 		}
 		return getCacheInfo(normalPathKey) != emptyCacheInfo;
 	}
@@ -139,6 +139,12 @@ public class N5JsonCache {
 			addNewCacheInfo(normalPathKey, normalCacheKey, uncachedValue);
 		}
 	}
+
+	private void addNewCacheInfo(String normalPathKey, String normalCacheKey) {
+
+		addNewCacheInfo( normalPathKey, normalCacheKey, readBackingAttributes.apply( normalPathKey, normalCacheKey));
+	}
+
 	private void addNewCacheInfo(String normalPathKey, String normalCacheKey, JsonElement uncachedAttributes) {
 
 		final N5CacheInfo cacheInfo;
@@ -151,7 +157,6 @@ public class N5JsonCache {
 			}
 			cacheInfo.isGroup = getIsGroup.apply(normalPathKey);
 			cacheInfo.isDataset = getIsDataset.apply(normalPathKey);
-			cacheInfo.attributesCache.put(normalCacheKey, readBackingAttributes.apply(normalPathKey, normalCacheKey));
 			addChild(cacheInfo, normalPathKey);
 		}
 		synchronized (containerPathToCache) {
@@ -205,7 +210,7 @@ public class N5JsonCache {
 
 		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null ){
-			addNewCacheInfo(normalPathKey);
+			addNewCacheInfo(normalPathKey, normalCacheKey, uncachedAttributes );
 			return;
 		} else if (!getExists.apply(normalPathKey)) {
 			cacheInfo = emptyCacheInfo;
@@ -220,32 +225,6 @@ public class N5JsonCache {
 			addChild(cacheInfo, normalPathKey);
 		}
 
-		synchronized (containerPathToCache) {
-			containerPathToCache.put(normalPathKey, cacheInfo);
-		}
-	}
-
-	public void setCacheInfo( final String normalPathKey, final String normalCacheKey, final JsonElement attributes, final boolean isGroup, final boolean isDataset ) {
-
-		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
-		if (cacheInfo == null )
-			cacheInfo = addNewCacheInfo(normalPathKey);
-
-		cacheInfo.isGroup = isGroup;
-		cacheInfo.isDataset = isDataset;
-		cacheInfo.attributesCache.put( normalCacheKey, attributes );
-		synchronized (containerPathToCache) {
-			containerPathToCache.put(normalPathKey, cacheInfo);
-		}
-	}
-
-	public void setCacheAttributes( final String normalPathKey, final String normalCacheKey, final JsonElement attributes ) {
-
-		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
-		if (cacheInfo == null )
-			cacheInfo = addNewCacheInfo(normalPathKey);
-
-		cacheInfo.attributesCache.put( normalCacheKey, attributes );
 		synchronized (containerPathToCache) {
 			containerPathToCache.put(normalPathKey, cacheInfo);
 		}
@@ -274,25 +253,6 @@ public class N5JsonCache {
 			synchronized (cacheInfo.attributesCache) {
 				cacheInfo.attributesCache.remove(normalCacheKey);
 			}
-		}
-	}
-
-	private void updateCache(String normalPathKey, String normalCacheKey, JsonElement uncachedAttributes) {
-
-		final N5CacheInfo cacheInfo;
-		if (!getExists.apply(normalPathKey)) {
-			cacheInfo = emptyCacheInfo;
-		} else {
-			cacheInfo = new N5CacheInfo();
-			synchronized (cacheInfo.attributesCache) {
-				cacheInfo.attributesCache.put(normalCacheKey, uncachedAttributes);
-			}
-			cacheInfo.isGroup = getIsGroup.apply(normalPathKey);
-			cacheInfo.isDataset = getIsDataset.apply(normalPathKey);
-			addChild(cacheInfo, normalPathKey);
-		}
-		synchronized (containerPathToCache) {
-			containerPathToCache.put(normalPathKey, cacheInfo);
 		}
 	}
 

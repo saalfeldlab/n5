@@ -41,8 +41,8 @@ import java.lang.reflect.Type;
  * @author Igor Pisarev
  * @author Philipp Hanslovsky
  */
-public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
 
+public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
 	default N5JsonCache newCache() {
 
 		return new N5JsonCache(
@@ -64,8 +64,9 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
 		final String normalPath = N5URL.normalizeGroupPath(pathName);
 		final JsonElement attributes;
 
-		// TODO the isDataset check results in unexpected behavior: breaks the cacheGroupDatasetTest test
-//		if (cacheMeta() && getCache().isDataset(normalPath)) {
+		if (!datasetExists(pathName))
+			return null;
+
 		if (cacheMeta()) {
 			attributes = getCache().getAttributes(normalPath, N5JsonCache.jsonFile);
 		} else {
@@ -122,7 +123,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
 
 		final String normalPathName = N5URL.normalizeGroupPath(pathName);
 		if (cacheMeta())
-			return getCache().exists(normalPathName);
+			return getCache().exists(normalPathName, N5JsonCache.jsonFile);
 		else {
 			return normalExists(normalPathName);
 		}
@@ -138,7 +139,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
 
 		final String normalPathName = N5URL.normalizeGroupPath(pathName);
 		if (cacheMeta())
-			return getCache().isGroup(normalPathName);
+			return getCache().isGroup(normalPathName, N5JsonCache.jsonFile);
 		else {
 			return normalGroupExists(normalPathName);
 		}
@@ -154,7 +155,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
 
 		if (cacheMeta()) {
 			final String normalPathName = N5URL.normalizeGroupPath(pathName);
-			return getCache().isDataset(normalPathName);
+			return getCache().isDataset(normalPathName, N5JsonCache.jsonFile);
 		}
 		return normalDatasetExists(pathName);
 	}
@@ -183,7 +184,6 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
 		}
 
 	}
-
 
 	@Override
 	default String[] list(final String pathName) throws N5Exception.N5IOException {
