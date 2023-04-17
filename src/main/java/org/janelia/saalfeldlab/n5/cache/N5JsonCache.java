@@ -196,6 +196,10 @@ public class N5JsonCache {
 		} else if (!getExists.apply(normalPathKey)) {
 			cacheInfo = emptyCacheInfo;
 		} else {
+			final JsonElement attributesToCache = readBackingAttributes.apply(normalPathKey, normalCacheKey);
+			synchronized (cacheInfo.attributesCache) {
+				cacheInfo.attributesCache.put(normalCacheKey, attributesToCache);
+			}
 			cacheInfo.isGroup = getIsGroup.apply(normalPathKey);
 			cacheInfo.isDataset = getIsDataset.apply(normalPathKey);
 			cacheInfo.children.clear();
