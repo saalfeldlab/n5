@@ -53,15 +53,6 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 			setAttribute("/", VERSION_KEY, VERSION.toString());;
 	}
 
-	static String initializeContainer(
-			final KeyValueAccess keyValueAccess,
-			final String basePath) throws IOException {
-
-		final String normBasePath = keyValueAccess.normalize(basePath);
-		keyValueAccess.createDirectories(normBasePath);
-		return normBasePath;
-	}
-
 	/**
 	 * Performs any necessary initialization to ensure the key given by the
 	 * argument {@code normalPath} is a valid group after creation. Called by
