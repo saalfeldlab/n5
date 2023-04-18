@@ -73,7 +73,7 @@ public class N5KeyValueWithInterfacesTest extends AbstractN5Test {
 	 */
 	@Override
 	protected N5Writer createN5Writer() throws IOException {
-		return new N5KeyValueWriterWithInterfaces(access, tempN5PathName(), new GsonBuilder(), true);
+		return new N5KeyValueWriter(access, tempN5PathName(), new GsonBuilder(), true);
 	}
 
 	@Override
@@ -81,7 +81,7 @@ public class N5KeyValueWithInterfacesTest extends AbstractN5Test {
 		if (!new File(location).exists()) {
 			tmpFiles.add(location);
 		}
-		return new N5KeyValueWriterWithInterfaces(access, location, gson, true);
+		return new N5KeyValueWriter(access, location, gson, true);
 	}
 
 	@Override

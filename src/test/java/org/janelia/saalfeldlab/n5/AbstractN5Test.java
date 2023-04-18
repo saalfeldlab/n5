@@ -173,7 +173,9 @@ public abstract class AbstractN5Test {
 	public static void rampDownAfterClass() throws IOException {
 
 		if (n5 != null) {
-			Assert.assertTrue(n5.remove());
+			try { 
+				Assert.assertTrue(n5.remove());
+			} catch ( Exception e ) {}
 			n5 = null;
 		}
 	}

@@ -54,7 +54,7 @@ public class N5CachedFSTest extends N5FSTest {
 		* The only possible way for the test to succeed is if it never again attempts to read the file, and relies on the cache. */
 
 //		try (N5KeyValueWriter n5 = (N5KeyValueWriter) createN5Writer()) {
-		try (N5KeyValueWriterWithInterfaces n5 = (N5KeyValueWriterWithInterfaces) createN5Writer()) {
+		try (N5KeyValueWriter n5 = (N5KeyValueWriter) createN5Writer()) {
 			final String cachedGroup = "cachedGroup";
 			final String attributesPath = n5.attributesPath(cachedGroup);
 
@@ -70,7 +70,7 @@ public class N5CachedFSTest extends N5FSTest {
 		}
 
 //		try (N5KeyValueWriter n5 = new N5FSWriter(tempN5PathName(), false)) {
-		try (N5KeyValueWriterWithInterfaces n5 = (N5KeyValueWriterWithInterfaces)createN5Writer(tempN5PathName(), false)) {
+		try (N5KeyValueWriter n5 = (N5KeyValueWriter)createN5Writer(tempN5PathName(), false)) {
 			final String cachedGroup = "cachedGroup";
 			final String attributesPath = n5.attributesPath(cachedGroup);
 
@@ -92,8 +92,8 @@ public class N5CachedFSTest extends N5FSTest {
 		final String groupName = "gg";
 
 		final String tmpPath = tempN5PathName();
-		try (N5KeyValueWriterWithInterfaces w1 = (N5KeyValueWriterWithInterfaces) createN5Writer(tmpPath);
-				N5KeyValueWriterWithInterfaces w2 = (N5KeyValueWriterWithInterfaces) createN5Writer(tmpPath);) {
+		try (N5KeyValueWriter w1 = (N5KeyValueWriter) createN5Writer(tmpPath);
+				N5KeyValueWriter w2 = (N5KeyValueWriter) createN5Writer(tmpPath);) {
 
 			// create a group, both writers know it exists
 			w1.createGroup(groupName);

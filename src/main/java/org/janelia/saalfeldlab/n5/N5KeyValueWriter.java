@@ -25,31 +25,20 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 
+import java.io.IOException;
 
 /**
- * {@link N5Writer} implementation through a {@link KeyValueAccess} with version compatibility check.
- * JSON attributes are parsed and written with {@link Gson}.
+ * Filesystem {@link N5Writer} implementation with version compatibility check.
  *
  * @author Stephan Saalfeld
  */
-public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
+public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyValueWriter {
 
 	/**
 	 * Opens an {@link N5KeyValueWriter} at a given base path with a custom
-	 * {@link GsonBuilder} to support custom attributes. Storage is managed by 
-	 * the given {@link KeyValueAccess}.
+	 * {@link GsonBuilder} to support custom attributes.
 	 * <p>
 	 * If the base path does not exist, it will be created.
 	 * <p>
@@ -57,20 +46,16 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 	 * compatible with this implementation, the N5 version of this container
 	 * will be set to the current N5 version of this implementation.
 	 *
-	 * @param keyValueAccess the key value access
-	 * @param basePath
-	 *            n5 base path
-	 * @param gsonBuilder the gson builder
-	 * @param cacheAttributes
-	 *            Setting this to true avoids frequent reading and parsing of
-	 *            JSON encoded attributes, this is most interesting for high
-	 *            latency file systems. Changes of attributes by an independent
-	 *            writer will not be tracked.
-	 *
-	 * @throws IOException
-	 *             if the base path cannot be written to or cannot be created,
-	 *             if the N5 version of the container is not compatible with
-	 *             this implementation.
+	 * @param keyValueAccess
+	 * @param basePath        n5 base path
+	 * @param gsonBuilder
+	 * @param cacheAttributes Setting this to true avoids frequent reading and parsing of
+	 *                        JSON encoded attributes, this is most interesting for high
+	 *                        latency file systems. Changes of attributes by an independent
+	 *                        writer will not be tracked.
+	 * @throws IOException if the base path cannot be written to or cannot be created,
+	 *                     if the N5 version of the container is not compatible with
+	 *                     this implementation.
 	 */
 	public N5KeyValueWriter(
 			final KeyValueAccess keyValueAccess,
@@ -82,230 +67,5 @@ public class N5KeyValueWriter extends N5KeyValueReader implements N5Writer {
 		super(false, keyValueAccess, basePath, gsonBuilder, cacheAttributes);
 		createGroup("/");
 		setVersion("/");
-	}
-
-	protected void setVersion(final String path) throws IOException {
-
-		final Version version = getVersion();
-		if (!VERSION.isCompatible(version))
-			throw new N5Exception.N5IOException("Incompatible version " + version + " (this is " + VERSION + ").");
-
-		if (!VERSION.equals(version))
-			setAttribute("/", VERSION_KEY, VERSION.toString());
-	}
-
-	/**
-	 * Performs any necessary initialization to ensure the key given by the
-	 * argument {@code normalPath} is a valid group after creation. Called by
-	 * {@link #createGroup(String)}.
-	 *
-	 * @param normalPath the group path.
-	 */
-	protected void initializeGroup(final String normalPath) {
-
-		// Nothing to do here, but other implementations (e.g. zarr) use this.
-	}
-
-	@Override
-	public void createGroup(final String path) throws IOException {
-
-		final String normalPath = N5URL.normalizeGroupPath(path);
-		keyValueAccess.createDirectories(groupPath(normalPath));
-		if (cacheMeta) {
-			final String[] pathParts = keyValueAccess.components(normalPath);
-			if (pathParts.length > 1) {
-				String parent = N5URL.normalizeGroupPath("/");
-				for (String child : pathParts) {
-					final String childPath = keyValueAccess.compose(parent, child);
-					cache.addChild(parent, child);
-					parent = childPath;
-				}
-			}
-		}
-		initializeGroup(normalPath);
-	}
-
-	@Override
-	public void createDataset(
-			final String path,
-			final DatasetAttributes datasetAttributes) throws IOException {
-
-		final String normalPath = N5URL.normalizeGroupPath(path);
-		createGroup(path);
-		setDatasetAttributes(normalPath, datasetAttributes);
-	}
-
-	/**
-	 * Helper method that reads an existing JsonElement representing the root
-	 * attributes for {@code normalGroupPath}, inserts and overrides the
-	 * provided attributes, and writes them back into the attributes store.
-	 *
-	 * @param normalGroupPath to write the attributes to
-	 * @param attributes      to write
-	 * @throws IOException if unable to read the attributes at {@code normalGroupPath}
-	 *                     <p>
-	 *                     TODO consider cache (or you read the attributes twice?)
-	 */
-	protected void writeAttributes(
-			final String normalGroupPath,
-			final JsonElement attributes) throws IOException {
-
-		JsonElement root = getAttributes(normalGroupPath);
-		root = GsonUtils.insertAttribute(root, "/", attributes, gson);
-		writeAndCacheAttributes(normalGroupPath, root);
-	}
-
-	/**
-	 * Helper method that reads the existing map of attributes, JSON encodes,
-	 * inserts and overrides the provided attributes, and writes them back into
-	 * the attributes store.
-	 *
-	 * @param normalGroupPath to write the attributes to
-	 * @param attributes      to write
-	 * @throws IOException if unable to read the attributes at {@code normalGroupPath}
-	 */
-	protected void writeAttributes(
-			final String normalGroupPath,
-			final Map<String, ?> attributes) throws IOException {
-
-		if (attributes != null && !attributes.isEmpty()) {
-			JsonElement existingAttributes = getAttributes(normalGroupPath);
-			existingAttributes = existingAttributes != null && existingAttributes.isJsonObject()
-					? existingAttributes.getAsJsonObject()
-					: new JsonObject();
-			JsonElement newAttributes = GsonUtils.insertAttributes(existingAttributes, attributes, gson);
-			writeAndCacheAttributes(normalGroupPath, newAttributes);
-		}
-	}
-
-	private void writeAndCacheAttributes(final String normalGroupPath, final JsonElement attributes) throws IOException {
-
-		try (final LockedChannel lock = keyValueAccess.lockForWriting(attributesPath(normalGroupPath))) {
-			GsonUtils.writeAttributes(lock.newWriter(), attributes, gson);
-		}
-		if (cacheMeta) {
-			JsonElement nullRespectingAttributes = attributes;
-			/* Gson only filters out nulls when you write the JsonElement. This means it doesn't filter them out when caching.
-			 * To handle this, we explicitly writer the existing JsonElement to a new JsonElement.
-			 * The output is identical to the input if:
-			 * 	- serializeNulls is true
-			 * 	- no null values are present
-			 * 	- cacheing is turned off */
-			if (!gson.serializeNulls()) {
-				nullRespectingAttributes = gson.toJsonTree(attributes);
-			}
-			/* Update the cache, and write to the writer */
-			cache.updateCacheInfo(normalGroupPath, N5JsonCache.jsonFile, nullRespectingAttributes);
-		}
-	}
-
-	@Override
-	public void setAttributes(
-			final String path,
-			final Map<String, ?> attributes) throws IOException {
-
-		final String normalPath = N5URL.normalizeGroupPath(path);
-		if (!exists(normalPath))
-			throw new N5Exception.N5IOException("" + normalPath + " is not a group or dataset.");
-
-		writeAttributes(normalPath, attributes);
-	}
-
-	@Override
-	public boolean removeAttribute(final String pathName, final String key) throws IOException {
-
-		final String normalPath = N5URL.normalizeGroupPath(pathName);
-		final String absoluteNormalPath = keyValueAccess.compose(basePath, normalPath);
-		final String normalKey = N5URL.normalizeAttributePath(key);
-
-		if (!keyValueAccess.exists(absoluteNormalPath))
-			return false;
-
-		if (key.equals("/")) {
-			writeAttributes(normalPath, JsonNull.INSTANCE);
-			return true;
-		}
-
-		final JsonElement attributes = getAttributes(normalPath);
-		if (GsonUtils.removeAttribute(attributes, normalKey) != null) {
-			writeAttributes(normalPath, attributes);
-			return true;
-		}
-		return false;
-	}
-
-	@Override
-	public <T> T removeAttribute(final String pathName, final String key, final Class<T> cls) throws IOException {
-
-		final String normalPath = N5URL.normalizeGroupPath(pathName);
-		final String normalKey = N5URL.normalizeAttributePath(key);
-
-		final JsonElement attributes = getAttributes(normalPath);
-		final T obj = GsonUtils.removeAttribute(attributes, normalKey, cls, gson);
-		if (obj != null) {
-			writeAttributes(normalPath, attributes);
-		}
-		return obj;
-	}
-
-	@Override
-	public boolean removeAttributes(final String pathName, final List<String> attributes) throws IOException {
-
-		final String normalPath = N5URL.normalizeGroupPath(pathName);
-		boolean removed = false;
-		for (final String attribute : attributes) {
-			final String normalKey = N5URL.normalizeAttributePath(attribute);
-			removed |= removeAttribute(normalPath, attribute);
-		}
-		return removed;
-	}
-
-	@Override
-	public <T> void writeBlock(
-			final String path,
-			final DatasetAttributes datasetAttributes,
-			final DataBlock<T> dataBlock) throws IOException {
-
-		final String blockPath = getDataBlockPath(N5URL.normalizeGroupPath(path), dataBlock.getGridPosition());
-		try (final LockedChannel lock = keyValueAccess.lockForWriting(blockPath)) {
-
-			DefaultBlockWriter.writeBlock(lock.newOutputStream(), datasetAttributes, dataBlock);
-		}
-	}
-
-	@Override
-	public boolean remove(final String path) throws IOException {
-
-		final String normalPath = N5URL.normalizeGroupPath(path);
-		final String groupPath = groupPath(normalPath);
-		if (keyValueAccess.exists(groupPath))
-			keyValueAccess.delete(groupPath);
-		if (cacheMeta) {
-			final String[] pathParts = keyValueAccess.components(normalPath);
-			final String parent;
-			if (pathParts.length <= 1) {
-				parent = N5URL.normalizeGroupPath("/");
-			} else {
-				final int parentPathLength = pathParts.length - 1;
-				parent = keyValueAccess.compose(Arrays.copyOf(pathParts, parentPathLength));
-			}
-			cache.removeCache(parent, normalPath);
-		}
-
-		/* an IOException should have occurred if anything had failed midway */
-		return true;
-	}
-
-	@Override
-	public boolean deleteBlock(
-			final String path,
-			final long... gridPosition) throws IOException {
-
-		final String blockPath = getDataBlockPath(N5URL.normalizeGroupPath(path), gridPosition);
-		if (keyValueAccess.exists(blockPath))
-			keyValueAccess.delete(blockPath);
-
-		/* an IOException should have occurred if anything had failed midway */
-		return true;
 	}
 }

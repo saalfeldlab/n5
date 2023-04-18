@@ -40,7 +40,7 @@ import com.google.gson.GsonBuilder;
  * @author Philipp Hanslovsky
  */
 //public class N5FSReader extends N5KeyValueReader {
-public class N5FSReader extends N5KeyValueReaderWithInterfaces {
+public class N5FSReader extends N5KeyValueReader {
 
 	/**
 	 * Opens an {@link N5FSReader} at a given base path with a custom
