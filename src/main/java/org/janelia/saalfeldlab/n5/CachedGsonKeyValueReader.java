@@ -29,6 +29,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
+import org.janelia.saalfeldlab.n5.cache.N5JsonCacheableContainer;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -42,21 +43,21 @@ import java.lang.reflect.Type;
  * @author Philipp Hanslovsky
  */
 
-public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
+public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCacheableContainer {
 	default N5JsonCache newCache() {
-
-		return new N5JsonCache(
-				(groupPath, cacheKey) -> GsonKeyValueReader.super.getAttributes(groupPath),
-				this::normalExists,
-				this::normalGroupExists,
-				this::normalDatasetExists,
-				GsonKeyValueReader.super::list
-		);
+		return new N5JsonCache( this );
 	}
 
 	boolean cacheMeta();
 
 	N5JsonCache getCache();
+
+	default JsonElement getAttributesFromContainer(final String normalPathName, final String normalCacheKey) {
+
+		// this implementation doesn't use cache key, but rather depends on
+		// attributesPath being implemented
+		return GsonKeyValueReader.super.getAttributes(normalPathName);
+	}
 
 	@Override
 	default DatasetAttributes getDatasetAttributes(final String pathName) {
@@ -125,14 +126,14 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
 		if (cacheMeta())
 			return getCache().exists(normalPathName, N5JsonCache.jsonFile);
 		else {
-			return normalExists(normalPathName);
+			return existsFromContainer(normalPathName);
 		}
 	}
 
-	default boolean normalExists(final String pathName) {
+	default boolean existsFromContainer(final String pathName) {
 
 		final String normalPathName = N5URL.normalizeGroupPath(pathName);
-		return getKeyValueAccess().exists(groupPath(normalPathName)) || normalDatasetExists(normalPathName);
+		return getKeyValueAccess().exists(groupPath(normalPathName)) || isDatasetFromContainer(normalPathName);
 	}
 
 	default boolean groupExists(final String pathName) {
@@ -141,11 +142,11 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
 		if (cacheMeta())
 			return getCache().isGroup(normalPathName, N5JsonCache.jsonFile);
 		else {
-			return normalGroupExists(normalPathName);
+			return isGroupFromContainer(normalPathName);
 		}
 	}
 
-	default boolean normalGroupExists(final String pathName) {
+	default boolean isGroupFromContainer(final String pathName) {
 
 		return GsonKeyValueReader.super.groupExists(pathName);
 	}
@@ -157,12 +158,12 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
 			final String normalPathName = N5URL.normalizeGroupPath(pathName);
 			return getCache().isDataset(normalPathName, N5JsonCache.jsonFile);
 		}
-		return normalDatasetExists(pathName);
+		return isDatasetFromContainer(pathName);
 	}
 
-	default boolean normalDatasetExists(final String pathName) throws N5Exception.N5IOException {
+	default boolean isDatasetFromContainer(final String pathName) throws N5Exception.N5IOException {
 
-		return normalGroupExists(groupPath(pathName)) && normalGetDatasetAttributes(pathName) != null;
+		return isGroupFromContainer(groupPath(pathName)) && normalGetDatasetAttributes(pathName) != null;
 	}
 
 	/**
@@ -194,6 +195,12 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader {
 		} else {
 			return GsonKeyValueReader.super.list(normalPath);
 		}
+	}
+
+	default String[] listFromContainer(final String normalPathName) {
+
+		// this implementation doesn't use cache key, but rather depends on
+		return GsonKeyValueReader.super.list(normalPathName);
 	}
 
 	/**

@@ -13,8 +13,7 @@ public class N5CacheTest {
 
 		final DummyBackingStorage backingStorage = new DummyBackingStorage();
 
-		final N5JsonCache cache = new N5JsonCache(backingStorage::backingAttrs, backingStorage::exists,
-				backingStorage::isGroup, backingStorage::isDataset, backingStorage::list);
+		final N5JsonCache cache = new N5JsonCache(backingStorage);
 
 		// check existance, ensure backing storage is only called once
 		assertEquals(0, backingStorage.existsCallCount);
@@ -86,7 +85,7 @@ public class N5CacheTest {
 
 	}
 
-	protected static class DummyBackingStorage {
+	protected static class DummyBackingStorage implements N5JsonCacheableContainer {
 
 		int attrCallCount = 0;
 		int existsCallCount = 0;
@@ -97,27 +96,27 @@ public class N5CacheTest {
 		public DummyBackingStorage() {
 		}
 
-		public JsonElement backingAttrs(final String key, final String cacheKey) {
+		public JsonElement getAttributesFromContainer(final String key, final String cacheKey) {
 			attrCallCount++;
 			return null;
 		}
 
-		public boolean exists(final String key) {
+		public boolean existsFromContainer(final String key) {
 			existsCallCount++;
 			return true;
 		}
 
-		public boolean isGroup(final String key) {
+		public boolean isGroupFromContainer(final String key) {
 			isGroupCallCount++;
 			return true;
 		}
 
-		public boolean isDataset(final String key) {
+		public boolean isDatasetFromContainer(final String key) {
 			isDatasetCallCount++;
 			return true;
 		}
 
-		public String[] list(final String key) {
+		public String[] listFromContainer(final String key) {
 			listCallCount++;
 			return new String[] { "list" };
 		}

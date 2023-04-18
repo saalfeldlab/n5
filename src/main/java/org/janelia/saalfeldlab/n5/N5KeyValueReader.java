@@ -36,6 +36,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
+import org.janelia.saalfeldlab.n5.cache.N5JsonCacheableContainer;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
@@ -45,19 +46,13 @@ import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
  * @author Igor Pisarev
  * @author Philipp Hanslovsky
  */
-public class N5KeyValueReader implements N5Reader {
+public class N5KeyValueReader implements N5Reader, N5JsonCacheableContainer {
 
 	protected final KeyValueAccess keyValueAccess;
 
 	protected final Gson gson;
 
-	protected final N5JsonCache cache = new N5JsonCache(
-			(groupPath,cacheKey) -> normalGetAttributes(groupPath),
-			this::normalExists,
-			this::normalExists,
-			this::normalDatasetExists,
-			this::normalList
-	);
+	protected final N5JsonCache cache = new N5JsonCache(this);
 
 	protected final boolean cacheMeta;
 
@@ -151,7 +146,7 @@ public class N5KeyValueReader implements N5Reader {
 	private DatasetAttributes normalGetDatasetAttributes(final String pathName) throws N5Exception.N5IOException {
 
 		final String normalPath = N5URL.normalizeGroupPath(pathName);
-		final JsonElement attributes = normalGetAttributes(normalPath);
+		final JsonElement attributes = getAttributesFromContainer(normalPath);
 		return createDatasetAttributes(attributes);
 	}
 
@@ -215,7 +210,7 @@ public class N5KeyValueReader implements N5Reader {
 		return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, gson);
 	}
 
-	protected boolean groupExists(final String absoluteNormalPath) {
+	public boolean isGroupFromContainer(final String absoluteNormalPath) {
 
 		return keyValueAccess.exists(absoluteNormalPath) && keyValueAccess.isDirectory(absoluteNormalPath);
 	}
@@ -227,13 +222,13 @@ public class N5KeyValueReader implements N5Reader {
 		if (cacheMeta)
 			return cache.exists(normalPathName, N5JsonCache.jsonFile);
 		else {
-			return normalExists(normalPathName);
+			return existsFromContainer(normalPathName);
 		}
 	}
 
-	private boolean normalExists(String normalPathName) {
+	public boolean existsFromContainer(String normalPathName) {
 
-		return keyValueAccess.exists(groupPath(normalPathName)) || normalDatasetExists(normalPathName);
+		return keyValueAccess.exists(groupPath(normalPathName));
 	}
 
 	@Override
@@ -243,14 +238,13 @@ public class N5KeyValueReader implements N5Reader {
 			final String normalPathName = N5URL.normalizeGroupPath(pathName);
 			return cache.isDataset(normalPathName, N5JsonCache.jsonFile);
 		}
-		return normalDatasetExists(pathName);
+		return isDatasetFromContainer(pathName);
 	}
 
-	private boolean normalDatasetExists(String pathName) throws N5Exception.N5IOException {
+	public boolean isDatasetFromContainer(String pathName) throws N5Exception.N5IOException {
 
 		// for n5, every dataset must be a group
-		return groupExists(groupPath(pathName)) && normalGetDatasetAttributes(pathName) != null;
-
+		return isGroupFromContainer(groupPath(pathName)) && normalGetDatasetAttributes(pathName) != null;
 	}
 
 	/**
@@ -268,15 +262,20 @@ public class N5KeyValueReader implements N5Reader {
 		if (cacheMeta) {
 			return cache.getAttributes(groupPath, N5JsonCache.jsonFile);
 		} else {
-			return normalGetAttributes(groupPath);
+			return getAttributesFromContainer(groupPath);
 		}
 
 	}
 
-	private JsonElement normalGetAttributes(String groupPath) throws N5Exception.N5IOException {
+	public JsonElement getAttributesFromContainer(String groupPath ) throws N5Exception.N5IOException {
+
+		return getAttributesFromContainer(groupPath, N5JsonCache.jsonFile);
+	}
+
+	public JsonElement getAttributesFromContainer(String groupPath, String cachePath) throws N5Exception.N5IOException {
 
 		final String attributesPath = attributesPath(groupPath);
-		if (!normalExists(groupPath))
+		if (!existsFromContainer(groupPath))
 			throw new N5Exception.N5IOException("Group " + groupPath + " does not exist");
 		if (!keyValueAccess.exists(attributesPath))
 			return null;
@@ -308,7 +307,7 @@ public class N5KeyValueReader implements N5Reader {
 	 * @return the normalized groups in {@code normalPath}
 	 * @throws N5Exception.N5IOException the exception
 	 */
-	protected String[] normalList(final String normalPath) throws N5Exception.N5IOException {
+	public String[] listFromContainer(final String normalPath) throws N5Exception.N5IOException {
 
 		try {
 			return keyValueAccess.listDirectories(groupPath(normalPath));
@@ -324,7 +323,7 @@ public class N5KeyValueReader implements N5Reader {
 		if (cacheMeta) {
 			return cache.list(normalPath);
 		} else {
-			return normalList(normalPath);
+			return listFromContainer(normalPath);
 		}
 	}
 
