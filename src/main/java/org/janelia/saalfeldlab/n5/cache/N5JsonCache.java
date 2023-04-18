@@ -148,6 +148,20 @@ public class N5JsonCache {
 		}
 	}
 
+	public void addNewCacheInfo(String normalPathKey, String normalCacheKey, JsonElement uncachedAttributes, boolean isGroup, boolean isDataset) {
+
+		final N5CacheInfo cacheInfo = new N5CacheInfo();
+		synchronized (cacheInfo.attributesCache) {
+			cacheInfo.attributesCache.put(normalCacheKey, uncachedAttributes);
+		}
+		cacheInfo.isGroup = isGroup;
+		cacheInfo.isDataset = isDataset;
+		addChild(cacheInfo, normalPathKey);
+		synchronized (containerPathToCache) {
+			containerPathToCache.put(normalPathKey, cacheInfo);
+		}
+	}
+
 	private void addChild(N5CacheInfo cacheInfo, String normalPathKey) {
 
 		final String[] children = container.listFromContainer(normalPathKey);
@@ -215,6 +229,26 @@ public class N5JsonCache {
 
 		synchronized (containerPathToCache) {
 			containerPathToCache.put(normalPathKey, cacheInfo);
+		}
+	}
+
+	public void setIsDataset(final String normalPathKey, final boolean isDataset ) {
+		final N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
+		if (cacheInfo == null ){
+			return;
+		}
+		synchronized (cacheInfo) {
+			cacheInfo.isDataset = isDataset;
+		}
+	}
+
+	public void setAttributes(final String normalPathKey, final String normalCacheKey, final JsonElement attributes ) {
+		final N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
+		if (cacheInfo == null ){
+			return;
+		}
+		synchronized (cacheInfo.attributesCache) {
+			cacheInfo.attributesCache.put(normalCacheKey, attributes);
 		}
 	}
 

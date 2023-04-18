@@ -61,8 +61,8 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 	 * @param normalPath the group path.
 	 */
 	default void initializeGroup(final String normalPath) {
-
 		// Nothing to do here, but other implementations (e.g. zarr) use this.
+		// TODO remove if not used by zarr
 	}
 
 	@Override
@@ -76,12 +76,38 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 				String parent = N5URL.normalizeGroupPath("/");
 				for (String child : pathParts) {
 					final String childPath = getKeyValueAccess().compose(parent, child);
+					// add the group to the cache
+					getCache().addNewCacheInfo(childPath, N5JsonCache.jsonFile, null, true, false);
 					getCache().addChild(parent, child);
 					parent = childPath;
 				}
 			}
 		}
 		initializeGroup(normalPath);
+	}
+
+	/**
+	 * Creates a dataset.  This does not create any data but the path and
+	 * mandatory attributes only.
+	 *
+	 * @param pathName dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @throws IOException the exception
+	 */
+	@Override
+	default void createDataset(
+			final String pathName,
+			final DatasetAttributes datasetAttributes) throws IOException {
+
+		// N5Writer.super.createDataset(pathName, datasetAttributes);
+		/* the three lines below duplicate the single line above but would have to call
+		 * normalizeGroupPath again the below duplicates code, but avoids extra work */
+		final String normalPath = N5URL.normalizeGroupPath(pathName);
+		createGroup(normalPath);
+		setDatasetAttributes(normalPath, datasetAttributes);
+
+		if (cacheMeta())
+			getCache().setIsDataset(normalPath, true);
 	}
 
 	/**
@@ -144,7 +170,7 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 				nullRespectingAttributes = getGson().toJsonTree(attributes);
 			}
 			/* Update the cache, and write to the writer */
-			getCache().updateCacheInfo(normalGroupPath, N5JsonCache.jsonFile, nullRespectingAttributes);
+			getCache().setAttributes(normalGroupPath, N5JsonCache.jsonFile, nullRespectingAttributes);
 		}
 	}
 
