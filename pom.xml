@@ -150,7 +150,6 @@
 		<dependency>
 			<groupId>cisd</groupId>
 			<artifactId>jhdf5</artifactId>
-			<version>${cisd.jhdf5.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
