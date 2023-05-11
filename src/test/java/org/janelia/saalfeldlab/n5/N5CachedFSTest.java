@@ -1,6 +1,8 @@
 package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.GsonBuilder;
+import java.net.URI;
+import java.net.URISyntaxException;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
@@ -18,42 +20,39 @@ import java.util.ArrayList;
 public class N5CachedFSTest extends N5FSTest {
 
 	@Override
-	protected N5Writer createN5Writer() throws IOException {
+	protected N5Writer createN5Writer(final String location, final GsonBuilder gson) throws IOException, URISyntaxException {
 
-		return new N5FSWriter(tempN5PathName(), true);
+		return createN5Writer(location, gson, true);
 	}
 
 	@Override
-	protected N5Writer createN5Writer(final String location) throws IOException {
+	protected N5Reader createN5Reader(final String location, final GsonBuilder gson) throws IOException, URISyntaxException {
 
-		return createN5Writer(location, true);
+		return createN5Reader(location, gson, true);
 	}
 
-	protected N5Writer createN5Writer(final String location, final boolean cache ) throws IOException {
+	protected N5Writer createN5Writer(final String location, final GsonBuilder gson, final boolean cache) throws IOException, URISyntaxException {
 
-		return new N5FSWriter(location, cache);
+		final String basePath = new File(new URI(location)).getCanonicalPath();
+		return new N5FSWriter(basePath, gson, cache);
 	}
 
-	@Override
-	protected N5Writer createN5Writer(final String location, final GsonBuilder gson) throws IOException {
+	protected N5Writer createN5Writer(final String location, final boolean cache) throws IOException, URISyntaxException {
 
-		if (!new File(location).exists()) {
-			tmpFiles.add(location);
-		}
-		return new N5FSWriter(location, gson, true);
+		return createN5Writer(location, new GsonBuilder(), cache);
 	}
 
-	protected N5Reader createN5Reader(final String location, final GsonBuilder gson, final boolean cache) throws IOException {
+	protected N5Reader createN5Reader(final String location, final GsonBuilder gson, final boolean cache) throws IOException, URISyntaxException {
 
-		return new N5FSReader(location, gson, cache);
+		final String basePath = new File(new URI(location)).getCanonicalPath();
+		return new N5FSReader(basePath, gson, cache);
 	}
 
 	@Test
-	public void cacheTest() throws IOException {
+	public void cacheTest() throws IOException, URISyntaxException {
 		/* Test the cache by setting many attributes, then manually deleting the underlying file.
 		* The only possible way for the test to succeed is if it never again attempts to read the file, and relies on the cache. */
 
-//		try (N5KeyValueWriter n5 = (N5KeyValueWriter) createN5Writer()) {
 		try (N5KeyValueWriter n5 = (N5KeyValueWriter) createN5Writer()) {
 			final String cachedGroup = "cachedGroup";
 			final String attributesPath = n5.attributesPath(cachedGroup);
@@ -69,8 +68,7 @@ public class N5CachedFSTest extends N5FSTest {
 			runTests(n5, tests);
 		}
 
-//		try (N5KeyValueWriter n5 = new N5FSWriter(tempN5PathName(), false)) {
-		try (N5KeyValueWriter n5 = (N5KeyValueWriter)createN5Writer(tempN5PathName(), false)) {
+		try (N5KeyValueWriter n5 = (N5KeyValueWriter)createN5Writer(tempN5Location(), false)) {
 			final String cachedGroup = "cachedGroup";
 			final String attributesPath = n5.attributesPath(cachedGroup);
 
@@ -86,14 +84,14 @@ public class N5CachedFSTest extends N5FSTest {
 	}
 
 	@Test
-	public void cacheGroupDatasetTest() throws IOException {
+	public void cacheGroupDatasetTest() throws IOException, URISyntaxException {
 
 		final String datasetName = "dd";
 		final String groupName = "gg";
 
-		final String tmpPath = tempN5PathName();
-		try (N5KeyValueWriter w1 = (N5KeyValueWriter) createN5Writer(tmpPath);
-				N5KeyValueWriter w2 = (N5KeyValueWriter) createN5Writer(tmpPath);) {
+		final String tmpLocation = tempN5Location();
+		try (N5KeyValueWriter w1 = (N5KeyValueWriter) createN5Writer(tmpLocation);
+				N5KeyValueWriter w2 = (N5KeyValueWriter) createN5Writer(tmpLocation);) {
 
 			// create a group, both writers know it exists
 			w1.createGroup(groupName);

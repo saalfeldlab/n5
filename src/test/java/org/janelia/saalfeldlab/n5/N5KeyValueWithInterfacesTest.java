@@ -26,6 +26,10 @@
 package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.GsonBuilder;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
 import org.junit.AfterClass;
@@ -53,10 +57,43 @@ import static org.junit.Assert.fail;
  * @author Stephan Saalfeld
  * @author Igor Pisarev
  */
+// TODO Remove? This looks like a near-duplicate of N5FSTest. Leftover from some intermediate state and not cleaned up?
 public class N5KeyValueWithInterfacesTest extends AbstractN5Test {
 
 	private static FileSystemKeyValueAccess access = new FileSystemKeyValueAccess(FileSystems.getDefault());
 	private static String testDirPath = tempN5PathName();
+
+	private static Set<String> tmpFiles = new HashSet<>();
+
+	private static String tempN5PathName()  {
+		try {
+			final File tmpFile = Files.createTempDirectory("n5-test-").toFile();
+			tmpFile.deleteOnExit();
+			final String tmpPath = tmpFile.getCanonicalPath();
+			tmpFiles.add(tmpPath);
+			return tmpPath;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	protected String tempN5Location() throws URISyntaxException {
+		final String basePath = tempN5PathName();
+		return new URI("file", null, basePath, null).toString();
+	}
+
+	@Override
+	protected N5Writer createN5Writer(final String location, final GsonBuilder gson) throws IOException, URISyntaxException {
+		final String basePath = new File(new URI(location)).getCanonicalPath();
+		return new N5KeyValueWriter(access, basePath, gson, true);
+	}
+
+	@Override
+	protected N5Reader createN5Reader(final String location, final GsonBuilder gson) throws IOException, URISyntaxException {
+		final String basePath = new File(new URI(location)).getCanonicalPath();
+		return new N5FSReader(basePath, gson);
+	}
 
 	@AfterClass
 	public static void cleanup() {
@@ -66,27 +103,6 @@ public class N5KeyValueWithInterfacesTest extends AbstractN5Test {
 				FileUtils.deleteDirectory(new File(tmpFile));
 			} catch (Exception e) { }
 		}
-	}
-
-	/**
-	 * @throws IOException
-	 */
-	@Override
-	protected N5Writer createN5Writer() throws IOException {
-		return new N5KeyValueWriter(access, tempN5PathName(), new GsonBuilder(), true);
-	}
-
-	@Override
-	protected N5Writer createN5Writer(String location, GsonBuilder gson) throws IOException {
-		if (!new File(location).exists()) {
-			tmpFiles.add(location);
-		}
-		return new N5KeyValueWriter(access, location, gson, true);
-	}
-
-	@Override
-	protected N5Reader createN5Reader(String location, GsonBuilder gson) throws IOException {
-		return new N5FSReader(location, gson);
 	}
 
 	@Test

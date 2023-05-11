@@ -29,10 +29,14 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -59,6 +63,38 @@ public class N5FSTest extends AbstractN5Test {
 	private static FileSystemKeyValueAccess access = new FileSystemKeyValueAccess(FileSystems.getDefault());
 	private static String testDirPath = tempN5PathName();
 
+	private static Set<String> tmpFiles = new HashSet<>();
+
+	private static String tempN5PathName()  {
+		try {
+			final File tmpFile = Files.createTempDirectory("n5-test-").toFile();
+			tmpFile.deleteOnExit();
+			final String tmpPath = tmpFile.getCanonicalPath();
+			tmpFiles.add(tmpPath);
+			return tmpPath;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	protected String tempN5Location() throws URISyntaxException {
+		final String basePath = tempN5PathName();
+		return new URI("file", null, basePath, null).toString();
+	}
+
+	@Override
+	protected N5Writer createN5Writer(final String location, final GsonBuilder gson) throws IOException, URISyntaxException {
+		final String basePath = new File(new URI(location)).getCanonicalPath();
+		return new N5FSWriter(basePath, gson);
+	}
+
+	@Override
+	protected N5Reader createN5Reader(final String location, final GsonBuilder gson) throws IOException, URISyntaxException {
+		final String basePath = new File(new URI(location)).getCanonicalPath();
+		return new N5FSReader(basePath, gson);
+	}
+
 	@AfterClass
 	public static void cleanup() {
 
@@ -67,30 +103,6 @@ public class N5FSTest extends AbstractN5Test {
 				FileUtils.deleteDirectory(new File(tmpFile));
 			} catch (Exception e) { }
 		}
-	}
-
-	/**
-	 * @throws IOException
-	 */
-	@Override
-	protected N5Writer createN5Writer() throws IOException {
-		return new N5FSWriter(tempN5PathName(), false);
-	}
-
-
-
-
-	@Override
-	protected N5Writer createN5Writer(String location, GsonBuilder gson) throws IOException {
-		if (!new File(location).exists()) {
-			tmpFiles.add(location);
-		}
-		return new N5FSWriter(location, gson);
-	}
-
-	@Override
-	protected N5Reader createN5Reader(String location, GsonBuilder gson) throws IOException {
-		return new N5FSReader(location, gson);
 	}
 
 	@Test
