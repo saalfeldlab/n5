@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
 
 /**
@@ -80,6 +81,15 @@ public interface KeyValueAccess {
 	 * @return the normalized path
 	 */
 	public String normalize(final String path);
+
+	/**
+	 * Get the absolute (including scheme) URI of the given path
+	 *
+	 * @param normalPath is expected to be in normalized form, no further
+	 * 		efforts are made to normalize it.
+	 * @return absolute URI
+	 */
+	public String absoluteURI(final String normalPath) throws URISyntaxException;
 
 	/**
 	 * Test whether the path exists.

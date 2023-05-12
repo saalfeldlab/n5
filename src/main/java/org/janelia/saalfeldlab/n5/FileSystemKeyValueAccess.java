@@ -30,6 +30,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
@@ -268,6 +270,11 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public String normalize(final String path) {
 
 		return fileSystem.getPath(path).normalize().toString();
+	}
+
+	@Override
+	public String absoluteURI(final String normalPath) throws URISyntaxException {
+		return new URI("file", null, normalPath, null).toString();
 	}
 
 	@Override
