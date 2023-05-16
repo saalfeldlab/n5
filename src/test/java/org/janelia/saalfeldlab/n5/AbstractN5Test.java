@@ -37,7 +37,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -46,11 +45,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
@@ -90,28 +87,24 @@ public abstract class AbstractN5Test {
 
 	static protected N5Writer n5;
 
-	protected abstract N5Writer createN5Writer() throws IOException;
+	protected abstract String tempN5Location() throws URISyntaxException;
 
-	protected N5Writer createN5Writer(String location) throws IOException {
-
-		final Path testN5Path  = Paths.get(location);
-		final boolean existsBefore = testN5Path.toFile().exists();
-		final N5Writer n5Writer = createN5Writer(location, new GsonBuilder());
-		final boolean existsAfter = testN5Path.toFile().exists();
-		if (!existsBefore && existsAfter) {
-			tmpFiles.add(location);
-		}
-		return n5Writer;
+	protected N5Writer createN5Writer() throws IOException, URISyntaxException {
+		return createN5Writer(tempN5Location());
 	}
 
-	protected abstract N5Writer createN5Writer(String location, GsonBuilder gson) throws IOException;
+	protected N5Writer createN5Writer(String location) throws IOException, URISyntaxException {
+		return createN5Writer(location, new GsonBuilder());
+	}
 
-	protected N5Reader createN5Reader(String location) throws IOException {
+	protected abstract N5Writer createN5Writer(String location, GsonBuilder gson) throws IOException, URISyntaxException;
+
+	protected N5Reader createN5Reader(String location) throws IOException, URISyntaxException {
 
 		return createN5Reader(location, new GsonBuilder());
 	}
 
-	protected abstract N5Reader createN5Reader(String location, GsonBuilder gson) throws IOException;
+	protected abstract N5Reader createN5Reader(String location, GsonBuilder gson) throws IOException, URISyntaxException;
 
 	protected Compression[] getCompressions() {
 
@@ -125,24 +118,11 @@ public abstract class AbstractN5Test {
 		};
 	}
 
-	protected static Set<String> tmpFiles = new HashSet<>();
-	protected static String tempN5PathName()  {
-		try {
-			final File tmpFile = Files.createTempDirectory("n5-test-").toFile();
-			tmpFile.deleteOnExit();
-			final String tmpPath = tmpFile.getCanonicalPath();
-			tmpFiles.add(tmpPath);
-			return tmpPath;
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 	/**
 	 * @throws IOException
 	 */
 	@Before
-	public void setUpOnce() throws IOException {
+	public void setUpOnce() throws IOException, URISyntaxException {
 
 		if (n5 != null)
 			return;
@@ -196,7 +176,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testSetAttributeDoesntCreateGroup() throws IOException {
+	public void testSetAttributeDoesntCreateGroup() throws IOException, URISyntaxException {
 
 		try (final N5Writer writer = createN5Writer()) {
 			final String testGroup = "/group/should/not/exit";
@@ -207,7 +187,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testCreateDataset() throws IOException {
+	public void testCreateDataset() throws IOException, URISyntaxException {
 
 		final DatasetAttributes info;
 		try (N5Writer writer = createN5Writer()) {
@@ -254,7 +234,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testWriteReadShortBlock() {
+	public void testWriteReadShortBlock() throws URISyntaxException {
 
 		for (final Compression compression : getCompressions()) {
 			for (final DataType dataType : new DataType[]{
@@ -283,7 +263,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testWriteReadIntBlock() {
+	public void testWriteReadIntBlock() throws URISyntaxException {
 
 		for (final Compression compression : getCompressions()) {
 			for (final DataType dataType : new DataType[]{
@@ -312,7 +292,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testWriteReadLongBlock() {
+	public void testWriteReadLongBlock() throws URISyntaxException {
 
 		for (final Compression compression : getCompressions()) {
 			for (final DataType dataType : new DataType[]{
@@ -341,7 +321,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testWriteReadFloatBlock() {
+	public void testWriteReadFloatBlock() throws URISyntaxException {
 
 		for (final Compression compression : getCompressions()) {
 			System.out.println("Testing " + compression.getType() + " float32");
@@ -365,7 +345,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testWriteReadDoubleBlock() {
+	public void testWriteReadDoubleBlock() throws URISyntaxException {
 
 		for (final Compression compression : getCompressions()) {
 			System.out.println("Testing " + compression.getType() + " float64");
@@ -389,7 +369,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testMode1WriteReadByteBlock() {
+	public void testMode1WriteReadByteBlock() throws URISyntaxException {
 
 		final int[] differentBlockSize = new int[]{5, 10, 15};
 
@@ -420,7 +400,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testWriteReadSerializableBlock() throws ClassNotFoundException {
+	public void testWriteReadSerializableBlock() throws ClassNotFoundException, URISyntaxException {
 
 		for (final Compression compression : getCompressions()) {
 
@@ -452,7 +432,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testOverwriteBlock() {
+	public void testOverwriteBlock() throws URISyntaxException {
 
 		try (final N5Writer n5 = createN5Writer()) {
 			n5.createDataset(datasetName, dimensions, blockSize, DataType.INT32, new GzipCompression());
@@ -478,7 +458,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testAttributeParsingPrimitive() throws IOException {
+	public void testAttributeParsingPrimitive() throws IOException, URISyntaxException {
 
 		try (final N5Writer n5 = createN5Writer()) {
 
@@ -554,7 +534,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testAttributes() throws IOException {
+	public void testAttributes() throws IOException, URISyntaxException {
 
 		try (final N5Writer n5 = createN5Writer()) {
 			n5.createGroup(groupName);
@@ -616,10 +596,10 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testNullAttributes() throws IOException {
+	public void testNullAttributes() throws IOException, URISyntaxException {
 
 		/* serializeNulls*/
-		try (N5Writer writer = createN5Writer(tempN5PathName(), new GsonBuilder().serializeNulls())) {
+		try (N5Writer writer = createN5Writer(tempN5Location(), new GsonBuilder().serializeNulls())) {
 
 			writer.createGroup(groupName);
 			writer.setAttribute(groupName, "nullValue", null);
@@ -701,9 +681,9 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testRemoveAttributes() throws IOException {
+	public void testRemoveAttributes() throws IOException, URISyntaxException {
 
-		try (N5Writer writer = createN5Writer(tempN5PathName(), new GsonBuilder().serializeNulls())) {
+		try (N5Writer writer = createN5Writer(tempN5Location(), new GsonBuilder().serializeNulls())) {
 
 			writer.setAttribute("", "a/b/c", 100);
 			assertEquals((Integer)100, writer.getAttribute("", "a/b/c", Integer.class));
@@ -814,10 +794,11 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testRemoveContainer() throws IOException {
+	public void testRemoveContainer() throws IOException, URISyntaxException {
 
-		final String location = tempN5PathName();
-		try (final N5Writer n5 = createN5Writer(location)) {
+		String location;
+		try (final N5Writer n5 = createN5Writer()) {
+			location = n5.getContainerURI();
 			assertNotNull(createN5Reader(location));
 			n5.remove();
 			assertThrows(Exception.class, () -> createN5Reader(location));
@@ -826,7 +807,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testRemoveGroup() throws IOException {
+	public void testRemoveGroup() throws IOException, URISyntaxException {
 
 		try (final N5Writer n5 = createN5Writer()) {
 			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
@@ -839,7 +820,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testList() throws IOException {
+	public void testList() throws IOException, URISyntaxException {
 
 		try (final N5Writer listN5 = createN5Writer()) {
 			listN5.createGroup(groupName);
@@ -861,12 +842,9 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testDeepList() throws IOException, ExecutionException, InterruptedException {
+	public void testDeepList() throws IOException, URISyntaxException, ExecutionException, InterruptedException {
 
-		final File tmpFile = Files.createTempDirectory("deeplist-test-").toFile();
-		tmpFile.delete();
-		final String canonicalPath = tmpFile.getCanonicalPath();
-		try (final N5Writer n5 = createN5Writer(canonicalPath)) {
+		try (final N5Writer n5 = createN5Writer()) {
 
 			n5.createGroup(groupName);
 			for (final String subGroup : subGroupNames)
@@ -1019,7 +997,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testExists() throws IOException {
+	public void testExists() throws IOException, URISyntaxException {
 
 		final String groupName2 = groupName + "-2";
 		final String datasetName2 = datasetName + "-2";
@@ -1090,7 +1068,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testVersion() throws NumberFormatException, IOException {
+	public void testVersion() throws NumberFormatException, IOException, URISyntaxException {
 
 		try (final N5Writer writer = createN5Writer()) {
 
@@ -1103,7 +1081,10 @@ public abstract class AbstractN5Test {
 			final Version version = writer.getVersion();
 			assertFalse(N5Reader.VERSION.isCompatible(version));
 
-			assertThrows(N5Exception.N5IOException.class, () -> createN5Writer( writer.getBasePath() ));
+			assertThrows(N5Exception.N5IOException.class, () -> {
+				final String containerPath = writer.getContainerURI();
+				createN5Writer(containerPath);
+			});
 
 			final Version compatibleVersion = new Version(N5Reader.VERSION.getMajor(), N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch());
 			writer.setAttribute("/", N5Reader.VERSION_KEY, compatibleVersion.toString());
@@ -1112,24 +1093,24 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testReaderCreation() throws IOException {
+	public void testReaderCreation() throws IOException, URISyntaxException {
 
-		final String canonicalPath = tempN5PathName();
-		try (N5Writer writer = createN5Writer(canonicalPath)) {
+		final String location = tempN5Location();
+		try (N5Writer writer = createN5Writer(location)) {
 
-			final N5Reader n5r = createN5Reader(canonicalPath);
+			final N5Reader n5r = createN5Reader(location);
 			assertNotNull(n5r);
 
 			// existing directory without attributes is okay;
 			// Remove and create to remove attributes store
 			writer.removeAttribute("/", "/");
-			final N5Reader na = createN5Reader(canonicalPath);
+			final N5Reader na = createN5Reader(location);
 			assertNotNull(na);
 
 			// existing location with attributes, but no version
 			writer.removeAttribute("/", "/");
 			writer.setAttribute("/", "mystring", "ms");
-			final N5Reader wa = createN5Reader(canonicalPath);
+			final N5Reader wa = createN5Reader(location);
 			assertNotNull(wa);
 
 			// existing directory with incompatible version should fail
@@ -1138,14 +1119,14 @@ public abstract class AbstractN5Test {
 					new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
 			assertThrows("Incompatible version throws error", N5Exception.N5IOException.class,
 					() -> {
-						createN5Reader(canonicalPath);
+						createN5Reader(location);
 					});
 			writer.remove();
 		}
 		// non-existent group should fail
 		assertThrows("Non-existant location throws error", N5Exception.N5IOException.class,
 				() -> {
-					final N5Reader test = createN5Reader(canonicalPath);
+					final N5Reader test = createN5Reader(location);
 					test.list("/");
 				});
 	}
@@ -1234,7 +1215,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testAttributePaths() throws IOException {
+	public void testAttributePaths() throws IOException, URISyntaxException {
 
 		try (final N5Writer writer = createN5Writer()) {
 
@@ -1339,7 +1320,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testAttributePathEscaping() throws IOException {
+	public void testAttributePathEscaping() throws IOException, URISyntaxException {
 
 		final JsonObject emptyObj = new JsonObject();
 
@@ -1436,7 +1417,7 @@ public abstract class AbstractN5Test {
 
 	@Test
 	public void
-	testRootLeaves() throws IOException {
+	testRootLeaves() throws IOException, URISyntaxException {
 
 		/* Test retrieving non-JsonObject root leaves */
 		try (final N5Writer n5 = createN5Writer()) {

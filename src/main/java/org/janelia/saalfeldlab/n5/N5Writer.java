@@ -133,7 +133,7 @@ public interface N5Writer extends N5Reader {
 	/**
 	 * Removes a group or dataset (directory and all contained files).
 	 *
-	 * <p><code>{@link #remove(String) remove("")}</code> or
+	 * <p><code>{@link #remove(String) remove("/")}</code> or
 	 * <code>{@link #remove(String) remove("")}</code> will delete this N5
 	 * container.  Please note that no checks for safety will be performed,
 	 * e.g. <code>{@link #remove(String) remove("..")}</code> will try to

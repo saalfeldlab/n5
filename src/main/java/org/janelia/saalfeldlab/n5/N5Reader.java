@@ -217,6 +217,15 @@ public interface N5Reader extends AutoCloseable {
 	String getBasePath();
 
 	/**
+	 * Returns a String representation of the absolute URI of the container.
+	 *
+	 * @return the absolute URI of the container
+	 */
+	// TODO: should this throw URISyntaxException or can we assume that this is
+	//       never possible if we were able to instantiate this N5Reader?
+	String getContainerURI();
+
+	/**
 	 * Reads an attribute.
 	 *
 	 * @param pathName group path

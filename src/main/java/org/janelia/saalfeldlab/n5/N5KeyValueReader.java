@@ -27,11 +27,12 @@ package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import java.net.URISyntaxException;
+import java.util.stream.Stream;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.stream.Stream;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
@@ -125,6 +126,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueReader {
 
 		return gson;
 	}
+
 	public KeyValueAccess getKeyValueAccess() {
 		return keyValueAccess;
 	}
@@ -133,6 +135,16 @@ public class N5KeyValueReader implements CachedGsonKeyValueReader {
 	public String getBasePath() {
 
 		return this.basePath;
+	}
+
+	@Override
+	public String getContainerURI() {
+
+		try {
+			return keyValueAccess.absoluteURI(basePath);
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
