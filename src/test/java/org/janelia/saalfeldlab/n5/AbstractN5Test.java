@@ -603,7 +603,7 @@ public abstract class AbstractN5Test {
 
 			writer.createGroup(groupName);
 			writer.setAttribute(groupName, "nullValue", null);
-			assertEquals(null, writer.getAttribute(groupName, "nullValue", Object.class));
+			assertNull(writer.getAttribute(groupName, "nullValue", Object.class));
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "nullValue", JsonElement.class));
 			final HashMap<String, Object> nulls = new HashMap<>();
 			nulls.put("anotherNullValue", null);
@@ -611,30 +611,30 @@ public abstract class AbstractN5Test {
 			nulls.put("implicitNulls[3]", null);
 			writer.setAttributes(groupName, nulls);
 
-			assertEquals(null, writer.getAttribute(groupName, "anotherNullValue", Object.class));
+			assertNull(writer.getAttribute(groupName, "anotherNullValue", Object.class));
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "anotherNullValue", JsonElement.class));
 
-			assertEquals(null, writer.getAttribute(groupName, "structured/nullValue", Object.class));
+			assertNull(writer.getAttribute(groupName, "structured/nullValue", Object.class));
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "structured/nullValue", JsonElement.class));
 
-			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[3]", Object.class));
+			assertNull(writer.getAttribute(groupName, "implicitNulls[3]", Object.class));
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "implicitNulls[3]", JsonElement.class));
 
-			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[1]", Object.class));
+			assertNull(writer.getAttribute(groupName, "implicitNulls[1]", Object.class));
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "implicitNulls[1]", JsonElement.class));
 
 			/* Negative test; a value that truly doesn't exist will still return `null` but will also return `null` when querying as a `JsonElement` */
-			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[10]", Object.class));
-			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[10]", JsonElement.class));
+			assertNull(writer.getAttribute(groupName, "implicitNulls[10]", Object.class));
+			assertNull(writer.getAttribute(groupName, "implicitNulls[10]", JsonElement.class));
 
-			assertEquals(null, writer.getAttribute(groupName, "keyDoesn'tExist", Object.class));
-			assertEquals(null, writer.getAttribute(groupName, "keyDoesn'tExist", JsonElement.class));
+			assertNull(writer.getAttribute(groupName, "keyDoesn'tExist", Object.class));
+			assertNull(writer.getAttribute(groupName, "keyDoesn'tExist", JsonElement.class));
 
 			/* check existing value gets overwritten */
 			writer.setAttribute(groupName, "existingValue", 1);
 			assertEquals((Integer)1, writer.getAttribute(groupName, "existingValue", Integer.class));
 			writer.setAttribute(groupName, "existingValue", null);
-			assertEquals(null, writer.getAttribute(groupName, "existingValue", Integer.class));
+			assertNull(writer.getAttribute(groupName, "existingValue", Integer.class));
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "existingValue", JsonElement.class));
 		}
 
@@ -643,40 +643,40 @@ public abstract class AbstractN5Test {
 
 			writer.createGroup(groupName);
 			writer.setAttribute(groupName, "nullValue", null);
-			assertEquals(null, writer.getAttribute(groupName, "nullValue", Object.class));
-			assertEquals(null, writer.getAttribute(groupName, "nullValue", JsonElement.class));
+			assertNull(writer.getAttribute(groupName, "nullValue", Object.class));
+			assertNull(writer.getAttribute(groupName, "nullValue", JsonElement.class));
 			final HashMap<String, Object> nulls = new HashMap<>();
 			nulls.put("anotherNullValue", null);
 			nulls.put("structured/nullValue", null);
 			nulls.put("implicitNulls[3]", null);
 			writer.setAttributes(groupName, nulls);
 
-			assertEquals(null, writer.getAttribute(groupName, "anotherNullValue", Object.class));
-			assertEquals(null, writer.getAttribute(groupName, "anotherNullValue", JsonElement.class));
+			assertNull(writer.getAttribute(groupName, "anotherNullValue", Object.class));
+			assertNull(writer.getAttribute(groupName, "anotherNullValue", JsonElement.class));
 
-			assertEquals(null, writer.getAttribute(groupName, "structured/nullValue", Object.class));
-			assertEquals(null, writer.getAttribute(groupName, "structured/nullValue", JsonElement.class));
+			assertNull(writer.getAttribute(groupName, "structured/nullValue", Object.class));
+			assertNull(writer.getAttribute(groupName, "structured/nullValue", JsonElement.class));
 
 			/* Arrays are still filled with `null`, regardless of `serializeNulls()`*/
-			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[3]", Object.class));
+			assertNull(writer.getAttribute(groupName, "implicitNulls[3]", Object.class));
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "implicitNulls[3]", JsonElement.class));
 
-			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[1]", Object.class));
+			assertNull(writer.getAttribute(groupName, "implicitNulls[1]", Object.class));
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "implicitNulls[1]", JsonElement.class));
 
 			/* Negative test; a value that truly doesn't exist will still return `null` but will also return `null` when querying as a `JsonElement` */
-			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[10]", Object.class));
-			assertEquals(null, writer.getAttribute(groupName, "implicitNulls[10]", JsonElement.class));
+			assertNull(writer.getAttribute(groupName, "implicitNulls[10]", Object.class));
+			assertNull(writer.getAttribute(groupName, "implicitNulls[10]", JsonElement.class));
 
-			assertEquals(null, writer.getAttribute(groupName, "keyDoesn'tExist", Object.class));
-			assertEquals(null, writer.getAttribute(groupName, "keyDoesn'tExist", JsonElement.class));
+			assertNull(writer.getAttribute(groupName, "keyDoesn'tExist", Object.class));
+			assertNull(writer.getAttribute(groupName, "keyDoesn'tExist", JsonElement.class));
 
 			/* check existing value gets overwritten */
 			writer.setAttribute(groupName, "existingValue", 1);
 			assertEquals((Integer)1, writer.getAttribute(groupName, "existingValue", Integer.class));
 			writer.setAttribute(groupName, "existingValue", null);
-			assertEquals(null, writer.getAttribute(groupName, "existingValue", Integer.class));
-			assertEquals(null, writer.getAttribute(groupName, "existingValue", JsonElement.class));
+			assertNull(writer.getAttribute(groupName, "existingValue", Integer.class));
+			assertNull(writer.getAttribute(groupName, "existingValue", JsonElement.class));
 		}
 	}
 
