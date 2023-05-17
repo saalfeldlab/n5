@@ -33,7 +33,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -52,6 +51,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -154,7 +154,7 @@ public abstract class AbstractN5Test {
 
 		if (n5 != null) {
 			try { 
-				Assert.assertTrue(n5.remove());
+				assertTrue(n5.remove());
 			} catch ( Exception e ) {}
 			n5 = null;
 		}
@@ -198,10 +198,10 @@ public abstract class AbstractN5Test {
 
 			info = writer.getDatasetAttributes(datasetName);
 		}
-		Assert.assertArrayEquals(dimensions, info.getDimensions());
-		Assert.assertArrayEquals(blockSize, info.getBlockSize());
-		Assert.assertEquals(DataType.UINT64, info.getDataType());
-		Assert.assertTrue(info.getCompression() instanceof RawCompression);
+		assertArrayEquals(dimensions, info.getDimensions());
+		assertArrayEquals(blockSize, info.getBlockSize());
+		assertEquals(DataType.UINT64, info.getDataType());
+		assertTrue(info.getCompression() instanceof RawCompression);
 	}
 
 	@Test
@@ -221,9 +221,9 @@ public abstract class AbstractN5Test {
 
 					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 
-					Assert.assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
+					assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
 
-					Assert.assertTrue(n5.remove(datasetName));
+					assertTrue(n5.remove(datasetName));
 
 				} catch (final IOException e) {
 					e.printStackTrace();
@@ -250,9 +250,9 @@ public abstract class AbstractN5Test {
 
 					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 
-					Assert.assertArrayEquals(shortBlock, (short[])loadedDataBlock.getData());
+					assertArrayEquals(shortBlock, (short[])loadedDataBlock.getData());
 
-					Assert.assertTrue(n5.remove(datasetName));
+					assertTrue(n5.remove(datasetName));
 
 				} catch (final IOException e) {
 					e.printStackTrace();
@@ -279,9 +279,9 @@ public abstract class AbstractN5Test {
 
 					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 
-					Assert.assertArrayEquals(intBlock, (int[])loadedDataBlock.getData());
+					assertArrayEquals(intBlock, (int[])loadedDataBlock.getData());
 
-					Assert.assertTrue(n5.remove(datasetName));
+					assertTrue(n5.remove(datasetName));
 
 				} catch (final IOException e) {
 					e.printStackTrace();
@@ -308,9 +308,9 @@ public abstract class AbstractN5Test {
 
 					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 
-					Assert.assertArrayEquals(longBlock, (long[])loadedDataBlock.getData());
+					assertArrayEquals(longBlock, (long[])loadedDataBlock.getData());
 
-					Assert.assertTrue(n5.remove(datasetName));
+					assertTrue(n5.remove(datasetName));
 
 				} catch (final IOException e) {
 					e.printStackTrace();
@@ -333,9 +333,9 @@ public abstract class AbstractN5Test {
 
 				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 
-				Assert.assertArrayEquals(floatBlock, (float[])loadedDataBlock.getData(), 0.001f);
+				assertArrayEquals(floatBlock, (float[])loadedDataBlock.getData(), 0.001f);
 
-				Assert.assertTrue(n5.remove(datasetName));
+				assertTrue(n5.remove(datasetName));
 
 			} catch (final IOException e) {
 				e.printStackTrace();
@@ -357,9 +357,9 @@ public abstract class AbstractN5Test {
 
 				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 
-				Assert.assertArrayEquals(doubleBlock, (double[])loadedDataBlock.getData(), 0.001);
+				assertArrayEquals(doubleBlock, (double[])loadedDataBlock.getData(), 0.001);
 
-				Assert.assertTrue(n5.remove(datasetName));
+				assertTrue(n5.remove(datasetName));
 
 			} catch (final IOException e) {
 				e.printStackTrace();
@@ -387,9 +387,9 @@ public abstract class AbstractN5Test {
 
 					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
 
-					Assert.assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
+					assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
 
-					Assert.assertTrue(n5.remove(datasetName));
+					assertTrue(n5.remove(datasetName));
 
 				} catch (final IOException e) {
 					e.printStackTrace();
@@ -420,9 +420,9 @@ public abstract class AbstractN5Test {
 
 				final HashMap<String, ArrayList<double[]>> loadedObject = n5.readSerializedBlock(datasetName, attributes, new long[]{0, 0, 0});
 
-				object.entrySet().stream().forEach(e -> Assert.assertArrayEquals(e.getValue().get(0), loadedObject.get(e.getKey()).get(0), 0.01));
+				object.entrySet().stream().forEach(e -> assertArrayEquals(e.getValue().get(0), loadedObject.get(e.getKey()).get(0), 0.01));
 
-				Assert.assertTrue(n5.remove(datasetName));
+				assertTrue(n5.remove(datasetName));
 
 			} catch (final IOException e) {
 				e.printStackTrace();
@@ -441,15 +441,15 @@ public abstract class AbstractN5Test {
 			final IntArrayDataBlock randomDataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
 			n5.writeBlock(datasetName, attributes, randomDataBlock);
 			final DataBlock<?> loadedRandomDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
-			Assert.assertArrayEquals(intBlock, (int[])loadedRandomDataBlock.getData());
+			assertArrayEquals(intBlock, (int[])loadedRandomDataBlock.getData());
 
 			// test the case where the resulting file becomes shorter
 			final IntArrayDataBlock emptyDataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, new int[DataBlock.getNumElements(blockSize)]);
 			n5.writeBlock(datasetName, attributes, emptyDataBlock);
 			final DataBlock<?> loadedEmptyDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
-			Assert.assertArrayEquals(new int[DataBlock.getNumElements(blockSize)], (int[])loadedEmptyDataBlock.getData());
+			assertArrayEquals(new int[DataBlock.getNumElements(blockSize)], (int[])loadedEmptyDataBlock.getData());
 
-			Assert.assertTrue(n5.remove(datasetName));
+			assertTrue(n5.remove(datasetName));
 
 		} catch (final IOException e) {
 			e.printStackTrace();
@@ -478,58 +478,58 @@ public abstract class AbstractN5Test {
 			 */
 
 			n5.setAttribute(groupName, "key", "value");
-			Assert.assertNull(n5.getAttribute(groupName, "key", Integer.class ));
-			Assert.assertNull(n5.getAttribute(groupName, "key", int[].class ));
-			Assert.assertNull(n5.getAttribute(groupName, "key", Double.class ));
-			Assert.assertNull(n5.getAttribute(groupName, "key", double[].class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", String.class ));
-			Assert.assertNull(n5.getAttribute(groupName, "key", String[].class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+			assertNull(n5.getAttribute(groupName, "key", Integer.class ));
+			assertNull(n5.getAttribute(groupName, "key", int[].class ));
+			assertNull(n5.getAttribute(groupName, "key", Double.class ));
+			assertNull(n5.getAttribute(groupName, "key", double[].class ));
+			assertNotNull(n5.getAttribute(groupName, "key", String.class ));
+			assertNull(n5.getAttribute(groupName, "key", String[].class ));
+			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
 
 			n5.setAttribute(groupName, "key", new String[]{"value" });
-			Assert.assertNull(n5.getAttribute(groupName, "key", Integer.class ));
-			Assert.assertNull(n5.getAttribute(groupName, "key", int[].class ));
-			Assert.assertNull(n5.getAttribute(groupName, "key", Double.class ));
-			Assert.assertNull(n5.getAttribute(groupName, "key", double[].class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", String.class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", String[].class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+			assertNull(n5.getAttribute(groupName, "key", Integer.class ));
+			assertNull(n5.getAttribute(groupName, "key", int[].class ));
+			assertNull(n5.getAttribute(groupName, "key", Double.class ));
+			assertNull(n5.getAttribute(groupName, "key", double[].class ));
+			assertNotNull(n5.getAttribute(groupName, "key", String.class ));
+			assertNotNull(n5.getAttribute(groupName, "key", String[].class ));
+			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
 
 			n5.setAttribute(groupName, "key", 1);
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", Integer.class ));
-			Assert.assertNull(n5.getAttribute(groupName, "key", int[].class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", Double.class ));
-			Assert.assertNull(n5.getAttribute(groupName, "key", double[].class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", String.class ));
-			Assert.assertNull(n5.getAttribute(groupName, "key", String[].class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+			assertNotNull(n5.getAttribute(groupName, "key", Integer.class ));
+			assertNull(n5.getAttribute(groupName, "key", int[].class ));
+			assertNotNull(n5.getAttribute(groupName, "key", Double.class ));
+			assertNull(n5.getAttribute(groupName, "key", double[].class ));
+			assertNotNull(n5.getAttribute(groupName, "key", String.class ));
+			assertNull(n5.getAttribute(groupName, "key", String[].class ));
+			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
 
 			n5.setAttribute(groupName, "key", new int[]{2, 3});
-			Assert.assertNull(n5.getAttribute(groupName, "key", Integer.class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", int[].class ));
-			Assert.assertNull(n5.getAttribute(groupName, "key", Double.class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", double[].class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", String.class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", String[].class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+			assertNull(n5.getAttribute(groupName, "key", Integer.class ));
+			assertNotNull(n5.getAttribute(groupName, "key", int[].class ));
+			assertNull(n5.getAttribute(groupName, "key", Double.class ));
+			assertNotNull(n5.getAttribute(groupName, "key", double[].class ));
+			assertNotNull(n5.getAttribute(groupName, "key", String.class ));
+			assertNotNull(n5.getAttribute(groupName, "key", String[].class ));
+			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
 
 			n5.setAttribute(groupName, "key", 0.1);
-//			Assert.assertNull(n5.getAttribute(groupName, "key", Integer.class )); // TODO returns 0, is this right
-			Assert.assertNull(n5.getAttribute(groupName, "key", int[].class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", Double.class ));
-			Assert.assertNull(n5.getAttribute(groupName, "key", double[].class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", String.class ));
-			Assert.assertNull(n5.getAttribute(groupName, "key", String[].class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+//			assertNull(n5.getAttribute(groupName, "key", Integer.class )); // TODO returns 0, is this right
+			assertNull(n5.getAttribute(groupName, "key", int[].class ));
+			assertNotNull(n5.getAttribute(groupName, "key", Double.class ));
+			assertNull(n5.getAttribute(groupName, "key", double[].class ));
+			assertNotNull(n5.getAttribute(groupName, "key", String.class ));
+			assertNull(n5.getAttribute(groupName, "key", String[].class ));
+			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
 
 			n5.setAttribute(groupName, "key", new double[]{0.2, 0.3});
-			Assert.assertNull(n5.getAttribute(groupName, "key", Integer.class ));
-//			Assert.assertNull(n5.getAttribute(groupName, "key", int[].class )); // TODO returns not null, is this right?
-			Assert.assertNull(n5.getAttribute(groupName, "key", Double.class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", double[].class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", String.class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", String[].class ));
-			Assert.assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+			assertNull(n5.getAttribute(groupName, "key", Integer.class ));
+//			assertNull(n5.getAttribute(groupName, "key", int[].class )); // TODO returns not null, is this right?
+			assertNull(n5.getAttribute(groupName, "key", Double.class ));
+			assertNotNull(n5.getAttribute(groupName, "key", double[].class ));
+			assertNotNull(n5.getAttribute(groupName, "key", String.class ));
+			assertNotNull(n5.getAttribute(groupName, "key", String[].class ));
+			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
 		}
 	}
 
@@ -540,12 +540,12 @@ public abstract class AbstractN5Test {
 			n5.createGroup(groupName);
 
 			n5.setAttribute(groupName, "key1", "value1");
-			Assert.assertEquals(1, n5.listAttributes(groupName).size());
+			assertEquals(1, n5.listAttributes(groupName).size());
 
 			/* class interface */
-			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
+			assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
 			/* type interface */
-			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", new TypeToken<String>() {
+			assertEquals("value1", n5.getAttribute(groupName, "key1", new TypeToken<String>() {
 
 			}.getType()));
 
@@ -553,45 +553,45 @@ public abstract class AbstractN5Test {
 			newAttributes.put("key2", "value2");
 			newAttributes.put("key3", "value3");
 			n5.setAttributes(groupName, newAttributes);
-			Assert.assertEquals(3, n5.listAttributes(groupName).size());
+			assertEquals(3, n5.listAttributes(groupName).size());
 			/* class interface */
-			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
-			Assert.assertEquals("value2", n5.getAttribute(groupName, "key2", String.class));
-			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
+			assertEquals("value1", n5.getAttribute(groupName, "key1", String.class));
+			assertEquals("value2", n5.getAttribute(groupName, "key2", String.class));
+			assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
 			/* type interface */
-			Assert.assertEquals("value1", n5.getAttribute(groupName, "key1", new TypeToken<String>() {
+			assertEquals("value1", n5.getAttribute(groupName, "key1", new TypeToken<String>() {
 
 			}.getType()));
-			Assert.assertEquals("value2", n5.getAttribute(groupName, "key2", new TypeToken<String>() {
+			assertEquals("value2", n5.getAttribute(groupName, "key2", new TypeToken<String>() {
 
 			}.getType()));
-			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", new TypeToken<String>() {
+			assertEquals("value3", n5.getAttribute(groupName, "key3", new TypeToken<String>() {
 
 			}.getType()));
 
 			// test the case where the resulting file becomes shorter
 			n5.setAttribute(groupName, "key1", Integer.valueOf(1));
 			n5.setAttribute(groupName, "key2", Integer.valueOf(2));
-			Assert.assertEquals(3, n5.listAttributes(groupName).size());
+			assertEquals(3, n5.listAttributes(groupName).size());
 			/* class interface */
-			Assert.assertEquals(Integer.valueOf(1), n5.getAttribute(groupName, "key1", Integer.class));
-			Assert.assertEquals(Integer.valueOf(2), n5.getAttribute(groupName, "key2", Integer.class));
-			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
+			assertEquals(Integer.valueOf(1), n5.getAttribute(groupName, "key1", Integer.class));
+			assertEquals(Integer.valueOf(2), n5.getAttribute(groupName, "key2", Integer.class));
+			assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
 			/* type interface */
-			Assert.assertEquals(Integer.valueOf(1), n5.getAttribute(groupName, "key1", new TypeToken<Integer>() {
+			assertEquals(Integer.valueOf(1), n5.getAttribute(groupName, "key1", new TypeToken<Integer>() {
 
 			}.getType()));
-			Assert.assertEquals(Integer.valueOf(2), n5.getAttribute(groupName, "key2", new TypeToken<Integer>() {
+			assertEquals(Integer.valueOf(2), n5.getAttribute(groupName, "key2", new TypeToken<Integer>() {
 
 			}.getType()));
-			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", new TypeToken<String>() {
+			assertEquals("value3", n5.getAttribute(groupName, "key3", new TypeToken<String>() {
 
 			}.getType()));
 
 			n5.setAttribute(groupName, "key1", null);
 			n5.setAttribute(groupName, "key2", null);
 			n5.setAttribute(groupName, "key3", null);
-			Assert.assertEquals(0, n5.listAttributes(groupName).size());
+			assertEquals(0, n5.listAttributes(groupName).size());
 		}
 	}
 
@@ -830,11 +830,11 @@ public abstract class AbstractN5Test {
 			final String[] groupsList = listN5.list(groupName);
 			Arrays.sort(groupsList);
 
-			Assert.assertArrayEquals(subGroupNames, groupsList);
+			assertArrayEquals(subGroupNames, groupsList);
 
 			// test listing the root group ("" and "/" should give identical results)
-			Assert.assertArrayEquals(new String[]{"test"}, listN5.list(""));
-			Assert.assertArrayEquals(new String[]{"test"}, listN5.list("/"));
+			assertArrayEquals(new String[]{"test"}, listN5.list(""));
+			assertArrayEquals(new String[]{"test"}, listN5.list("/"));
 
 		} catch (final IOException e) {
 			fail(e.getMessage());
@@ -852,10 +852,10 @@ public abstract class AbstractN5Test {
 
 			final List<String> groupsList = Arrays.asList(n5.deepList("/"));
 			for (final String subGroup : subGroupNames)
-				Assert.assertTrue("deepList contents", groupsList.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
+				assertTrue("deepList contents", groupsList.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 
 			for (final String subGroup : subGroupNames)
-				Assert.assertTrue("deepList contents", Arrays.asList(n5.deepList("")).contains(groupName.replaceFirst("/", "") + "/" + subGroup));
+				assertTrue("deepList contents", Arrays.asList(n5.deepList("")).contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 
 			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64, new RawCompression());
 			final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, new long[blockNumElements]);
@@ -864,40 +864,40 @@ public abstract class AbstractN5Test {
 
 			final List<String> datasetList = Arrays.asList(n5.deepList("/"));
 			for (final String subGroup : subGroupNames)
-				Assert.assertTrue("deepList contents", datasetList.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
-			Assert.assertTrue("deepList contents", datasetList.contains(datasetName.replaceFirst("/", "")));
+				assertTrue("deepList contents", datasetList.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
+			assertTrue("deepList contents", datasetList.contains(datasetName.replaceFirst("/", "")));
 			assertFalse("deepList stops at datasets", datasetList.contains(datasetName + "/0"));
 
 			final List<String> datasetList2 = Arrays.asList(n5.deepList(""));
 			for (final String subGroup : subGroupNames)
-				Assert.assertTrue("deepList contents", datasetList2.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
-			Assert.assertTrue("deepList contents", datasetList2.contains(datasetName.replaceFirst("/", "")));
+				assertTrue("deepList contents", datasetList2.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
+			assertTrue("deepList contents", datasetList2.contains(datasetName.replaceFirst("/", "")));
 			assertFalse("deepList stops at datasets", datasetList2.contains(datasetName + "/0"));
 
 			final String prefix = "/test";
 			final String datasetSuffix = "group/dataset";
 			final List<String> datasetList3 = Arrays.asList(n5.deepList(prefix));
 			for (final String subGroup : subGroupNames)
-				Assert.assertTrue("deepList contents", datasetList3.contains("group/" + subGroup));
-			Assert.assertTrue("deepList contents", datasetList3.contains(datasetName.replaceFirst(prefix + "/", "")));
+				assertTrue("deepList contents", datasetList3.contains("group/" + subGroup));
+			assertTrue("deepList contents", datasetList3.contains(datasetName.replaceFirst(prefix + "/", "")));
 
 			// parallel deepList tests
 			final List<String> datasetListP = Arrays.asList(n5.deepList("/", Executors.newFixedThreadPool(2)));
 			for (final String subGroup : subGroupNames)
-				Assert.assertTrue("deepList contents", datasetListP.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
-			Assert.assertTrue("deepList contents", datasetListP.contains(datasetName.replaceFirst("/", "")));
+				assertTrue("deepList contents", datasetListP.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
+			assertTrue("deepList contents", datasetListP.contains(datasetName.replaceFirst("/", "")));
 			assertFalse("deepList stops at datasets", datasetListP.contains(datasetName + "/0"));
 
 			final List<String> datasetListP2 = Arrays.asList(n5.deepList("", Executors.newFixedThreadPool(2)));
 			for (final String subGroup : subGroupNames)
-				Assert.assertTrue("deepList contents", datasetListP2.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
-			Assert.assertTrue("deepList contents", datasetListP2.contains(datasetName.replaceFirst("/", "")));
+				assertTrue("deepList contents", datasetListP2.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
+			assertTrue("deepList contents", datasetListP2.contains(datasetName.replaceFirst("/", "")));
 			assertFalse("deepList stops at datasets", datasetListP2.contains(datasetName + "/0"));
 
 			final List<String> datasetListP3 = Arrays.asList(n5.deepList(prefix, Executors.newFixedThreadPool(2)));
 			for (final String subGroup : subGroupNames)
-				Assert.assertTrue("deepList contents", datasetListP3.contains("group/" + subGroup));
-			Assert.assertTrue("deepList contents", datasetListP3.contains(datasetName.replaceFirst(prefix + "/", "")));
+				assertTrue("deepList contents", datasetListP3.contains("group/" + subGroup));
+			assertTrue("deepList contents", datasetListP3.contains(datasetName.replaceFirst(prefix + "/", "")));
 			assertFalse("deepList stops at datasets", datasetListP3.contains(datasetName + "/0"));
 
 			// test filtering
@@ -909,33 +909,33 @@ public abstract class AbstractN5Test {
 			};
 
 			final List<String> datasetListFilter1 = Arrays.asList(n5.deepList(prefix, isCalledDataset));
-			Assert.assertTrue(
+			assertTrue(
 					"deepList filter \"dataset\"",
 					datasetListFilter1.stream().map(x -> prefix + x).allMatch(isCalledDataset));
 
 			final List<String> datasetListFilter2 = Arrays.asList(n5.deepList(prefix, isBorC));
-			Assert.assertTrue(
+			assertTrue(
 					"deepList filter \"b or c\"",
 					datasetListFilter2.stream().map(x -> prefix + x).allMatch(isBorC));
 
 			final List<String> datasetListFilterP1 =
 					Arrays.asList(n5.deepList(prefix, isCalledDataset, Executors.newFixedThreadPool(2)));
-			Assert.assertTrue(
+			assertTrue(
 					"deepList filter \"dataset\"",
 					datasetListFilterP1.stream().map(x -> prefix + x).allMatch(isCalledDataset));
 
 			final List<String> datasetListFilterP2 =
 					Arrays.asList(n5.deepList(prefix, isBorC, Executors.newFixedThreadPool(2)));
-			Assert.assertTrue(
+			assertTrue(
 					"deepList filter \"b or c\"",
 					datasetListFilterP2.stream().map(x -> prefix + x).allMatch(isBorC));
 
 			// test dataset filtering
 			final List<String> datasetListFilterD = Arrays.asList(n5.deepListDatasets(prefix));
-			Assert.assertTrue(
+			assertTrue(
 					"deepListDataset",
 					datasetListFilterD.size() == 1 && (prefix + "/" + datasetListFilterD.get(0)).equals(datasetName));
-			Assert.assertArrayEquals(
+			assertArrayEquals(
 					datasetListFilterD.toArray(),
 					n5.deepList(
 							prefix,
@@ -948,8 +948,8 @@ public abstract class AbstractN5Test {
 							}));
 
 			final List<String> datasetListFilterDandBC = Arrays.asList(n5.deepListDatasets(prefix, isBorC));
-			Assert.assertTrue("deepListDatasetFilter", datasetListFilterDandBC.size() == 0);
-			Assert.assertArrayEquals(
+			assertTrue("deepListDatasetFilter", datasetListFilterDandBC.size() == 0);
+			assertArrayEquals(
 					datasetListFilterDandBC.toArray(),
 					n5.deepList(
 							prefix,
@@ -963,10 +963,10 @@ public abstract class AbstractN5Test {
 
 			final List<String> datasetListFilterDP =
 					Arrays.asList(n5.deepListDatasets(prefix, Executors.newFixedThreadPool(2)));
-			Assert.assertTrue(
+			assertTrue(
 					"deepListDataset Parallel",
 					datasetListFilterDP.size() == 1 && (prefix + "/" + datasetListFilterDP.get(0)).equals(datasetName));
-			Assert.assertArrayEquals(
+			assertArrayEquals(
 					datasetListFilterDP.toArray(),
 					n5.deepList(
 							prefix,
@@ -981,8 +981,8 @@ public abstract class AbstractN5Test {
 
 			final List<String> datasetListFilterDandBCP =
 					Arrays.asList(n5.deepListDatasets(prefix, isBorC, Executors.newFixedThreadPool(2)));
-			Assert.assertTrue("deepListDatasetFilter Parallel", datasetListFilterDandBCP.size() == 0);
-			Assert.assertArrayEquals(
+			assertTrue("deepListDatasetFilter Parallel", datasetListFilterDandBCP.size() == 0);
+			assertArrayEquals(
 					datasetListFilterDandBCP.toArray(),
 					n5.deepList(
 							prefix,
@@ -1005,11 +1005,11 @@ public abstract class AbstractN5Test {
 		final String notExists = groupName + "-notexists";
 		try (N5Writer n5 = createN5Writer()){
 			n5.createDataset(datasetName2, dimensions, blockSize, DataType.UINT64, new RawCompression());
-			Assert.assertTrue(n5.exists(datasetName2));
-			Assert.assertTrue(n5.datasetExists(datasetName2));
+			assertTrue(n5.exists(datasetName2));
+			assertTrue(n5.datasetExists(datasetName2));
 
 			n5.createGroup(groupName2);
-			Assert.assertTrue(n5.exists(groupName2));
+			assertTrue(n5.exists(groupName2));
 			assertFalse(n5.datasetExists(groupName2));
 
 			assertFalse(n5.exists(notExists));
@@ -1035,14 +1035,14 @@ public abstract class AbstractN5Test {
 			n5.setAttribute(datasetName2, "attr8", new Object[]{"1", 2, 3.1});
 
 			Map<String, Class<?>> attributesMap = n5.listAttributes(datasetName2);
-			Assert.assertTrue(attributesMap.get("attr1") == double[].class);
-			Assert.assertTrue(attributesMap.get("attr2") == String[].class);
-			Assert.assertTrue(attributesMap.get("attr3") == double.class);
-			Assert.assertTrue(attributesMap.get("attr4") == String.class);
-			Assert.assertTrue(attributesMap.get("attr5") == long[].class);
-			Assert.assertTrue(attributesMap.get("attr6") == long.class);
-			Assert.assertTrue(attributesMap.get("attr7") == double[].class);
-			Assert.assertTrue(attributesMap.get("attr8") == Object[].class);
+			assertTrue(attributesMap.get("attr1") == double[].class);
+			assertTrue(attributesMap.get("attr2") == String[].class);
+			assertTrue(attributesMap.get("attr3") == double.class);
+			assertTrue(attributesMap.get("attr4") == String.class);
+			assertTrue(attributesMap.get("attr5") == long[].class);
+			assertTrue(attributesMap.get("attr6") == long.class);
+			assertTrue(attributesMap.get("attr7") == double[].class);
+			assertTrue(attributesMap.get("attr8") == Object[].class);
 
 			n5.createGroup(groupName2);
 			n5.setAttribute(groupName2, "attr1", new double[]{1.1, 2.1, 3.1});
@@ -1055,14 +1055,14 @@ public abstract class AbstractN5Test {
 			n5.setAttribute(groupName2, "attr8", new Object[]{"1", 2, 3.1});
 
 			attributesMap = n5.listAttributes(groupName2);
-			Assert.assertTrue(attributesMap.get("attr1") == double[].class);
-			Assert.assertTrue(attributesMap.get("attr2") == String[].class);
-			Assert.assertTrue(attributesMap.get("attr3") == double.class);
-			Assert.assertTrue(attributesMap.get("attr4") == String.class);
-			Assert.assertTrue(attributesMap.get("attr5") == long[].class);
-			Assert.assertTrue(attributesMap.get("attr6") == long.class);
-			Assert.assertTrue(attributesMap.get("attr7") == double[].class);
-			Assert.assertTrue(attributesMap.get("attr8") == Object[].class);
+			assertTrue(attributesMap.get("attr1") == double[].class);
+			assertTrue(attributesMap.get("attr2") == String[].class);
+			assertTrue(attributesMap.get("attr3") == double.class);
+			assertTrue(attributesMap.get("attr4") == String.class);
+			assertTrue(attributesMap.get("attr5") == long[].class);
+			assertTrue(attributesMap.get("attr6") == long.class);
+			assertTrue(attributesMap.get("attr7") == double[].class);
+			assertTrue(attributesMap.get("attr8") == Object[].class);
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
@@ -1075,7 +1075,7 @@ public abstract class AbstractN5Test {
 
 			final Version n5Version = writer.getVersion();
 
-			Assert.assertTrue(n5Version.equals(N5Reader.VERSION));
+			assertTrue(n5Version.equals(N5Reader.VERSION));
 
 			final Version incompatibleVersion = new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch());
 			writer.setAttribute("/", N5Reader.VERSION_KEY, incompatibleVersion.toString());
@@ -1142,27 +1142,27 @@ public abstract class AbstractN5Test {
 		final long[] position2 = {0, 1, 2};
 
 		// no blocks should exist to begin with
-		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position1)));
-		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
+		assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position1)));
+		assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
 
 		final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, position1, byteBlock);
 		n5.writeBlock(datasetName, attributes, dataBlock);
 
 		// block should exist at position1 but not at position2
 		final DataBlock<?> readBlock = n5.readBlock(datasetName, attributes, position1);
-		Assert.assertNotNull(readBlock);
-		Assert.assertTrue(readBlock instanceof ByteArrayDataBlock);
-		Assert.assertArrayEquals(byteBlock, ((ByteArrayDataBlock)readBlock).getData());
-		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
+		assertNotNull(readBlock);
+		assertTrue(readBlock instanceof ByteArrayDataBlock);
+		assertArrayEquals(byteBlock, ((ByteArrayDataBlock)readBlock).getData());
+		assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
 
 		// deletion should report true in all cases
-		Assert.assertTrue(n5.deleteBlock(datasetName, position1));
-		Assert.assertTrue(n5.deleteBlock(datasetName, position1));
-		Assert.assertTrue(n5.deleteBlock(datasetName, position2));
+		assertTrue(n5.deleteBlock(datasetName, position1));
+		assertTrue(n5.deleteBlock(datasetName, position1));
+		assertTrue(n5.deleteBlock(datasetName, position2));
 
 		// no block should exist anymore
-		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position1)));
-		Assert.assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
+		assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position1)));
+		assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
 	}
 
 	protected boolean testDeleteIsBlockDeleted(final DataBlock<?> dataBlock) {
@@ -1189,8 +1189,8 @@ public abstract class AbstractN5Test {
 	protected static void addAndTest(N5Writer writer, ArrayList<TestData<?>> existingTests, TestData<?> testData) throws IOException {
 		/* test a new value on existing path */
 		writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
-		Assert.assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
-		Assert.assertEquals(testData.attributeValue,
+		assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
+		assertEquals(testData.attributeValue,
 				writer.getAttribute(testData.groupPath, testData.attributePath, TypeToken.get(testData.attributeClass).getType()));
 
 		/* previous values should still be there, but we remove first if the test we just added overwrites. */
@@ -1210,8 +1210,8 @@ public abstract class AbstractN5Test {
 	protected static void runTests(N5Writer writer, ArrayList<TestData<?>> existingTests) throws IOException {
 
 		for (TestData<?> test : existingTests) {
-			Assert.assertEquals(test.attributeValue, writer.getAttribute(test.groupPath, test.attributePath, test.attributeClass));
-			Assert.assertEquals(test.attributeValue, writer.getAttribute(test.groupPath, test.attributePath, TypeToken.get(test.attributeClass).getType()));
+			assertEquals(test.attributeValue, writer.getAttribute(test.groupPath, test.attributePath, test.attributeClass));
+			assertEquals(test.attributeValue, writer.getAttribute(test.groupPath, test.attributePath, TypeToken.get(test.attributeClass).getType()));
 		}
 	}
 
@@ -1280,7 +1280,7 @@ public abstract class AbstractN5Test {
 			addAndTest(writer, existingTests, new TestData<>(testGroup, "/filled/double_array[0]", 0.0));
 
 			/* We intentionally skipped index 3, it should be `0` */
-			Assert.assertEquals((Integer)0, writer.getAttribute(testGroup, "/filled/double_array[3]", Integer.class));
+			assertEquals((Integer)0, writer.getAttribute(testGroup, "/filled/double_array[3]", Integer.class));
 
 			/* Fill an array with Object */
 			addAndTest(writer, existingTests, new TestData<>(testGroup, "/filled/string_array[5]", "f"));
@@ -1291,7 +1291,7 @@ public abstract class AbstractN5Test {
 			addAndTest(writer, existingTests, new TestData<>(testGroup, "/filled/string_array[0]", "a"));
 
 			/* We intentionally skipped index 3, it should be null */
-			Assert.assertNull(writer.getAttribute(testGroup, "/filled/double_array[3]", JsonNull.class));
+			assertNull(writer.getAttribute(testGroup, "/filled/double_array[3]", JsonNull.class));
 
 			/* Ensure that escaping does NOT interpret the json path structure, but rather it adds the keys opaquely*/
 			final HashMap<String, Object> testAttributes = new HashMap<>();
@@ -1459,8 +1459,8 @@ public abstract class AbstractN5Test {
 			try (final N5Writer writer = createN5Writer()) {
 				writer.createGroup(testData.groupPath);
 				writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
-				Assert.assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
-				Assert.assertEquals(testData.attributeValue,
+				assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
+				assertEquals(testData.attributeValue,
 						writer.getAttribute(testData.groupPath, testData.attributePath, TypeToken.get(testData.attributeClass).getType()));
 			}
 		}
@@ -1475,8 +1475,8 @@ public abstract class AbstractN5Test {
 			writer.createGroup(groupName);
 			for (TestData<?> testData : tests) {
 				writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
-				Assert.assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
-				Assert.assertEquals(testData.attributeValue,
+				assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
+				assertEquals(testData.attributeValue,
 						writer.getAttribute(testData.groupPath, testData.attributePath, TypeToken.get(testData.attributeClass).getType()));
 			}
 		}
@@ -1493,15 +1493,15 @@ public abstract class AbstractN5Test {
 			for (TestData<?> test : tests) {
 				/* Set the root as Object*/
 				writer.setAttribute(rootAsObject.groupPath, rootAsObject.attributePath, rootAsObject.attributeValue);
-				Assert.assertEquals(rootAsObject.attributeValue,
+				assertEquals(rootAsObject.attributeValue,
 						writer.getAttribute(rootAsObject.groupPath, rootAsObject.attributePath, rootAsObject.attributeClass));
 
 				/* Override the root with something else */
 				writer.setAttribute(test.groupPath, test.attributePath, test.attributeValue);
 				/* Verify original root is gone */
-				Assert.assertNull(writer.getAttribute(rootAsObject.groupPath, rootAsObject.attributePath, rootAsObject.attributeClass));
+				assertNull(writer.getAttribute(rootAsObject.groupPath, rootAsObject.attributePath, rootAsObject.attributeClass));
 				/* verify new root exists */
-				Assert.assertEquals(test.attributeValue, writer.getAttribute(test.groupPath, test.attributePath, test.attributeClass));
+				assertEquals(test.attributeValue, writer.getAttribute(test.groupPath, test.attributePath, test.attributeClass));
 			}
 		}
 	}
