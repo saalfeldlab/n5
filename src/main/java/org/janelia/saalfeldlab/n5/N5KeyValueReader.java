@@ -116,9 +116,15 @@ public class N5KeyValueReader implements CachedGsonKeyValueReader {
 		if (checkVersion) {
 			/* Existence checks, if any, go in subclasses */
 			/* Check that version (if there is one) is compatible. */
-			final Version version = getVersion();
-			if (!VERSION.isCompatible(version))
-				throw new N5Exception.N5IOException("Incompatible version " + version + " (this is " + VERSION + ").");
+			try {
+				final Version version = getVersion();
+				if (!VERSION.isCompatible(version))
+					throw new N5Exception.N5IOException("Incompatible version " + version + " (this is " + VERSION + ").");
+			} catch( NullPointerException e )
+			{
+				throw new N5Exception.N5IOException("Could not read version from " + basePath);
+			}
+
 		}
 	}
 
