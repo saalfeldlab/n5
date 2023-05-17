@@ -61,9 +61,8 @@ import java.util.ArrayList;
 public class N5FSTest extends AbstractN5Test {
 
 	private static FileSystemKeyValueAccess access = new FileSystemKeyValueAccess(FileSystems.getDefault());
-	private static String testDirPath = tempN5PathName();
-
 	private static Set<String> tmpFiles = new HashSet<>();
+	private static String testDirPath = tempN5PathName();
 
 	private static String tempN5PathName()  {
 		try {
