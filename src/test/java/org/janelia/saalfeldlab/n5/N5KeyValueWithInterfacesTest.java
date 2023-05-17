@@ -61,9 +61,10 @@ import static org.junit.Assert.fail;
 public class N5KeyValueWithInterfacesTest extends AbstractN5Test {
 
 	private static FileSystemKeyValueAccess access = new FileSystemKeyValueAccess(FileSystems.getDefault());
-	private static String testDirPath = tempN5PathName();
 
 	private static Set<String> tmpFiles = new HashSet<>();
+
+	private static String testDirPath = tempN5PathName();
 
 	private static String tempN5PathName()  {
 		try {
