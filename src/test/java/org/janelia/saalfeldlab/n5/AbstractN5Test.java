@@ -570,18 +570,18 @@ public abstract class AbstractN5Test {
 			}.getType()));
 
 			// test the case where the resulting file becomes shorter
-			n5.setAttribute(groupName, "key1", new Integer(1));
-			n5.setAttribute(groupName, "key2", new Integer(2));
+			n5.setAttribute(groupName, "key1", Integer.valueOf(1));
+			n5.setAttribute(groupName, "key2", Integer.valueOf(2));
 			Assert.assertEquals(3, n5.listAttributes(groupName).size());
 			/* class interface */
-			Assert.assertEquals(new Integer(1), n5.getAttribute(groupName, "key1", Integer.class));
-			Assert.assertEquals(new Integer(2), n5.getAttribute(groupName, "key2", Integer.class));
+			Assert.assertEquals(Integer.valueOf(1), n5.getAttribute(groupName, "key1", Integer.class));
+			Assert.assertEquals(Integer.valueOf(2), n5.getAttribute(groupName, "key2", Integer.class));
 			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", String.class));
 			/* type interface */
-			Assert.assertEquals(new Integer(1), n5.getAttribute(groupName, "key1", new TypeToken<Integer>() {
+			Assert.assertEquals(Integer.valueOf(1), n5.getAttribute(groupName, "key1", new TypeToken<Integer>() {
 
 			}.getType()));
-			Assert.assertEquals(new Integer(2), n5.getAttribute(groupName, "key2", new TypeToken<Integer>() {
+			Assert.assertEquals(Integer.valueOf(2), n5.getAttribute(groupName, "key2", new TypeToken<Integer>() {
 
 			}.getType()));
 			Assert.assertEquals("value3", n5.getAttribute(groupName, "key3", new TypeToken<String>() {
