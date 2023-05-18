@@ -194,6 +194,9 @@ public class N5JsonCache {
 		} else if (!container.existsFromContainer(normalPathKey)) {
 			cacheInfo = emptyCacheInfo;
 		} else {
+			if( cacheInfo == emptyCacheInfo )
+				cacheInfo = new N5CacheInfo();
+
 			final JsonElement attributesToCache = container.getAttributesFromContainer(normalPathKey, normalCacheKey);
 			synchronized (cacheInfo.attributesCache) {
 				cacheInfo.attributesCache.put(normalCacheKey, attributesToCache);
@@ -217,6 +220,9 @@ public class N5JsonCache {
 		} else if (!container.existsFromContainer(normalPathKey)) {
 			cacheInfo = emptyCacheInfo;
 		} else {
+			if( cacheInfo == emptyCacheInfo )
+				cacheInfo = new N5CacheInfo();
+
 			final JsonElement attributesToCache = uncachedAttributes == null ? container.getAttributesFromContainer(normalPathKey, normalCacheKey) : uncachedAttributes;
 			synchronized (cacheInfo.attributesCache) {
 				cacheInfo.attributesCache.put(normalCacheKey, attributesToCache);
@@ -233,23 +239,46 @@ public class N5JsonCache {
 	}
 
 	public void setIsDataset(final String normalPathKey, final boolean isDataset ) {
-		final N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
+		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
+		boolean update = false;
 		if (cacheInfo == null ){
 			return;
 		}
+		if( cacheInfo == emptyCacheInfo ) {
+			cacheInfo = new N5CacheInfo();
+			update = true;
+		}
+
 		synchronized (cacheInfo) {
 			cacheInfo.isDataset = isDataset;
 		}
+
+		if( update )
+			synchronized (containerPathToCache) {
+				containerPathToCache.put(normalPathKey, cacheInfo);
+			}
 	}
 
 	public void setAttributes(final String normalPathKey, final String normalCacheKey, final JsonElement attributes ) {
-		final N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
+		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
+		boolean update = false;
 		if (cacheInfo == null ){
 			return;
 		}
+
+		if( cacheInfo == emptyCacheInfo ) {
+			cacheInfo = new N5CacheInfo();
+			update = true;
+		}
+
 		synchronized (cacheInfo.attributesCache) {
 			cacheInfo.attributesCache.put(normalCacheKey, attributes);
 		}
+
+		if( update )
+			synchronized (containerPathToCache) {
+				containerPathToCache.put(normalPathKey, cacheInfo);
+			}
 	}
 
 	public void addChild(final String parent, final String child) {
