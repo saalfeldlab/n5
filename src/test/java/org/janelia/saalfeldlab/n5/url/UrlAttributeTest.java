@@ -199,9 +199,11 @@ public class UrlAttributeTest
 
 		final String[] stringArray = getAttribute( n5, new N5URL( "?objs#String" ), String[].class );
 		final String[] expectedString = new String[] { "This", "is", "a", "test" };
+		assertArrayEquals( expectedString, stringArray );
 
 		final Integer[] integerArray = getAttribute( n5, new N5URL( "?objs#Integer" ), Integer[].class );
 		final Integer[] expectedInteger = new Integer[] { 1, 2, 3, 4 };
+		assertArrayEquals( expectedInteger, integerArray );
 
 		final int[] intArray = getAttribute( n5, new N5URL( "?objs#int" ), int[].class );
 		final int[] expectedInt = new int[] { 1, 2, 3, 4 };

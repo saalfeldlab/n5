@@ -14,14 +14,14 @@ public class N5CacheTest {
 
 		final N5JsonCache cache = new N5JsonCache(backingStorage);
 
-		// check existance, ensure backing storage is only called once
+		// check existence, ensure backing storage is only called once
 		assertEquals(0, backingStorage.existsCallCount);
 		cache.exists("a","face");
 		assertEquals(1, backingStorage.existsCallCount);
 		cache.exists("a","face");
 		assertEquals(1, backingStorage.existsCallCount);
 
-		// check existance of new group, ensure backing storage is only called one more time
+		// check existence of new group, ensure backing storage is only called one more time
 		cache.exists("b","face");
 		assertEquals(2, backingStorage.existsCallCount);
 		cache.exists("b","face");

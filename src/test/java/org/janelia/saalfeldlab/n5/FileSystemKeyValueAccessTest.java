@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
  */
 public class FileSystemKeyValueAccessTest {
 
-	private static String[] testPaths = new String[] {
+	private static final String[] testPaths = new String[] {
 			"/test/path/file",
 			"test/path/file",
 			"/test/path/file/",
@@ -33,7 +33,7 @@ public class FileSystemKeyValueAccessTest {
 //			Paths.get("C:", "test", "path", "file").toString()
 	};
 
-	private static String[][] testPathComponents = new String[][] {
+	private static final String[][] testPathComponents = new String[][] {
 			{"/", "test", "path", "file"},
 			{"test", "path", "file"},
 			{"/", "test", "path", "file"},
@@ -61,7 +61,7 @@ public class FileSystemKeyValueAccessTest {
 
 		for (int i = 0; i <  testPaths.length; ++i) {
 
-			System.out.println(String.format("%d: %s -> %s", i, testPaths[i], Arrays.toString(access.components(testPaths[i]))));
+			System.out.printf("%d: %s -> %s%n", i, testPaths[i], Arrays.toString(access.components(testPaths[i])));
 
 			assertArrayEquals(testPathComponents[i], access.components(testPaths[i]));
 		}

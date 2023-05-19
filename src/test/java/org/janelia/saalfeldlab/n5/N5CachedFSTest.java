@@ -92,7 +92,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 		final String tmpLocation = tempN5Location();
 		try (N5KeyValueWriter w1 = (N5KeyValueWriter) createN5Writer(tmpLocation);
-				N5KeyValueWriter w2 = (N5KeyValueWriter) createN5Writer(tmpLocation);) {
+				N5KeyValueWriter w2 = (N5KeyValueWriter) createN5Writer(tmpLocation)) {
 
 			// create a group, both writers know it exists
 			w1.createGroup(groupName);

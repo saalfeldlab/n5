@@ -61,11 +61,11 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class N5FSTest extends AbstractN5Test {
 
-	private static FileSystemKeyValueAccess access = new FileSystemKeyValueAccess(FileSystems.getDefault());
+	private static final FileSystemKeyValueAccess access = new FileSystemKeyValueAccess(FileSystems.getDefault());
 
-	private static Set<String> tmpFiles = new HashSet<>();
+	private static final Set<String> tmpFiles = new HashSet<>();
 
-	private static String testDirPath = tempN5PathName();
+	private static final String testDirPath = tempN5PathName();
 
 	private static String tempN5PathName() {
 		try {
@@ -103,7 +103,7 @@ public class N5FSTest extends AbstractN5Test {
 		for (String tmpFile : tmpFiles) {
 			try{
 				FileUtils.deleteDirectory(new File(tmpFile));
-			} catch (Exception e) { }
+			} catch (Exception ignored) { }
 		}
 	}
 
@@ -129,12 +129,12 @@ public class N5FSTest extends AbstractN5Test {
 
 
 //	@Test
-	public void testReadLock() throws IOException, InterruptedException {
+	public void testReadLock() throws IOException {
 
 		final Path path = Paths.get(testDirPath, "lock");
 		try {
 			Files.delete(path);
-		} catch (final IOException e) {}
+		} catch (final IOException ignored) {}
 
 		LockedChannel lock = access.lockForWriting(path);
 		lock.close();
@@ -172,7 +172,7 @@ public class N5FSTest extends AbstractN5Test {
 		final Path path = Paths.get(testDirPath, "lock");
 		try {
 			Files.delete(path);
-		} catch (final IOException e) {}
+		} catch (final IOException ignored) {}
 
 		final LockedChannel lock = access.lockForWriting(path);
 		System.out.println("locked");
@@ -209,7 +209,7 @@ public class N5FSTest extends AbstractN5Test {
 		final Path path = Paths.get(testDirPath, "lock");
 		try {
 			Files.delete(path);
-		} catch (final IOException e) {}
+		} catch (final IOException ignored) {}
 
 		final LockedChannel lock = access.lockForWriting(path);
 
@@ -245,7 +245,7 @@ public class N5FSTest extends AbstractN5Test {
 		final Path path = Paths.get(testDirPath, "lock");
 		try {
 			Files.delete(path);
-		} catch (final IOException e) {}
+		} catch (final IOException ignored) {}
 
 		final LockedChannel lock = access.lockForWriting(path);
 

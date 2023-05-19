@@ -63,7 +63,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class N5Benchmark {
 
-	private static String testDirPath;
+	private static final String testDirPath;
 
 	static {
 		try {
@@ -73,7 +73,7 @@ public class N5Benchmark {
 		}
 	}
 
-	private static String datasetName = "/dataset";
+	private static final String datasetName = "/dataset";
 
 	private static N5Writer n5;
 
@@ -166,7 +166,7 @@ public class N5Benchmark {
 				} catch (final IOException e) {
 					fail(e.getMessage());
 				}
-				System.out.println(String.format("%d : %s : %fs", i, compression.getType(), 0.001 * (System.currentTimeMillis() - t)));
+				System.out.printf("%d : %s : %fs%n", i, compression.getType(), 0.001 * (System.currentTimeMillis() - t));
 			}
 
 			/* TIF blocks */
@@ -179,7 +179,7 @@ public class N5Benchmark {
 						final ImagePlus impBlock = new ImagePlus("", new ShortProcessor(64, 64 * 64, data, null));
 						IJ.saveAsTiff(impBlock, compressedDatasetName + "/" + x + "-" + y + "-" + z + ".tif");
 					}
-			System.out.println(String.format("%d : tif : %fs", i, 0.001 * (System.currentTimeMillis() - t)));
+			System.out.printf("%d : tif : %fs%n", i, 0.001 * (System.currentTimeMillis() - t));
 
 			/* HDF5 raw */
 			t = System.currentTimeMillis();
@@ -197,7 +197,7 @@ public class N5Benchmark {
 						final MDShortArray targetCell = new MDShortArray(data, new int[]{64, 64, 64});
 						uint16Writer.writeMDArrayBlockWithOffset(datasetName, targetCell, new long[]{64 * z, 64 * y, 64 * x});
 					}
-			System.out.println(String.format("%d : hdf5 raw : %fs", i, 0.001 * (System.currentTimeMillis() - t)));
+			System.out.printf("%d : hdf5 raw : %fs%n", i, 0.001 * (System.currentTimeMillis() - t));
 			new File(hdf5Name).delete();
 
 			/* HDF5 gzip */
@@ -216,7 +216,7 @@ public class N5Benchmark {
 						final MDShortArray targetCell = new MDShortArray(data, new int[]{64, 64, 64});
 						uint16Writer.writeMDArrayBlockWithOffset(datasetName, targetCell, new long[]{64 * z, 64 * y, 64 * x});
 					}
-			System.out.println(String.format("%d : hdf5 gzip : %fs", i, 0.001 * (System.currentTimeMillis() - t)));
+			System.out.printf("%d : hdf5 gzip : %fs%n", i, 0.001 * (System.currentTimeMillis() - t));
 			new File(hdf5Name).delete();
 		}
 	}
@@ -259,7 +259,7 @@ public class N5Benchmark {
 					for (final Future<Boolean> f : futures)
 						f.get();
 
-					System.out.println(String.format("%d : %s : %fs", i, compression.getType(), 0.001 * (System.currentTimeMillis() - t)));
+					System.out.printf("%d : %s : %fs%n", i, compression.getType(), 0.001 * (System.currentTimeMillis() - t));
 				} catch (final IOException | InterruptedException | ExecutionException e) {
 					fail(e.getMessage());
 				}
@@ -290,7 +290,7 @@ public class N5Benchmark {
 				for (final Future<Boolean> f : futures)
 					f.get();
 
-				System.out.println(String.format("%d : tif : %fs", i, 0.001 * (System.currentTimeMillis() - t)));
+				System.out.printf("%d : tif : %fs%n", i, 0.001 * (System.currentTimeMillis() - t));
 			} catch (final InterruptedException | ExecutionException e) {
 				fail(e.getMessage());
 			}
@@ -327,7 +327,7 @@ public class N5Benchmark {
 					f.get();
 
 				hdf5Writer.close();
-				System.out.println(String.format("%d : hdf5 raw : %fs", i, 0.001 * (System.currentTimeMillis() - t)));
+				System.out.printf("%d : hdf5 raw : %fs%n", i, 0.001 * (System.currentTimeMillis() - t));
 				new File(hdf5Name).delete();
 			} catch (final InterruptedException | ExecutionException e) {
 				fail(e.getMessage());
@@ -365,7 +365,7 @@ public class N5Benchmark {
 					f.get();
 
 				hdf5Writer.close();
-				System.out.println(String.format("%d : hdf5 gzip : %fs", i, 0.001 * (System.currentTimeMillis() - t)));
+				System.out.printf("%d : hdf5 gzip : %fs%n", i, 0.001 * (System.currentTimeMillis() - t));
 				new File(hdf5Name).delete();
 			} catch (final InterruptedException | ExecutionException e) {
 				fail(e.getMessage());
