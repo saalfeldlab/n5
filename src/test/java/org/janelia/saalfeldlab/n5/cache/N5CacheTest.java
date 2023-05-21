@@ -1,10 +1,9 @@
 package org.janelia.saalfeldlab.n5.cache;
 
-import static org.junit.Assert.assertEquals;
-
-import org.junit.Test;
-
 import com.google.gson.JsonElement;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class N5CacheTest {
 

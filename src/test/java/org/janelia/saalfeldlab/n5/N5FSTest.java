@@ -25,7 +25,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,12 +44,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
-import org.junit.Test;
 import com.google.gson.GsonBuilder;
 import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Initiates testing of the filesystem-based N5 implementation.
@@ -96,7 +97,7 @@ public class N5FSTest extends AbstractN5Test {
 		return new N5FSReader(basePath, gson);
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void cleanup() {
 
 		for (String tmpFile : tmpFiles) {

@@ -3,13 +3,13 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import static org.junit.Assert.assertArrayEquals;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.FileSystems;
 import java.util.Arrays;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 
 /**
@@ -51,7 +51,7 @@ public class FileSystemKeyValueAccessTest {
 	/**
 	 * @throws java.lang.Exception
 	 */
-	@BeforeClass
+	@BeforeAll
 	public static void setUpBeforeClass() throws Exception {}
 
 	@Test

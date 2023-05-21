@@ -14,13 +14,12 @@ import java.util.stream.Stream;
 import org.janelia.saalfeldlab.n5.N5FSWriter;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5URL;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UrlAttributeTest
 {
@@ -38,7 +37,7 @@ public class UrlAttributeTest
 
 	TestDoubles testObjDoubles;
 
-	@Before
+	@BeforeEach
 	public void before()
 	{
 		try
@@ -69,45 +68,45 @@ public class UrlAttributeTest
 		// get
 		Map< String, Object > everything = getAttribute( n5, new N5URL( "" ), Map.class );
 		final String version = N5Reader.VERSION.toString();
-		assertEquals( "empty url", version, everything.get( "n5" ) );
+		assertEquals( version, everything.get( "n5" ), "empty url" );
 
 		Map< String, Object > everything2 = getAttribute( n5, new N5URL( "#/" ), Map.class );
-		assertEquals( "root attribute", version, everything2.get( "n5" ) );
+		assertEquals( version, everything2.get( "n5" ), "root attribute" );
 
-		assertEquals( "url to attribute", "bar", getAttribute( n5, new N5URL( "#foo" ), String.class ) );
-		assertEquals( "url to attribute absolute", "bar", getAttribute( n5, new N5URL( "#/foo" ), String.class ) );
+		assertEquals( "bar", getAttribute( n5, new N5URL( "#foo" ), String.class ), "url to attribute" );
+		assertEquals( "bar", getAttribute( n5, new N5URL( "#/foo" ), String.class ), "url to attribute absolute" );
 
-		assertEquals( "#foo", "bar", getAttribute( n5, new N5URL( "#foo" ), String.class ) );
-		assertEquals( "#/foo", "bar", getAttribute( n5, new N5URL( "#/foo" ), String.class ) );
-		assertEquals( "?#foo", "bar", getAttribute( n5, new N5URL( "?#foo" ), String.class ) );
-		assertEquals( "?#/foo", "bar", getAttribute( n5, new N5URL( "?#/foo" ), String.class ) );
-		assertEquals( "?/#/foo", "bar", getAttribute( n5, new N5URL( "?/#/foo" ), String.class ) );
-		assertEquals( "?/.#/foo", "bar", getAttribute( n5, new N5URL( "?/.#/foo" ), String.class ) );
-		assertEquals( "?./#/foo", "bar", getAttribute( n5, new N5URL( "?./#/foo" ), String.class ) );
-		assertEquals( "?.#foo", "bar", getAttribute( n5, new N5URL( "?.#foo" ), String.class ) );
-		assertEquals( "?/a/..#foo", "bar", getAttribute( n5, new N5URL( "?/a/..#foo" ), String.class ) );
-		assertEquals( "?/a/../.#foo", "bar", getAttribute( n5, new N5URL( "?/a/../.#foo" ), String.class ) );
+		assertEquals( "bar", getAttribute( n5, new N5URL( "#foo" ), String.class ), "#foo" );
+		assertEquals( "bar", getAttribute( n5, new N5URL( "#/foo" ), String.class ), "#/foo" );
+		assertEquals( "bar", getAttribute( n5, new N5URL( "?#foo" ), String.class ), "?#foo" );
+		assertEquals( "bar", getAttribute( n5, new N5URL( "?#/foo" ), String.class ), "?#/foo" );
+		assertEquals( "bar", getAttribute( n5, new N5URL( "?/#/foo" ), String.class ), "?/#/foo" );
+		assertEquals( "bar", getAttribute( n5, new N5URL( "?/.#/foo" ), String.class ), "?/.#/foo" );
+		assertEquals( "bar", getAttribute( n5, new N5URL( "?./#/foo" ), String.class ), "?./#/foo" );
+		assertEquals( "bar", getAttribute( n5, new N5URL( "?.#foo" ), String.class ), "?.#foo" );
+		assertEquals( "bar", getAttribute( n5, new N5URL( "?/a/..#foo" ), String.class ), "?/a/..#foo" );
+		assertEquals( "bar", getAttribute( n5, new N5URL( "?/a/../.#foo" ), String.class ), "?/a/../.#foo" );
 
 		/* whitespace-encoding-necesary, fragment-only test*/
-		assertEquals( "#f o o", "b a r", getAttribute( n5, new N5URL( "#f o o" ), String.class ) );
+		assertEquals( "b a r", getAttribute( n5, new N5URL( "#f o o" ), String.class ), "#f o o" );
 
-		Assert.assertArrayEquals( "url list", list, getAttribute( n5, new N5URL( "#list" ), int[].class ) );
+		assertArrayEquals( list, getAttribute( n5, new N5URL( "#list" ), int[].class ), "url list" );
 
 		// list
-		assertEquals( "url list[0]", list[ 0 ], ( int ) getAttribute( n5, new N5URL( "#list[0]" ), Integer.class ) );
-		assertEquals( "url list[1]", list[ 1 ], ( int ) getAttribute( n5, new N5URL( "#list[1]" ), Integer.class ) );
-		assertEquals( "url list[2]", list[ 2 ], ( int ) getAttribute( n5, new N5URL( "#list[2]" ), Integer.class ) );
+		assertEquals( list[ 0 ], ( int ) getAttribute( n5, new N5URL( "#list[0]" ), Integer.class ), "url list[0]" );
+		assertEquals( list[ 1 ], ( int ) getAttribute( n5, new N5URL( "#list[1]" ), Integer.class ), "url list[1]" );
+		assertEquals( list[ 2 ], ( int ) getAttribute( n5, new N5URL( "#list[2]" ), Integer.class ), "url list[2]" );
 
-		assertEquals( "url list[3]", list[ 3 ], ( int ) getAttribute( n5, new N5URL( "#list[3]" ), Integer.class ) );
-		assertEquals( "url list/[3]", list[ 3 ], ( int ) getAttribute( n5, new N5URL( "#list/[3]" ), Integer.class ) );
-		assertEquals( "url list//[3]", list[ 3 ], ( int ) getAttribute( n5, new N5URL( "#list//[3]" ), Integer.class ) );
-		assertEquals( "url //list//[3]", list[ 3 ], ( int ) getAttribute( n5, new N5URL( "#//list//[3]" ), Integer.class ) );
-		assertEquals( "url //list//[3]//", list[ 3 ], ( int ) getAttribute( n5, new N5URL( "#//list////[3]//" ), Integer.class ) );
+		assertEquals( list[ 3 ], ( int ) getAttribute( n5, new N5URL( "#list[3]" ), Integer.class ), "url list[3]" );
+		assertEquals( list[ 3 ], ( int ) getAttribute( n5, new N5URL( "#list/[3]" ), Integer.class ), "url list/[3]" );
+		assertEquals( list[ 3 ], ( int ) getAttribute( n5, new N5URL( "#list//[3]" ), Integer.class ), "url list//[3]" );
+		assertEquals( list[ 3 ], ( int ) getAttribute( n5, new N5URL( "#//list//[3]" ), Integer.class ), "url //list//[3]" );
+		assertEquals( list[ 3 ], ( int ) getAttribute( n5, new N5URL( "#//list////[3]//" ), Integer.class ), "url //list//[3]//" );
 
 		// object
-		assertTrue( "url object", mapsEqual( obj, getAttribute( n5, new N5URL( "#object" ), Map.class ) ) );
-		assertEquals( "url object/a", "aa", getAttribute( n5, new N5URL( "#object/a" ), String.class ) );
-		assertEquals( "url object/b", "bb", getAttribute( n5, new N5URL( "#object/b" ), String.class ) );
+		assertTrue( mapsEqual( obj, getAttribute( n5, new N5URL( "#object" ), Map.class ) ), "url object" );
+		assertEquals( "aa", getAttribute( n5, new N5URL( "#object/a" ), String.class ), "url object/a" );
+		assertEquals( "bb", getAttribute( n5, new N5URL( "#object/b" ), String.class ), "url object/b" );
 	}
 
 	@Test
@@ -123,35 +122,35 @@ public class UrlAttributeTest
 		final N5URL aaaUrl = new N5URL( "?/a/aa/aaa" );
 
 		// name of a
-		assertEquals( "name of a from root", a, getAttribute( n5, "?/a#name", String.class ) );
-		assertEquals( "name of a from root", a, getAttribute( n5, new N5URL( "?a#name" ), String.class ) );
-		assertEquals( "name of a from a", a, getAttribute( n5, aUrl.resolve( new N5URL( "?/a#name" ) ), String.class ) );
-		assertEquals( "name of a from aa", a, getAttribute( n5, aaUrl.resolve( "?..#name" ), String.class ) );
-		assertEquals( "name of a from aaa", a, getAttribute( n5, aaaUrl.resolve( new N5URL( "?../..#name" ) ), String.class ) );
+		assertEquals( a, getAttribute( n5, "?/a#name", String.class ), "name of a from root" );
+		assertEquals( a, getAttribute( n5, new N5URL( "?a#name" ), String.class ), "name of a from root" );
+		assertEquals( a, getAttribute( n5, aUrl.resolve( new N5URL( "?/a#name" ) ), String.class ), "name of a from a" );
+		assertEquals( a, getAttribute( n5, aaUrl.resolve( "?..#name" ), String.class ), "name of a from aa" );
+		assertEquals( a, getAttribute( n5, aaaUrl.resolve( new N5URL( "?../..#name" ) ), String.class ), "name of a from aaa" );
 
 		// name of aa
-		assertEquals( "name of aa from root", aa, getAttribute( n5, new N5URL( "?/a/aa#name" ), String.class ) );
-		assertEquals( "name of aa from root", aa, getAttribute( n5, new N5URL( "?a/aa#name" ), String.class ) );
-		assertEquals( "name of aa from a", aa, getAttribute( n5, aUrl.resolve( "?aa#name" ), String.class ) );
+		assertEquals( aa, getAttribute( n5, new N5URL( "?/a/aa#name" ), String.class ), "name of aa from root" );
+		assertEquals( aa, getAttribute( n5, new N5URL( "?a/aa#name" ), String.class ), "name of aa from root" );
+		assertEquals( aa, getAttribute( n5, aUrl.resolve( "?aa#name" ), String.class ), "name of aa from a" );
 
-		assertEquals( "name of aa from aa", aa, getAttribute( n5, aaUrl.resolve( "?./#name" ), String.class ) );
+		assertEquals( aa, getAttribute( n5, aaUrl.resolve( "?./#name" ), String.class ), "name of aa from aa" );
 
-		assertEquals( "name of aa from aa", aa, getAttribute( n5, aaUrl.resolve( "#name" ), String.class ) );
-		assertEquals( "name of aa from aaa", aa, getAttribute( n5, aaaUrl.resolve( "?..#name" ), String.class ) );
+		assertEquals( aa, getAttribute( n5, aaUrl.resolve( "#name" ), String.class ), "name of aa from aa" );
+		assertEquals( aa, getAttribute( n5, aaaUrl.resolve( "?..#name" ), String.class ), "name of aa from aaa" );
 
 		// name of aaa
-		assertEquals( "name of aaa from root", aaa, getAttribute( n5, new N5URL( "?/a/aa/aaa#name" ), String.class ) );
-		assertEquals( "name of aaa from root", aaa, getAttribute( n5, new N5URL( "?a/aa/aaa#name" ), String.class ) );
-		assertEquals( "name of aaa from a", aaa, getAttribute( n5, aUrl.resolve( "?aa/aaa#name" ), String.class ) );
-		assertEquals( "name of aaa from aa", aaa, getAttribute( n5, aaUrl.resolve( "?aaa#name" ), String.class ) );
-		assertEquals( "name of aaa from aaa", aaa, getAttribute( n5, aaaUrl.resolve( "#name" ), String.class ) );
+		assertEquals( aaa, getAttribute( n5, new N5URL( "?/a/aa/aaa#name" ), String.class ), "name of aaa from root" );
+		assertEquals( aaa, getAttribute( n5, new N5URL( "?a/aa/aaa#name" ), String.class ), "name of aaa from root" );
+		assertEquals( aaa, getAttribute( n5, aUrl.resolve( "?aa/aaa#name" ), String.class ), "name of aaa from a" );
+		assertEquals( aaa, getAttribute( n5, aaUrl.resolve( "?aaa#name" ), String.class ), "name of aaa from aa" );
+		assertEquals( aaa, getAttribute( n5, aaaUrl.resolve( "#name" ), String.class ), "name of aaa from aaa" );
 
-		assertEquals( "name of aaa from aaa", aaa, getAttribute( n5, aaaUrl.resolve( "?./#name" ), String.class ) );
+		assertEquals( aaa, getAttribute( n5, aaaUrl.resolve( "?./#name" ), String.class ), "name of aaa from aaa" );
 
-		assertEquals( "nested list 1", (Integer)1, getAttribute( n5, new N5URL( "#nestedList[0][0][0]" ), Integer.class ) );
-		assertEquals( "nested list 1", (Integer)1, getAttribute( n5, new N5URL( "#/nestedList/[0][0][0]" ), Integer.class ) );
-		assertEquals( "nested list 1", (Integer)1, getAttribute( n5, new N5URL( "#nestedList//[0]/[0]///[0]" ), Integer.class ) );
-		assertEquals( "nested list 1", (Integer)1, getAttribute( n5, new N5URL( "#/nestedList[0]//[0][0]" ), Integer.class ) );
+		assertEquals( (Integer)1, getAttribute( n5, new N5URL( "#nestedList[0][0][0]" ), Integer.class ), "nested list 1" );
+		assertEquals( (Integer)1, getAttribute( n5, new N5URL( "#/nestedList/[0][0][0]" ), Integer.class ), "nested list 1" );
+		assertEquals( (Integer)1, getAttribute( n5, new N5URL( "#nestedList//[0]/[0]///[0]" ), Integer.class ), "nested list 1" );
+		assertEquals( (Integer)1, getAttribute( n5, new N5URL( "#/nestedList[0]//[0][0]" ), Integer.class ), "nested list 1" );
 
 	}
 

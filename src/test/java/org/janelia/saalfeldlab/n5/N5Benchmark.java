@@ -25,8 +25,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -35,11 +33,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import ch.systemsx.cisd.base.mdarray.MDShortArray;
 import ch.systemsx.cisd.hdf5.HDF5Factory;
@@ -55,6 +48,13 @@ import net.imglib2.img.imageplus.ImagePlusImg;
 import net.imglib2.img.imageplus.ImagePlusImgs;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.view.Views;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -91,8 +91,8 @@ public class N5Benchmark {
 	/**
 	 * @throws java.lang.Exception
 	 */
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
+	@BeforeAll
+	public static void setUpGlobal() throws Exception {
 
 		final File testDir = new File(testDirPath);
 		testDir.mkdirs();
@@ -112,8 +112,8 @@ public class N5Benchmark {
 	/**
 	 * @throws java.lang.Exception
 	 */
-	@AfterClass
-	public static void rampDownAfterClass() throws Exception {
+	@AfterAll
+	public static void rampDownGlobal() throws Exception {
 
 		n5.remove("");
 	}
@@ -121,7 +121,7 @@ public class N5Benchmark {
 	/**
 	 * @throws java.lang.Exception
 	 */
-	@Before
+	@BeforeEach
 	public void setUp() throws Exception {}
 
 	/**

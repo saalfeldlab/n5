@@ -8,11 +8,12 @@ import java.util.Map;
 
 import org.apache.commons.collections4.MapUtils;
 import org.janelia.saalfeldlab.n5.CompressionAdapter;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Stephan Saalfeld
@@ -23,28 +24,28 @@ public class CompressionTypesTest {
 	/**
 	 * @throws java.lang.Exception
 	 */
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
+	@BeforeAll
+	public static void setUpGlobal() throws Exception {
 	}
 
 	/**
 	 * @throws java.lang.Exception
 	 */
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
+	@AfterAll
+	public static void tearDownGlobal() throws Exception {
 	}
 
 	/**
 	 * @throws java.lang.Exception
 	 */
-	@Before
+	@BeforeEach
 	public void setUp() throws Exception {
 	}
 
 	/**
 	 * @throws java.lang.Exception
 	 */
-	@After
+	@AfterEach
 	public void tearDown() throws Exception {
 	}
 

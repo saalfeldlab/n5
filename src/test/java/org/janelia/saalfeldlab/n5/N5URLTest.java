@@ -1,12 +1,14 @@
 package org.janelia.saalfeldlab.n5;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.net.URISyntaxException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class N5URLTest {
 	@Test
@@ -54,7 +56,7 @@ public class N5URLTest {
 		assertEquals("../..", N5URL.normalizeAttributePath("../result/../multiple/../.."));
 
 		String normalizedPath = N5URL.normalizeAttributePath("let's/try/a/some/////with/ /	//white spaces/");
-		assertEquals("Normalizing a normal path should be the identity", normalizedPath, N5URL.normalizeAttributePath(normalizedPath));
+		assertEquals(normalizedPath, N5URL.normalizeAttributePath(normalizedPath), "Normalizing a normal path should be the identity");
 	}
 
 	@Test

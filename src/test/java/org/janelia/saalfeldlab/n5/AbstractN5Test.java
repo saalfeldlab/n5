@@ -32,9 +32,6 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -51,14 +48,18 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Abstract base class for testing N5 functionality.
@@ -121,8 +122,8 @@ public abstract class AbstractN5Test {
 	/**
 	 * @throws IOException
 	 */
-	@Before
-	public void setUpOnce() throws IOException, URISyntaxException {
+	@BeforeEach
+	public void setUp() throws IOException, URISyntaxException {
 
 		if (n5 != null)
 			return;
@@ -149,11 +150,11 @@ public abstract class AbstractN5Test {
 	/**
 	 * @throws IOException
 	 */
-	@AfterClass
-	public static void rampDownAfterClass() throws IOException {
+	@AfterAll
+	public static void rampDownGlobal() throws IOException {
 
 		if (n5 != null) {
-			try { 
+			try {
 				assertTrue(n5.remove());
 			} catch ( Exception e ) {}
 			n5 = null;
@@ -192,10 +193,7 @@ public abstract class AbstractN5Test {
 		final DatasetAttributes info;
 		try (N5Writer writer = createN5Writer()) {
 			writer.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
-
-			if (!writer.exists(datasetName))
-				fail("Dataset does not exist");
-
+			assertTrue(writer.exists(datasetName), "Dataset does not exist");
 			info = writer.getDatasetAttributes(datasetName);
 		}
 		assertArrayEquals(dimensions, info.getDimensions());
@@ -852,10 +850,10 @@ public abstract class AbstractN5Test {
 
 			final List<String> groupsList = Arrays.asList(n5.deepList("/"));
 			for (final String subGroup : subGroupNames)
-				assertTrue("deepList contents", groupsList.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
+				assertTrue(groupsList.contains(groupName.replaceFirst("/", "") + "/" + subGroup), "deepList contents");
 
 			for (final String subGroup : subGroupNames)
-				assertTrue("deepList contents", Arrays.asList(n5.deepList("")).contains(groupName.replaceFirst("/", "") + "/" + subGroup));
+				assertTrue(Arrays.asList(n5.deepList("")).contains(groupName.replaceFirst("/", "") + "/" + subGroup), "deepList contents");
 
 			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64, new RawCompression());
 			final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, new long[blockNumElements]);
@@ -864,41 +862,41 @@ public abstract class AbstractN5Test {
 
 			final List<String> datasetList = Arrays.asList(n5.deepList("/"));
 			for (final String subGroup : subGroupNames)
-				assertTrue("deepList contents", datasetList.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
-			assertTrue("deepList contents", datasetList.contains(datasetName.replaceFirst("/", "")));
-			assertFalse("deepList stops at datasets", datasetList.contains(datasetName + "/0"));
+				assertTrue(datasetList.contains(groupName.replaceFirst("/", "") + "/" + subGroup), "deepList contents");
+			assertTrue(datasetList.contains(datasetName.replaceFirst("/", "")), "deepList contents");
+			assertFalse(datasetList.contains(datasetName + "/0"), "deepList stops at datasets");
 
 			final List<String> datasetList2 = Arrays.asList(n5.deepList(""));
 			for (final String subGroup : subGroupNames)
-				assertTrue("deepList contents", datasetList2.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
-			assertTrue("deepList contents", datasetList2.contains(datasetName.replaceFirst("/", "")));
-			assertFalse("deepList stops at datasets", datasetList2.contains(datasetName + "/0"));
+				assertTrue(datasetList2.contains(groupName.replaceFirst("/", "") + "/" + subGroup), "deepList contents");
+			assertTrue(datasetList2.contains(datasetName.replaceFirst("/", "")), "deepList contents");
+			assertFalse(datasetList2.contains(datasetName + "/0"), "deepList stops at datasets");
 
 			final String prefix = "/test";
 			final String datasetSuffix = "group/dataset";
 			final List<String> datasetList3 = Arrays.asList(n5.deepList(prefix));
 			for (final String subGroup : subGroupNames)
-				assertTrue("deepList contents", datasetList3.contains("group/" + subGroup));
-			assertTrue("deepList contents", datasetList3.contains(datasetName.replaceFirst(prefix + "/", "")));
+				assertTrue(datasetList3.contains("group/" + subGroup), "deepList contents");
+			assertTrue(datasetList3.contains(datasetName.replaceFirst(prefix + "/", "")), "deepList contents");
 
 			// parallel deepList tests
 			final List<String> datasetListP = Arrays.asList(n5.deepList("/", Executors.newFixedThreadPool(2)));
 			for (final String subGroup : subGroupNames)
-				assertTrue("deepList contents", datasetListP.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
-			assertTrue("deepList contents", datasetListP.contains(datasetName.replaceFirst("/", "")));
-			assertFalse("deepList stops at datasets", datasetListP.contains(datasetName + "/0"));
+				assertTrue(datasetListP.contains(groupName.replaceFirst("/", "") + "/" + subGroup), "deepList contents");
+			assertTrue(datasetListP.contains(datasetName.replaceFirst("/", "")), "deepList contents");
+			assertFalse(datasetListP.contains(datasetName + "/0"), "deepList stops at datasets");
 
 			final List<String> datasetListP2 = Arrays.asList(n5.deepList("", Executors.newFixedThreadPool(2)));
 			for (final String subGroup : subGroupNames)
-				assertTrue("deepList contents", datasetListP2.contains(groupName.replaceFirst("/", "") + "/" + subGroup));
-			assertTrue("deepList contents", datasetListP2.contains(datasetName.replaceFirst("/", "")));
-			assertFalse("deepList stops at datasets", datasetListP2.contains(datasetName + "/0"));
+				assertTrue(datasetListP2.contains(groupName.replaceFirst("/", "") + "/" + subGroup), "deepList contents");
+			assertTrue(datasetListP2.contains(datasetName.replaceFirst("/", "")), "deepList contents");
+			assertFalse(datasetListP2.contains(datasetName + "/0"), "deepList stops at datasets");
 
 			final List<String> datasetListP3 = Arrays.asList(n5.deepList(prefix, Executors.newFixedThreadPool(2)));
 			for (final String subGroup : subGroupNames)
-				assertTrue("deepList contents", datasetListP3.contains("group/" + subGroup));
-			assertTrue("deepList contents", datasetListP3.contains(datasetName.replaceFirst(prefix + "/", "")));
-			assertFalse("deepList stops at datasets", datasetListP3.contains(datasetName + "/0"));
+				assertTrue(datasetListP3.contains("group/" + subGroup), "deepList contents");
+			assertTrue(datasetListP3.contains(datasetName.replaceFirst(prefix + "/", "")), "deepList contents");
+			assertFalse(datasetListP3.contains(datasetName + "/0"), "deepList stops at datasets");
 
 			// test filtering
 			final Predicate<String> isCalledDataset = d -> {
@@ -910,31 +908,31 @@ public abstract class AbstractN5Test {
 
 			final List<String> datasetListFilter1 = Arrays.asList(n5.deepList(prefix, isCalledDataset));
 			assertTrue(
-					"deepList filter \"dataset\"",
-					datasetListFilter1.stream().map(x -> prefix + x).allMatch(isCalledDataset));
+					datasetListFilter1.stream().map(x -> prefix + x).allMatch(isCalledDataset),
+					"deepList filter \"dataset\"");
 
 			final List<String> datasetListFilter2 = Arrays.asList(n5.deepList(prefix, isBorC));
 			assertTrue(
-					"deepList filter \"b or c\"",
-					datasetListFilter2.stream().map(x -> prefix + x).allMatch(isBorC));
+					datasetListFilter2.stream().map(x -> prefix + x).allMatch(isBorC),
+					"deepList filter \"b or c\"");
 
 			final List<String> datasetListFilterP1 =
 					Arrays.asList(n5.deepList(prefix, isCalledDataset, Executors.newFixedThreadPool(2)));
 			assertTrue(
-					"deepList filter \"dataset\"",
-					datasetListFilterP1.stream().map(x -> prefix + x).allMatch(isCalledDataset));
+					datasetListFilterP1.stream().map(x -> prefix + x).allMatch(isCalledDataset),
+					"deepList filter \"dataset\"");
 
 			final List<String> datasetListFilterP2 =
 					Arrays.asList(n5.deepList(prefix, isBorC, Executors.newFixedThreadPool(2)));
 			assertTrue(
-					"deepList filter \"b or c\"",
-					datasetListFilterP2.stream().map(x -> prefix + x).allMatch(isBorC));
+					datasetListFilterP2.stream().map(x -> prefix + x).allMatch(isBorC),
+					"deepList filter \"b or c\"");
 
 			// test dataset filtering
 			final List<String> datasetListFilterD = Arrays.asList(n5.deepListDatasets(prefix));
 			assertTrue(
-					"deepListDataset",
-					datasetListFilterD.size() == 1 && (prefix + "/" + datasetListFilterD.get(0)).equals(datasetName));
+					datasetListFilterD.size() == 1 && (prefix + "/" + datasetListFilterD.get(0)).equals(datasetName),
+					"deepListDataset");
 			assertArrayEquals(
 					datasetListFilterD.toArray(),
 					n5.deepList(
@@ -948,7 +946,7 @@ public abstract class AbstractN5Test {
 							}));
 
 			final List<String> datasetListFilterDandBC = Arrays.asList(n5.deepListDatasets(prefix, isBorC));
-			assertTrue("deepListDatasetFilter", datasetListFilterDandBC.size() == 0);
+			assertEquals(0, datasetListFilterDandBC.size(), "deepListDatasetFilter");
 			assertArrayEquals(
 					datasetListFilterDandBC.toArray(),
 					n5.deepList(
@@ -964,8 +962,8 @@ public abstract class AbstractN5Test {
 			final List<String> datasetListFilterDP =
 					Arrays.asList(n5.deepListDatasets(prefix, Executors.newFixedThreadPool(2)));
 			assertTrue(
-					"deepListDataset Parallel",
-					datasetListFilterDP.size() == 1 && (prefix + "/" + datasetListFilterDP.get(0)).equals(datasetName));
+					datasetListFilterDP.size() == 1 && (prefix + "/" + datasetListFilterDP.get(0)).equals(datasetName),
+					"deepListDataset Parallel");
 			assertArrayEquals(
 					datasetListFilterDP.toArray(),
 					n5.deepList(
@@ -981,7 +979,7 @@ public abstract class AbstractN5Test {
 
 			final List<String> datasetListFilterDandBCP =
 					Arrays.asList(n5.deepListDatasets(prefix, isBorC, Executors.newFixedThreadPool(2)));
-			assertTrue("deepListDatasetFilter Parallel", datasetListFilterDandBCP.size() == 0);
+			assertEquals(0, datasetListFilterDandBCP.size(), "deepListDatasetFilter Parallel");
 			assertArrayEquals(
 					datasetListFilterDandBCP.toArray(),
 					n5.deepList(
@@ -1118,18 +1116,15 @@ public abstract class AbstractN5Test {
 			writer.removeAttribute("/", "/");
 			writer.setAttribute("/", N5Reader.VERSION_KEY,
 					new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
-			assertThrows("Incompatible version throws error", N5Exception.N5IOException.class,
-					() -> {
-						createN5Reader(location);
-					});
+			assertThrows(N5Exception.N5IOException.class,
+						 () -> createN5Reader(location),
+						 "Incompatible version throws error");
 			writer.remove();
 		}
 		// non-existent group should fail
-		assertThrows("Non-existant location throws error", N5Exception.N5IOException.class,
-				() -> {
-					final N5Reader test = createN5Reader(location);
-					test.list("/");
-				});
+		assertThrows(N5Exception.N5IOException.class,
+					 () -> {final N5Reader test = createN5Reader(location);test.list("/");},
+					 "Non-existant location throws error");
 	}
 
 	@Test
