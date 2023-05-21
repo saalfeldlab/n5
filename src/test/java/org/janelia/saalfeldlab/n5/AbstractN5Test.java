@@ -50,7 +50,10 @@ import java.util.function.Predicate;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,6 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Named.named;
 
 /**
  * Abstract base class for testing N5 functionality.
@@ -108,16 +112,16 @@ public abstract class AbstractN5Test {
 
 	protected abstract N5Reader createN5Reader(String location, GsonBuilder gson) throws IOException, URISyntaxException;
 
-	protected Compression[] getCompressions() {
+	protected static List<Named<Compression>> provideCompressions() {
 
-		return new Compression[]{
-				new RawCompression(),
-				new Bzip2Compression(),
-				new GzipCompression(),
-				new GzipCompression(5, true),
-				new Lz4Compression(),
-				new XzCompression()
-		};
+		return Arrays.asList(
+				named("raw", new RawCompression()),
+				named("bzip2", new Bzip2Compression()),
+				named("gzip", new GzipCompression()),
+				named("gzip (w/ zlib)", new GzipCompression(5, true)),
+				named("lz4", new Lz4Compression()),
+				named("xz", new XzCompression())
+		);
 	}
 
 	/**
@@ -202,136 +206,24 @@ public abstract class AbstractN5Test {
 		assertTrue(info.getCompression() instanceof RawCompression);
 	}
 
-	@Test
-	public void testWriteReadByteBlock() {
+	@ParameterizedTest
+	@MethodSource("provideCompressions")
+	public void testWriteReadByteBlock(final Compression compression) {
 
-		for (final Compression compression : getCompressions()) {
-			for (final DataType dataType : new DataType[]{
-					DataType.UINT8,
-					DataType.INT8}) {
+		for (final DataType dataType : new DataType[]{
+				DataType.UINT8,
+				DataType.INT8}) {
 
-				System.out.println("Testing " + compression.getType() + " " + dataType);
-				try {
-					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
-					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
-					final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, new long[]{0, 0, 0}, byteBlock);
-					n5.writeBlock(datasetName, attributes, dataBlock);
-
-					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
-
-					assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
-
-					assertTrue(n5.remove(datasetName));
-
-				} catch (final IOException e) {
-					e.printStackTrace();
-					fail("Block cannot be written.");
-				}
-			}
-		}
-	}
-
-	@Test
-	public void testWriteReadShortBlock() throws URISyntaxException {
-
-		for (final Compression compression : getCompressions()) {
-			for (final DataType dataType : new DataType[]{
-					DataType.UINT16,
-					DataType.INT16}) {
-
-				System.out.println("Testing " + compression.getType() + " " + dataType);
-				try (final N5Writer n5 = createN5Writer()) {
-					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
-					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
-					final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(blockSize, new long[]{0, 0, 0}, shortBlock);
-					n5.writeBlock(datasetName, attributes, dataBlock);
-
-					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
-
-					assertArrayEquals(shortBlock, (short[])loadedDataBlock.getData());
-
-					assertTrue(n5.remove(datasetName));
-
-				} catch (final IOException e) {
-					e.printStackTrace();
-					fail("Block cannot be written.");
-				}
-			}
-		}
-	}
-
-	@Test
-	public void testWriteReadIntBlock() throws URISyntaxException {
-
-		for (final Compression compression : getCompressions()) {
-			for (final DataType dataType : new DataType[]{
-					DataType.UINT32,
-					DataType.INT32}) {
-
-				System.out.println("Testing " + compression.getType() + " " + dataType);
-				try (final N5Writer n5 = createN5Writer()) {
-					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
-					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
-					final IntArrayDataBlock dataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
-					n5.writeBlock(datasetName, attributes, dataBlock);
-
-					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
-
-					assertArrayEquals(intBlock, (int[])loadedDataBlock.getData());
-
-					assertTrue(n5.remove(datasetName));
-
-				} catch (final IOException e) {
-					e.printStackTrace();
-					fail("Block cannot be written.");
-				}
-			}
-		}
-	}
-
-	@Test
-	public void testWriteReadLongBlock() throws URISyntaxException {
-
-		for (final Compression compression : getCompressions()) {
-			for (final DataType dataType : new DataType[]{
-					DataType.UINT64,
-					DataType.INT64}) {
-
-				System.out.println("Testing " + compression.getType() + " " + dataType);
-				try (final N5Writer n5 = createN5Writer()) {
-					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
-					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
-					final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, longBlock);
-					n5.writeBlock(datasetName, attributes, dataBlock);
-
-					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
-
-					assertArrayEquals(longBlock, (long[])loadedDataBlock.getData());
-
-					assertTrue(n5.remove(datasetName));
-
-				} catch (final IOException e) {
-					e.printStackTrace();
-					fail("Block cannot be written.");
-				}
-			}
-		}
-	}
-
-	@Test
-	public void testWriteReadFloatBlock() throws URISyntaxException {
-
-		for (final Compression compression : getCompressions()) {
-			System.out.println("Testing " + compression.getType() + " float32");
-			try (final N5Writer n5 = createN5Writer()) {
-				n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT32, compression);
+			System.out.println("Testing " + compression.getType() + " " + dataType);
+			try {
+				n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
-				final FloatArrayDataBlock dataBlock = new FloatArrayDataBlock(blockSize, new long[]{0, 0, 0}, floatBlock);
+				final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, new long[]{0, 0, 0}, byteBlock);
 				n5.writeBlock(datasetName, attributes, dataBlock);
 
 				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
-				assertArrayEquals(floatBlock, (float[])loadedDataBlock.getData(), 0.001f);
+				assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
 
 				assertTrue(n5.remove(datasetName));
 
@@ -342,83 +234,24 @@ public abstract class AbstractN5Test {
 		}
 	}
 
-	@Test
-	public void testWriteReadDoubleBlock() throws URISyntaxException {
+	@ParameterizedTest
+	@MethodSource("provideCompressions")
+	public void testWriteReadShortBlock(final Compression compression) throws URISyntaxException {
 
-		for (final Compression compression : getCompressions()) {
-			System.out.println("Testing " + compression.getType() + " float64");
-			try (final N5Writer n5 = createN5Writer()) {
-				n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT64, compression);
-				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
-				final DoubleArrayDataBlock dataBlock = new DoubleArrayDataBlock(blockSize, new long[]{0, 0, 0}, doubleBlock);
-				n5.writeBlock(datasetName, attributes, dataBlock);
+		for (final DataType dataType : new DataType[]{
+				DataType.UINT16,
+				DataType.INT16}) {
 
-				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
-
-				assertArrayEquals(doubleBlock, (double[])loadedDataBlock.getData(), 0.001);
-
-				assertTrue(n5.remove(datasetName));
-
-			} catch (final IOException e) {
-				e.printStackTrace();
-				fail("Block cannot be written.");
-			}
-		}
-	}
-
-	@Test
-	public void testMode1WriteReadByteBlock() throws URISyntaxException {
-
-		final int[] differentBlockSize = new int[]{5, 10, 15};
-
-		for (final Compression compression : getCompressions()) {
-			for (final DataType dataType : new DataType[]{
-					DataType.UINT8,
-					DataType.INT8}) {
-
-				System.out.println("Testing " + compression.getType() + " " + dataType + " (mode=1)");
-				try (final N5Writer n5 = createN5Writer()) {
-					n5.createDataset(datasetName, dimensions, differentBlockSize, dataType, compression);
-					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
-					final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(differentBlockSize, new long[]{0, 0, 0}, byteBlock);
-					n5.writeBlock(datasetName, attributes, dataBlock);
-
-					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
-
-					assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
-
-					assertTrue(n5.remove(datasetName));
-
-				} catch (final IOException e) {
-					e.printStackTrace();
-					fail("Block cannot be written.");
-				}
-			}
-		}
-	}
-
-	@Test
-	public void testWriteReadSerializableBlock() throws ClassNotFoundException, URISyntaxException {
-
-		for (final Compression compression : getCompressions()) {
-
-			final DataType dataType = DataType.OBJECT;
-			System.out.println("Testing " + compression.getType() + " " + dataType + " (mode=2)");
+			System.out.println("Testing " + compression.getType() + " " + dataType);
 			try (final N5Writer n5 = createN5Writer()) {
 				n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+				final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(blockSize, new long[]{0, 0, 0}, shortBlock);
+				n5.writeBlock(datasetName, attributes, dataBlock);
 
-				final HashMap<String, ArrayList<double[]>> object = new HashMap<>();
-				object.put("one", new ArrayList<>());
-				object.put("two", new ArrayList<>());
-				object.get("one").add(new double[]{1, 2, 3});
-				object.get("two").add(new double[]{4, 5, 6, 7, 8});
+				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
-				n5.writeSerializedBlock(object, datasetName, attributes, 0, 0, 0);
-
-				final HashMap<String, ArrayList<double[]>> loadedObject = n5.readSerializedBlock(datasetName, attributes, new long[]{0, 0, 0});
-
-				object.forEach((key, value) -> assertArrayEquals(value.get(0), loadedObject.get(key).get(0), 0.01));
+				assertArrayEquals(shortBlock, (short[])loadedDataBlock.getData());
 
 				assertTrue(n5.remove(datasetName));
 
@@ -426,6 +259,168 @@ public abstract class AbstractN5Test {
 				e.printStackTrace();
 				fail("Block cannot be written.");
 			}
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("provideCompressions")
+	public void testWriteReadIntBlock(final Compression compression) throws URISyntaxException {
+
+		for (final DataType dataType : new DataType[]{
+				DataType.UINT32,
+				DataType.INT32}) {
+
+			System.out.println("Testing " + compression.getType() + " " + dataType);
+			try (final N5Writer n5 = createN5Writer()) {
+				n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
+				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+				final IntArrayDataBlock dataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
+				n5.writeBlock(datasetName, attributes, dataBlock);
+
+				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
+
+				assertArrayEquals(intBlock, (int[])loadedDataBlock.getData());
+
+				assertTrue(n5.remove(datasetName));
+
+			} catch (final IOException e) {
+				e.printStackTrace();
+				fail("Block cannot be written.");
+			}
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("provideCompressions")
+	public void testWriteReadLongBlock(final Compression compression) throws URISyntaxException {
+
+		for (final DataType dataType : new DataType[]{
+				DataType.UINT64,
+				DataType.INT64}) {
+
+			System.out.println("Testing " + compression.getType() + " " + dataType);
+			try (final N5Writer n5 = createN5Writer()) {
+				n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
+				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+				final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, longBlock);
+				n5.writeBlock(datasetName, attributes, dataBlock);
+
+				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
+
+				assertArrayEquals(longBlock, (long[])loadedDataBlock.getData());
+
+				assertTrue(n5.remove(datasetName));
+
+			} catch (final IOException e) {
+				e.printStackTrace();
+				fail("Block cannot be written.");
+			}
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("provideCompressions")
+	public void testWriteReadFloatBlock(final Compression compression) throws URISyntaxException {
+
+		System.out.println("Testing " + compression.getType() + " float32");
+		try (final N5Writer n5 = createN5Writer()) {
+			n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT32, compression);
+			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+			final FloatArrayDataBlock dataBlock = new FloatArrayDataBlock(blockSize, new long[]{0, 0, 0}, floatBlock);
+			n5.writeBlock(datasetName, attributes, dataBlock);
+
+			final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
+
+			assertArrayEquals(floatBlock, (float[])loadedDataBlock.getData(), 0.001f);
+
+			assertTrue(n5.remove(datasetName));
+
+		} catch (final IOException e) {
+			e.printStackTrace();
+			fail("Block cannot be written.");
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("provideCompressions")
+	public void testWriteReadDoubleBlock(final Compression compression) throws URISyntaxException {
+
+		System.out.println("Testing " + compression.getType() + " float64");
+		try (final N5Writer n5 = createN5Writer()) {
+			n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT64, compression);
+			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+			final DoubleArrayDataBlock dataBlock = new DoubleArrayDataBlock(blockSize, new long[]{0, 0, 0}, doubleBlock);
+			n5.writeBlock(datasetName, attributes, dataBlock);
+
+			final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
+
+			assertArrayEquals(doubleBlock, (double[])loadedDataBlock.getData(), 0.001);
+
+			assertTrue(n5.remove(datasetName));
+
+		} catch (final IOException e) {
+			e.printStackTrace();
+			fail("Block cannot be written.");
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("provideCompressions")
+	public void testMode1WriteReadByteBlock(final Compression compression) throws URISyntaxException {
+
+		final int[] differentBlockSize = new int[]{5, 10, 15};
+
+		for (final DataType dataType : new DataType[]{
+				DataType.UINT8,
+				DataType.INT8}) {
+
+			System.out.println("Testing " + compression.getType() + " " + dataType + " (mode=1)");
+			try (final N5Writer n5 = createN5Writer()) {
+				n5.createDataset(datasetName, dimensions, differentBlockSize, dataType, compression);
+				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+				final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(differentBlockSize, new long[]{0, 0, 0}, byteBlock);
+				n5.writeBlock(datasetName, attributes, dataBlock);
+
+				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
+
+				assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
+
+				assertTrue(n5.remove(datasetName));
+
+			} catch (final IOException e) {
+				e.printStackTrace();
+				fail("Block cannot be written.");
+			}
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("provideCompressions")
+	public void testWriteReadSerializableBlock(final Compression compression) throws ClassNotFoundException, URISyntaxException {
+
+		final DataType dataType = DataType.OBJECT;
+		System.out.println("Testing " + compression.getType() + " " + dataType + " (mode=2)");
+		try (final N5Writer n5 = createN5Writer()) {
+			n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
+			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+
+			final HashMap<String, ArrayList<double[]>> object = new HashMap<>();
+			object.put("one", new ArrayList<>());
+			object.put("two", new ArrayList<>());
+			object.get("one").add(new double[]{1, 2, 3});
+			object.get("two").add(new double[]{4, 5, 6, 7, 8});
+
+			n5.writeSerializedBlock(object, datasetName, attributes, 0, 0, 0);
+
+			final HashMap<String, ArrayList<double[]>> loadedObject = n5.readSerializedBlock(datasetName, attributes, new long[]{0, 0, 0});
+
+			object.forEach((key, value) -> assertArrayEquals(value.get(0), loadedObject.get(key).get(0), 0.01));
+
+			assertTrue(n5.remove(datasetName));
+
+		} catch (final IOException e) {
+			e.printStackTrace();
+			fail("Block cannot be written.");
 		}
 	}
 
