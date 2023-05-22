@@ -24,13 +24,13 @@ public interface N5JsonCacheableContainer {
 	JsonElement getAttributesFromContainer(final String normalPathName, final String normalCacheKey);
 
 	/**
-	 * Query whether a path exists in this container.
+	 * Query whether a resource exists in this container.
 	 * 
 	 * @param normalPathName the normalized path name
-	 * @return true if the path is a group or dataset
-	 * @see N5Reader#exists
+	 * @param normalCacheKey the normalized resource name (may be null).
+	 * @return true if the resouce exists
 	 */
-	boolean existsFromContainer(final String normalPathName);
+	boolean existsFromContainer(final String normalPathName, final String normalCacheKey);
 
 	/**
 	 * Query whether a path in this container is a group.
@@ -48,6 +48,26 @@ public interface N5JsonCacheableContainer {
 	 * @see N5Reader#datasetExists
 	 */
 	boolean isDatasetFromContainer(final String normalPathName);
+
+	/**
+	 * If this method is called, its parent path must exist,
+	 * and normalCacheKey must exist, with contents given by attributes.
+	 *
+	 * @param normalCacheKey the cache key
+	 * @param attributes the attributes
+	 * @return true if the path is a group
+	 */
+	boolean isGroupFromAttributes(final String normalCacheKey, final JsonElement attributes);
+
+	/**
+	 * If this method is called, its parent path must exist,
+	 * and normalCacheKey must exist, with contents given by attributes.
+	 *
+	 * @param normalCacheKey the cache key
+	 * @param attributes the attributes
+	 * @return true if the path is a dataset
+	 */
+	boolean isDatasetFromAttributes(final String normalCacheKey, final JsonElement attributes);
 
 	/**
 	 * List the children of a path for this container.

@@ -71,16 +71,19 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 		final String normalPath = N5URL.normalizeGroupPath(path);
 		getKeyValueAccess().createDirectories(groupPath(normalPath));
 		if (cacheMeta()) {
-			final String[] pathParts = getKeyValueAccess().components(normalPath);
-			if (pathParts.length > 1) {
-				String parent = N5URL.normalizeGroupPath("/");
-				for (String child : pathParts) {
-					final String childPath = getKeyValueAccess().compose(parent, child);
-					// add the group to the cache
-					getCache().addNewCacheInfo(childPath, N5JsonCache.jsonFile, null, true, false);
+			String[] pathParts = getKeyValueAccess().components(normalPath);
+			String parent = N5URL.normalizeGroupPath("/");
+			if (pathParts.length == 0) {
+				pathParts = new String[]{""};
+			}
+			for (String child : pathParts) {
+				final String childPath = getKeyValueAccess().compose(parent, child);
+				// add the group to the cache
+				getCache().forceAddNewCacheInfo(childPath, N5JsonCache.jsonFile, null, true, false );
+				if( parent != null && !child.isEmpty())
 					getCache().addChild(parent, child);
-					parent = childPath;
-				}
+
+				parent = childPath;
 			}
 		}
 		initializeGroup(normalPath);
@@ -105,9 +108,6 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 		final String normalPath = N5URL.normalizeGroupPath(pathName);
 		createGroup(normalPath);
 		setDatasetAttributes(normalPath, datasetAttributes);
-
-		if (cacheMeta())
-			getCache().setIsDataset(normalPath, true);
 	}
 
 	/**
@@ -170,7 +170,7 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 				nullRespectingAttributes = getGson().toJsonTree(attributes);
 			}
 			/* Update the cache, and write to the writer */
-			getCache().setAttributes(normalGroupPath, N5JsonCache.jsonFile, nullRespectingAttributes);
+			getCache().updateCacheInfo(normalGroupPath, N5JsonCache.jsonFile, nullRespectingAttributes);
 		}
 	}
 

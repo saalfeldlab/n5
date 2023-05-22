@@ -29,6 +29,8 @@ import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
 
+import org.janelia.saalfeldlab.n5.N5Reader.Version;
+
 /**
  * Filesystem {@link N5Writer} implementation with version compatibility check.
  *
@@ -65,7 +67,18 @@ public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyV
 			throws IOException {
 
 		super(false, keyValueAccess, basePath, gsonBuilder, cacheAttributes);
-		createGroup("/");
-		setVersion("/");
+
+		Version version = null;
+		try {
+			version = getVersion();
+			if (!VERSION.isCompatible(version))
+				throw new N5Exception.N5IOException("Incompatible version " + version + " (this is " + VERSION + ").");
+		} catch (NullPointerException e) {
+		}
+
+		if (version == null || version.equals(new Version(0, 0, 0, ""))) {
+			createGroup("/");
+			setVersion("/");
+		}
 	}
 }

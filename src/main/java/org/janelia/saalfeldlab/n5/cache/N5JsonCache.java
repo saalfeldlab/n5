@@ -19,9 +19,8 @@ public class N5JsonCache {
 	 */
 	private static class N5CacheInfo {
 
-		private final HashSet<String> children = new HashSet<>();
-
 		private final HashMap<String, JsonElement> attributesCache = new HashMap<>();
+		private HashSet<String> children = null;
 		private Boolean isDataset = false;
 		private Boolean isGroup = false;
 
@@ -73,29 +72,44 @@ public class N5JsonCache {
 		return getCacheInfo(normalPathKey).getCache(normalCacheKey);
 	}
 
-	public boolean isDataset(final String normalPathKey, final String normalCacheKey) {
+	private void cacheAttributes(final String normalPathKey, final String normalCacheKey) {
+
+		final JsonElement uncachedValue = container.getAttributesFromContainer(normalPathKey, normalCacheKey);
+		if (uncachedValue != null || container.existsFromContainer(normalPathKey, normalCacheKey)) {
+			addNewCacheInfo(normalPathKey, normalCacheKey, uncachedValue);
+		}
+	}
+
+	public boolean isDataset(final String normalPathKey, final String normalCacheKey ) {
 
 		final N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
-			addNewCacheInfo(normalPathKey, normalCacheKey);
+			addNewCacheInfo(normalPathKey, normalCacheKey, null);
 		}
 		return getCacheInfo(normalPathKey).isDataset;
 	}
 
-	public boolean isGroup(final String normalPathKey, final String normalCacheKey) {
+	public boolean isGroup(final String normalPathKey, String cacheKey) {
 
 		final N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
-			addNewCacheInfo(normalPathKey, normalCacheKey);
+			addNewCacheInfo(normalPathKey, cacheKey, null);
 		}
 		return getCacheInfo(normalPathKey).isGroup;
 	}
 
-	public boolean exists(final String normalPathKey, final String normalCacheKey ) {
+	/**
+	 * Returns true if a resource exists.
+	 *
+	 * @param normalPathKey the container path
+	 * @param normalCacheKey the cache key / resource (may be null)
+	 * @return true if exists
+	 */
+	public boolean exists(final String normalPathKey, final String normalCacheKey) {
 
 		final N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
-			addNewCacheInfo(normalPathKey, normalCacheKey );
+			addNewCacheInfo( normalPathKey, normalCacheKey, null);
 		}
 		return getCacheInfo(normalPathKey) != emptyCacheInfo;
 	}
@@ -108,6 +122,9 @@ public class N5JsonCache {
 		cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == emptyCacheInfo) return null;
 
+		if( cacheInfo.children == null )
+			addChild( cacheInfo, normalPathKey );
+
 		final String[] children = new String[cacheInfo.children.size()];
 		int i = 0;
 		for (String child : cacheInfo.children) {
@@ -116,43 +133,43 @@ public class N5JsonCache {
 		return children;
 	}
 
-	private void cacheAttributes(final String normalPathKey, final String normalCacheKey) {
-
-		final JsonElement uncachedValue = container.getAttributesFromContainer(normalPathKey, normalCacheKey);
-		if (uncachedValue != null || container.existsFromContainer(normalPathKey)) {
-			addNewCacheInfo(normalPathKey, normalCacheKey, uncachedValue);
-		}
-	}
-
-	private void addNewCacheInfo(String normalPathKey, String normalCacheKey) {
-
-		addNewCacheInfo( normalPathKey, normalCacheKey, container.getAttributesFromContainer( normalPathKey, normalCacheKey));
-	}
-
-	private void addNewCacheInfo(String normalPathKey, String normalCacheKey, JsonElement uncachedAttributes) {
+	public N5CacheInfo addNewCacheInfo(String normalPathKey, String normalCacheKey, JsonElement uncachedAttributes) {
 
 		final N5CacheInfo cacheInfo;
-		if (!container.existsFromContainer(normalPathKey)) {
-			cacheInfo = emptyCacheInfo;
-		} else {
+		if ( container.existsFromContainer(normalPathKey, null)) {
 			cacheInfo = new N5CacheInfo();
+		} else {
+			cacheInfo = emptyCacheInfo;
+		}
+
+		if (cacheInfo != emptyCacheInfo && normalCacheKey != null) {
+			final JsonElement attributes = (uncachedAttributes == null)
+					? container.getAttributesFromContainer(normalPathKey, normalCacheKey)
+					: uncachedAttributes;
+
 			synchronized (cacheInfo.attributesCache) {
-				cacheInfo.attributesCache.put(normalCacheKey, uncachedAttributes);
+				cacheInfo.attributesCache.put(normalCacheKey, attributes);
 			}
+			cacheInfo.isGroup = container.isGroupFromAttributes(normalCacheKey, attributes);
+			cacheInfo.isDataset = container.isDatasetFromAttributes(normalCacheKey, attributes);
+		} else {
 			cacheInfo.isGroup = container.isGroupFromContainer(normalPathKey);
 			cacheInfo.isDataset = container.isDatasetFromContainer(normalPathKey);
-			addChild(cacheInfo, normalPathKey);
 		}
+
 		synchronized (containerPathToCache) {
 			containerPathToCache.put(normalPathKey, cacheInfo);
 		}
+		return cacheInfo;
 	}
 
-	public void addNewCacheInfo(String normalPathKey, String normalCacheKey, JsonElement uncachedAttributes, boolean isGroup, boolean isDataset) {
+	public N5CacheInfo forceAddNewCacheInfo(String normalPathKey, String normalCacheKey, JsonElement uncachedAttributes, boolean isGroup, boolean isDataset) {
 
 		final N5CacheInfo cacheInfo = new N5CacheInfo();
-		synchronized (cacheInfo.attributesCache) {
-			cacheInfo.attributesCache.put(normalCacheKey, uncachedAttributes);
+		if (normalCacheKey != null) {
+			synchronized (cacheInfo.attributesCache) {
+				cacheInfo.attributesCache.put(normalCacheKey, uncachedAttributes);
+			}
 		}
 		cacheInfo.isGroup = isGroup;
 		cacheInfo.isDataset = isDataset;
@@ -160,55 +177,21 @@ public class N5JsonCache {
 		synchronized (containerPathToCache) {
 			containerPathToCache.put(normalPathKey, cacheInfo);
 		}
-	}
-
-	private void addChild(N5CacheInfo cacheInfo, String normalPathKey) {
-
-		final String[] children = container.listFromContainer(normalPathKey);
-		Collections.addAll(cacheInfo.children, children);
+		return cacheInfo;
 	}
 
 	private N5CacheInfo addNewCacheInfo(String normalPathKey) {
 
-		final N5CacheInfo cacheInfo;
-		if (!container.existsFromContainer(normalPathKey)) {
-			cacheInfo = emptyCacheInfo;
-		} else {
-			cacheInfo = new N5CacheInfo();
-			cacheInfo.isGroup = container.isGroupFromContainer(normalPathKey);
-			cacheInfo.isDataset = container.isDatasetFromContainer(normalPathKey);
-			addChild(cacheInfo, normalPathKey);
-		}
-		synchronized (containerPathToCache) {
-			containerPathToCache.put(normalPathKey, cacheInfo);
-		}
-		return cacheInfo;
+		return addNewCacheInfo(normalPathKey, null, null);
 	}
 
-	public void updateCacheInfo(final String normalPathKey, final String normalCacheKey) {
+	private void addChild(N5CacheInfo cacheInfo, String normalPathKey) {
 
-		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
-		if (cacheInfo == null ){
-			addNewCacheInfo(normalPathKey);
-			return;
-		} else if (!container.existsFromContainer(normalPathKey)) {
-			cacheInfo = emptyCacheInfo;
-		} else {
-			if( cacheInfo == emptyCacheInfo )
-				cacheInfo = new N5CacheInfo();
+		if( cacheInfo.children == null )
+			cacheInfo.children = new HashSet<>();
 
-			final JsonElement attributesToCache = container.getAttributesFromContainer(normalPathKey, normalCacheKey);
-			synchronized (cacheInfo.attributesCache) {
-				cacheInfo.attributesCache.put(normalCacheKey, attributesToCache);
-			}
-			cacheInfo.isGroup = container.isGroupFromContainer(normalPathKey);
-			cacheInfo.isDataset = container.isDatasetFromContainer(normalPathKey);
-			cacheInfo.children.clear();
-			addChild(cacheInfo, normalPathKey);
-		}
-		synchronized (containerPathToCache) {
-			containerPathToCache.put(normalPathKey, cacheInfo);
-		}
+		final String[] children = container.listFromContainer(normalPathKey);
+		Collections.addAll(cacheInfo.children, children);
 	}
 
 	public void updateCacheInfo(final String normalPathKey, final String normalCacheKey, final JsonElement uncachedAttributes) {
@@ -217,46 +200,31 @@ public class N5JsonCache {
 		if (cacheInfo == null ){
 			addNewCacheInfo(normalPathKey, normalCacheKey, uncachedAttributes );
 			return;
-		} else if (!container.existsFromContainer(normalPathKey)) {
+		} else if (!container.existsFromContainer(normalPathKey, normalCacheKey)) {
 			cacheInfo = emptyCacheInfo;
 		} else {
 			if( cacheInfo == emptyCacheInfo )
 				cacheInfo = new N5CacheInfo();
 
-			final JsonElement attributesToCache = uncachedAttributes == null ? container.getAttributesFromContainer(normalPathKey, normalCacheKey) : uncachedAttributes;
-			synchronized (cacheInfo.attributesCache) {
-				cacheInfo.attributesCache.put(normalCacheKey, attributesToCache);
+			if (normalCacheKey != null) {
+				final JsonElement attributesToCache = uncachedAttributes == null
+						? container.getAttributesFromContainer(normalPathKey, normalCacheKey)
+						: uncachedAttributes;
+				synchronized (cacheInfo.attributesCache) {
+					cacheInfo.attributesCache.put(normalCacheKey, attributesToCache);
+				}
+				cacheInfo.isGroup = container.isGroupFromAttributes(normalCacheKey, attributesToCache);
+				cacheInfo.isDataset = container.isDatasetFromAttributes(normalCacheKey, attributesToCache);
 			}
-			cacheInfo.isGroup = container.isGroupFromContainer(normalPathKey);
-			cacheInfo.isDataset = container.isDatasetFromContainer(normalPathKey);
-			cacheInfo.children.clear();
-			addChild(cacheInfo, normalPathKey);
+			else {
+				cacheInfo.isGroup = container.isGroupFromContainer(normalPathKey);
+				cacheInfo.isDataset = container.isDatasetFromContainer(normalPathKey);
+			}
 		}
 
 		synchronized (containerPathToCache) {
 			containerPathToCache.put(normalPathKey, cacheInfo);
 		}
-	}
-
-	public void setIsDataset(final String normalPathKey, final boolean isDataset ) {
-		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
-		boolean update = false;
-		if (cacheInfo == null ){
-			return;
-		}
-		if( cacheInfo == emptyCacheInfo ) {
-			cacheInfo = new N5CacheInfo();
-			update = true;
-		}
-
-		synchronized (cacheInfo) {
-			cacheInfo.isDataset = isDataset;
-		}
-
-		if( update )
-			synchronized (containerPathToCache) {
-				containerPathToCache.put(normalPathKey, cacheInfo);
-			}
 	}
 
 	public void setAttributes(final String normalPathKey, final String normalCacheKey, final JsonElement attributes ) {
@@ -290,9 +258,9 @@ public class N5JsonCache {
 
 	public void removeCache(final String normalParentPathKey, final String normalPathKey) {
 		synchronized (containerPathToCache) {
-			containerPathToCache.remove(normalPathKey);
+			containerPathToCache.put(normalPathKey, emptyCacheInfo);
 			final N5CacheInfo parentCache = containerPathToCache.get(normalParentPathKey);
-			if (parentCache != null) {
+			if (parentCache != null && parentCache.children != null ) {
 				parentCache.children.remove(normalPathKey);
 			}
 		}
