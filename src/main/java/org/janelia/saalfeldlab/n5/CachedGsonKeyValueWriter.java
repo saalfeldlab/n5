@@ -53,18 +53,6 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 			setAttribute("/", VERSION_KEY, VERSION.toString());;
 	}
 
-	/**
-	 * Performs any necessary initialization to ensure the key given by the
-	 * argument {@code normalPath} is a valid group after creation. Called by
-	 * {@link #createGroup(String)}.
-	 *
-	 * @param normalPath the group path.
-	 */
-	default void initializeGroup(final String normalPath) {
-		// Nothing to do here, but other implementations (e.g. zarr) use this.
-		// TODO remove if not used by zarr
-	}
-
 	@Override
 	default void createGroup(final String path) throws IOException {
 
@@ -86,7 +74,6 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 				parent = childPath;
 			}
 		}
-		initializeGroup(normalPath);
 	}
 
 	/**
