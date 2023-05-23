@@ -45,22 +45,10 @@ public class N5JsonCache {
 		this.container = container;
 	}
 
-	/**
-	 * Get cached attributes for the group identified by a normalPath
-	 *
-	 * @param cacheInfo
-	 * @param normalCacheKey normalized cache key
-	 * @return cached attributes
-	 * null if the group exists but no attributes are set, the group does not exist, or if attributes have not been cached
-	 */
-	private JsonElement getCachedAttributes(final N5CacheInfo cacheInfo, final String normalCacheKey) {
-		return cacheInfo == null ? null : cacheInfo.getCache(normalCacheKey);
-	}
-
 	public JsonElement getAttributes(final String normalPathKey, final String normalCacheKey) {
 		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
-			cacheAttributes(normalPathKey, normalCacheKey);
+			addNewCacheInfo(normalPathKey, normalCacheKey, null);
 		}
 		cacheInfo = getCacheInfo(normalPathKey);
 		synchronized (cacheInfo) {
@@ -71,14 +59,6 @@ public class N5JsonCache {
 
 		final JsonElement output = getCacheInfo(normalPathKey).getCache(normalCacheKey);
 		return output == null ? null : output.deepCopy();
-	}
-
-	private void cacheAttributes(final String normalPathKey, final String normalCacheKey) {
-
-		final JsonElement uncachedValue = container.getAttributesFromContainer(normalPathKey, normalCacheKey);
-		if (uncachedValue != null || container.existsFromContainer(normalPathKey, normalCacheKey)) {
-			addNewCacheInfo(normalPathKey, normalCacheKey, uncachedValue);
-		}
 	}
 
 	public boolean isDataset(final String normalPathKey, final String normalCacheKey ) {
