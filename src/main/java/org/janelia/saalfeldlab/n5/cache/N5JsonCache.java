@@ -9,7 +9,6 @@ import java.util.HashSet;
 public class N5JsonCache {
 
 	public static final N5CacheInfo emptyCacheInfo = new N5CacheInfo();
-	public static final String jsonFile = "attributes.json";
 
 	protected final N5JsonCacheableContainer container;
 

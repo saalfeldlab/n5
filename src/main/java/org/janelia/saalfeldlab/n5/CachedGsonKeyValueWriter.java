@@ -59,7 +59,7 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 		final String normalPath = N5URL.normalizeGroupPath(path);
 		getKeyValueAccess().createDirectories(groupPath(normalPath));
 		if (cacheMeta()) {
-			getCache().forceAddNewCacheInfo(normalPath, N5JsonCache.jsonFile, null, true, false );
+			getCache().forceAddNewCacheInfo(normalPath, jsonFile, null, true, false );
 
 			 // check all nodes that are parents of the added node, if they have a children set, add the new child to it
 			String[] pathParts = getKeyValueAccess().components(normalPath);
@@ -159,7 +159,7 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 				nullRespectingAttributes = getGson().toJsonTree(attributes);
 			}
 			/* Update the cache, and write to the writer */
-			getCache().updateCacheInfo(normalGroupPath, N5JsonCache.jsonFile, nullRespectingAttributes);
+			getCache().updateCacheInfo(normalGroupPath, jsonFile, nullRespectingAttributes);
 		}
 	}
 

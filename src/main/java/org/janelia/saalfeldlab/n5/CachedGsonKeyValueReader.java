@@ -44,6 +44,7 @@ import java.lang.reflect.Type;
  */
 
 public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCacheableContainer {
+
 	default N5JsonCache newCache() {
 		return new N5JsonCache( this );
 	}
@@ -69,7 +70,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 			return null;
 
 		if (cacheMeta()) {
-			attributes = getCache().getAttributes(normalPath, N5JsonCache.jsonFile);
+			attributes = getCache().getAttributes(normalPath, jsonFile);
 		} else {
 			attributes = GsonKeyValueReader.super.getAttributes(normalPath);
 		}
@@ -95,7 +96,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 
 		final JsonElement attributes;
 		if (cacheMeta()) {
-			attributes = getCache().getAttributes(normalPathName, N5JsonCache.jsonFile);
+			attributes = getCache().getAttributes(normalPathName, jsonFile);
 		} else {
 			attributes = GsonKeyValueReader.super.getAttributes(normalPathName);
 		}
@@ -112,7 +113,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 		final String normalizedAttributePath = N5URL.normalizeAttributePath(key);
 		JsonElement attributes;
 		if (cacheMeta()) {
-			attributes = getCache().getAttributes(normalPathName, N5JsonCache.jsonFile);
+			attributes = getCache().getAttributes(normalPathName, jsonFile);
 		} else {
 			attributes = GsonKeyValueReader.super.getAttributes(normalPathName);
 		}
@@ -124,7 +125,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 
 		final String normalPathName = N5URL.normalizeGroupPath(pathName);
 		if (cacheMeta())
-			return getCache().isGroup(normalPathName, N5JsonCache.jsonFile);
+			return getCache().isGroup(normalPathName, jsonFile);
 		else {
 			return existsFromContainer(normalPathName, null);
 		}
@@ -189,7 +190,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 
 		/* If cached, return the cache*/
 		if (cacheMeta()) {
-			return getCache().getAttributes(groupPath, N5JsonCache.jsonFile);
+			return getCache().getAttributes(groupPath, jsonFile);
 		} else {
 			return GsonKeyValueReader.super.getAttributes(groupPath);
 		}

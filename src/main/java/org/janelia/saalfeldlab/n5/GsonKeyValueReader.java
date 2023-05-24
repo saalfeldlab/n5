@@ -28,7 +28,6 @@ package org.janelia.saalfeldlab.n5;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -44,6 +43,8 @@ import java.util.Map;
  * @author Philipp Hanslovsky
  */
 public interface GsonKeyValueReader extends N5Reader {
+
+	public static final String jsonFile = "attributes.json";
 
 	Gson getGson();
 
@@ -220,7 +221,7 @@ public interface GsonKeyValueReader extends N5Reader {
 	 */
 	default String attributesPath(final String normalPath) {
 
-		return getKeyValueAccess().compose(getBasePath(), normalPath, N5JsonCache.jsonFile);
+		return getKeyValueAccess().compose(getBasePath(), normalPath, jsonFile);
 	}
 
 	static DatasetAttributes createDatasetAttributes(
