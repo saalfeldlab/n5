@@ -48,8 +48,11 @@ public class N5JsonCache {
 		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
 			addNewCacheInfo(normalPathKey, normalCacheKey, null);
+			cacheInfo = getCacheInfo(normalPathKey);
 		}
-		cacheInfo = getCacheInfo(normalPathKey);
+		if (cacheInfo == emptyCacheInfo) {
+			return null;
+		}
 		synchronized (cacheInfo) {
 			if (!cacheInfo.containsKey(normalCacheKey)) {
 				updateCacheInfo(normalPathKey, normalCacheKey, null);
@@ -62,20 +65,22 @@ public class N5JsonCache {
 
 	public boolean isDataset(final String normalPathKey, final String normalCacheKey ) {
 
-		final N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
+		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
 			addNewCacheInfo(normalPathKey, normalCacheKey, null);
+			cacheInfo = getCacheInfo(normalPathKey);
 		}
-		return getCacheInfo(normalPathKey).isDataset;
+		return cacheInfo.isDataset;
 	}
 
 	public boolean isGroup(final String normalPathKey, String cacheKey) {
 
-		final N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
+		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
 			addNewCacheInfo(normalPathKey, cacheKey, null);
+			cacheInfo = getCacheInfo(normalPathKey);
 		}
-		return getCacheInfo(normalPathKey).isGroup;
+		return cacheInfo.isGroup;
 	}
 
 	/**
@@ -87,19 +92,20 @@ public class N5JsonCache {
 	 */
 	public boolean exists(final String normalPathKey, final String normalCacheKey) {
 
-		final N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
+		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
 			addNewCacheInfo( normalPathKey, normalCacheKey, null);
+			cacheInfo = getCacheInfo(normalPathKey);
 		}
-		return getCacheInfo(normalPathKey) != emptyCacheInfo;
+		return cacheInfo != emptyCacheInfo;
 	}
 
 	public String[] list(String normalPathKey) {
 		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
 			addNewCacheInfo(normalPathKey);
+			cacheInfo = getCacheInfo(normalPathKey);
 		}
-		cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == emptyCacheInfo) return null;
 
 		if( cacheInfo.children == null )
