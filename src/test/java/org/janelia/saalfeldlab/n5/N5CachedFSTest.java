@@ -121,4 +121,188 @@ public class N5CachedFSTest extends N5FSTest {
 		}
 	}
 
+	@Test
+	public void emptyCacheInfoBehavior() throws IOException, URISyntaxException {
+
+		final String loc = tempN5Location();
+		// make an uncached n5 writer
+		try (final TrackingStorage n5 = new TrackingStorage(new FileSystemKeyValueAccess(FileSystems.getDefault()), loc,
+				new GsonBuilder(), true)) {
+
+			final String group = "mygroup";
+			boolean groupExists = n5.exists(group);
+			assertFalse(groupExists); // group does not exist
+			assertEquals(1, n5.existsCallCount);
+			assertEquals(0, n5.isGroupCallCount);
+			assertEquals(0, n5.isDatasetCallCount);
+			assertEquals(0, n5.attrCallCount);
+
+			n5.createGroup(group);
+			groupExists = n5.exists(group);
+			assertTrue(groupExists); // group now exists
+			assertEquals(1, n5.existsCallCount);
+			assertEquals(0, n5.isGroupCallCount);
+			assertEquals(0, n5.isDatasetCallCount);
+			assertEquals(0, n5.attrCallCount);
+		}
+	}
+
+	@Test
+	public void attributeListingSeparationTest() throws IOException, URISyntaxException {
+
+		final String loc = tempN5Location();
+		// make an uncached n5 writer
+		try (final TrackingStorage n5 = new TrackingStorage(
+				new FileSystemKeyValueAccess(FileSystems.getDefault()), loc, new GsonBuilder(), true)) {
+
+			final String cachedGroup = "cachedGroup";
+			// should not check existence when creating a group
+			n5.createGroup(cachedGroup);
+			n5.createGroup(cachedGroup); // be annoying
+			assertEquals(0, n5.existsCallCount);
+			assertEquals(0, n5.isGroupCallCount);
+			assertEquals(0, n5.isDatasetCallCount);
+			assertEquals(0, n5.attrCallCount);
+			assertEquals(0, n5.listCallCount);
+
+			// should not check existence when this instance created a group
+			n5.exists(cachedGroup);
+			n5.groupExists(cachedGroup);
+			n5.datasetExists(cachedGroup);
+			assertEquals(0, n5.existsCallCount);
+			assertEquals(0, n5.isGroupCallCount);
+			assertEquals(0, n5.isDatasetCallCount);
+			assertEquals(0, n5.attrCallCount);
+			assertEquals(0, n5.listCallCount);
+
+			// should not read attributes from container when setting them
+			n5.setAttribute(cachedGroup, "one", 1);
+			assertEquals(0, n5.existsCallCount);
+			assertEquals(0, n5.isGroupCallCount);
+			assertEquals(0, n5.isDatasetCallCount);
+			assertEquals(0, n5.attrCallCount);
+			assertEquals(0, n5.listCallCount);
+
+			n5.setAttribute(cachedGroup, "two", 2);
+			assertEquals(0, n5.existsCallCount);
+			assertEquals(0, n5.isGroupCallCount);
+			assertEquals(0, n5.isDatasetCallCount);
+			assertEquals(0, n5.attrCallCount);
+			assertEquals(0, n5.listCallCount);
+
+			n5.list("/");
+			assertEquals(0, n5.existsCallCount);
+			assertEquals(0, n5.isGroupCallCount);
+			assertEquals(0, n5.isDatasetCallCount);
+			assertEquals(0, n5.attrCallCount);
+			assertEquals(1, n5.listCallCount);
+
+			n5.list(cachedGroup);
+			assertEquals(0, n5.existsCallCount);
+			assertEquals(0, n5.isGroupCallCount);
+			assertEquals(0, n5.isDatasetCallCount);
+			assertEquals(0, n5.attrCallCount);
+			assertEquals(2, n5.listCallCount);
+
+			/*
+			 * Check existence for groups that have not been made by this reader but isGroup
+			 * and isDatatset must be false if it does not exists so then should not be
+			 * called.
+			 *
+			 * Similarly, attributes can not exist for a non-existent group, so should not
+			 * attempt to get attributes from the container.
+			 * 
+			 * Finally,listing on a non-existent group is pointless, so don't call the
+			 * backend storage
+			 */
+			final String nonExistentGroup = "doesNotExist";
+			n5.exists(nonExistentGroup);
+			assertEquals(1, n5.existsCallCount);
+			assertEquals(0, n5.isGroupCallCount);
+			assertEquals(0, n5.isDatasetCallCount);
+			assertEquals(0, n5.attrCallCount);
+			assertEquals(2, n5.listCallCount);
+
+			n5.groupExists(nonExistentGroup);
+			assertEquals(1, n5.existsCallCount);
+			assertEquals(0, n5.isGroupCallCount);
+			assertEquals(0, n5.isDatasetCallCount);
+			assertEquals(0, n5.attrCallCount);
+			assertEquals(2, n5.listCallCount);
+
+			n5.datasetExists(nonExistentGroup);
+			assertEquals(1, n5.existsCallCount);
+			assertEquals(0, n5.isGroupCallCount);
+			assertEquals(0, n5.isDatasetCallCount);
+			assertEquals(0, n5.attrCallCount);
+			assertEquals(2, n5.listCallCount);
+
+			n5.getAttributes(nonExistentGroup);
+			assertEquals(1, n5.existsCallCount);
+			assertEquals(0, n5.isGroupCallCount);
+			assertEquals(0, n5.isDatasetCallCount);
+			assertEquals(0, n5.attrCallCount);
+			assertEquals(2, n5.listCallCount);
+
+			n5.list(nonExistentGroup);
+			assertEquals(1, n5.existsCallCount);
+			assertEquals(0, n5.isGroupCallCount);
+			assertEquals(0, n5.isDatasetCallCount);
+			assertEquals(0, n5.attrCallCount);
+			assertEquals(2, n5.listCallCount);
+		}
+	}
+
+	protected static class TrackingStorage extends N5KeyValueWriter {
+
+		int attrCallCount = 0;
+		int existsCallCount = 0;
+		int isGroupCallCount = 0;
+		int isGroupAttrCallCount = 0;
+		int isDatasetCallCount = 0;
+		int isDatasetAttrCallCount = 0;
+		int listCallCount = 0;
+
+		public TrackingStorage(final KeyValueAccess keyValueAccess, final String basePath,
+				final GsonBuilder gsonBuilder, final boolean cacheAttributes) throws IOException {
+
+			super(keyValueAccess, basePath, gsonBuilder, cacheAttributes);
+		}
+
+		public JsonElement getAttributesFromContainer(final String key, final String cacheKey) {
+			attrCallCount++;
+			return super.getAttributesFromContainer(key, cacheKey);
+		}
+
+		public boolean existsFromContainer(final String path, final String cacheKey) {
+			existsCallCount++;
+			return super.existsFromContainer(path, cacheKey);
+		}
+
+		public boolean isGroupFromContainer(final String key) {
+			isGroupCallCount++;
+			return super.isGroupFromContainer(key);
+		}
+
+		public boolean isGroupFromAttributes(final String normalCacheKey, final JsonElement attributes) {
+			isGroupAttrCallCount++;
+			return super.isGroupFromAttributes(normalCacheKey, attributes);
+		}
+
+		public boolean isDatasetFromContainer(final String key) {
+			isDatasetCallCount++;
+			return super.isDatasetFromContainer(key);
+		}
+
+		public boolean isDatasetFromAttributes(final String normalCacheKey, final JsonElement attributes) {
+			isDatasetAttrCallCount++;
+			return super.isDatasetFromAttributes(normalCacheKey, attributes);
+		}
+
+		public String[] listFromContainer(final String key) {
+			listCallCount++;
+			return super.listFromContainer(key);
+		}
+	}
+
 }
