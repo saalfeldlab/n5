@@ -330,6 +330,26 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(0, n5.getAttrCallCount());
 		assertEquals(2, n5.getListCallCount());
 
+		n5.createGroup("a");
+		n5.createGroup("a/a");
+		n5.createGroup("a/b");
+		n5.createGroup("a/c");
+		assertArrayEquals(new String[] {"a", "b", "c"}, n5.list("a")); // call list
+		assertEquals(3, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(3, n5.getListCallCount()); // list incremented
+
+		// remove a
+		n5.remove("a/a");
+		assertArrayEquals(new String[] {"b", "c"}, n5.list("a")); // call list
+		assertEquals(3, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(3, n5.getListCallCount()); // list NOT incremented
+
 	}
 
 	public static interface TrackingStorage extends CachedGsonKeyValueWriter {

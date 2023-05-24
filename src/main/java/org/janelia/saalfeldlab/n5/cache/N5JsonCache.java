@@ -281,7 +281,7 @@ public class N5JsonCache {
 		// update the parent's children, if present (remove the normalPathKey)
 		final N5CacheInfo parentCache = containerPathToCache.get(normalParentPathKey);
 		if (parentCache != null && parentCache.children != null ) {
-			parentCache.children.remove(normalPathKey);
+			parentCache.children.remove(normalPathKey.replaceFirst(normalParentPathKey + "/", ""));
 		}
 	}
 
