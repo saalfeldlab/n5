@@ -70,7 +70,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 			return null;
 
 		if (cacheMeta()) {
-			attributes = getCache().getAttributes(normalPath, jsonFile);
+			attributes = getCache().getAttributes(normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
 		} else {
 			attributes = GsonKeyValueReader.super.getAttributes(normalPath);
 		}
@@ -96,7 +96,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 
 		final JsonElement attributes;
 		if (cacheMeta()) {
-			attributes = getCache().getAttributes(normalPathName, jsonFile);
+			attributes = getCache().getAttributes(normalPathName, N5KeyValueReader.ATTRIBUTES_JSON);
 		} else {
 			attributes = GsonKeyValueReader.super.getAttributes(normalPathName);
 		}
@@ -113,7 +113,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 		final String normalizedAttributePath = N5URL.normalizeAttributePath(key);
 		JsonElement attributes;
 		if (cacheMeta()) {
-			attributes = getCache().getAttributes(normalPathName, jsonFile);
+			attributes = getCache().getAttributes(normalPathName, N5KeyValueReader.ATTRIBUTES_JSON);
 		} else {
 			attributes = GsonKeyValueReader.super.getAttributes(normalPathName);
 		}
@@ -125,7 +125,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 
 		final String normalPathName = N5URL.normalizeGroupPath(pathName);
 		if (cacheMeta())
-			return getCache().isGroup(normalPathName, jsonFile);
+			return getCache().isGroup(normalPathName, N5KeyValueReader.ATTRIBUTES_JSON);
 		else {
 			return existsFromContainer(normalPathName, null);
 		}
@@ -190,7 +190,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 
 		/* If cached, return the cache*/
 		if (cacheMeta()) {
-			return getCache().getAttributes(groupPath, jsonFile);
+			return getCache().getAttributes(groupPath, N5KeyValueReader.ATTRIBUTES_JSON);
 		} else {
 			return GsonKeyValueReader.super.getAttributes(groupPath);
 		}

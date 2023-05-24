@@ -29,8 +29,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
-import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -59,7 +57,7 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 		final String normalPath = N5URL.normalizeGroupPath(path);
 		getKeyValueAccess().createDirectories(groupPath(normalPath));
 		if (cacheMeta()) {
-			getCache().forceAddNewCacheInfo(normalPath, jsonFile, null, true, false );
+			getCache().forceAddNewCacheInfo(normalPath, N5KeyValueReader.ATTRIBUTES_JSON, null, true, false );
 
 			 // check all nodes that are parents of the added node, if they have a children set, add the new child to it
 			String[] pathParts = getKeyValueAccess().components(normalPath);
@@ -159,7 +157,7 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 				nullRespectingAttributes = getGson().toJsonTree(attributes);
 			}
 			/* Update the cache, and write to the writer */
-			getCache().updateCacheInfo(normalGroupPath, jsonFile, nullRespectingAttributes);
+			getCache().updateCacheInfo(normalGroupPath, N5KeyValueReader.ATTRIBUTES_JSON, nullRespectingAttributes);
 		}
 	}
 

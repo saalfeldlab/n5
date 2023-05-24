@@ -44,8 +44,6 @@ import java.util.Map;
  */
 public interface GsonKeyValueReader extends N5Reader {
 
-	public static final String jsonFile = "attributes.json";
-
 	Gson getGson();
 
 	KeyValueAccess getKeyValueAccess();
@@ -221,7 +219,7 @@ public interface GsonKeyValueReader extends N5Reader {
 	 */
 	default String attributesPath(final String normalPath) {
 
-		return getKeyValueAccess().compose(getBasePath(), normalPath, jsonFile);
+		return getKeyValueAccess().compose(getBasePath(), normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
 	}
 
 	static DatasetAttributes createDatasetAttributes(

@@ -44,6 +44,8 @@ import java.util.Arrays;
  */
 public class N5KeyValueReader implements CachedGsonKeyValueReader {
 
+	public static final String ATTRIBUTES_JSON = "attributes.json";
+
 	protected final KeyValueAccess keyValueAccess;
 
 	protected final Gson gson;
