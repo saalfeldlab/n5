@@ -57,8 +57,6 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 		final String normalPath = N5URL.normalizeGroupPath(path);
 		getKeyValueAccess().createDirectories(groupPath(normalPath));
 		if (cacheMeta()) {
-			getCache().forceAddNewCacheInfo(normalPath, N5KeyValueReader.ATTRIBUTES_JSON, null, true, false );
-
 			 // check all nodes that are parents of the added node, if they have a children set, add the new child to it
 			String[] pathParts = getKeyValueAccess().components(normalPath);
 			String parent = N5URL.normalizeGroupPath("/");
@@ -66,8 +64,11 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 				pathParts = new String[]{""};
 			}
 			for (String child : pathParts) {
+
 				final String childPath = getKeyValueAccess().compose(parent, child);
-				// only add if the parent exists and has children cached alreay
+				getCache().forceAddNewCacheInfo(childPath, N5KeyValueReader.ATTRIBUTES_JSON, null, true, false );
+
+				// only add if the parent exists and has children cached already
 				if( parent != null && !child.isEmpty())
 					getCache().addChildIfPresent(parent, child);
 
@@ -242,6 +243,7 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 		final String groupPath = groupPath(normalPath);
 		if (getKeyValueAccess().exists(groupPath))
 			getKeyValueAccess().delete(groupPath);
+
 		if (cacheMeta()) {
 			final String[] pathParts = getKeyValueAccess().components(normalPath);
 			final String parent;

@@ -1,10 +1,14 @@
 package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+
 import java.net.URI;
 import java.net.URISyntaxException;
+
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -13,6 +17,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -122,148 +127,233 @@ public class N5CachedFSTest extends N5FSTest {
 	}
 
 	@Test
-	public void emptyCacheInfoBehavior() throws IOException, URISyntaxException {
+	public void cacheBehaviorTest() throws IOException, URISyntaxException {
 
 		final String loc = tempN5Location();
 		// make an uncached n5 writer
-		try (final TrackingStorage n5 = new TrackingStorage(new FileSystemKeyValueAccess(FileSystems.getDefault()), loc,
+		try (final N5TrackingStorage n5 = new N5TrackingStorage(new FileSystemKeyValueAccess(FileSystems.getDefault()), loc,
 				new GsonBuilder(), true)) {
 
-			final String group = "mygroup";
-			boolean groupExists = n5.exists(group);
-			assertFalse(groupExists); // group does not exist
-			assertEquals(1, n5.existsCallCount);
-			assertEquals(0, n5.isGroupCallCount);
-			assertEquals(0, n5.isDatasetCallCount);
-			assertEquals(0, n5.attrCallCount);
-
-			n5.createGroup(group);
-			groupExists = n5.exists(group);
-			assertTrue(groupExists); // group now exists
-			assertEquals(1, n5.existsCallCount);
-			assertEquals(0, n5.isGroupCallCount);
-			assertEquals(0, n5.isDatasetCallCount);
-			assertEquals(0, n5.attrCallCount);
+			cacheBehaviorHelper(n5);
 		}
 	}
 
-	@Test
-	public void attributeListingSeparationTest() throws IOException, URISyntaxException {
+	public static void cacheBehaviorHelper(final TrackingStorage n5) throws IOException, URISyntaxException {
 
-		final String loc = tempN5Location();
-		// make an uncached n5 writer
-		try (final TrackingStorage n5 = new TrackingStorage(
-				new FileSystemKeyValueAccess(FileSystems.getDefault()), loc, new GsonBuilder(), true)) {
+		// non existant group
+		final String groupA = "groupA";
+		final String groupB = "groupB";
 
-			final String cachedGroup = "cachedGroup";
-			// should not check existence when creating a group
-			n5.createGroup(cachedGroup);
-			n5.createGroup(cachedGroup); // be annoying
-			assertEquals(0, n5.existsCallCount);
-			assertEquals(0, n5.isGroupCallCount);
-			assertEquals(0, n5.isDatasetCallCount);
-			assertEquals(0, n5.attrCallCount);
-			assertEquals(0, n5.listCallCount);
+		boolean exists = n5.exists(groupA);
+		boolean groupExists = n5.groupExists(groupA);
+		boolean datasetExists = n5.datasetExists(groupA);
+		assertFalse(exists); // group does not exist
+		assertFalse(groupExists); // group does not exist
+		assertFalse(datasetExists); // dataset does not exist
+		assertEquals(1, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
 
-			// should not check existence when this instance created a group
-			n5.exists(cachedGroup);
-			n5.groupExists(cachedGroup);
-			n5.datasetExists(cachedGroup);
-			assertEquals(0, n5.existsCallCount);
-			assertEquals(0, n5.isGroupCallCount);
-			assertEquals(0, n5.isDatasetCallCount);
-			assertEquals(0, n5.attrCallCount);
-			assertEquals(0, n5.listCallCount);
+		n5.createGroup(groupA);
 
-			// should not read attributes from container when setting them
-			n5.setAttribute(cachedGroup, "one", 1);
-			assertEquals(0, n5.existsCallCount);
-			assertEquals(0, n5.isGroupCallCount);
-			assertEquals(0, n5.isDatasetCallCount);
-			assertEquals(0, n5.attrCallCount);
-			assertEquals(0, n5.listCallCount);
+		// group B
+		exists = n5.exists(groupB);
+		groupExists = n5.groupExists(groupB);
+		datasetExists = n5.datasetExists(groupB);
+		assertFalse(exists); // group now exists
+		assertFalse(groupExists); // group now exists
+		assertFalse(datasetExists); // dataset does not exist
+		assertEquals(2, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
 
-			n5.setAttribute(cachedGroup, "two", 2);
-			assertEquals(0, n5.existsCallCount);
-			assertEquals(0, n5.isGroupCallCount);
-			assertEquals(0, n5.isDatasetCallCount);
-			assertEquals(0, n5.attrCallCount);
-			assertEquals(0, n5.listCallCount);
+		exists = n5.exists(groupA);
+		groupExists = n5.groupExists(groupA);
+		datasetExists = n5.datasetExists(groupA);
+		assertTrue(exists); // group now exists
+		assertTrue(groupExists); // group now exists
+		assertFalse(datasetExists); // dataset does not exist
+		assertEquals(2, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
 
-			n5.list("/");
-			assertEquals(0, n5.existsCallCount);
-			assertEquals(0, n5.isGroupCallCount);
-			assertEquals(0, n5.isDatasetCallCount);
-			assertEquals(0, n5.attrCallCount);
-			assertEquals(1, n5.listCallCount);
+		final String cachedGroup = "cachedGroup";
+		// should not check existence when creating a group
+		n5.createGroup(cachedGroup);
+		n5.createGroup(cachedGroup); // be annoying
+		assertEquals(2, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(0, n5.getListCallCount());
 
-			n5.list(cachedGroup);
-			assertEquals(0, n5.existsCallCount);
-			assertEquals(0, n5.isGroupCallCount);
-			assertEquals(0, n5.isDatasetCallCount);
-			assertEquals(0, n5.attrCallCount);
-			assertEquals(2, n5.listCallCount);
+		// should not check existence when this instance created a group
+		n5.exists(cachedGroup);
+		n5.groupExists(cachedGroup);
+		n5.datasetExists(cachedGroup);
+		assertEquals(2, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(0, n5.getListCallCount());
 
-			/*
-			 * Check existence for groups that have not been made by this reader but isGroup
-			 * and isDatatset must be false if it does not exists so then should not be
-			 * called.
-			 *
-			 * Similarly, attributes can not exist for a non-existent group, so should not
-			 * attempt to get attributes from the container.
-			 * 
-			 * Finally,listing on a non-existent group is pointless, so don't call the
-			 * backend storage
-			 */
-			final String nonExistentGroup = "doesNotExist";
-			n5.exists(nonExistentGroup);
-			assertEquals(1, n5.existsCallCount);
-			assertEquals(0, n5.isGroupCallCount);
-			assertEquals(0, n5.isDatasetCallCount);
-			assertEquals(0, n5.attrCallCount);
-			assertEquals(2, n5.listCallCount);
+		// should not read attributes from container when setting them
+		n5.setAttribute(cachedGroup, "one", 1);
+		assertEquals(2, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(0, n5.getListCallCount());
 
-			n5.groupExists(nonExistentGroup);
-			assertEquals(1, n5.existsCallCount);
-			assertEquals(0, n5.isGroupCallCount);
-			assertEquals(0, n5.isDatasetCallCount);
-			assertEquals(0, n5.attrCallCount);
-			assertEquals(2, n5.listCallCount);
+		n5.setAttribute(cachedGroup, "two", 2);
+		assertEquals(2, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(0, n5.getListCallCount());
 
-			n5.datasetExists(nonExistentGroup);
-			assertEquals(1, n5.existsCallCount);
-			assertEquals(0, n5.isGroupCallCount);
-			assertEquals(0, n5.isDatasetCallCount);
-			assertEquals(0, n5.attrCallCount);
-			assertEquals(2, n5.listCallCount);
+		n5.list("");
+		assertEquals(2, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(1, n5.getListCallCount());
 
-			n5.getAttributes(nonExistentGroup);
-			assertEquals(1, n5.existsCallCount);
-			assertEquals(0, n5.isGroupCallCount);
-			assertEquals(0, n5.isDatasetCallCount);
-			assertEquals(0, n5.attrCallCount);
-			assertEquals(2, n5.listCallCount);
+		n5.list(cachedGroup);
+		assertEquals(2, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(2, n5.getListCallCount());
 
-			n5.list(nonExistentGroup);
-			assertEquals(1, n5.existsCallCount);
-			assertEquals(0, n5.isGroupCallCount);
-			assertEquals(0, n5.isDatasetCallCount);
-			assertEquals(0, n5.attrCallCount);
-			assertEquals(2, n5.listCallCount);
-		}
+		/*
+		 * Check existence for groups that have not been made by this reader but isGroup
+		 * and isDatatset must be false if it does not exists so then should not be
+		 * called.
+		 *
+		 * Similarly, attributes can not exist for a non-existent group, so should not
+		 * attempt to get attributes from the container.
+		 * 
+		 * Finally,listing on a non-existent group is pointless, so don't call the
+		 * backend storage
+		 */
+		final String nonExistentGroup = "doesNotExist";
+		n5.exists(nonExistentGroup);
+		assertEquals(3, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(2, n5.getListCallCount());
+
+		n5.groupExists(nonExistentGroup);
+		assertEquals(3, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(2, n5.getListCallCount());
+
+		n5.datasetExists(nonExistentGroup);
+		assertEquals(3, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(2, n5.getListCallCount());
+
+		n5.getAttributes(nonExistentGroup);
+		assertEquals(3, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(2, n5.getListCallCount());
+
+		n5.list(nonExistentGroup);
+		assertEquals(3, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(2, n5.getListCallCount());
+
+		String a = "a";
+		String ab = "a/b";
+		String abc = "a/b/c";
+		// create "a/b/c"
+		n5.createGroup(abc);
+		assertTrue(n5.exists(abc));
+		assertTrue(n5.groupExists(abc));
+		assertFalse(n5.datasetExists(abc));
+		assertEquals(3, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(2, n5.getListCallCount());
+
+		// ensure that backend need not be checked when testing existence of "a/b"
+		assertTrue(n5.exists(ab));
+		assertTrue(n5.groupExists(ab));
+		assertFalse(n5.datasetExists(ab));
+		assertEquals(3, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(2, n5.getListCallCount());
+
+		// remove a nested group
+		// checks for all children should not require a backend check
+		n5.remove(a);
+		assertFalse(n5.exists(a));
+		assertFalse(n5.groupExists(a));
+		assertFalse(n5.datasetExists(a));
+		assertEquals(3, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(2, n5.getListCallCount());
+
+		assertFalse(n5.exists(ab));
+		assertFalse(n5.groupExists(ab));
+		assertFalse(n5.datasetExists(ab));
+		assertEquals(3, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(2, n5.getListCallCount());
+
+		assertFalse(n5.exists(abc));
+		assertFalse(n5.groupExists(abc));
+		assertFalse(n5.datasetExists(abc));
+		assertEquals(3, n5.getExistCallCount());
+		assertEquals(0, n5.getGroupCallCount());
+		assertEquals(0, n5.getDatasetCallCount());
+		assertEquals(0, n5.getAttrCallCount());
+		assertEquals(2, n5.getListCallCount());
+
 	}
 
-	protected static class TrackingStorage extends N5KeyValueWriter {
+	public static interface TrackingStorage extends CachedGsonKeyValueWriter {
 
-		int attrCallCount = 0;
-		int existsCallCount = 0;
-		int isGroupCallCount = 0;
-		int isGroupAttrCallCount = 0;
-		int isDatasetCallCount = 0;
-		int isDatasetAttrCallCount = 0;
-		int listCallCount = 0;
+		public int getAttrCallCount();
+		public int getExistCallCount();
+		public int getGroupCallCount();
+		public int getGroupAttrCallCount();
+		public int getDatasetCallCount();
+		public int getDatasetAttrCallCount();
+		public int getListCallCount();
+	}
 
-		public TrackingStorage(final KeyValueAccess keyValueAccess, final String basePath,
+	public static class N5TrackingStorage extends N5KeyValueWriter implements TrackingStorage {
+
+		public int attrCallCount = 0;
+		public int existsCallCount = 0;
+		public int groupCallCount = 0;
+		public int groupAttrCallCount = 0;
+		public int datasetCallCount = 0;
+		public int datasetAttrCallCount = 0;
+		public int listCallCount = 0;
+
+		public N5TrackingStorage(final KeyValueAccess keyValueAccess, final String basePath,
 				final GsonBuilder gsonBuilder, final boolean cacheAttributes) throws IOException {
 
 			super(keyValueAccess, basePath, gsonBuilder, cacheAttributes);
@@ -280,28 +370,56 @@ public class N5CachedFSTest extends N5FSTest {
 		}
 
 		public boolean isGroupFromContainer(final String key) {
-			isGroupCallCount++;
+			groupCallCount++;
 			return super.isGroupFromContainer(key);
 		}
 
 		public boolean isGroupFromAttributes(final String normalCacheKey, final JsonElement attributes) {
-			isGroupAttrCallCount++;
+			groupAttrCallCount++;
 			return super.isGroupFromAttributes(normalCacheKey, attributes);
 		}
 
 		public boolean isDatasetFromContainer(final String key) {
-			isDatasetCallCount++;
+			datasetCallCount++;
 			return super.isDatasetFromContainer(key);
 		}
 
 		public boolean isDatasetFromAttributes(final String normalCacheKey, final JsonElement attributes) {
-			isDatasetAttrCallCount++;
+			datasetAttrCallCount++;
 			return super.isDatasetFromAttributes(normalCacheKey, attributes);
 		}
 
 		public String[] listFromContainer(final String key) {
 			listCallCount++;
 			return super.listFromContainer(key);
+		}
+
+		public int getAttrCallCount() {
+			return attrCallCount;
+		}
+
+		public int getExistCallCount() {
+			return existsCallCount;
+		}
+
+		public int getGroupCallCount() {
+			return groupCallCount;
+		}
+
+		public int getGroupAttrCallCount() {
+			return groupAttrCallCount;
+		}
+
+		public int getDatasetCallCount() {
+			return datasetCallCount;
+		}
+
+		public int getDatasetAttrCallCount() {
+			return datasetAttrCallCount;
+		}
+
+		public int getListCallCount() {
+			return listCallCount;
 		}
 	}
 

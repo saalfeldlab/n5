@@ -59,7 +59,7 @@ public class N5JsonCache {
 			}
 		}
 
-		final JsonElement output = getCacheInfo(normalPathKey).getCache(normalCacheKey);
+		final JsonElement output = cacheInfo.getCache(normalCacheKey);
 		return output == null ? null : output.deepCopy();
 	}
 
@@ -148,7 +148,11 @@ public class N5JsonCache {
 
 	public N5CacheInfo forceAddNewCacheInfo(String normalPathKey, String normalCacheKey, JsonElement uncachedAttributes, boolean isGroup, boolean isDataset) {
 
-		final N5CacheInfo cacheInfo = newCacheInfo();
+		// getting the current cache info is useful if it already has had its children listed 
+		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
+		if( cacheInfo == null || cacheInfo == emptyCacheInfo )
+			cacheInfo = newCacheInfo();
+
 		if (normalCacheKey != null) {
 			synchronized (cacheInfo.attributesCache) {
 				cacheInfo.attributesCache.put(normalCacheKey, uncachedAttributes);
@@ -264,21 +268,20 @@ public class N5JsonCache {
 
 
 	public void removeCache(final String normalParentPathKey, final String normalPathKey) {
+		// this path and all children should be removed = set to emptyCacheInfo
 		synchronized (containerPathToCache) {
 			containerPathToCache.put(normalPathKey, emptyCacheInfo);
-			final N5CacheInfo parentCache = containerPathToCache.get(normalParentPathKey);
-			if (parentCache != null && parentCache.children != null ) {
-				parentCache.children.remove(normalPathKey);
-			}
+			containerPathToCache.keySet().stream().filter(x -> {
+				return x.startsWith(normalPathKey + "/");
+			}).forEach(x -> {
+				containerPathToCache.put(x, emptyCacheInfo);
+			});
 		}
-	}
-	public void clearCache(final String normalPathKey, final String normalCacheKey) {
 
-		final N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
-		if (cacheInfo != null && cacheInfo != emptyCacheInfo) {
-			synchronized (cacheInfo.attributesCache) {
-				cacheInfo.attributesCache.remove(normalCacheKey);
-			}
+		// update the parent's children, if present (remove the normalPathKey)
+		final N5CacheInfo parentCache = containerPathToCache.get(normalParentPathKey);
+		if (parentCache != null && parentCache.children != null ) {
+			parentCache.children.remove(normalPathKey);
 		}
 	}
 
