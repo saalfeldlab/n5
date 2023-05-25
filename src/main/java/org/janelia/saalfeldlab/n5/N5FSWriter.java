@@ -35,7 +35,6 @@ import com.google.gson.GsonBuilder;
  *
  * @author Stephan Saalfeld
  */
-//public class N5FSWriter extends N5KeyValueWriter implements N5Writer {
 public class N5FSWriter extends N5KeyValueWriter {
 
 	/**
