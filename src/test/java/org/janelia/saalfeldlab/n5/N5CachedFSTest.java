@@ -8,6 +8,7 @@ import java.net.URISyntaxException;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -57,7 +58,6 @@ public class N5CachedFSTest extends N5FSTest {
 	public void cacheTest() throws IOException, URISyntaxException {
 		/* Test the cache by setting many attributes, then manually deleting the underlying file.
 		* The only possible way for the test to succeed is if it never again attempts to read the file, and relies on the cache. */
-
 		try (N5KeyValueWriter n5 = (N5KeyValueWriter) createN5Writer()) {
 			final String cachedGroup = "cachedGroup";
 			final String attributesPath = n5.attributesPath(cachedGroup);
