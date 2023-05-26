@@ -25,6 +25,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
@@ -48,6 +49,8 @@ import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Test;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+
 import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
 
 import java.util.ArrayList;
@@ -86,14 +89,12 @@ public class N5FSTest extends AbstractN5Test {
 
 	@Override
 	protected N5Writer createN5Writer(final String location, final GsonBuilder gson) throws IOException, URISyntaxException {
-		final String basePath = new File(location).getCanonicalPath();
-		return new N5FSWriter(basePath, gson);
+		return new N5FSWriter(location, gson);
 	}
 
 	@Override
 	protected N5Reader createN5Reader(final String location, final GsonBuilder gson) throws IOException, URISyntaxException {
-		final String basePath = new File(location).getCanonicalPath();
-		return new N5FSReader(basePath, gson);
+		return new N5FSReader(location, gson);
 	}
 
 	@AfterClass

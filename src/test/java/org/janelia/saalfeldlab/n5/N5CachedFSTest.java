@@ -3,7 +3,6 @@ package org.janelia.saalfeldlab.n5;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.junit.Test;
@@ -16,7 +15,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -39,8 +37,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 	protected N5Writer createN5Writer(final String location, final GsonBuilder gson, final boolean cache) throws IOException, URISyntaxException {
 
-		final String basePath = new File(location).getCanonicalPath();
-		return new N5FSWriter(basePath, gson, cache);
+		return new N5FSWriter(location, gson, cache);
 	}
 
 	protected N5Writer createN5Writer(final String location, final boolean cache) throws IOException, URISyntaxException {
@@ -50,8 +47,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 	protected N5Reader createN5Reader(final String location, final GsonBuilder gson, final boolean cache) throws IOException, URISyntaxException {
 
-		final String basePath = new File(location).getCanonicalPath();
-		return new N5FSReader(basePath, gson, cache);
+		return new N5FSReader(location, gson, cache);
 	}
 
 	@Test
