@@ -134,9 +134,9 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 	default boolean existsFromContainer(final String normalPathName, final String normalCacheKey) {
 
 		if( normalCacheKey == null )
-			return getKeyValueAccess().exists(groupPath(normalPathName));
+			return getKeyValueAccess().isDirectory(groupPath(normalPathName));
 		else
-			return getKeyValueAccess().exists(getKeyValueAccess().compose(groupPath(normalPathName), normalCacheKey));
+			return getKeyValueAccess().isFile(getKeyValueAccess().compose(groupPath(normalPathName), normalCacheKey));
 	}
 
 	default boolean groupExists(final String pathName) {
@@ -151,7 +151,8 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 
 	default boolean isGroupFromContainer(final String pathName) {
 
-		return GsonKeyValueReader.super.groupExists(pathName);
+		final String normalPathName = N5URL.normalizeGroupPath(pathName);
+		return GsonKeyValueReader.super.groupExists(groupPath(normalPathName));
 	}
 
 	default boolean isGroupFromAttributes(final String normalCacheKey, final JsonElement attributes) {
@@ -170,10 +171,11 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 
 	default boolean isDatasetFromContainer(final String pathName) throws N5Exception.N5IOException {
 
-		return isGroupFromContainer(groupPath(pathName)) && normalGetDatasetAttributes(pathName) != null;
+		return normalGetDatasetAttributes(pathName) != null;
 	}
 
 	default boolean isDatasetFromAttributes(final String normalCacheKey, final JsonElement attributes) {
+
 		return isGroupFromAttributes(normalCacheKey, attributes) && createDatasetAttributes(attributes) != null;
 	}
 

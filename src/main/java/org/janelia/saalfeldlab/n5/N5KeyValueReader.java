@@ -171,4 +171,11 @@ public class N5KeyValueReader implements CachedGsonKeyValueReader {
 	public String groupPath(String... nodes) {
 		return keyValueAccess.compose(Stream.concat(Stream.of(basePath), Arrays.stream(nodes)).toArray(String[]::new));
 	}
+
+	@Override
+	public boolean exists(final String pathName) {
+
+		final String normalPath = N5URL.normalizeGroupPath(pathName);
+		return groupExists(normalPath);
+	}
 }

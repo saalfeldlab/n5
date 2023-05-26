@@ -181,7 +181,7 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 		final String absoluteNormalPath = getKeyValueAccess().compose(getBasePath(), normalPath);
 		final String normalKey = N5URL.normalizeAttributePath(key);
 
-		if (!getKeyValueAccess().exists(absoluteNormalPath))
+		if (!getKeyValueAccess().isDirectory(absoluteNormalPath))
 			return false;
 
 		if (key.equals("/")) {
@@ -241,7 +241,7 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 
 		final String normalPath = N5URL.normalizeGroupPath(path);
 		final String groupPath = groupPath(normalPath);
-		if (getKeyValueAccess().exists(groupPath))
+		if (getKeyValueAccess().isDirectory(groupPath))
 			getKeyValueAccess().delete(groupPath);
 
 		if (cacheMeta()) {
@@ -266,7 +266,7 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 			final long... gridPosition) throws IOException {
 
 		final String blockPath = getDataBlockPath(N5URL.normalizeGroupPath(path), gridPosition);
-		if (getKeyValueAccess().exists(blockPath))
+		if (getKeyValueAccess().isFile(blockPath))
 			getKeyValueAccess().delete(blockPath);
 
 		/* an IOException should have occurred if anything had failed midway */

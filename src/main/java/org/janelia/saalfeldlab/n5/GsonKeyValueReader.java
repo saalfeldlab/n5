@@ -108,21 +108,20 @@ public interface GsonKeyValueReader extends N5Reader {
 
 	default boolean groupExists(final String absoluteNormalPath) {
 
-		return getKeyValueAccess().exists(absoluteNormalPath) && getKeyValueAccess().isDirectory(absoluteNormalPath);
+		return getKeyValueAccess().isDirectory(absoluteNormalPath);
 	}
 
 	@Override
 	default boolean exists(final String pathName) {
 
-		final String normalPathName = N5URL.normalizeGroupPath(pathName);
-		return getKeyValueAccess().exists(groupPath(normalPathName)) || datasetExists(normalPathName);
+		final String normalPath = N5URL.normalizeGroupPath(pathName);
+		return groupExists(normalPath) || datasetExists(normalPath);
 	}
 
 	@Override
 	default boolean datasetExists(final String pathName) throws N5Exception.N5IOException {
-		// for n5, every dataset must be a group
-		return groupExists(groupPath(pathName)) && getDatasetAttributes(pathName) != null;
 
+		return getDatasetAttributes(pathName) != null;
 	}
 
 	/**
@@ -137,7 +136,7 @@ public interface GsonKeyValueReader extends N5Reader {
 		final String groupPath = N5URL.normalizeGroupPath(pathName);
 		final String attributesPath = attributesPath(groupPath);
 
-		if (!getKeyValueAccess().exists(attributesPath))
+		if (!getKeyValueAccess().isFile(attributesPath))
 			return null;
 
 		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(attributesPath)) {
@@ -152,7 +151,7 @@ public interface GsonKeyValueReader extends N5Reader {
 	default DataBlock<?> readBlock( final String pathName, final DatasetAttributes datasetAttributes, final long... gridPosition) throws IOException {
 
 		final String path = getDataBlockPath(N5URL.normalizeGroupPath(pathName), gridPosition);
-		if (!getKeyValueAccess().exists(path))
+		if (!getKeyValueAccess().isFile(path))
 			return null;
 
 		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(path)) {

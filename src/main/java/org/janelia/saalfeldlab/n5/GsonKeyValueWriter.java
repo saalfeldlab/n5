@@ -143,7 +143,7 @@ public interface GsonKeyValueWriter extends GsonKeyValueReader, N5Writer {
 		final String absoluteNormalPath = getKeyValueAccess().compose(getBasePath(), normalPath);
 		final String normalKey = N5URL.normalizeAttributePath(key);
 
-		if (!getKeyValueAccess().exists(absoluteNormalPath))
+		if (!getKeyValueAccess().isDirectory(absoluteNormalPath))
 			return false;
 
 		if (key.equals("/")) {
@@ -203,11 +203,12 @@ public interface GsonKeyValueWriter extends GsonKeyValueReader, N5Writer {
 
 		final String normalPath = N5URL.normalizeGroupPath(path);
 		final String groupPath = groupPath(normalPath);
-		if (getKeyValueAccess().exists(groupPath))
+		if (getKeyValueAccess().isDirectory(groupPath)) {
 			getKeyValueAccess().delete(groupPath);
-
-		/* an IOException should have occurred if anything had failed midway */
-		return true;
+			/* an IOException should have occurred if anything had failed midway */
+			return true;
+		} else
+			return false;
 	}
 
 	@Override
@@ -216,10 +217,11 @@ public interface GsonKeyValueWriter extends GsonKeyValueReader, N5Writer {
 			final long... gridPosition) throws IOException {
 
 		final String blockPath = getDataBlockPath(N5URL.normalizeGroupPath(path), gridPosition);
-		if (getKeyValueAccess().exists(blockPath))
+		if (getKeyValueAccess().isFile(blockPath)) {
 			getKeyValueAccess().delete(blockPath);
-
-		/* an IOException should have occurred if anything had failed midway */
-		return true;
+			/* an IOException should have occurred if anything had failed midway */
+			return true;
+		} else
+			return false;
 	}
 }
