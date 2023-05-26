@@ -55,16 +55,11 @@ public interface GsonKeyValueWriter extends GsonKeyValueReader, N5Writer {
 		return normBasePath;
 	}
 
-	default void initializeGroup(String normalPath) {
-
-	}
-
 	@Override
 	default void createGroup(final String path) throws IOException {
 
 		final String normalPath = N5URL.normalizeGroupPath(path);
 		getKeyValueAccess().createDirectories(groupPath(normalPath));
-		initializeGroup(normalPath);
 	}
 
 	@Override
