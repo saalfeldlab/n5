@@ -517,8 +517,8 @@ public class N5URL {
 	public static N5URL from(final String container, final String group, final String attribute) throws URISyntaxException {
 
 		final String containerPart = container != null ? container : "";
-		final String groupPart = group != null ? "?" + group : "?";
-		final String attributePart = attribute != null ? "#" + attribute : "#";
+		final String groupPart = group != null ? "?" + group : "";
+		final String attributePart = attribute != null ? "#" + attribute : "";
 		return new N5URL(containerPart + groupPart + attributePart);
 	}
 

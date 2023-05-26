@@ -188,7 +188,7 @@ public interface GsonKeyValueReader extends N5Reader {
 			final long... gridPosition) {
 
 		final String[] components = new String[gridPosition.length + 2];
-		components[0] = getBasePath();
+		components[0] = getURI().getPath();
 		components[1] = normalPath;
 		int i = 1;
 		for (final long p : gridPosition)
@@ -206,7 +206,7 @@ public interface GsonKeyValueReader extends N5Reader {
 	 */
 	default String groupPath(final String normalGroupPath) {
 
-		return getKeyValueAccess().compose(getBasePath(), normalGroupPath);
+		return getKeyValueAccess().compose(getURI().getPath(), normalGroupPath);
 	}
 
 	/**
@@ -218,7 +218,7 @@ public interface GsonKeyValueReader extends N5Reader {
 	 */
 	default String attributesPath(final String normalPath) {
 
-		return getKeyValueAccess().compose(getBasePath(), normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
+		return getKeyValueAccess().compose(getURI().getPath(), normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
 	}
 
 	static DatasetAttributes createDatasetAttributes(

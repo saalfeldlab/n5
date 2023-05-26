@@ -273,8 +273,8 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public String absoluteURI(final String normalPath) throws URISyntaxException {
-		return new URI("file", null, normalPath, null).toString();
+	public URI uri(final String normalPath) throws URISyntaxException {
+		return N5URL.from( normalPath, null, null ).uri;
 	}
 
 	@Override

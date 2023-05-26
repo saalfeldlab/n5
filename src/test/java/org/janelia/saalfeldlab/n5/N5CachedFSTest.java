@@ -39,7 +39,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 	protected N5Writer createN5Writer(final String location, final GsonBuilder gson, final boolean cache) throws IOException, URISyntaxException {
 
-		final String basePath = new File(new URI(location)).getCanonicalPath();
+		final String basePath = new File(location).getCanonicalPath();
 		return new N5FSWriter(basePath, gson, cache);
 	}
 
@@ -50,7 +50,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 	protected N5Reader createN5Reader(final String location, final GsonBuilder gson, final boolean cache) throws IOException, URISyntaxException {
 
-		final String basePath = new File(new URI(location)).getCanonicalPath();
+		final String basePath = new File(location).getCanonicalPath();
 		return new N5FSReader(basePath, gson, cache);
 	}
 

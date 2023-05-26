@@ -27,6 +27,8 @@ package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.stream.Stream;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
@@ -50,8 +52,8 @@ public class N5KeyValueReader implements CachedGsonKeyValueReader {
 
 	protected final Gson gson;
 	protected final boolean cacheMeta;
+	protected URI uri;
 
-	protected final String basePath;
 	private final N5JsonCache cache;
 
 	/**
@@ -110,10 +112,15 @@ public class N5KeyValueReader implements CachedGsonKeyValueReader {
 			final boolean cacheMeta) throws IOException {
 
 		this.keyValueAccess = keyValueAccess;
-		this.basePath = keyValueAccess.normalize(basePath);
 		this.gson = GsonUtils.registerGson(gsonBuilder);
 		this.cacheMeta = cacheMeta;
 		this.cache = newCache();
+
+		try {
+			uri = keyValueAccess.uri(keyValueAccess.normalize(basePath));
+		} catch (URISyntaxException e) {
+			throw new N5Exception( e );
+		}
 
 		if (checkVersion) {
 			/* Existence checks, if any, go in subclasses */
@@ -140,19 +147,9 @@ public class N5KeyValueReader implements CachedGsonKeyValueReader {
 	}
 
 	@Override
-	public String getBasePath() {
+	public URI getURI() {
 
-		return this.basePath;
-	}
-
-	@Override
-	public String getContainerURI() {
-
-		try {
-			return keyValueAccess.absoluteURI(basePath);
-		} catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
+		return uri;
 	}
 
 	@Override
@@ -169,7 +166,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueReader {
 
 	@Override
 	public String groupPath(String... nodes) {
-		return keyValueAccess.compose(Stream.concat(Stream.of(basePath), Arrays.stream(nodes)).toArray(String[]::new));
+		return keyValueAccess.compose(Stream.concat(Stream.of(getURI().getPath()), Arrays.stream(nodes)).toArray(String[]::new));
 	}
 
 	@Override

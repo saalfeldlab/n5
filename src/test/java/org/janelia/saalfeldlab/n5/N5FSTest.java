@@ -86,13 +86,13 @@ public class N5FSTest extends AbstractN5Test {
 
 	@Override
 	protected N5Writer createN5Writer(final String location, final GsonBuilder gson) throws IOException, URISyntaxException {
-		final String basePath = new File(new URI(location)).getCanonicalPath();
+		final String basePath = new File(location).getCanonicalPath();
 		return new N5FSWriter(basePath, gson);
 	}
 
 	@Override
 	protected N5Reader createN5Reader(final String location, final GsonBuilder gson) throws IOException, URISyntaxException {
-		final String basePath = new File(new URI(location)).getCanonicalPath();
+		final String basePath = new File(location).getCanonicalPath();
 		return new N5FSReader(basePath, gson);
 	}
 

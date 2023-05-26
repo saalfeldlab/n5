@@ -178,7 +178,7 @@ public interface CachedGsonKeyValueWriter extends CachedGsonKeyValueReader, N5Wr
 	default boolean removeAttribute(final String pathName, final String key) throws IOException {
 
 		final String normalPath = N5URL.normalizeGroupPath(pathName);
-		final String absoluteNormalPath = getKeyValueAccess().compose(getBasePath(), normalPath);
+		final String absoluteNormalPath = getKeyValueAccess().compose(getURI().getPath(), normalPath);
 		final String normalKey = N5URL.normalizeAttributePath(key);
 
 		if (!getKeyValueAccess().isDirectory(absoluteNormalPath))
