@@ -139,7 +139,7 @@ public class N5JsonCache {
 				updateCacheIsDataset(cacheInfo, container.isDatasetFromAttributes(normalCacheKey, attributes));
 			} else {
 				updateCacheIsGroup(cacheInfo, container.isGroupFromContainer(normalPathKey));
-				updateCacheIsGroup(cacheInfo, container.isDatasetFromContainer(normalPathKey));
+				updateCacheIsDataset(cacheInfo, container.isDatasetFromContainer(normalPathKey));
 			}
 		}
 		updateCache(normalPathKey, cacheInfo);
@@ -209,7 +209,7 @@ public class N5JsonCache {
 		}
 		else {
 			updateCacheIsGroup(cacheInfo, container.isGroupFromContainer(normalPathKey));
-			updateCacheIsGroup(cacheInfo, container.isDatasetFromContainer(normalPathKey));
+			updateCacheIsDataset(cacheInfo, container.isDatasetFromContainer(normalPathKey));
 		}
 		updateCache(normalPathKey, cacheInfo);
 	}
