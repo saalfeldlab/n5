@@ -68,7 +68,7 @@ public class UrlAttributeTest
 	{
 		// get
 		Map< String, Object > everything = getAttribute( n5, new N5URL( "" ), Map.class );
-		final String version = N5Reader.VERSION.toString();
+		final String version = "2.6.1"; // the n5 version at the time the test data were created
 		assertEquals( "empty url", version, everything.get( "n5" ) );
 
 		Map< String, Object > everything2 = getAttribute( n5, new N5URL( "#/" ), Map.class );
