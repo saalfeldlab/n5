@@ -25,6 +25,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -273,8 +274,10 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public String absoluteURI(final String normalPath) throws URISyntaxException {
-		return new URI("file", null, normalPath, null).toString();
+	public URI uri(final String normalPath) throws URISyntaxException {
+		// normalize make absolute the scheme specific part only
+		final URI uri = new URI( normalPath );
+		return new URI( "file", normalize(new File( uri.getSchemeSpecificPart()).getAbsolutePath()), uri.getFragment() );
 	}
 
 	@Override

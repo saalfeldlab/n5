@@ -26,14 +26,16 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
@@ -51,8 +53,8 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 	protected final Gson gson;
 	protected final boolean cacheMeta;
+	protected URI uri;
 
-	protected final String basePath;
 	private final N5JsonCache cache;
 
 	/**
@@ -118,10 +120,15 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			throws IOException {
 
 		this.keyValueAccess = keyValueAccess;
-		this.basePath = keyValueAccess.normalize(basePath);
 		this.gson = GsonUtils.registerGson(gsonBuilder);
 		this.cacheMeta = cacheMeta;
 		this.cache = newCache();
+
+		try {
+			uri = keyValueAccess.uri(basePath);
+		} catch (URISyntaxException e) {
+			throw new N5Exception( e );
+		}
 
 		if (checkVersion) {
 			/* Existence checks, if any, go in subclasses */
@@ -151,19 +158,8 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	}
 
 	@Override
-	public String getBasePath() {
-
-		return this.basePath;
-	}
-
-	@Override
-	public String getContainerURI() {
-
-		try {
-			return keyValueAccess.absoluteURI(basePath);
-		} catch (final URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
+	public URI getURI() {
+		return uri;
 	}
 
 	@Override
@@ -179,8 +175,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	}
 
 	@Override
-	public String groupPath(final String... nodes) {
-
-		return keyValueAccess.compose(Stream.concat(Stream.of(basePath), Arrays.stream(nodes)).toArray(String[]::new));
+	public String groupPath(String... nodes) {
+		return keyValueAccess.compose(Stream.concat(Stream.of(getURI().getPath()), Arrays.stream(nodes)).toArray(String[]::new));
 	}
 }

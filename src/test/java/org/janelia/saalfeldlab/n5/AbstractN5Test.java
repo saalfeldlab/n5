@@ -596,6 +596,7 @@ public abstract class AbstractN5Test {
 		}
 	}
 
+
 	@Test
 	public void testNullAttributes() throws IOException, URISyntaxException {
 
@@ -799,7 +800,7 @@ public abstract class AbstractN5Test {
 
 		String location;
 		try (final N5Writer n5 = createN5Writer()) {
-			location = n5.getContainerURI();
+			location = n5.getURI().toString();
 			assertNotNull(createN5Reader(location));
 			n5.remove();
 			assertThrows(Exception.class, () -> createN5Reader(location));
@@ -1084,7 +1085,7 @@ public abstract class AbstractN5Test {
 			assertFalse(N5Reader.VERSION.isCompatible(version));
 
 			assertThrows(N5Exception.N5IOException.class, () -> {
-				final String containerPath = writer.getContainerURI();
+				final String containerPath = writer.getURI().toString();
 				createN5Writer(containerPath);
 			});
 
@@ -1409,7 +1410,7 @@ public abstract class AbstractN5Test {
 
 	private String readAttributesAsString(final String group) {
 
-		final String basePath = ((N5FSWriter)n5).getBasePath();
+		final String basePath = ((N5FSWriter)n5).getURI().getSchemeSpecificPart();
 		try {
 			return new String(Files.readAllBytes(Paths.get(basePath, group, "attributes.json")));
 		} catch (final IOException e) {

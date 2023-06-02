@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.reflect.Type;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -213,20 +214,13 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Returns a String representation of the path to the root of the container.
+	 * Returns the URI of the container's root.
 	 *
-	 * @return the base path
-	 */
-	String getBasePath();
-
-	/**
-	 * Returns a String representation of the absolute URI of the container.
-	 *
-	 * @return the absolute URI of the container
+	 * @return the base path URI
 	 */
 	// TODO: should this throw URISyntaxException or can we assume that this is
 	//       never possible if we were able to instantiate this N5Reader?
-	String getContainerURI();
+	URI getURI();
 
 	/**
 	 * Reads an attribute.
