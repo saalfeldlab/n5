@@ -66,19 +66,6 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		return normBasePath;
 	}
 
-	/**
-	 * Performs any necessary initialization to ensure the key given by the
-	 * argument {@code normalPath} is a valid group after creation. Called by
-	 * {@link #createGroup(String)}.
-	 *
-	 * @param normalPath the group path.
-	 */
-	default void initializeGroup(final String normalPath) {
-
-		// Nothing to do here, but other implementations (e.g. zarr) use this.
-		// TODO remove if not used by zarr
-	}
-
 	@Override
 	default void createGroup(final String path) throws N5Exception {
 
@@ -88,7 +75,6 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		} catch (final IOException e) {
 			throw new N5Exception.N5IOException("Failed to create group " + path, e);
 		}
-		initializeGroup(normalPath);
 	}
 
 	/**

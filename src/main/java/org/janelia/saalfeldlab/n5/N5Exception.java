@@ -2,56 +2,61 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 
-public class N5Exception extends RuntimeException{
+public class N5Exception extends RuntimeException {
 
 	public N5Exception() {
 
 		super();
 	}
 
-	public N5Exception(String message) {
+	public N5Exception(final String message) {
 
 		super(message);
 	}
 
-	public N5Exception(String message, Throwable cause) {
+	public N5Exception(final String message, final Throwable cause) {
 
 		super(message, cause);
 	}
 
-	public N5Exception(Throwable cause) {
+	public N5Exception(final Throwable cause) {
 
 		super(cause);
 	}
 
-	protected N5Exception(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+	protected N5Exception(
+			final String message,
+			final Throwable cause,
+			final boolean enableSuppression,
+			final boolean writableStackTrace) {
 
 		super(message, cause, enableSuppression, writableStackTrace);
 	}
 
 	public static class N5IOException extends N5Exception {
 
-		public N5IOException(String message) {
+		public N5IOException(final String message) {
 
 			super(message);
 		}
 
-		public N5IOException(String message, IOException cause) {
+		public N5IOException(final String message, final IOException cause) {
 
 			super(message, cause);
 		}
 
-		public N5IOException(IOException cause) {
+		public N5IOException(final IOException cause) {
 
 			super(cause);
 		}
 
-		protected N5IOException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+		protected N5IOException(
+				final String message,
+				final Throwable cause,
+				final boolean enableSuppression,
+				final boolean writableStackTrace) {
 
 			super(message, cause, enableSuppression, writableStackTrace);
 		}
-
-
 	}
-
 }

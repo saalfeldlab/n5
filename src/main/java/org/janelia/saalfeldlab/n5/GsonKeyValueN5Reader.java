@@ -26,6 +26,9 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import java.util.Arrays;
+
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -52,7 +55,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	@Override
-	default boolean datasetExists(final String pathName) throws N5Exception.N5IOException {
+	default boolean datasetExists(final String pathName) throws N5Exception {
 
 		// for n5, every dataset must be a group
 		return getDatasetAttributes(pathName) != null;
@@ -67,7 +70,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 * @throws IOException
 	 */
 	@Override
-	default JsonElement getAttributes(final String pathName) throws N5Exception.N5IOException {
+	default JsonElement getAttributes(final String pathName) throws N5Exception {
 
 		final String groupPath = N5URL.normalizeGroupPath(pathName);
 		final String attributesPath = attributesPath(groupPath);
@@ -78,7 +81,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(attributesPath)) {
 			return GsonUtils.readAttributes(lockedChannel.newReader(), getGson());
 		} catch (final IOException e) {
-			throw new N5Exception.N5IOException("Cannot open lock for Reading", e);
+			throw new N5IOException("Failed to read attributes from dataset " + pathName, e);
 		}
 
 	}
@@ -87,7 +90,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	default DataBlock<?> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
-			final long... gridPosition) throws N5Exception.N5IOException {
+			final long... gridPosition) throws N5Exception {
 
 		final String path = getDataBlockPath(N5URL.normalizeGroupPath(pathName), gridPosition);
 		if (!getKeyValueAccess().isFile(path))
@@ -96,17 +99,19 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(path)) {
 			return DefaultBlockReader.readBlock(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
 		} catch (final IOException e) {
-			throw new N5Exception.N5IOException("Cannot open lock for Reading", e);
+			throw new N5IOException(
+					"Failed to read block " + Arrays.toString(gridPosition) + " from dataset " + path,
+					e);
 		}
 	}
 
 	@Override
-	default String[] list(final String pathName) throws N5Exception.N5IOException {
+	default String[] list(final String pathName) throws N5Exception {
 
 		try {
 			return getKeyValueAccess().listDirectories(groupPath(pathName));
 		} catch (final IOException e) {
-			throw new N5Exception.N5IOException("Cannot list directories for group " + pathName, e);
+			throw new N5IOException("Cannot list directories for group " + pathName, e);
 		}
 	}
 
