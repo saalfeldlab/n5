@@ -39,9 +39,9 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	KeyValueAccess getKeyValueAccess();
 
-	default boolean groupExists(final String absoluteNormalPath) {
+	default boolean groupExists(final String normalPath) {
 
-		return getKeyValueAccess().isDirectory(absoluteNormalPath);
+		return getKeyValueAccess().isDirectory(groupPath(normalPath));
 	}
 
 	@Override
