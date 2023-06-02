@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 
 /**
@@ -103,5 +104,40 @@ public class DatasetAttributes implements Serializable {
 		map.put(DATA_TYPE_KEY, dataType);
 		map.put(COMPRESSION_KEY, compression);
 		return map;
+	}
+
+	static DatasetAttributes from(
+			final long[] dimensions,
+			final DataType dataType,
+			int[] blockSize,
+			Compression compression,
+			final String compressionVersion0Name
+	) {
+
+		if (blockSize == null)
+			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
+
+		/* version 0 */
+		if (compression == null) {
+			switch (compressionVersion0Name) {
+			case "raw":
+				compression = new RawCompression();
+				break;
+			case "gzip":
+				compression = new GzipCompression();
+				break;
+			case "bzip2":
+				compression = new Bzip2Compression();
+				break;
+			case "lz4":
+				compression = new Lz4Compression();
+				break;
+			case "xz":
+				compression = new XzCompression();
+				break;
+			}
+		}
+
+		return new DatasetAttributes(dimensions, blockSize, dataType, compression);
 	}
 }

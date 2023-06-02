@@ -1,12 +1,5 @@
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-
-import java.net.URISyntaxException;
-
-import org.junit.Test;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -16,10 +9,16 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+
+import org.junit.Test;
+
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 
 public class N5CachedFSTest extends N5FSTest {
 
@@ -142,9 +141,9 @@ public class N5CachedFSTest extends N5FSTest {
 
 		// expected backend method call counts
 		int expectedExistCount = 0;
-		int expectedGroupCount = 0;
-		int expectedDatasetCount = 0;
-		int expectedAttributeCount = 0;
+		final int expectedGroupCount = 0;
+		final int expectedDatasetCount = 0;
+		final int expectedAttributeCount = 0;
 		int expectedListCount = 0;
 
 		boolean exists = n5.exists(groupA);
@@ -239,7 +238,7 @@ public class N5CachedFSTest extends N5FSTest {
 		 *
 		 * Similarly, attributes can not exist for a non-existent group, so should not
 		 * attempt to get attributes from the container.
-		 * 
+		 *
 		 * Finally,listing on a non-existent group is pointless, so don't call the
 		 * backend storage
 		 */
@@ -279,9 +278,9 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
 
-		String a = "a";
-		String ab = "a/b";
-		String abc = "a/b/c";
+		final String a = "a";
+		final String ab = "a/b";
+		final String abc = "a/b/c";
 		// create "a/b/c"
 		n5.createGroup(abc);
 		assertTrue(n5.exists(abc));
@@ -355,7 +354,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 	}
 
-	public static interface TrackingStorage extends CachedGsonKeyValueWriter {
+	public static interface TrackingStorage extends CachedGsonKeyValueN5Writer {
 
 		public int getAttrCallCount();
 		public int getExistCallCount();
@@ -382,65 +381,79 @@ public class N5CachedFSTest extends N5FSTest {
 			super(keyValueAccess, basePath, gsonBuilder, cacheAttributes);
 		}
 
+		@Override
 		public JsonElement getAttributesFromContainer(final String key, final String cacheKey) {
 			attrCallCount++;
 			return super.getAttributesFromContainer(key, cacheKey);
 		}
 
+		@Override
 		public boolean existsFromContainer(final String path, final String cacheKey) {
 			existsCallCount++;
 			return super.existsFromContainer(path, cacheKey);
 		}
 
+		@Override
 		public boolean isGroupFromContainer(final String key) {
 			groupCallCount++;
 			return super.isGroupFromContainer(key);
 		}
 
+		@Override
 		public boolean isGroupFromAttributes(final String normalCacheKey, final JsonElement attributes) {
 			groupAttrCallCount++;
 			return super.isGroupFromAttributes(normalCacheKey, attributes);
 		}
 
+		@Override
 		public boolean isDatasetFromContainer(final String key) {
 			datasetCallCount++;
 			return super.isDatasetFromContainer(key);
 		}
 
+		@Override
 		public boolean isDatasetFromAttributes(final String normalCacheKey, final JsonElement attributes) {
 			datasetAttrCallCount++;
 			return super.isDatasetFromAttributes(normalCacheKey, attributes);
 		}
 
+		@Override
 		public String[] listFromContainer(final String key) {
 			listCallCount++;
 			return super.listFromContainer(key);
 		}
 
+		@Override
 		public int getAttrCallCount() {
 			return attrCallCount;
 		}
 
+		@Override
 		public int getExistCallCount() {
 			return existsCallCount;
 		}
 
+		@Override
 		public int getGroupCallCount() {
 			return groupCallCount;
 		}
 
+		@Override
 		public int getGroupAttrCallCount() {
 			return groupAttrCallCount;
 		}
 
+		@Override
 		public int getDatasetCallCount() {
 			return datasetCallCount;
 		}
 
+		@Override
 		public int getDatasetAttrCallCount() {
 			return datasetAttrCallCount;
 		}
 
+		@Override
 		public int getListCallCount() {
 			return listCallCount;
 		}

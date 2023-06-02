@@ -1,10 +1,10 @@
 package org.janelia.saalfeldlab.n5.cache;
 
-import com.google.gson.JsonElement;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+
+import com.google.gson.JsonElement;
 
 public class N5JsonCache {
 
@@ -20,7 +20,7 @@ public class N5JsonCache {
 
 		protected final HashMap<String, JsonElement> attributesCache = new HashMap<>();
 		protected HashSet<String> children = null;
-		protected boolean	isDataset = false;
+		protected boolean isDataset = false;
 		protected boolean isGroup = false;
 
 		protected JsonElement getCache(final String normalCacheKey) {
@@ -73,7 +73,7 @@ public class N5JsonCache {
 		return cacheInfo.isDataset;
 	}
 
-	public boolean isGroup(final String normalPathKey, String cacheKey) {
+	public boolean isGroup(final String normalPathKey, final String cacheKey) {
 
 		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
@@ -100,7 +100,7 @@ public class N5JsonCache {
 		return cacheInfo != emptyCacheInfo;
 	}
 
-	public String[] list(String normalPathKey) {
+	public String[] list(final String normalPathKey) {
 		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
 			addNewCacheInfo(normalPathKey);
@@ -113,13 +113,13 @@ public class N5JsonCache {
 
 		final String[] children = new String[cacheInfo.children.size()];
 		int i = 0;
-		for (String child : cacheInfo.children) {
+		for (final String child : cacheInfo.children) {
 			children[i++] = child;
 		}
 		return children;
 	}
 
-	public N5CacheInfo addNewCacheInfo(String normalPathKey, String normalCacheKey, JsonElement uncachedAttributes) {
+	public N5CacheInfo addNewCacheInfo(final String normalPathKey, final String normalCacheKey, final JsonElement uncachedAttributes) {
 
 		final N5CacheInfo cacheInfo;
 		if (container.existsFromContainer(normalPathKey, null)) {
@@ -146,9 +146,9 @@ public class N5JsonCache {
 		return cacheInfo;
 	}
 
-	public N5CacheInfo forceAddNewCacheInfo(String normalPathKey, String normalCacheKey, JsonElement uncachedAttributes, boolean isGroup, boolean isDataset) {
+	public N5CacheInfo forceAddNewCacheInfo(final String normalPathKey, final String normalCacheKey, final JsonElement uncachedAttributes, final boolean isGroup, final boolean isDataset) {
 
-		// getting the current cache info is useful if it already has had its children listed 
+		// getting the current cache info is useful if it already has had its children listed
 		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if( cacheInfo == null || cacheInfo == emptyCacheInfo )
 			cacheInfo = newCacheInfo();
@@ -164,12 +164,12 @@ public class N5JsonCache {
 		return cacheInfo;
 	}
 
-	private N5CacheInfo addNewCacheInfo(String normalPathKey) {
+	private N5CacheInfo addNewCacheInfo(final String normalPathKey) {
 
 		return addNewCacheInfo(normalPathKey, null, null);
 	}
 
-	private void addChild(N5CacheInfo cacheInfo, String normalPathKey) {
+	private void addChild(final N5CacheInfo cacheInfo, final String normalPathKey) {
 
 		if( cacheInfo.children == null )
 			cacheInfo.children = new HashSet<>();
@@ -181,7 +181,7 @@ public class N5JsonCache {
 	/**
 	 * Updates the cache attributes for the given normalPathKey and normalCacheKey,
 	 * adding the appropriate node to the cache if necessary.
-	 * 
+	 *
 	 * @param normalPathKey the normalized path key
 	 * @param normalCacheKey the normalized cache key
 	 * @param uncachedAttributes attributes to be cached
@@ -233,7 +233,7 @@ public class N5JsonCache {
 	}
 
 	/**
-	 * Adds child to the parent's children list, only if the parent has been 
+	 * Adds child to the parent's children list, only if the parent has been
 	 * cached, and its children list already exists.
 	 *
 	 * @param parent parent path
@@ -249,7 +249,7 @@ public class N5JsonCache {
 	}
 
 	/**
-	 * Adds child to the parent's children list, only if the parent has been 
+	 * Adds child to the parent's children list, only if the parent has been
 	 * cached, creating a children list if it does not already exist.
 	 *
 	 * @param parent parent path
@@ -285,7 +285,7 @@ public class N5JsonCache {
 		}
 	}
 
-	protected N5CacheInfo getCacheInfo(String pathKey) {
+	protected N5CacheInfo getCacheInfo(final String pathKey) {
 
 		synchronized (containerPathToCache) {
 			return containerPathToCache.get(pathKey);
@@ -296,7 +296,7 @@ public class N5JsonCache {
 		return new N5CacheInfo();
 	}
 
-	protected void updateCache(final String normalPathKey, N5CacheInfo cacheInfo) {
+	protected void updateCache(final String normalPathKey, final N5CacheInfo cacheInfo) {
 		synchronized (containerPathToCache) {
 			containerPathToCache.put(normalPathKey, cacheInfo);
 		}

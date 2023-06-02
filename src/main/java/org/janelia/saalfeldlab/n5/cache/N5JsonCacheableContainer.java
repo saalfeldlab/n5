@@ -6,7 +6,7 @@ import com.google.gson.JsonElement;
  * An N5 container whose structure and attributes can be cached.
  * <p>
  * Implementations of interface methods must explicitly query the backing
- * storage. Cached implmentations (e.g {@link CachedGsonKeyValueReader}) call
+ * storage. Cached implmentations (e.g {@link CachedGsonKeyValueN5Reader}) call
  * these methods to update their {@link N5JsonCache}. Corresponding
  * {@link N5Reader} methods should use the cache, if present.
  */
@@ -19,7 +19,7 @@ public interface N5JsonCacheableContainer {
 	 * @param normalPathName the normalized path name
 	 * @param normalCacheKey the cache key
 	 * @return the attributes as a json element. 
-	 * @see GsonKeyValueReader#getAttributes
+	 * @see GsonKeyValueN5Reader#getAttributes
 	 */
 	JsonElement getAttributesFromContainer(final String normalPathName, final String normalCacheKey);
 

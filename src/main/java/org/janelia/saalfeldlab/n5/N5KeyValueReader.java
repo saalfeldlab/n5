@@ -42,7 +42,7 @@ import java.util.Arrays;
  * @author Igor Pisarev
  * @author Philipp Hanslovsky
  */
-public class N5KeyValueReader implements CachedGsonKeyValueReader {
+public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 	public static final String ATTRIBUTES_JSON = "attributes.json";
 

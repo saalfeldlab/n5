@@ -25,86 +25,19 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.IOException;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.Map;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
  * attributes parsed with {@link Gson}.
  *
- * @author Stephan Saalfeld
- * @author Igor Pisarev
- * @author Philipp Hanslovsky
  */
-public interface GsonKeyValueReader extends N5Reader {
-
-	Gson getGson();
+public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	KeyValueAccess getKeyValueAccess();
-
-	@Override
-	default Map<String, Class<?>> listAttributes(final String pathName) throws IOException {
-
-		return GsonUtils.listAttributes(getAttributes(pathName));
-	}
-
-	@Override
-	default DatasetAttributes getDatasetAttributes(final String pathName) throws N5Exception.N5IOException {
-
-		final String normalPath = N5URL.normalizeGroupPath(pathName);
-		final JsonElement attributes = getAttributes(normalPath);
-		return createDatasetAttributes(attributes);
-	}
-
-	default DatasetAttributes createDatasetAttributes(JsonElement attributes) {
-
-		final long[] dimensions = GsonUtils.readAttribute(attributes, DatasetAttributes.DIMENSIONS_KEY, long[].class, getGson());
-		if (dimensions == null) {
-			return null;
-		}
-
-		final DataType dataType = GsonUtils.readAttribute(attributes, DatasetAttributes.DATA_TYPE_KEY, DataType.class, getGson());
-		if (dataType == null) {
-			return null;
-		}
-
-		final int[] blockSize = GsonUtils.readAttribute(attributes, DatasetAttributes.BLOCK_SIZE_KEY, int[].class, getGson());
-
-		final Compression compression = GsonUtils.readAttribute(attributes, DatasetAttributes.COMPRESSION_KEY, Compression.class, getGson());
-
-		/* version 0 */
-		final String compressionVersion0Name = compression
-				== null
-				? GsonUtils.readAttribute(attributes, DatasetAttributes.compressionTypeKey, String.class, getGson())
-				: null;
-
-		return createDatasetAttributes(dimensions, dataType, blockSize, compression, compressionVersion0Name);
-	}
-
-	@Override
-	default <T> T getAttribute(final String pathName, final String key, final Class<T> clazz) throws IOException {
-
-		final String normalPathName = N5URL.normalizeGroupPath(pathName);
-		final String normalizedAttributePath = N5URL.normalizeAttributePath(key);
-
-		final JsonElement attributes = getAttributes(normalPathName);
-		return GsonUtils.readAttribute(attributes, normalizedAttributePath, clazz, getGson());
-	}
-
-	@Override
-	default <T> T getAttribute(final String pathName, final String key, final Type type) throws IOException {
-
-		final String normalPathName = N5URL.normalizeGroupPath(pathName);
-		final String normalizedAttributePath = N5URL.normalizeAttributePath(key);
-		JsonElement attributes = getAttributes(normalPathName);
-		return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, getGson());
-	}
 
 	default boolean groupExists(final String absoluteNormalPath) {
 
@@ -121,16 +54,19 @@ public interface GsonKeyValueReader extends N5Reader {
 	@Override
 	default boolean datasetExists(final String pathName) throws N5Exception.N5IOException {
 
+		// for n5, every dataset must be a group
 		return getDatasetAttributes(pathName) != null;
 	}
 
 	/**
 	 * Reads or creates the attributes map of a group or dataset.
 	 *
-	 * @param pathName group path
+	 * @param pathName
+	 *            group path
 	 * @return
 	 * @throws IOException
 	 */
+	@Override
 	default JsonElement getAttributes(final String pathName) throws N5Exception.N5IOException {
 
 		final String groupPath = N5URL.normalizeGroupPath(pathName);
@@ -141,14 +77,17 @@ public interface GsonKeyValueReader extends N5Reader {
 
 		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(attributesPath)) {
 			return GsonUtils.readAttributes(lockedChannel.newReader(), getGson());
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			throw new N5Exception.N5IOException("Cannot open lock for Reading", e);
 		}
 
 	}
 
 	@Override
-	default DataBlock<?> readBlock( final String pathName, final DatasetAttributes datasetAttributes, final long... gridPosition) throws IOException {
+	default DataBlock<?> readBlock(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final long... gridPosition) throws N5Exception.N5IOException {
 
 		final String path = getDataBlockPath(N5URL.normalizeGroupPath(pathName), gridPosition);
 		if (!getKeyValueAccess().isFile(path))
@@ -156,6 +95,8 @@ public interface GsonKeyValueReader extends N5Reader {
 
 		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(path)) {
 			return DefaultBlockReader.readBlock(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
+		} catch (final IOException e) {
+			throw new N5Exception.N5IOException("Cannot open lock for Reading", e);
 		}
 	}
 
@@ -164,22 +105,25 @@ public interface GsonKeyValueReader extends N5Reader {
 
 		try {
 			return getKeyValueAccess().listDirectories(groupPath(pathName));
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			throw new N5Exception.N5IOException("Cannot list directories for group " + pathName, e);
 		}
 	}
 
 	/**
-	 * Constructs the path for a data block in a dataset at a given grid position.
+	 * Constructs the path for a data block in a dataset at a given grid
+	 * position.
 	 * <p>
 	 * The returned path is
+	 *
 	 * <pre>
 	 * $basePath/datasetPathName/$gridPosition[0]/$gridPosition[1]/.../$gridPosition[n]
 	 * </pre>
 	 * <p>
 	 * This is the file into which the data block will be stored.
 	 *
-	 * @param normalPath   normalized dataset path
+	 * @param normalPath
+	 *            normalized dataset path
 	 * @param gridPosition
 	 * @return
 	 */
@@ -201,7 +145,8 @@ public interface GsonKeyValueReader extends N5Reader {
 	 * Constructs the absolute path (in terms of this store) for the group or
 	 * dataset.
 	 *
-	 * @param normalGroupPath normalized group path without leading slash
+	 * @param normalGroupPath
+	 *            normalized group path without leading slash
 	 * @return the absolute path to the group
 	 */
 	default String groupPath(final String normalGroupPath) {
@@ -213,62 +158,12 @@ public interface GsonKeyValueReader extends N5Reader {
 	 * Constructs the absolute path (in terms of this store) for the attributes
 	 * file of a group or dataset.
 	 *
-	 * @param normalPath normalized group path without leading slash
+	 * @param normalPath
+	 *            normalized group path without leading slash
 	 * @return the absolute path to the attributes
 	 */
 	default String attributesPath(final String normalPath) {
 
 		return getKeyValueAccess().compose(getBasePath(), normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
-	}
-
-	static DatasetAttributes createDatasetAttributes(
-			final long[] dimensions,
-			final DataType dataType,
-			int[] blockSize,
-			Compression compression,
-			final String compressionVersion0Name
-	) {
-
-		if (blockSize == null)
-			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
-
-		/* version 0 */
-		if (compression == null) {
-			switch (compressionVersion0Name) {
-			case "raw":
-				compression = new RawCompression();
-				break;
-			case "gzip":
-				compression = new GzipCompression();
-				break;
-			case "bzip2":
-				compression = new Bzip2Compression();
-				break;
-			case "lz4":
-				compression = new Lz4Compression();
-				break;
-			case "xz":
-				compression = new XzCompression();
-				break;
-			}
-		}
-
-		return new DatasetAttributes(dimensions, blockSize, dataType, compression);
-	}
-
-	/**
-	 * Check for attributes that are required for a group to be a dataset.
-	 *
-	 * @param attributes to check for dataset attributes
-	 * @return if {@link DatasetAttributes#DIMENSIONS_KEY} and {@link DatasetAttributes#DATA_TYPE_KEY} are present
-	 */
-	static boolean hasDatasetAttributes(final JsonElement attributes) {
-
-		if (attributes == null || !attributes.isJsonObject()) {
-			return false;
-		}
-
-		final JsonObject metadataCache = attributes.getAsJsonObject();
-		return metadataCache.has(DatasetAttributes.DIMENSIONS_KEY) && metadataCache.has(DatasetAttributes.DATA_TYPE_KEY);
 	}
 }

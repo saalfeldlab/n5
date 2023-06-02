@@ -183,7 +183,7 @@ public interface GsonUtils {
 	 * <li>String[]</li>
 	 * <li>Object[]</li>
 	 * </ul>
-	 * 
+	 *
 	 * @param root the json element
 	 * @return the attribute map
 	 */
@@ -516,7 +516,8 @@ public interface GsonUtils {
 	static <T> JsonElement insertAttribute(JsonElement root, final String normalizedAttributePath, final T attribute, final Gson gson) {
 
 		LinkedAttributePathToken<?> pathToken = N5URL.getAttributePathTokens(normalizedAttributePath);
-		/* No path to traverse or build; just write the value */
+
+		/* No path to traverse or build; just return the value */
 		if (pathToken == null)
 			return gson.toJsonTree(attribute);
 

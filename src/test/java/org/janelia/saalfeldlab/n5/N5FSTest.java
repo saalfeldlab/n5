@@ -25,7 +25,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
@@ -36,6 +35,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -46,14 +46,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.io.FileUtils;
+import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
 import org.junit.AfterClass;
 import org.junit.Test;
+
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-
-import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
-
-import java.util.ArrayList;
 
 /**
  * Initiates testing of the filesystem-based N5 implementation.
@@ -70,40 +67,48 @@ public class N5FSTest extends AbstractN5Test {
 	private static String testDirPath = tempN5PathName();
 
 	private static String tempN5PathName() {
+
 		try {
 			final File tmpFile = Files.createTempDirectory("n5-test-").toFile();
 			tmpFile.deleteOnExit();
 			final String tmpPath = tmpFile.getCanonicalPath();
 			tmpFiles.add(tmpPath);
 			return tmpPath;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
 	protected String tempN5Location() throws URISyntaxException {
+
 		final String basePath = tempN5PathName();
 		return new URI("file", null, basePath, null).toString();
 	}
 
 	@Override
-	protected N5Writer createN5Writer(final String location, final GsonBuilder gson) throws IOException, URISyntaxException {
+	protected N5Writer createN5Writer(
+			final String location,
+			final GsonBuilder gson) throws IOException, URISyntaxException {
+
 		return new N5FSWriter(location, gson);
 	}
 
 	@Override
-	protected N5Reader createN5Reader(final String location, final GsonBuilder gson) throws IOException, URISyntaxException {
+	protected N5Reader createN5Reader(
+			final String location,
+			final GsonBuilder gson) throws IOException, URISyntaxException {
+
 		return new N5FSReader(location, gson);
 	}
 
 	@AfterClass
 	public static void cleanup() {
 
-		for (String tmpFile : tmpFiles) {
-			try{
+		for (final String tmpFile : tmpFiles) {
+			try {
 				FileUtils.deleteDirectory(new File(tmpFile));
-			} catch (Exception e) { }
+			} catch (final Exception e) {}
 		}
 	}
 
@@ -113,10 +118,22 @@ public class N5FSTest extends AbstractN5Test {
 		final String testGroup = "test";
 		final ArrayList<TestData<?>> existingTests = new ArrayList<>();
 
-		final UrlAttributeTest.TestDoubles doubles1 = new UrlAttributeTest.TestDoubles("doubles", "doubles1", new double[]{5.7, 4.5, 3.4});
-		final UrlAttributeTest.TestDoubles doubles2 = new UrlAttributeTest.TestDoubles("doubles", "doubles2", new double[]{5.8, 4.6, 3.5});
-		final UrlAttributeTest.TestDoubles doubles3 = new UrlAttributeTest.TestDoubles("doubles", "doubles3", new double[]{5.9, 4.7, 3.6});
-		final UrlAttributeTest.TestDoubles doubles4 = new UrlAttributeTest.TestDoubles("doubles", "doubles4", new double[]{5.10, 4.8, 3.7});
+		final UrlAttributeTest.TestDoubles doubles1 = new UrlAttributeTest.TestDoubles(
+				"doubles",
+				"doubles1",
+				new double[]{5.7, 4.5, 3.4});
+		final UrlAttributeTest.TestDoubles doubles2 = new UrlAttributeTest.TestDoubles(
+				"doubles",
+				"doubles2",
+				new double[]{5.8, 4.6, 3.5});
+		final UrlAttributeTest.TestDoubles doubles3 = new UrlAttributeTest.TestDoubles(
+				"doubles",
+				"doubles3",
+				new double[]{5.9, 4.7, 3.6});
+		final UrlAttributeTest.TestDoubles doubles4 = new UrlAttributeTest.TestDoubles(
+				"doubles",
+				"doubles4",
+				new double[]{5.10, 4.8, 3.7});
 		n5.createGroup(testGroup);
 		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[1]", doubles1));
 		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[2]", doubles2));
@@ -126,7 +143,6 @@ public class N5FSTest extends AbstractN5Test {
 		/* Test overwrite custom */
 		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[1]", doubles4));
 	}
-
 
 //	@Test
 	public void testReadLock() throws IOException, InterruptedException {
@@ -164,7 +180,6 @@ public class N5FSTest extends AbstractN5Test {
 
 		exec.shutdownNow();
 	}
-
 
 //	@Test
 	public void testWriteLock() throws IOException {

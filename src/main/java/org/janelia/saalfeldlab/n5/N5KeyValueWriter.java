@@ -36,7 +36,7 @@ import org.janelia.saalfeldlab.n5.N5Reader.Version;
  *
  * @author Stephan Saalfeld
  */
-public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyValueWriter {
+public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyValueN5Writer {
 
 	/**
 	 * Opens an {@link N5KeyValueWriter} at a given base path with a custom

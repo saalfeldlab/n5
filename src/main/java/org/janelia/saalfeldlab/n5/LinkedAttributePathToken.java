@@ -27,7 +27,7 @@ public abstract class LinkedAttributePathToken<T extends JsonElement> implements
 	public abstract T getJsonType();
 
 	/**
-	 * This method will retgurn the child element, if the {@link #parentJson}
+	 * This method will return the child element, if the {@link #parentJson}
 	 * contains a child that
 	 * is valid for this token. If the {@link #parentJson} does not have a
 	 * child, this method will
@@ -77,7 +77,7 @@ public abstract class LinkedAttributePathToken<T extends JsonElement> implements
 	/**
 	 * Check if the provided {@code json} is compatible with this token.
 	 * <br>
-	 * Compatibility means thath the provided {@code JsonElement} does not
+	 * Compatibility means that the provided {@code JsonElement} does not
 	 * explicitly conflict with this token. That means that {@code null} is
 	 * always compatible. The only real incompatibility is when the
 	 * {@code JsonElement}

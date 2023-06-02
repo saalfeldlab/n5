@@ -68,7 +68,7 @@ public class N5Benchmark {
 	static {
 		try {
 			testDirPath = Files.createTempDirectory("n5-benchmark-").toFile().getCanonicalPath();
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -138,7 +138,7 @@ public class N5Benchmark {
 				final DatasetAttributes attributes = n5.getDatasetAttributes(compressedDatasetName);
 				final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(new int[]{1, 2, 3}, new long[]{0, 0, 0}, dataBlockData);
 				n5.writeBlock(compressedDatasetName, attributes, dataBlock);
-			} catch (final IOException e) {
+			} catch (final N5Exception e) {
 				fail(e.getMessage());
 			}
 		}
@@ -163,7 +163,7 @@ public class N5Benchmark {
 								final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(new int[]{64, 64, 64}, new long[]{x, y, z}, data);
 								n5.writeBlock(compressedDatasetName, attributes, dataBlock);
 							}
-				} catch (final IOException e) {
+				} catch (final N5Exception e) {
 					fail(e.getMessage());
 				}
 				System.out.println(String.format("%d : %s : %fs", i, compression.getType(), 0.001 * (System.currentTimeMillis() - t)));
@@ -260,7 +260,7 @@ public class N5Benchmark {
 						f.get();
 
 					System.out.println(String.format("%d : %s : %fs", i, compression.getType(), 0.001 * (System.currentTimeMillis() - t)));
-				} catch (final IOException | InterruptedException | ExecutionException e) {
+				} catch (final N5Exception | InterruptedException | ExecutionException e) {
 					fail(e.getMessage());
 				}
 			}

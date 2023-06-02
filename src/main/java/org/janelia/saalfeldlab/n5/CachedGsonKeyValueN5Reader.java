@@ -25,39 +25,38 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import java.io.IOException;
+import java.lang.reflect.Type;
+
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCacheableContainer;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
  * attributes parsed with {@link Gson}.
  *
- * @author Stephan Saalfeld
- * @author Igor Pisarev
- * @author Philipp Hanslovsky
  */
-
-public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCacheableContainer {
+public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5JsonCacheableContainer {
 
 	default N5JsonCache newCache() {
-		return new N5JsonCache( this );
+
+		return new N5JsonCache(this);
 	}
 
 	boolean cacheMeta();
 
 	N5JsonCache getCache();
 
+	@Override
 	default JsonElement getAttributesFromContainer(final String normalPathName, final String normalCacheKey) {
 
 		// this implementation doesn't use cache key, but rather depends on
 		// attributesPath being implemented
-		return GsonKeyValueReader.super.getAttributes(normalPathName);
+		return GsonKeyValueN5Reader.super.getAttributes(normalPathName);
 	}
 
 	@Override
@@ -72,7 +71,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 		if (cacheMeta()) {
 			attributes = getCache().getAttributes(normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
 		} else {
-			attributes = GsonKeyValueReader.super.getAttributes(normalPath);
+			attributes = GsonKeyValueN5Reader.super.getAttributes(normalPath);
 		}
 
 		return createDatasetAttributes(attributes);
@@ -81,7 +80,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 	default DatasetAttributes normalGetDatasetAttributes(final String pathName) throws N5Exception.N5IOException {
 
 		final String normalPath = N5URL.normalizeGroupPath(pathName);
-		final JsonElement attributes = GsonKeyValueReader.super.getAttributes(normalPath);
+		final JsonElement attributes = GsonKeyValueN5Reader.super.getAttributes(normalPath);
 		return createDatasetAttributes(attributes);
 	}
 
@@ -89,7 +88,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 	default <T> T getAttribute(
 			final String pathName,
 			final String key,
-			final Class<T> clazz) throws IOException {
+			final Class<T> clazz) throws N5Exception {
 
 		final String normalPathName = N5URL.normalizeGroupPath(pathName);
 		final String normalizedAttributePath = N5URL.normalizeAttributePath(key);
@@ -98,7 +97,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 		if (cacheMeta()) {
 			attributes = getCache().getAttributes(normalPathName, N5KeyValueReader.ATTRIBUTES_JSON);
 		} else {
-			attributes = GsonKeyValueReader.super.getAttributes(normalPathName);
+			attributes = GsonKeyValueN5Reader.super.getAttributes(normalPathName);
 		}
 		return GsonUtils.readAttribute(attributes, normalizedAttributePath, clazz, getGson());
 	}
@@ -107,7 +106,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 	default <T> T getAttribute(
 			final String pathName,
 			final String key,
-			final Type type) throws IOException {
+			final Type type) throws N5Exception {
 
 		final String normalPathName = N5URL.normalizeGroupPath(pathName);
 		final String normalizedAttributePath = N5URL.normalizeAttributePath(key);
@@ -115,7 +114,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 		if (cacheMeta()) {
 			attributes = getCache().getAttributes(normalPathName, N5KeyValueReader.ATTRIBUTES_JSON);
 		} else {
-			attributes = GsonKeyValueReader.super.getAttributes(normalPathName);
+			attributes = GsonKeyValueN5Reader.super.getAttributes(normalPathName);
 		}
 		return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, getGson());
 	}
@@ -131,14 +130,16 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 		}
 	}
 
+	@Override
 	default boolean existsFromContainer(final String normalPathName, final String normalCacheKey) {
 
-		if( normalCacheKey == null )
+		if (normalCacheKey == null)
 			return getKeyValueAccess().isDirectory(groupPath(normalPathName));
 		else
 			return getKeyValueAccess().isFile(getKeyValueAccess().compose(groupPath(normalPathName), normalCacheKey));
 	}
 
+	@Override
 	default boolean groupExists(final String pathName) {
 
 		final String normalPathName = N5URL.normalizeGroupPath(pathName);
@@ -149,31 +150,35 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 		}
 	}
 
-	default boolean isGroupFromContainer(final String pathName) {
+	@Override
+	default boolean isGroupFromContainer(final String normalPathName) {
 
-		final String normalPathName = N5URL.normalizeGroupPath(pathName);
-		return GsonKeyValueReader.super.groupExists(groupPath(normalPathName));
+		return GsonKeyValueN5Reader.super.groupExists(normalPathName);
 	}
 
+	@Override
 	default boolean isGroupFromAttributes(final String normalCacheKey, final JsonElement attributes) {
+
 		return true;
 	}
 
 	@Override
 	default boolean datasetExists(final String pathName) throws N5Exception.N5IOException {
 
+		final String normalPathName = N5URL.normalizeGroupPath(pathName);
 		if (cacheMeta()) {
-			final String normalPathName = N5URL.normalizeGroupPath(pathName);
-			return getCache().isDataset(normalPathName, null);
+			return getCache().isDataset(normalPathName, N5KeyValueReader.ATTRIBUTES_JSON);
 		}
-		return isDatasetFromContainer(pathName);
+		return isDatasetFromContainer(normalPathName);
 	}
 
-	default boolean isDatasetFromContainer(final String pathName) throws N5Exception.N5IOException {
+	@Override
+	default boolean isDatasetFromContainer(final String normalPathName) throws N5Exception.N5IOException {
 
-		return normalGetDatasetAttributes(pathName) != null;
+		return normalGetDatasetAttributes(normalPathName) != null;
 	}
 
+	@Override
 	default boolean isDatasetFromAttributes(final String normalCacheKey, final JsonElement attributes) {
 
 		return isGroupFromAttributes(normalCacheKey, attributes) && createDatasetAttributes(attributes) != null;
@@ -182,21 +187,22 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 	/**
 	 * Reads or creates the attributes map of a group or dataset.
 	 *
-	 * @param pathName group path
+	 * @param pathName
+	 *            group path
 	 * @return
 	 * @throws IOException
 	 */
+	@Override
 	default JsonElement getAttributes(final String pathName) throws N5Exception.N5IOException {
 
 		final String groupPath = N5URL.normalizeGroupPath(pathName);
 
-		/* If cached, return the cache*/
+		/* If cached, return the cache */
 		if (cacheMeta()) {
 			return getCache().getAttributes(groupPath, N5KeyValueReader.ATTRIBUTES_JSON);
 		} else {
-			return GsonKeyValueReader.super.getAttributes(groupPath);
+			return GsonKeyValueN5Reader.super.getAttributes(groupPath);
 		}
-
 	}
 
 	@Override
@@ -206,30 +212,35 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 		if (cacheMeta()) {
 			return getCache().list(normalPath);
 		} else {
-			return GsonKeyValueReader.super.list(normalPath);
+			return GsonKeyValueN5Reader.super.list(normalPath);
 		}
 	}
 
+	@Override
 	default String[] listFromContainer(final String normalPathName) {
 
 		// this implementation doesn't use cache key, but rather depends on
-		return GsonKeyValueReader.super.list(normalPathName);
+		return GsonKeyValueN5Reader.super.list(normalPathName);
 	}
 
 	/**
-	 * Constructs the path for a data block in a dataset at a given grid position.
+	 * Constructs the path for a data block in a dataset at a given grid
+	 * position.
 	 * <p>
 	 * The returned path is
+	 *
 	 * <pre>
 	 * $basePath/datasetPathName/$gridPosition[0]/$gridPosition[1]/.../$gridPosition[n]
 	 * </pre>
 	 * <p>
 	 * This is the file into which the data block will be stored.
 	 *
-	 * @param normalPath   normalized dataset path
+	 * @param normalPath
+	 *            normalized dataset path
 	 * @param gridPosition
 	 * @return
 	 */
+	@Override
 	default String getDataBlockPath(
 			final String normalPath,
 			final long... gridPosition) {
@@ -247,8 +258,10 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 	/**
 	 * Check for attributes that are required for a group to be a dataset.
 	 *
-	 * @param attributes to check for dataset attributes
-	 * @return if {@link DatasetAttributes#DIMENSIONS_KEY} and {@link DatasetAttributes#DATA_TYPE_KEY} are present
+	 * @param attributes
+	 *            to check for dataset attributes
+	 * @return if {@link DatasetAttributes#DIMENSIONS_KEY} and
+	 *         {@link DatasetAttributes#DATA_TYPE_KEY} are present
 	 */
 	static boolean hasDatasetAttributes(final JsonElement attributes) {
 
@@ -257,6 +270,7 @@ public interface CachedGsonKeyValueReader extends GsonKeyValueReader, N5JsonCach
 		}
 
 		final JsonObject metadataCache = attributes.getAsJsonObject();
-		return metadataCache.has(DatasetAttributes.DIMENSIONS_KEY) && metadataCache.has(DatasetAttributes.DATA_TYPE_KEY);
+		return metadataCache.has(DatasetAttributes.DIMENSIONS_KEY)
+				&& metadataCache.has(DatasetAttributes.DATA_TYPE_KEY);
 	}
 }

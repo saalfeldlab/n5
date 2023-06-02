@@ -25,16 +25,14 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
-import org.janelia.saalfeldlab.n5.N5Reader.Version;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -51,14 +49,17 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.janelia.saalfeldlab.n5.N5Reader.Version;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Test;
+
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * Abstract base class for testing N5 functionality.
@@ -93,13 +94,13 @@ public abstract class AbstractN5Test {
 		return createN5Writer(tempN5Location());
 	}
 
-	protected N5Writer createN5Writer(String location) throws IOException, URISyntaxException {
+	protected N5Writer createN5Writer(final String location) throws IOException, URISyntaxException {
 		return createN5Writer(location, new GsonBuilder());
 	}
 
 	protected abstract N5Writer createN5Writer(String location, GsonBuilder gson) throws IOException, URISyntaxException;
 
-	protected N5Reader createN5Reader(String location) throws IOException, URISyntaxException {
+	protected N5Reader createN5Reader(final String location) throws IOException, URISyntaxException {
 
 		return createN5Reader(location, new GsonBuilder());
 	}
@@ -153,9 +154,9 @@ public abstract class AbstractN5Test {
 	public static void rampDownAfterClass() throws IOException {
 
 		if (n5 != null) {
-			try { 
+			try {
 				assertTrue(n5.remove());
-			} catch ( Exception e ) {}
+			} catch ( final Exception e ) {}
 			n5 = null;
 		}
 	}
@@ -165,7 +166,7 @@ public abstract class AbstractN5Test {
 
 		try {
 			n5.createGroup(groupName);
-		} catch (final IOException e) {
+		} catch (final N5Exception e) {
 			fail(e.getMessage());
 		}
 
@@ -225,7 +226,7 @@ public abstract class AbstractN5Test {
 
 					assertTrue(n5.remove(datasetName));
 
-				} catch (final IOException e) {
+				} catch (final N5Exception e) {
 					e.printStackTrace();
 					fail("Block cannot be written.");
 				}
@@ -942,7 +943,7 @@ public abstract class AbstractN5Test {
 							a -> {
 								try {
 									return n5.datasetExists(a);
-								} catch (final IOException e) {
+								} catch (final N5Exception e) {
 									return false;
 								}
 							}));
@@ -956,7 +957,7 @@ public abstract class AbstractN5Test {
 							a -> {
 								try {
 									return n5.datasetExists(a) && isBorC.test(a);
-								} catch (final IOException e) {
+								} catch (final N5Exception e) {
 									return false;
 								}
 							}));
@@ -973,7 +974,7 @@ public abstract class AbstractN5Test {
 							a -> {
 								try {
 									return n5.datasetExists(a);
-								} catch (final IOException e) {
+								} catch (final N5Exception e) {
 									return false;
 								}
 							},
@@ -989,7 +990,7 @@ public abstract class AbstractN5Test {
 							a -> {
 								try {
 									return n5.datasetExists(a) && isBorC.test(a);
-								} catch (final IOException e) {
+								} catch (final N5Exception e) {
 									return false;
 								}
 							},
@@ -1063,7 +1064,7 @@ public abstract class AbstractN5Test {
 			assertTrue(attributesMap.get("attr6") == long.class);
 			assertTrue(attributesMap.get("attr7") == double[].class);
 			assertTrue(attributesMap.get("attr8") == Object[].class);
-		} catch (final IOException e) {
+		} catch (final N5Exception e) {
 			fail(e.getMessage());
 		}
 	}
@@ -1177,7 +1178,7 @@ public abstract class AbstractN5Test {
 		public T attributeValue;
 		public Class<T> attributeClass;
 
-		public TestData(String groupPath, String key, T attributeValue) {
+		public TestData(final String groupPath, final String key, final T attributeValue) {
 
 			this.groupPath = groupPath;
 			this.attributePath = key;
@@ -1186,7 +1187,7 @@ public abstract class AbstractN5Test {
 		}
 	}
 
-	protected static void addAndTest(N5Writer writer, ArrayList<TestData<?>> existingTests, TestData<?> testData) throws IOException {
+	protected static void addAndTest(final N5Writer writer, final ArrayList<TestData<?>> existingTests, final TestData<?> testData) throws IOException {
 		/* test a new value on existing path */
 		writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
 		assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
@@ -1199,7 +1200,7 @@ public abstract class AbstractN5Test {
 				final String normalizedTestKey = N5URL.from(null, "", test.attributePath).normalizeAttributePath().replaceAll("^/", "");
 				final String normalizedTestDataKey = N5URL.from(null, "", testData.attributePath).normalizeAttributePath().replaceAll("^/", "");
 				return normalizedTestKey.equals(normalizedTestDataKey);
-			} catch (URISyntaxException e) {
+			} catch (final URISyntaxException e) {
 				throw new RuntimeException(e);
 			}
 		});
@@ -1207,9 +1208,9 @@ public abstract class AbstractN5Test {
 		existingTests.add(testData);
 	}
 
-	protected static void runTests(N5Writer writer, ArrayList<TestData<?>> existingTests) throws IOException {
+	protected static void runTests(final N5Writer writer, final ArrayList<TestData<?>> existingTests) throws IOException {
 
-		for (TestData<?> test : existingTests) {
+		for (final TestData<?> test : existingTests) {
 			assertEquals(test.attributeValue, writer.getAttribute(test.groupPath, test.attributePath, test.attributeClass));
 			assertEquals(test.attributeValue, writer.getAttribute(test.groupPath, test.attributePath, TypeToken.get(test.attributeClass).getType()));
 		}
@@ -1220,7 +1221,7 @@ public abstract class AbstractN5Test {
 
 		try (final N5Writer writer = createN5Writer()) {
 
-			String testGroup = "test";
+			final String testGroup = "test";
 			writer.createGroup(testGroup);
 
 			final ArrayList<TestData<?>> existingTests = new ArrayList<>();
@@ -1401,7 +1402,7 @@ public abstract class AbstractN5Test {
 	/*
 	 * For readability above
 	 */
-	private String jsonKeyVal(String key, String val) {
+	private String jsonKeyVal(final String key, final String val) {
 
 		return String.format("\"%s\":\"%s\"", key, val);
 	}
@@ -1411,7 +1412,7 @@ public abstract class AbstractN5Test {
 		final String basePath = ((N5FSWriter)n5).getBasePath();
 		try {
 			return new String(Files.readAllBytes(Paths.get(basePath, group, "attributes.json")));
-		} catch (IOException e) {
+		} catch (final IOException e) {
 		}
 		return null;
 	}
@@ -1455,7 +1456,7 @@ public abstract class AbstractN5Test {
 		tests.add(new TestData<>(groupName, "/", "replace_empty_root"));
 		tests.add(new TestData<>(groupName, "[0]", "array_root"));
 
-		for (TestData<?> testData : tests) {
+		for (final TestData<?> testData : tests) {
 			try (final N5Writer writer = createN5Writer()) {
 				writer.createGroup(testData.groupPath);
 				writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
@@ -1473,7 +1474,7 @@ public abstract class AbstractN5Test {
 
 		try (final N5Writer writer = createN5Writer()) {
 			writer.createGroup(groupName);
-			for (TestData<?> testData : tests) {
+			for (final TestData<?> testData : tests) {
 				writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
 				assertEquals(testData.attributeValue, writer.getAttribute(testData.groupPath, testData.attributePath, testData.attributeClass));
 				assertEquals(testData.attributeValue,
@@ -1490,7 +1491,7 @@ public abstract class AbstractN5Test {
 		tests.add(rootAsArray);
 		try (final N5Writer writer = createN5Writer()) {
 			writer.createGroup(groupName);
-			for (TestData<?> test : tests) {
+			for (final TestData<?> test : tests) {
 				/* Set the root as Object*/
 				writer.setAttribute(rootAsObject.groupPath, rootAsObject.attributePath, rootAsObject.attributeValue);
 				assertEquals(rootAsObject.attributeValue,
