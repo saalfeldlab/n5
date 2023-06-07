@@ -105,4 +105,14 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 		in.defaultReadObject();
 		ReflectionUtils.setFieldValue(this, "parameters", new GzipParameters());
 	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (other == null || other.getClass() != GzipCompression.class)
+			return false;
+		else {
+			GzipCompression gz = ((GzipCompression) other);
+			return useZlib == gz.useZlib && level == gz.level;
+		}
+	}
 }

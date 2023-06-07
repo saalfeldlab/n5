@@ -76,5 +76,12 @@ public class XzCompression implements DefaultBlockReader, DefaultBlockWriter, Co
 		return this;
 	}
 
+	@Override
+	public boolean equals(Object other) {
+		if (other == null || other.getClass() != XzCompression.class)
+			return false;
+		else
+			return preset == ((XzCompression) other).preset;
+	}
 
 }

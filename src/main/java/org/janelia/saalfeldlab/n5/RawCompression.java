@@ -59,4 +59,12 @@ public class RawCompression implements DefaultBlockReader, DefaultBlockWriter, C
 
 		return this;
 	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (other == null || other.getClass() != RawCompression.class)
+			return false;
+		else
+			return true;
+	}
 }
