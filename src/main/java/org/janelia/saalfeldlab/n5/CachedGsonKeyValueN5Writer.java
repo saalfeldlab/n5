@@ -53,6 +53,18 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 	@Override
 	default void createGroup(final String path) throws N5Exception {
 
+		final String normalPath = N5URL.normalizeGroupPath(path);
+		// TODO: John document this!
+		// if you are a group, avoid hitting the backend
+		// if something exists, be safe
+		if (cacheMeta()) {
+			if( getCache().isGroup(normalPath, N5KeyValueReader.ATTRIBUTES_JSON))
+				return;
+			else if ( getCache().exists(normalPath, N5KeyValueReader.ATTRIBUTES_JSON)){
+				throw new N5Exception("Can't make a group on existing path.");
+			}
+		}
+
 		// N5Writer.super.createGroup(path);
 		/*
 		 * the 6 lines below duplicate the single line above but would have to
@@ -60,7 +72,6 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		 * normalizeGroupPath again the below duplicates code, but avoids extra
 		 * work
 		 */
-		final String normalPath = N5URL.normalizeGroupPath(path);
 		try {
 			getKeyValueAccess().createDirectories(groupPath(normalPath));
 		} catch (final IOException e) {
@@ -78,7 +89,8 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 			for (final String child : pathParts) {
 
 				final String childPath = getKeyValueAccess().compose(parent, child);
-				getCache().forceAddNewCacheInfo(childPath, N5KeyValueReader.ATTRIBUTES_JSON, null, true, false);
+				getCache().initializeNonemptyCache(childPath, N5KeyValueReader.ATTRIBUTES_JSON);
+				getCache().updateCacheInfo(childPath, N5KeyValueReader.ATTRIBUTES_JSON);
 
 				// only add if the parent exists and has children cached already
 				if (parent != null && !child.isEmpty())

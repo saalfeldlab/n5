@@ -4,11 +4,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import org.janelia.saalfeldlab.n5.N5Exception;
+
 import com.google.gson.JsonElement;
 
 public class N5JsonCache {
 
 	public static final N5CacheInfo emptyCacheInfo = new N5CacheInfo();
+
+	public static final EmptyJson emptyJson = new EmptyJson();
 
 	protected final N5JsonCacheableContainer container;
 
@@ -38,6 +42,15 @@ public class N5JsonCache {
 		}
 	}
 
+	protected static class EmptyJson extends JsonElement {
+
+		@Override
+		public JsonElement deepCopy() {
+			throw new N5Exception("Do not copy EmptyJson, you naughty person");
+		}
+
+	}
+
 	private final HashMap<String, N5JsonCache.N5CacheInfo> containerPathToCache = new HashMap<>();
 
 	public N5JsonCache( final N5JsonCacheableContainer container ) {
@@ -50,7 +63,7 @@ public class N5JsonCache {
 			addNewCacheInfo(normalPathKey, normalCacheKey, null);
 			cacheInfo = getCacheInfo(normalPathKey);
 		}
-		if (cacheInfo == emptyCacheInfo) {
+		if (cacheInfo == emptyCacheInfo || cacheInfo.getCache(normalCacheKey) == emptyJson) {
 			return null;
 		}
 		synchronized (cacheInfo) {
@@ -146,24 +159,6 @@ public class N5JsonCache {
 		return cacheInfo;
 	}
 
-	public N5CacheInfo forceAddNewCacheInfo(final String normalPathKey, final String normalCacheKey, final JsonElement uncachedAttributes, final boolean isGroup, final boolean isDataset) {
-
-		// getting the current cache info is useful if it already has had its children listed
-		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
-		if( cacheInfo == null || cacheInfo == emptyCacheInfo )
-			cacheInfo = newCacheInfo();
-
-		if (normalCacheKey != null) {
-			synchronized (cacheInfo.attributesCache) {
-				cacheInfo.attributesCache.put(normalCacheKey, uncachedAttributes);
-			}
-		}
-		updateCacheIsGroup(cacheInfo, isGroup);
-		updateCacheIsDataset(cacheInfo, isDataset);
-		updateCache(normalPathKey, cacheInfo);
-		return cacheInfo;
-	}
-
 	private N5CacheInfo addNewCacheInfo(final String normalPathKey) {
 
 		return addNewCacheInfo(normalPathKey, null, null);
@@ -178,6 +173,32 @@ public class N5JsonCache {
 		Collections.addAll(cacheInfo.children, children);
 	}
 
+	protected N5CacheInfo getOrMakeCacheInfo(final String normalPathKey) {
+
+		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
+		if (cacheInfo == null) {
+			return addNewCacheInfo(normalPathKey, null, null);
+		}
+
+		if (cacheInfo == emptyCacheInfo)
+			cacheInfo = newCacheInfo();
+
+		return cacheInfo;
+	}
+
+	/**
+	 * Updates the cache attributes for the given normalPathKey
+	 * adding the appropriate node to the cache if necessary.
+	 *
+	 * @param normalPathKey the normalized path key
+	 */
+	public void updateCacheInfo(final String normalPathKey, final String normalCacheKey) {
+
+		final N5CacheInfo cacheInfo = getOrMakeCacheInfo(normalPathKey);
+		final JsonElement attrs = cacheInfo.attributesCache.get(normalCacheKey);
+		updateCacheInfo(normalPathKey, normalCacheKey, attrs);
+	}
+
 	/**
 	 * Updates the cache attributes for the given normalPathKey and normalCacheKey,
 	 * adding the appropriate node to the cache if necessary.
@@ -188,16 +209,7 @@ public class N5JsonCache {
 	 */
 	public void updateCacheInfo(final String normalPathKey, final String normalCacheKey, final JsonElement uncachedAttributes) {
 
-		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
-		if (cacheInfo == null ){
-			addNewCacheInfo(normalPathKey, normalCacheKey, uncachedAttributes );
-			return;
-		}
-
-		// TODO go through this again with Caleb
-		if (cacheInfo == emptyCacheInfo)
-			cacheInfo = newCacheInfo();
-
+		final N5CacheInfo cacheInfo = getOrMakeCacheInfo(normalPathKey);
 		if (normalCacheKey != null) {
 			final JsonElement attributesToCache = uncachedAttributes == null
 					? container.getAttributesFromContainer(normalPathKey, normalCacheKey)
@@ -206,12 +218,23 @@ public class N5JsonCache {
 			updateCacheAttributes(cacheInfo, normalCacheKey, attributesToCache);
 			updateCacheIsGroup(cacheInfo, container.isGroupFromAttributes(normalCacheKey, attributesToCache));
 			updateCacheIsDataset(cacheInfo, container.isDatasetFromAttributes(normalCacheKey, attributesToCache));
-		}
-		else {
+		} else {
 			updateCacheIsGroup(cacheInfo, container.isGroupFromContainer(normalPathKey));
 			updateCacheIsDataset(cacheInfo, container.isDatasetFromContainer(normalPathKey));
 		}
 		updateCache(normalPathKey, cacheInfo);
+	}
+
+	public void initializeNonemptyCache(final String normalPathKey, final String normalCacheKey) {
+
+		final N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
+		if (cacheInfo == null || cacheInfo == emptyCacheInfo ) {
+			final N5CacheInfo info = newCacheInfo();
+			if( normalCacheKey != null )
+				info.attributesCache.put(normalCacheKey, emptyJson);
+
+			updateCache(normalPathKey, info);
+		}
 	}
 
 	public void setAttributes(final String normalPathKey, final String normalCacheKey, final JsonElement attributes ) {
