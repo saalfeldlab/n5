@@ -206,27 +206,23 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testWriteReadByteBlock() {
+	public void testWriteReadByteBlock() throws URISyntaxException {
 
 		for (final Compression compression : getCompressions()) {
 			for (final DataType dataType : new DataType[]{
-					DataType.UINT8,
-					DataType.INT8}) {
+					DataType.UINT8, DataType.INT8}) {
 
-				System.out.println("Testing " + compression.getType() + " " + dataType);
-				try {
+				try (final N5Writer n5 = createN5Writer()) {
 					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 					final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, new long[]{0, 0, 0}, byteBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
 
 					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
-
 					assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
-
 					assertTrue(n5.remove(datasetName));
 
-				} catch (final N5Exception e) {
+				} catch (final IOException e) {
 					e.printStackTrace();
 					fail("Block cannot be written.");
 				}
@@ -242,7 +238,6 @@ public abstract class AbstractN5Test {
 					DataType.UINT16,
 					DataType.INT16}) {
 
-				System.out.println("Testing " + compression.getType() + " " + dataType);
 				try (final N5Writer n5 = createN5Writer()) {
 					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
@@ -271,7 +266,6 @@ public abstract class AbstractN5Test {
 					DataType.UINT32,
 					DataType.INT32}) {
 
-				System.out.println("Testing " + compression.getType() + " " + dataType);
 				try (final N5Writer n5 = createN5Writer()) {
 					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
@@ -300,7 +294,6 @@ public abstract class AbstractN5Test {
 					DataType.UINT64,
 					DataType.INT64}) {
 
-				System.out.println("Testing " + compression.getType() + " " + dataType);
 				try (final N5Writer n5 = createN5Writer()) {
 					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
@@ -325,7 +318,6 @@ public abstract class AbstractN5Test {
 	public void testWriteReadFloatBlock() throws URISyntaxException {
 
 		for (final Compression compression : getCompressions()) {
-			System.out.println("Testing " + compression.getType() + " float32");
 			try (final N5Writer n5 = createN5Writer()) {
 				n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT32, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
@@ -349,7 +341,6 @@ public abstract class AbstractN5Test {
 	public void testWriteReadDoubleBlock() throws URISyntaxException {
 
 		for (final Compression compression : getCompressions()) {
-			System.out.println("Testing " + compression.getType() + " float64");
 			try (final N5Writer n5 = createN5Writer()) {
 				n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT64, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
@@ -379,7 +370,6 @@ public abstract class AbstractN5Test {
 					DataType.UINT8,
 					DataType.INT8}) {
 
-				System.out.println("Testing " + compression.getType() + " " + dataType + " (mode=1)");
 				try (final N5Writer n5 = createN5Writer()) {
 					n5.createDataset(datasetName, dimensions, differentBlockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
@@ -406,7 +396,6 @@ public abstract class AbstractN5Test {
 		for (final Compression compression : getCompressions()) {
 
 			final DataType dataType = DataType.OBJECT;
-			System.out.println("Testing " + compression.getType() + " " + dataType + " (mode=2)");
 			try (final N5Writer n5 = createN5Writer()) {
 				n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
