@@ -139,7 +139,6 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			} catch (final NullPointerException e) {
 				throw new N5Exception.N5IOException("Could not read version from " + basePath);
 			}
-
 		}
 	}
 
