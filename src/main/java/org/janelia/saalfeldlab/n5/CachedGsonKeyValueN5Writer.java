@@ -58,9 +58,9 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		// if you are a group, avoid hitting the backend
 		// if something exists, be safe
 		if (cacheMeta()) {
-			if( getCache().isGroup(normalPath, N5KeyValueReader.ATTRIBUTES_JSON))
+			if (getCache().isGroup(normalPath, N5KeyValueReader.ATTRIBUTES_JSON))
 				return;
-			else if ( getCache().exists(normalPath, N5KeyValueReader.ATTRIBUTES_JSON)){
+			else if (getCache().exists(normalPath, N5KeyValueReader.ATTRIBUTES_JSON)) {
 				throw new N5Exception("Can't make a group on existing path.");
 			}
 		}

@@ -56,11 +56,15 @@ public interface DefaultBlockReader extends BlockReader {
 	/**
 	 * Reads a {@link DataBlock} from an {@link InputStream}.
 	 *
-	 * @param in the input stream
-	 * @param datasetAttributes the dataset attributes
-	 * @param gridPosition the grid position
+	 * @param in
+	 *            the input stream
+	 * @param datasetAttributes
+	 *            the dataset attributes
+	 * @param gridPosition
+	 *            the grid position
 	 * @return the block
-	 * @throws IOException the exception
+	 * @throws IOException
+	 *             the exception
 	 */
 	public static DataBlock<?> readBlock(
 			final InputStream in,

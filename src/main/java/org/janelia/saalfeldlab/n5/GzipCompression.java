@@ -107,11 +107,12 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	}
 
 	@Override
-	public boolean equals(Object other) {
+	public boolean equals(final Object other) {
+
 		if (other == null || other.getClass() != GzipCompression.class)
 			return false;
 		else {
-			GzipCompression gz = ((GzipCompression) other);
+			final GzipCompression gz = ((GzipCompression)other);
 			return useZlib == gz.useZlib && level == gz.level;
 		}
 	}

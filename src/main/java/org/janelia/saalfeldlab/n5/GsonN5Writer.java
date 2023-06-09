@@ -35,7 +35,7 @@ import com.google.gson.JsonElement;
 public interface GsonN5Writer extends GsonN5Reader, N5Writer {
 
 	/**
-	 * Set the attributes of a group.  This result of this method is equivalent
+	 * Set the attributes of a group. This result of this method is equivalent
 	 * with {@link #setAttribute(groupPath, "/", attributes)}.
 	 *
 	 * @param groupPath

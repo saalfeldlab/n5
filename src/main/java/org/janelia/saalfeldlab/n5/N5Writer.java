@@ -45,16 +45,11 @@ public interface N5Writer extends N5Reader {
 	/**
 	 * Sets an attribute.
 	 *
-	 * @param groupPath
-	 *            group path
-	 * @param attributePath
-	 *            the key
-	 * @param attribute
-	 *            the attribute
-	 * @param <T>
-	 *            the attribute type type
-	 * @throws N5Exception
-	 *             the exception
+	 * @param groupPath group path
+	 * @param attributePath the key
+	 * @param attribute the attribute
+	 * @param <T> the attribute type type
+	 * @throws N5Exception the exception
 	 */
 	default <T> void setAttribute(
 			final String groupPath,
@@ -70,12 +65,9 @@ public interface N5Writer extends N5Reader {
 	 * objects will be added, existing attributes whose paths are not included
 	 * will remain unchanged, those whose paths are included will be overridden.
 	 *
-	 * @param groupPath
-	 *            group path
-	 * @param attributes
-	 *            the attribute map of attribute paths and values
-	 * @throws N5Exception
-	 *             the exception
+	 * @param groupPath group path
+	 * @param attributes the attribute map of attribute paths and values
+	 * @throws N5Exception the exception
 	 */
 	void setAttributes(
 			final String groupPath,
@@ -84,13 +76,10 @@ public interface N5Writer extends N5Reader {
 	/**
 	 * Remove the attribute from group {@code pathName} with key {@code key}.
 	 *
-	 * @param groupPath
-	 *            group path
-	 * @param attributePath
-	 *            of attribute to remove
+	 * @param groupPath group path
+	 * @param attributePath of attribute to remove
 	 * @return true if attribute removed, else false
-	 * @throws N5Exception
-	 *             the exception
+	 * @throws N5Exception the exception
 	 */
 	boolean removeAttribute(String groupPath, String attributePath) throws N5Exception;
 
@@ -101,19 +90,13 @@ public interface N5Writer extends N5Reader {
 	 * If an attribute at {@code pathName} and {@code key} exists, but is not of
 	 * type {@code T}, it is not removed.
 	 *
-	 * @param groupPath
-	 *            group path
-	 * @param attributePath
-	 *            of attribute to remove
-	 * @param clazz
-	 *            of the attribute to remove
-	 * @param <T>
-	 *            of the attribute
+	 * @param groupPath group path
+	 * @param attributePath of attribute to remove
+	 * @param clazz of the attribute to remove
+	 * @param <T> of the attribute
 	 * @return the removed attribute, as {@code T}, or {@code null} if no
 	 *         matching attribute
-	 * @throws N5Exception
-	 *             if removing he attribute failed, parsing the attribute
-	 *             failed, or the attribute cannot be interpreted as T
+	 * @throws N5Exception if removing he attribute failed, parsing the attribute failed, or the attribute cannot be interpreted as T
 	 */
 	<T> T removeAttribute(String groupPath, String attributePath, Class<T> clazz) throws N5Exception;
 
@@ -125,13 +108,10 @@ public interface N5Writer extends N5Reader {
 	 * return {@code true}.
 	 *
 	 *
-	 * @param groupPath
-	 *            group path
-	 * @param attributePaths
-	 *            to remove
+	 * @param groupPath group path
+	 * @param attributePaths to remove
 	 * @return true if any of the listed attributes were removed
-	 * @throws N5Exception
-	 *             the exception
+	 * @throws N5Exception the exception
 	 */
 	default boolean removeAttributes(final String groupPath, final List<String> attributePaths) throws N5Exception {
 
@@ -147,12 +127,9 @@ public interface N5Writer extends N5Reader {
 	/**
 	 * Sets mandatory dataset attributes.
 	 *
-	 * @param datasetPath
-	 *            dataset path
-	 * @param datasetAttributes
-	 *            the dataset attributse
-	 * @throws N5Exception
-	 *             the exception
+	 * @param datasetPath dataset path
+	 * @param datasetAttributes the dataset attributse
+	 * @throws N5Exception the exception
 	 */
 	default void setDatasetAttributes(
 			final String datasetPath,
@@ -167,8 +144,7 @@ public interface N5Writer extends N5Reader {
 	 * implementation writes the version only if the current version is not
 	 * equal {@link N5Reader#VERSION}.
 	 *
-	 * @throws N5Exception
-	 *             the exception
+	 * @throws N5Exception the exception
 	 */
 	default void setVersion() throws N5Exception {
 
@@ -179,10 +155,8 @@ public interface N5Writer extends N5Reader {
 	/**
 	 * Creates a group (directory)
 	 *
-	 * @param groupPath
-	 *            the path
-	 * @throws N5Exception
-	 *             the exception
+	 * @param groupPath the path
+	 * @throws N5Exception the exception
 	 */
 	void createGroup(final String groupPath) throws N5Exception;
 
@@ -198,11 +172,9 @@ public interface N5Writer extends N5Reader {
 	 * only fails because it attempts to delete the parent directory before it
 	 * is empty.
 	 *
-	 * @param groupPath
-	 *            group path
+	 * @param groupPath group path
 	 * @return true if removal was successful, false otherwise
-	 * @throws N5Exception
-	 *             the exception
+	 * @throws N5Exception the exception
 	 */
 	boolean remove(final String groupPath) throws N5Exception;
 
@@ -210,8 +182,7 @@ public interface N5Writer extends N5Reader {
 	 * Removes the N5 container.
 	 *
 	 * @return true if removal was successful, false otherwise
-	 * @throws N5Exception
-	 *             the exception
+	 * @throws N5Exception the exception
 	 */
 	default boolean remove() throws N5Exception {
 
@@ -222,12 +193,9 @@ public interface N5Writer extends N5Reader {
 	 * Creates a dataset. This does not create any data but the path and
 	 * mandatory attributes only.
 	 *
-	 * @param datasetPath
-	 *            dataset path
-	 * @param datasetAttributes
-	 *            the dataset attributes
-	 * @throws N5Exception
-	 *             the exception
+	 * @param datasetPath dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @throws N5Exception the exception
 	 */
 	default void createDataset(
 			final String datasetPath,
@@ -243,18 +211,12 @@ public interface N5Writer extends N5Reader {
 	 * mandatory
 	 * attributes only.
 	 *
-	 * @param datasetPath
-	 *            dataset path
-	 * @param dimensions
-	 *            the dataset dimensions
-	 * @param blockSize
-	 *            the block size
-	 * @param dataType
-	 *            the data type
-	 * @param compression
-	 *            the compression
-	 * @throws N5Exception
-	 *             the exception
+	 * @param datasetPath dataset path
+	 * @param dimensions the dataset dimensions
+	 * @param blockSize the block size
+	 * @param dataType the data type
+	 * @param compression the compression
+	 * @throws N5Exception the exception
 	 */
 	default void createDataset(
 			final String datasetPath,
@@ -269,16 +231,11 @@ public interface N5Writer extends N5Reader {
 	/**
 	 * Writes a {@link DataBlock}.
 	 *
-	 * @param datasetPath
-	 *            dataset path
-	 * @param datasetAttributes
-	 *            the dataset attributes
-	 * @param dataBlock
-	 *            the data block
-	 * @param <T>
-	 *            the data block data type
-	 * @throws N5Exception
-	 *             the exception
+	 * @param datasetPath dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param dataBlock the data block
+	 * @param <T> the data block data type
+	 * @throws N5Exception the exception
 	 */
 	<T> void writeBlock(
 			final String datasetPath,
@@ -288,12 +245,9 @@ public interface N5Writer extends N5Reader {
 	/**
 	 * Deletes the block at {@code gridPosition}
 	 *
-	 * @param datasetPath
-	 *            dataset path
-	 * @param gridPosition
-	 *            position of block to be deleted
-	 * @throws N5Exception
-	 *             the exception
+	 * @param datasetPath dataset path
+	 * @param gridPosition position of block to be deleted
+	 * @throws N5Exception the exception
 	 *
 	 * @return {@code true} if the block at {@code gridPosition} is "empty"
 	 *         after
@@ -312,16 +266,11 @@ public interface N5Writer extends N5Reader {
 	 * The
 	 * offset is given in {@link DataBlock} grid coordinates.
 	 *
-	 * @param object
-	 *            the object to serialize
-	 * @param datasetPath
-	 *            the dataset path
-	 * @param datasetAttributes
-	 *            the dataset attributes
-	 * @param gridPosition
-	 *            the grid position
-	 * @throws N5Exception
-	 *             the exception
+	 * @param object the object to serialize
+	 * @param datasetPath the dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param gridPosition the grid position
+	 * @throws N5Exception the exception
 	 */
 	default void writeSerializedBlock(
 			final Serializable object,

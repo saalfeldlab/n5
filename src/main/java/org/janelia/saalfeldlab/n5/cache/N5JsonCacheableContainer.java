@@ -1,5 +1,9 @@
 package org.janelia.saalfeldlab.n5.cache;
 
+import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Reader;
+import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
+import org.janelia.saalfeldlab.n5.N5Reader;
+
 import com.google.gson.JsonElement;
 
 /**
@@ -13,37 +17,43 @@ import com.google.gson.JsonElement;
 public interface N5JsonCacheableContainer {
 
 	/**
-	 * Returns a {@link JsonElement} containing attributes at a given path, 
+	 * Returns a {@link JsonElement} containing attributes at a given path,
 	 * for a given cache key.
 	 *
-	 * @param normalPathName the normalized path name
-	 * @param normalCacheKey the cache key
-	 * @return the attributes as a json element. 
+	 * @param normalPathName
+	 *            the normalized path name
+	 * @param normalCacheKey
+	 *            the cache key
+	 * @return the attributes as a json element.
 	 * @see GsonKeyValueN5Reader#getAttributes
 	 */
 	JsonElement getAttributesFromContainer(final String normalPathName, final String normalCacheKey);
 
 	/**
 	 * Query whether a resource exists in this container.
-	 * 
-	 * @param normalPathName the normalized path name
-	 * @param normalCacheKey the normalized resource name (may be null).
+	 *
+	 * @param normalPathName
+	 *            the normalized path name
+	 * @param normalCacheKey
+	 *            the normalized resource name (may be null).
 	 * @return true if the resouce exists
 	 */
 	boolean existsFromContainer(final String normalPathName, final String normalCacheKey);
 
 	/**
 	 * Query whether a path in this container is a group.
-	 * 
-	 * @param normalPathName the normalized path name
+	 *
+	 * @param normalPathName
+	 *            the normalized path name
 	 * @return true if the path is a group
 	 */
 	boolean isGroupFromContainer(final String normalPathName);
 
 	/**
 	 * Query whether a path in this container is a dataset.
-	 * 
-	 * @param normalPathName the normalized path name
+	 *
+	 * @param normalPathName
+	 *            the normalized path name
 	 * @return true if the path is a dataset
 	 * @see N5Reader#datasetExists
 	 */
@@ -53,8 +63,10 @@ public interface N5JsonCacheableContainer {
 	 * If this method is called, its parent path must exist,
 	 * and normalCacheKey must exist, with contents given by attributes.
 	 *
-	 * @param normalCacheKey the cache key
-	 * @param attributes the attributes
+	 * @param normalCacheKey
+	 *            the cache key
+	 * @param attributes
+	 *            the attributes
 	 * @return true if the path is a group
 	 */
 	boolean isGroupFromAttributes(final String normalCacheKey, final JsonElement attributes);
@@ -63,8 +75,10 @@ public interface N5JsonCacheableContainer {
 	 * If this method is called, its parent path must exist,
 	 * and normalCacheKey must exist, with contents given by attributes.
 	 *
-	 * @param normalCacheKey the cache key
-	 * @param attributes the attributes
+	 * @param normalCacheKey
+	 *            the cache key
+	 * @param attributes
+	 *            the attributes
 	 * @return true if the path is a dataset
 	 */
 	boolean isDatasetFromAttributes(final String normalCacheKey, final JsonElement attributes);
@@ -72,7 +86,8 @@ public interface N5JsonCacheableContainer {
 	/**
 	 * List the children of a path for this container.
 	 *
-	 * @param normalPathName the normalized path name
+	 * @param normalPathName
+	 *            the normalized path name
 	 * @return list of children
 	 * @see N5Reader#list
 	 */

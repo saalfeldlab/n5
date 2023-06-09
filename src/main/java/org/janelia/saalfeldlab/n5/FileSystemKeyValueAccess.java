@@ -64,7 +64,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	/**
 	 * A {@link FileChannel} wrapper that attempts to acquire a lock and waits
 	 * for existing locks to be lifted before returning if the
-	 * {@link FileSystem} supports that.  If the {@link FileSystem} does not
+	 * {@link FileSystem} supports that. If the {@link FileSystem} does not
 	 * support locking, it returns immediately.
 	 */
 	protected class LockedFileChannel implements LockedChannel {
@@ -83,7 +83,8 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 				options = new OpenOption[]{StandardOpenOption.READ};
 				channel = FileChannel.open(path, options);
 			} else {
-				options = new OpenOption[]{StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE};
+				options = new OpenOption[]{StandardOpenOption.READ, StandardOpenOption.WRITE,
+						StandardOpenOption.CREATE};
 				FileChannel tryChannel = null;
 				try {
 					tryChannel = FileChannel.open(path, options);
@@ -232,8 +233,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		if (root == null) {
 			components = new String[fsPath.getNameCount()];
 			o = 0;
-		}
-		else {
+		} else {
 			components = new String[fsPath.getNameCount() + 1];
 			components[0] = root.toString();
 			o = 1;
@@ -248,8 +248,10 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public String parent(final String path) {
 
 		final Path parent = fileSystem.getPath(path).getParent();
-		if (parent == null) return null;
-		else return parent.toString();
+		if (parent == null)
+			return null;
+		else
+			return parent.toString();
 	}
 
 	@Override
@@ -260,7 +262,8 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	/**
-	 * Returns a normalized path. It ensures correctness on both Unix and Windows,
+	 * Returns a normalized path. It ensures correctness on both Unix and
+	 * Windows,
 	 * otherwise {@code pathName} is treated as UNC path on Windows, and
 	 * {@code Paths.get(pathName, ...)} fails with {@code InvalidPathException}.
 	 *
@@ -275,9 +278,10 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 	@Override
 	public URI uri(final String normalPath) throws URISyntaxException {
+
 		// normalize make absolute the scheme specific part only
-		final URI uri = new URI( normalPath );
-		return new URI( "file", normalize(new File( uri.getSchemeSpecificPart()).getAbsolutePath()), uri.getFragment() );
+		final URI uri = new URI(normalPath);
+		return new URI("file", normalize(new File(uri.getSchemeSpecificPart()).getAbsolutePath()), uri.getFragment());
 	}
 
 	@Override
@@ -325,7 +329,8 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		try {
 			Files.delete(path);
 		} catch (final DirectoryNotEmptyException e) {
-			/* Even though path is expected to be an empty directory, sometimes
+			/*
+			 * Even though path is expected to be an empty directory, sometimes
 			 * deletion fails on network filesystems when lock files are not
 			 * cleared immediately after the leaves have been removed.
 			 */
@@ -346,97 +351,109 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	 *
 	 * Workaround for https://bugs.openjdk.java.net/browse/JDK-8130464
 	 *
-     * Creates a directory by creating all nonexistent parent directories first.
-     * Unlike the {@link Files#createDirectories} method, an exception
-     * is not thrown if the directory could not be created because it already
-     * exists.
-     *
-     * <p> The {@code attrs} parameter is optional {@link FileAttribute
-     * file-attributes} to set atomically when creating the nonexistent
-     * directories. Each file attribute is identified by its {@link
-     * FileAttribute#name name}. If more than one attribute of the same name is
-     * included in the array then all but the last occurrence is ignored.
-     *
-     * <p> If this method fails, then it may do so after creating some, but not
-     * all, of the parent directories.
-     *
-     * @param   dir
-     *          the directory to create
-     *
-     * @param   attrs
-     *          an optional list of file attributes to set atomically when
-     *          creating the directory
-     *
-     * @return  the directory
-     *
-     * @throws  UnsupportedOperationException
-     *          if the array contains an attribute that cannot be set atomically
-     *          when creating the directory
-     * @throws  FileAlreadyExistsException
-     *          if {@code dir} exists but is not a directory <i>(optional specific
-     *          exception)</i>
-     * @throws  IOException
-     *          if an I/O error occurs
-     * @throws  SecurityException
-     *          in the case of the default provider, and a security manager is
-     *          installed, the {@link SecurityManager#checkWrite(String) checkWrite}
-     *          method is invoked prior to attempting to create a directory and
-     *          its {@link SecurityManager#checkRead(String) checkRead} is
-     *          invoked for each parent directory that is checked. If {@code
-     *          dir} is not an absolute path then its {@link Path#toAbsolutePath
-     *          toAbsolutePath} may need to be invoked to get its absolute path.
-     *          This may invoke the security manager's {@link
-     *          SecurityManager#checkPropertyAccess(String) checkPropertyAccess}
-     *          method to check access to the system property {@code user.dir}
-     */
+	 * Creates a directory by creating all nonexistent parent directories first.
+	 * Unlike the {@link Files#createDirectories} method, an exception
+	 * is not thrown if the directory could not be created because it already
+	 * exists.
+	 *
+	 * <p>
+	 * The {@code attrs} parameter is optional {@link FileAttribute
+	 * file-attributes} to set atomically when creating the nonexistent
+	 * directories. Each file attribute is identified by its {@link
+	 * FileAttribute#name name}. If more than one attribute of the same name is
+	 * included in the array then all but the last occurrence is ignored.
+	 *
+	 * <p>
+	 * If this method fails, then it may do so after creating some, but not
+	 * all, of the parent directories.
+	 *
+	 * @param dir
+	 *            the directory to create
+	 *
+	 * @param attrs
+	 *            an optional list of file attributes to set atomically when
+	 *            creating the directory
+	 *
+	 * @return the directory
+	 *
+	 * @throws UnsupportedOperationException
+	 *             if the array contains an attribute that cannot be set
+	 *             atomically
+	 *             when creating the directory
+	 * @throws FileAlreadyExistsException
+	 *             if {@code dir} exists but is not a directory <i>(optional
+	 *             specific
+	 *             exception)</i>
+	 * @throws IOException
+	 *             if an I/O error occurs
+	 * @throws SecurityException
+	 *             in the case of the default provider, and a security manager
+	 *             is
+	 *             installed, the {@link SecurityManager#checkWrite(String)
+	 *             checkWrite}
+	 *             method is invoked prior to attempting to create a directory
+	 *             and
+	 *             its {@link SecurityManager#checkRead(String) checkRead} is
+	 *             invoked for each parent directory that is checked. If {@code
+	 *          dir} is not an absolute path then its {@link Path#toAbsolutePath
+	 *             toAbsolutePath} may need to be invoked to get its absolute
+	 *             path.
+	 *             This may invoke the security manager's {@link
+	 *             SecurityManager#checkPropertyAccess(String)
+	 *             checkPropertyAccess}
+	 *             method to check access to the system property
+	 *             {@code user.dir}
+	 */
 	protected static Path createDirectories(Path dir, final FileAttribute<?>... attrs) throws IOException {
 
-        // attempt to create the directory
-        try {
-            createAndCheckIsDirectory(dir, attrs);
-            return dir;
-        } catch (final FileAlreadyExistsException x) {
-            // file exists and is not a directory
-            throw x;
-        } catch (final IOException x) {
-            // parent may not exist or other reason
-        }
-        SecurityException se = null;
-        try {
-            dir = dir.toAbsolutePath();
-        } catch (final SecurityException x) {
-            // don't have permission to get absolute path
-            se = x;
-        }
-        // find a decendent that exists
-        Path parent = dir.getParent();
-        while (parent != null) {
-            try {
-            	parent.getFileSystem().provider().checkAccess(parent);
-                break;
-            } catch (final NoSuchFileException x) {
-                // does not exist
-            }
-            parent = parent.getParent();
-        }
-        if (parent == null) {
-            // unable to find existing parent
-            if (se == null) {
-                throw new FileSystemException(dir.toString(), null,
-                    "Unable to determine if root directory exists");
-            } else {
-                throw se;
-            }
-        }
+		// attempt to create the directory
+		try {
+			createAndCheckIsDirectory(dir, attrs);
+			return dir;
+		} catch (final FileAlreadyExistsException x) {
+			// file exists and is not a directory
+			throw x;
+		} catch (final IOException x) {
+			// parent may not exist or other reason
+		}
+		SecurityException se = null;
+		try {
+			dir = dir.toAbsolutePath();
+		} catch (final SecurityException x) {
+			// don't have permission to get absolute path
+			se = x;
+		}
+		// find a decendent that exists
+		Path parent = dir.getParent();
+		while (parent != null) {
+			try {
+				parent.getFileSystem().provider().checkAccess(parent);
+				break;
+			} catch (final NoSuchFileException x) {
+				// does not exist
+			}
+			parent = parent.getParent();
+		}
+		if (parent == null) {
+			// unable to find existing parent
+			if (se == null) {
+				throw new FileSystemException(
+						dir.toString(),
+						null,
+						"Unable to determine if root directory exists");
+			} else {
+				throw se;
+			}
+		}
 
-        // create directories
-        Path child = parent;
-        for (final Path name: parent.relativize(dir)) {
-            child = child.resolve(name);
-            createAndCheckIsDirectory(child, attrs);
-        }
-        return dir;
-    }
+		// create directories
+		Path child = parent;
+		for (final Path name : parent.relativize(dir)) {
+			child = child.resolve(name);
+			createAndCheckIsDirectory(child, attrs);
+		}
+		return dir;
+	}
 
 	/**
 	 * This is a copy of a previous

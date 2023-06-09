@@ -47,10 +47,10 @@ public class IntArrayDataBlock extends AbstractDataBlock<int[]> {
 
 		buffer.asIntBuffer().get(data);
 	}
-	
+
 	@Override
 	public int getNumElements() {
-		
+
 		return data.length;
 	}
 }

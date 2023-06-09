@@ -51,7 +51,6 @@ public class XzCompression implements DefaultBlockReader, DefaultBlockWriter, Co
 		this(6);
 	}
 
-
 	@Override
 	public InputStream getInputStream(final InputStream in) throws IOException {
 
@@ -77,11 +76,12 @@ public class XzCompression implements DefaultBlockReader, DefaultBlockWriter, Co
 	}
 
 	@Override
-	public boolean equals(Object other) {
+	public boolean equals(final Object other) {
+
 		if (other == null || other.getClass() != XzCompression.class)
 			return false;
 		else
-			return preset == ((XzCompression) other).preset;
+			return preset == ((XzCompression)other).preset;
 	}
 
 }

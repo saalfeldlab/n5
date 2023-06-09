@@ -27,10 +27,6 @@ package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.GsonBuilder;
 
-import java.io.IOException;
-
-import org.janelia.saalfeldlab.n5.N5Reader.Version;
-
 /**
  * Filesystem {@link N5Writer} implementation with version compatibility check.
  *
@@ -41,6 +37,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyV
 	/**
 	 * Opens an {@link N5KeyValueWriter} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
+	 *
 	 * <p>
 	 * If the base path does not exist, it will be created.
 	 * <p>
@@ -49,22 +46,25 @@ public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyV
 	 * will be set to the current N5 version of this implementation.
 	 *
 	 * @param keyValueAccess
-	 * @param basePath        n5 base path
+	 * @param basePath
+	 *            n5 base path
 	 * @param gsonBuilder
-	 * @param cacheAttributes Setting this to true avoids frequent reading and parsing of
-	 *                        JSON encoded attributes, this is most interesting for high
-	 *                        latency file systems. Changes of attributes by an independent
-	 *                        writer will not be tracked.
-	 * @throws IOException if the base path cannot be written to or cannot be created,
-	 *                     if the N5 version of the container is not compatible with
-	 *                     this implementation.
+	 * @param cacheAttributes
+	 *            Setting this to true avoids frequent reading and parsing of
+	 *            JSON encoded attributes, this is most interesting for high
+	 *            latency file systems. Changes of attributes by an independent
+	 *            writer will not be tracked.
+	 * @throws N5Exception
+	 *             if the base path cannot be written to or cannot be created,
+	 *             if the N5 version of the container is not compatible with
+	 *             this implementation.
 	 */
 	public N5KeyValueWriter(
 			final KeyValueAccess keyValueAccess,
 			final String basePath,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheAttributes)
-			throws IOException {
+			throws N5Exception {
 
 		super(false, keyValueAccess, basePath, gsonBuilder, cacheAttributes);
 
@@ -73,8 +73,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyV
 			version = getVersion();
 			if (!VERSION.isCompatible(version))
 				throw new N5Exception.N5IOException("Incompatible version " + version + " (this is " + VERSION + ").");
-		} catch (NullPointerException e) {
-		}
+		} catch (final NullPointerException e) {}
 
 		if (version == null || version.equals(new Version(0, 0, 0, ""))) {
 			createGroup("/");

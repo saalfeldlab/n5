@@ -96,7 +96,8 @@ public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSe
 
 					newInstance.compressionConstructors.put(type, constructor);
 					newInstance.compressionParameters.put(type, parameters);
-				} catch (final ClassNotFoundException | NoSuchMethodException | ClassCastException | UnsatisfiedLinkError e) {
+				} catch (final ClassNotFoundException | NoSuchMethodException | ClassCastException
+						| UnsatisfiedLinkError e) {
 					System.err.println("Compression '" + item.className() + "' could not be registered because:");
 					e.printStackTrace(System.err);
 				}
@@ -112,7 +113,10 @@ public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSe
 	}
 
 	@Override
-	public JsonElement serialize(final Compression compression, final Type typeOfSrc, final JsonSerializationContext context) {
+	public JsonElement serialize(
+			final Compression compression,
+			final Type typeOfSrc,
+			final JsonSerializationContext context) {
 
 		final String type = compression.getType();
 		final Class<? extends Compression> clazz = compression.getClass();
@@ -140,8 +144,10 @@ public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSe
 	}
 
 	@Override
-	public Compression deserialize(final JsonElement json, final Type typeOfT, final JsonDeserializationContext context)
-			throws JsonParseException {
+	public Compression deserialize(
+			final JsonElement json,
+			final Type typeOfT,
+			final JsonDeserializationContext context) throws JsonParseException {
 
 		final JsonObject jsonObject = json.getAsJsonObject();
 		final JsonElement jsonType = jsonObject.get("type");
@@ -161,7 +167,8 @@ public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSe
 					ReflectionUtils.setFieldValue(compression, name, parameter);
 				}
 			}
-		} catch (InstantiationException | IllegalAccessException  | IllegalArgumentException | InvocationTargetException | SecurityException | NoSuchFieldException e) {
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+				| SecurityException | NoSuchFieldException e) {
 			e.printStackTrace(System.err);
 			return null;
 		}

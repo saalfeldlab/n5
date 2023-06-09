@@ -25,7 +25,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
 import java.nio.file.FileSystems;
 
 import com.google.gson.GsonBuilder;
@@ -47,21 +46,25 @@ public class N5FSWriter extends N5KeyValueWriter {
 	 * compatible with this implementation, the N5 version of this container
 	 * will be set to the current N5 version of this implementation.
 	 *
-	 * @param basePath n5 base path
-	 * @param gsonBuilder the gson builder
-	 * @param cacheAttributes cache attributes and meta data
-	 *    Setting this to true avoids frequent reading and parsing of JSON
-	 *    encoded attributes and other meta data that requires accessing the
-	 *    store. This is most interesting for high latency backends. Changes
-	 *    of cached attributes and meta data by an independent writer on the
-	 *    same container will not be tracked.
+	 * @param basePath
+	 *            n5 base path
+	 * @param gsonBuilder
+	 *            the gson builder
+	 * @param cacheAttributes
+	 *            cache attributes and meta data
+	 *            Setting this to true avoidsfrequent reading and parsing of
+	 *            JSON encoded attributes andother meta data that requires
+	 *            accessing the store. This ismost interesting for high latency
+	 *            backends. Changes of cachedattributes and meta data by an
+	 *            independent writer on the samecontainer will not be tracked.
 	 *
-	 * @throws IOException
-	 *    if the base path cannot be written to or cannot be created,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
+	 * @throws N5Exception
+	 *             if the base path cannot be written to or cannot be created,
+	 *             if the N5 version of the container is not compatible with
+	 *             this implementation.
 	 */
-	public N5FSWriter(final String basePath, final GsonBuilder gsonBuilder, final boolean cacheAttributes) throws IOException {
+	public N5FSWriter(final String basePath, final GsonBuilder gsonBuilder, final boolean cacheAttributes)
+			throws N5Exception {
 
 		super(
 				new FileSystemKeyValueAccess(FileSystems.getDefault()),
@@ -79,20 +82,22 @@ public class N5FSWriter extends N5KeyValueWriter {
 	 * compatible with this implementation, the N5 version of this container
 	 * will be set to the current N5 version of this implementation.
 	 *
-	 * @param basePath n5 base path
-	 * @param cacheAttributes cache attributes and meta data
-	 *    Setting this to true avoids frequent reading and parsing of JSON
-	 *    encoded attributes and other meta data that requires accessing the
-	 *    store. This is most interesting for high latency backends. Changes
-	 *    of cached attributes and meta data by an independent writer on the
-	 *    same container will not be tracked.
+	 * @param basePathn5
+	 *            base path
+	 * @param cacheAttributescache
+	 *            attributes and meta data
+	 *            Setting this to true avoidsfrequent reading and parsing of
+	 *            JSON encoded attributes andother meta data that requires
+	 *            accessing the store. This ismost interesting for high latency
+	 *            backends. Changes of cachedattributes and meta data by an
+	 *            independent writer on the samecontainer will not be tracked.
 	 *
-	 * @throws IOException
-	 *    if the base path cannot be written to or cannot be created,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
+	 * @throws N5Exception
+	 *             if the base path cannot be written to or cannot be created,
+	 *             if the N5 version of the container is not compatible with
+	 *             this implementation.
 	 */
-	public N5FSWriter(final String basePath, final boolean cacheAttributes) throws IOException {
+	public N5FSWriter(final String basePath, final boolean cacheAttributes) throws N5Exception {
 
 		this(basePath, new GsonBuilder(), cacheAttributes);
 	}
@@ -109,15 +114,17 @@ public class N5FSWriter extends N5KeyValueWriter {
 	 * will be set to the current N5 version of this implementation.
 	 * </p>
 	 *
-	 * @param basePath n5 base path
-	 * @param gsonBuilder the gson builder
+	 * @param basePathn5
+	 *            base path
+	 * @param gsonBuilderthe
+	 *            gson builder
 	 *
-	 * @throws IOException
-	 *    if the base path cannot be written to or cannot be created,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
+	 * @throws N5Exception
+	 *             if the base path cannot be written to or cannot be created,
+	 *             if the N5 version of the container is not compatible with
+	 *             this implementation.
 	 */
-	public N5FSWriter(final String basePath, final GsonBuilder gsonBuilder) throws IOException {
+	public N5FSWriter(final String basePath, final GsonBuilder gsonBuilder) throws N5Exception {
 
 		this(basePath, gsonBuilder, false);
 	}
@@ -133,14 +140,15 @@ public class N5FSWriter extends N5KeyValueWriter {
 	 * will be set to the current N5 version of this implementation.
 	 * </p>
 	 *
-	 * @param basePath n5 base path
+	 * @param basePath
+	 *            n5 base path
 	 *
-	 * @throws IOException
-	 *    if the base path cannot be written to or cannot be created,
-	 *    if the N5 version of the container is not compatible with this
-	 *    implementation.
+	 * @throws N5Exception
+	 *             if the base path cannot be written to or cannot be created,
+	 *             if the N5 version of the container is not compatible with
+	 *             this implementation.
 	 */
-	public N5FSWriter(final String basePath) throws IOException {
+	public N5FSWriter(final String basePath) throws N5Exception {
 
 		this(basePath, new GsonBuilder());
 	}

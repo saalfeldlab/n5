@@ -39,11 +39,16 @@ public interface BlockReader {
 	/**
 	 * Reads a {@link DataBlock} from an {@link InputStream}.
 	 *
-	 * @param dataBlock the data block
-	 * @param in        the input stream
-	 * @param <T>       the block data type
-	 * @param <B>       the block type
-	 * @throws IOException the exception
+	 * @param dataBlock
+	 *            the data block
+	 * @param in
+	 *            the input stream
+	 * @param <T>
+	 *            the block data type
+	 * @param <B>
+	 *            the block type
+	 * @throws IOException
+	 *             the exception
 	 */
 	public <T, B extends DataBlock<T>> void read(final B dataBlock, final InputStream in) throws IOException;
 }

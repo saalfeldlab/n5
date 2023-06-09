@@ -47,10 +47,10 @@ public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
 
 		buffer.asShortBuffer().get(data);
 	}
-	
+
 	@Override
 	public int getNumElements() {
-		
+
 		return data.length;
 	}
 }

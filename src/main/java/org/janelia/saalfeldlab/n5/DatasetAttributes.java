@@ -111,8 +111,7 @@ public class DatasetAttributes implements Serializable {
 			final DataType dataType,
 			int[] blockSize,
 			Compression compression,
-			final String compressionVersion0Name
-	) {
+			final String compressionVersion0Name) {
 
 		if (blockSize == null)
 			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();

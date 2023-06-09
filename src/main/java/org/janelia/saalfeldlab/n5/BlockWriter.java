@@ -39,10 +39,14 @@ public interface BlockWriter {
 	/**
 	 * Writes a {@link DataBlock} into an {@link OutputStream}.
 	 *
-	 * @param dataBlock the data block
-	 * @param out       the output stream
-	 * @param <T>       the block data type
-	 * @throws IOException the exception
+	 * @param dataBlock
+	 *            the data block
+	 * @param out
+	 *            the output stream
+	 * @param <T>
+	 *            the block data type
+	 * @throws IOException
+	 *             the exception
 	 */
 	public <T> void write(final DataBlock<T> dataBlock, final OutputStream out) throws IOException;
 }

@@ -98,11 +98,15 @@ public class N5URL {
 	}
 
 	/**
-	 * Parses the {@link String normalizedAttributePath} to a list of {@link LinkedAttributePathToken}.
-	 * This is useful for traversing or constructing a json representation of the provided {@link String normalizedAttributePath}.
-	 * Note that {@link String normalizedAttributePath} should be normalized prior to generating this list
+	 * Parses the {@link String normalizedAttributePath} to a list of
+	 * {@link LinkedAttributePathToken}.
+	 * This is useful for traversing or constructing a json representation of
+	 * the provided {@link String normalizedAttributePath}.
+	 * Note that {@link String normalizedAttributePath} should be normalized
+	 * prior to generating this list
 	 *
-	 * @param normalizedAttributePath to parse into {@link LinkedAttributePathToken}s
+	 * @param normalizedAttributePath
+	 *            to parse into {@link LinkedAttributePathToken}s
 	 * @return the head of the {@link LinkedAttributePathToken}s
 	 */
 	public static LinkedAttributePathToken<?> getAttributePathTokens(final String normalizedAttributePath) {
@@ -161,20 +165,22 @@ public class N5URL {
 		return attribute == null ? "" : "#" + attribute;
 	}
 
-	@Override public String toString() {
+	@Override
+	public String toString() {
 
 		return getContainerPart() + getGroupPart() + getAttributePart();
 	}
 
 	private String getSchemeSpecificPartWithoutQuery() {
 
-		/* Why not substring "?"?*/
+		/* Why not substring "?"? */
 		return uri.getSchemeSpecificPart().replace("?" + uri.getQuery(), "");
 	}
 
 	/**
 	 * N5URL is always considered absolute if a scheme is provided.
-	 * If no scheme is provided, the N5URL is absolute if it starts with either "/" or "[A-Z]:"
+	 * If no scheme is provided, the N5URL is absolute if it starts with either
+	 * "/" or "[A-Z]:"
 	 *
 	 * @return if the path for this N5URL is absolute
 	 */
@@ -191,12 +197,16 @@ public class N5URL {
 	}
 
 	/**
-	 * Generate a new N5URL which is the result of resolving {@link N5URL relativeN5Url} to this {@link N5URL}.
-	 * If relativeN5Url is not relative to this N5URL, then the resulting N5URL is equivalent to relativeN5Url.
+	 * Generate a new N5URL which is the result of resolving {@link N5URL
+	 * relativeN5Url} to this {@link N5URL}.
+	 * If relativeN5Url is not relative to this N5URL, then the resulting N5URL
+	 * is equivalent to relativeN5Url.
 	 *
-	 * @param relativeN5Url N5URL to resolve against ourselves
+	 * @param relativeN5Url
+	 *            N5URL to resolve against ourselves
 	 * @return the result of the resolution.
-	 * @throws URISyntaxException if the uri is malformed
+	 * @throws URISyntaxException
+	 *             if the uri is malformed
 	 */
 	public N5URL resolve(final N5URL relativeN5Url) throws URISyntaxException {
 
@@ -268,12 +278,16 @@ public class N5URL {
 	}
 
 	/**
-	 * Generate a new N5URL which is the result of resolving {@link URI relativeUri} to this {@link N5URL}.
-	 * If relativeUri is not relative to this N5URL, then the resulting N5URL is equivalent to relativeUri.
+	 * Generate a new N5URL which is the result of resolving {@link URI
+	 * relativeUri} to this {@link N5URL}.
+	 * If relativeUri is not relative to this N5URL, then the resulting N5URL is
+	 * equivalent to relativeUri.
 	 *
-	 * @param relativeUri URI to resolve against ourselves
+	 * @param relativeUri
+	 *            URI to resolve against ourselves
 	 * @return the result of the resolution.
-	 * @throws URISyntaxException if the uri is malformed
+	 * @throws URISyntaxException
+	 *             if the uri is malformed
 	 */
 	public N5URL resolve(final URI relativeUri) throws URISyntaxException {
 
@@ -281,12 +295,16 @@ public class N5URL {
 	}
 
 	/**
-	 * Generate a new N5URL which is the result of resolving {@link String relativeString} to this {@link N5URL}
-	 * If relativeString is not relative to this N5URL, then the resulting N5URL is equivalent to relativeString.
+	 * Generate a new N5URL which is the result of resolving {@link String
+	 * relativeString} to this {@link N5URL}
+	 * If relativeString is not relative to this N5URL, then the resulting N5URL
+	 * is equivalent to relativeString.
 	 *
-	 * @param relativeString String to resolve against ourselves
+	 * @param relativeString
+	 *            String to resolve against ourselves
 	 * @return the result of the resolution.
-	 * @throws URISyntaxException if the uri is malformed
+	 * @throws URISyntaxException
+	 *             if the uri is malformed
 	 */
 	public N5URL resolve(final String relativeString) throws URISyntaxException {
 
@@ -294,9 +312,11 @@ public class N5URL {
 	}
 
 	/**
-	 * Normalize a path, resulting in removal of redundant "/", "./", and resolution of relative "../".
+	 * Normalize a path, resulting in removal of redundant "/", "./", and
+	 * resolution of relative "../".
 	 *
-	 * @param path to normalize
+	 * @param path
+	 *            to normalize
 	 * @return the normalized path
 	 */
 	public static String normalizePath(String path) {
@@ -308,7 +328,7 @@ public class N5URL {
 		final StringBuilder curToken = new StringBuilder();
 		boolean escape = false;
 		for (final char character : pathChars) {
-			/* Skip if we last saw escape*/
+			/* Skip if we last saw escape */
 			if (escape) {
 				escape = false;
 				curToken.append(character);
@@ -323,10 +343,16 @@ public class N5URL {
 					curToken.append(character);
 				}
 
-				/* The current token is complete, add it to the list, if it isn't empty */
+				/*
+				 * The current token is complete, add it to the list, if it
+				 * isn't empty
+				 */
 				final String newToken = curToken.toString();
 				if (!newToken.isEmpty()) {
-					/* If our token is '..' then remove the last token instead of adding a new one */
+					/*
+					 * If our token is '..' then remove the last token instead
+					 * of adding a new one
+					 */
 					if (newToken.equals("..")) {
 						tokens.remove(tokens.size() - 1);
 					} else {
@@ -354,26 +380,34 @@ public class N5URL {
 			tokens.remove(0);
 			root = "/";
 		}
-		return root + tokens.stream()
+		return root + tokens
+				.stream()
 				.filter(it -> !it.equals("."))
 				.filter(it -> !it.isEmpty())
-				.reduce((l, r) -> l + "/" + r).orElse("");
+				.reduce((l, r) -> l + "/" + r)
+				.orElse("");
 	}
 
 	/**
-	 * Normalize a group path relative to a container's root, resulting in removal of redundant "/", "./", resolution of relative "../",
+	 * Normalize a group path relative to a container's root, resulting in
+	 * removal of redundant "/", "./", resolution of relative "../",
 	 * and removal of leading slashes.
 	 *
-	 * @param path to normalize
+	 * @param path
+	 *            to normalize
 	 * @return the normalized path
 	 */
-	public static String normalizeGroupPath( final String path ) {
+	public static String normalizeGroupPath(final String path) {
 
-		/* Alternatively, could do something like the below in every KeyValueReader implementation
+		/*
+		 * Alternatively, could do something like the below in every
+		 * KeyValueReader implementation
 		 *
-		 * return keyValueAccess.relativize( N5URL.normalizeGroupPath(path), basePath);
+		 * return keyValueAccess.relativize( N5URL.normalizeGroupPath(path),
+		 * basePath);
 		 *
-		 * has to be in the implementations, since KeyValueAccess doesn't have a basePath.
+		 * has to be in the implementations, since KeyValueAccess doesn't have a
+		 * basePath.
 		 */
 		return normalizePath(path.startsWith("/") || path.startsWith("\\") ? path.substring(1) : path);
 	}
@@ -383,66 +417,81 @@ public class N5URL {
 	 * <p>
 	 * Attribute paths have a few of special characters:
 	 * <ul>
-	 * 	<li>"." which represents the current element </li>
-	 * 	<li>".." which represent the previous elemnt </li>
-	 * 	<li>"/" which is used to separate elements in the json tree </li>
-	 * 	<li>[N] where N is an integer, refer to an index in the previous element in the tree; the previous element must be an array.
-	 * 	<p>
-	 * 		Note: [N] also separates the previous and following elements, regardless of whether it is preceded by "/" or not.
-	 * 	</li>
-	 * 	<li>"\" which is an escape character, which indicates the subquent '/' or '[N]' should not be interpreted as a path delimeter,
-	 * 	but as part of the current path name. </li>
+	 * <li>"." which represents the current element</li>
+	 * <li>".." which represent the previous elemnt</li>
+	 * <li>"/" which is used to separate elements in the json tree</li>
+	 * <li>[N] where N is an integer, refer to an index in the previous element
+	 * in the tree; the previous element must be an array.
+	 * <p>
+	 * Note: [N] also separates the previous and following elements, regardless
+	 * of whether it is preceded by "/" or not.
+	 * </li>
+	 * <li>"\" which is an escape character, which indicates the subquent '/' or
+	 * '[N]' should not be interpreted as a path delimeter,
+	 * but as part of the current path name.</li>
 	 *
 	 * </ul>
-	 * 	<p>
+	 * <p>
 	 * When normalizing:
 	 * <ul>
-	 * 	<li>"/" are added before and after any indexing brackets [N] </li>
-	 * 	<li>any redundant "/" are removed </li>
-	 * 	<li>any relative ".." and "." are resolved </li>
+	 * <li>"/" are added before and after any indexing brackets [N]</li>
+	 * <li>any redundant "/" are removed</li>
+	 * <li>any relative ".." and "." are resolved</li>
 	 * </ul>
 	 * <p>
 	 * Examples of valid attribute paths, and their normalizations
 	 * <ul>
-	 * 	<li>/a/b/c becomes /a/b/c</li>
-	 * 	<li>/a/b/c/ becomes /a/b/c</li>
-	 * 	<li>///a///b///c becomes /a/b/c</li>
-	 * 	<li>/a/././b/c becomes /a/b/c</li>
-	 * 	<li>/a/b[1]c becomes /a/b/[1]/c</li>
-	 * 	<li>/a/b/[1]c becomes /a/b/[1]/c</li>
-	 * 	<li>/a/b[1]/c becomes /a/b/[1]/c</li>
-	 * 	<li>/a/b[1]/c/.. becomes /a/b/[1]</li>
+	 * <li>/a/b/c becomes /a/b/c</li>
+	 * <li>/a/b/c/ becomes /a/b/c</li>
+	 * <li>///a///b///c becomes /a/b/c</li>
+	 * <li>/a/././b/c becomes /a/b/c</li>
+	 * <li>/a/b[1]c becomes /a/b/[1]/c</li>
+	 * <li>/a/b/[1]c becomes /a/b/[1]/c</li>
+	 * <li>/a/b[1]/c becomes /a/b/[1]/c</li>
+	 * <li>/a/b[1]/c/.. becomes /a/b/[1]</li>
 	 * </ul>
 	 *
-	 * @param attributePath to normalize
+	 * @param attributePath
+	 *            to normalize
 	 * @return the normalized attribute path
 	 */
 	public static String normalizeAttributePath(final String attributePath) {
 
-		/* Short circuit if there are no non-escaped `/` or array indices (e.g. [N] where N is a non-negative integer) */
+		/*
+		 * Short circuit if there are no non-escaped `/` or array indices (e.g.
+		 * [N] where N is a non-negative integer)
+		 */
 		if (!attributePath.matches(".*((?<!\\\\)(/|\\[[0-9]+])).*")) {
 			return attributePath;
 		}
 
-		/* Add separator after arrays at the beginning `[10]b` -> `[10]/b`*/
+		/* Add separator after arrays at the beginning `[10]b` -> `[10]/b` */
 		final String attrPathPlusFirstIndexSeparator = attributePath.replaceAll("^(?<array>\\[[0-9]+])", "${array}/");
-		/* Add separator before and after arrays not at the beginning `a[10]b` -> `a/[10]/b`*/
-		final String attrPathPlusIndexSeparators = attrPathPlusFirstIndexSeparator.replaceAll("((?<!(^|\\\\))(?<array>\\[[0-9]+]))", "/${array}/");
+		/*
+		 * Add separator before and after arrays not at the beginning `a[10]b`
+		 * -> `a/[10]/b`
+		 */
+		final String attrPathPlusIndexSeparators = attrPathPlusFirstIndexSeparator
+				.replaceAll("((?<!(^|\\\\))(?<array>\\[[0-9]+]))", "/${array}/");
 
 		/*
-		 *	The following has 4 possible matches, in each case it removes the match:
-		 * 		The first 3 remove redundant separators of the form:
-		 * 		1.`a///b` 	->	 `a/b`			:	(?<=/)/+
-		 * 		2.`a/./b` 	->	 `a/b`			:	(?<=(/|^))(\./)+
-		 * 		3.`a/b/` 	->	 `a/b`			:	((/|(?<=/))\.)$
-		 * 		The last resolves relative paths:
-		 * 		4. `a/../b` 	->	 `a/b` 		:	(?<!(^|\\))/$|(?<=(/|^))[^/]+(?<!(/|(/|^)\.\.))/\.\./?
+		 * The following has 4 possible matches, in each case it removes the
+		 * match:
+		 * The first 3 remove redundant separators of the form:
+		 * 1.`a///b` -> `a/b` : (?<=/)/+
+		 * 2.`a/./b` -> `a/b` : (?<=(/|^))(\./)+
+		 * 3.`a/b/` -> `a/b` : ((/|(?<=/))\.)$
+		 * The last resolves relative paths:
+		 * 4. `a/../b` -> `a/b` :
+		 * (?<!(^|\\))/$|(?<=(/|^))[^/]+(?<!(/|(/|^)\.\.))/\.\./?
 		 *
-		 * 	This is run iteratively, since earlier removals may cause later removals to be valid,
-		 * 		as well as the need to match once per relative `../` pattern.
+		 * This is run iteratively, since earlier removals may cause later
+		 * removals to be valid,
+		 * as well as the need to match once per relative `../` pattern.
 		 */
-		final Pattern relativePathPattern = Pattern.compile(
-				"((?<=/)/+|(?<=(/|^))(\\./)+|((/|(?<=/))\\.)$|(?<!(^|\\\\))/$|(?<=(/|^))[^/]+(?<!(/|(/|^)\\.\\.))/\\.\\./?)");
+		final Pattern relativePathPattern = Pattern
+				.compile(
+						"((?<=/)/+|(?<=(/|^))(\\./)+|((/|(?<=/))\\.)$|(?<!(^|\\\\))/$|(?<=(/|^))[^/]+(?<!(/|(/|^)\\.\\.))/\\.\\./?)");
 		int prevStringLenth = 0;
 		String resolvedAttributePath = attrPathPlusIndexSeparators;
 		while (prevStringLenth != resolvedAttributePath.length()) {
@@ -453,19 +502,25 @@ public class N5URL {
 	}
 
 	/**
-	 * Encode the inpurt {@link String uri} so that illegal characters are properly escaped prior to generating the resulting {@link URI}.
+	 * Encode the inpurt {@link String uri} so that illegal characters are
+	 * properly escaped prior to generating the resulting {@link URI}.
 	 *
-	 * @param uri to encode
+	 * @param uri
+	 *            to encode
 	 * @return the {@link URI} created from encoding the {@link String uri}
-	 * @throws URISyntaxException if {@link String uri} is not valid
+	 * @throws URISyntaxException
+	 *             if {@link String uri} is not valid
 	 */
 	public static URI encodeAsUri(final String uri) throws URISyntaxException {
 
 		if (uri.trim().length() == 0) {
 			return new URI(uri);
 		}
-		/* find last # symbol to split fragment on. If we don't remove it first, then it will encode it, and not parse it separately
-		 * after we remove the temporary _N5 scheme */
+		/*
+		 * find last # symbol to split fragment on. If we don't remove it first,
+		 * then it will encode it, and not parse it separately
+		 * after we remove the temporary _N5 scheme
+		 */
 		final int fragmentIdx = uri.lastIndexOf('#');
 		final String uriWithoutFragment;
 		final String fragment;
@@ -500,13 +555,20 @@ public class N5URL {
 	/**
 	 * Generate an {@link N5URL} from a container, group, and attribute
 	 *
-	 * @param container of the N5Url
-	 * @param group     of the N5Url
-	 * @param attribute of the N5Url
+	 * @param container
+	 *            of the N5Url
+	 * @param group
+	 *            of the N5Url
+	 * @param attribute
+	 *            of the N5Url
 	 * @return the {@link N5URL}
-	 * @throws URISyntaxException if the uri is malformed
+	 * @throws URISyntaxException
+	 *             if the uri is malformed
 	 */
-	public static N5URL from(final String container, final String group, final String attribute) throws URISyntaxException {
+	public static N5URL from(
+			final String container,
+			final String group,
+			final String attribute) throws URISyntaxException {
 
 		final String containerPart = container != null ? container : "";
 		final String groupPart = group != null ? "?" + group : "";
@@ -543,12 +605,16 @@ public class N5URL {
 	}
 
 	/**
-	 * Modified from {@link URI#decode(String)} to ignore the listed exception, where it doesn't decode escape values inside square braces.
+	 * Modified from {@link URI#decode(String)} to ignore the listed exception,
+	 * where it doesn't decode escape values inside square braces.
 	 * <p>
-	 * As an example of the original implementation, a backslash inside a square brace would be encoded to "[%5C]", and
-	 * when calling {@code decode("[%5C]")} it would not decode to "[\]" since the encode escape sequence is inside square braces.
+	 * As an example of the original implementation, a backslash inside a square
+	 * brace would be encoded to "[%5C]", and
+	 * when calling {@code decode("[%5C]")} it would not decode to "[\]" since
+	 * the encode escape sequence is inside square braces.
 	 * <p>
-	 * We keep all the decoding logic in this modified version, EXCEPT, that we don't check for and ignore encoded sequences inside square braces.
+	 * We keep all the decoding logic in this modified version, EXCEPT, that we
+	 * don't check for and ignore encoded sequences inside square braces.
 	 * <p>
 	 * Thus, {@code decode("[%5C]")} -> "[\]".
 	 *
@@ -568,15 +634,16 @@ public class N5URL {
 		final ByteBuffer bb = ByteBuffer.allocate(n);
 		final CharBuffer cb = CharBuffer.allocate(n);
 
-		final CharsetDecoder dec = UTF8.newDecoder()
+		final CharsetDecoder dec = UTF8
+				.newDecoder()
 				.onMalformedInput(CodingErrorAction.REPLACE)
 				.onUnmappableCharacter(CodingErrorAction.REPLACE);
 
 		// This is not horribly efficient, but it will do for now
 		char c = rawFragment.charAt(0);
 
-		for (int i = 0; i < n; ) {
-			assert c == rawFragment.charAt(i);    // Loop invariant
+		for (int i = 0; i < n;) {
+			assert c == rawFragment.charAt(i); // Loop invariant
 			if (c != '%') {
 				sb.append(c);
 				if (++i >= n)
@@ -585,7 +652,7 @@ public class N5URL {
 				continue;
 			}
 			bb.clear();
-			for (; ; ) {
+			for (;;) {
 				assert (n - i >= 2);
 				bb.put(decode(rawFragment.charAt(++i), rawFragment.charAt(++i)));
 				if (++i >= n)

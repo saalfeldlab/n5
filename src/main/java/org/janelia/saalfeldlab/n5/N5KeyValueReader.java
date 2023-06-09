@@ -25,10 +25,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -36,6 +32,8 @@ import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
@@ -67,13 +65,13 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 * @param gsonBuilder
 	 * @param cacheMeta
 	 *            cache attributes and meta data
-	 *            Setting this to true avoids frequent reading and parsing of
-	 *            JSON encoded attributes and other meta data that requires
-	 *            accessing the store. This is most interesting for high latency
-	 *            backends. Changes of cached attributes and meta data by an
-	 *            independent writer will not be tracked.
+	 *            Setting this to true avoidsfrequent reading and parsing of
+	 *            JSON encoded attributes andother meta data that requires
+	 *            accessing the store. This ismost interesting for high latency
+	 *            backends. Changes of cachedattributes and meta data by an
+	 *            independent writer will not betracked.
 	 *
-	 * @throws IOException
+	 * @throws N5Exception
 	 *             if the base path cannot be read or does not exist, if the N5
 	 *             version of the container is not compatible with this
 	 *             implementation.
@@ -83,7 +81,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			final String basePath,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheMeta)
-			throws IOException {
+			throws N5Exception {
 
 		this(true, keyValueAccess, basePath, gsonBuilder, cacheMeta);
 	}
@@ -92,21 +90,21 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 * Opens an {@link N5KeyValueReader} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
-	 * @param checkVersion
-	 *            do the version check
+	 * @param checkVersiondo
+	 *            the version check
 	 * @param keyValueAccess
-	 * @param basePath
-	 *            N5 base path
+	 * @param basePathN5
+	 *            base path
 	 * @param gsonBuilder
-	 * @param cacheMeta
-	 *            cache attributes and meta data
-	 *            Setting this to true avoids frequent reading and parsing of
-	 *            JSON encoded attributes and other meta data that requires
-	 *            accessing the store. This is most interesting for high latency
-	 *            backends. Changes of cached attributes and meta data by an
-	 *            independent writer will not be tracked.
+	 * @param cacheMetacache
+	 *            attributes and meta data
+	 *            Setting this to true avoidsfrequent reading and parsing of
+	 *            JSON encoded attributes andother meta data that requires
+	 *            accessing the store. This ismost interesting for high latency
+	 *            backends. Changes of cachedattributes and meta data by an
+	 *            independent writer will not betracked.
 	 *
-	 * @throws IOException
+	 * @throws N5Exception
 	 *             if the base path cannot be read or does not exist, if the N5
 	 *             version of the container is not compatible with this
 	 *             implementation.
@@ -117,7 +115,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			final String basePath,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheMeta)
-			throws IOException {
+			throws N5Exception {
 
 		this.keyValueAccess = keyValueAccess;
 		this.gson = GsonUtils.registerGson(gsonBuilder);
@@ -126,8 +124,8 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 		try {
 			uri = keyValueAccess.uri(basePath);
-		} catch (URISyntaxException e) {
-			throw new N5Exception( e );
+		} catch (final URISyntaxException e) {
+			throw new N5Exception(e);
 		}
 
 		if (checkVersion) {
@@ -159,6 +157,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 	@Override
 	public URI getURI() {
+
 		return uri;
 	}
 
@@ -175,7 +174,9 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	}
 
 	@Override
-	public String groupPath(String... nodes) {
-		return keyValueAccess.compose(Stream.concat(Stream.of(getURI().getPath()), Arrays.stream(nodes)).toArray(String[]::new));
+	public String groupPath(final String... nodes) {
+
+		return keyValueAccess
+				.compose(Stream.concat(Stream.of(getURI().getPath()), Arrays.stream(nodes)).toArray(String[]::new));
 	}
 }

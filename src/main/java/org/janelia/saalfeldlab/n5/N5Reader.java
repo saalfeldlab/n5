@@ -219,7 +219,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @return the base path URI
 	 */
 	// TODO: should this throw URISyntaxException or can we assume that this is
-	//       never possible if we were able to instantiate this N5Reader?
+	// never possible if we were able to instantiate this N5Reader?
 	URI getURI();
 
 	/**

@@ -32,8 +32,9 @@ import java.nio.file.FileSystem;
 
 /**
  * Key value read primitives used by {@link N5KeyValueReader}
- * implementations.  This interface implements a subset of access primitives
- * provided by {@link FileSystem} to reduce the implementation burden for backends
+ * implementations. This interface implements a subset of access primitives
+ * provided by {@link FileSystem} to reduce the implementation burden for
+ * backends
  * lacking a {@link FileSystem} implementation (such as AWS-S3).
  *
  * @author Stephan Saalfeld
@@ -43,7 +44,8 @@ public interface KeyValueAccess {
 	/**
 	 * Split a path string into its components.
 	 *
-	 * @param path the path
+	 * @param path
+	 *            the path
 	 * @return the path components
 	 */
 	public String[] components(final String path);
@@ -51,7 +53,8 @@ public interface KeyValueAccess {
 	/**
 	 * Compose a path from components.
 	 *
-	 * @param components the path components
+	 * @param components
+	 *            the path components
 	 * @return the path
 	 */
 	public String compose(final String... components);
@@ -59,7 +62,8 @@ public interface KeyValueAccess {
 	/**
 	 * Get the parent of a path string.
 	 *
-	 * @param path the path
+	 * @param path
+	 *            the path
 	 * @return the parent path or null if the path has no parent
 	 */
 	public String parent(final String path);
@@ -67,18 +71,21 @@ public interface KeyValueAccess {
 	/**
 	 * Relativize path relative to base.
 	 *
-	 * @param path the path
-	 * @param base the base path
+	 * @param path
+	 *            the path
+	 * @param base
+	 *            the base path
 	 * @return the result or null if the path has no parent
 	 */
 	public String relativize(final String path, final String base);
 
 	/**
-	 * Normalize a path to canonical form.  All paths pointing to the same
-	 * location return the same output.  This is most important for cached
+	 * Normalize a path to canonical form. All paths pointing to the same
+	 * location return the same output. This is most important for cached
 	 * data pointing at the same location getting the same key.
 	 *
-	 * @param path the path
+	 * @param path
+	 *            the path
 	 * @return the normalized path
 	 */
 	public String normalize(final String path);
@@ -86,8 +93,9 @@ public interface KeyValueAccess {
 	/**
 	 * Get the absolute (including scheme) URI of the given path
 	 *
-	 * @param normalPath is expected to be in normalized form, no further
-	 * 		efforts are made to normalize it.
+	 * @param normalPath
+	 *            is expected to be in normalized form, no further
+	 *            efforts are made to normalize it.
 	 * @return absolute URI
 	 */
 	public URI uri(final String normalPath) throws URISyntaxException;
@@ -95,8 +103,9 @@ public interface KeyValueAccess {
 	/**
 	 * Test whether the path exists.
 	 *
-	 * @param normalPath is expected to be in normalized form, no further
-	 * 		efforts are made to normalize it.
+	 * @param normalPath
+	 *            is expected to be in normalized form, no further
+	 *            efforts are made to normalize it.
 	 * @return true if the path exists
 	 */
 	public boolean exists(final String normalPath);
@@ -104,8 +113,9 @@ public interface KeyValueAccess {
 	/**
 	 * Test whether the path is a directory.
 	 *
-	 * @param normalPath is expected to be in normalized form, no further
-	 * 		efforts are made to normalize it.
+	 * @param normalPath
+	 *            is expected to be in normalized form, no further
+	 *            efforts are made to normalize it.
 	 * @return true if the path is a directory
 	 */
 	public boolean isDirectory(String normalPath);
@@ -113,82 +123,97 @@ public interface KeyValueAccess {
 	/**
 	 * Test whether the path is a file.
 	 *
-	 * @param normalPath is expected to be in normalized form, no further
-	 * 		efforts are made to normalize it.
+	 * @param normalPath
+	 *            is expected to be in normalized form, no further
+	 *            efforts are made to normalize it.
 	 * @return true if the path is a file
 	 */
 	public boolean isFile(String normalPath); // TODO: Looks un-used. Remove?
 
 	/**
-	 * Create a lock on a path for reading.  This isn't meant to be kept
-	 * around.  Create, use, [auto]close, e.g.
+	 * Create a lock on a path for reading. This isn't meant to be kept
+	 * around. Create, use, [auto]close, e.g.
 	 * <code>
 	 * try (final lock = store.lockForReading()) {
 	 *   ...
 	 * }
 	 * </code>
 	 *
-	 * @param normalPath is expected to be in normalized form, no further
-	 * 		efforts are made to normalize it.
+	 * @param normalPath
+	 *            is expected to be in normalized form, no further
+	 *            efforts are made to normalize it.
 	 * @return the locked channel
-	 * @throws IOException the exception
+	 * @throws IOException
+	 *             the exception
 	 */
 	public LockedChannel lockForReading(final String normalPath) throws IOException;
 
 	/**
-	 * Create an exclusive lock on a path for writing.  If the file doesn't
+	 * Create an exclusive lock on a path for writing. If the file doesn't
 	 * exist yet, it will be created, including all directories leading up to
-	 * it.  This lock isn't meant to be kept around.  Create, use, [auto]close, e.g.
+	 * it. This lock isn't meant to be kept around. Create, use, [auto]close,
+	 * e.g.
 	 * <code>
 	 * try (final lock = store.lockForWriting()) {
 	 *   ...
 	 * }
 	 * </code>
 	 *
-	 * @param normalPath is expected to be in normalized form, no further
-	 * 		efforts are made to normalize it.
+	 * @param normalPath
+	 *            is expected to be in normalized form, no further
+	 *            efforts are made to normalize it.
 	 * @return the locked channel
-	 * @throws IOException the exception
+	 * @throws IOException
+	 *             the exception
 	 */
 	public LockedChannel lockForWriting(final String normalPath) throws IOException;
 
 	/**
 	 * List all 'directory'-like children of a path.
 	 *
-	 * @param normalPath is expected to be in normalized form, no further
-	 * 		efforts are made to normalize it.
+	 * @param normalPath
+	 *            is expected to be in normalized form, no further
+	 *            efforts are made to normalize it.
 	 * @return the directories
-	 * @throws IOException the exception
+	 * @throws IOException
+	 *             the exception
 	 */
 	public String[] listDirectories(final String normalPath) throws IOException;
 
 	/**
 	 * List all children of a path.
 	 *
-	 * @param normalPath is expected to be in normalized form, no further
-	 * 		efforts are made to normalize it.
+	 * @param normalPath
+	 *            is expected to be in normalized form, no further
+	 *            efforts are made to normalize it.
 	 * @return the the child paths
-	 * @throws IOException the exception
+	 * @throws IOException
+	 *             the exception
+	 *
+	 *
 	 */
-	public String[] list(final String normalPath) throws IOException; // TODO: Looks un-used. Remove?
+	public String[] list(final String normalPath) throws IOException;
 
 	/**
-	 * Create a directory and all parent paths along the way.  The directory
-	 * and parent paths are discoverable.  On a filesystem, this usually means
+	 * Create a directory and all parent paths along the way. The directory
+	 * and parent paths are discoverable. On a filesystem, this usually means
 	 * that the directories exist, on a key value store that is unaware of
 	 * directories, this may be implemented as creating an object for each path.
 	 *
-	 * @param normalPath is expected to be in normalized form, no further
-	 * 		efforts are made to normalize it.
-	 * @throws IOException the exception
+	 * @param normalPath
+	 *            is expected to be in normalized form, no further
+	 *            efforts are made to normalize it.
+	 * @throws IOException
+	 *             the exception
 	 */
 	public void createDirectories(final String normalPath) throws IOException;
 
 	/**
-	 * Delete a path.  If the path is a directory, delete it recursively.
+	 * Delete a path. If the path is a directory, delete it recursively.
 	 *
-	 * @param normalPath is expected to be in normalized form, no further
-	 * 		efforts are made to normalize it.
+	 * @param normalPath
+	 *            is expected to be in normalized form, no further
+	 *            efforts are made to normalize it.
 	 */
 	public void delete(final String normalPath) throws IOException;
 }

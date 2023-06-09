@@ -77,10 +77,11 @@ public class Lz4Compression implements DefaultBlockReader, DefaultBlockWriter, C
 	}
 
 	@Override
-	public boolean equals(Object other) {
+	public boolean equals(final Object other) {
+
 		if (other == null || other.getClass() != Lz4Compression.class)
 			return false;
 		else
-			return blockSize == ((Lz4Compression) other).blockSize;
+			return blockSize == ((Lz4Compression)other).blockSize;
 	}
 }
