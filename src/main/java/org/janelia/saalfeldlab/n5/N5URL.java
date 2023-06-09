@@ -63,14 +63,6 @@ public class N5URL {
 	}
 
 	/**
-	 * @return the normalized container path
-	 */
-	public String normalizeContainerPath() {
-
-		return normalizePath(getContainerPath());
-	}
-
-	/**
 	 * @return the normalized group path
 	 */
 	public String normalizeGroupPath() {
