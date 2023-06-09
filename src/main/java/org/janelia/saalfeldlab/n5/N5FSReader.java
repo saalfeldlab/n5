@@ -70,6 +70,9 @@ public class N5FSReader extends N5KeyValueReader {
 				basePath,
 				gsonBuilder,
 				cacheMeta);
+
+		if (!exists("/"))
+			throw new N5Exception.N5IOException("No container exists at " + basePath);
 	}
 
 	/**
