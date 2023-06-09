@@ -3,7 +3,6 @@ package org.janelia.saalfeldlab.n5;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
@@ -25,13 +24,9 @@ public class UriTest {
 
 	@Before
 	public void before() {
-		try {
-			n5 = new N5FSWriter(relativePath);
-			kva = n5.getKeyValueAccess();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 
+		n5 = new N5FSWriter(relativePath);
+		kva = n5.getKeyValueAccess();
 	}
 
 	@Test
@@ -41,7 +36,8 @@ public class UriTest {
 		try {
 			assertEquals("Container URI must contain scheme", "file", uri.getScheme());
 
-			assertEquals("Container URI must be absolute",
+			assertEquals(
+					"Container URI must be absolute",
 					Paths.get(relativePath).toAbsolutePath().toString(),
 					uri.getPath());
 
@@ -51,7 +47,7 @@ public class UriTest {
 			assertEquals("Container URI must be normalized 4", uri, kva.uri("file:" + relativeAbnormalPath));
 			assertEquals("Container URI must be normalized 5", uri, kva.uri("file:" + relativeAbnormalPath2));
 
-		} catch (URISyntaxException e) {
+		} catch (final URISyntaxException e) {
 			fail(e.getMessage());
 		}
 
