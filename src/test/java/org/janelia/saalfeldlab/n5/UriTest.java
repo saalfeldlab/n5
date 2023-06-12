@@ -35,15 +35,12 @@ public class UriTest {
 			assertEquals("Container URI must contain scheme", "file", uri.getScheme());
 
 			assertEquals("Container URI must be absolute",
-					Paths.get(relativePath).toAbsolutePath().toString(),
-					Paths.get(uri).toAbsolutePath().toString());
+					uri.getPath(),
+					Paths.get(relativePath).toAbsolutePath().toUri().normalize().getPath());
 
-			assertEquals("Container URI must be normalized 1", uri, kva.uri(relativeAbnormalPath));
-			assertEquals("Container URI must be normalized 2", uri, kva.uri(relativeAbnormalPath2));
-//			assertEquals("Container URI must be normalized 3", uri, kva.uri("file:" + relativePath));
-//			assertEquals("Container URI must be normalized 4", uri, kva.uri("file:" + relativeAbnormalPath));
-//			assertEquals("Container URI must be normalized 5", uri, kva.uri("file:" + relativeAbnormalPath2));
-
+		assertEquals("Container URI must be normalized 1", uri, kva.uri(relativePath));
+		assertEquals("Container URI must be normalized 2", uri, kva.uri(relativeAbnormalPath));
+		assertEquals("Container URI must be normalized 3", uri, kva.uri(relativeAbnormalPath2));
 	}
 
 }
