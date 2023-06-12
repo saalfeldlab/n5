@@ -71,7 +71,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		final String normalPath = N5URI.normalizeGroupPath(path);
 		try {
-			getKeyValueAccess().createDirectories(groupPath(normalPath));
+			getKeyValueAccess().createDirectories(absoluteGroupPath(normalPath));
 		} catch (final IOException e) {
 			throw new N5Exception.N5IOException("Failed to create group " + path, e);
 		}
@@ -94,7 +94,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final String normalGroupPath,
 			final JsonElement attributes) throws N5Exception {
 
-		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(attributesPath(normalGroupPath))) {
+		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(absoluteAttributesPath(normalGroupPath))) {
 			GsonUtils.writeAttributes(lock.newWriter(), attributes, getGson());
 		} catch (final IOException e) {
 			throw new N5Exception.N5IOException("Failed to write attributes into " + normalGroupPath, e);
@@ -210,7 +210,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception {
 
-		final String blockPath = getDataBlockPath(N5URL.normalizeGroupPath(path), dataBlock.getGridPosition());
+		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), dataBlock.getGridPosition());
 		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(blockPath)) {
 			DefaultBlockWriter.writeBlock(lock.newOutputStream(), datasetAttributes, dataBlock);
 		} catch (final IOException e) {
@@ -241,7 +241,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final String path,
 			final long... gridPosition) throws N5Exception {
 
-		final String blockPath = getDataBlockPath(N5URL.normalizeGroupPath(path), gridPosition);
+		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), gridPosition);
 		try {
 			if (getKeyValueAccess().isFile(blockPath))
 				getKeyValueAccess().delete(blockPath);

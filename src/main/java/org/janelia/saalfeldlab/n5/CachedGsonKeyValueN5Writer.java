@@ -73,7 +73,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		 * work
 		 */
 		try {
-			getKeyValueAccess().createDirectories(groupPath(normalPath));
+			getKeyValueAccess().createDirectories(absoluteGroupPath(normalPath));
 		} catch (final IOException e) {
 			throw new N5Exception.N5IOException("Failed to create group " + path, e);
 		}

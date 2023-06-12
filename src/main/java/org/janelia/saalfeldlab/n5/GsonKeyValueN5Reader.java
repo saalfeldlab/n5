@@ -44,7 +44,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	default boolean groupExists(final String normalPath) {
 
-		return getKeyValueAccess().isDirectory(groupPath(normalPath));
+		return getKeyValueAccess().isDirectory(absoluteGroupPath(normalPath));
 	}
 
 	@Override
@@ -92,7 +92,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		final String path = getDataBlockPath(N5URL.normalizeGroupPath(pathName), gridPosition);
+		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), gridPosition);
 		if (!getKeyValueAccess().isFile(path))
 			return null;
 
@@ -109,7 +109,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	default String[] list(final String pathName) throws N5Exception {
 
 		try {
-			return getKeyValueAccess().listDirectories(groupPath(pathName));
+			return getKeyValueAccess().listDirectories(absoluteGroupPath(pathName));
 		} catch (final IOException e) {
 			throw new N5IOException("Cannot list directories for group " + pathName, e);
 		}
@@ -132,7 +132,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 * @param gridPosition
 	 * @return
 	 */
-	default String getDataBlockPath(
+	default String absoluteDataBlockPath(
 			final String normalPath,
 			final long... gridPosition) {
 
@@ -154,7 +154,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 *            normalized group path without leading slash
 	 * @return the absolute path to the group
 	 */
-	default String groupPath(final String normalGroupPath) {
+	default String absoluteGroupPath(final String normalGroupPath) {
 
 		return getKeyValueAccess().compose(getURI(), normalGroupPath);
 	}
@@ -167,7 +167,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 *            normalized group path without leading slash
 	 * @return the absolute path to the attributes
 	 */
-	default String attributesPath(final String normalPath) {
+	default String absoluteAttributesPath(final String normalPath) {
 
 		return getKeyValueAccess().compose(getURI(), normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
 	}

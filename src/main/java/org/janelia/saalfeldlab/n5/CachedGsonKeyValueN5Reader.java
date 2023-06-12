@@ -134,9 +134,9 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	default boolean existsFromContainer(final String normalPathName, final String normalCacheKey) {
 
 		if (normalCacheKey == null)
-			return getKeyValueAccess().isDirectory(groupPath(normalPathName));
+			return getKeyValueAccess().isDirectory(absoluteGroupPath(normalPathName));
 		else
-			return getKeyValueAccess().isFile(getKeyValueAccess().compose(groupPath(normalPathName), normalCacheKey));
+			return getKeyValueAccess().isFile(getKeyValueAccess().compose(absoluteGroupPath(normalPathName), normalCacheKey));
 	}
 
 	@Override
@@ -241,7 +241,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	 * @return
 	 */
 	@Override
-	default String getDataBlockPath(
+	default String absoluteDataBlockPath(
 			final String normalPath,
 			final long... gridPosition) {
 
