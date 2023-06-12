@@ -49,7 +49,7 @@ public interface GsonN5Reader extends N5Reader {
 	@Override
 	default DatasetAttributes getDatasetAttributes(final String pathName) throws N5Exception {
 
-		final String normalPath = N5URL.normalizeGroupPath(pathName);
+		final String normalPath = N5URI.normalizeGroupPath(pathName);
 		final JsonElement attributes = getAttributes(normalPath);
 		return createDatasetAttributes(attributes);
 	}
@@ -85,8 +85,8 @@ public interface GsonN5Reader extends N5Reader {
 	@Override
 	default <T> T getAttribute(final String pathName, final String key, final Class<T> clazz) throws N5Exception {
 
-		final String normalPathName = N5URL.normalizeGroupPath(pathName);
-		final String normalizedAttributePath = N5URL.normalizeAttributePath(key);
+		final String normalPathName = N5URI.normalizeGroupPath(pathName);
+		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
 
 		final JsonElement attributes = getAttributes(normalPathName);
 		return GsonUtils.readAttribute(attributes, normalizedAttributePath, clazz, getGson());
@@ -95,8 +95,8 @@ public interface GsonN5Reader extends N5Reader {
 	@Override
 	default <T> T getAttribute(final String pathName, final String key, final Type type) throws N5Exception {
 
-		final String normalPathName = N5URL.normalizeGroupPath(pathName);
-		final String normalizedAttributePath = N5URL.normalizeAttributePath(key);
+		final String normalPathName = N5URI.normalizeGroupPath(pathName);
+		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
 		final JsonElement attributes = getAttributes(normalPathName);
 		return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, getGson());
 	}

@@ -169,7 +169,7 @@ public interface GsonUtils {
 				final JsonObject jsonObject = root.getAsJsonObject();
 				root = jsonObject.get(pathPartWithoutEscapeCharacters);
 			} else {
-				final Matcher matcher = N5URL.ARRAY_INDEX.matcher(pathPart);
+				final Matcher matcher = N5URI.ARRAY_INDEX.matcher(pathPart);
 				if (root != null && root.isJsonArray() && matcher.matches()) {
 					final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
 					final JsonArray jsonArray = root.getAsJsonArray();
@@ -477,7 +477,7 @@ public interface GsonUtils {
 					jsonObject.remove(pathPartWithoutEscapeCharacters);
 				}
 			} else {
-				final Matcher matcher = N5URL.ARRAY_INDEX.matcher(pathPart);
+				final Matcher matcher = N5URI.ARRAY_INDEX.matcher(pathPart);
 				if (root != null && root.isJsonArray() && matcher.matches()) {
 					final int index = Integer.parseInt(matcher.group().replace("[", "").replace("]", ""));
 					final JsonArray jsonArray = root.getAsJsonArray();
@@ -556,7 +556,7 @@ public interface GsonUtils {
 	static JsonElement insertAttributes(JsonElement root, final Map<String, ?> attributes, final Gson gson) {
 
 		for (final Map.Entry<String, ?> attribute : attributes.entrySet()) {
-			root = insertAttribute(root, N5URL.normalizeAttributePath(attribute.getKey()), attribute.getValue(), gson);
+			root = insertAttribute(root, N5URI.normalizeAttributePath(attribute.getKey()), attribute.getValue(), gson);
 		}
 		return root;
 	}
@@ -567,7 +567,7 @@ public interface GsonUtils {
 			final T attribute,
 			final Gson gson) {
 
-		LinkedAttributePathToken<?> pathToken = N5URL.getAttributePathTokens(normalizedAttributePath);
+		LinkedAttributePathToken<?> pathToken = N5URI.getAttributePathTokens(normalizedAttributePath);
 
 		/* No path to traverse or build; just return the value */
 		if (pathToken == null)

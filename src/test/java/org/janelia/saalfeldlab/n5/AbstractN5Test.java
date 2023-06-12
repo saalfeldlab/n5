@@ -1185,8 +1185,8 @@ public abstract class AbstractN5Test {
 		/* previous values should still be there, but we remove first if the test we just added overwrites. */
 		existingTests.removeIf(test -> {
 			try {
-				final String normalizedTestKey = N5URL.from(null, "", test.attributePath).normalizeAttributePath().replaceAll("^/", "");
-				final String normalizedTestDataKey = N5URL.from(null, "", testData.attributePath).normalizeAttributePath().replaceAll("^/", "");
+				final String normalizedTestKey = N5URI.from(null, "", test.attributePath).normalizeAttributePath().replaceAll("^/", "");
+				final String normalizedTestDataKey = N5URI.from(null, "", testData.attributePath).normalizeAttributePath().replaceAll("^/", "");
 				return normalizedTestKey.equals(normalizedTestDataKey);
 			} catch (final URISyntaxException e) {
 				throw new RuntimeException(e);

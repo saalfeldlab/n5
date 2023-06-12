@@ -53,7 +53,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 	@Override
 	default void createGroup(final String path) throws N5Exception {
 
-		final String normalPath = N5URL.normalizeGroupPath(path);
+		final String normalPath = N5URI.normalizeGroupPath(path);
 		// TODO: John document this!
 		// if you are a group, avoid hitting the backend
 		// if something exists, be safe
@@ -82,7 +82,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 			// check all nodes that are parents of the added node, if they have
 			// a children set, add the new child to it
 			String[] pathParts = getKeyValueAccess().components(normalPath);
-			String parent = N5URL.normalizeGroupPath("/");
+			String parent = N5URI.normalizeGroupPath("/");
 			if (pathParts.length == 0) {
 				pathParts = new String[]{""};
 			}
@@ -145,8 +145,8 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		 * normalizeGroupPath again the below duplicates code, but avoids extra
 		 * work
 		 */
-		final String normalPath = N5URL.normalizeGroupPath(path);
-		final String groupPath = groupPath(normalPath);
+		final String normalPath = N5URI.normalizeGroupPath(path);
+		final String groupPath = absoluteGroupPath(normalPath);
 		try {
 			if (getKeyValueAccess().isDirectory(groupPath))
 				getKeyValueAccess().delete(groupPath);
@@ -158,7 +158,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 			final String[] pathParts = getKeyValueAccess().components(normalPath);
 			final String parent;
 			if (pathParts.length <= 1) {
-				parent = N5URL.normalizeGroupPath("/");
+				parent = N5URI.normalizeGroupPath("/");
 			} else {
 				final int parentPathLength = pathParts.length - 1;
 				parent = getKeyValueAccess().compose(Arrays.copyOf(pathParts, parentPathLength));

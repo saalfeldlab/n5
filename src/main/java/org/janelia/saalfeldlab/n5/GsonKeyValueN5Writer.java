@@ -69,7 +69,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	@Override
 	default void createGroup(final String path) throws N5Exception {
 
-		final String normalPath = N5URL.normalizeGroupPath(path);
+		final String normalPath = N5URI.normalizeGroupPath(path);
 		try {
 			getKeyValueAccess().createDirectories(groupPath(normalPath));
 		} catch (final IOException e) {
@@ -106,7 +106,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final String path,
 			final JsonElement attributes) throws N5Exception {
 
-		final String normalPath = N5URL.normalizeGroupPath(path);
+		final String normalPath = N5URI.normalizeGroupPath(path);
 		if (!exists(normalPath))
 			throw new N5IOException("" + normalPath + " is not a group or dataset.");
 
@@ -148,7 +148,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final String path,
 			final Map<String, ?> attributes) throws N5Exception {
 
-		final String normalPath = N5URL.normalizeGroupPath(path);
+		final String normalPath = N5URI.normalizeGroupPath(path);
 		if (!exists(normalPath))
 			throw new N5IOException("" + normalPath + " is not a group or dataset.");
 
@@ -158,9 +158,9 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	@Override
 	default boolean removeAttribute(final String groupPath, final String attributePath) throws N5Exception {
 
-		final String normalPath = N5URL.normalizeGroupPath(groupPath);
+		final String normalPath = N5URI.normalizeGroupPath(groupPath);
 		final String absoluteNormalPath = getKeyValueAccess().compose(getURI(), normalPath);
-		final String normalKey = N5URL.normalizeAttributePath(attributePath);
+		final String normalKey = N5URI.normalizeAttributePath(attributePath);
 
 		if (!getKeyValueAccess().isDirectory(absoluteNormalPath))
 			return false;
@@ -181,8 +181,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	@Override
 	default <T> T removeAttribute(final String pathName, final String key, final Class<T> cls) throws N5Exception {
 
-		final String normalPath = N5URL.normalizeGroupPath(pathName);
-		final String normalKey = N5URL.normalizeAttributePath(key);
+		final String normalPath = N5URI.normalizeGroupPath(pathName);
+		final String normalKey = N5URI.normalizeAttributePath(key);
 
 		final JsonElement attributes = getAttributes(normalPath);
 		final T obj = GsonUtils.removeAttribute(attributes, normalKey, cls, getGson());
@@ -195,10 +195,10 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	@Override
 	default boolean removeAttributes(final String pathName, final List<String> attributes) throws N5Exception {
 
-		final String normalPath = N5URL.normalizeGroupPath(pathName);
+		final String normalPath = N5URI.normalizeGroupPath(pathName);
 		boolean removed = false;
 		for (final String attribute : attributes) {
-			final String normalKey = N5URL.normalizeAttributePath(attribute);
+			final String normalKey = N5URI.normalizeAttributePath(attribute);
 			removed |= removeAttribute(normalPath, normalKey);
 		}
 		return removed;
@@ -223,8 +223,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	@Override
 	default boolean remove(final String path) throws N5Exception {
 
-		final String normalPath = N5URL.normalizeGroupPath(path);
-		final String groupPath = groupPath(normalPath);
+		final String normalPath = N5URI.normalizeGroupPath(path);
+		final String groupPath = absoluteGroupPath(normalPath);
 		try {
 			if (getKeyValueAccess().isDirectory(groupPath))
 				getKeyValueAccess().delete(groupPath);

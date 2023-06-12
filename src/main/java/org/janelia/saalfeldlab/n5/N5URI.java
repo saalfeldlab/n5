@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class N5URL {
+public class N5URI {
 
 	private static final Charset UTF8 = Charset.forName("UTF-8");
 	public static final Pattern ARRAY_INDEX = Pattern.compile("\\[([0-9]+)]");
@@ -27,12 +27,12 @@ public class N5URL {
 	private final String group;
 	private final String attribute;
 
-	public N5URL(final String uri) throws URISyntaxException {
+	public N5URI(final String uri) throws URISyntaxException {
 
 		this(encodeAsUri(uri));
 	}
 
-	public N5URL(final URI uri) {
+	public N5URI(final URI uri) {
 
 		this.uri = uri;
 		scheme = uri.getScheme() == null ? null : uri.getScheme();
@@ -87,9 +87,9 @@ public class N5URL {
 	}
 
 	/**
-	 * Parse this {@link N5URL} as a {@link LinkedAttributePathToken}.
+	 * Parse this {@link N5URI} as a {@link LinkedAttributePathToken}.
 	 *
-	 * @see N5URL#getAttributePathTokens(String)
+	 * @see N5URI#getAttributePathTokens(String)
 	 * @return the linked attribute path token
 	 */
 	public LinkedAttributePathToken<?> getAttributePathTokens() {
@@ -178,11 +178,11 @@ public class N5URL {
 	}
 
 	/**
-	 * N5URL is always considered absolute if a scheme is provided.
-	 * If no scheme is provided, the N5URL is absolute if it starts with either
+	 * N5URI is always considered absolute if a scheme is provided.
+	 * If no scheme is provided, the N5URI is absolute if it starts with either
 	 * "/" or "[A-Z]:"
 	 *
-	 * @return if the path for this N5URL is absolute
+	 * @return if the path for this N5URI is absolute
 	 */
 	public boolean isAbsolute() {
 
@@ -197,18 +197,18 @@ public class N5URL {
 	}
 
 	/**
-	 * Generate a new N5URL which is the result of resolving {@link N5URL
-	 * relativeN5Url} to this {@link N5URL}.
-	 * If relativeN5Url is not relative to this N5URL, then the resulting N5URL
+	 * Generate a new N5URI which is the result of resolving {@link N5URI
+	 * relativeN5Url} to this {@link N5URI}.
+	 * If relativeN5Url is not relative to this N5URI, then the resulting N5URI
 	 * is equivalent to relativeN5Url.
 	 *
 	 * @param relativeN5Url
-	 *            N5URL to resolve against ourselves
+	 *            N5URI to resolve against ourselves
 	 * @return the result of the resolution.
 	 * @throws URISyntaxException
 	 *             if the uri is malformed
 	 */
-	public N5URL resolve(final N5URL relativeN5Url) throws URISyntaxException {
+	public N5URI resolve(final N5URI relativeN5Url) throws URISyntaxException {
 
 		final URI thisUri = uri;
 		final URI relativeUri = relativeN5Url.uri;
@@ -229,7 +229,7 @@ public class N5URL {
 					.append(relativeUri.getPath())
 					.append(relativeN5Url.getGroupPart())
 					.append(relativeN5Url.getAttributePart());
-			return new N5URL(newUri.toString());
+			return new N5URI(newUri.toString());
 		}
 		final String thisAuthority = thisUri.getAuthority();
 		if (thisAuthority != null) {
@@ -245,7 +245,7 @@ public class N5URL {
 					.append(path)
 					.append(relativeN5Url.getGroupPart())
 					.append(relativeN5Url.getAttributePart());
-			return new N5URL(newUri.toString());
+			return new N5URI(newUri.toString());
 		}
 		newUri.append(thisUri.getPath());
 
@@ -258,7 +258,7 @@ public class N5URL {
 				newUri.append(relativeN5Url.getGroupPart());
 			}
 			newUri.append(relativeN5Url.getAttributePart());
-			return new N5URL(newUri.toString());
+			return new N5URI(newUri.toString());
 		}
 		newUri.append(this.getGroupPart());
 
@@ -270,17 +270,17 @@ public class N5URL {
 				newUri.append(relativeN5Url.getAttributePart());
 			}
 
-			return new N5URL(newUri.toString());
+			return new N5URI(newUri.toString());
 		}
 		newUri.append(this.getAttributePart());
 
-		return new N5URL(newUri.toString());
+		return new N5URI(newUri.toString());
 	}
 
 	/**
-	 * Generate a new N5URL which is the result of resolving {@link URI
-	 * relativeUri} to this {@link N5URL}.
-	 * If relativeUri is not relative to this N5URL, then the resulting N5URL is
+	 * Generate a new N5URI which is the result of resolving {@link URI
+	 * relativeUri} to this {@link N5URI}.
+	 * If relativeUri is not relative to this N5URI, then the resulting N5URI is
 	 * equivalent to relativeUri.
 	 *
 	 * @param relativeUri
@@ -289,15 +289,15 @@ public class N5URL {
 	 * @throws URISyntaxException
 	 *             if the uri is malformed
 	 */
-	public N5URL resolve(final URI relativeUri) throws URISyntaxException {
+	public N5URI resolve(final URI relativeUri) throws URISyntaxException {
 
-		return resolve(new N5URL(relativeUri));
+		return resolve(new N5URI(relativeUri));
 	}
 
 	/**
-	 * Generate a new N5URL which is the result of resolving {@link String
-	 * relativeString} to this {@link N5URL}
-	 * If relativeString is not relative to this N5URL, then the resulting N5URL
+	 * Generate a new N5URI which is the result of resolving {@link String
+	 * relativeString} to this {@link N5URI}
+	 * If relativeString is not relative to this N5URI, then the resulting N5URI
 	 * is equivalent to relativeString.
 	 *
 	 * @param relativeString
@@ -306,20 +306,24 @@ public class N5URL {
 	 * @throws URISyntaxException
 	 *             if the uri is malformed
 	 */
-	public N5URL resolve(final String relativeString) throws URISyntaxException {
+	public N5URI resolve(final String relativeString) throws URISyntaxException {
 
-		return resolve(new N5URL(relativeString));
+		return resolve(new N5URI(relativeString));
 	}
 
 	/**
-	 * Normalize a path, resulting in removal of redundant "/", "./", and
+	 * Normalize a POSIX path, resulting in removal of redundant "/", "./", and
 	 * resolution of relative "../".
+	 * <p>
+	 * NOTE: currently a private helper method only used by {@link N5URI#normalizeGroupPath(String)}.
+	 * 	It's safe to do in that case since relative group paths should always be POSIX compliant.
+	 * 	A new helper method to understand other path types (e.g. Windows) may be necessary eventually.
 	 *
 	 * @param path
 	 *            to normalize
 	 * @return the normalized path
 	 */
-	public static String normalizePath(String path) {
+	private static String normalizePath(String path) {
 
 		path = path == null ? "" : path;
 		final char[] pathChars = path.toCharArray();
@@ -403,7 +407,7 @@ public class N5URL {
 		 * Alternatively, could do something like the below in every
 		 * KeyValueReader implementation
 		 *
-		 * return keyValueAccess.relativize( N5URL.normalizeGroupPath(path),
+		 * return keyValueAccess.relativize( N5URI.normalizeGroupPath(path),
 		 * basePath);
 		 *
 		 * has to be in the implementations, since KeyValueAccess doesn't have a
@@ -553,7 +557,7 @@ public class N5URL {
 	}
 
 	/**
-	 * Generate an {@link N5URL} from a container, group, and attribute
+	 * Generate an {@link N5URI} from a container, group, and attribute
 	 *
 	 * @param container
 	 *            of the N5Url
@@ -561,11 +565,11 @@ public class N5URL {
 	 *            of the N5Url
 	 * @param attribute
 	 *            of the N5Url
-	 * @return the {@link N5URL}
+	 * @return the {@link N5URI}
 	 * @throws URISyntaxException
 	 *             if the uri is malformed
 	 */
-	public static N5URL from(
+	public static N5URI from(
 			final String container,
 			final String group,
 			final String attribute) throws URISyntaxException {
@@ -573,7 +577,7 @@ public class N5URL {
 		final String containerPart = container != null ? container : "";
 		final String groupPart = group != null ? "?" + group : "";
 		final String attributePart = attribute != null ? "#" + attribute : "";
-		return new N5URL(containerPart + groupPart + attributePart);
+		return new N5URI(containerPart + groupPart + attributePart);
 	}
 
 	/**
@@ -581,6 +585,7 @@ public class N5URL {
 	 *
 	 * @see URI#decode(char)
 	 */
+	@SuppressWarnings("JavadocReference")
 	private static int decode(final char c) {
 
 		if ((c >= '0') && (c <= '9'))
@@ -598,6 +603,7 @@ public class N5URL {
 	 *
 	 * @see URI#decode(char, char)
 	 */
+	@SuppressWarnings("JavadocReference")
 	private static byte decode(final char c1, final char c2) {
 
 		return (byte)(((decode(c1) & 0xf) << 4)
@@ -620,6 +626,7 @@ public class N5URL {
 	 *
 	 * @see URI#decode(char, char)
 	 */
+	@SuppressWarnings("JavadocReference")
 	private static String decodeFragment(final String rawFragment) {
 
 		if (rawFragment == null)

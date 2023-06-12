@@ -50,7 +50,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	@Override
 	default boolean exists(final String pathName) {
 
-		final String normalPath = N5URL.normalizeGroupPath(pathName);
+		final String normalPath = N5URI.normalizeGroupPath(pathName);
 		return groupExists(normalPath) || datasetExists(normalPath);
 	}
 
@@ -72,8 +72,8 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	@Override
 	default JsonElement getAttributes(final String pathName) throws N5Exception {
 
-		final String groupPath = N5URL.normalizeGroupPath(pathName);
-		final String attributesPath = attributesPath(groupPath);
+		final String groupPath = N5URI.normalizeGroupPath(pathName);
+		final String attributesPath = absoluteAttributesPath(groupPath);
 
 		if (!getKeyValueAccess().isFile(attributesPath))
 			return null;

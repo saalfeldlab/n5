@@ -115,10 +115,10 @@ public interface N5Writer extends N5Reader {
 	 */
 	default boolean removeAttributes(final String groupPath, final List<String> attributePaths) throws N5Exception {
 
-		final String normalPath = N5URL.normalizeGroupPath(groupPath);
+		final String normalPath = N5URI.normalizeGroupPath(groupPath);
 		boolean removed = false;
 		for (final String attribute : attributePaths) {
-			final String normalKey = N5URL.normalizeAttributePath(attribute);
+			final String normalKey = N5URI.normalizeAttributePath(attribute);
 			removed |= removeAttribute(normalPath, attribute);
 		}
 		return removed;
@@ -201,7 +201,7 @@ public interface N5Writer extends N5Reader {
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes) throws N5Exception {
 
-		final String normalPath = N5URL.normalizeGroupPath(datasetPath);
+		final String normalPath = N5URI.normalizeGroupPath(datasetPath);
 		createGroup(normalPath);
 		setDatasetAttributes(normalPath, datasetAttributes);
 	}
