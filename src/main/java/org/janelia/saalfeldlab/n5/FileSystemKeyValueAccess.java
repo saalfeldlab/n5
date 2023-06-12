@@ -280,7 +280,9 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public URI uri(final String normalPath) throws URISyntaxException {
 
 		// normalize make absolute the scheme specific part only
-		return new File(normalPath).toURI().normalize();
+		final URI normalUri = URI.create(normalPath);
+		if (normalUri.isAbsolute()) return normalUri.normalize();
+		else return new File(normalPath).toURI().normalize();
 
 	}
 

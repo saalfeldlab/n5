@@ -82,7 +82,8 @@ public class N5FSTest extends AbstractN5Test {
 	@Override
 	protected String tempN5Location() throws URISyntaxException {
 
-		return tempN5PathName();
+		final String basePath = new File(tempN5PathName()).toURI().normalize().getPath();
+		return new URI("file", null, basePath, null).toString();
 	}
 
 	@Override
