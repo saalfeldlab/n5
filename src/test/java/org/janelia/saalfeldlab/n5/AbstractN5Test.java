@@ -164,16 +164,14 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testCreateGroup() {
 
-		try {
-			n5.createGroup(groupName);
-		} catch (final N5Exception e) {
-			fail(e.getMessage());
-		}
-
+		n5.createGroup(groupName);
 		final Path groupPath = Paths.get(groupName);
-		for (int i = 0; i < groupPath.getNameCount(); ++i)
-			if (!n5.exists(groupPath.subpath(0, i + 1).toString()))
-				fail("Group does not exist");
+		String subGroup = "";
+		for (int i = 0; i < groupPath.getNameCount(); ++i) {
+			subGroup = subGroup + "/" + groupPath.getName(i);
+			if (!n5.exists(subGroup))
+				fail("Group does not exist: " + subGroup);
+		}
 	}
 
 	@Test
@@ -789,7 +787,7 @@ public abstract class AbstractN5Test {
 
 		String location;
 		try (final N5Writer n5 = createN5Writer()) {
-			location = n5.getURI().toString();
+			location = n5.getURI().getPath();
 			assertNotNull(createN5Reader(location));
 			n5.remove();
 			assertThrows(Exception.class, () -> createN5Reader(location));
@@ -1074,7 +1072,7 @@ public abstract class AbstractN5Test {
 			assertFalse(N5Reader.VERSION.isCompatible(version));
 
 			assertThrows(N5Exception.N5IOException.class, () -> {
-				final String containerPath = writer.getURI().toString();
+				final String containerPath = writer.getURI().getPath();
 				createN5Writer(containerPath);
 			});
 

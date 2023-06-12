@@ -51,12 +51,19 @@ public interface KeyValueAccess {
 	public String[] components(final String path);
 
 	/**
-	 * Compose a path from components.
+	 * Compose a path from a base uri and subsequent components.
 	 *
-	 * @param components
-	 *            the path components
+	 * @param uri the base path uri
+	 * @param components the path components
 	 * @return the path
 	 */
+	public default String compose(final URI uri, final String... components) {
+		final String[] uriComponents = new String[components.length+1];
+		System.arraycopy(components, 0, uriComponents, 1, components.length);
+		uriComponents[0] = uri.getPath();
+		return compose(uriComponents);
+	}
+
 	public String compose(final String... components);
 
 	/**

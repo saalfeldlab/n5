@@ -245,14 +245,13 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 			final String normalPath,
 			final long... gridPosition) {
 
-		final String[] components = new String[gridPosition.length + 2];
-		components[0] = getURI().getPath();
-		components[1] = normalPath;
-		int i = 1;
+		final String[] components = new String[gridPosition.length + 1];
+		components[0] = normalPath;
+		int i = 0;
 		for (final long p : gridPosition)
 			components[++i] = Long.toString(p);
 
-		return getKeyValueAccess().compose(components);
+		return getKeyValueAccess().compose(getURI(), components);
 	}
 
 	/**

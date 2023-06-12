@@ -6,6 +6,7 @@ package org.janelia.saalfeldlab.n5;
 import static org.junit.Assert.assertArrayEquals;
 
 import java.nio.file.FileSystems;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 import org.junit.BeforeClass;
@@ -18,34 +19,32 @@ import org.junit.Test;
  */
 public class FileSystemKeyValueAccessTest {
 
-	private static String[] testPaths = new String[] {
-			"/test/path/file",
-			"test/path/file",
-			"/test/path/file/",
-			"test/path/file/",
-			"/file",
-			"file",
-			"/file/",
-			"file/",
-			"/",
-			""
-//			"",
-//			Paths.get("C:", "test", "path", "file").toString()
+	private static String root = FileSystems.getDefault().getRootDirectories().iterator().next().toString();
+	private static String separator = FileSystems.getDefault().getSeparator();
+	private static String[] testPaths = new String[]{
+			Paths.get(root, "test", "path", "file").toString(),
+			Paths.get("test", "path", "file").toString(),
+			Paths.get(root, "test", "path", "file", separator).toString(),
+			Paths.get("test", "path", "file", separator).toString(),
+			Paths.get(root, "file").toString(),
+			Paths.get("file").toString(),
+			Paths.get(root, "file", separator).toString(),
+			Paths.get("file", separator).toString(),
+			Paths.get(root).toString(),
+			Paths.get("").toString()
 	};
 
 	private static String[][] testPathComponents = new String[][] {
-			{"/", "test", "path", "file"},
+			{root, "test", "path", "file"},
 			{"test", "path", "file"},
-			{"/", "test", "path", "file"},
+			{root, "test", "path", "file"},
 			{"test", "path", "file"},
-			{"/", "file"},
+			{root, "file"},
 			{"file"},
-			{"/", "file"},
+			{root, "file"},
 			{"file"},
-			{"/"},
+			{root},
 			{""}
-//			{""},
-//			{"C:", "test", "path", "file"}
 	};
 
 	/**
@@ -59,11 +58,12 @@ public class FileSystemKeyValueAccessTest {
 
 		final FileSystemKeyValueAccess access = new FileSystemKeyValueAccess(FileSystems.getDefault());
 
-		for (int i = 0; i <  testPaths.length; ++i) {
+		for (int i = 0; i < testPaths.length; ++i) {
 
-			System.out.println(String.format("%d: %s -> %s", i, testPaths[i], Arrays.toString(access.components(testPaths[i]))));
+			final String[] components = access.components(testPaths[i]);
+			System.out.println(String.format("%d: %s -> %s", i, testPaths[i], Arrays.toString(components)));
 
-			assertArrayEquals(testPathComponents[i], access.components(testPaths[i]));
+			assertArrayEquals(testPathComponents[i], components);
 		}
 	}
 }

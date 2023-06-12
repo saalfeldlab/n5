@@ -88,7 +88,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 			}
 			for (final String child : pathParts) {
 
-				final String childPath = getKeyValueAccess().compose(parent, child);
+				final String childPath = parent.isEmpty() ? child : parent + "/" + child;
 				getCache().initializeNonemptyCache(childPath, N5KeyValueReader.ATTRIBUTES_JSON);
 				getCache().updateCacheInfo(childPath, N5KeyValueReader.ATTRIBUTES_JSON);
 

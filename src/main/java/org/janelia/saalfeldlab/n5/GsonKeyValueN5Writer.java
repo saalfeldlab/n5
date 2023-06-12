@@ -159,7 +159,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	default boolean removeAttribute(final String groupPath, final String attributePath) throws N5Exception {
 
 		final String normalPath = N5URL.normalizeGroupPath(groupPath);
-		final String absoluteNormalPath = getKeyValueAccess().compose(getURI().getPath(), normalPath);
+		final String absoluteNormalPath = getKeyValueAccess().compose(getURI(), normalPath);
 		final String normalKey = N5URL.normalizeAttributePath(attributePath);
 
 		if (!getKeyValueAccess().isDirectory(absoluteNormalPath))

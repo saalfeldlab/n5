@@ -156,7 +156,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 */
 	default String groupPath(final String normalGroupPath) {
 
-		return getKeyValueAccess().compose(getURI().getPath(), normalGroupPath);
+		return getKeyValueAccess().compose(getURI(), normalGroupPath);
 	}
 
 	/**
@@ -169,6 +169,6 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 */
 	default String attributesPath(final String normalPath) {
 
-		return getKeyValueAccess().compose(getURI().getPath(), normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
+		return getKeyValueAccess().compose(getURI(), normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
 	}
 }

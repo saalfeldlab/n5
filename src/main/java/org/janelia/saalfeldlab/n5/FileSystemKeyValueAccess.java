@@ -280,8 +280,16 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public URI uri(final String normalPath) throws URISyntaxException {
 
 		// normalize make absolute the scheme specific part only
-		final URI uri = new URI(normalPath);
-		return new URI("file", normalize(new File(uri.getSchemeSpecificPart()).getAbsolutePath()), uri.getFragment());
+		return new File(normalPath).toURI().normalize();
+
+	}
+
+	@Override
+	public String compose(final URI uri, final String... components) {
+		final String[] uriComps = new String[components.length+1];
+		System.arraycopy(components, 0, uriComps, 1, components.length);
+		uriComps[0] = fileSystem.provider().getPath(uri).toString();
+		return compose(uriComps);
 	}
 
 	@Override
@@ -291,7 +299,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			return null;
 		if (components.length == 1)
 			return fileSystem.getPath(components[0]).toString();
-		return fileSystem.getPath(components[0], Arrays.copyOfRange(components, 1, components.length)).toString();
+		return fileSystem.getPath(components[0], Arrays.copyOfRange(components, 1, components.length)).normalize().toString();
 	}
 
 	@Override
