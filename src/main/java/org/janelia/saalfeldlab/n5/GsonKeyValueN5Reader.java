@@ -55,8 +55,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		// then pass the result to the other groupPath method
 		// this impl assumes streams and array building are less expensive than
 		// keyValueAccess composition (may not always be true)
-		return getKeyValueAccess()
-				.compose(Stream.concat(Stream.of(getURI().getPath()), Arrays.stream(nodes)).toArray(String[]::new));
+		return getKeyValueAccess().compose(getURI(), nodes);
 	}
 
 	@Override
