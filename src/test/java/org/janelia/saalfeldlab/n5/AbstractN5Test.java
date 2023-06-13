@@ -787,7 +787,7 @@ public abstract class AbstractN5Test {
 
 		String location;
 		try (final N5Writer n5 = createN5Writer()) {
-			location = n5.getURI().getPath();
+			location = n5.getURI().toString();
 			assertNotNull(createN5Reader(location));
 			n5.remove();
 			assertThrows(Exception.class, () -> createN5Reader(location));
@@ -1072,7 +1072,7 @@ public abstract class AbstractN5Test {
 			assertFalse(N5Reader.VERSION.isCompatible(version));
 
 			assertThrows(N5Exception.N5IOException.class, () -> {
-				final String containerPath = writer.getURI().getPath();
+				final String containerPath = writer.getURI().toString();
 				createN5Writer(containerPath);
 			});
 
