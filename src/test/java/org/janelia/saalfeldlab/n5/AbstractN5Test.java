@@ -787,7 +787,7 @@ public abstract class AbstractN5Test {
 
 		String location;
 		try (final N5Writer n5 = createN5Writer()) {
-			location = n5.getURI().getPath();
+			location = n5.getURI().toString();
 			assertNotNull(createN5Reader(location));
 			n5.remove();
 			assertThrows(Exception.class, () -> createN5Reader(location));
