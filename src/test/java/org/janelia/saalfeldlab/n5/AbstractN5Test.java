@@ -1072,7 +1072,7 @@ public abstract class AbstractN5Test {
 			assertFalse(N5Reader.VERSION.isCompatible(version));
 
 			assertThrows(N5Exception.N5IOException.class, () -> {
-				final String containerPath = writer.getURI().getPath();
+				final String containerPath = writer.getURI().toString();
 				createN5Writer(containerPath);
 			});
 
