@@ -27,6 +27,7 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
@@ -45,6 +46,17 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	default boolean groupExists(final String normalPath) {
 
 		return getKeyValueAccess().isDirectory(absoluteGroupPath(normalPath));
+	}
+
+	@Override
+	default String groupPath(final String... nodes) {
+
+		// alternatively call compose twice, once with this functions inputs,
+		// then pass the result to the other groupPath method
+		// this impl assumes streams and array building are less expensive than
+		// keyValueAccess composition (may not always be true)
+		return getKeyValueAccess()
+				.compose(Stream.concat(Stream.of(getURI().getPath()), Arrays.stream(nodes)).toArray(String[]::new));
 	}
 
 	@Override

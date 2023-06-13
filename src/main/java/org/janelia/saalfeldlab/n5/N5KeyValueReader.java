@@ -27,8 +27,6 @@ package org.janelia.saalfeldlab.n5;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 
@@ -168,10 +166,4 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 		return this.cache;
 	}
 
-	@Override
-	public String groupPath(final String... nodes) {
-
-		return keyValueAccess
-				.compose(Stream.concat(Stream.of(getURI().getPath()), Arrays.stream(nodes)).toArray(String[]::new));
-	}
 }
