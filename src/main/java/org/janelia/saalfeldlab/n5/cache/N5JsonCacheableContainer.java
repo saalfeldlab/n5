@@ -10,7 +10,7 @@ import com.google.gson.JsonElement;
  * An N5 container whose structure and attributes can be cached.
  * <p>
  * Implementations of interface methods must explicitly query the backing
- * storage. Cached implmentations (e.g {@link CachedGsonKeyValueN5Reader}) call
+ * storage unless noted otherwise. Cached implementations (e.g {@link CachedGsonKeyValueN5Reader}) call
  * these methods to update their {@link N5JsonCache}. Corresponding
  * {@link N5Reader} methods should use the cache, if present.
  */
@@ -60,8 +60,11 @@ public interface N5JsonCacheableContainer {
 	boolean isDatasetFromContainer(final String normalPathName);
 
 	/**
-	 * If this method is called, its parent path must exist,
-	 * and normalCacheKey must exist, with contents given by attributes.
+	 * 
+	 * Returns true if a path is a group, given that the the given attributes exist
+	 * for the given cache key.
+	 * <p>
+	 * Should not call the backing storage.
 	 *
 	 * @param normalCacheKey
 	 *            the cache key
@@ -72,8 +75,10 @@ public interface N5JsonCacheableContainer {
 	boolean isGroupFromAttributes(final String normalCacheKey, final JsonElement attributes);
 
 	/**
-	 * If this method is called, its parent path must exist,
-	 * and normalCacheKey must exist, with contents given by attributes.
+	 * Returns true if a path is a dataset, given that the the given attributes exist
+	 * for the given cache key.
+	 * <p>
+	 * Should not call the backing storage.
 	 *
 	 * @param normalCacheKey
 	 *            the cache key

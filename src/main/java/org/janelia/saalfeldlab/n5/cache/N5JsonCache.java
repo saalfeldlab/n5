@@ -8,6 +8,12 @@ import org.janelia.saalfeldlab.n5.N5Exception;
 
 import com.google.gson.JsonElement;
 
+/*
+ * A cache containing JSON attributes and children for groups and
+ * datasets stored in N5 containers. Used by {@link CachedGsonKeyValueN5Reader}
+ * and {@link CachedGsonKeyValueN5Writer}.
+ *
+ */
 public class N5JsonCache {
 
 	public static final N5CacheInfo emptyCacheInfo = new N5CacheInfo();

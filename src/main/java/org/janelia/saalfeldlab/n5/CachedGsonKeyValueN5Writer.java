@@ -54,9 +54,9 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 	default void createGroup(final String path) throws N5Exception {
 
 		final String normalPath = N5URI.normalizeGroupPath(path);
-		// TODO: John document this!
-		// if you are a group, avoid hitting the backend
-		// if something exists, be safe
+		// avoid hitting the backend if this path is already a group according to the cache
+		// else if exists is true (then a dataset is present) so throw an exception to avoid
+		// overwriting / invalidating existing data
 		if (cacheMeta()) {
 			if (getCache().isGroup(normalPath, N5KeyValueReader.ATTRIBUTES_JSON))
 				return;
@@ -67,10 +67,8 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 
 		// N5Writer.super.createGroup(path);
 		/*
-		 * the 6 lines below duplicate the single line above but would have to
-		 * call
-		 * normalizeGroupPath again the below duplicates code, but avoids extra
-		 * work
+		 * the lines below duplicate the single line above but would have to call
+		 * normalizeGroupPath again the below duplicates code, but avoids extra work
 		 */
 		try {
 			getKeyValueAccess().createDirectories(absoluteGroupPath(normalPath));
@@ -140,10 +138,8 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 
 		// GsonKeyValueN5Writer.super.remove(path)
 		/*
-		 * the 8 lines below duplicate the single line above but would have to
-		 * call
-		 * normalizeGroupPath again the below duplicates code, but avoids extra
-		 * work
+		 * the lines below duplicate the single line above but would have to call
+		 * normalizeGroupPath again the below duplicates code, but avoids extra work
 		 */
 		final String normalPath = N5URI.normalizeGroupPath(path);
 		final String groupPath = absoluteGroupPath(normalPath);

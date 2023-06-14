@@ -27,7 +27,6 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 

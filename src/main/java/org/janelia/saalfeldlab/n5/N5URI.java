@@ -17,6 +17,12 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * A {@link URI} for N5 containers, groups, datasets, and attributes.
+ * <p>
+ * Container paths are stored in the URI path. Group / dataset paths are stored in the URI query,
+ * and attribute paths are stored in the URI fragment.
+ */
 public class N5URI {
 
 	private static final Charset UTF8 = Charset.forName("UTF-8");

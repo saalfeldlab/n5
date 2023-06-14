@@ -25,7 +25,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Map;
 
@@ -107,7 +106,7 @@ public interface GsonN5Reader extends N5Reader {
 	 * @param pathName
 	 *            group path
 	 * @return
-	 * @throws IOException
+	 * @throws N5Exception
 	 */
 	JsonElement getAttributes(final String pathName) throws N5Exception;
 }

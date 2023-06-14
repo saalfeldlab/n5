@@ -339,7 +339,7 @@ public interface N5Reader extends AutoCloseable {
 	boolean exists(final String pathName);
 
 	/**
-	 * Test whether a dataset exists.
+	 * Test whether a dataset exists at a given path.
 	 *
 	 * @param pathName
 	 *            dataset path
@@ -364,7 +364,7 @@ public interface N5Reader extends AutoCloseable {
 	String[] list(final String pathName) throws N5Exception;
 
 	/**
-	 * Recursively list all groups (including datasets) in the given group.
+	 * Recursively list all groups and datasets in the given path.
 	 * Only paths that satisfy the provided filter will be included, but the
 	 * children of paths that were excluded may be included (filter does not
 	 * apply to the subtree).
@@ -373,7 +373,7 @@ public interface N5Reader extends AutoCloseable {
 	 *            base group path
 	 * @param filter
 	 *            filter for children to be included
-	 * @return list of groups
+	 * @return list of child groups and datasets
 	 * @throws N5Exception
 	 *             the exception
 	 */
@@ -396,11 +396,11 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Recursively list all groups (including datasets) in the given group.
+	 * Recursively list all groups and datasets in the given path.
 	 *
 	 * @param pathName
 	 *            base group path
-	 * @return list of groups
+	 * @return list of groups and datasets
 	 * @throws N5Exception
 	 *             the exception
 	 */
@@ -410,8 +410,7 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Recursively list all datasets in the given group. Only paths that satisfy
-	 * the
+	 * Recursively list all datasets in the given path. Only paths that satisfy the
 	 * provided filter will be included, but the children of paths that were
 	 * excluded may be included (filter does not apply to the subtree).
 	 *
@@ -431,19 +430,14 @@ public interface N5Reader extends AutoCloseable {
 	 * }
 	 * </pre>
 	 * <p>
-	 * but will execute {@link #datasetExists(String)} only once per node. This
-	 * can
-	 * be relevant for performance on high latency backends such as cloud
-	 * stores.
+	 * but will execute {@link #datasetExists(String)} only once per node. This can
+	 * be relevant for performance on high latency backends such as cloud stores.
 	 * </p>
 	 *
-	 * @param pathName
-	 *            base group path
-	 * @param filter
-	 *            filter for datasets to be included
+	 * @param pathName base group path
+	 * @param filter   filter for datasets to be included
 	 * @return list of groups
-	 * @throws N5Exception
-	 *             the exception
+	 * @throws N5Exception the exception
 	 */
 	default String[] deepListDatasets(
 			final String pathName,
@@ -464,7 +458,7 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Recursively list all including datasets in the given group.
+	 * Recursively list all including datasets in the given path.
 	 *
 	 * <p>
 	 * This method delivers the same results as
@@ -500,23 +494,18 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Helper method to recursively list all groups. This method is not part
-	 * of the public API and is accessible only because Java 8 does not support
-	 * private interface methods yet.
+	 * Helper method to recursively list all groups and datasets. This method is not part of the
+	 * public API and is accessible only because Java 8 does not support private
+	 * interface methods yet.
 	 *
 	 * TODO make private when committing to Java versions newer than 8
 	 *
-	 * @param n5
-	 *            the n5 reader
-	 * @param pathName
-	 *            the base group path
-	 * @param datasetsOnly
-	 *            true if only dataset paths should be returned
-	 * @param filter
-	 *            a dataset filter
+	 * @param n5           the n5 reader
+	 * @param pathName     the base group path
+	 * @param datasetsOnly true if only dataset paths should be returned
+	 * @param filter       a dataset filter
 	 * @return the list of all children
-	 * @throws N5Exception
-	 *             the exception
+	 * @throws N5Exception the exception
 	 */
 	static ArrayList<String> deepList(
 			final N5Reader n5,
