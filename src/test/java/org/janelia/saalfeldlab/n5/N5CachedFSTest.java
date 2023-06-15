@@ -274,7 +274,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
 
-		n5.list(nonExistentGroup);
+		assertThrows(N5Exception.class, () -> n5.list(nonExistentGroup));
 		assertEquals(expectedExistCount, n5.getExistCallCount());
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());

@@ -132,7 +132,7 @@ public class N5JsonCache {
 			cacheInfo = getCacheInfo(normalPathKey);
 		}
 		if (cacheInfo == emptyCacheInfo)
-			return null;
+			throw new N5Exception.N5IOException(normalPathKey + " is not a valid group");
 
 		if (cacheInfo.children == null)
 			addChild(cacheInfo, normalPathKey);
