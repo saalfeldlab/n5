@@ -345,7 +345,7 @@ public interface N5Reader extends AutoCloseable {
 	 *            dataset path
 	 * @return true if a dataset exists
 	 * @throws N5Exception
-	 *             the exception
+	 *             an exception is thrown if the existence of a dataset at the given path cannot be determined.
 	 */
 	default boolean datasetExists(final String pathName) throws N5Exception {
 
@@ -359,7 +359,7 @@ public interface N5Reader extends AutoCloseable {
 	 *            group path
 	 * @return list of children
 	 * @throws N5Exception
-	 *             the exception
+	 *             an exception is thrown if pathName is not a valid group
 	 */
 	String[] list(final String pathName) throws N5Exception;
 
@@ -375,7 +375,7 @@ public interface N5Reader extends AutoCloseable {
 	 *            filter for children to be included
 	 * @return list of child groups and datasets
 	 * @throws N5Exception
-	 *             the exception
+	 * 		an exception is thrown if pathName is not a valid group
 	 */
 	default String[] deepList(
 			final String pathName,
@@ -402,7 +402,7 @@ public interface N5Reader extends AutoCloseable {
 	 *            base group path
 	 * @return list of groups and datasets
 	 * @throws N5Exception
-	 *             the exception
+	 * 				an exception is thrown if pathName is not a valid group
 	 */
 	default String[] deepList(final String pathName) throws N5Exception {
 
@@ -437,7 +437,8 @@ public interface N5Reader extends AutoCloseable {
 	 * @param pathName base group path
 	 * @param filter   filter for datasets to be included
 	 * @return list of groups
-	 * @throws N5Exception the exception
+	 * @throws N5Exception
+	 * 				an exception is thrown if pathName is not a valid group
 	 */
 	default String[] deepListDatasets(
 			final String pathName,
@@ -486,7 +487,7 @@ public interface N5Reader extends AutoCloseable {
 	 *            base group path
 	 * @return list of groups
 	 * @throws N5Exception
-	 *             the exception
+	 * 				an exception is thrown if pathName is not a valid group
 	 */
 	default String[] deepListDatasets(final String pathName) throws N5Exception {
 
@@ -505,7 +506,8 @@ public interface N5Reader extends AutoCloseable {
 	 * @param datasetsOnly true if only dataset paths should be returned
 	 * @param filter       a dataset filter
 	 * @return the list of all children
-	 * @throws N5Exception the exception
+	 * @throws N5Exception
+	 * 				an exception is thrown if pathName is not a valid group
 	 */
 	static ArrayList<String> deepList(
 			final N5Reader n5,
@@ -545,7 +547,7 @@ public interface N5Reader extends AutoCloseable {
 	 *            executor service
 	 * @return list of datasets
 	 * @throws N5Exception
-	 *             the exception
+	 * 				an exception is thrown if pathName is not a valid group
 	 * @throws ExecutionException
 	 *             the execution exception
 	 * @throws InterruptedException
@@ -582,11 +584,11 @@ public interface N5Reader extends AutoCloseable {
 	 *            executor service
 	 * @return list of groups
 	 * @throws N5Exception
-	 *             the exception
+	 * 				an exception is thrown if pathName is not a valid group
 	 * @throws ExecutionException
 	 *             the execution exception
 	 * @throws InterruptedException
-	 *             the interrupted exception
+	 *             this exception is thrown if execution is interrupted
 	 */
 	default String[] deepList(
 			final String pathName,
@@ -632,11 +634,11 @@ public interface N5Reader extends AutoCloseable {
 	 *            executor service
 	 * @return list of datasets
 	 * @throws N5Exception
-	 *             the exception
+	 * 				an exception is thrown if pathName is not a valid group
 	 * @throws ExecutionException
 	 *             the execution exception
 	 * @throws InterruptedException
-	 *             the interrupted exception
+	 *             this exception is thrown if execution is interrupted
 	 */
 	default String[] deepListDatasets(
 			final String pathName,
@@ -691,11 +693,11 @@ public interface N5Reader extends AutoCloseable {
 	 *            executor service
 	 * @return list of groups
 	 * @throws N5Exception
-	 *             the exception
+	 * 				an exception is thrown if pathName is not a valid group
 	 * @throws ExecutionException
 	 *             the execution exception
 	 * @throws InterruptedException
-	 *             the interrupted exception
+	 *             this exception is thrown if execution is interrupted
 	 */
 	default String[] deepListDatasets(
 			final String pathName,
