@@ -825,6 +825,11 @@ public abstract class AbstractN5Test {
 			assertArrayEquals(new String[]{"test"}, listN5.list(""));
 			assertArrayEquals(new String[]{"test"}, listN5.list("/"));
 
+			// calling list on a non-existant group throws an exception
+			assertThrows(N5Exception.class, () -> {
+				listN5.list("this-group-does-not-exist");
+			});
+
 		} catch (final IOException e) {
 			fail(e.getMessage());
 		}
