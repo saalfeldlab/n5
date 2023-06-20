@@ -48,16 +48,6 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	@Override
-	default String groupPath(final String... nodes) {
-
-		// alternatively call compose twice, once with this functions inputs,
-		// then pass the result to the other groupPath method
-		// this impl assumes streams and array building are less expensive than
-		// keyValueAccess composition (may not always be true)
-		return getKeyValueAccess().compose(getURI(), nodes);
-	}
-
-	@Override
 	default boolean exists(final String pathName) {
 
 		final String normalPath = N5URI.normalizeGroupPath(pathName);
