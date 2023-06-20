@@ -908,12 +908,8 @@ public abstract class AbstractN5Test {
 			assertFalse("deepList stops at datasets", datasetListP3.contains(datasetName + "/0"));
 
 			// test filtering
-			final Predicate<String> isCalledDataset = d -> {
-				return d.endsWith("/dataset");
-			};
-			final Predicate<String> isBorC = d -> {
-				return d.matches(".*/[bc]$");
-			};
+			final Predicate<String> isCalledDataset = d -> d.endsWith("/dataset");
+			final Predicate<String> isBorC = d -> d.matches(".*/[bc]$");
 
 			final List<String> datasetListFilter1 = Arrays.asList(n5.deepList(prefix, isCalledDataset));
 			assertTrue(
@@ -944,29 +940,13 @@ public abstract class AbstractN5Test {
 					datasetListFilterD.size() == 1 && (prefix + "/" + datasetListFilterD.get(0)).equals(datasetName));
 			assertArrayEquals(
 					datasetListFilterD.toArray(),
-					n5.deepList(
-							prefix,
-							a -> {
-								try {
-									return n5.datasetExists(a);
-								} catch (final N5Exception e) {
-									return false;
-								}
-							}));
+					n5.deepList(prefix, n5::datasetExists));
 
 			final List<String> datasetListFilterDandBC = Arrays.asList(n5.deepListDatasets(prefix, isBorC));
 			assertTrue("deepListDatasetFilter", datasetListFilterDandBC.size() == 0);
 			assertArrayEquals(
 					datasetListFilterDandBC.toArray(),
-					n5.deepList(
-							prefix,
-							a -> {
-								try {
-									return n5.datasetExists(a) && isBorC.test(a);
-								} catch (final N5Exception e) {
-									return false;
-								}
-							}));
+					n5.deepList(prefix, a -> n5.datasetExists(a) && isBorC.test(a)));
 
 			final List<String> datasetListFilterDP =
 					Arrays.asList(n5.deepListDatasets(prefix, Executors.newFixedThreadPool(2)));
@@ -975,32 +955,14 @@ public abstract class AbstractN5Test {
 					datasetListFilterDP.size() == 1 && (prefix + "/" + datasetListFilterDP.get(0)).equals(datasetName));
 			assertArrayEquals(
 					datasetListFilterDP.toArray(),
-					n5.deepList(
-							prefix,
-							a -> {
-								try {
-									return n5.datasetExists(a);
-								} catch (final N5Exception e) {
-									return false;
-								}
-							},
-							Executors.newFixedThreadPool(2)));
+					n5.deepList(prefix, n5::datasetExists, Executors.newFixedThreadPool(2)));
 
 			final List<String> datasetListFilterDandBCP =
 					Arrays.asList(n5.deepListDatasets(prefix, isBorC, Executors.newFixedThreadPool(2)));
 			assertTrue("deepListDatasetFilter Parallel", datasetListFilterDandBCP.size() == 0);
 			assertArrayEquals(
 					datasetListFilterDandBCP.toArray(),
-					n5.deepList(
-							prefix,
-							a -> {
-								try {
-									return n5.datasetExists(a) && isBorC.test(a);
-								} catch (final N5Exception e) {
-									return false;
-								}
-							},
-							Executors.newFixedThreadPool(2)));
+					n5.deepList(prefix, a -> n5.datasetExists(a) && isBorC.test(a), Executors.newFixedThreadPool(2)));
 		}
 	}
 
@@ -1030,49 +992,45 @@ public abstract class AbstractN5Test {
 
 		final String groupName2 = groupName + "-2";
 		final String datasetName2 = datasetName + "-2";
-		try {
-			n5.createDataset(datasetName2, dimensions, blockSize, DataType.UINT64, new RawCompression());
-			n5.setAttribute(datasetName2, "attr1", new double[]{1.1, 2.1, 3.1});
-			n5.setAttribute(datasetName2, "attr2", new String[]{"a", "b", "c"});
-			n5.setAttribute(datasetName2, "attr3", 1.1);
-			n5.setAttribute(datasetName2, "attr4", "a");
-			n5.setAttribute(datasetName2, "attr5", new long[]{1, 2, 3});
-			n5.setAttribute(datasetName2, "attr6", 1);
-			n5.setAttribute(datasetName2, "attr7", new double[]{1, 2, 3.1});
-			n5.setAttribute(datasetName2, "attr8", new Object[]{"1", 2, 3.1});
+		n5.createDataset(datasetName2, dimensions, blockSize, DataType.UINT64, new RawCompression());
+		n5.setAttribute(datasetName2, "attr1", new double[]{1.1, 2.1, 3.1});
+		n5.setAttribute(datasetName2, "attr2", new String[]{"a", "b", "c"});
+		n5.setAttribute(datasetName2, "attr3", 1.1);
+		n5.setAttribute(datasetName2, "attr4", "a");
+		n5.setAttribute(datasetName2, "attr5", new long[]{1, 2, 3});
+		n5.setAttribute(datasetName2, "attr6", 1);
+		n5.setAttribute(datasetName2, "attr7", new double[]{1, 2, 3.1});
+		n5.setAttribute(datasetName2, "attr8", new Object[]{"1", 2, 3.1});
 
-			Map<String, Class<?>> attributesMap = n5.listAttributes(datasetName2);
-			assertTrue(attributesMap.get("attr1") == double[].class);
-			assertTrue(attributesMap.get("attr2") == String[].class);
-			assertTrue(attributesMap.get("attr3") == double.class);
-			assertTrue(attributesMap.get("attr4") == String.class);
-			assertTrue(attributesMap.get("attr5") == long[].class);
-			assertTrue(attributesMap.get("attr6") == long.class);
-			assertTrue(attributesMap.get("attr7") == double[].class);
-			assertTrue(attributesMap.get("attr8") == Object[].class);
+		Map<String, Class<?>> attributesMap = n5.listAttributes(datasetName2);
+		assertTrue(attributesMap.get("attr1") == double[].class);
+		assertTrue(attributesMap.get("attr2") == String[].class);
+		assertTrue(attributesMap.get("attr3") == double.class);
+		assertTrue(attributesMap.get("attr4") == String.class);
+		assertTrue(attributesMap.get("attr5") == long[].class);
+		assertTrue(attributesMap.get("attr6") == long.class);
+		assertTrue(attributesMap.get("attr7") == double[].class);
+		assertTrue(attributesMap.get("attr8") == Object[].class);
 
-			n5.createGroup(groupName2);
-			n5.setAttribute(groupName2, "attr1", new double[]{1.1, 2.1, 3.1});
-			n5.setAttribute(groupName2, "attr2", new String[]{"a", "b", "c"});
-			n5.setAttribute(groupName2, "attr3", 1.1);
-			n5.setAttribute(groupName2, "attr4", "a");
-			n5.setAttribute(groupName2, "attr5", new long[]{1, 2, 3});
-			n5.setAttribute(groupName2, "attr6", 1);
-			n5.setAttribute(groupName2, "attr7", new double[]{1, 2, 3.1});
-			n5.setAttribute(groupName2, "attr8", new Object[]{"1", 2, 3.1});
+		n5.createGroup(groupName2);
+		n5.setAttribute(groupName2, "attr1", new double[]{1.1, 2.1, 3.1});
+		n5.setAttribute(groupName2, "attr2", new String[]{"a", "b", "c"});
+		n5.setAttribute(groupName2, "attr3", 1.1);
+		n5.setAttribute(groupName2, "attr4", "a");
+		n5.setAttribute(groupName2, "attr5", new long[]{1, 2, 3});
+		n5.setAttribute(groupName2, "attr6", 1);
+		n5.setAttribute(groupName2, "attr7", new double[]{1, 2, 3.1});
+		n5.setAttribute(groupName2, "attr8", new Object[]{"1", 2, 3.1});
 
-			attributesMap = n5.listAttributes(groupName2);
-			assertTrue(attributesMap.get("attr1") == double[].class);
-			assertTrue(attributesMap.get("attr2") == String[].class);
-			assertTrue(attributesMap.get("attr3") == double.class);
-			assertTrue(attributesMap.get("attr4") == String.class);
-			assertTrue(attributesMap.get("attr5") == long[].class);
-			assertTrue(attributesMap.get("attr6") == long.class);
-			assertTrue(attributesMap.get("attr7") == double[].class);
-			assertTrue(attributesMap.get("attr8") == Object[].class);
-		} catch (final N5Exception e) {
-			fail(e.getMessage());
-		}
+		attributesMap = n5.listAttributes(groupName2);
+		assertTrue(attributesMap.get("attr1") == double[].class);
+		assertTrue(attributesMap.get("attr2") == String[].class);
+		assertTrue(attributesMap.get("attr3") == double.class);
+		assertTrue(attributesMap.get("attr4") == String.class);
+		assertTrue(attributesMap.get("attr5") == long[].class);
+		assertTrue(attributesMap.get("attr6") == long.class);
+		assertTrue(attributesMap.get("attr7") == double[].class);
+		assertTrue(attributesMap.get("attr8") == Object[].class);
 	}
 
 	@Test
@@ -1082,7 +1040,7 @@ public abstract class AbstractN5Test {
 
 			final Version n5Version = writer.getVersion();
 
-			assertTrue(n5Version.equals(N5Reader.VERSION));
+			assertEquals(n5Version, N5Reader.VERSION);
 
 			final Version incompatibleVersion = new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch());
 			writer.setAttribute("/", N5Reader.VERSION_KEY, incompatibleVersion.toString());
