@@ -59,4 +59,42 @@ public class N5Exception extends RuntimeException {
 			super(message, cause, enableSuppression, writableStackTrace);
 		}
 	}
+
+	/**
+	 * This excpetion represents the situation when an attribute is requested by key as a specific Class<T>,
+	 * 	that attribute key <b>does</b> exist, but is not parseable as the desired Class<T>
+	 */
+	public static class N5ClassCastException extends N5Exception {
+
+
+		public N5ClassCastException(final Class<?> cls) {
+
+			super("Cannot cast as class " + cls.getName());
+		}
+
+		public N5ClassCastException(final String message) {
+
+			super(message);
+		}
+
+		public N5ClassCastException(final String message, final Throwable cause) {
+
+			super(message, cause);
+		}
+
+		public N5ClassCastException(final Throwable cause) {
+
+			super(cause);
+		}
+
+		protected N5ClassCastException(
+				final String message,
+				final Throwable cause,
+				final boolean enableSuppression,
+				final boolean writableStackTrace) {
+
+			super(message, cause, enableSuppression, writableStackTrace);
+		}
+	}
+
 }

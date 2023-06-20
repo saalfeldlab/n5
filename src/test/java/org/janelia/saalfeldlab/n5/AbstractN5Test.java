@@ -88,7 +88,7 @@ public abstract class AbstractN5Test {
 
 	static protected N5Writer n5;
 
-	protected abstract String tempN5Location() throws URISyntaxException;
+	protected abstract String tempN5Location() throws URISyntaxException, IOException;
 
 	protected N5Writer createN5Writer() throws IOException, URISyntaxException {
 		return createN5Writer(tempN5Location());
@@ -454,11 +454,11 @@ public abstract class AbstractN5Test {
 
 			/* Test parsing of int, int[], double, double[], String, and String[] types
 			 *
-			 *	All types should be parseable as JsonElements
+			 *	All types are parseable as JsonElements or String
 			 *
-			 *	ints should be parseable as doubles and Strings
-			 *	doubles should be parseable as doubles and Strings
-			 *	Strings sould be parsable as Strings
+			 *	ints are also parseable as doubles and Strings
+			 *	doubles are also parseable as ints and Strings
+			 *	Strings should be parsable as Strings
 			 *
 			 *	int[]s should be parseable as double[]s and String[]s
 			 *	double[]s should be parseable as double[]s and String[]s
@@ -466,58 +466,58 @@ public abstract class AbstractN5Test {
 			 */
 
 			n5.setAttribute(groupName, "key", "value");
-			assertNull(n5.getAttribute(groupName, "key", Integer.class ));
-			assertNull(n5.getAttribute(groupName, "key", int[].class ));
-			assertNull(n5.getAttribute(groupName, "key", Double.class ));
-			assertNull(n5.getAttribute(groupName, "key", double[].class ));
-			assertNotNull(n5.getAttribute(groupName, "key", String.class ));
-			assertNull(n5.getAttribute(groupName, "key", String[].class ));
-			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+			assertEquals("value", n5.getAttribute(groupName, "key", String.class));
+			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", Integer.class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", int[].class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", Double.class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", double[].class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", String[].class));
 
-			n5.setAttribute(groupName, "key", new String[]{"value" });
-			assertNull(n5.getAttribute(groupName, "key", Integer.class ));
-			assertNull(n5.getAttribute(groupName, "key", int[].class ));
-			assertNull(n5.getAttribute(groupName, "key", Double.class ));
-			assertNull(n5.getAttribute(groupName, "key", double[].class ));
-			assertNotNull(n5.getAttribute(groupName, "key", String.class ));
-			assertNotNull(n5.getAttribute(groupName, "key", String[].class ));
-			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+			n5.setAttribute(groupName, "key", new String[]{"value"});
+			assertArrayEquals(new String[]{"value"}, n5.getAttribute(groupName, "key", String[].class));
+			assertEquals(JsonParser.parseString("[\"value\"]"), JsonParser.parseString(n5.getAttribute(groupName, "key", String.class)));
+			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", Integer.class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", int[].class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", Double.class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", double[].class));
 
 			n5.setAttribute(groupName, "key", 1);
-			assertNotNull(n5.getAttribute(groupName, "key", Integer.class ));
-			assertNull(n5.getAttribute(groupName, "key", int[].class ));
-			assertNotNull(n5.getAttribute(groupName, "key", Double.class ));
-			assertNull(n5.getAttribute(groupName, "key", double[].class ));
-			assertNotNull(n5.getAttribute(groupName, "key", String.class ));
-			assertNull(n5.getAttribute(groupName, "key", String[].class ));
-			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+			assertEquals(1, (long)n5.getAttribute(groupName, "key", Integer.class));
+			assertEquals(1.0, n5.getAttribute(groupName, "key", Double.class), .00001);
+			assertEquals("1", n5.getAttribute(groupName, "key", String.class));
+			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", int[].class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", double[].class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", String[].class));
 
 			n5.setAttribute(groupName, "key", new int[]{2, 3});
-			assertNull(n5.getAttribute(groupName, "key", Integer.class ));
-			assertNotNull(n5.getAttribute(groupName, "key", int[].class ));
-			assertNull(n5.getAttribute(groupName, "key", Double.class ));
-			assertNotNull(n5.getAttribute(groupName, "key", double[].class ));
-			assertNotNull(n5.getAttribute(groupName, "key", String.class ));
-			assertNotNull(n5.getAttribute(groupName, "key", String[].class ));
-			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+			assertArrayEquals(new int[]{2, 3}, n5.getAttribute(groupName, "key", int[].class));
+			assertArrayEquals(new double[]{2.0, 3.0}, n5.getAttribute(groupName, "key", double[].class), .00001);
+			assertEquals(JsonParser.parseString("[2,3]"), JsonParser.parseString(n5.getAttribute(groupName, "key", String.class)));
+			assertArrayEquals(new String[]{"2", "3"}, n5.getAttribute(groupName, "key", String[].class));
+			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", Integer.class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", Double.class));
 
 			n5.setAttribute(groupName, "key", 0.1);
-//			assertNull(n5.getAttribute(groupName, "key", Integer.class )); // TODO returns 0, is this right
-			assertNull(n5.getAttribute(groupName, "key", int[].class ));
-			assertNotNull(n5.getAttribute(groupName, "key", Double.class ));
-			assertNull(n5.getAttribute(groupName, "key", double[].class ));
-			assertNotNull(n5.getAttribute(groupName, "key", String.class ));
-			assertNull(n5.getAttribute(groupName, "key", String[].class ));
-			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+			assertEquals(0, (long)n5.getAttribute(groupName, "key", Integer.class));
+			assertEquals(0.1, n5.getAttribute(groupName, "key", Double.class), .00001);
+			assertEquals("0.1", n5.getAttribute(groupName, "key", String.class));
+			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", int[].class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", double[].class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", String[].class));
 
 			n5.setAttribute(groupName, "key", new double[]{0.2, 0.3});
-			assertNull(n5.getAttribute(groupName, "key", Integer.class ));
-//			assertNull(n5.getAttribute(groupName, "key", int[].class )); // TODO returns not null, is this right?
-			assertNull(n5.getAttribute(groupName, "key", Double.class ));
-			assertNotNull(n5.getAttribute(groupName, "key", double[].class ));
-			assertNotNull(n5.getAttribute(groupName, "key", String.class ));
-			assertNotNull(n5.getAttribute(groupName, "key", String[].class ));
-			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class ));
+			assertArrayEquals(new int[]{0, 0}, n5.getAttribute(groupName, "key", int[].class)); // TODO returns not null, is this right?
+			assertArrayEquals(new double[]{0.2, 0.3}, n5.getAttribute(groupName, "key", double[].class), .00001);
+			assertEquals(JsonParser.parseString("[0.2,0.3]"), JsonParser.parseString(n5.getAttribute(groupName, "key", String.class)));
+			assertArrayEquals(new String[]{"0.2", "0.3"}, n5.getAttribute(groupName, "key", String[].class));
+			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", Integer.class));
+			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", Double.class));
 		}
 	}
 
@@ -623,7 +623,7 @@ public abstract class AbstractN5Test {
 			writer.setAttribute(groupName, "existingValue", 1);
 			assertEquals((Integer)1, writer.getAttribute(groupName, "existingValue", Integer.class));
 			writer.setAttribute(groupName, "existingValue", null);
-			assertNull(writer.getAttribute(groupName, "existingValue", Integer.class));
+			assertThrows(N5ClassCastException.class, () -> writer.getAttribute(groupName, "existingValue", Integer.class));
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "existingValue", JsonElement.class));
 		}
 
@@ -689,7 +689,7 @@ public abstract class AbstractN5Test {
 			writer.setAttribute("", "a/b/c", 100);
 			assertEquals((Integer)100, writer.getAttribute("", "a/b/c", Integer.class));
 			/* Remove Test with incorrect Type */
-			assertNull(writer.removeAttribute("", "a/b/c", Boolean.class));
+			assertThrows(N5ClassCastException.class, () -> writer.removeAttribute("", "a/b/c", Boolean.class));
 			final Integer abcInteger = writer.removeAttribute("", "a/b/c", Integer.class);
 			assertEquals((Integer)100, abcInteger);
 			assertNull(writer.getAttribute("", "a/b/c", Integer.class));

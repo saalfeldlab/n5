@@ -44,7 +44,7 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 /**
- * {@link N5Reader} for JSON attributes parsed by {@link Gson}.
+ * Utility class for working with  JSON.
  *
  * @author Stephan Saalfeld
  */
@@ -77,7 +77,7 @@ public interface GsonUtils {
 			final JsonElement root,
 			final String normalizedAttributePath,
 			final Class<T> cls,
-			final Gson gson) {
+			final Gson gson) throws JsonSyntaxException, NumberFormatException, ClassCastException {
 
 		return readAttribute(root, normalizedAttributePath, TypeToken.get(cls).getType(), gson);
 	}
@@ -86,7 +86,7 @@ public interface GsonUtils {
 			final JsonElement root,
 			final String normalizedAttributePath,
 			final Type type,
-			final Gson gson) {
+			final Gson gson) throws JsonSyntaxException, NumberFormatException, ClassCastException {
 
 		final JsonElement attribute = getAttribute(root, normalizedAttributePath);
 		return parseAttributeElement(attribute, gson, type);
@@ -106,7 +106,7 @@ public interface GsonUtils {
 	 * @return the deserialized attribute object, or {@code null} if
 	 *         {@code attribute} cannot deserialize to {@code T}
 	 */
-	static <T> T parseAttributeElement(final JsonElement attribute, final Gson gson, final Type type) {
+	static <T> T parseAttributeElement(final JsonElement attribute, final Gson gson, final Type type) throws JsonSyntaxException, NumberFormatException, ClassCastException {
 
 		if (attribute == null)
 			return null;
@@ -128,20 +128,20 @@ public interface GsonUtils {
 					return retArray;
 			} catch (final JsonSyntaxException e) {
 				if (type == String.class)
+					//noinspection unchecked
 					return (T)gson.toJson(attribute);
-				return null;
-			} catch (final NumberFormatException nfe) {
-				return null;
 			}
 		}
 		try {
-			return gson.fromJson(attribute, type);
+			final T parsedResult = gson.fromJson(attribute, type);
+			if (parsedResult == null)
+				throw new ClassCastException("Cannot parse json as type " + type.getTypeName());
+			return parsedResult;
 		} catch (final JsonSyntaxException e) {
 			if (type == String.class)
+				//noinspection unchecked
 				return (T)gson.toJson(attribute);
-			return null;
-		} catch (final NumberFormatException nfe) {
-			return null;
+			throw e;
 		}
 	}
 
@@ -388,7 +388,7 @@ public interface GsonUtils {
 			final JsonElement root,
 			final String normalizedAttributePath,
 			final Class<T> cls,
-			final Gson gson) throws IOException {
+			final Gson gson) throws JsonSyntaxException, NumberFormatException, ClassCastException, IOException  {
 
 		final T removed = removeAttribute(root, normalizedAttributePath, cls, gson);
 		if (removed != null) {
@@ -411,7 +411,7 @@ public interface GsonUtils {
 			final Writer writer,
 			final JsonElement root,
 			final String normalizedAttributePath,
-			final Gson gson) throws IOException {
+			final Gson gson) throws JsonSyntaxException, NumberFormatException, ClassCastException, IOException  {
 
 		final JsonElement removed = removeAttribute(root, normalizedAttributePath, JsonElement.class, gson);
 		if (removed != null) {
@@ -440,7 +440,7 @@ public interface GsonUtils {
 			final JsonElement root,
 			final String normalizedAttributePath,
 			final Class<T> cls,
-			final Gson gson) {
+			final Gson gson) throws JsonSyntaxException, NumberFormatException, ClassCastException {
 
 		final T attribute = GsonUtils.readAttribute(root, normalizedAttributePath, cls, gson);
 		if (attribute != null) {

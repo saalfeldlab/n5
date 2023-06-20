@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 import com.google.gson.Gson;
@@ -185,7 +186,12 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		final String normalKey = N5URI.normalizeAttributePath(key);
 
 		final JsonElement attributes = getAttributes(normalPath);
-		final T obj = GsonUtils.removeAttribute(attributes, normalKey, cls, getGson());
+		final T obj;
+		try {
+			obj = GsonUtils.removeAttribute(attributes, normalKey, cls, getGson());
+		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
+			throw new N5Exception.N5ClassCastException(e);
+		}
 		if (obj != null) {
 			writeAttributes(normalPath, attributes);
 		}

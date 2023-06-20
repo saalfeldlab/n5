@@ -30,6 +30,7 @@ import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * {@link N5Reader} with JSON attributes parsed with {@link Gson}.
@@ -55,30 +56,30 @@ public interface GsonN5Reader extends N5Reader {
 
 	default DatasetAttributes createDatasetAttributes(final JsonElement attributes) {
 
-		final long[] dimensions = GsonUtils
-				.readAttribute(attributes, DatasetAttributes.DIMENSIONS_KEY, long[].class, getGson());
-		if (dimensions == null) {
+		try {
+			final long[] dimensions = GsonUtils.readAttribute(attributes, DatasetAttributes.DIMENSIONS_KEY, long[].class, getGson());
+			if (dimensions == null) {
+				return null;
+			}
+
+			final DataType dataType = GsonUtils.readAttribute(attributes, DatasetAttributes.DATA_TYPE_KEY, DataType.class, getGson());
+			if (dataType == null) {
+				return null;
+			}
+
+			final int[] blockSize = GsonUtils.readAttribute(attributes, DatasetAttributes.BLOCK_SIZE_KEY, int[].class, getGson());
+			final Compression compression = GsonUtils.readAttribute(attributes, DatasetAttributes.COMPRESSION_KEY, Compression.class, getGson());
+
+			/* version 0 */
+			final String compressionVersion0Name = compression == null
+					? GsonUtils.readAttribute(attributes, DatasetAttributes.compressionTypeKey, String.class, getGson())
+					: null;
+
+			return DatasetAttributes.from(dimensions, dataType, blockSize, compression, compressionVersion0Name);
+		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
+			/* We cannot create a dataset, so return null. */
 			return null;
 		}
-
-		final DataType dataType = GsonUtils
-				.readAttribute(attributes, DatasetAttributes.DATA_TYPE_KEY, DataType.class, getGson());
-		if (dataType == null) {
-			return null;
-		}
-
-		final int[] blockSize = GsonUtils
-				.readAttribute(attributes, DatasetAttributes.BLOCK_SIZE_KEY, int[].class, getGson());
-
-		final Compression compression = GsonUtils
-				.readAttribute(attributes, DatasetAttributes.COMPRESSION_KEY, Compression.class, getGson());
-
-		/* version 0 */
-		final String compressionVersion0Name = compression == null
-				? GsonUtils.readAttribute(attributes, DatasetAttributes.compressionTypeKey, String.class, getGson())
-				: null;
-
-		return DatasetAttributes.from(dimensions, dataType, blockSize, compression, compressionVersion0Name);
 	}
 
 	@Override
@@ -88,7 +89,11 @@ public interface GsonN5Reader extends N5Reader {
 		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
 
 		final JsonElement attributes = getAttributes(normalPathName);
-		return GsonUtils.readAttribute(attributes, normalizedAttributePath, clazz, getGson());
+		try {
+			return GsonUtils.readAttribute(attributes, normalizedAttributePath, clazz, getGson());
+		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
+			throw new N5Exception.N5ClassCastException(e);
+		}
 	}
 
 	@Override
@@ -97,7 +102,11 @@ public interface GsonN5Reader extends N5Reader {
 		final String normalPathName = N5URI.normalizeGroupPath(pathName);
 		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
 		final JsonElement attributes = getAttributes(normalPathName);
-		return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, getGson());
+		try {
+			return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, getGson());
+		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
+			throw new N5Exception.N5ClassCastException(e);
+		}
 	}
 
 	/**

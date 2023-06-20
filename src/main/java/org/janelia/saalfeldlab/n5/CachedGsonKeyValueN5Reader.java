@@ -28,6 +28,7 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.lang.reflect.Type;
 
+import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCacheableContainer;
 
@@ -99,7 +100,11 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 		} else {
 			attributes = GsonKeyValueN5Reader.super.getAttributes(normalPathName);
 		}
-		return GsonUtils.readAttribute(attributes, normalizedAttributePath, clazz, getGson());
+		try {
+			return GsonUtils.readAttribute(attributes, normalizedAttributePath, clazz, getGson());
+		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
+			throw new N5Exception.N5ClassCastException(e);
+		}
 	}
 
 	@Override
@@ -116,7 +121,11 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 		} else {
 			attributes = GsonKeyValueN5Reader.super.getAttributes(normalPathName);
 		}
-		return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, getGson());
+		try {
+			return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, getGson());
+		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
+			throw new N5Exception.N5ClassCastException(e);
+		}
 	}
 
 	@Override
