@@ -25,14 +25,18 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
+import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
+import org.janelia.saalfeldlab.n5.N5Reader.Version;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -49,17 +53,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 
-import org.janelia.saalfeldlab.n5.N5Reader.Version;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Abstract base class for testing N5 functionality.
@@ -91,10 +92,12 @@ public abstract class AbstractN5Test {
 	protected abstract String tempN5Location() throws URISyntaxException, IOException;
 
 	protected N5Writer createN5Writer() throws IOException, URISyntaxException {
+
 		return createN5Writer(tempN5Location());
 	}
 
 	protected N5Writer createN5Writer(final String location) throws IOException, URISyntaxException {
+
 		return createN5Writer(location, new GsonBuilder());
 	}
 
@@ -997,7 +1000,7 @@ public abstract class AbstractN5Test {
 		final String groupName2 = groupName + "-2";
 		final String datasetName2 = datasetName + "-2";
 		final String notExists = groupName + "-notexists";
-		try (N5Writer n5 = createN5Writer()){
+		try (N5Writer n5 = createN5Writer()) {
 			n5.createDataset(datasetName2, dimensions, blockSize, DataType.UINT64, new RawCompression());
 			assertTrue(n5.exists(datasetName2));
 			assertTrue(n5.datasetExists(datasetName2));
@@ -1419,23 +1422,23 @@ public abstract class AbstractN5Test {
 			n5.createGroup(groupName);
 			n5.setAttribute(groupName, "/", "String");
 
-			final JsonElement stringPrimitive =  n5.getAttribute(groupName, "/", JsonElement.class);
+			final JsonElement stringPrimitive = n5.getAttribute(groupName, "/", JsonElement.class);
 			assertTrue(stringPrimitive.isJsonPrimitive());
 			assertEquals("String", stringPrimitive.getAsString());
 			n5.setAttribute(groupName, "/", 0);
-			final JsonElement intPrimitive =  n5.getAttribute(groupName, "/", JsonElement.class);
+			final JsonElement intPrimitive = n5.getAttribute(groupName, "/", JsonElement.class);
 			assertTrue(intPrimitive.isJsonPrimitive());
 			assertEquals(0, intPrimitive.getAsInt());
 			n5.setAttribute(groupName, "/", true);
-			final JsonElement booleanPrimitive =  n5.getAttribute(groupName, "/", JsonElement.class);
+			final JsonElement booleanPrimitive = n5.getAttribute(groupName, "/", JsonElement.class);
 			assertTrue(booleanPrimitive.isJsonPrimitive());
 			assertEquals(true, booleanPrimitive.getAsBoolean());
-			n5.setAttribute(groupName, "/",  null);
-			final JsonElement jsonNull =  n5.getAttribute(groupName, "/", JsonElement.class);
+			n5.setAttribute(groupName, "/", null);
+			final JsonElement jsonNull = n5.getAttribute(groupName, "/", JsonElement.class);
 			assertTrue(jsonNull.isJsonNull());
 			assertEquals(JsonNull.INSTANCE, jsonNull);
-			n5.setAttribute(groupName, "[5]",  "array");
-			final JsonElement rootJsonArray =  n5.getAttribute(groupName, "/", JsonElement.class);
+			n5.setAttribute(groupName, "[5]", "array");
+			final JsonElement rootJsonArray = n5.getAttribute(groupName, "/", JsonElement.class);
 			assertTrue(rootJsonArray.isJsonArray());
 			final JsonArray rootArray = rootJsonArray.getAsJsonArray();
 			assertEquals("array", rootArray.get(5).getAsString());
