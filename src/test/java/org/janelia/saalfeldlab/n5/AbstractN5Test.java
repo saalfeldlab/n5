@@ -1295,8 +1295,8 @@ public abstract class AbstractN5Test {
 			addAndTest(writer, existingTests, new TestData<>(testGroup, "/filled/string_array[4]", "e"));
 			addAndTest(writer, existingTests, new TestData<>(testGroup, "/filled/string_array[0]", "a"));
 
-			/* We intentionally skipped index 3, it should be null */
-			assertNull(writer.getAttribute(testGroup, "/filled/double_array[3]", JsonNull.class));
+			/* We intentionally skipped index 3, but it should have been pre-populated with JsonNull */
+			assertEquals(JsonNull.INSTANCE, writer.getAttribute(testGroup, "/filled/string_array[3]", JsonNull.class));
 
 			/* Ensure that escaping does NOT interpret the json path structure, but rather it adds the keys opaquely*/
 			final HashMap<String, Object> testAttributes = new HashMap<>();
