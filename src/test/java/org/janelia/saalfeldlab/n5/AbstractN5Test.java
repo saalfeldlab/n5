@@ -488,7 +488,7 @@ public abstract class AbstractN5Test {
 
 			n5.setAttribute(groupName, "key", 1);
 			assertEquals(1, (long)n5.getAttribute(groupName, "key", Integer.class));
-			assertEquals(1.0, n5.getAttribute(groupName, "key", Double.class), .00001);
+			assertEquals(1.0, n5.getAttribute(groupName, "key", Double.class), 1e-9);
 			assertEquals("1", n5.getAttribute(groupName, "key", String.class));
 			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class));
 			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", int[].class));
@@ -497,7 +497,7 @@ public abstract class AbstractN5Test {
 
 			n5.setAttribute(groupName, "key", new int[]{2, 3});
 			assertArrayEquals(new int[]{2, 3}, n5.getAttribute(groupName, "key", int[].class));
-			assertArrayEquals(new double[]{2.0, 3.0}, n5.getAttribute(groupName, "key", double[].class), .00001);
+			assertArrayEquals(new double[]{2.0, 3.0}, n5.getAttribute(groupName, "key", double[].class), 1e-9);
 			assertEquals(JsonParser.parseString("[2,3]"), JsonParser.parseString(n5.getAttribute(groupName, "key", String.class)));
 			assertArrayEquals(new String[]{"2", "3"}, n5.getAttribute(groupName, "key", String[].class));
 			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class));
@@ -506,7 +506,7 @@ public abstract class AbstractN5Test {
 
 			n5.setAttribute(groupName, "key", 0.1);
 			assertEquals(0, (long)n5.getAttribute(groupName, "key", Integer.class));
-			assertEquals(0.1, n5.getAttribute(groupName, "key", Double.class), .00001);
+			assertEquals(0.1, n5.getAttribute(groupName, "key", Double.class), 1e-9);
 			assertEquals("0.1", n5.getAttribute(groupName, "key", String.class));
 			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class));
 			assertThrows(N5ClassCastException.class, () -> n5.getAttribute(groupName, "key", int[].class));
@@ -515,7 +515,7 @@ public abstract class AbstractN5Test {
 
 			n5.setAttribute(groupName, "key", new double[]{0.2, 0.3});
 			assertArrayEquals(new int[]{0, 0}, n5.getAttribute(groupName, "key", int[].class)); // TODO returns not null, is this right?
-			assertArrayEquals(new double[]{0.2, 0.3}, n5.getAttribute(groupName, "key", double[].class), .00001);
+			assertArrayEquals(new double[]{0.2, 0.3}, n5.getAttribute(groupName, "key", double[].class), 1e-9);
 			assertEquals(JsonParser.parseString("[0.2,0.3]"), JsonParser.parseString(n5.getAttribute(groupName, "key", String.class)));
 			assertArrayEquals(new String[]{"0.2", "0.3"}, n5.getAttribute(groupName, "key", String[].class));
 			assertNotNull(n5.getAttribute(groupName, "key", JsonElement.class));
