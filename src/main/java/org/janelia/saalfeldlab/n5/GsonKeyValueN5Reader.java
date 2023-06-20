@@ -77,7 +77,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 * @param pathName
 	 *            group path
 	 * @return
-	 * @throws IOException
+	 * @throws N5Exception if the attributes cannot be read
 	 */
 	@Override
 	default JsonElement getAttributes(final String pathName) throws N5Exception {

@@ -36,7 +36,7 @@ public interface GsonN5Writer extends GsonN5Reader, N5Writer {
 
 	/**
 	 * Set the attributes of a group. This result of this method is equivalent
-	 * with {@link #setAttribute(groupPath, "/", attributes)}.
+	 * with {@link N5Writer#setAttribute(String, String, Object) N5Writer#setAttribute(groupPath, "/", attributes)}.
 	 *
 	 * @param groupPath
 	 *            to write the attributes to
