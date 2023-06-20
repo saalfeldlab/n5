@@ -793,9 +793,9 @@ public abstract class AbstractN5Test {
 			location = n5.getURI().toString();
 			assertNotNull(createN5Reader(location));
 			n5.remove();
-			assertThrows(Exception.class, () -> createN5Reader(location));
+			assertThrows(Exception.class, () -> createN5Reader(location).close());
 		}
-		assertThrows(Exception.class, () -> createN5Reader(location));
+		assertThrows(Exception.class, () -> createN5Reader(location).close());
 	}
 
 	@Test
@@ -1091,7 +1091,7 @@ public abstract class AbstractN5Test {
 
 			assertThrows(N5Exception.N5IOException.class, () -> {
 				final String containerPath = writer.getURI().toString();
-				createN5Writer(containerPath);
+				createN5Writer(containerPath).close();
 			});
 
 			final Version compatibleVersion = new Version(N5Reader.VERSION.getMajor(), N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch());
@@ -1125,10 +1125,7 @@ public abstract class AbstractN5Test {
 			writer.removeAttribute("/", "/");
 			writer.setAttribute("/", N5Reader.VERSION_KEY,
 					new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
-			assertThrows("Incompatible version throws error", N5Exception.N5IOException.class,
-					() -> {
-						createN5Reader(location);
-					});
+			assertThrows("Incompatible version throws error", N5Exception.class, () -> createN5Reader(location).close());
 			writer.remove();
 		}
 		// non-existent group should fail
@@ -1136,6 +1133,7 @@ public abstract class AbstractN5Test {
 				() -> {
 					final N5Reader test = createN5Reader(location);
 					test.list("/");
+					test.close();
 				});
 	}
 
