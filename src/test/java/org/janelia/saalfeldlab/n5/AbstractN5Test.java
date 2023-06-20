@@ -799,6 +799,16 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
+	public void testUri() throws IOException, URISyntaxException {
+
+		try (final N5Writer writer = createN5Writer()) {
+			try (final N5Reader reader = createN5Reader(writer.getURI().toString())) {
+				assertEquals(writer.getURI(), reader.getURI());
+			}
+		}
+	}
+
+	@Test
 	public void testRemoveGroup() throws IOException, URISyntaxException {
 
 		try (final N5Writer n5 = createN5Writer()) {
