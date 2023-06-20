@@ -145,6 +145,7 @@ public class N5CachedFSTest extends N5FSTest {
 		final int expectedDatasetCount = 0;
 		final int expectedAttributeCount = 0;
 		int expectedListCount = 0;
+		int expectedWriteAttributeCount = 0;
 
 		boolean exists = n5.exists(groupA);
 		boolean groupExists = n5.groupExists(groupA);
@@ -156,9 +157,11 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		n5.createGroup(groupA);
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		// group B
 		exists = n5.exists(groupB);
@@ -171,6 +174,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		exists = n5.exists(groupA);
 		groupExists = n5.groupExists(groupA);
@@ -182,6 +186,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		final String cachedGroup = "cachedGroup";
 		// should not check existence when creating a group
@@ -192,6 +197,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		// should not check existence when this instance created a group
 		n5.exists(cachedGroup);
@@ -202,16 +208,16 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		// should not read attributes from container when setting them
-		System.out.println(n5.getAttrCallCount());
 		n5.setAttribute(cachedGroup, "one", 1);
-		System.out.println(n5.getAttrCallCount());
 		assertEquals(expectedExistCount, n5.getExistCallCount());
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(++expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		n5.setAttribute(cachedGroup, "two", 2);
 		assertEquals(expectedExistCount, n5.getExistCallCount());
@@ -219,6 +225,39 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(++expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+
+		n5.removeAttribute(cachedGroup, "one");
+		assertEquals(expectedExistCount, n5.getExistCallCount());
+		assertEquals(expectedGroupCount, n5.getGroupCallCount());
+		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
+		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
+		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(++expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+
+		n5.removeAttribute(cachedGroup, "one");
+		assertEquals(expectedExistCount, n5.getExistCallCount());
+		assertEquals(expectedGroupCount, n5.getGroupCallCount());
+		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
+		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
+		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+
+		n5.removeAttribute(cachedGroup, "cow");
+		assertEquals(expectedExistCount, n5.getExistCallCount());
+		assertEquals(expectedGroupCount, n5.getGroupCallCount());
+		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
+		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
+		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+
+		n5.removeAttribute(cachedGroup, "two", Integer.class);
+		assertEquals(expectedExistCount, n5.getExistCallCount());
+		assertEquals(expectedGroupCount, n5.getGroupCallCount());
+		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
+		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
+		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(++expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		n5.list("");
 		assertEquals(expectedExistCount, n5.getExistCallCount());
@@ -226,6 +265,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(++expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		n5.list(cachedGroup);
 		assertEquals(expectedExistCount, n5.getExistCallCount());
@@ -233,6 +273,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(++expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		/*
 		 * Check existence for groups that have not been made by this reader but isGroup
@@ -252,6 +293,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		n5.groupExists(nonExistentGroup);
 		assertEquals(expectedExistCount, n5.getExistCallCount());
@@ -259,6 +301,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		n5.datasetExists(nonExistentGroup);
 		assertEquals(expectedExistCount, n5.getExistCallCount());
@@ -266,6 +309,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		n5.getAttributes(nonExistentGroup);
 		assertEquals(expectedExistCount, n5.getExistCallCount());
@@ -273,6 +317,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		assertThrows(N5Exception.class, () -> n5.list(nonExistentGroup));
 		assertEquals(expectedExistCount, n5.getExistCallCount());
@@ -280,6 +325,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		final String a = "a";
 		final String ab = "a/b";
@@ -294,6 +340,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		// ensure that backend need not be checked when testing existence of "a/b"
 		// TODO how does this work
@@ -305,6 +352,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		// remove a nested group
 		// checks for all children should not require a backend check
@@ -317,6 +365,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		assertFalse(n5.exists(ab));
 		assertFalse(n5.groupExists(ab));
@@ -326,6 +375,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		assertFalse(n5.exists(abc));
 		assertFalse(n5.groupExists(abc));
@@ -335,21 +385,27 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		n5.createGroup("a");
 		assertEquals(expectedExistCount, n5.getExistCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 		n5.createGroup("a/a");
 		assertEquals(++expectedExistCount, n5.getExistCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 		n5.createGroup("a/b");
 		assertEquals(expectedExistCount, n5.getExistCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 		n5.createGroup("a/c");
 		assertEquals(++expectedExistCount, n5.getExistCallCount());
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		assertArrayEquals(new String[] {"a", "b", "c"}, n5.list("a")); // call list
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(++expectedListCount, n5.getListCallCount()); // list incremented
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		// remove a
 		n5.remove("a/a");
@@ -359,6 +415,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount()); // list NOT incremented
+		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		// TODO repeat the above exercise when creating dataset
 	}
@@ -372,6 +429,7 @@ public class N5CachedFSTest extends N5FSTest {
 		public int getDatasetCallCount();
 		public int getDatasetAttrCallCount();
 		public int getListCallCount();
+		public int getWriteAttrCallCount();
 	}
 
 	public static class N5TrackingStorage extends N5KeyValueWriter implements TrackingStorage {
@@ -383,6 +441,7 @@ public class N5CachedFSTest extends N5FSTest {
 		public int datasetCallCount = 0;
 		public int datasetAttrCallCount = 0;
 		public int listCallCount = 0;
+		public int writeAttrCallCount = 0;
 
 		public N5TrackingStorage(final KeyValueAccess keyValueAccess, final String basePath,
 				final GsonBuilder gsonBuilder, final boolean cacheAttributes) throws IOException {
@@ -432,6 +491,11 @@ public class N5CachedFSTest extends N5FSTest {
 			return super.listFromContainer(key);
 		}
 
+		@Override public void writeAttributes(String normalGroupPath, JsonElement attributes) throws N5Exception {
+			writeAttrCallCount++;
+			super.writeAttributes(normalGroupPath, attributes);
+		}
+
 		@Override
 		public int getAttrCallCount() {
 			return attrCallCount;
@@ -465,6 +529,10 @@ public class N5CachedFSTest extends N5FSTest {
 		@Override
 		public int getListCallCount() {
 			return listCallCount;
+		}
+
+		@Override public int getWriteAttrCallCount() {
+			return writeAttrCallCount;
 		}
 	}
 
