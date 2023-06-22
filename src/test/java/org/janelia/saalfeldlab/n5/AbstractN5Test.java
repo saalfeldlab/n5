@@ -87,6 +87,7 @@ public abstract class AbstractN5Test {
 	static protected float[] floatBlock;
 	static protected double[] doubleBlock;
 
+	//TODO: should be removed; Static n5 should not be depended on, use `createN5Wrtier` as autoclosable instaead.
 	static protected N5Writer n5;
 
 	protected abstract String tempN5Location() throws URISyntaxException, IOException;
@@ -101,6 +102,7 @@ public abstract class AbstractN5Test {
 		return createN5Writer(location, new GsonBuilder());
 	}
 
+	/* Tests that overide this should enusre that the `N5Writer` created will remove its container on close() */
 	protected abstract N5Writer createN5Writer(String location, GsonBuilder gson) throws IOException, URISyntaxException;
 
 	protected N5Reader createN5Reader(final String location) throws IOException, URISyntaxException {
@@ -154,12 +156,10 @@ public abstract class AbstractN5Test {
 	 * @throws IOException
 	 */
 	@AfterClass
-	public static void rampDownAfterClass() throws IOException {
+	public static void rampDownAfterClass() {
 
 		if (n5 != null) {
-			try {
-				assertTrue(n5.remove());
-			} catch ( final Exception e ) {}
+			n5.remove();
 			n5 = null;
 		}
 	}
@@ -628,6 +628,8 @@ public abstract class AbstractN5Test {
 			writer.setAttribute(groupName, "existingValue", null);
 			assertThrows(N5ClassCastException.class, () -> writer.getAttribute(groupName, "existingValue", Integer.class));
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "existingValue", JsonElement.class));
+
+			writer.remove();
 		}
 
 		/* without serializeNulls*/
@@ -782,6 +784,8 @@ public abstract class AbstractN5Test {
 			writer.setAttribute("foo", "a", 100);
 			writer.removeAttribute("foo", "a");
 			assertNull(writer.getAttribute("foo", "a", Integer.class));
+
+			writer.remove();
 		}
 	}
 
@@ -1049,7 +1053,9 @@ public abstract class AbstractN5Test {
 
 			assertThrows(N5Exception.N5IOException.class, () -> {
 				final String containerPath = writer.getURI().toString();
-				createN5Writer(containerPath).close();
+				final N5Writer newWriter = createN5Writer(containerPath);
+				newWriter.remove();
+				newWriter.close();
 			});
 
 			final Version compatibleVersion = new Version(N5Reader.VERSION.getMajor(), N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch());

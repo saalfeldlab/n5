@@ -49,6 +49,17 @@ public class N5CachedFSTest extends N5FSTest {
 		return new N5FSReader(location, gson, cache);
 	}
 
+	@Override protected N5Writer createN5Writer() throws IOException, URISyntaxException {
+
+		return new N5FSWriter(tempN5Location(), new GsonBuilder(), true) {
+			@Override public void close() {
+
+				super.close();
+				remove();
+			}
+		};
+	}
+
 	@Test
 	public void cacheTest() throws IOException, URISyntaxException {
 		/* Test the cache by setting many attributes, then manually deleting the underlying file.
@@ -80,6 +91,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 			Files.delete(Paths.get(attributesPath));
 			assertThrows(AssertionError.class, () -> runTests(n5, tests));
+			n5.remove();
 		}
 	}
 
@@ -118,6 +130,8 @@ public class N5CachedFSTest extends N5FSTest {
 
 			assertNotNull(w1.getDatasetAttributes(datasetName));
 			assertNull(w2.getDatasetAttributes(datasetName));
+
+			w1.remove();
 		}
 	}
 
@@ -130,6 +144,7 @@ public class N5CachedFSTest extends N5FSTest {
 				new GsonBuilder(), true)) {
 
 			cacheBehaviorHelper(n5);
+			n5.remove();
 		}
 	}
 

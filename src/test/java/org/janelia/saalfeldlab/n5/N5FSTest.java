@@ -62,18 +62,12 @@ public class N5FSTest extends AbstractN5Test {
 
 	private static FileSystemKeyValueAccess access = new FileSystemKeyValueAccess(FileSystems.getDefault());
 
-	private static Set<String> tmpFiles = new HashSet<>();
-
-	private static String testDirPath = tempN5PathName();
-
 	private static String tempN5PathName() {
 
 		try {
 			final File tmpFile = Files.createTempDirectory("n5-test-").toFile();
 			tmpFile.deleteOnExit();
-			final String tmpPath = tmpFile.getCanonicalPath();
-			tmpFiles.add(tmpPath);
-			return tmpPath;
+			return tmpFile.getCanonicalPath();
 		} catch (final Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -84,6 +78,17 @@ public class N5FSTest extends AbstractN5Test {
 
 		final String basePath = new File(tempN5PathName()).toURI().normalize().getPath();
 		return new URI("file", null, basePath, null).toString();
+	}
+
+	@Override protected N5Writer createN5Writer() throws IOException, URISyntaxException {
+
+		return new N5FSWriter(tempN5Location(), new GsonBuilder()) {
+			@Override public void close() {
+
+				super.close();
+				remove();
+			}
+		};
 	}
 
 	@Override
@@ -100,16 +105,6 @@ public class N5FSTest extends AbstractN5Test {
 			final GsonBuilder gson) throws IOException, URISyntaxException {
 
 		return new N5FSReader(location, gson);
-	}
-
-	@AfterClass
-	public static void cleanup() {
-
-		for (final String tmpFile : tmpFiles) {
-			try {
-				FileUtils.deleteDirectory(new File(tmpFile));
-			} catch (final Exception e) {}
-		}
 	}
 
 	@Test
@@ -147,11 +142,7 @@ public class N5FSTest extends AbstractN5Test {
 //	@Test
 	public void testReadLock() throws IOException, InterruptedException {
 
-		final Path path = Paths.get(testDirPath, "lock");
-		try {
-			Files.delete(path);
-		} catch (final IOException e) {}
-
+		final Path path = Paths.get(tempN5PathName(), "lock");
 		LockedChannel lock = access.lockForWriting(path);
 		lock.close();
 		lock = access.lockForReading(path);
@@ -184,11 +175,7 @@ public class N5FSTest extends AbstractN5Test {
 //	@Test
 	public void testWriteLock() throws IOException {
 
-		final Path path = Paths.get(testDirPath, "lock");
-		try {
-			Files.delete(path);
-		} catch (final IOException e) {}
-
+		final Path path = Paths.get(tempN5PathName(), "lock");
 		final LockedChannel lock = access.lockForWriting(path);
 		System.out.println("locked");
 
@@ -221,11 +208,7 @@ public class N5FSTest extends AbstractN5Test {
 
 		System.out.println("Testing lock release by Reader.");
 
-		final Path path = Paths.get(testDirPath, "lock");
-		try {
-			Files.delete(path);
-		} catch (final IOException e) {}
-
+		final Path path = Paths.get(tempN5PathName(), "lock");
 		final LockedChannel lock = access.lockForWriting(path);
 
 		lock.newReader().close();
@@ -257,11 +240,7 @@ public class N5FSTest extends AbstractN5Test {
 
 		System.out.println("Testing lock release by InputStream.");
 
-		final Path path = Paths.get(testDirPath, "lock");
-		try {
-			Files.delete(path);
-		} catch (final IOException e) {}
-
+		final Path path = Paths.get(tempN5PathName(), "lock");
 		final LockedChannel lock = access.lockForWriting(path);
 
 		lock.newInputStream().close();
