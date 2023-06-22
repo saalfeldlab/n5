@@ -165,15 +165,17 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testCreateGroup() {
+	public void testCreateGroup() throws IOException, URISyntaxException {
 
-		n5.createGroup(groupName);
-		final Path groupPath = Paths.get(groupName);
-		String subGroup = "";
-		for (int i = 0; i < groupPath.getNameCount(); ++i) {
-			subGroup = subGroup + "/" + groupPath.getName(i);
-			if (!n5.exists(subGroup))
-				fail("Group does not exist: " + subGroup);
+		try (N5Writer n5 = createN5Writer()) {
+			n5.createGroup(groupName);
+			final Path groupPath = Paths.get(groupName);
+			String subGroup = "";
+			for (int i = 0; i < groupPath.getNameCount(); ++i) {
+				subGroup = subGroup + "/" + groupPath.getName(i);
+				if (!n5.exists(subGroup))
+					fail("Group does not exist: " + subGroup);
+			}
 		}
 	}
 
@@ -992,49 +994,53 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testListAttributes() {
+	public void testListAttributes() throws IOException, URISyntaxException {
 
-		final String groupName2 = groupName + "-2";
-		final String datasetName2 = datasetName + "-2";
-		n5.createDataset(datasetName2, dimensions, blockSize, DataType.UINT64, new RawCompression());
-		n5.setAttribute(datasetName2, "attr1", new double[]{1.1, 2.1, 3.1});
-		n5.setAttribute(datasetName2, "attr2", new String[]{"a", "b", "c"});
-		n5.setAttribute(datasetName2, "attr3", 1.1);
-		n5.setAttribute(datasetName2, "attr4", "a");
-		n5.setAttribute(datasetName2, "attr5", new long[]{1, 2, 3});
-		n5.setAttribute(datasetName2, "attr6", 1);
-		n5.setAttribute(datasetName2, "attr7", new double[]{1, 2, 3.1});
-		n5.setAttribute(datasetName2, "attr8", new Object[]{"1", 2, 3.1});
+		try (N5Writer n5 = createN5Writer()) {
+			final String groupName2 = groupName + "-2";
+			final String datasetName2 = datasetName + "-2";
+			n5.createDataset(datasetName2, dimensions, blockSize, DataType.UINT64, new RawCompression());
+			n5.setAttribute(datasetName2, "attr1", new double[]{1.1, 2.1, 3.1});
+			n5.setAttribute(datasetName2, "attr2", new String[]{"a", "b", "c"});
+			n5.setAttribute(datasetName2, "attr3", 1.1);
+			n5.setAttribute(datasetName2, "attr4", "a");
+			n5.setAttribute(datasetName2, "attr5", new long[]{1, 2, 3});
+			n5.setAttribute(datasetName2, "attr6", 1);
+			n5.setAttribute(datasetName2, "attr7", new double[]{1, 2, 3.1});
+			n5.setAttribute(datasetName2, "attr8", new Object[]{"1", 2, 3.1});
 
-		Map<String, Class<?>> attributesMap = n5.listAttributes(datasetName2);
-		assertTrue(attributesMap.get("attr1") == double[].class);
-		assertTrue(attributesMap.get("attr2") == String[].class);
-		assertTrue(attributesMap.get("attr3") == double.class);
-		assertTrue(attributesMap.get("attr4") == String.class);
-		assertTrue(attributesMap.get("attr5") == long[].class);
-		assertTrue(attributesMap.get("attr6") == long.class);
-		assertTrue(attributesMap.get("attr7") == double[].class);
-		assertTrue(attributesMap.get("attr8") == Object[].class);
+			Map<String, Class<?>> attributesMap = n5.listAttributes(datasetName2);
+			assertTrue(attributesMap.get("attr1") == double[].class);
+			assertTrue(attributesMap.get("attr2") == String[].class);
+			assertTrue(attributesMap.get("attr3") == double.class);
+			assertTrue(attributesMap.get("attr4") == String.class);
+			assertTrue(attributesMap.get("attr5") == long[].class);
+			assertTrue(attributesMap.get("attr6") == long.class);
+			assertTrue(attributesMap.get("attr7") == double[].class);
+			assertTrue(attributesMap.get("attr8") == Object[].class);
 
-		n5.createGroup(groupName2);
-		n5.setAttribute(groupName2, "attr1", new double[]{1.1, 2.1, 3.1});
-		n5.setAttribute(groupName2, "attr2", new String[]{"a", "b", "c"});
-		n5.setAttribute(groupName2, "attr3", 1.1);
-		n5.setAttribute(groupName2, "attr4", "a");
-		n5.setAttribute(groupName2, "attr5", new long[]{1, 2, 3});
-		n5.setAttribute(groupName2, "attr6", 1);
-		n5.setAttribute(groupName2, "attr7", new double[]{1, 2, 3.1});
-		n5.setAttribute(groupName2, "attr8", new Object[]{"1", 2, 3.1});
+			n5.createGroup(groupName2);
+			n5.setAttribute(groupName2, "attr1", new double[]{1.1, 2.1, 3.1});
+			n5.setAttribute(groupName2, "attr2", new String[]{"a", "b", "c"});
+			n5.setAttribute(groupName2, "attr3", 1.1);
+			n5.setAttribute(groupName2, "attr4", "a");
+			n5.setAttribute(groupName2, "attr5", new long[]{1, 2, 3});
+			n5.setAttribute(groupName2, "attr6", 1);
+			n5.setAttribute(groupName2, "attr7", new double[]{1, 2, 3.1});
+			n5.setAttribute(groupName2, "attr8", new Object[]{"1", 2, 3.1});
 
-		attributesMap = n5.listAttributes(groupName2);
-		assertTrue(attributesMap.get("attr1") == double[].class);
-		assertTrue(attributesMap.get("attr2") == String[].class);
-		assertTrue(attributesMap.get("attr3") == double.class);
-		assertTrue(attributesMap.get("attr4") == String.class);
-		assertTrue(attributesMap.get("attr5") == long[].class);
-		assertTrue(attributesMap.get("attr6") == long.class);
-		assertTrue(attributesMap.get("attr7") == double[].class);
-		assertTrue(attributesMap.get("attr8") == Object[].class);
+			attributesMap = n5.listAttributes(groupName2);
+			assertTrue(attributesMap.get("attr1") == double[].class);
+			assertTrue(attributesMap.get("attr2") == String[].class);
+			assertTrue(attributesMap.get("attr3") == double.class);
+			assertTrue(attributesMap.get("attr4") == String.class);
+			assertTrue(attributesMap.get("attr5") == long[].class);
+			assertTrue(attributesMap.get("attr6") == long.class);
+			assertTrue(attributesMap.get("attr7") == double[].class);
+			assertTrue(attributesMap.get("attr8") == Object[].class);
+
+		}
+
 	}
 
 	@Test
@@ -1102,36 +1108,38 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testDelete() throws IOException {
+	public void testDelete() throws IOException, URISyntaxException {
 
-		final String datasetName = AbstractN5Test.datasetName + "-test-delete";
-		n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT8, new RawCompression());
-		final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
-		final long[] position1 = {0, 0, 0};
-		final long[] position2 = {0, 1, 2};
+		try (N5Writer n5 = createN5Writer()) {
+			final String datasetName = AbstractN5Test.datasetName + "-test-delete";
+			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT8, new RawCompression());
+			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+			final long[] position1 = {0, 0, 0};
+			final long[] position2 = {0, 1, 2};
 
-		// no blocks should exist to begin with
-		assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position1)));
-		assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
+			// no blocks should exist to begin with
+			assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position1)));
+			assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
 
-		final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, position1, byteBlock);
-		n5.writeBlock(datasetName, attributes, dataBlock);
+			final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, position1, byteBlock);
+			n5.writeBlock(datasetName, attributes, dataBlock);
 
-		// block should exist at position1 but not at position2
-		final DataBlock<?> readBlock = n5.readBlock(datasetName, attributes, position1);
-		assertNotNull(readBlock);
-		assertTrue(readBlock instanceof ByteArrayDataBlock);
-		assertArrayEquals(byteBlock, ((ByteArrayDataBlock)readBlock).getData());
-		assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
+			// block should exist at position1 but not at position2
+			final DataBlock<?> readBlock = n5.readBlock(datasetName, attributes, position1);
+			assertNotNull(readBlock);
+			assertTrue(readBlock instanceof ByteArrayDataBlock);
+			assertArrayEquals(byteBlock, ((ByteArrayDataBlock)readBlock).getData());
+			assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
 
-		// deletion should report true in all cases
-		assertTrue(n5.deleteBlock(datasetName, position1));
-		assertTrue(n5.deleteBlock(datasetName, position1));
-		assertTrue(n5.deleteBlock(datasetName, position2));
+			// deletion should report true in all cases
+			assertTrue(n5.deleteBlock(datasetName, position1));
+			assertTrue(n5.deleteBlock(datasetName, position1));
+			assertTrue(n5.deleteBlock(datasetName, position2));
 
-		// no block should exist anymore
-		assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position1)));
-		assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
+			// no block should exist anymore
+			assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position1)));
+			assertTrue(testDeleteIsBlockDeleted(n5.readBlock(datasetName, attributes, position2)));
+		}
 	}
 
 	protected boolean testDeleteIsBlockDeleted(final DataBlock<?> dataBlock) {
@@ -1373,16 +1381,6 @@ public abstract class AbstractN5Test {
 	private String jsonKeyVal(final String key, final String val) {
 
 		return String.format("\"%s\":\"%s\"", key, val);
-	}
-
-	private String readAttributesAsString(final String group) {
-
-		final String basePath = ((N5FSWriter)n5).getURI().getSchemeSpecificPart();
-		try {
-			return new String(Files.readAllBytes(Paths.get(basePath, group, "attributes.json")));
-		} catch (final IOException e) {
-		}
-		return null;
 	}
 
 	@Test
