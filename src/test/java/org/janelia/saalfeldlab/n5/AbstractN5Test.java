@@ -40,7 +40,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -87,7 +86,7 @@ public abstract class AbstractN5Test {
 	static protected float[] floatBlock;
 	static protected double[] doubleBlock;
 
-	//TODO: should be removed; Static n5 should not be depended on, use `createN5Wrtier` as autoclosable instaead.
+	//TODO: should be removed; Static n5 should not be depended on, use `createN5Writer` as autoclosable instaead.
 	static protected N5Writer n5;
 
 	protected abstract String tempN5Location() throws URISyntaxException, IOException;

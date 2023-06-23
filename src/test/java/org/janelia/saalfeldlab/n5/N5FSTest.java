@@ -108,7 +108,7 @@ public class N5FSTest extends AbstractN5Test {
 	}
 
 	@Test
-	public void customObjectTest() throws IOException {
+	public void customObjectTest() throws IOException, URISyntaxException {
 
 		final String testGroup = "test";
 		final ArrayList<TestData<?>> existingTests = new ArrayList<>();
@@ -129,14 +129,17 @@ public class N5FSTest extends AbstractN5Test {
 				"doubles",
 				"doubles4",
 				new double[]{5.10, 4.8, 3.7});
-		n5.createGroup(testGroup);
-		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[1]", doubles1));
-		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[2]", doubles2));
-		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[3]", doubles3));
-		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[4]", doubles4));
 
-		/* Test overwrite custom */
-		addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[1]", doubles4));
+		try (N5Writer n5 = createN5Writer()) {
+			n5.createGroup(testGroup);
+			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[1]", doubles1));
+			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[2]", doubles2));
+			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[3]", doubles3));
+			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[4]", doubles4));
+
+			/* Test overwrite custom */
+			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[1]", doubles4));
+		}
 	}
 
 //	@Test
