@@ -123,7 +123,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 			 * The output is identical to the input if:
 			 * - serializeNulls is true
 			 * - no null values are present
-			 * - cacheing is turned off
+			 * - caching is turned off
 			 */
 			if (!getGson().serializeNulls()) {
 				nullRespectingAttributes = getGson().toJsonTree(attributes);

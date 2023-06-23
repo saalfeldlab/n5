@@ -127,7 +127,7 @@ public interface N5Writer extends N5Reader {
 	 * Sets mandatory dataset attributes.
 	 *
 	 * @param datasetPath dataset path
-	 * @param datasetAttributes the dataset attributse
+	 * @param datasetAttributes the dataset attributes
 	 * @throws N5Exception the exception
 	 */
 	default void setDatasetAttributes(
