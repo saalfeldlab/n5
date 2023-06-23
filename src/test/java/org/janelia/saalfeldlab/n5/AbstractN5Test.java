@@ -86,9 +86,6 @@ public abstract class AbstractN5Test {
 	static protected float[] floatBlock;
 	static protected double[] doubleBlock;
 
-	//TODO: should be removed; Static n5 should not be depended on, use `createN5Writer` as autoclosable instaead.
-	static protected N5Writer n5;
-
 	protected abstract String tempN5Location() throws URISyntaxException, IOException;
 
 	protected N5Writer createN5Writer() throws IOException, URISyntaxException {
@@ -129,11 +126,6 @@ public abstract class AbstractN5Test {
 	@Before
 	public void setUpOnce() throws IOException, URISyntaxException {
 
-		if (n5 != null)
-			return;
-
-		n5 = createN5Writer();
-
 		final Random rnd = new Random();
 		byteBlock = new byte[blockSize[0] * blockSize[1] * blockSize[2]];
 		shortBlock = new short[blockSize[0] * blockSize[1] * blockSize[2]];
@@ -148,18 +140,6 @@ public abstract class AbstractN5Test {
 			longBlock[i] = rnd.nextLong();
 			floatBlock[i] = Float.intBitsToFloat(rnd.nextInt());
 			doubleBlock[i] = Double.longBitsToDouble(rnd.nextLong());
-		}
-	}
-
-	/**
-	 * @throws IOException
-	 */
-	@AfterClass
-	public static void rampDownAfterClass() {
-
-		if (n5 != null) {
-			n5.remove();
-			n5 = null;
 		}
 	}
 
