@@ -118,8 +118,7 @@ public interface N5Writer extends N5Reader {
 		final String normalPath = N5URI.normalizeGroupPath(groupPath);
 		boolean removed = false;
 		for (final String attribute : attributePaths) {
-			final String normalKey = N5URI.normalizeAttributePath(attribute);
-			removed |= removeAttribute(normalPath, attribute);
+			removed |= removeAttribute(normalPath, N5URI.normalizeAttributePath(attribute));
 		}
 		return removed;
 	}
