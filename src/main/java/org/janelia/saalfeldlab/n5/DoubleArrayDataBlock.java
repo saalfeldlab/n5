@@ -47,10 +47,10 @@ public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 
 		buffer.asDoubleBuffer().get(data);
 	}
-	
+
 	@Override
 	public int getNumElements() {
-		
+
 		return data.length;
 	}
 }

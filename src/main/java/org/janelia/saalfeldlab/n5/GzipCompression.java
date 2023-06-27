@@ -29,8 +29,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
@@ -106,5 +104,16 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 
 		in.defaultReadObject();
 		ReflectionUtils.setFieldValue(this, "parameters", new GzipParameters());
+	}
+
+	@Override
+	public boolean equals(final Object other) {
+
+		if (other == null || other.getClass() != GzipCompression.class)
+			return false;
+		else {
+			final GzipCompression gz = ((GzipCompression)other);
+			return useZlib == gz.useZlib && level == gz.level;
+		}
 	}
 }

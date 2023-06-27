@@ -74,4 +74,14 @@ public class Bzip2Compression implements DefaultBlockReader, DefaultBlockWriter,
 
 		return this;
 	}
+
+	@Override
+	public boolean equals(final Object other) {
+
+		if (other == null || other.getClass() != Bzip2Compression.class)
+			return false;
+		else
+			return blockSize == ((Bzip2Compression)other).blockSize;
+	}
+
 }
