@@ -66,7 +66,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 *
 	 * @param pathName
 	 *            group path
-	 * @return
+	 * @return the attribute
 	 * @throws N5Exception if the attributes cannot be read
 	 */
 	@Override
@@ -129,8 +129,8 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 *
 	 * @param normalPath
 	 *            normalized dataset path
-	 * @param gridPosition
-	 * @return
+	 * @param gridPosition to the target data block
+	 * @return the absolute path to the data block ad gridPosition
 	 */
 	default String absoluteDataBlockPath(
 			final String normalPath,

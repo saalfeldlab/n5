@@ -49,10 +49,9 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	 * if this is the desired behavior or if it is always overridden, e.g. as by
 	 * the caching version. If this is true, delete this implementation.
 	 *
-	 * @param path
-	 * @throws IOException
+	 * @param path to the group to write the version into
 	 */
-	default void setVersion(final String path) throws IOException {
+	default void setVersion(final String path) {
 
 		if (!VERSION.equals(getVersion()))
 			setAttribute("/", VERSION_KEY, VERSION.toString());
@@ -82,7 +81,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	 * Helper method that writes an attributes tree into the store
 	 *
 	 * TODO This method is not part of the public API and should be protected
-	 * in Java >8
+	 * in Java versions greater than 8
 	 *
 	 * @param normalGroupPath
 	 *            to write the attributes to
@@ -120,7 +119,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	 * the attributes store.
 	 *
 	 * TODO This method is not part of the public API and should be protected
-	 * in Java >8
+	 * in Java greater than 8
 	 *
 	 * @param normalGroupPath
 	 *            to write the attributes to

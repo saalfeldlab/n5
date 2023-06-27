@@ -110,12 +110,12 @@ public interface GsonN5Reader extends N5Reader {
 	}
 
 	/**
-	 * Reads or creates the attributes map of a group or dataset.
+	 * Reads or the attributes of a group or dataset.
 	 *
 	 * @param pathName
 	 *            group path
-	 * @return
-	 * @throws N5Exception
+	 * @return the attributes identified by pathName
+	 * @throws N5Exception if the attribute cannot be returned
 	 */
 	JsonElement getAttributes(final String pathName) throws N5Exception;
 }

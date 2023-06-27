@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 
 import com.google.gson.JsonSyntaxException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCacheableContainer;
 
@@ -78,7 +79,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 		return createDatasetAttributes(attributes);
 	}
 
-	default DatasetAttributes normalGetDatasetAttributes(final String pathName) throws N5Exception.N5IOException {
+	default DatasetAttributes normalGetDatasetAttributes(final String pathName) throws N5IOException {
 
 		final String normalPath = N5URI.normalizeGroupPath(pathName);
 		final JsonElement attributes = GsonKeyValueN5Reader.super.getAttributes(normalPath);
@@ -172,7 +173,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	}
 
 	@Override
-	default boolean datasetExists(final String pathName) throws N5Exception.N5IOException {
+	default boolean datasetExists(final String pathName) throws N5IOException {
 
 		final String normalPathName = N5URI.normalizeGroupPath(pathName);
 		if (cacheMeta()) {
@@ -182,7 +183,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	}
 
 	@Override
-	default boolean isDatasetFromContainer(final String normalPathName) throws N5Exception.N5IOException {
+	default boolean isDatasetFromContainer(final String normalPathName) throws N5IOException {
 
 		return normalGetDatasetAttributes(normalPathName) != null;
 	}
@@ -198,11 +199,11 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	 *
 	 * @param pathName
 	 *            group path
-	 * @return
-	 * @throws IOException
+	 * @return the attribute
+	 * @throws N5IOException if an IO error occurs while reading the attribute
 	 */
 	@Override
-	default JsonElement getAttributes(final String pathName) throws N5Exception.N5IOException {
+	default JsonElement getAttributes(final String pathName) throws N5IOException {
 
 		final String groupPath = N5URI.normalizeGroupPath(pathName);
 
@@ -215,7 +216,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	}
 
 	@Override
-	default String[] list(final String pathName) throws N5Exception.N5IOException {
+	default String[] list(final String pathName) throws N5IOException {
 
 		final String normalPath = N5URI.normalizeGroupPath(pathName);
 		if (cacheMeta()) {
@@ -232,23 +233,6 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 		return GsonKeyValueN5Reader.super.list(normalPathName);
 	}
 
-	/**
-	 * Constructs the path for a data block in a dataset at a given grid
-	 * position.
-	 * <p>
-	 * The returned path is
-	 *
-	 * <pre>
-	 * $basePath/datasetPathName/$gridPosition[0]/$gridPosition[1]/.../$gridPosition[n]
-	 * </pre>
-	 * <p>
-	 * This is the file into which the data block will be stored.
-	 *
-	 * @param normalPath
-	 *            normalized dataset path
-	 * @param gridPosition
-	 * @return
-	 */
 	@Override
 	default String absoluteDataBlockPath(
 			final String normalPath,

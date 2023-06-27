@@ -88,10 +88,10 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 * Opens an {@link N5KeyValueReader} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
-	 * @param checkVersiondo
+	 * @param checkVersion
 	 *            the version check
 	 * @param keyValueAccess
-	 * @param basePathN5
+	 * @param basePath
 	 *            base path
 	 * @param gsonBuilder
 	 * @param cacheMeta

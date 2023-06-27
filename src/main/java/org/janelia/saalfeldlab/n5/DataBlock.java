@@ -32,7 +32,7 @@ import java.nio.ByteBuffer;
  * grid, a size, and can read itself from and write itself into a
  * {@link ByteBuffer}.
  *
- * @param <T>
+ * @param <T> type of the data contained in the DataBlock
  *
  * @author Stephan Saalfeld
  */

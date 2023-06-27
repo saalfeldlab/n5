@@ -42,7 +42,7 @@ public interface GsonN5Writer extends GsonN5Reader, N5Writer {
 	 *            to write the attributes to
 	 * @param attributes
 	 *            to write
-	 * @throws N5Exception
+	 * @throws N5Exception if the attributes cannot be set
 	 */
 	void setAttributes(
 			final String groupPath,

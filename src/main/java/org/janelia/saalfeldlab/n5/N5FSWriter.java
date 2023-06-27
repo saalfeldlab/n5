@@ -82,9 +82,9 @@ public class N5FSWriter extends N5KeyValueWriter {
 	 * compatible with this implementation, the N5 version of this container
 	 * will be set to the current N5 version of this implementation.
 	 *
-	 * @param basePathn5
+	 * @param basePath
 	 *            base path
-	 * @param cacheAttributescache
+	 * @param cacheAttributes
 	 *            attributes and meta data
 	 *            Setting this to true avoidsfrequent reading and parsing of
 	 *            JSON encoded attributes andother meta data that requires
@@ -114,9 +114,9 @@ public class N5FSWriter extends N5KeyValueWriter {
 	 * will be set to the current N5 version of this implementation.
 	 * </p>
 	 *
-	 * @param basePathn5
+	 * @param basePath
 	 *            base path
-	 * @param gsonBuilderthe
+	 * @param gsonBuilder
 	 *            gson builder
 	 *
 	 * @throws N5Exception

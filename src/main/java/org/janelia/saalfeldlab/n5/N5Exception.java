@@ -61,7 +61,7 @@ public class N5Exception extends RuntimeException {
 	}
 
 	/**
-	 * This excpetion represents the situation when an attribute is requested by key as a specific Class<T>,
+	 * This excpetion represents the situation when an attribute is requested by key as a specific Class,
 	 * 	that attribute key <b>does</b> exist, but is not parseable as the desired Class<T>
 	 */
 	public static class N5ClassCastException extends N5Exception {
