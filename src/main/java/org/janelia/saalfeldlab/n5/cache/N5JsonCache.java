@@ -208,6 +208,8 @@ public class N5JsonCache {
 	 *
 	 * @param normalPathKey
 	 *            the normalized path key
+	 * @param normalCacheKey
+	 * 			the normalize key to cache
 	 */
 	public void updateCacheInfo(final String normalPathKey, final String normalCacheKey) {
 

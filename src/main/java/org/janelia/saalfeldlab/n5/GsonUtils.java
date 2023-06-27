@@ -63,9 +63,11 @@ public interface GsonUtils {
 	 *
 	 * @param reader
 	 *            the reader
+	 * @param gson
+	 * 			  to parse Json from the {@code reader}
 	 * @return the root {@link JsonObject} of the attributes
 	 * @throws IOException
-	 *             the exception
+	 *             if an error occurs reading json from the {@code reader}
 	 */
 	static JsonElement readAttributes(final Reader reader, final Gson gson) throws IOException {
 
@@ -151,6 +153,8 @@ public interface GsonUtils {
 	 * to search for the {@link JsonElement} at location
 	 * {@code normalizedAttributePath}
 	 *
+	 * @param root
+	 * 			containing an attribute at normalizedAttributePath
 	 * @param normalizedAttributePath
 	 *            to the attribute
 	 * @return the attribute as a {@link JsonElement}.
@@ -376,12 +380,18 @@ public interface GsonUtils {
 	 * to write the modified {@code root} to after removal of the attribute to
 	 * remove the attribute from
 	 *
+	 *
+	 * @param <T> the type of the attribute to be removed
+	 * @param writer to write the modified JsonElement, which no longer contains the removed attribute
+	 * @param root element to remove the attribute from
 	 * @param normalizedAttributePath
 	 *            to the attribute location of the attribute to remove to
 	 *            deserialize the attribute with of the removed attribute
+	 * @param cls of the type of the attribute to be removed
+	 * @param gson used to deserialize the JsonElement as {@code T}
 	 * @return the removed attribute, or null if nothing removed
 	 * @throws IOException
-	 *             the exception
+	 *             if unable to write to the {@code writer}
 	 */
 	static <T> T removeAttribute(
 			final Writer writer,
@@ -403,9 +413,13 @@ public interface GsonUtils {
 	 * to write the modified {@code root} to after removal of the attribute to
 	 * remove the attribute from
 	 *
+	 * @param writer to write the modified JsonElement, which no longer contains the removed attribute
+	 * @param root to remove the attribute from
 	 * @param normalizedAttributePath
 	 *            to the attribute location to deserialize the attribute with
+	 * @param gson to write the attribute to the  {@code writer}
 	 * @return if the attribute was removed or not
+	 * @throws IOException if an error occurs while writing to the {@code writer}
 	 */
 	static boolean removeAttribute(
 			final Writer writer,
@@ -431,10 +445,17 @@ public interface GsonUtils {
 	 * {@code T}, then it is not removed.
 	 * to remove the attribute from
 	 *
+	 * @param <T> the type of the attribute to be removed
+	 * @param root element to remove the attribute from
 	 * @param normalizedAttributePath
 	 *            to the attribute location of the attribute to remove to
 	 *            deserialize the attribute with of the removed attribute
+	 * @param cls of the type of the attribute to be removed
+	 * @param gson used to deserialize the JsonElement as {@code T}
 	 * @return the removed attribute, or null if nothing removed
+	 * @throws JsonSyntaxException if the attribute is not valid json
+	 * @throws NumberFormatException if {@code T} is a {@link Number} but the attribute cannot be parsed as {@code T}
+	 * @throws ClassCastException if an attribute exists at this path, but is not of type {@code T}
 	 */
 	static <T> T removeAttribute(
 			final JsonElement root,

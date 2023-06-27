@@ -46,9 +46,11 @@ public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyV
 	 * will be set to the current N5 version of this implementation.
 	 *
 	 * @param keyValueAccess
+	 * 			  the backend key value access to use
 	 * @param basePath
 	 *            n5 base path
 	 * @param gsonBuilder
+	 *            the gson builder
 	 * @param cacheAttributes
 	 *            Setting this to true avoids frequent reading and parsing of
 	 *            JSON encoded attributes, this is most interesting for high

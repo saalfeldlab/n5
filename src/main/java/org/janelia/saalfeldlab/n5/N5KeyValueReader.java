@@ -58,9 +58,11 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
 	 * @param keyValueAccess
+	 * 			  the KeyValueAccess backend used
 	 * @param basePath
 	 *            N5 base path
 	 * @param gsonBuilder
+	 * 			  the GsonBuilder
 	 * @param cacheMeta
 	 *            cache attributes and meta data
 	 *            Setting this to true avoidsfrequent reading and parsing of
@@ -91,9 +93,11 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 * @param checkVersion
 	 *            the version check
 	 * @param keyValueAccess
+	 * 			  the backend KeyValueAccess used
 	 * @param basePath
 	 *            base path
 	 * @param gsonBuilder
+	 * 		      the GsonBuilder
 	 * @param cacheMeta
 	 *            cache attributes and meta data
 	 *            Setting this to true avoids frequent reading and parsing of
