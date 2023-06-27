@@ -98,15 +98,15 @@ public interface KeyValueAccess {
 	public String normalize(final String path);
 
 	/**
-	 * Get the absolute (including scheme) URI of the given path
+	 * Get the absolute (including scheme) {@link URI} of the given path
 	 *
-	 * @param normalPath
+	 * @param uriString
 	 *            is expected to be in normalized form, no further
 	 *            efforts are made to normalize it.
 	 * @return absolute URI
+	 * @throws URISyntaxException if the given path is not a proper URI
 	 */
-	public URI uri(final String normalPath) throws URISyntaxException;
-
+	public URI uri(final String uriString) throws URISyntaxException;
 	/**
 	 * Test whether the path exists.
 	 *
@@ -151,7 +151,7 @@ public interface KeyValueAccess {
 	 *            efforts are made to normalize it.
 	 * @return the locked channel
 	 * @throws IOException
-	 *             the exception
+	 *             if a locked channel could not be created
 	 */
 	public LockedChannel lockForReading(final String normalPath) throws IOException;
 
@@ -171,7 +171,7 @@ public interface KeyValueAccess {
 	 *            efforts are made to normalize it.
 	 * @return the locked channel
 	 * @throws IOException
-	 *             the exception
+	 *             if a locked channel could not be created
 	 */
 	public LockedChannel lockForWriting(final String normalPath) throws IOException;
 
@@ -183,7 +183,7 @@ public interface KeyValueAccess {
 	 *            efforts are made to normalize it.
 	 * @return the directories
 	 * @throws IOException
-	 *             the exception
+	 *             if an error occurs during listing
 	 */
 	public String[] listDirectories(final String normalPath) throws IOException;
 
@@ -194,10 +194,7 @@ public interface KeyValueAccess {
 	 *            is expected to be in normalized form, no further
 	 *            efforts are made to normalize it.
 	 * @return the the child paths
-	 * @throws IOException
-	 *             the exception
-	 *
-	 *
+	 * @throws IOException if an error occurs during listing
 	 */
 	public String[] list(final String normalPath) throws IOException;
 
@@ -211,7 +208,7 @@ public interface KeyValueAccess {
 	 *            is expected to be in normalized form, no further
 	 *            efforts are made to normalize it.
 	 * @throws IOException
-	 *             the exception
+	 *             if an error occurs during creation
 	 */
 	public void createDirectories(final String normalPath) throws IOException;
 
@@ -221,6 +218,8 @@ public interface KeyValueAccess {
 	 * @param normalPath
 	 *            is expected to be in normalized form, no further
 	 *            efforts are made to normalize it.
+	 * @throws IOException
+	 *            if an error occurs during deletion
 	 */
 	public void delete(final String normalPath) throws IOException;
 }

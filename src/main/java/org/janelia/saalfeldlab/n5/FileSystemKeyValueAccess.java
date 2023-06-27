@@ -148,9 +148,9 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	protected final FileSystem fileSystem;
 
 	/**
-	 * Opens a {@link FileSystemKeyValueAccess}.
+	 * Opens a {@link FileSystemKeyValueAccess} with a {@link FileSystem}.
 	 *
-	 * @param fileSystem
+	 * @param fileSystem the file system
 	 */
 	public FileSystemKeyValueAccess(final FileSystem fileSystem) {
 
@@ -267,7 +267,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	 * otherwise {@code pathName} is treated as UNC path on Windows, and
 	 * {@code Paths.get(pathName, ...)} fails with {@code InvalidPathException}.
 	 *
-	 * @param path
+	 * @param path the path
 	 * @return the normalized path, without leading slash
 	 */
 	@Override
@@ -470,14 +470,17 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	/**
-	 * This is a copy of a previous
-	 * Files#createAndCheckIsDirectory(Path, FileAttribute...) method that
-	 * follows symlinks.
+	 * This is a copy of a previous Files#createAndCheckIsDirectory(Path,
+	 * FileAttribute...) method that follows symlinks.
 	 *
 	 * Workaround for https://bugs.openjdk.java.net/browse/JDK-8130464
 	 *
-	 * Used by createDirectories to attempt to create a directory. A no-op if
-	 * the directory already exists.
+	 * Used by createDirectories to attempt to create a directory. A no-op if the
+	 * directory already exists.
+	 * 
+	 * @param dir directory path
+	 * @param attrs file attributes
+	 * @throws IOException the exception
 	 */
 	protected static void createAndCheckIsDirectory(
 			final Path dir,

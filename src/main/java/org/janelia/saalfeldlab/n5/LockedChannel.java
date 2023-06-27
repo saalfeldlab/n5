@@ -45,16 +45,16 @@ public interface LockedChannel extends Closeable {
 	 *
 	 * @return the reader
 	 * @throws IOException
-	 *             the exception
+	 *             if the reader could not be created
 	 */
 	public Reader newReader() throws IOException;
 
 	/**
 	 * Create a new {@link InputStream}.
 	 *
-	 * @return the reader
+	 * @return the input stream
 	 * @throws IOException
-	 *             the exception
+	 *             if an input stream could not be created
 	 */
 	public InputStream newInputStream() throws IOException;
 
@@ -62,6 +62,8 @@ public interface LockedChannel extends Closeable {
 	 * Create a new UTF-8 {@link Writer}.
 	 *
 	 * @return the writer
+	 * @throws IOException
+	 *             if a writer could not be created
 	 */
 	public Writer newWriter() throws IOException;
 
@@ -69,6 +71,8 @@ public interface LockedChannel extends Closeable {
 	 * Create a new {@link OutputStream}.
 	 *
 	 * @return the output stream
+	 * @throws IOException
+	 *             if an output stream could not be created
 	 */
 	public OutputStream newOutputStream() throws IOException;
 }

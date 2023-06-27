@@ -763,9 +763,8 @@ public interface N5Reader extends AutoCloseable {
 	 *
 	 * @param pathName
 	 *            group path
-	 * @return the attribute map
-	 * @throws N5Exception
-	 *             the exception
+	 * @return a map of attribute keys to their inferred class
+	 * @throws N5Exception if an error occurred during listing
 	 */
 	Map<String, Class<?>> listAttributes(final String pathName) throws N5Exception;
 
@@ -784,8 +783,8 @@ public interface N5Reader extends AutoCloseable {
 	 * defined by {@link #getGroupSeparator()}. The string will not have a
 	 * leading or trailing node separator symbol.
 	 *
-	 * @param nodes
-	 * @return
+	 * @param nodes a collection of child node names
+	 * @return the full group path
 	 */
 	default String groupPath(final String... nodes) {
 
