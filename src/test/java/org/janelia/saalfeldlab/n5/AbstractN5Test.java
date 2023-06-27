@@ -34,7 +34,6 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -774,10 +773,12 @@ public abstract class AbstractN5Test {
 	public void testRemoveContainer() throws IOException, URISyntaxException {
 
 		String location;
-		try (final N5Writer n5 = createN5Writer()) {
+		try (final N5Writer n5 = createN5Writer(tempN5Location())) {
 			location = n5.getURI().toString();
-			assertNotNull(createN5Reader(location));
-			n5.remove();
+			try (N5Reader n5Reader = createN5Reader(location)) {
+				assertNotNull(n5Reader);
+			}
+			assertTrue(n5.remove());
 			assertThrows(Exception.class, () -> createN5Reader(location).close());
 		}
 		assertThrows(Exception.class, () -> createN5Reader(location).close());
@@ -1052,37 +1053,44 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testReaderCreation() throws IOException, URISyntaxException {
 
-		final String location = tempN5Location();
-		try (N5Writer writer = createN5Writer(location)) {
+		final String location;
+		try (N5Writer writer = createN5Writer()) {
+			location = writer.getURI().toString();
 
-			final N5Reader n5r = createN5Reader(location);
-			assertNotNull(n5r);
+			try (N5Reader n5r = createN5Reader(location)) {
+				assertNotNull(n5r);
+			}
 
 			// existing directory without attributes is okay;
 			// Remove and create to remove attributes store
 			writer.removeAttribute("/", "/");
-			final N5Reader na = createN5Reader(location);
-			assertNotNull(na);
+			try (N5Reader na = createN5Reader(location)) {
+				assertNotNull(na);
+			}
 
 			// existing location with attributes, but no version
 			writer.removeAttribute("/", "/");
 			writer.setAttribute("/", "mystring", "ms");
-			final N5Reader wa = createN5Reader(location);
-			assertNotNull(wa);
+			try (N5Reader wa = createN5Reader(location)) {
+				assertNotNull(wa);
+			}
 
 			// existing directory with incompatible version should fail
 			writer.removeAttribute("/", "/");
-			writer.setAttribute("/", N5Reader.VERSION_KEY,
-					new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString());
-			assertThrows("Incompatible version throws error", N5Exception.class, () -> createN5Reader(location).close());
-			writer.remove();
+			final String invalidVersion = new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString();
+			writer.setAttribute("/", N5Reader.VERSION_KEY, invalidVersion);
+			assertThrows("Incompatible version throws error", N5Exception.class, () -> {
+				try (final N5Reader ignored = createN5Reader(location)) {
+					 /*Only try with resource to ensure `close()` is called.*/
+				}
+			});
 		}
-		// non-existent group should fail
-		assertThrows("Non-existant location throws error", N5Exception.N5IOException.class,
+		// non-existent location should fail
+		assertThrows("Non-existent location throws error", N5Exception.N5IOException.class,
 				() -> {
-					final N5Reader test = createN5Reader(location);
-					test.list("/");
-					test.close();
+					try (N5Reader test = createN5Reader(location)) {
+						test.list("/");
+					}
 				});
 	}
 
