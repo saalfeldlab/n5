@@ -61,6 +61,19 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		return getDatasetAttributes(pathName) != null;
 	}
 
+	@Override
+	default boolean blockExists(final String dataset, final long[] blockPosition) {
+		final String path = getURI().getPath();
+		final String[] blockParts = new String[1 + 1 + blockPosition.length];
+		blockParts[0] = path;
+		blockParts[1] = dataset;
+		for (int i = 0; i < blockPosition.length; i++) {
+			blockParts[i+2] = Long.toString(blockPosition[i]);
+		}
+		final String blockPath = getKeyValueAccess().compose(blockParts);
+		return getKeyValueAccess().exists(blockPath);
+	}
+
 	/**
 	 * Reads or creates the attributes map of a group or dataset.
 	 *

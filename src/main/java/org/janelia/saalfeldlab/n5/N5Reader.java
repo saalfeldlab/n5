@@ -353,6 +353,15 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
+	 * Test whether a block exists for a given dataset.
+	 *
+	 * @param dataset containing to test for existence of a block at {@code blockPosition}
+	 * @param blockPosition to check the existence of
+	 * @return true if a block at blockPosition exists in dataset
+	 */
+	boolean blockExists(final String dataset, final long... blockPosition);
+
+	/**
 	 * List all groups (including datasets) in a group.
 	 *
 	 * @param pathName
