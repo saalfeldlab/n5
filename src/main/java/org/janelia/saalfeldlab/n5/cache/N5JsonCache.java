@@ -151,7 +151,7 @@ public class N5JsonCache {
 			final JsonElement uncachedAttributes) {
 
 		final N5CacheInfo cacheInfo;
-		if (container.existsFromContainer(normalPathKey, null)) {
+		if (container.existsFromContainer(normalPathKey, normalCacheKey)) {
 			cacheInfo = newCacheInfo();
 		} else {
 			cacheInfo = emptyCacheInfo;
