@@ -969,7 +969,31 @@ public abstract class AbstractN5Test {
 
 			assertFalse(n5.exists(notExists));
 			assertFalse(n5.datasetExists(notExists));
+		}
+	}
 
+	@Test
+	public void blockExistsTest() throws IOException, URISyntaxException {
+		try (N5Writer n5Writer = createN5Writer()) {
+			assertThrows(N5Exception.N5IOException.class, () -> n5Writer.blockExists("test", 0,0,0));
+			final DatasetAttributes datasetAttributes = new DatasetAttributes(
+					new long[]{10,10,10},
+					new int[]{2, 2, 2},
+					DataType.INT8,
+					new RawCompression()
+			);
+			n5Writer.createDataset("test", datasetAttributes);
+			assertFalse(n5Writer.blockExists("test", 0,0,0));
+			final IntArrayDataBlock dataBlock = new IntArrayDataBlock(
+					new int[]{2, 2, 2},
+					new long[]{0, 0, 0},
+					new int[]{0,1,2,3,4,5,6,6,7}
+			);
+			n5Writer.writeBlock("test", datasetAttributes, dataBlock);
+			assertTrue(n5Writer.blockExists("test", 0,0,0));
+			assertFalse(n5Writer.blockExists("test", 0,0,1));
+			n5Writer.deleteBlock("test", 0,0,0);
+			assertFalse(n5Writer.blockExists("test", 0,0,0));
 		}
 	}
 

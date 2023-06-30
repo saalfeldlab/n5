@@ -63,15 +63,17 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	@Override
 	default boolean blockExists(final String dataset, final long[] blockPosition) {
-		final String path = getURI().getPath();
-		final String[] blockParts = new String[1 + 1 + blockPosition.length];
-		blockParts[0] = path;
-		blockParts[1] = dataset;
-		for (int i = 0; i < blockPosition.length; i++) {
-			blockParts[i+2] = Long.toString(blockPosition[i]);
+		final DatasetAttributes datasetAttributes = getDatasetAttributes(dataset);
+		if (datasetAttributes == null) {
+			throw new N5IOException("No Dataset at " + dataset + ". Block cannot exist");
 		}
-		final String blockPath = getKeyValueAccess().compose(blockParts);
-		return getKeyValueAccess().exists(blockPath);
+		if (blockPosition.length > datasetAttributes.getNumDimensions()) return false;
+		final long[] dimensions = datasetAttributes.getDimensions();
+		final int[] blockSize = datasetAttributes.getBlockSize();
+		for (int i = 0; i < dimensions.length; i++) {
+			if (blockPosition[i] * blockSize[i] >= dimensions[i]) return false;
+		}
+		return getKeyValueAccess().exists(absoluteDataBlockPath(dataset, blockPosition));
 	}
 
 	/**
@@ -149,14 +151,13 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final String normalPath,
 			final long... gridPosition) {
 
-		final String[] components = new String[gridPosition.length + 2];
-		components[0] = getURI().getPath();
-		components[1] = normalPath;
-		int i = 1;
+		final String[] components = new String[gridPosition.length + 1];
+		components[0] = normalPath;
+		int i = 0;
 		for (final long p : gridPosition)
 			components[++i] = Long.toString(p);
 
-		return getKeyValueAccess().compose(components);
+		return getKeyValueAccess().compose(getURI(), components);
 	}
 
 	/**
