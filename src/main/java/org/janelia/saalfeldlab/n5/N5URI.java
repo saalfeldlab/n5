@@ -60,6 +60,10 @@ public class N5URI {
 		return container;
 	}
 
+	public URI getURI() {
+		return uri;
+	}
+
 	/**
 	 * @return the group path, or root ("/") if none was provided
 	 */
