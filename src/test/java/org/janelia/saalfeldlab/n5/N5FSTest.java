@@ -17,6 +17,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import java.nio.file.Files;
 
 /**
  * Initiates testing of the filesystem-based N5 implementation.
@@ -26,7 +27,15 @@ import java.io.IOException;
  */
 public class N5FSTest extends AbstractN5Test {
 
-	static private String testDirPath = System.getProperty("user.home") + "/tmp/n5-test";
+	private static String testDirPath = createTestDirPath("n5-test");
+
+	private static String createTestDirPath(String dirName) {
+		try {
+			return Files.createTempDirectory(dirName).toString();
+		} catch (IOException exc) {
+			return System.getProperty("user.home") + "/tmp/" + dirName;
+		}
+	}
 
 	/**
 	 * @throws IOException

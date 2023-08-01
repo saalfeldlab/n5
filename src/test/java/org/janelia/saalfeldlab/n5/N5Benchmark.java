@@ -20,6 +20,7 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -53,7 +54,15 @@ import net.imglib2.view.Views;
  */
 public class N5Benchmark {
 
-	private static String testDirPath = System.getProperty("user.home") + "/tmp/n5-benchmark";
+	private static String testDirPath = createTestDirPath("n5-benchmark");
+
+	private static String createTestDirPath(String dirName) {
+		try {
+			return Files.createTempDirectory(dirName).toString();
+		} catch (IOException exc) {
+			return System.getProperty("user.home") + "/tmp/" + dirName;
+		}
+	}
 
 	private static String datasetName = "/dataset";
 
