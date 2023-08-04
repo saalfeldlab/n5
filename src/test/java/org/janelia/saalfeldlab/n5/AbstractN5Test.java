@@ -508,7 +508,12 @@ public abstract class AbstractN5Test {
 	public void testAttributes() throws IOException, URISyntaxException {
 
 		try (final N5Writer n5 = createN5Writer()) {
+			assertEquals(null, n5.getAttribute(groupName, "test", String.class));
+			assertEquals(0, n5.listAttributes(groupName).size());
 			n5.createGroup(groupName);
+			assertEquals(null, n5.getAttribute(groupName, "test", String.class));
+
+			assertEquals(0, n5.listAttributes(groupName).size());
 
 			n5.setAttribute(groupName, "key1", "value1");
 			assertEquals(1, n5.listAttributes(groupName).size());
