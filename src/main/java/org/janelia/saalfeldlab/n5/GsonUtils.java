@@ -210,8 +210,11 @@ public interface GsonUtils {
 	 */
 	static Map<String, Class<?>> listAttributes(final JsonElement root) throws N5Exception.N5IOException {
 
-		if (root == null || !root.isJsonObject()) {
-			return null;
+		if (root == null) {
+			return new HashMap<>();
+		}
+		if (!root.isJsonObject()) {
+			throw new N5Exception("JsonElement found, but was not JsonObject");
 		}
 
 		final HashMap<String, Class<?>> attributes = new HashMap<>();
