@@ -136,14 +136,14 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final String normalPath,
 			final long... gridPosition) {
 
-		final String[] components = new String[gridPosition.length + 2];
-		components[0] = getURI().getPath();
-		components[1] = normalPath;
-		int i = 1;
+		final String[] pathParts = normalPath.split(getGroupSeparator());
+		final String[] components = new String[gridPosition.length + pathParts.length];
+		System.arraycopy(pathParts, 0, components, 1, pathParts.length);
+		int i = pathParts.length;
 		for (final long p : gridPosition)
-			components[++i] = Long.toString(p);
+			components[i++] = Long.toString(p);
 
-		return getKeyValueAccess().compose(components);
+		return getKeyValueAccess().compose(getURI(), components);
 	}
 
 	/**
@@ -156,7 +156,9 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 */
 	default String absoluteGroupPath(final String normalGroupPath) {
 
-		return getKeyValueAccess().compose(getURI(), normalGroupPath);
+
+		final String[] groupPathParts = normalGroupPath.split(getGroupSeparator());
+		return getKeyValueAccess().compose(getURI(), groupPathParts);
 	}
 
 	/**
@@ -169,6 +171,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 */
 	default String absoluteAttributesPath(final String normalPath) {
 
+		final String[] pathParts = normalPath.split(getGroupSeparator());
 		return getKeyValueAccess().compose(getURI(), normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
 	}
 }
