@@ -37,15 +37,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.DirectoryNotEmptyException;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystemException;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -146,6 +138,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	protected final FileSystem fileSystem;
+	private final boolean trimWhitespace;
 
 	/**
 	 * Opens a {@link FileSystemKeyValueAccess} with a {@link FileSystem}.
@@ -155,6 +148,15 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public FileSystemKeyValueAccess(final FileSystem fileSystem) {
 
 		this.fileSystem = fileSystem;
+		boolean failedWhitespaceTest;
+		try {
+			fileSystem.getPath("trailingWhitespaceTest ");
+			failedWhitespaceTest = false;
+		} catch (InvalidPathException e) {
+			failedWhitespaceTest = true;
+		}
+		trimWhitespace = failedWhitespaceTest;
+
 	}
 
 	@Override
@@ -305,6 +307,11 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			return null;
 		if (components.length == 1)
 			return fileSystem.getPath(components[0]).toString();
+		if (trimWhitespace) {
+			for (int i = 0; i < components.length; i++) {
+				components[i] = components[i].trim();
+			}
+		}
 		return fileSystem.getPath(components[0], Arrays.copyOfRange(components, 1, components.length)).normalize().toString();
 	}
 
