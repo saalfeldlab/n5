@@ -33,7 +33,7 @@ public class N5JsonCache {
 		protected boolean isDataset = false;
 		protected boolean isGroup = false;
 
-		protected JsonElement getCache(final String normalCacheKey) {
+		public JsonElement getCache(final String normalCacheKey) {
 
 			// synchronize the method instead?
 			synchronized (attributesCache) {
@@ -41,7 +41,7 @@ public class N5JsonCache {
 			}
 		}
 
-		protected boolean containsKey(final String normalCacheKey) {
+		public boolean containsKey(final String normalCacheKey) {
 
 			// synchronize the method instead?
 			synchronized (attributesCache) {
