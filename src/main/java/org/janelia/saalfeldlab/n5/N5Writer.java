@@ -29,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -280,7 +281,7 @@ public interface N5Writer extends N5Reader {
 		final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
 		try (ObjectOutputStream out = new ObjectOutputStream(byteOutputStream)) {
 			out.writeObject(object);
-		} catch (final IOException e) {
+		} catch (final IOException | UncheckedIOException e) {
 			throw new N5Exception.N5IOException(e);
 		}
 		final byte[] bytes = byteOutputStream.toByteArray();

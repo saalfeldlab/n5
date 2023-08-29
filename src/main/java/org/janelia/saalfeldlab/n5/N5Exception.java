@@ -40,12 +40,12 @@ public class N5Exception extends RuntimeException {
 			super(message);
 		}
 
-		public N5IOException(final String message, final IOException cause) {
+		public N5IOException(final String message, final Exception cause) {
 
 			super(message, cause);
 		}
 
-		public N5IOException(final IOException cause) {
+		public N5IOException(final Exception cause) {
 
 			super(cause);
 		}

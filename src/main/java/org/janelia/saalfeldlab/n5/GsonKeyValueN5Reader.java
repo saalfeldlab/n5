@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
@@ -80,7 +81,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(attributesPath)) {
 			return GsonUtils.readAttributes(lockedChannel.newReader(), getGson());
-		} catch (final IOException e) {
+		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException("Failed to read attributes from dataset " + pathName, e);
 		}
 
@@ -98,7 +99,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(path)) {
 			return DefaultBlockReader.readBlock(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
-		} catch (final IOException e) {
+		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to read block " + Arrays.toString(gridPosition) + " from dataset " + path,
 					e);
@@ -110,7 +111,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		try {
 			return getKeyValueAccess().listDirectories(absoluteGroupPath(pathName));
-		} catch (final IOException e) {
+		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException("Cannot list directories for group " + pathName, e);
 		}
 	}
