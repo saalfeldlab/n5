@@ -35,6 +35,7 @@ public class N5JsonCache {
 
 		protected JsonElement getCache(final String normalCacheKey) {
 
+			// synchronize the method instead?
 			synchronized (attributesCache) {
 				return attributesCache.get(normalCacheKey);
 			}
@@ -42,9 +43,20 @@ public class N5JsonCache {
 
 		protected boolean containsKey(final String normalCacheKey) {
 
+			// synchronize the method instead?
 			synchronized (attributesCache) {
 				return attributesCache.containsKey(normalCacheKey);
 			}
+		}
+
+		public boolean isDataset() {
+
+			return isDataset;
+		}
+
+		public boolean isGroup() {
+
+			return isGroup;
 		}
 	}
 
