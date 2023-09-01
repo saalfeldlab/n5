@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +73,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		final String normalPath = N5URI.normalizeGroupPath(path);
 		try {
 			getKeyValueAccess().createDirectories(absoluteGroupPath(normalPath));
-		} catch (final IOException e) {
+		} catch (final IOException | UncheckedIOException e) {
 			throw new N5Exception.N5IOException("Failed to create group " + path, e);
 		}
 	}
@@ -96,7 +97,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(absoluteAttributesPath(normalGroupPath))) {
 			GsonUtils.writeAttributes(lock.newWriter(), attributes, getGson());
-		} catch (final IOException e) {
+		} catch (final IOException | UncheckedIOException e) {
 			throw new N5Exception.N5IOException("Failed to write attributes into " + normalGroupPath, e);
 		}
 	}
@@ -218,7 +219,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), dataBlock.getGridPosition());
 		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(blockPath)) {
 			DefaultBlockWriter.writeBlock(lock.newOutputStream(), datasetAttributes, dataBlock);
-		} catch (final IOException e) {
+		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
 					e);
@@ -233,7 +234,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		try {
 			if (getKeyValueAccess().isDirectory(groupPath))
 				getKeyValueAccess().delete(groupPath);
-		} catch (final IOException e) {
+		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException("Failed to remove " + path, e);
 		}
 
@@ -250,7 +251,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		try {
 			if (getKeyValueAccess().isFile(blockPath))
 				getKeyValueAccess().delete(blockPath);
-		} catch (final IOException e) {
+		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to delete block " + Arrays.toString(gridPosition) + " from dataset " + path,
 					e);

@@ -29,6 +29,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.ArrayList;
@@ -324,7 +325,7 @@ public interface N5Reader extends AutoCloseable {
 		final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(block.toByteBuffer().array());
 		try (ObjectInputStream in = new ObjectInputStream(byteArrayInputStream)) {
 			return (T)in.readObject();
-		} catch (final IOException e) {
+		} catch (final IOException | UncheckedIOException e) {
 			throw new N5Exception.N5IOException(e);
 		}
 	}

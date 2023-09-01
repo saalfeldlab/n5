@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
@@ -72,7 +73,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		 */
 		try {
 			getKeyValueAccess().createDirectories(absoluteGroupPath(normalPath));
-		} catch (final IOException e) {
+		} catch (final IOException | UncheckedIOException e) {
 			throw new N5Exception.N5IOException("Failed to create group " + path, e);
 		}
 
@@ -146,7 +147,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		try {
 			if (getKeyValueAccess().isDirectory(groupPath))
 				getKeyValueAccess().delete(groupPath);
-		} catch (final IOException e) {
+		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException("Failed to remove " + path, e);
 		}
 
