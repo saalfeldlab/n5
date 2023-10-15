@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 
 /**
@@ -45,10 +46,10 @@ public class DatasetAttributes implements Serializable {
 
 	private static final long serialVersionUID = -4521467080388947553L;
 
-	protected static final String dimensionsKey = "dimensions";
-	protected static final String blockSizeKey = "blockSize";
-	protected static final String dataTypeKey = "dataType";
-	protected static final String compressionKey = "compression";
+	public static final String DIMENSIONS_KEY = "dimensions";
+	public static final String BLOCK_SIZE_KEY = "blockSize";
+	public static final String DATA_TYPE_KEY = "dataType";
+	public static final String COMPRESSION_KEY = "compression";
 
 	/* version 0 */
 	protected static final String compressionTypeKey = "compressionType";
@@ -98,10 +99,44 @@ public class DatasetAttributes implements Serializable {
 	public HashMap<String, Object> asMap() {
 
 		final HashMap<String, Object> map = new HashMap<>();
-		map.put(dimensionsKey, dimensions);
-		map.put(blockSizeKey, blockSize);
-		map.put(dataTypeKey, dataType.toString());
-		map.put(compressionKey, compression);
+		map.put(DIMENSIONS_KEY, dimensions);
+		map.put(BLOCK_SIZE_KEY, blockSize);
+		map.put(DATA_TYPE_KEY, dataType);
+		map.put(COMPRESSION_KEY, compression);
 		return map;
+	}
+
+	static DatasetAttributes from(
+			final long[] dimensions,
+			final DataType dataType,
+			int[] blockSize,
+			Compression compression,
+			final String compressionVersion0Name) {
+
+		if (blockSize == null)
+			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
+
+		/* version 0 */
+		if (compression == null) {
+			switch (compressionVersion0Name) {
+			case "raw":
+				compression = new RawCompression();
+				break;
+			case "gzip":
+				compression = new GzipCompression();
+				break;
+			case "bzip2":
+				compression = new Bzip2Compression();
+				break;
+			case "lz4":
+				compression = new Lz4Compression();
+				break;
+			case "xz":
+				compression = new XzCompression();
+				break;
+			}
+		}
+
+		return new DatasetAttributes(dimensions, blockSize, dataType, compression);
 	}
 }

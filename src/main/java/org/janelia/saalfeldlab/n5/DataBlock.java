@@ -28,11 +28,11 @@ package org.janelia.saalfeldlab.n5;
 import java.nio.ByteBuffer;
 
 /**
- * Interface for data blocks.  A data block has data, a position on the block
+ * Interface for data blocks. A data block has data, a position on the block
  * grid, a size, and can read itself from and write itself into a
  * {@link ByteBuffer}.
  *
- * @param <T>
+ * @param <T> type of the data contained in the DataBlock
  *
  * @author Stephan Saalfeld
  */
@@ -42,8 +42,8 @@ public interface DataBlock<T> {
 	 * Returns the size of this data block.
 	 *
 	 * The size of a data block is expected to be smaller than or equal to the
-	 * spacing of the block grid.  The dimensionality of size is expected to be
-	 * equal to the dimensionality of the dataset.  Consistency is not enforced.
+	 * spacing of the block grid. The dimensionality of size is expected to be
+	 * equal to the dimensionality of the dataset. Consistency is not enforced.
 	 *
 	 * @return size of the data block
 	 */
@@ -53,7 +53,7 @@ public interface DataBlock<T> {
 	 * Returns the position of this data block on the block grid.
 	 *
 	 * The dimensionality of the grid position is expected to be equal to the
-	 * dimensionality of the dataset.  Consistency is not enforced.
+	 * dimensionality of the dataset. Consistency is not enforced.
 	 *
 	 * @return position on the block grid
 	 */
@@ -71,7 +71,7 @@ public interface DataBlock<T> {
 	 * block.
 	 *
 	 * The {@link ByteBuffer} may or may not map directly to the data
-	 * object of this data block.  I.e. modifying the {@link ByteBuffer} after
+	 * object of this data block. I.e. modifying the {@link ByteBuffer} after
 	 * calling this method may or may not change the data of this data block.
 	 * modifying the data object of this data block after calling this method
 	 * may or may not change the content of the {@link ByteBuffer}.
@@ -84,12 +84,13 @@ public interface DataBlock<T> {
 	 * Reads the data object of this data block from a {@link ByteBuffer}.
 	 *
 	 * The {@link ByteBuffer} may or may not map directly to the data
-	 * object of this data block.  I.e. modifying the {@link ByteBuffer} after
+	 * object of this data block. I.e. modifying the {@link ByteBuffer} after
 	 * calling this method may or may not change the data of this data block.
 	 * modifying the data object of this data block after calling this method
 	 * may or may not change the content of the {@link ByteBuffer}.
 	 *
 	 * @param buffer
+	 *            the byte buffer
 	 */
 	public void readData(final ByteBuffer buffer);
 
@@ -98,7 +99,7 @@ public interface DataBlock<T> {
 	 * not necessarily equal {@link #getNumElements(int[])
 	 * getNumElements(getSize())}.
 	 *
-	 * @return
+	 * @return the number of elements
 	 */
 	public int getNumElements();
 
@@ -106,9 +107,11 @@ public interface DataBlock<T> {
 	 * Returns the number of elements in a box of given size.
 	 *
 	 * @param size
-	 * @return
+	 *            the size
+	 * @return the number of elements
 	 */
 	public static int getNumElements(final int[] size) {
+
 		int n = size[0];
 		for (int i = 1; i < size.length; ++i)
 			n *= size[i];

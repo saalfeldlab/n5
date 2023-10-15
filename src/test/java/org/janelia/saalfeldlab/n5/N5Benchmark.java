@@ -1,18 +1,27 @@
 /**
- * License: GPL
+ * Copyright (c) 2017--2021, Stephan Saalfeld
+ * All rights reserved.
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License 2
- * as published by the Free Software Foundation.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 package org.janelia.saalfeldlab.n5;
 
@@ -20,6 +29,7 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -53,7 +63,15 @@ import net.imglib2.view.Views;
  */
 public class N5Benchmark {
 
-	private static String testDirPath = System.getProperty("user.home") + "/tmp/n5-benchmark";
+	private static String testDirPath;
+
+	static {
+		try {
+			testDirPath = Files.createTempDirectory("n5-benchmark-").toFile().getCanonicalPath();
+		} catch (final IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	private static String datasetName = "/dataset";
 
@@ -120,7 +138,7 @@ public class N5Benchmark {
 				final DatasetAttributes attributes = n5.getDatasetAttributes(compressedDatasetName);
 				final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(new int[]{1, 2, 3}, new long[]{0, 0, 0}, dataBlockData);
 				n5.writeBlock(compressedDatasetName, attributes, dataBlock);
-			} catch (final IOException e) {
+			} catch (final N5Exception e) {
 				fail(e.getMessage());
 			}
 		}
@@ -145,7 +163,7 @@ public class N5Benchmark {
 								final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(new int[]{64, 64, 64}, new long[]{x, y, z}, data);
 								n5.writeBlock(compressedDatasetName, attributes, dataBlock);
 							}
-				} catch (final IOException e) {
+				} catch (final N5Exception e) {
 					fail(e.getMessage());
 				}
 				System.out.println(String.format("%d : %s : %fs", i, compression.getType(), 0.001 * (System.currentTimeMillis() - t)));
@@ -242,7 +260,7 @@ public class N5Benchmark {
 						f.get();
 
 					System.out.println(String.format("%d : %s : %fs", i, compression.getType(), 0.001 * (System.currentTimeMillis() - t)));
-				} catch (final IOException | InterruptedException | ExecutionException e) {
+				} catch (final N5Exception | InterruptedException | ExecutionException e) {
 					fail(e.getMessage());
 				}
 			}

@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 public class FloatArrayDataBlock extends AbstractDataBlock<float[]> {
 
 	public FloatArrayDataBlock(final int[] size, final long[] gridPosition, final float[] data) {
+
 		super(size, gridPosition, data);
 	}
 
@@ -46,10 +47,10 @@ public class FloatArrayDataBlock extends AbstractDataBlock<float[]> {
 
 		buffer.asFloatBuffer().get(data);
 	}
-	
+
 	@Override
 	public int getNumElements() {
-		
+
 		return data.length;
 	}
 }

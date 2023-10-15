@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
-		<version>31.1.0</version>
+		<version>36.0.0</version>
 		<relativePath />
 	</parent>
 
 	<groupId>org.janelia.saalfeldlab</groupId>
 	<artifactId>n5</artifactId>
-	<version>2.5.2-SNAPSHOT</version>
+	<version>3.0.3-SNAPSHOT</version>
 
 	<name>N5</name>
 	<description>Not HDF5</description>
@@ -43,12 +43,42 @@
 				<role>maintainer</role>
 			</roles>
 		</developer>
+		<developer>
+			<id>bogovicj</id>
+			<name>John Bogovic</name>
+			<url>http://imagej.net/User:Bogovic</url>
+			<roles>
+				<role>lead</role>
+				<role>developer</role>
+				<role>debugger</role>
+				<role>reviewer</role>
+				<role>support</role>
+				<role>maintainer</role>
+			</roles>
+		</developer>
+		<developer>
+			<name>Caleb Hulbert</name>
+			<roles>
+				<role>lead</role>
+				<role>developer</role>
+				<role>debugger</role>
+				<role>reviewer</role>
+				<role>support</role>
+				<role>maintainer</role>
+			</roles>
+		</developer>
 	</developers>
 	<contributors>
 		<contributor>
 			<name>Stephan Saalfeld</name>
 			<properties>
 				<id>axtimwalde</id>
+			</properties>
+		</contributor>
+		<contributor>
+			<name>John Bogovic</name>
+			<properties>
+				<id>bogovicj</id>
 			</properties>
 		</contributor>
 		<contributor>
@@ -68,6 +98,18 @@
 			<properties>
 				<id>hanslovsky</id>
 			</properties>
+		</contributor>
+		<contributor>
+			<name>Caleb Hulbert</name>
+		</contributor>
+        <contributor>
+			<name>Tobias Pietzsch</name>
+			<properties>
+				<id>tpietzsch</id>
+			</properties>
+		</contributor>
+        <contributor>
+            <name>Mark Kittisopikul</name>
 		</contributor>
 	</contributors>
 
@@ -105,6 +147,11 @@
 		<cisd.jhdf5.version>19.04.0</cisd.jhdf5.version>
 
 		<commons-collections4.version>4.2</commons-collections4.version>
+
+		<maven-enforcer-plugin.version>3.0.0-M3</maven-enforcer-plugin.version>
+		<jacoco-maven-plugin.version>0.8.6</jacoco-maven-plugin.version>
+
+		<n5-spec.version>2.6.1</n5-spec.version>
 	</properties>
 
 	<dependencies>
@@ -145,7 +192,6 @@
 		<dependency>
 			<groupId>cisd</groupId>
 			<artifactId>jhdf5</artifactId>
-			<version>${cisd.jhdf5.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -174,6 +220,23 @@
 	<build>
 		<pluginManagement>
 			<plugins>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>build-helper-maven-plugin</artifactId>
+					<executions>
+						<execution>
+							<id>timestamp-property</id>
+							<goals>
+								<goal>timestamp-property</goal>
+							</goals>
+							<phase>validate</phase>
+							<configuration>
+								<name>current.year</name>
+								<pattern>yyyy</pattern>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
 				<plugin>
 					<artifactId>maven-resources-plugin</artifactId>
 					<executions>
