@@ -119,11 +119,8 @@ public abstract class AbstractN5Test {
 		};
 	}
 
-	/**
-	 * @throws IOException
-	 */
 	@Before
-	public void setUpOnce() throws IOException, URISyntaxException {
+	public void setUpOnce() {
 
 		final Random rnd = new Random();
 		byteBlock = new byte[blockNumElements];
@@ -197,7 +194,7 @@ public abstract class AbstractN5Test {
 					final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, new long[]{0, 0, 0}, byteBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
 
-					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 					assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
 					assertTrue(n5.remove(datasetName));
 
@@ -226,7 +223,7 @@ public abstract class AbstractN5Test {
 				final VLenStringDataBlock dataBlock = new VLenStringDataBlock(blockSize, new long[]{0L, 0L, 0L}, stringBlock);
 				n5.writeBlock(datasetName, attributes, dataBlock);
 
-				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0L, 0L, 0L});
+				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0L, 0L, 0L);
 
 				assertArrayEquals(stringBlock, (String[])loadedDataBlock.getData());
 
@@ -253,7 +250,7 @@ public abstract class AbstractN5Test {
 					final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(blockSize, new long[]{0, 0, 0}, shortBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
 
-					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 					assertArrayEquals(shortBlock, (short[])loadedDataBlock.getData());
 
@@ -281,7 +278,7 @@ public abstract class AbstractN5Test {
 					final IntArrayDataBlock dataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
 
-					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 					assertArrayEquals(intBlock, (int[])loadedDataBlock.getData());
 
@@ -309,7 +306,7 @@ public abstract class AbstractN5Test {
 					final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, longBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
 
-					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 					assertArrayEquals(longBlock, (long[])loadedDataBlock.getData());
 
@@ -333,7 +330,7 @@ public abstract class AbstractN5Test {
 				final FloatArrayDataBlock dataBlock = new FloatArrayDataBlock(blockSize, new long[]{0, 0, 0}, floatBlock);
 				n5.writeBlock(datasetName, attributes, dataBlock);
 
-				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 				assertArrayEquals(floatBlock, (float[])loadedDataBlock.getData(), 0.001f);
 
@@ -356,7 +353,7 @@ public abstract class AbstractN5Test {
 				final DoubleArrayDataBlock dataBlock = new DoubleArrayDataBlock(blockSize, new long[]{0, 0, 0}, doubleBlock);
 				n5.writeBlock(datasetName, attributes, dataBlock);
 
-				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 				assertArrayEquals(doubleBlock, (double[])loadedDataBlock.getData(), 0.001);
 
@@ -385,7 +382,7 @@ public abstract class AbstractN5Test {
 					final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(differentBlockSize, new long[]{0, 0, 0}, byteBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
 
-					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 					assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
 
@@ -415,11 +412,11 @@ public abstract class AbstractN5Test {
 				object.get("one").add(new double[]{1, 2, 3});
 				object.get("two").add(new double[]{4, 5, 6, 7, 8});
 
-				n5.writeSerializedBlock(object, datasetName, attributes, new long[]{0, 0, 0});
+				n5.writeSerializedBlock(object, datasetName, attributes, 0, 0, 0);
 
 				final HashMap<String, ArrayList<double[]>> loadedObject = n5.readSerializedBlock(datasetName, attributes, new long[]{0, 0, 0});
 
-				object.entrySet().stream().forEach(e -> assertArrayEquals(e.getValue().get(0), loadedObject.get(e.getKey()).get(0), 0.01));
+				object.forEach((key, value) -> assertArrayEquals(value.get(0), loadedObject.get(key).get(0), 0.01));
 
 				assertTrue(n5.remove(datasetName));
 
@@ -439,13 +436,13 @@ public abstract class AbstractN5Test {
 
 			final IntArrayDataBlock randomDataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
 			n5.writeBlock(datasetName, attributes, randomDataBlock);
-			final DataBlock<?> loadedRandomDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+			final DataBlock<?> loadedRandomDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 			assertArrayEquals(intBlock, (int[])loadedRandomDataBlock.getData());
 
 			// test the case where the resulting file becomes shorter
 			final IntArrayDataBlock emptyDataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, new int[DataBlock.getNumElements(blockSize)]);
 			n5.writeBlock(datasetName, attributes, emptyDataBlock);
-			final DataBlock<?> loadedEmptyDataBlock = n5.readBlock(datasetName, attributes, new long[]{0, 0, 0});
+			final DataBlock<?> loadedEmptyDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 			assertArrayEquals(new int[DataBlock.getNumElements(blockSize)], (int[])loadedEmptyDataBlock.getData());
 
 			assertTrue(n5.remove(datasetName));
@@ -536,10 +533,10 @@ public abstract class AbstractN5Test {
 	public void testAttributes() throws IOException, URISyntaxException {
 
 		try (final N5Writer n5 = createN5Writer()) {
-			assertEquals(null, n5.getAttribute(groupName, "test", String.class));
+			assertNull(n5.getAttribute(groupName, "test", String.class));
 			assertEquals(0, n5.listAttributes(groupName).size());
 			n5.createGroup(groupName);
-			assertEquals(null, n5.getAttribute(groupName, "test", String.class));
+			assertNull(n5.getAttribute(groupName, "test", String.class));
 
 			assertEquals(0, n5.listAttributes(groupName).size());
 
@@ -574,8 +571,8 @@ public abstract class AbstractN5Test {
 			}.getType()));
 
 			// test the case where the resulting file becomes shorter
-			n5.setAttribute(groupName, "key1", Integer.valueOf(1));
-			n5.setAttribute(groupName, "key2", Integer.valueOf(2));
+			n5.setAttribute(groupName, "key1", 1);
+			n5.setAttribute(groupName, "key2", 2);
 			assertEquals(3, n5.listAttributes(groupName).size());
 			/* class interface */
 			assertEquals(Integer.valueOf(1), n5.getAttribute(groupName, "key1", Integer.class));
@@ -839,7 +836,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testList() throws IOException, URISyntaxException {
+	public void testList() throws URISyntaxException {
 
 		try (final N5Writer listN5 = createN5Writer()) {
 			listN5.createGroup(groupName);
@@ -899,7 +896,6 @@ public abstract class AbstractN5Test {
 			assertFalse("deepList stops at datasets", datasetList2.contains(datasetName + "/0"));
 
 			final String prefix = "/test";
-			final String datasetSuffix = "group/dataset";
 			final List<String> datasetList3 = Arrays.asList(n5.deepList(prefix));
 			for (final String subGroup : subGroupNames)
 				assertTrue("deepList contents", datasetList3.contains("group/" + subGroup));
@@ -960,7 +956,7 @@ public abstract class AbstractN5Test {
 					n5.deepList(prefix, n5::datasetExists));
 
 			final List<String> datasetListFilterDandBC = Arrays.asList(n5.deepListDatasets(prefix, isBorC));
-			assertTrue("deepListDatasetFilter", datasetListFilterDandBC.size() == 0);
+			assertEquals("deepListDatasetFilter", 0, datasetListFilterDandBC.size());
 			assertArrayEquals(
 					datasetListFilterDandBC.toArray(),
 					n5.deepList(prefix, a -> n5.datasetExists(a) && isBorC.test(a)));
@@ -976,7 +972,7 @@ public abstract class AbstractN5Test {
 
 			final List<String> datasetListFilterDandBCP =
 					Arrays.asList(n5.deepListDatasets(prefix, isBorC, Executors.newFixedThreadPool(2)));
-			assertTrue("deepListDatasetFilter Parallel", datasetListFilterDandBCP.size() == 0);
+			assertEquals("deepListDatasetFilter Parallel", 0, datasetListFilterDandBCP.size());
 			assertArrayEquals(
 					datasetListFilterDandBCP.toArray(),
 					n5.deepList(prefix, a -> n5.datasetExists(a) && isBorC.test(a), Executors.newFixedThreadPool(2)));
@@ -1201,7 +1197,7 @@ public abstract class AbstractN5Test {
 		existingTests.add(testData);
 	}
 
-	protected static void runTests(final N5Writer writer, final ArrayList<TestData<?>> existingTests) throws IOException {
+	protected static void runTests(final N5Writer writer, final ArrayList<TestData<?>> existingTests) {
 
 		for (final TestData<?> test : existingTests) {
 			assertEquals(test.attributeValue, writer.getAttribute(test.groupPath, test.attributePath, test.attributeClass));
@@ -1419,7 +1415,7 @@ public abstract class AbstractN5Test {
 			n5.setAttribute(groupName, "/", true);
 			final JsonElement booleanPrimitive = n5.getAttribute(groupName, "/", JsonElement.class);
 			assertTrue(booleanPrimitive.isJsonPrimitive());
-			assertEquals(true, booleanPrimitive.getAsBoolean());
+			assertTrue(booleanPrimitive.getAsBoolean());
 			n5.setAttribute(groupName, "/", null);
 			final JsonElement jsonNull = n5.getAttribute(groupName, "/", JsonElement.class);
 			assertTrue(jsonNull.isJsonNull());

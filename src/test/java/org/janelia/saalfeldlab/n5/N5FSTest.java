@@ -36,8 +36,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,9 +43,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.commons.io.FileUtils;
 import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
-import org.junit.AfterClass;
 import org.junit.Test;
 
 import com.google.gson.GsonBuilder;
@@ -143,7 +139,7 @@ public class N5FSTest extends AbstractN5Test {
 	}
 
 //	@Test
-	public void testReadLock() throws IOException, InterruptedException {
+	public void testReadLock() throws IOException {
 
 		final Path path = Paths.get(tempN5PathName(), "lock");
 		LockedChannel lock = access.lockForWriting(path);
