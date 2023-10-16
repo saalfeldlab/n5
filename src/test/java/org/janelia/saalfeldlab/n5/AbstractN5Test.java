@@ -210,7 +210,7 @@ public abstract class AbstractN5Test {
 	public void testWriteReadStringBlock() throws URISyntaxException {
 
 		// test dataset; all characters are valid UTF8 but may have different numbers of bytes!
-		final DataType dataType = DataType.VLENSTRING;
+		final DataType dataType = DataType.STRING;
 		final int[] blockSize = new int[]{3, 2, 1};
 		final String[] stringBlock = new String[]{"", "a", "bc", "de", "fgh", ":-þ"};
 
@@ -220,7 +220,7 @@ public abstract class AbstractN5Test {
 			try (final N5Writer n5 = createN5Writer()) {
 				n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
-				final VLenStringDataBlock dataBlock = new VLenStringDataBlock(blockSize, new long[]{0L, 0L, 0L}, stringBlock);
+				final StringDataBlock dataBlock = new StringDataBlock(blockSize, new long[]{0L, 0L, 0L}, stringBlock);
 				n5.writeBlock(datasetName, attributes, dataBlock);
 
 				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0L, 0L, 0L);

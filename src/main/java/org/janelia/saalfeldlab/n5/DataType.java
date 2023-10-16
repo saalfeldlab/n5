@@ -102,9 +102,9 @@ public enum DataType {
 					blockSize,
 					gridPosition,
 					new double[numElements])),
-	VLENSTRING(
-			"String(-1)",
-			(blockSize, gridPosition, numElements) -> new VLenStringDataBlock(
+	STRING(
+			"string",
+			(blockSize, gridPosition, numElements) -> new StringDataBlock(
 					blockSize,
 					gridPosition,
 					new byte[numElements])),
