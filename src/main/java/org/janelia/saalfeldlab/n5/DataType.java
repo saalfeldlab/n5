@@ -102,6 +102,12 @@ public enum DataType {
 					blockSize,
 					gridPosition,
 					new double[numElements])),
+	VLENSTRING(
+			"String(-1)",
+			(blockSize, gridPosition, numElements) -> new VLenStringDataBlock(
+					blockSize,
+					gridPosition,
+					new byte[numElements])),
 	OBJECT(
 			"object",
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
@@ -111,9 +117,9 @@ public enum DataType {
 
 	private final String label;
 
-	private DataBlockFactory dataBlockFactory;
+	private final DataBlockFactory dataBlockFactory;
 
-	private DataType(final String label, final DataBlockFactory dataBlockFactory) {
+	DataType(final String label, final DataBlockFactory dataBlockFactory) {
 
 		this.label = label;
 		this.dataBlockFactory = dataBlockFactory;
@@ -165,9 +171,9 @@ public enum DataType {
 		return dataBlockFactory.createDataBlock(blockSize, gridPosition, DataBlock.getNumElements(blockSize));
 	}
 
-	private static interface DataBlockFactory {
+	private interface DataBlockFactory {
 
-		public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition, final int numElements);
+		DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition, final int numElements);
 	}
 
 	static public class JsonAdapter implements JsonDeserializer<DataType>, JsonSerializer<DataType> {
