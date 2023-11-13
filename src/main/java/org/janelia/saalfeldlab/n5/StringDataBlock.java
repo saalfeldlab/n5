@@ -25,24 +25,23 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-public class VLenStringDataBlock extends AbstractDataBlock<String[]> {
+public class StringDataBlock extends AbstractDataBlock<String[]> {
 
     protected static final Charset ENCODING = StandardCharsets.UTF_8;
     protected static final String NULLCHAR = "\0";
     protected byte[] serializedData = null;
     protected String[] actualData = null;
 
-    public VLenStringDataBlock(final int[] size, final long[] gridPosition, final String[] data) {
+    public StringDataBlock(final int[] size, final long[] gridPosition, final String[] data) {
         super(size, gridPosition, new String[0]);
         actualData = data;
     }
 
-    public VLenStringDataBlock(final int[] size, final long[] gridPosition, final byte[] data) {
+    public StringDataBlock(final int[] size, final long[] gridPosition, final byte[] data) {
         super(size, gridPosition, new String[0]);
         serializedData = data;
     }
