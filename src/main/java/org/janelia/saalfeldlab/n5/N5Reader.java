@@ -189,7 +189,7 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * SemVer version of this N5 spec.
 	 */
-	public static final Version VERSION = new Version(3, 0, 0);
+	public static final Version VERSION = new Version(4, 0, 0);
 
 	/**
 	 * Version attribute key.
