@@ -19,11 +19,13 @@ import org.janelia.saalfeldlab.n5.Compression.CompressionType;
  * 
  * Add the following dependency entry under to the Maven pom.xml
  * 
+ * <pre>{@code
  *		<dependency>
  *		    <groupId>com.github.luben</groupId>
  *		    <artifactId>zstd-jni</artifactId>
  *		    <version>1.5.5-10</version>
  *		</dependency>
+ * }</pre>
  * 
  * See the Zstandard manual for details on parameters.
  * https://facebook.github.io/zstd/zstd_manual.html
@@ -34,12 +36,9 @@ import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 @CompressionType("zstd")
 public class ZstdCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
 	
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 8592416400988371189L;
 
-	/*
+	/**
 	 * Compression level
 	 * 
 	 * Standard compression level is between 1 and 22
@@ -52,15 +51,21 @@ public class ZstdCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	@CompressionParameter
 	private int level = 3;
 	
-	/*
+	/**
 	 * Default compression level from zstd.h
 	 */
 	public static final int ZSTD_CLEVEL_DEFAULT = 3;
 	
+	/**
+	 * Create Zstandard compression with level equal to the constant ZSTD_CLEVEL_DEFAULT (value: {@value ZstdCompression#ZSTD_CLEVEL_DEFAULT})
+	 */
 	public ZstdCompression() {
 		this.level = ZSTD_CLEVEL_DEFAULT;
 	}
 	
+	/**
+	 * @param level The standard compression levels are normally between 1 to 22. Negative compression levels offer greater speed.
+	 */
 	public ZstdCompression(int level) {
 		this.level = level;
 	}
