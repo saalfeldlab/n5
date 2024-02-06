@@ -55,9 +55,13 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
 
     @Override
     public void readData(final ByteBuffer buffer) {
-        if (buffer.array() != serializedData)
-            buffer.get(serializedData);
-        actualData = deserialize(buffer.array());
+
+		if (buffer.hasArray()) {
+			if (buffer.array() != serializedData)
+				buffer.get(serializedData);
+			actualData = deserialize(buffer.array());
+		} else
+			actualData = ENCODING.decode(buffer).toString().split(NULLCHAR);
     }
 
     protected byte[] serialize(String[] strings) {
