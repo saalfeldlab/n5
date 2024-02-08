@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * A {@link URI} for N5 containers, groups, datasets, and attributes.
@@ -25,9 +26,16 @@ import java.util.regex.Pattern;
  */
 public class N5URI {
 
+	public static final String H5_SCHEME = "h5:";
+	public static final String HDF_SCHEME = "hdf:";
+	public static final String HDF5_SCHEME = "hdf5:";
+	public static final String N5_SCHEME = "n5:";
+	public static final String ZARR_SCHEME = "zarr:";
+
 	private static final Charset UTF8 = Charset.forName("UTF-8");
 	public static final Pattern ARRAY_INDEX = Pattern.compile("\\[([0-9]+)]");
 	final URI uri;
+	private final String type;
 	private final String scheme;
 	private final String container;
 	private final String group;
@@ -38,18 +46,28 @@ public class N5URI {
 		this(encodeAsUri(uri));
 	}
 
-	public N5URI(final URI uri) {
+	public N5URI(final URI uri) throws URISyntaxException {
 
-		this.uri = uri;
-		scheme = uri.getScheme() == null ? null : uri.getScheme();
+		final String uriString = uri.toString();
+		type = parseTypeScheme(uri.toString());
+
+		// note this line requires us to throw URISyntaxException, where we didn't use to need to
+		this.uri = type == null ? uri : new URI(uriString.replaceFirst(type, ""));
+
+		scheme = this.uri.getScheme() == null ? null : this.uri.getScheme();
 		final String schemeSpecificPartWithoutQuery = getSchemeSpecificPartWithoutQuery();
-		if (uri.getScheme() == null) {
+		if (this.uri.getScheme() == null) {
 			container = schemeSpecificPartWithoutQuery.replaceFirst("//", "");
 		} else {
-			container = uri.getScheme() + ":" + schemeSpecificPartWithoutQuery;
+			container = this.uri.getScheme() + ":" + schemeSpecificPartWithoutQuery;
 		}
-		group = uri.getQuery();
-		attribute = decodeFragment(uri.getRawFragment());
+		group = this.uri.getQuery();
+		attribute = decodeFragment(this.uri.getRawFragment());
+	}
+
+	public String getType() {
+
+		return type;
 	}
 
 	/**
@@ -62,6 +80,13 @@ public class N5URI {
 
 	public URI getURI() {
 		return uri;
+	}
+
+	public URI getTypedURI() {
+		try {
+			return new URI( getType() + ":" + uri.toString());
+		} catch (URISyntaxException e) { }
+		return null;
 	}
 
 	/**
@@ -689,6 +714,30 @@ public class N5URI {
 		}
 
 		return sb.toString();
+	}
+
+	private static String parseTypeScheme(final String uri) {
+
+		// return Stream.of(HDF5_SCHEME, HDF_SCHEME, H5_SCHEME, N5_SCHEME,
+		// ZARR_SCHEME)
+		// .filter(x -> {
+		// return uri.startsWith(x);
+		// })
+		// .findFirst().orElse(null);
+
+		// The above is shorter, this is probably faster
+		if (uri.startsWith(HDF5_SCHEME))
+			return HDF5_SCHEME;
+		else if (uri.startsWith(HDF_SCHEME))
+			return HDF_SCHEME;
+		else if (uri.startsWith(H5_SCHEME))
+			return H5_SCHEME;
+		else if (uri.startsWith(N5_SCHEME))
+			return N5_SCHEME;
+		else if (uri.startsWith(ZARR_SCHEME))
+			return ZARR_SCHEME;
+		else
+			return null;
 	}
 
 }
