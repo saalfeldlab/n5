@@ -1,7 +1,5 @@
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-
 public class N5Exception extends RuntimeException {
 
 	public N5Exception() {
@@ -40,12 +38,12 @@ public class N5Exception extends RuntimeException {
 			super(message);
 		}
 
-		public N5IOException(final String message, final Exception cause) {
+		public N5IOException(final String message, final Throwable cause) {
 
 			super(message, cause);
 		}
 
-		public N5IOException(final Exception cause) {
+		public N5IOException(final Throwable cause) {
 
 			super(cause);
 		}
@@ -96,5 +94,4 @@ public class N5Exception extends RuntimeException {
 			super(message, cause, enableSuppression, writableStackTrace);
 		}
 	}
-
 }
