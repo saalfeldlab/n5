@@ -643,7 +643,7 @@ public abstract class AbstractN5Test {
 		}
 
 		/* without serializeNulls*/
-		try (N5Writer writer = createN5Writer()) {
+		try (N5Writer writer = createN5Writer(tempN5Location(), new GsonBuilder())) {
 
 			writer.createGroup(groupName);
 			writer.setAttribute(groupName, "nullValue", null);
@@ -802,9 +802,8 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testRemoveContainer() throws IOException, URISyntaxException {
 
-		String location;
-		try (final N5Writer n5 = createN5Writer(tempN5Location())) {
-			location = n5.getURI().toString();
+		final String location = tempN5Location();
+		try (final N5Writer n5 = createN5Writer(location)) {
 			try (N5Reader n5Reader = createN5Reader(location)) {
 				assertNotNull(n5Reader);
 			}
