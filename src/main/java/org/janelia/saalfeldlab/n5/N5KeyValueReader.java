@@ -83,7 +83,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			final boolean cacheMeta)
 			throws N5Exception {
 
-		this(true, keyValueAccess, basePath, gsonBuilder, cacheMeta);
+		this(true, keyValueAccess, basePath, gsonBuilder, cacheMeta, true);
 	}
 
 	/**
@@ -116,7 +116,8 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			final KeyValueAccess keyValueAccess,
 			final String basePath,
 			final GsonBuilder gsonBuilder,
-			final boolean cacheMeta)
+			final boolean cacheMeta,
+			final boolean checkExists)
 			throws N5Exception {
 
 		this.keyValueAccess = keyValueAccess;
@@ -138,6 +139,9 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 				throw new N5Exception.N5IOException(
 					"Incompatible version " + version + " (this is " + VERSION + ").");
 		}
+
+		if (checkExists && !exists("/"))
+			throw new N5Exception.N5IOException("No container exists at " + basePath);
 	}
 
 	@Override
