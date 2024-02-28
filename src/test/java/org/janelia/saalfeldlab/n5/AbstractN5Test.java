@@ -40,6 +40,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -1087,7 +1088,9 @@ public abstract class AbstractN5Test {
 	public void testReaderCreation() throws IOException, URISyntaxException {
 
 		final String location;
-		try (N5Writer writer = createTempN5Writer()) {
+		N5Writer removeMe = null;
+		try (N5Writer writer = createN5Writer()) {
+			removeMe = writer;
 			location = writer.getURI().toString();
 
 			try (N5Reader n5r = createN5Reader(location)) {
@@ -1117,7 +1120,10 @@ public abstract class AbstractN5Test {
 					 /*Only try with resource to ensure `close()` is called.*/
 				}
 			});
+		} finally {
+			removeMe.remove();
 		}
+
 		// non-existent location should fail
 		assertThrows("Non-existent location throws error", N5Exception.N5IOException.class,
 				() -> {
