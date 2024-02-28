@@ -78,13 +78,13 @@ public class N5FSTest extends AbstractN5Test {
 
 	@Override protected N5Writer createN5Writer() throws IOException, URISyntaxException {
 
-		return new N5FSWriter(tempN5Location(), new GsonBuilder()) {
-			@Override public void close() {
-
-				super.close();
-				remove();
-			}
-		};
+		return new N5FSWriter(tempN5Location(), new GsonBuilder()); // {
+//			@Override public void close() {
+//
+//				super.close();
+//				remove();
+//			}
+//		};
 	}
 
 	@Override
@@ -126,7 +126,7 @@ public class N5FSTest extends AbstractN5Test {
 				"doubles4",
 				new double[]{5.10, 4.8, 3.7});
 
-		try (N5Writer n5 = createN5Writer()) {
+		try (N5Writer n5 = createTempN5Writer()) {
 			n5.createGroup(testGroup);
 			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[1]", doubles1));
 			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[2]", doubles2));
