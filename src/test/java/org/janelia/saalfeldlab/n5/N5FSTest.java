@@ -56,7 +56,7 @@ import com.google.gson.GsonBuilder;
  */
 public class N5FSTest extends AbstractN5Test {
 
-	private static FileSystemKeyValueAccess access = new FileSystemKeyValueAccess(FileSystems.getDefault());
+	private static final FileSystemKeyValueAccess access = new FileSystemKeyValueAccess(FileSystems.getDefault());
 
 	private static String tempN5PathName() {
 
@@ -78,13 +78,7 @@ public class N5FSTest extends AbstractN5Test {
 
 	@Override protected N5Writer createN5Writer() throws IOException, URISyntaxException {
 
-		return new N5FSWriter(tempN5Location(), new GsonBuilder()); // {
-//			@Override public void close() {
-//
-//				super.close();
-//				remove();
-//			}
-//		};
+		return new N5FSWriter(tempN5Location(), new GsonBuilder());
 	}
 
 	@Override
@@ -104,7 +98,7 @@ public class N5FSTest extends AbstractN5Test {
 	}
 
 	@Test
-	public void customObjectTest() throws IOException, URISyntaxException {
+	public void customObjectTest() {
 
 		final String testGroup = "test";
 		final ArrayList<TestData<?>> existingTests = new ArrayList<>();
@@ -138,7 +132,7 @@ public class N5FSTest extends AbstractN5Test {
 		}
 	}
 
-//	@Test
+	@Test
 	public void testReadLock() throws IOException {
 
 		final Path path = Paths.get(tempN5PathName(), "lock");
@@ -171,7 +165,7 @@ public class N5FSTest extends AbstractN5Test {
 		exec.shutdownNow();
 	}
 
-//	@Test
+	@Test
 	public void testWriteLock() throws IOException {
 
 		final Path path = Paths.get(tempN5PathName(), "lock");
@@ -203,7 +197,7 @@ public class N5FSTest extends AbstractN5Test {
 	}
 
 	@Test
-	public void testLockReleaseByReader() throws IOException {
+	public void testLockReleaseByReader() throws IOException, ExecutionException, InterruptedException, TimeoutException {
 
 		System.out.println("Testing lock release by Reader.");
 
@@ -218,26 +212,16 @@ public class N5FSTest extends AbstractN5Test {
 			return null;
 		});
 
-		try {
-			future.get(3, TimeUnit.SECONDS);
-		} catch (final TimeoutException e) {
-			fail("... lock not released!");
-			future.cancel(true);
-		} catch (final InterruptedException | ExecutionException e) {
-			future.cancel(true);
-			System.out.println("... test interrupted!");
-		} finally {
-			lock.close();
-			Files.delete(path);
-		}
+		future.get(3, TimeUnit.SECONDS);
+		future.cancel(true);
+		lock.close();
+		Files.delete(path);
 
 		exec.shutdownNow();
 	}
 
 	@Test
-	public void testLockReleaseByInputStream() throws IOException {
-
-		System.out.println("Testing lock release by InputStream.");
+	public void testLockReleaseByInputStream() throws IOException, ExecutionException, InterruptedException, TimeoutException {
 
 		final Path path = Paths.get(tempN5PathName(), "lock");
 		final LockedChannel lock = access.lockForWriting(path);
@@ -250,18 +234,10 @@ public class N5FSTest extends AbstractN5Test {
 			return null;
 		});
 
-		try {
-			future.get(3, TimeUnit.SECONDS);
-		} catch (final TimeoutException e) {
-			fail("... lock not released!");
-			future.cancel(true);
-		} catch (final InterruptedException | ExecutionException e) {
-			future.cancel(true);
-			System.out.println("... test interrupted!");
-		} finally {
-			lock.close();
-			Files.delete(path);
-		}
+		future.get(3, TimeUnit.SECONDS);
+		future.cancel(true);
+		lock.close();
+		Files.delete(path);
 
 		exec.shutdownNow();
 	}
