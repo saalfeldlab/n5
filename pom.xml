@@ -144,12 +144,6 @@
 
 		<!-- NB: Deploy releases to the SciJava Maven repository. -->
 		<releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
-		<cisd.jhdf5.version>19.04.0</cisd.jhdf5.version>
-
-		<commons-collections4.version>4.2</commons-collections4.version>
-
-		<maven-enforcer-plugin.version>3.0.0-M3</maven-enforcer-plugin.version>
-		<jacoco-maven-plugin.version>0.8.6</jacoco-maven-plugin.version>
 
 		<n5-spec.version>4.0.0</n5-spec.version>
 	</properties>
