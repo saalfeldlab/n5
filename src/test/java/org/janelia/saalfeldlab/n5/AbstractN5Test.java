@@ -40,7 +40,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -649,8 +648,6 @@ public abstract class AbstractN5Test {
 			writer.setAttribute(groupName, "existingValue", null);
 			assertThrows(N5ClassCastException.class, () -> writer.getAttribute(groupName, "existingValue", Integer.class));
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(groupName, "existingValue", JsonElement.class));
-
-			writer.remove();
 		}
 
 		/* without serializeNulls*/
@@ -805,8 +802,6 @@ public abstract class AbstractN5Test {
 			writer.setAttribute("foo", "a", 100);
 			writer.removeAttribute("foo", "a");
 			assertNull(writer.getAttribute("foo", "a", Integer.class));
-
-			writer.remove();
 		}
 	}
 
@@ -863,9 +858,7 @@ public abstract class AbstractN5Test {
 			assertArrayEquals(new String[]{"test"}, listN5.list("/"));
 
 			// calling list on a non-existant group throws an exception
-			assertThrows(N5Exception.class, () -> {
-				listN5.list("this-group-does-not-exist");
-			});
+			assertThrows(N5Exception.class, () -> listN5.list("this-group-does-not-exist"));
 
 		}
 	}
@@ -1071,12 +1064,7 @@ public abstract class AbstractN5Test {
 			final Version version = writer.getVersion();
 			assertFalse(N5Reader.VERSION.isCompatible(version));
 
-			assertThrows(N5Exception.N5IOException.class, () -> {
-				final String containerPath = writer.getURI().toString();
-				final N5Writer newWriter = createTempN5Writer(containerPath);
-				newWriter.remove();
-				newWriter.close();
-			});
+			assertThrows(N5Exception.N5IOException.class, () -> createTempN5Writer(writer.getURI().toString()));
 
 			final Version compatibleVersion = new Version(N5Reader.VERSION.getMajor(), N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch());
 			writer.setAttribute("/", N5Reader.VERSION_KEY, compatibleVersion.toString());
@@ -1173,7 +1161,7 @@ public abstract class AbstractN5Test {
 		return dataBlock == null;
 	}
 
-	public class TestData<T> {
+	public static class TestData<T> {
 
 		public String groupPath;
 		public String attributePath;
