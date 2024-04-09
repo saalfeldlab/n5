@@ -98,8 +98,7 @@ public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSe
 					newInstance.compressionParameters.put(type, parameters);
 				} catch (final ClassNotFoundException | NoSuchMethodException | ClassCastException
 						| UnsatisfiedLinkError e) {
-					System.err.println("Compression '" + item.className() + "' could not be registered because:");
-					e.printStackTrace(System.err);
+					System.err.println("Compression '" + item.className() + "' could not be registered");
 				}
 			}
 
