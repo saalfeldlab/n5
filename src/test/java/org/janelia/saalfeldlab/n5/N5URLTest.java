@@ -113,4 +113,19 @@ public class N5URLTest {
 				"s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5#f/g",
 				new N5URI("s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5").resolve("#f/g").toString());
 	}
+
+	@Test
+	public void testContainerPath() throws URISyntaxException {
+
+		assertEquals(
+				"/a/b/c/d",
+				new N5URI("/a/b/c/d?e#f").getContainerPath());
+
+		final String home = System.getProperty("user.home");
+		assertEquals(
+				home,
+				new N5URI(home + "?e#f").getContainerPath());
+
+	}
+
 }
