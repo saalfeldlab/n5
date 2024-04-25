@@ -600,10 +600,11 @@ public class N5URI {
 	 */
 	public static N5URI from(final String uriOrPath) {
 
-		URI uri;
+		URI uri = null;
 		try {
 			uri = new URI(uriOrPath);
-			System.out.println("parsed as uri");
+			System.out.println("direct uri: " + uri.toString());
+			return new N5URI(uri);
 		} catch (Throwable ignore) {}
 
 		try {
@@ -615,22 +616,23 @@ public class N5URI {
 			else {
 				StringBuffer buildUri = new StringBuffer();
 				buildUri.append(tmp.toString());
+				buildUri.append("?");
 				for (int i = 1; i < split.length; i++)
 					buildUri.append(split[i]);
 
 				uri = new URI(buildUri.toString());
 				System.out.println("path uri: " + uri.toString());
+				return new N5URI(uri);
 			}
 		} catch (Throwable ignore) {}
 
 		try {
 			uri = N5URI.encodeAsUri(uriOrPath);
 			System.out.println("encoded uri: " + uri.toString());
+			return new N5URI(N5URI.encodeAsUri(uriOrPath));
 		} catch (URISyntaxException e) {
 			throw new N5Exception(e);
 		}
-
-		return new N5URI(uri);
 	}
 
 	/**
