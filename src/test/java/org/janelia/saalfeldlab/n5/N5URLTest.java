@@ -130,9 +130,11 @@ public class N5URLTest {
 
 		// normalize with File
 		final N5URI systemUri = N5URI.from(systemPath);
+		System.out.println( Paths.get(home).toFile().getCanonicalPath());
+		System.out.println("system uri path " + systemUri.getURI().getPath());
 		assertEquals(
 				Paths.get(home).toFile().getCanonicalPath(),
-				new File(systemUri.getContainerPath()).getCanonicalPath());
+				new File(systemUri.getURI().getPath()).getCanonicalPath());
 
 	}
 

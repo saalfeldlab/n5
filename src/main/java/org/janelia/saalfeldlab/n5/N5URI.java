@@ -603,7 +603,7 @@ public class N5URI {
 		URI uri = null;
 		try {
 			uri = new URI(uriOrPath);
-			System.out.println("direct uri: " + uri.toString());
+//			System.out.println("direct uri: " + uri.toString());
 			return new N5URI(uri);
 		} catch (Throwable ignore) {}
 
@@ -621,14 +621,14 @@ public class N5URI {
 					buildUri.append(split[i]);
 
 				uri = new URI(buildUri.toString());
-				System.out.println("path uri: " + uri.toString());
+//				System.out.println("path uri: " + uri.toString());
 				return new N5URI(uri);
 			}
 		} catch (Throwable ignore) {}
 
 		try {
 			uri = N5URI.encodeAsUri(uriOrPath);
-			System.out.println("encoded uri: " + uri.toString());
+//			System.out.println("encoded uri: " + uri.toString());
 			return new N5URI(N5URI.encodeAsUri(uriOrPath));
 		} catch (URISyntaxException e) {
 			throw new N5Exception(e);
