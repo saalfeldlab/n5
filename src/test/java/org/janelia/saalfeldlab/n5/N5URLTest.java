@@ -2,6 +2,8 @@ package org.janelia.saalfeldlab.n5;
 
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 
@@ -116,7 +118,7 @@ public class N5URLTest {
 	}
 
 	@Test
-	public void testContainerPath() throws URISyntaxException {
+	public void testContainerPath() throws URISyntaxException, IOException {
 
 		final String home = System.getProperty("user.home");
 //		final String posixPath = "/a/b/c/d?e#f";
@@ -126,10 +128,11 @@ public class N5URLTest {
 //				"/a/b/c/d",
 //				N5URI.from(posixPath).getContainerPath());
 
+		// normalize with File
 		final N5URI systemUri = N5URI.from(systemPath);
 		assertEquals(
-				Paths.get(home).toUri().toString(),
-				systemUri.getContainerPath());
+				Paths.get(home).toFile().getCanonicalPath(),
+				new File(systemUri.getContainerPath()).getCanonicalPath());
 
 	}
 
