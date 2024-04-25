@@ -3,6 +3,7 @@ package org.janelia.saalfeldlab.n5;
 import org.junit.Test;
 
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -126,9 +127,8 @@ public class N5URLTest {
 //				N5URI.from(posixPath).getContainerPath());
 
 		final N5URI systemUri = N5URI.from(systemPath);
-
 		assertEquals(
-				home,
+				Paths.get(home).toUri().toString(),
 				systemUri.getContainerPath());
 
 	}
