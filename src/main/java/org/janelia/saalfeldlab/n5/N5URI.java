@@ -600,19 +600,15 @@ public class N5URI {
 	 */
 	public static N5URI from(final String uriOrPath) {
 
-		URI uri = null;
 		try {
-			uri = new URI(uriOrPath);
-//			System.out.println("direct uri: " + uri.toString());
-			return new N5URI(uri);
+			return new N5URI(new URI(uriOrPath));
 		} catch (Throwable ignore) {}
 
 		try {
 			final String[] split = uriOrPath.split("\\?");
 			final URI tmp = Paths.get(split[0]).toUri();
-			System.out.println("tmp: " + tmp.toString());
 			if (split.length == 1)
-				uri = tmp;
+				return new N5URI(tmp);
 			else {
 				StringBuffer buildUri = new StringBuffer();
 				buildUri.append(tmp.toString());
@@ -620,15 +616,11 @@ public class N5URI {
 				for (int i = 1; i < split.length; i++)
 					buildUri.append(split[i]);
 
-				uri = new URI(buildUri.toString());
-//				System.out.println("path uri: " + uri.toString());
-				return new N5URI(uri);
+				return new N5URI(new URI(buildUri.toString()));
 			}
 		} catch (Throwable ignore) {}
 
 		try {
-			uri = N5URI.encodeAsUri(uriOrPath);
-//			System.out.println("encoded uri: " + uri.toString());
 			return new N5URI(N5URI.encodeAsUri(uriOrPath));
 		} catch (URISyntaxException e) {
 			throw new N5Exception(e);
