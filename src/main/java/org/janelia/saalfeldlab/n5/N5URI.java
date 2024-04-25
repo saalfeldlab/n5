@@ -591,6 +591,44 @@ public class N5URI {
 	}
 
 	/**
+	 * Generate an {@link N5URI} from a String.
+	 *
+	 * @param uriOrPath
+	 *            a string representation of a uri or a path string.
+	 * @return the {@link N5URI}
+	 */
+	public static N5URI from(final String uriOrPath) {
+
+		URI uri;
+		try {
+			uri = URI.create(uriOrPath);
+		} catch (Throwable ignore) {}
+
+		try {
+			final String[] split = uriOrPath.split("\\?");
+			final URI tmp = Paths.get(split[0]).toUri();
+			if (split.length == 1)
+				uri = tmp;
+			else {
+				StringBuffer buildUri = new StringBuffer();
+				buildUri.append(tmp.toString());
+				for (int i = 1; i < split.length; i++)
+					buildUri.append(split[i]);
+
+				uri = new URI(buildUri.toString());
+			}
+		} catch (Throwable ignore) {}
+
+		try {
+			uri = N5URI.encodeAsUri(uriOrPath);
+		} catch (URISyntaxException e) {
+			throw new N5Exception(e);
+		}
+
+		return new N5URI(uri);
+	}
+
+	/**
 	 * Intentionally copied from {@link URI} for internal use
 	 *
 	 * @see URI#decode(char)

@@ -117,14 +117,17 @@ public class N5URLTest {
 	@Test
 	public void testContainerPath() throws URISyntaxException {
 
+		final String home = System.getProperty("user.home");
+		final String posixPath = "/a/b/c/d?e#f";
+		final String systemPath = home + "?e#f";
+
 		assertEquals(
 				"/a/b/c/d",
-				new N5URI("/a/b/c/d?e#f").getContainerPath());
+				N5URI.from(posixPath).getContainerPath());
 
-		final String home = System.getProperty("user.home");
 		assertEquals(
 				home,
-				new N5URI(home + "?e#f").getContainerPath());
+				N5URI.from(systemPath).getContainerPath());
 
 	}
 
