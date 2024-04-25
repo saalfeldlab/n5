@@ -602,12 +602,14 @@ public class N5URI {
 
 		URI uri;
 		try {
-			uri = URI.create(uriOrPath);
+			uri = new URI(uriOrPath);
+			System.out.println("parsed as uri");
 		} catch (Throwable ignore) {}
 
 		try {
 			final String[] split = uriOrPath.split("\\?");
 			final URI tmp = Paths.get(split[0]).toUri();
+			System.out.println("tmp: " + tmp.toString());
 			if (split.length == 1)
 				uri = tmp;
 			else {
@@ -617,11 +619,13 @@ public class N5URI {
 					buildUri.append(split[i]);
 
 				uri = new URI(buildUri.toString());
+				System.out.println("path uri: " + uri.toString());
 			}
 		} catch (Throwable ignore) {}
 
 		try {
 			uri = N5URI.encodeAsUri(uriOrPath);
+			System.out.println("encoded uri: " + uri.toString());
 		} catch (URISyntaxException e) {
 			throw new N5Exception(e);
 		}
