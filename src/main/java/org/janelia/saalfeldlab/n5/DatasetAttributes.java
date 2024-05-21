@@ -29,6 +29,8 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import org.janelia.saalfeldlab.n5.codec.Codec;
+
 /**
  * Mandatory dataset attributes:
  *
@@ -37,6 +39,11 @@ import java.util.HashMap;
  * <li>int[] : blockSize</li>
  * <li>{@link DataType} : dataType</li>
  * <li>{@link Compression} : compression</li>
+ * </ol>
+ * 
+ * Optional dataset attributes:
+ * <ol>
+ * <li>{@link Codec}[] : codecs</li>
  * </ol>
  *
  * @author Stephan Saalfeld
@@ -50,6 +57,7 @@ public class DatasetAttributes implements Serializable {
 	public static final String BLOCK_SIZE_KEY = "blockSize";
 	public static final String DATA_TYPE_KEY = "dataType";
 	public static final String COMPRESSION_KEY = "compression";
+	public static final String CODEC_KEY = "codecs";
 
 	/* version 0 */
 	protected static final String compressionTypeKey = "compressionType";
@@ -58,6 +66,21 @@ public class DatasetAttributes implements Serializable {
 	private final int[] blockSize;
 	private final DataType dataType;
 	private final Compression compression;
+	private final Codec[] codecs;
+
+	public DatasetAttributes(
+			final long[] dimensions,
+			final int[] blockSize,
+			final DataType dataType,
+			final Compression compression,
+			final Codec[] codecs ) {
+
+		this.dimensions = dimensions;
+		this.blockSize = blockSize;
+		this.dataType = dataType;
+		this.compression = compression;
+		this.codecs = codecs;
+	}
 
 	public DatasetAttributes(
 			final long[] dimensions,
@@ -65,10 +88,7 @@ public class DatasetAttributes implements Serializable {
 			final DataType dataType,
 			final Compression compression) {
 
-		this.dimensions = dimensions;
-		this.blockSize = blockSize;
-		this.dataType = dataType;
-		this.compression = compression;
+		this(dimensions, blockSize, dataType, compression, null);
 	}
 
 	public long[] getDimensions() {
@@ -96,6 +116,11 @@ public class DatasetAttributes implements Serializable {
 		return dataType;
 	}
 
+	public Codec[] getCodecs() {
+
+		return codecs;
+	}
+
 	public HashMap<String, Object> asMap() {
 
 		final HashMap<String, Object> map = new HashMap<>();
@@ -103,6 +128,7 @@ public class DatasetAttributes implements Serializable {
 		map.put(BLOCK_SIZE_KEY, blockSize);
 		map.put(DATA_TYPE_KEY, dataType);
 		map.put(COMPRESSION_KEY, compression);
+		map.put(CODEC_KEY, codecs); // TODO : consider not adding to map when null?
 		return map;
 	}
 
@@ -112,6 +138,17 @@ public class DatasetAttributes implements Serializable {
 			int[] blockSize,
 			Compression compression,
 			final String compressionVersion0Name) {
+
+		return from(dimensions, dataType, blockSize, compression, compressionVersion0Name, null);
+	}
+
+	static DatasetAttributes from(
+			final long[] dimensions,
+			final DataType dataType,
+			int[] blockSize,
+			Compression compression,
+			final String compressionVersion0Name,
+			Codec[] codecs) {
 
 		if (blockSize == null)
 			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
@@ -137,6 +174,6 @@ public class DatasetAttributes implements Serializable {
 			}
 		}
 
-		return new DatasetAttributes(dimensions, blockSize, dataType, compression);
+		return new DatasetAttributes(dimensions, blockSize, dataType, compression, codecs);
 	}
 }

@@ -34,6 +34,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.janelia.saalfeldlab.n5.codec.Codec;
+
 /**
  * A simple structured container API for hierarchies of chunked
  * n-dimensional datasets and attributes.
@@ -208,8 +210,30 @@ public interface N5Writer extends N5Reader {
 
 	/**
 	 * Creates a dataset. This does not create any data but the path and
-	 * mandatory
-	 * attributes only.
+	 * mandatory attributes only.
+	 *
+	 * @param datasetPath dataset path
+	 * @param dimensions the dataset dimensions
+	 * @param blockSize the block size
+	 * @param dataType the data type
+	 * @param compression the compression
+	 * @param codecs optional codecs (may be null)
+	 * @throws N5Exception the exception
+	 */
+	default void createDataset(
+			final String datasetPath,
+			final long[] dimensions,
+			final int[] blockSize,
+			final DataType dataType,
+			final Compression compression,
+			final Codec[] codecs) throws N5Exception {
+
+		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, compression, codecs));
+	}
+
+	/**
+	 * Creates a dataset. This does not create any data but the path and
+	 * mandatory attributes only.
 	 *
 	 * @param datasetPath dataset path
 	 * @param dimensions the dataset dimensions
@@ -225,7 +249,7 @@ public interface N5Writer extends N5Reader {
 			final DataType dataType,
 			final Compression compression) throws N5Exception {
 
-		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, compression));
+		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, compression, null));
 	}
 
 	/**
