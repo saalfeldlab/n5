@@ -22,6 +22,8 @@ public class AsTypeCodec implements Codec {
 	protected final DataType type;
 	protected final DataType encodedType;
 
+	protected final String id = "astype";
+
 	public AsTypeCodec( DataType type, DataType encodedType )
 	{
 		this.type = type;
@@ -30,23 +32,14 @@ public class AsTypeCodec implements Codec {
 		numBytes = bytes(type);
 		numEncodedBytes = bytes(encodedType);
 
-		// TODO fill this out
-		if (type == DataType.UINT8 && encodedType == DataType.UINT32) {
-			encoder = BYTE_TO_INT;
-			decoder = INT_TO_BYTE;
-		} else if (type == DataType.UINT32 && encodedType == DataType.UINT8) {
-			encoder = INT_TO_BYTE;
-			decoder = BYTE_TO_INT;
-		} else if (type == DataType.FLOAT64 && encodedType == DataType.INT8) {
-			encoder = DOUBLE_TO_BYTE;
-			decoder = BYTE_TO_DOUBLE;
-		} else if (type == DataType.FLOAT32 && encodedType == DataType.INT8) {
-			encoder = FLOAT_TO_BYTE;
-			decoder = BYTE_TO_FLOAT;
-		} else {
-			encoder = IDENTITY;
-			decoder = IDENTITY;
-		}
+		encoder = converter(type, encodedType);
+		decoder = converter(encodedType, type);
+	}
+
+	@Override
+	public String getId() {
+
+		return id;
 	}
 
 	@Override
@@ -83,96 +76,301 @@ public class AsTypeCodec implements Codec {
 		}
 	}
 
-	public static final BiConsumer<byte[], byte[]> IDENTITY_ARR = (x, y) -> {
-		System.arraycopy(x, 0, y, 0, y.length);
-	};
+	public static BiConsumer<ByteBuffer, ByteBuffer> converter(final DataType from, final DataType to) {
 
-	public static final BiConsumer<byte[], byte[]> IDENTITY_ONE_ARR = (x, y) -> {
-		y[0] = x[0];
-	};
+		// // TODO fill this out
 
-	public static final BiConsumer<byte[], byte[]> BYTE_TO_INT_ARR = (b, i) -> {
-		i[0] = 0;
-		i[1] = 0;
-		i[2] = 0;
-		i[3] = b[0];
-	};
+		if (from == to)
+			return AsTypeCodec::IDENTITY;
+		else if (from == DataType.INT8) {
 
-	public static final BiConsumer<byte[], byte[]> INT_TO_BYTE_ARR = (i, b) -> {
-		b[0] = i[3];
-	};
+			if( to == DataType.INT16 )
+				return AsTypeCodec::BYTE_TO_SHORT;
+			else if( to == DataType.INT32 )
+				return AsTypeCodec::BYTE_TO_INT;
+			else if( to == DataType.INT64 )
+				return AsTypeCodec::BYTE_TO_LONG;
+			else if( to == DataType.FLOAT32 )
+				return AsTypeCodec::BYTE_TO_FLOAT;
+			else if( to == DataType.FLOAT64 )
+				return AsTypeCodec::BYTE_TO_DOUBLE;
 
-	public static final BiConsumer<byte[], byte[]> INT_TO_FLOAT_ARR = (i, f) -> {
-		ByteBuffer.wrap(f).putFloat(
-				(float)ByteBuffer.wrap(i).getInt());
-	};
+		} else if (from == DataType.INT16) {
 
-	public static final BiConsumer<byte[], byte[]> FLOAT_TO_INT_ARR = (f, i) -> {
-		ByteBuffer.wrap(i).putInt(
-				(int)ByteBuffer.wrap(f).getFloat());
-	};
+			if (to == DataType.INT8)
+				return AsTypeCodec::SHORT_TO_BYTE;
+			else if (to == DataType.INT32)
+				return AsTypeCodec::SHORT_TO_INT;
+			else if (to == DataType.INT64)
+				return AsTypeCodec::SHORT_TO_LONG;
+			else if (to == DataType.FLOAT32)
+				return AsTypeCodec::SHORT_TO_FLOAT;
+			else if (to == DataType.FLOAT64)
+				return AsTypeCodec::SHORT_TO_DOUBLE;
 
-	public static final BiConsumer<byte[], byte[]> INT_TO_DOUBLE_ARR = (i, f) -> {
-		ByteBuffer.wrap(f).putDouble(
-				(float)ByteBuffer.wrap(i).getInt());
-	};
+		} else if (from == DataType.INT32) {
 
-	public static final BiConsumer<byte[], byte[]> DOUBLE_TO_INT_ARR = (f, i) -> {
-		ByteBuffer.wrap(i).putInt(
-				(int)ByteBuffer.wrap(f).getDouble());
-	};
+			if (to == DataType.INT8)
+				return AsTypeCodec::INT_TO_BYTE;
+			else if (to == DataType.INT16)
+				return AsTypeCodec::INT_TO_SHORT;
+			if (to == DataType.INT8)
+				return AsTypeCodec::DOUBLE_TO_BYTE;
+			else if (to == DataType.INT16)
+				return AsTypeCodec::DOUBLE_TO_SHORT;
+			else if (to == DataType.INT32)
+				return AsTypeCodec::DOUBLE_TO_INT;
+			else if (to == DataType.INT64)
+				return AsTypeCodec::DOUBLE_TO_LONG;
+			else if (to == DataType.FLOAT32)
+				return AsTypeCodec::DOUBLE_TO_FLOAT;
+			else if (to == DataType.INT64)
+				return AsTypeCodec::INT_TO_LONG;
+			else if (to == DataType.FLOAT32)
+				return AsTypeCodec::INT_TO_FLOAT;
+			else if (to == DataType.FLOAT64)
+				return AsTypeCodec::INT_TO_DOUBLE;
 
-	public static final BiConsumer<ByteBuffer, ByteBuffer> IDENTITY = (x, y) -> {
+		} else if (from == DataType.INT64) {
+
+			if (to == DataType.INT8)
+				return AsTypeCodec::LONG_TO_BYTE;
+			else if (to == DataType.INT16)
+				return AsTypeCodec::LONG_TO_SHORT;
+			else if (to == DataType.INT32)
+				return AsTypeCodec::LONG_TO_INT;
+			else if (to == DataType.FLOAT32)
+				return AsTypeCodec::LONG_TO_FLOAT;
+			else if (to == DataType.FLOAT64)
+				return AsTypeCodec::LONG_TO_DOUBLE;
+
+		} else if (from == DataType.FLOAT32) {
+
+			if (to == DataType.INT8)
+				return AsTypeCodec::FLOAT_TO_BYTE;
+			else if (to == DataType.INT16)
+				return AsTypeCodec::FLOAT_TO_SHORT;
+			else if (to == DataType.INT32)
+				return AsTypeCodec::FLOAT_TO_INT;
+			else if (to == DataType.INT64)
+				return AsTypeCodec::FLOAT_TO_LONG;
+			else if (to == DataType.FLOAT64)
+				return AsTypeCodec::FLOAT_TO_DOUBLE;
+
+		} else if (from == DataType.FLOAT64) {
+
+			if (to == DataType.INT8)
+				return AsTypeCodec::DOUBLE_TO_BYTE;
+			else if (to == DataType.INT16)
+				return AsTypeCodec::DOUBLE_TO_SHORT;
+			else if (to == DataType.INT32)
+				return AsTypeCodec::DOUBLE_TO_INT;
+			else if (to == DataType.INT64)
+				return AsTypeCodec::DOUBLE_TO_LONG;
+			else if (to == DataType.FLOAT32)
+				return AsTypeCodec::DOUBLE_TO_FLOAT;
+		}
+
+		return AsTypeCodec::IDENTITY;
+	}
+
+	public static final void IDENTITY(final ByteBuffer x, final ByteBuffer y) {
+
 		for (int i = 0; i < y.capacity(); i++)
 			y.put(x.get());
-	};
+	}
 
-	public static final BiConsumer<ByteBuffer, ByteBuffer> IDENTITY_ONE = (x, y) -> {
+	public static final void IDENTITY_ONE(final ByteBuffer x, final ByteBuffer y) {
+
 		y.put(x.get());
-	};
+	}
 
-	public static final BiConsumer<ByteBuffer, ByteBuffer> BYTE_TO_INT = (b, i) -> {
+	public static final void BYTE_TO_SHORT(final ByteBuffer b, final ByteBuffer s) {
+
+		final byte zero = 0;
+		s.put(zero);
+		s.put(b.get());
+	}
+
+	public static final void BYTE_TO_INT(final ByteBuffer b, final ByteBuffer i) {
+
 		final byte zero = 0;
 		i.put(zero);
 		i.put(zero);
 		i.put(zero);
 		i.put(b.get());
-	};
+	}
 
-	public static final BiConsumer<ByteBuffer, ByteBuffer> INT_TO_BYTE = (i, b) -> {
-		b.put(i.get(3));
-	};
+	public static final void BYTE_TO_LONG(final ByteBuffer b, final ByteBuffer l) {
 
-	public static final BiConsumer<ByteBuffer, ByteBuffer> INT_TO_FLOAT = (i, f) -> {
-		f.putFloat((float)i.getInt());
-	};
+		final byte zero = 0;
+		l.put(zero);
+		l.put(zero);
+		l.put(zero);
+		l.put(zero);
+		l.put(zero);
+		l.put(zero);
+		l.put(zero);
+		l.put(b.get());
+	}
 
-	public static final BiConsumer<ByteBuffer, ByteBuffer> FLOAT_TO_INT = (f, i) -> {
-		i.putInt((int)f.getFloat());
-	};
+	public static final void BYTE_TO_FLOAT(final ByteBuffer b, final ByteBuffer f) {
 
-	public static final BiConsumer<ByteBuffer, ByteBuffer> INT_TO_DOUBLE = (i, f) -> {
-		f.putDouble((float)i.getInt());
-	};
-
-	public static final BiConsumer<ByteBuffer, ByteBuffer> DOUBLE_TO_INT = (f, i) -> {
-		i.putInt((int)f.getDouble());
-	};
-
-	public static final BiConsumer<ByteBuffer, ByteBuffer> BYTE_TO_FLOAT = (b, f) -> {
 		f.putFloat((float)b.get());
-	};
+	}
 
-	public static final BiConsumer<ByteBuffer, ByteBuffer> FLOAT_TO_BYTE = (f, b) -> {
-		b.put((byte)f.getFloat());
-	};
+	public static final void BYTE_TO_DOUBLE(final ByteBuffer b, final ByteBuffer d) {
 
-	public static final BiConsumer<ByteBuffer, ByteBuffer> BYTE_TO_DOUBLE = (b, d) -> {
 		d.putDouble((double)b.get());
-	};
+	}
 
-	public static final BiConsumer<ByteBuffer, ByteBuffer> DOUBLE_TO_BYTE = (d, b) -> {
+	public static final void SHORT_TO_BYTE(final ByteBuffer s, final ByteBuffer b) {
+
+		final byte zero = 0;
+		b.put(zero);
+		b.put(s.get());
+	}
+
+	public static final void SHORT_TO_INT(final ByteBuffer s, final ByteBuffer i) {
+
+		final byte zero = 0;
+		i.put(zero);
+		i.put(zero);
+		i.put(s.get());
+		i.put(s.get());
+	}
+
+	public static final void SHORT_TO_LONG(final ByteBuffer s, final ByteBuffer l) {
+
+		final byte zero = 0;
+		l.put(zero);
+		l.put(zero);
+		l.put(zero);
+		l.put(zero);
+		l.put(zero);
+		l.put(zero);
+		l.put(s.get());
+		l.put(s.get());
+	}
+
+	public static final void SHORT_TO_FLOAT(final ByteBuffer s, final ByteBuffer f) {
+
+		f.putFloat((float)s.getShort());
+	}
+
+	public static final void SHORT_TO_DOUBLE(final ByteBuffer s, final ByteBuffer d) {
+
+		d.putDouble((double)s.getShort());
+	}
+
+	public static final void INT_TO_BYTE(final ByteBuffer i, final ByteBuffer b) {
+
+		b.put(i.get(3));
+	}
+
+	public static final void INT_TO_SHORT(final ByteBuffer i, final ByteBuffer s) {
+
+		s.put(i.get(2));
+		s.put(i.get(3));
+	}
+
+	public static final void INT_TO_LONG(final ByteBuffer i, final ByteBuffer l) {
+
+		final byte zero = 0;
+		l.put(zero);
+		l.put(zero);
+		l.put(zero);
+		l.put(zero);
+		l.put(i.get());
+		l.put(i.get());
+		l.put(i.get());
+		l.put(i.get());
+	}
+
+	public static final void INT_TO_FLOAT(final ByteBuffer i, final ByteBuffer f) {
+
+		f.putFloat((float)i.getInt());
+	}
+
+	public static final void INT_TO_DOUBLE(final ByteBuffer i, final ByteBuffer f) {
+
+		f.putDouble((float)i.getInt());
+	}
+
+	public static final void LONG_TO_BYTE(final ByteBuffer l, final ByteBuffer b) {
+
+		b.put((byte)l.getLong());
+	}
+
+	public static final void LONG_TO_SHORT(final ByteBuffer l, final ByteBuffer s) {
+
+		s.putShort((short)l.getLong());
+	}
+
+	public static final void LONG_TO_INT(final ByteBuffer l, final ByteBuffer i) {
+
+		i.putInt((int)l.getLong());
+	}
+
+	public static final void LONG_TO_FLOAT(final ByteBuffer l, final ByteBuffer f) {
+
+		f.putFloat((float)l.getLong());
+	}
+
+	public static final void LONG_TO_DOUBLE(final ByteBuffer l, final ByteBuffer f) {
+
+		f.putDouble((float)l.getLong());
+	}
+
+	public static final void FLOAT_TO_BYTE(final ByteBuffer f, final ByteBuffer b) {
+
+		b.put((byte)f.getFloat());
+	}
+
+	public static final void FLOAT_TO_SHORT(final ByteBuffer f, final ByteBuffer s) {
+
+		s.putShort((short)f.getFloat());
+	}
+
+	public static final void FLOAT_TO_INT(final ByteBuffer f, final ByteBuffer i) {
+
+		i.putInt((int)f.getFloat());
+	}
+
+	public static final void FLOAT_TO_LONG(final ByteBuffer f, final ByteBuffer l) {
+
+		l.putLong((long)f.getFloat());
+	}
+
+	public static final void FLOAT_TO_DOUBLE(final ByteBuffer f, final ByteBuffer d) {
+
+		d.putDouble((double)f.getFloat());
+	}
+
+	public static final void DOUBLE_TO_BYTE(final ByteBuffer d, final ByteBuffer b) {
+
 		b.put((byte)d.getDouble());
-	};
+	}
+
+	public static final void DOUBLE_TO_SHORT(final ByteBuffer d, final ByteBuffer s) {
+
+		s.putShort((short)d.getDouble());
+	}
+
+	public static final void DOUBLE_TO_INT(final ByteBuffer d, final ByteBuffer i) {
+
+		i.putInt((int)d.getDouble());
+	}
+
+	public static final void DOUBLE_TO_LONG(final ByteBuffer d, final ByteBuffer l) {
+
+		l.putLong((long)d.getDouble());
+	}
+
+	public static final void DOUBLE_TO_FLOAT(final ByteBuffer d, final ByteBuffer f) {
+
+		f.putFloat((float)d.getDouble());
+	}
+
 
 }

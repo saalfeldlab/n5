@@ -9,11 +9,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.stream.IntStream;
 
 import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.codec.AsTypeCodec;
-import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.junit.Test;
 
 public class AsTypeTests {
@@ -22,52 +19,48 @@ public class AsTypeTests {
 	public void testInt2Byte() throws IOException {
 
 		final int N = 16;
-		final int[] ints = IntStream.rangeClosed(0, N).toArray();
-		final ByteBuffer encodedInts = ByteBuffer.allocate(Integer.BYTES * N);
-		final byte[] bytes = new byte[N];
+		final ByteBuffer intsAsBuffer = ByteBuffer.allocate(Integer.BYTES * N);
+		final byte[] encodedBytes = new byte[N];
 		for (int i = 0; i < N; i++) {
-
-			bytes[i] = (byte)ints[i];
-			encodedInts.putInt(ints[i]);
+			intsAsBuffer.putInt(i);
+			encodedBytes[i] = (byte)i;
 		}
 
-		final AsTypeCodec int2Byte = new AsTypeCodec(DataType.UINT32, DataType.UINT8);
-		testEncoding( int2Byte, bytes, encodedInts.array());
-		testDecoding( int2Byte, encodedInts.array(), bytes);
-
-		final AsTypeCodec byte2Int = new AsTypeCodec(DataType.UINT8, DataType.UINT32);
-		testEncoding( byte2Int, encodedInts.array(), bytes);
-		testDecoding( byte2Int, bytes, encodedInts.array());
+		final byte[] decodedInts = intsAsBuffer.array();
+		testEncodingAndDecoding(new AsTypeCodec(DataType.INT32, DataType.INT8), encodedBytes, decodedInts);
+		testEncodingAndDecoding(new AsTypeCodec(DataType.INT8, DataType.INT32), decodedInts, encodedBytes);
 	}
 
 	@Test
 	public void testDouble2Byte() throws IOException {
 
 		final int N = 16;
-		final double[] doubles = new double[N];
-		final byte[] bytes = new byte[N];
-		final ByteBuffer encodedDoubles = ByteBuffer.allocate(Double.BYTES * N);
+		final ByteBuffer doublesAsBuffer = ByteBuffer.allocate(Double.BYTES * N);
+		final byte[] encodedBytes = new byte[N];
 		for (int i = 0; i < N; i++) {
-			doubles[i] = i;
-			encodedDoubles.putDouble(doubles[i]);
-
-			bytes[i] = (byte)i;
+			doublesAsBuffer.putDouble(i);
+			encodedBytes[i] = (byte)i;
 		}
+		final byte[] decodedDoubles = doublesAsBuffer.array();
 
-		final AsTypeCodec double2Byte = new AsTypeCodec(DataType.FLOAT64, DataType.INT8);
-		testEncoding(double2Byte, bytes, encodedDoubles.array());
-		testDecoding(double2Byte, encodedDoubles.array(), bytes);
+		testEncodingAndDecoding(new AsTypeCodec(DataType.FLOAT64, DataType.INT8), encodedBytes, decodedDoubles);
+		testEncodingAndDecoding(new AsTypeCodec(DataType.INT8, DataType.FLOAT64), decodedDoubles, encodedBytes);
 	}
 
-	protected static void testDecoding( final Codec codec, final byte[] expected, final byte[] input ) throws IOException
-	{
+	public static void testEncodingAndDecoding(Codec codec, byte[] encodedBytes, byte[] decodedBytes) throws IOException {
+
+		testEncoding(codec, encodedBytes, decodedBytes);
+		testDecoding(codec, decodedBytes, encodedBytes);
+	}
+
+	public static void testDecoding(final Codec codec, final byte[] expected, final byte[] input) throws IOException {
+
 		final InputStream result = codec.decode(new ByteArrayInputStream(input));
 		for (int i = 0; i < expected.length; i++)
 			assertEquals(expected[i], (byte)result.read());
 	}
 
-	protected static void testEncoding( final Codec codec, final byte[] expected, final byte[] data ) throws IOException
-	{
+	public static void testEncoding(final Codec codec, final byte[] expected, final byte[] data) throws IOException {
 
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream(expected.length);
 		final OutputStream encodedStream = codec.encode(outputStream);

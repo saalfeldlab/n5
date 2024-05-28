@@ -12,17 +12,25 @@ public class ComposedCodec implements Codec {
 	private static final long serialVersionUID = 5068349140842235924L;
 	private final Codec[] filters;
 
+	protected String id = "composed";
+
 	public ComposedCodec(final Codec... filters) {
 
 		this.filters = filters;
 	}
 
 	@Override
+	public String getId() {
+
+		return id;
+	}
+
+	@Override
 	public InputStream decode(InputStream in) throws IOException {
 
-		// DOCME : note that decoding is in reverse order
+		// note that decoding is in reverse order
 		InputStream decoded = in;
-		for( int i = filters.length - 1; i >= 0; i-- )
+		for (int i = filters.length - 1; i >= 0; i--)
 			decoded = filters[i].decode(decoded);
 
 		return decoded;
@@ -32,7 +40,7 @@ public class ComposedCodec implements Codec {
 	public OutputStream encode(OutputStream out) throws IOException {
 
 		OutputStream encoded = out;
-		for( int i = 0; i < filters.length; i++ )
+		for (int i = 0; i < filters.length; i++)
 			encoded = filters[i].encode(encoded);
 
 		return encoded;

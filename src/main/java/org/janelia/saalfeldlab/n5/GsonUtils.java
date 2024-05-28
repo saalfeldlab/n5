@@ -34,6 +34,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 
+import org.janelia.saalfeldlab.n5.codec.Codec;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -54,6 +56,7 @@ public interface GsonUtils {
 
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
 		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
+		gsonBuilder.registerTypeHierarchyAdapter(Codec.class, new CodecAdapter());
 		gsonBuilder.disableHtmlEscaping();
 		return gsonBuilder.create();
 	}

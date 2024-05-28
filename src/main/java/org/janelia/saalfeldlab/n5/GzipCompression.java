@@ -68,7 +68,7 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	}
 
 	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
+	public InputStream decode(InputStream in) throws IOException {
 
 		if (useZlib) {
 			return new InflaterInputStream(in);
@@ -78,7 +78,13 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	}
 
 	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
+	public InputStream getInputStream(final InputStream in) throws IOException {
+
+		return decode(in);
+	}
+
+	@Override
+	public OutputStream encode(OutputStream out) throws IOException {
 
 		if (useZlib) {
 			return new DeflaterOutputStream(out, new Deflater(level));
@@ -86,6 +92,12 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 			parameters.setCompressionLevel(level);
 			return new GzipCompressorOutputStream(out, parameters);
 		}
+	}
+
+	@Override
+	public OutputStream getOutputStream(final OutputStream out) throws IOException {
+
+		return encode(out);
 	}
 
 	@Override
@@ -116,4 +128,5 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 			return useZlib == gz.useZlib && level == gz.level;
 		}
 	}
+
 }

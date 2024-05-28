@@ -28,6 +28,8 @@ package org.janelia.saalfeldlab.n5;
 import java.lang.reflect.Type;
 import java.util.Map;
 
+import org.janelia.saalfeldlab.n5.codec.Codec;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
@@ -69,13 +71,14 @@ public interface GsonN5Reader extends N5Reader {
 
 			final int[] blockSize = GsonUtils.readAttribute(attributes, DatasetAttributes.BLOCK_SIZE_KEY, int[].class, getGson());
 			final Compression compression = GsonUtils.readAttribute(attributes, DatasetAttributes.COMPRESSION_KEY, Compression.class, getGson());
+			final Codec[] codecs = GsonUtils.readAttribute(attributes, DatasetAttributes.CODEC_KEY, Codec[].class, getGson());
 
 			/* version 0 */
 			final String compressionVersion0Name = compression == null
 					? GsonUtils.readAttribute(attributes, DatasetAttributes.compressionTypeKey, String.class, getGson())
 					: null;
 
-			return DatasetAttributes.from(dimensions, dataType, blockSize, compression, compressionVersion0Name);
+			return DatasetAttributes.from(dimensions, dataType, blockSize, compression, compressionVersion0Name, codecs);
 		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
 			/* We cannot create a dataset, so return null. */
 			return null;

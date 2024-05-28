@@ -95,4 +95,56 @@ public interface DefaultBlockReader extends BlockReader {
 		reader.read(dataBlock, in);
 		return dataBlock;
 	}
+
+	/**
+	 * Reads a {@link DataBlock} from an {@link InputStream}.
+	 *
+	 * @param in
+	 *            the input stream
+	 * @param datasetAttributes
+	 *            the dataset attributes
+	 * @param gridPosition
+	 *            the grid position
+	 * @return the block
+	 * @throws IOException
+	 *             the exception
+	 */
+	public static DataBlock<?> readBlockWithCodecs(
+			final InputStream in,
+			final DatasetAttributes datasetAttributes,
+			final long[] gridPosition) throws IOException {
+
+		final DataInputStream dis = new DataInputStream(in);
+		final short mode = dis.readShort();
+		final int numElements;
+		final DataBlock<?> dataBlock;
+		if (mode != 2) {
+			final int nDim = dis.readShort();
+			final int[] blockSize = new int[nDim];
+			for (int d = 0; d < nDim; ++d)
+				blockSize[d] = dis.readInt();
+			if (mode == 0) {
+				numElements = DataBlock.getNumElements(blockSize);
+			} else {
+				numElements = dis.readInt();
+			}
+			dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
+		} else {
+			numElements = dis.readInt();
+			dataBlock = datasetAttributes.getDataType().createDataBlock(null, gridPosition, numElements);
+		}
+
+		readFromStream(dataBlock, datasetAttributes.collectCodecs().decode(in));
+		return dataBlock;
+	}
+
+	public static <T, B extends DataBlock<T>> void readFromStream(final B dataBlock, final InputStream in) throws IOException {
+
+		final ByteBuffer buffer = dataBlock.toByteBuffer();
+		final DataInputStream dis = new DataInputStream(in);
+		dis.readFully(buffer.array());
+		dataBlock.readData(buffer);
+	}
+
+
 }

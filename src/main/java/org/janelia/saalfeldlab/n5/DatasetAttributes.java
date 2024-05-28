@@ -1,28 +1,3 @@
-/**
- * Copyright (c) 2017, Stephan Saalfeld
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
 package org.janelia.saalfeldlab.n5;
 
 import java.io.Serializable;
@@ -30,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.ComposedCodec;
 
 /**
  * Mandatory dataset attributes:
@@ -40,7 +16,7 @@ import org.janelia.saalfeldlab.n5.codec.Codec;
  * <li>{@link DataType} : dataType</li>
  * <li>{@link Compression} : compression</li>
  * </ol>
- * 
+ *
  * Optional dataset attributes:
  * <ol>
  * <li>{@link Codec}[] : codecs</li>
@@ -121,6 +97,24 @@ public class DatasetAttributes implements Serializable {
 		return codecs;
 	}
 
+	public Codec collectCodecs() {
+
+		final Codec compressionCodec = Compression.getCompressionAsCodec(compression);
+
+		if (codecs == null || codecs.length == 0)
+			return compressionCodec;
+		else if (codecs.length == 1)
+			return new ComposedCodec(codecs[0], compressionCodec);
+		else {
+			final Codec[] codecsAndCompresor = new Codec[codecs.length + 1];
+			for (int i = 0; i < codecs.length; i++)
+				codecsAndCompresor[i] = codecs[i];
+
+			codecsAndCompresor[codecs.length] = compressionCodec;
+			return new ComposedCodec(codecsAndCompresor);
+		}
+	}
+
 	public HashMap<String, Object> asMap() {
 
 		final HashMap<String, Object> map = new HashMap<>();
@@ -128,7 +122,7 @@ public class DatasetAttributes implements Serializable {
 		map.put(BLOCK_SIZE_KEY, blockSize);
 		map.put(DATA_TYPE_KEY, dataType);
 		map.put(COMPRESSION_KEY, compression);
-		map.put(CODEC_KEY, codecs); // TODO : consider not adding to map when null?
+		map.put(CODEC_KEY, codecs); // TODO : consider not adding to map when null
 		return map;
 	}
 

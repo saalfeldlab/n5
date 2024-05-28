@@ -9,8 +9,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
-import org.janelia.saalfeldlab.n5.codec.AsTypeCodec;
-import org.janelia.saalfeldlab.n5.codec.FixedLengthConvertedInputStream;
 import org.junit.Test;
 
 public class FixedConvertedInputStreamTest {
@@ -24,7 +22,7 @@ public class FixedConvertedInputStreamTest {
 		Arrays.fill(data, expected);
 
 		final FixedLengthConvertedInputStream convertedId = new FixedLengthConvertedInputStream(1, 1,
-				AsTypeCodec.IDENTITY_ONE,
+				AsTypeCodec::IDENTITY_ONE,
 				new ByteArrayInputStream(data));
 
 		final FixedLengthConvertedInputStream convertedPlusOne = new FixedLengthConvertedInputStream(1, 1,
@@ -55,7 +53,7 @@ public class FixedConvertedInputStreamTest {
 		final byte[] data = buf.array();
 		final FixedLengthConvertedInputStream intToByte = new FixedLengthConvertedInputStream(
 				4, 1,
-				AsTypeCodec.INT_TO_BYTE,
+				AsTypeCodec::INT_TO_BYTE,
 				new ByteArrayInputStream(data));
 
 		for( int i = 0; i < N; i++ )
@@ -74,7 +72,7 @@ public class FixedConvertedInputStreamTest {
 			data[i] = (byte)i;
 
 		final FixedLengthConvertedInputStream byteToInt = new FixedLengthConvertedInputStream(
-				1, 4, AsTypeCodec.BYTE_TO_INT,
+				1, 4, AsTypeCodec::BYTE_TO_INT,
 				new ByteArrayInputStream(data));
 
 		final DataInputStream dataStream = new DataInputStream(byteToInt);
