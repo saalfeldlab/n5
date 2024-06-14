@@ -62,6 +62,21 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		return getDatasetAttributes(pathName) != null;
 	}
 
+	@Override
+	default boolean blockExists(final String dataset, final long[] blockPosition) {
+		final DatasetAttributes datasetAttributes = getDatasetAttributes(dataset);
+		if (datasetAttributes == null) {
+			throw new N5IOException("No Dataset at " + dataset + ". Block cannot exist");
+		}
+		if (blockPosition.length > datasetAttributes.getNumDimensions()) return false;
+		final long[] dimensions = datasetAttributes.getDimensions();
+		final int[] blockSize = datasetAttributes.getBlockSize();
+		for (int i = 0; i < dimensions.length; i++) {
+			if (blockPosition[i] * blockSize[i] >= dimensions[i]) return false;
+		}
+		return getKeyValueAccess().exists(absoluteDataBlockPath(dataset, blockPosition));
+	}
+
 	/**
 	 * Reads or creates the attributes map of a group or dataset.
 	 *
@@ -137,14 +152,13 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final String normalPath,
 			final long... gridPosition) {
 
-		final String[] components = new String[gridPosition.length + 2];
-		components[0] = getURI().getPath();
-		components[1] = normalPath;
-		int i = 1;
+		final String[] components = new String[gridPosition.length + 1];
+		components[0] = normalPath;
+		int i = 0;
 		for (final long p : gridPosition)
 			components[++i] = Long.toString(p);
 
-		return getKeyValueAccess().compose(components);
+		return getKeyValueAccess().compose(getURI(), components);
 	}
 
 	/**
