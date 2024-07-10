@@ -160,7 +160,11 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	@Override
 	public LockedFileChannel lockForReading(final String normalPath) throws IOException {
 
-		return new LockedFileChannel(normalPath, true);
+		try {
+			return new LockedFileChannel(normalPath, true);
+		} catch (NoSuchFileException e) {
+			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+		}
 	}
 
 	@Override

@@ -94,11 +94,11 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final long... gridPosition) throws N5Exception {
 
 		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), gridPosition);
-		if (!getKeyValueAccess().isFile(path))
-			return null;
 
 		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(path)) {
 			return DefaultBlockReader.readBlock(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
+		} catch (final N5Exception.N5NoSuchKeyException e) {
+			return null;
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to read block " + Arrays.toString(gridPosition) + " from dataset " + path,
