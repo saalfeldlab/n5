@@ -233,20 +233,6 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 		return GsonKeyValueN5Reader.super.list(normalPathName);
 	}
 
-	@Override
-	default String absoluteDataBlockPath(
-			final String normalPath,
-			final long... gridPosition) {
-
-		final String[] components = new String[gridPosition.length + 1];
-		components[0] = normalPath;
-		int i = 0;
-		for (final long p : gridPosition)
-			components[++i] = Long.toString(p);
-
-		return getKeyValueAccess().compose(getURI(), components);
-	}
-
 	/**
 	 * Check for attributes that are required for a group to be a dataset.
 	 *
