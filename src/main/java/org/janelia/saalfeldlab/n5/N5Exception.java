@@ -94,4 +94,31 @@ public class N5Exception extends RuntimeException {
 			super(message, cause, enableSuppression, writableStackTrace);
 		}
 	}
+
+	public static class N5NoSuchKeyException extends N5IOException {
+
+		public N5NoSuchKeyException(final String message) {
+
+			super(message);
+		}
+
+		public N5NoSuchKeyException(final String message, final Throwable cause) {
+
+			super(message, cause);
+		}
+
+		public N5NoSuchKeyException(final Throwable cause) {
+
+			super(cause);
+		}
+
+		protected N5NoSuchKeyException(
+				final String message,
+				final Throwable cause,
+				final boolean enableSuppression,
+				final boolean writableStackTrace) {
+
+			super(message, cause, enableSuppression, writableStackTrace);
+		}
+	}
 }

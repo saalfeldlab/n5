@@ -94,11 +94,11 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final long... gridPosition) throws N5Exception {
 
 		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), gridPosition);
-		if (!getKeyValueAccess().isFile(path))
-			return null;
 
 		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(path)) {
 			return DefaultBlockReader.readBlock(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
+		} catch (final N5Exception.N5NoSuchKeyException e) {
+			return null;
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to read block " + Arrays.toString(gridPosition) + " from dataset " + path,
@@ -137,14 +137,13 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final String normalPath,
 			final long... gridPosition) {
 
-		final String[] components = new String[gridPosition.length + 2];
-		components[0] = getURI().getPath();
-		components[1] = normalPath;
-		int i = 1;
+		final String[] components = new String[gridPosition.length + 1];
+		components[0] = normalPath;
+		int i = 0;
 		for (final long p : gridPosition)
 			components[++i] = Long.toString(p);
 
-		return getKeyValueAccess().compose(components);
+		return getKeyValueAccess().compose(getURI(), components);
 	}
 
 	/**
