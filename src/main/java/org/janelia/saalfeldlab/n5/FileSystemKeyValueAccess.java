@@ -175,7 +175,11 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 	public LockedFileChannel lockForReading(final Path path) throws IOException {
 
-		return new LockedFileChannel(path, true);
+		try {
+			return new LockedFileChannel(path, true);
+		} catch (NoSuchFileException e) {
+			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+		}
 	}
 
 	public LockedFileChannel lockForWriting(final Path path) throws IOException {
