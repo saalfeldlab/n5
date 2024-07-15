@@ -76,11 +76,10 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final String groupPath = N5URI.normalizeGroupPath(pathName);
 		final String attributesPath = absoluteAttributesPath(groupPath);
 
-		if (!getKeyValueAccess().isFile(attributesPath))
-			return null;
-
 		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(attributesPath)) {
 			return GsonUtils.readAttributes(lockedChannel.newReader(), getGson());
+		} catch (final N5Exception.N5NoSuchKeyException e) {
+			return null;
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException("Failed to read attributes from dataset " + pathName, e);
 		}
