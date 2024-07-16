@@ -108,6 +108,7 @@ public interface GsonUtils {
 	 * @return the deserialized attribute object, or {@code null} if
 	 *         {@code attribute} cannot deserialize to {@code T}
 	 */
+	@SuppressWarnings("unchecked")
 	static <T> T parseAttributeElement(final JsonElement attribute, final Gson gson, final Type type) throws JsonSyntaxException, NumberFormatException, ClassCastException {
 
 		if (attribute == null)
@@ -266,6 +267,7 @@ public interface GsonUtils {
 		return getJsonAsArray(gson, array, TypeToken.get(cls).getType());
 	}
 
+	@SuppressWarnings("unchecked")
 	static <T> T getJsonAsArray(final Gson gson, final JsonArray array, final Type type) {
 
 		final Class<?> clazz = (type instanceof Class<?>) ? ((Class<?>)type) : null;

@@ -60,6 +60,7 @@ public class N5JsonCache {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	protected static class EmptyJson extends JsonElement {
 
 		@Override

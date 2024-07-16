@@ -291,7 +291,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		try {
 			final URI normalUri = URI.create(normalPath);
 			if (normalUri.isAbsolute()) return normalUri.normalize();
-		} catch (IllegalArgumentException e) {
+		} catch (final IllegalArgumentException e) {
 			return new File(normalPath).toURI().normalize();
 		}
 		return new File(normalPath).toURI().normalize();
@@ -445,7 +445,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			// don't have permission to get absolute path
 			se = x;
 		}
-		// find a decendent that exists
+		// find a descendant that exists
 		Path parent = dir.getParent();
 		while (parent != null) {
 			try {
@@ -485,7 +485,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	 *
 	 * Used by createDirectories to attempt to create a directory. A no-op if the
 	 * directory already exists.
-	 * 
+	 *
 	 * @param dir directory path
 	 * @param attrs file attributes
 	 * @throws IOException the exception

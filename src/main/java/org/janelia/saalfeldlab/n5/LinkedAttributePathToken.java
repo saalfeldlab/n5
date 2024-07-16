@@ -130,6 +130,7 @@ public abstract class LinkedAttributePathToken<T extends JsonElement> implements
 	 *            to attempt to set to {@link #parentJson}
 	 * @return the value set to {@link #parentJson}.
 	 */
+	@SuppressWarnings("unchecked")
 	protected JsonElement setAndCreateParentElement(final JsonElement json) {
 
 		if (json == null || !jsonCompatible(json)) {
