@@ -95,9 +95,15 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), gridPosition);
 
 		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(path)) {
+<<<<<<< HEAD
 			return DefaultBlockReader.readBlock(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
+||||||| 6b6d4d2
+			return DefaultBlockReader.readBlock(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
+=======
+			return DefaultBlockReader.readBlockWithCodecs(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
+>>>>>>> origin/codecs
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to read block " + Arrays.toString(gridPosition) + " from dataset " + path,

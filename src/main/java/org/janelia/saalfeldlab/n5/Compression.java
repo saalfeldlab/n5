@@ -25,6 +25,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -32,6 +35,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.scijava.annotations.Indexable;
 
 /**
@@ -40,6 +44,12 @@ import org.scijava.annotations.Indexable;
  * @author Stephan Saalfeld
  */
 public interface Compression extends Serializable {
+
+	// @Override
+	// public default String getId() {
+	//
+	// return getType();
+	// }
 
 	/**
 	 * Annotation for runtime discovery of compression schemes.
@@ -72,7 +82,61 @@ public interface Compression extends Serializable {
 			return compressionType.value();
 	}
 
+
 	public BlockReader getReader();
 
 	public BlockWriter getWriter();
+
+	/**
+	 * Decode an {@link InputStream}.
+	 *
+	 * @param in
+	 *            input stream
+	 * @return the decoded input stream
+	 */
+	public InputStream decode(InputStream in) throws IOException;
+
+	/**
+	 * Encode an {@link OutputStream}.
+	 *
+	 * @param out
+	 *            the output stream
+	 * @return the encoded output stream
+	 */
+	public OutputStream encode(OutputStream out) throws IOException;
+
+	public static Codec getCompressionAsCodec(Compression compression) {
+
+		return new CompressionCodec(compression);
+	}
+
+	public static class CompressionCodec implements Codec {
+
+		private static final long serialVersionUID = -7931131454184340637L;
+		private Compression compression;
+
+		public CompressionCodec(Compression compression) {
+
+			this.compression = compression;
+		}
+
+		@Override
+		public InputStream decode(InputStream in) throws IOException {
+
+			return compression.decode(in);
+		}
+
+		@Override
+		public OutputStream encode(OutputStream out) throws IOException {
+
+			return compression.encode(out);
+		}
+
+		@Override
+		public String getId() {
+
+			return compression.getType();
+		}
+
+	}
 }

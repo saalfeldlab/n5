@@ -31,13 +31,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * Default implementation of {@link N5Writer} with JSON attributes parsed with
@@ -218,7 +218,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), dataBlock.getGridPosition());
 		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(blockPath)) {
-			DefaultBlockWriter.writeBlock(lock.newOutputStream(), datasetAttributes, dataBlock);
+			DefaultBlockWriter.writeBlockWithCodecs(lock.newOutputStream(), datasetAttributes, dataBlock);
+			// DefaultBlockWriter.writeBlock(lock.newOutputStream(), datasetAttributes, dataBlock);
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,

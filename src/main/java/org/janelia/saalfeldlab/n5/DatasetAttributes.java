@@ -1,33 +1,11 @@
-/**
- * Copyright (c) 2017, Stephan Saalfeld
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
 package org.janelia.saalfeldlab.n5;
 
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
+
+import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.ComposedCodec;
 
 /**
  * Mandatory dataset attributes:
@@ -37,6 +15,11 @@ import java.util.HashMap;
  * <li>int[] : blockSize</li>
  * <li>{@link DataType} : dataType</li>
  * <li>{@link Compression} : compression</li>
+ * </ol>
+ *
+ * Optional dataset attributes:
+ * <ol>
+ * <li>{@link Codec}[] : codecs</li>
  * </ol>
  *
  * @author Stephan Saalfeld
@@ -50,6 +33,7 @@ public class DatasetAttributes implements Serializable {
 	public static final String BLOCK_SIZE_KEY = "blockSize";
 	public static final String DATA_TYPE_KEY = "dataType";
 	public static final String COMPRESSION_KEY = "compression";
+	public static final String CODEC_KEY = "codecs";
 
 	/* version 0 */
 	protected static final String compressionTypeKey = "compressionType";
@@ -58,6 +42,21 @@ public class DatasetAttributes implements Serializable {
 	private final int[] blockSize;
 	private final DataType dataType;
 	private final Compression compression;
+	private final Codec[] codecs;
+
+	public DatasetAttributes(
+			final long[] dimensions,
+			final int[] blockSize,
+			final DataType dataType,
+			final Compression compression,
+			final Codec[] codecs ) {
+
+		this.dimensions = dimensions;
+		this.blockSize = blockSize;
+		this.dataType = dataType;
+		this.compression = compression;
+		this.codecs = codecs;
+	}
 
 	public DatasetAttributes(
 			final long[] dimensions,
@@ -65,10 +64,7 @@ public class DatasetAttributes implements Serializable {
 			final DataType dataType,
 			final Compression compression) {
 
-		this.dimensions = dimensions;
-		this.blockSize = blockSize;
-		this.dataType = dataType;
-		this.compression = compression;
+		this(dimensions, blockSize, dataType, compression, null);
 	}
 
 	public long[] getDimensions() {
@@ -96,6 +92,29 @@ public class DatasetAttributes implements Serializable {
 		return dataType;
 	}
 
+	public Codec[] getCodecs() {
+
+		return codecs;
+	}
+
+	public Codec collectCodecs() {
+
+		final Codec compressionCodec = Compression.getCompressionAsCodec(compression);
+
+		if (codecs == null || codecs.length == 0)
+			return compressionCodec;
+		else if (codecs.length == 1)
+			return new ComposedCodec(codecs[0], compressionCodec);
+		else {
+			final Codec[] codecsAndCompresor = new Codec[codecs.length + 1];
+			for (int i = 0; i < codecs.length; i++)
+				codecsAndCompresor[i] = codecs[i];
+
+			codecsAndCompresor[codecs.length] = compressionCodec;
+			return new ComposedCodec(codecsAndCompresor);
+		}
+	}
+
 	public HashMap<String, Object> asMap() {
 
 		final HashMap<String, Object> map = new HashMap<>();
@@ -103,6 +122,7 @@ public class DatasetAttributes implements Serializable {
 		map.put(BLOCK_SIZE_KEY, blockSize);
 		map.put(DATA_TYPE_KEY, dataType);
 		map.put(COMPRESSION_KEY, compression);
+		map.put(CODEC_KEY, codecs); // TODO : consider not adding to map when null
 		return map;
 	}
 
@@ -112,6 +132,17 @@ public class DatasetAttributes implements Serializable {
 			int[] blockSize,
 			Compression compression,
 			final String compressionVersion0Name) {
+
+		return from(dimensions, dataType, blockSize, compression, compressionVersion0Name, null);
+	}
+
+	static DatasetAttributes from(
+			final long[] dimensions,
+			final DataType dataType,
+			int[] blockSize,
+			Compression compression,
+			final String compressionVersion0Name,
+			Codec[] codecs) {
 
 		if (blockSize == null)
 			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
@@ -137,6 +168,6 @@ public class DatasetAttributes implements Serializable {
 			}
 		}
 
-		return new DatasetAttributes(dimensions, blockSize, dataType, compression);
+		return new DatasetAttributes(dimensions, blockSize, dataType, compression, codecs);
 	}
 }
