@@ -61,14 +61,14 @@ public abstract class ChecksumCodec implements DeterministicSizeCodec {
 		writeChecksum(out);
 	}
 
-	public ByteBuffer decodeAndValidate(final InputStream in, int numBytes) throws IOException {
+	public ByteBuffer decodeAndValidate(final InputStream in, int numBytes) throws IOException, ChecksumException {
 
 		final CheckedInputStream cin = decode(in);
 		final byte[] data = new byte[numBytes];
 		cin.read(data);
 
 		if (!valid(in))
-			throw new IOException("Invalid checksum");
+			throw new ChecksumException("Invalid checksum");
 
 		return ByteBuffer.wrap(data);
 	}
