@@ -3,6 +3,9 @@ package org.janelia.saalfeldlab.n5.codec.checksum;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.util.zip.CheckedInputStream;
+import java.util.zip.CheckedOutputStream;
 import java.util.zip.Checksum;
 
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
@@ -35,20 +38,39 @@ public abstract class ChecksumCodec implements DeterministicSizeCodec {
 	}
 
 	@Override
-	public ChecksumInputStream decode(final InputStream in) throws IOException {
+	public CheckedInputStream decode(final InputStream in) throws IOException {
 
 		// TODO get the correct expected checksum
 		// TODO write a test with nested checksum codecs
 
 		// has to know the number of it needs to read?
-		return new ChecksumInputStream(getChecksum(), in);
+		return new CheckedInputStream(in, getChecksum());
 	}
 
 	@Override
-	public ChecksumOutputStream encode(final OutputStream out) throws IOException {
+	public CheckedOutputStream encode(final OutputStream out) throws IOException {
 
-		// when do we validate
-		return new ChecksumOutputStream(getChecksum(), out);
+		// when do we validate?
+		return new CheckedOutputStream(out, getChecksum());
+	}
+
+	public void encode(final OutputStream out, ByteBuffer buffer) throws IOException {
+
+		final CheckedOutputStream cout = new CheckedOutputStream(out, getChecksum());
+		cout.write(buffer.array());
+		writeChecksum(out);
+	}
+
+	public ByteBuffer decodeAndValidate(final InputStream in, int numBytes) throws IOException {
+
+		final CheckedInputStream cin = decode(in);
+		final byte[] data = new byte[numBytes];
+		cin.read(data);
+
+		if (!valid(in))
+			throw new IOException("Invalid checksum");
+
+		return ByteBuffer.wrap(data);
 	}
 
 	@Override
@@ -63,11 +85,29 @@ public abstract class ChecksumCodec implements DeterministicSizeCodec {
 		return size - numChecksumBytes();
 	}
 
-	public boolean validate() {
+	protected boolean valid(InputStream in) throws IOException {
 
-		// TODO implement
-		// does validate go here or in ChecksumOutputStream
-		return true;
+		return readChecksum(in) == getChecksum().getValue();
 	}
+
+	protected long readChecksum(InputStream in) throws IOException {
+
+		final byte[] checksum = new byte[numChecksumBytes()];
+		in.read(checksum);
+		return ByteBuffer.wrap(checksum).getLong();
+	}
+
+	/**
+	 * Return the value of the checksum as a {@link ByteBuffer} to be serialized.
+	 *
+	 * @return a ByteBuffer representing the checksum value
+	 */
+	public abstract ByteBuffer getChecksumValue();
+
+	public void writeChecksum(OutputStream out) throws IOException {
+
+		out.write(getChecksumValue().array());
+	}
+
 
 }

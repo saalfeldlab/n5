@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5.codec.checksum;
 
+import java.nio.ByteBuffer;
 import java.util.zip.CRC32;
 
 public class Crc32cChecksumCodec extends ChecksumCodec {
@@ -32,10 +33,11 @@ public class Crc32cChecksumCodec extends ChecksumCodec {
 	}
 
 	@Override
-	public boolean validate() {
+	public ByteBuffer getChecksumValue() {
 
-		// TODO implement me
-		return true;
+		final ByteBuffer buf = ByteBuffer.allocate(numChecksumBytes());
+		buf.putInt((int)getChecksum().getValue());
+		return buf;
 	}
 
 }
