@@ -4,20 +4,22 @@ import org.janelia.saalfeldlab.n5.DataBlock;
 
 public abstract class AbstractShard<T> implements Shard<T> {
 
-	protected final long[] size;
+	protected final int[] size;
 	protected final long[] gridPosition;
 	protected final int[] blockSize;
+	private final ShardIndex index;
 
-	public AbstractShard(final long[] size, final long[] gridPosition,
-			final int[] blockSize, final T type) {
+	public AbstractShard(final int[] shardSize, final long[] gridPosition,
+			final int[] blockSize, final ShardIndex index) {
 
-		this.size = size;
+		this.size = shardSize;
 		this.gridPosition = gridPosition;
 		this.blockSize = blockSize;
+		this.index = index;
 	}
 
 	@Override
-	public long[] getSize() {
+	public int[] getSize() {
 
 		return size;
 	}
@@ -41,9 +43,9 @@ public abstract class AbstractShard<T> implements Shard<T> {
 	}
 
 	@Override
-	public ShardIndex getIndexes() {
+	public ShardIndex getIndex() {
 
-		return null;
+		return index;
 	}
 
 

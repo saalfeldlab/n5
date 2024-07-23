@@ -82,12 +82,11 @@ public class ShardIndex extends LongArrayDataBlock {
 
 		// TODO need codecs
 		// TODO FileChannel is too specific - generalize
-		final Shards shards = new Shards(datasetAttributes);
-		final int[] indexShape = indexBlockSize(shards.getShardBlockGridSize());
+		final int[] indexShape = indexBlockSize(datasetAttributes.getShardBlockGridSize());
 		final int indexSize = (int)Arrays.stream(indexShape).reduce(1, (x, y) -> x * y);
 		final int indexBytes = BYTES_PER_LONG * indexSize;
 
-		if (!datasetAttributes.getShardingConfiguration().areIndexesAtStart()) {
+		if (datasetAttributes.getIndexLocation() == ShardingConfiguration.IndexLocation.END) {
 			channel.position(channel.size() - indexBytes);
 		}
 

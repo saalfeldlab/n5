@@ -21,16 +21,19 @@ public class ShardingConfiguration {
 	public static final String CODECS_KEY = "codecs";
 	public static final String INDEX_CODECS_KEY = "index_codecs";
 
-	public static enum IndexLocation {
-		start, end
-	};
+	public enum IndexLocation {
+		START, END
+	}
 
 	protected int[] blockSize;
 	protected Codec[] codecs;
 	protected Codec[] indexCodecs;
 	protected IndexLocation indexLocation;
 
-	public ShardingConfiguration(final int[] blockSize, final Codec[] codecs, final Codec[] indexCodecs,
+	public ShardingConfiguration(
+			final int[] blockSize,
+			final Codec[] codecs,
+			final Codec[] indexCodecs,
 			final IndexLocation indexLocation) {
 
 		this.blockSize = blockSize;
@@ -46,7 +49,7 @@ public class ShardingConfiguration {
 
 	public boolean areIndexesAtStart() {
 
-		return indexLocation == IndexLocation.start;
+		return indexLocation == IndexLocation.START;
 	}
 
 	public static class ShardingConfigurationAdapter

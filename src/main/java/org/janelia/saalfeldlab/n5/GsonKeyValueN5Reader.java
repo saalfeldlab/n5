@@ -31,7 +31,6 @@ import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.shard.Shard;
-import org.janelia.saalfeldlab.n5.shard.Shards;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -88,11 +87,10 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	}
 
-	default Shard<?> readShard(final String pathName,
+	default Shard<?> getShard(final String pathName,
 			final ShardedDatasetAttributes datasetAttributes,
 			long... gridPosition) {
 
-		final Shards shards = new Shards(datasetAttributes);
 		// TODO throw exception if this dataset is not sharded?
 
 		return null;
@@ -104,7 +102,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		if (ShardedDatasetAttributes.isSharded(datasetAttributes)) {
+		if (datasetAttributes instanceof ShardedDatasetAttributes) {
 			// TODO
 		}
 

@@ -5,26 +5,28 @@ import java.io.InputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 
+import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.DefaultBlockReader;
+import org.janelia.saalfeldlab.n5.N5FSReader;
+import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.IdentityCodec;
+import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration.IndexLocation;
 
 public class ShardReader {
 
-
 	private final ShardedDatasetAttributes datasetAttributes;
 	private long[] indexes;
-	private Shards shards;
 
 	public ShardReader(final ShardedDatasetAttributes datasetAttributes) {
 
 		this.datasetAttributes = datasetAttributes;
-		this.shards = new Shards(datasetAttributes);
 	}
 
 	public ShardIndex readIndexes(FileChannel channel) throws IOException {
@@ -35,8 +37,6 @@ public class ShardReader {
 	public InMemoryShard readShardFully(
 			final FileChannel channel,
 			long... gridPosition) throws IOException {
-
-		final DatasetAttributes dsetAttrs = shards.getDatasetAttributes();
 
 		final ShardIndex si = readIndexes(channel);
 		return null;
@@ -52,7 +52,7 @@ public class ShardReader {
 
 		final ShardIndex index = readIndexes(in);
 
-		final long[] shardPosition = shards.getShardPositionForBlock(blockPosition);
+		final long[] shardPosition = datasetAttributes.getShardPositionForBlock(blockPosition);
 		in.position(index.getOffset(shardPosition));
 		final InputStream is = Channels.newInputStream(in);
 		return DefaultBlockReader.readBlock(is, datasetAttributes, indexes);
@@ -60,7 +60,7 @@ public class ShardReader {
 
 	private long getIndexIndex(long... shardPosition) {
 
-		final int[] indexDimensions = shards.getShardBlockGridSize();
+		final int[] indexDimensions = datasetAttributes.getShardBlockGridSize();
 		long idx = 0;
 		for (int i = 0; i < indexDimensions.length; i++) {
 			idx += shardPosition[i] * indexDimensions[i];
@@ -77,14 +77,27 @@ public class ShardReader {
 		System.out.println(reader.getIndexIndex(0, 1));
 		System.out.println(reader.getIndexIndex(1, 0));
 		System.out.println(reader.getIndexIndex(1, 1));
+
+		final N5Reader n5 = new N5FSReader("shard.n5");
+		final ShardedDatasetAttributes datasetAttributes = buildTestAttributes();
+		n5.readBlock("dataset", datasetAttributes, 0, 0, 0);
+
 	}
 
 	private static ShardedDatasetAttributes buildTestAttributes() {
 
 		final Codec[] codecs = new Codec[]{
-				new ShardingCodec(new ShardingConfiguration(new int[]{2, 2}, null, null, IndexLocation.end))};
+				new IdentityCodec(),
+				new ShardingCodec(
+						new ShardingConfiguration(
+								new int[]{2, 2},
+								new Codec[]{new Compression.CompressionCodec(new RawCompression()), new IdentityCodec()},
+								new Codec[]{new Crc32cChecksumCodec()},
+								IndexLocation.END)
+				)
+		};
 
-		return new ShardedDatasetAttributes(new long[]{4, 4}, new int[]{2, 2}, DataType.INT32, new RawCompression(), codecs);
+		return new ShardedDatasetAttributes(new long[]{4, 4}, new int[]{2, 2}, new int[]{2, 2}, IndexLocation.END, DataType.INT32, new RawCompression(), codecs);
 	}
 
 }

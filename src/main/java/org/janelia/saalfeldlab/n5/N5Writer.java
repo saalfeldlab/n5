@@ -221,7 +221,7 @@ public interface N5Writer extends N5Reader {
 			final Compression compression) throws N5Exception {
 
 		final Codec[] codecs = new Codec[]{new ShardingCodec(
-				new ShardingConfiguration(blockSize, null, null, IndexLocation.end))};
+				new ShardingConfiguration(blockSize, null, null, IndexLocation.END))};
 
 		createDataset(datasetPath, new DatasetAttributes(dimensions, shardSize, dataType, compression, codecs));
 	}

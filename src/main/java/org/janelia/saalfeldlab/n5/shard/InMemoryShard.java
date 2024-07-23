@@ -12,17 +12,10 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 
 	private ShardIndex shardIndex;
 
-	public InMemoryShard(final long[] size, final long[] gridPosition, final int[] blockSize, T type) {
+	public InMemoryShard(final int[] shardSize, final long[] gridPosition, final int[] blockSize, ShardIndex index) {
 
-		super(size, gridPosition, blockSize, type);
+		super(shardSize, gridPosition, blockSize, index);
 		blocks = new ArrayList<>();
-	}
-
-	@Override
-	public DataBlock<T> readBlock(String pathName, DatasetAttributes datasetAttributes, long... gridPosition) {
-
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 }

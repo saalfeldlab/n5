@@ -62,7 +62,7 @@ public class ShardWriter {
 		// }
 
 		prepareForWritingDataBlock();
-		if (datasetAttributes.getShardingConfiguration().areIndexesAtStart()) {
+		if (datasetAttributes.getIndexLocation() == ShardingConfiguration.IndexLocation.START) {
 			writeIndexBlock(out);
 			writeBlocks(out);
 		} else {

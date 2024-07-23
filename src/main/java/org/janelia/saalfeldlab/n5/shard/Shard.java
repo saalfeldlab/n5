@@ -3,9 +3,11 @@ package org.janelia.saalfeldlab.n5.shard;
 import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 
 public interface Shard<T> {
+
+	long EMPTY_INDEX_NBYTES = 0xFFFFFFFFFFFFFFFFL;
 
 	/**
 	 * Returns the number of blocks this shard contains along all dimensions.
@@ -17,7 +19,7 @@ public interface Shard<T> {
 	 */
 	default int[] getBlockGridSize() {
 
-		final long[] sz = getSize();
+		final int[] sz = getSize();
 		final int[] blkSz = getBlockSize();
 		final int[] blockGridSize = new int[sz.length];
 		for (int i = 0; i < sz.length; i++)
@@ -31,7 +33,7 @@ public interface Shard<T> {
 	 *
 	 * @return shard size
 	 */
-	public long[] getSize();
+	public int[] getSize();
 
 	/**
 	 * Returns the size of blocks in pixel units.
@@ -60,7 +62,7 @@ public interface Shard<T> {
 		if (!Arrays.equals(getGridPosition(), shardPos))
 			return null;
 
-		final long[] shardSize = getSize();
+		final int[] shardSize = getSize();
 		final int[] blkSize = getBlockSize();
 		final int[] blkGridSize = getBlockGridSize();
 
@@ -92,10 +94,25 @@ public interface Shard<T> {
 
 	public DataBlock<T> getBlock(int... position);
 
-	public ShardIndex getIndexes();
+	default DataBlock<T>[] getAllBlocks(int... position) {
+		//TODO Caleb: Do we want this?
+		return null;
+	}
 
-	public DataBlock<T> readBlock(final String pathName, final DatasetAttributes datasetAttributes, long... gridPosition);
+	public ShardIndex getIndex();
 
+	public static <T> Shard<T> createEmpty(final ShardedDatasetAttributes attributes, long... shardPosition) {
+
+		final long[] emptyIndex = new long[(int)(2 * attributes.getNumBlocks())];
+		Arrays.fill(emptyIndex, EMPTY_INDEX_NBYTES);
+		final ShardIndex shardIndex = new ShardIndex(attributes.getShardBlockGridSize(), emptyIndex);
+
+		return new InMemoryShard<T>(
+				attributes.getShardSize(),
+				shardPosition,
+				attributes.getBlockSize(),
+				shardIndex);
+	}
 
 	/**
 	 * Say we want async datablock access
@@ -107,5 +124,4 @@ public interface Shard<T> {
 	 * Shard doesn't hold the data directly, but is the metadata about how the blocks are stored
 	 *
 	 */
-
 }
