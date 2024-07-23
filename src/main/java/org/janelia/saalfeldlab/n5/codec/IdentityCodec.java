@@ -8,12 +8,12 @@ public class IdentityCodec implements Codec {
 
 	private static final long serialVersionUID = 8354269325800855621L;
 
-	protected final String id = "id";
+	protected final String name = "id";
 
 	@Override
-	public String getId() {
+	public String getName() {
 
-		return id;
+		return name;
 	}
 
 	@Override

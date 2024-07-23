@@ -22,7 +22,7 @@ public class AsTypeCodec implements Codec {
 	protected final DataType type;
 	protected final DataType encodedType;
 
-	protected final String id = "astype";
+	protected final String name = "astype";
 
 	public AsTypeCodec( DataType type, DataType encodedType )
 	{
@@ -37,9 +37,9 @@ public class AsTypeCodec implements Codec {
 	}
 
 	@Override
-	public String getId() {
+	public String getName() {
 
-		return id;
+		return name;
 	}
 
 	@Override

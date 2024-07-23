@@ -12,7 +12,7 @@ public class ComposedCodec implements Codec {
 	private static final long serialVersionUID = 5068349140842235924L;
 	private final Codec[] filters;
 
-	protected String id = "composed";
+	protected String name = "composed";
 
 	public ComposedCodec(final Codec... filters) {
 
@@ -20,9 +20,9 @@ public class ComposedCodec implements Codec {
 	}
 
 	@Override
-	public String getId() {
+	public String getName() {
 
-		return id;
+		return name;
 	}
 
 	@Override

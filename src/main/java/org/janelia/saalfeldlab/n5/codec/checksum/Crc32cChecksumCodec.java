@@ -9,15 +9,17 @@ public class Crc32cChecksumCodec extends ChecksumCodec {
 
 	public static transient final String CRC32C_CHECKSUM_CODEC_ID = "crc32c";
 
+	private final String name = CRC32C_CHECKSUM_CODEC_ID;
+
 	public Crc32cChecksumCodec() {
 
 		super(new CRC32(), 4);
 	}
 
 	@Override
-	public String getId() {
+	public String getName() {
 
-		return CRC32C_CHECKSUM_CODEC_ID;
+		return name;
 	}
 
 	@Override

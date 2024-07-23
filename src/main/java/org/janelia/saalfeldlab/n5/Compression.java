@@ -133,7 +133,7 @@ public interface Compression extends Serializable {
 		}
 
 		@Override
-		public String getId() {
+		public String getName() {
 
 			return compression.getType();
 		}

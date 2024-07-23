@@ -14,13 +14,11 @@ public class FixedScaleOffsetCodec extends AsTypeCodec {
 
 	public static transient final String FIXED_SCALE_OFFSET_CODEC_ID = "fixedscaleoffset";
 
-	@SuppressWarnings("unused")
 	private final double scale;
 
-	@SuppressWarnings("unused")
 	private final double offset;
 
-	protected final String id = FIXED_SCALE_OFFSET_CODEC_ID;
+	protected final String name = FIXED_SCALE_OFFSET_CODEC_ID;
 
 	private transient final ByteBuffer tmpEncoder;
 	private transient final ByteBuffer tmpDecoder;
@@ -55,8 +53,6 @@ public class FixedScaleOffsetCodec extends AsTypeCodec {
 			encoderPre.accept(i, tmpEncoder);
 			tmpEncoder.rewind();
 			final double x = tmpEncoder.getDouble();
-			final double y = scale * x + offset;
-			System.out.println("encode: " + y);
 			tmpEncoder.rewind();
 			tmpEncoder.putDouble(scale * x + offset);
 			tmpEncoder.rewind();
@@ -65,10 +61,6 @@ public class FixedScaleOffsetCodec extends AsTypeCodec {
 
 		// convert from i type to double, apply scale and offset, then convert to type o
 		decoder = (i, o) -> {
-			// System.out.println("decode");
-			// System.out.println(i.capacity());
-			// System.out.println(tmpDecoder.capacity());
-			// System.out.println(o.capacity());
 			tmpDecoder.rewind();
 			decoderPre.accept(i, tmpDecoder);
 			tmpDecoder.rewind();
@@ -101,9 +93,9 @@ public class FixedScaleOffsetCodec extends AsTypeCodec {
 	}
 
 	@Override
-	public String getId() {
+	public String getName() {
 
-		return id;
+		return name;
 	}
 
 	@Override

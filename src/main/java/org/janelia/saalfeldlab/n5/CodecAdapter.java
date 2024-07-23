@@ -47,10 +47,10 @@ public class CodecAdapter implements JsonDeserializer<Codec>, JsonSerializer<Cod
 			final Type typeOfSrc,
 			final JsonSerializationContext context) {
 
-		if (codec.getId().equals(FixedScaleOffsetCodec.FIXED_SCALE_OFFSET_CODEC_ID)) {
+		if (codec.getName().equals(FixedScaleOffsetCodec.FIXED_SCALE_OFFSET_CODEC_ID)) {
 			final FixedScaleOffsetCodec c = (FixedScaleOffsetCodec)codec;
 			final JsonObject obj = new JsonObject();
-			obj.addProperty("id", c.getId());
+			obj.addProperty("name", c.getName());
 			obj.addProperty("scale", c.getScale());
 			obj.addProperty("offset", c.getOffset());
 			obj.addProperty("type", c.getType().toString().toLowerCase());
@@ -73,9 +73,9 @@ public class CodecAdapter implements JsonDeserializer<Codec>, JsonSerializer<Cod
 			return null;
 
 		final JsonObject jsonObject = json.getAsJsonObject();
-		if (jsonObject.has("id")) {
+		if (jsonObject.has("name")) {
 
-			final String id = jsonObject.get("id").getAsString();
+			final String id = jsonObject.get("name").getAsString();
 			if (id.equals(FixedScaleOffsetCodec.FIXED_SCALE_OFFSET_CODEC_ID)) {
 
 				return new FixedScaleOffsetCodec(
