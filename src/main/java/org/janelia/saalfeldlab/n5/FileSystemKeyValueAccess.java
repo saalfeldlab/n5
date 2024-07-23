@@ -73,10 +73,20 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		protected LockedFileChannel(final String path, final boolean readOnly) throws IOException {
 
-			this(fileSystem.getPath(path), readOnly);
+			this(fileSystem.getPath(path), readOnly, -1, -1);
+		}
+
+		protected LockedFileChannel(final String path, final boolean readOnly, final long startByte, final long lastByte) throws IOException {
+
+			this(fileSystem.getPath(path), readOnly, startByte, lastByte);
 		}
 
 		protected LockedFileChannel(final Path path, final boolean readOnly) throws IOException {
+
+			this(path, readOnly, -1, -1);
+		}
+
+		protected LockedFileChannel(final Path path, final boolean readOnly, final long startByte, final long lastByte) throws IOException {
 
 			final OpenOption[] options;
 			if (readOnly) {
@@ -162,7 +172,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		try {
 			return new LockedFileChannel(normalPath, true);
-		} catch (NoSuchFileException e) {
+		} catch (final NoSuchFileException e) {
 			throw new N5Exception.N5NoSuchKeyException("No such file", e);
 		}
 	}
@@ -177,7 +187,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		try {
 			return new LockedFileChannel(path, true);
-		} catch (NoSuchFileException e) {
+		} catch (final NoSuchFileException e) {
 			throw new N5Exception.N5NoSuchKeyException("No such file", e);
 		}
 	}

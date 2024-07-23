@@ -30,6 +30,8 @@ import java.io.UncheckedIOException;
 import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.Shards;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -86,24 +88,32 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	}
 
+	default Shard<?> readShard(final String pathName,
+			final ShardedDatasetAttributes datasetAttributes,
+			long... gridPosition) {
+
+		final Shards shards = new Shards(datasetAttributes);
+		// TODO throw exception if this dataset is not sharded?
+
+		return null;
+	}
+
 	@Override
 	default DataBlock<?> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
+		if (ShardedDatasetAttributes.isSharded(datasetAttributes)) {
+			// TODO
+		}
+
 		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), gridPosition);
 
 		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(path)) {
-<<<<<<< HEAD
-			return DefaultBlockReader.readBlock(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
+			return DefaultBlockReader.readBlockWithCodecs(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
-||||||| 6b6d4d2
-			return DefaultBlockReader.readBlock(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
-=======
-			return DefaultBlockReader.readBlockWithCodecs(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
->>>>>>> origin/codecs
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to read block " + Arrays.toString(gridPosition) + " from dataset " + path,
@@ -150,6 +160,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		return getKeyValueAccess().compose(getURI(), components);
 	}
+
 
 	/**
 	 * Constructs the absolute path (in terms of this store) for the group or

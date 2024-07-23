@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.shard.Shard;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -225,6 +226,18 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
 					e);
 		}
+	}
+
+	@Override
+	default <T> void writeShard(
+			final String path,
+			final DatasetAttributes datasetAttributes,
+			final Shard<T> shard) throws N5Exception {
+
+		if (!(datasetAttributes instanceof ShardedDatasetAttributes))
+			throw new N5IOException("Can not write shard into non-sharded dataset " + path);
+
+		// TODO implement me
 	}
 
 	@Override

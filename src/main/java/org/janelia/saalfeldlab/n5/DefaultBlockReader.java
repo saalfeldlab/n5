@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
+import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration;
+
 /**
  * Default implementation of {@link BlockReader}.
  *
@@ -46,10 +48,11 @@ public interface DefaultBlockReader extends BlockReader {
 			final InputStream in) throws IOException {
 
 		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final InputStream inflater = getInputStream(in)) {
-			final DataInputStream dis = new DataInputStream(inflater);
-			dis.readFully(buffer.array());
-		}
+
+		// do not try with this input stream because subsequent block reads may happen if the stream points to a shard
+		final InputStream inflater = getInputStream(in);
+		final DataInputStream dis = new DataInputStream(inflater);
+		dis.readFully(buffer.array());
 		dataBlock.readData(buffer);
 	}
 
@@ -146,5 +149,10 @@ public interface DefaultBlockReader extends BlockReader {
 		dataBlock.readData(buffer);
 	}
 
+	public static long getShardIndex(final ShardingConfiguration shardingConfiguration, final long[] gridPosition) {
+
+		// TODO implement
+		return -1;
+	}
 
 }

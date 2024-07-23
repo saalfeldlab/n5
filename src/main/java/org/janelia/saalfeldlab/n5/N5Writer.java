@@ -35,6 +35,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
+import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration;
+import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration.IndexLocation;
 
 /**
  * A simple structured container API for hierarchies of chunked
@@ -208,6 +212,20 @@ public interface N5Writer extends N5Reader {
 		setDatasetAttributes(normalPath, datasetAttributes);
 	}
 
+	default void createDataset(
+			final String datasetPath,
+			final long[] dimensions,
+			final int[] shardSize,
+			final int[] blockSize,
+			final DataType dataType,
+			final Compression compression) throws N5Exception {
+
+		final Codec[] codecs = new Codec[]{new ShardingCodec(
+				new ShardingConfiguration(blockSize, null, null, IndexLocation.end))};
+
+		createDataset(datasetPath, new DatasetAttributes(dimensions, shardSize, dataType, compression, codecs));
+	}
+
 	/**
 	 * Creates a dataset. This does not create any data but the path and
 	 * mandatory attributes only.
@@ -265,6 +283,25 @@ public interface N5Writer extends N5Reader {
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception;
+
+	/**
+	 * Writes a complete {@link Shard} to a dataset.
+	 *
+	 * @param datasetPath
+	 *            dataset path
+	 * @param datasetAttributes
+	 *            the dataset attributes
+	 * @param dataBlock
+	 *            the data block
+	 * @param <T>
+	 *            the data block data type
+	 * @throws N5Exception
+	 *             if the requested dataset is not sharded
+	 */
+	<T> void writeShard(
+			final String datasetPath,
+			final DatasetAttributes datasetAttributes,
+			final Shard<T> shard) throws N5Exception;
 
 	/**
 	 * Deletes the block at {@code gridPosition}

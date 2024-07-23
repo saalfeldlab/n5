@@ -27,8 +27,11 @@ package org.janelia.saalfeldlab.n5;
 
 import java.lang.reflect.Type;
 
+import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.FixedScaleOffsetCodec;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
+import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -57,6 +60,24 @@ public class CodecAdapter implements JsonDeserializer<Codec>, JsonSerializer<Cod
 			obj.addProperty("encodedType", c.getEncodedType().toString().toLowerCase());
 			return obj;
 		}
+		else if (codec.getName().equals(ShardingCodec.ID)) {
+			final ShardingCodec sharding = (ShardingCodec)codec;
+			final JsonObject obj = new JsonObject();
+			obj.addProperty("name", sharding.getName());
+			obj.add("configuration", context.serialize(sharding.getConfiguration()));
+			return obj;
+		}
+		else if (codec.getName().equals(BytesCodec.ID)) {
+			final BytesCodec bytes = (BytesCodec)codec;
+			final JsonObject obj = new JsonObject();
+			obj.addProperty("name", bytes.getName());
+
+			final JsonObject config = new JsonObject();
+			config.addProperty("endian", bytes.getName());
+			obj.add("configuration", config);
+
+			return obj;
+		}
 
 		return JsonNull.INSTANCE;
 	}
@@ -83,6 +104,14 @@ public class CodecAdapter implements JsonDeserializer<Codec>, JsonSerializer<Cod
 						jsonObject.get("offset").getAsDouble(),
 						DataType.valueOf(jsonObject.get("type").getAsString().toUpperCase()),
 						DataType.valueOf(jsonObject.get("encodedType").getAsString().toUpperCase()));
+			}
+			else if (id.equals(ShardingCodec.ID)) {
+				return new ShardingCodec(
+						context.deserialize(jsonObject.get("configuration"), ShardingConfiguration.class));
+			} else if (id.equals(BytesCodec.ID)) {
+
+				// TODO
+				return new BytesCodec();
 			}
 		}
 
