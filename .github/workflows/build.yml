@@ -6,6 +6,9 @@ on:
       - master
     tags:
       - "*-[0-9]+.*"
+  pull_request:
+    branches:
+      - master
 
 jobs:
   build:
@@ -24,8 +27,10 @@ jobs:
           cache: 'maven'
       - name: Set up CI environment
         run: .github/setup.sh
+        shell: bash
       - name: Execute the build
         run: .github/build.sh
+        shell: bash
         env:
           GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
