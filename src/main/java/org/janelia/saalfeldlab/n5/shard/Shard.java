@@ -88,13 +88,17 @@ public interface Shard<T> {
 		final int[] shardBlockDimensions = getBlockGridSize();
 		final long[] shardGridPosition = new long[shardBlockDimensions.length];
 		for (int i = 0; i < shardGridPosition.length; i++) {
-			shardGridPosition[i] = (long)Math.floor((double)blockPosition[i] / shardBlockDimensions[i]);
+			shardGridPosition[i] = (long)Math.floor((double)(blockPosition[i]) / shardBlockDimensions[i]);
 		}
 
 		return shardGridPosition;
 	}
 
 	public DataBlock<T> getBlock(long... position);
+
+	public void writeBlock(DataBlock<T> block);
+
+	public void writeShard();
 
 	default DataBlock<T>[] getAllBlocks(long... position) {
 		//TODO Caleb: Do we want this?

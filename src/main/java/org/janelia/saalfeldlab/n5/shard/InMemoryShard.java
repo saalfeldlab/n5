@@ -17,4 +17,18 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		blocks = new ArrayList<>();
 	}
 
+	@Override
+	public void writeBlock(DataBlock<T> block) {
+
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void writeShard() {
+
+		// TODO Auto-generated method stub
+
+	}
+
 }

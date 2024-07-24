@@ -3,6 +3,7 @@ package org.janelia.saalfeldlab.n5.shard;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -37,6 +38,12 @@ public class ShardIndex extends LongArrayDataBlock {
 	public ShardIndex(int[] shardBlockGridSize) {
 
 		super(prepend(LONGS_PER_BLOCK, shardBlockGridSize), DUMMY_GRID_POSITION, emptyIndexData(shardBlockGridSize));
+	}
+
+	public boolean exists(long... gridPosition) {
+
+		return getOffset(gridPosition) != Shard.EMPTY_INDEX_NBYTES &&
+				getNumBytes(gridPosition) != Shard.EMPTY_INDEX_NBYTES;
 	}
 
 	public long getOffset(long... gridPosition) {
@@ -80,7 +87,10 @@ public class ShardIndex extends LongArrayDataBlock {
 				datasetAttributes.getIndexLocation());
 	}
 
-	public static ShardIndex read(final KeyValueAccess keyValueAccess, final String key, final int[] shardBlockGridSize,
+	public static ShardIndex read(
+			final KeyValueAccess keyValueAccess,
+			final String key,
+			final int[] shardBlockGridSize,
 			final IndexLocation indexLocation) throws IOException {
 
 		final ShardIndex idx = new ShardIndex(shardBlockGridSize);
@@ -94,6 +104,23 @@ public class ShardIndex extends LongArrayDataBlock {
 
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
+		} catch (final IOException | UncheckedIOException e) {
+			throw new N5IOException("Failed to read from " + key, e);
+		}
+	}
+
+	public static void write(ShardIndex index,
+			final KeyValueAccess keyValueAccess,
+			final String key,
+			final int[] shardBlockGridSize,
+			final IndexLocation indexLocation) throws IOException {
+
+		final IndexByteBounds byteBounds = byteBounds(index.getSize(), indexLocation, keyValueAccess.size(key));
+		try (final LockedChannel lockedChannel = keyValueAccess.lockForWriting(key, byteBounds.start, byteBounds.end)) {
+
+			final OutputStream os = lockedChannel.newOutputStream();
+			os.write(index.toByteBuffer().array());
+
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException("Failed to read from " + key, e);
 		}
