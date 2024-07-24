@@ -182,6 +182,9 @@ public interface KeyValueAccess {
 	 */
 	public LockedChannel lockForWriting(final String normalPath) throws IOException;
 
+	public LockedFileChannel lockForWriting(String normalPath, final long startByte, final long endByte)
+			throws IOException;
+
 	/**
 	 * List all 'directory'-like children of a path.
 	 *

@@ -71,6 +71,8 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		protected final FileChannel channel;
 
+		protected final boolean truncate;
+
 		protected LockedFileChannel(final String path, final boolean readOnly) throws IOException {
 
 			this(fileSystem.getPath(path), readOnly, -1, -1);
@@ -88,6 +90,11 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		protected LockedFileChannel(final Path path, final boolean readOnly, final long startByte, final long endByte)
 				throws IOException {
+
+			truncate = (startByte < 0 && endByte < 0);
+
+			final long start = startByte < 0 ? 0L : startByte;
+			final long end = endByte < 0 ? Long.MAX_VALUE : endByte;
 
 			final OpenOption[] options;
 			if (readOnly) {
@@ -108,12 +115,12 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			}
 
 			if (startByte != 0)
-				channel.position(startByte);
+				channel.position(start);
 
 			for (boolean waiting = true; waiting;) {
 				waiting = false;
 				try {
-					channel.lock(startByte, endByte, readOnly);
+					channel.lock(start, end, readOnly);
 				} catch (final OverlappingFileLockException e) {
 					waiting = true;
 					try {
@@ -141,7 +148,9 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		@Override
 		public Writer newWriter() throws IOException {
 
-			channel.truncate(0);
+			if (truncate)
+				channel.truncate(0);
+
 			return Channels.newWriter(channel, StandardCharsets.UTF_8.name());
 		}
 
@@ -154,7 +163,9 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		@Override
 		public OutputStream newOutputStream() throws IOException {
 
-			channel.truncate(0);
+			if (truncate)
+				channel.truncate(0);
+
 			return Channels.newOutputStream(channel);
 		}
 
@@ -202,6 +213,13 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public LockedFileChannel lockForWriting(final String normalPath) throws IOException {
 
 		return new LockedFileChannel(normalPath, false);
+	}
+
+	@Override
+	public LockedFileChannel lockForWriting(final String normalPath, final long startByte, final long endByte)
+			throws IOException {
+
+		return new LockedFileChannel(normalPath, false, startByte, endByte);
 	}
 
 	public LockedFileChannel lockForReading(final Path path) throws IOException {
