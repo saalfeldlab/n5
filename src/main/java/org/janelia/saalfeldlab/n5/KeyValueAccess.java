@@ -30,6 +30,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
 
+import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess.LockedFileChannel;
+
 /**
  * Key value read primitives used by {@link N5KeyValueReader}
  * implementations. This interface implements a subset of access primitives
@@ -117,6 +119,8 @@ public interface KeyValueAccess {
 	 */
 	public boolean exists(final String normalPath);
 
+	public long size(final String normalPath) throws IOException;
+
 	/**
 	 * Test whether the path is a directory.
 	 *
@@ -154,6 +158,9 @@ public interface KeyValueAccess {
 	 *             if a locked channel could not be created
 	 */
 	public LockedChannel lockForReading(final String normalPath) throws IOException;
+
+	public LockedFileChannel lockForReading(String normalPath, final long startByte, final long endByte)
+			throws IOException;
 
 	/**
 	 * Create an exclusive lock on a path for writing. If the file doesn't
@@ -222,4 +229,5 @@ public interface KeyValueAccess {
 	 *            if an error occurs during deletion
 	 */
 	public void delete(final String normalPath) throws IOException;
+
 }

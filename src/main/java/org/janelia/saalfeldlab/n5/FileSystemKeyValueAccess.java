@@ -86,7 +86,8 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			this(path, readOnly, -1, -1);
 		}
 
-		protected LockedFileChannel(final Path path, final boolean readOnly, final long startByte, final long lastByte) throws IOException {
+		protected LockedFileChannel(final Path path, final boolean readOnly, final long startByte, final long endByte)
+				throws IOException {
 
 			final OpenOption[] options;
 			if (readOnly) {
@@ -106,10 +107,13 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 				}
 			}
 
+			if (startByte != 0)
+				channel.position(startByte);
+
 			for (boolean waiting = true; waiting;) {
 				waiting = false;
 				try {
-					channel.lock(0L, Long.MAX_VALUE, readOnly);
+					channel.lock(startByte, endByte, readOnly);
 				} catch (final OverlappingFileLockException e) {
 					waiting = true;
 					try {
@@ -120,6 +124,12 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 					}
 				} catch (final IOException e) {}
 			}
+		}
+
+		@Override
+		public long size() throws IOException {
+
+			return channel.size();
 		}
 
 		@Override
@@ -178,6 +188,17 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
+	public LockedFileChannel lockForReading(final String normalPath, final long startByte, final long endByte)
+			throws IOException {
+
+		try {
+			return new LockedFileChannel(normalPath, true, startByte, endByte);
+		} catch (final NoSuchFileException e) {
+			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+		}
+	}
+
+	@Override
 	public LockedFileChannel lockForWriting(final String normalPath) throws IOException {
 
 		return new LockedFileChannel(normalPath, false);
@@ -216,6 +237,13 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		final Path path = fileSystem.getPath(normalPath);
 		return Files.exists(path);
+	}
+
+	@Override
+	public long size(final String normalPath) throws IOException {
+
+		final Path path = fileSystem.getPath(normalPath);
+		return Files.size(path);
 	}
 
 	@Override
