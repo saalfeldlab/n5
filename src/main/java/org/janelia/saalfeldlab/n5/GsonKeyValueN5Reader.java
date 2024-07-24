@@ -31,6 +31,7 @@ import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.VirtualShard;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -87,13 +88,13 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	}
 
+	@SuppressWarnings("rawtypes")
 	default Shard<?> getShard(final String pathName,
 			final ShardedDatasetAttributes datasetAttributes,
-			long... gridPosition) {
+			long... shardGridPosition) {
 
-		// TODO throw exception if this dataset is not sharded?
-
-		return null;
+		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), shardGridPosition);
+		return new VirtualShard(datasetAttributes, shardGridPosition, getKeyValueAccess(), path);
 	}
 
 	@Override
@@ -103,7 +104,10 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final long... gridPosition) throws N5Exception {
 
 		if (datasetAttributes instanceof ShardedDatasetAttributes) {
-			// TODO
+			final ShardedDatasetAttributes shardedAttrs = (ShardedDatasetAttributes)datasetAttributes;
+			final long[] shardPosition = shardedAttrs.getShardPositionForBlock(gridPosition);
+			final Shard<?> shard = getShard(pathName, shardedAttrs, shardPosition);
+			return shard.getBlock(gridPosition);
 		}
 
 		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), gridPosition);

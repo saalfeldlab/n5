@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
@@ -93,7 +94,7 @@ public class ShardWriter {
 			blockBytes.add(blockOut.toByteArray());
 		}
 
-		indexData.printData();
+		System.out.println(Arrays.toString(indexData.getData()));
 	}
 
 	private void prepareForWriting() throws IOException {

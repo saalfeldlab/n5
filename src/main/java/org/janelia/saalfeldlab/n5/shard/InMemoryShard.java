@@ -4,17 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 
 public class InMemoryShard<T> extends AbstractShard<T> {
 
 	private List<DataBlock<T>> blocks;
 
-	private ShardIndex shardIndex;
+	public InMemoryShard(final ShardedDatasetAttributes datasetAttributes, final long[] gridPosition,
+			ShardIndex index) {
 
-	public InMemoryShard(final int[] shardSize, final long[] gridPosition, final int[] blockSize, ShardIndex index) {
-
-		super(shardSize, gridPosition, blockSize, index);
+		super(datasetAttributes, gridPosition, index);
 		blocks = new ArrayList<>();
 	}
 

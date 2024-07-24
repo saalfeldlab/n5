@@ -8,7 +8,6 @@ import java.nio.channels.FileChannel;
 import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.DefaultBlockReader;
 import org.janelia.saalfeldlab.n5.N5FSReader;
 import org.janelia.saalfeldlab.n5.N5Reader;
@@ -32,14 +31,6 @@ public class ShardReader {
 	public ShardIndex readIndexes(FileChannel channel) throws IOException {
 
 		return ShardIndex.read(channel, datasetAttributes);
-	}
-
-	public InMemoryShard readShardFully(
-			final FileChannel channel,
-			long... gridPosition) throws IOException {
-
-		final ShardIndex si = readIndexes(channel);
-		return null;
 	}
 
 	public DataBlock<?> readBlock(

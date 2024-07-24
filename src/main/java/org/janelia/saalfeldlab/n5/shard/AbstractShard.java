@@ -1,33 +1,39 @@
 package org.janelia.saalfeldlab.n5.shard;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 
 public abstract class AbstractShard<T> implements Shard<T> {
 
-	protected final int[] size;
-	protected final long[] gridPosition;
-	protected final int[] blockSize;
-	private final ShardIndex index;
+	protected final ShardedDatasetAttributes datasetAttributes;
 
-	public AbstractShard(final int[] shardSize, final long[] gridPosition,
-			final int[] blockSize, final ShardIndex index) {
+	protected final ShardIndex index;
 
-		this.size = shardSize;
+	private final long[] gridPosition;
+
+	public AbstractShard(final ShardedDatasetAttributes datasetAttributes, final long[] gridPosition,
+			final ShardIndex index) {
+
+		this.datasetAttributes = datasetAttributes;
 		this.gridPosition = gridPosition;
-		this.blockSize = blockSize;
 		this.index = index;
+	}
+
+	public ShardedDatasetAttributes getDatasetAttributes() {
+
+		return datasetAttributes;
 	}
 
 	@Override
 	public int[] getSize() {
 
-		return size;
+		return datasetAttributes.getShardSize();
 	}
 
 	@Override
 	public int[] getBlockSize() {
 
-		return blockSize;
+		return datasetAttributes.getShardSize();
 	}
 
 	@Override
@@ -37,7 +43,7 @@ public abstract class AbstractShard<T> implements Shard<T> {
 	}
 
 	@Override
-	public DataBlock<T> getBlock(int... position) {
+	public DataBlock<T> getBlock(long... position) {
 
 		return null;
 	}

@@ -28,6 +28,8 @@ public interface Shard<T> {
 		return blockGridSize;
 	}
 
+	public ShardedDatasetAttributes getDatasetAttributes();
+
 	/**
 	 * Returns the size of shards in pixel units.
 	 *
@@ -56,7 +58,7 @@ public interface Shard<T> {
 	 *
 	 * @return the shard position
 	 */
-	default int[] getBlockPosition(long... blockPosition) {
+	default long[] getBlockPosition(long... blockPosition) {
 
 		final long[] shardPos = getShard(blockPosition);
 		if (!Arrays.equals(getGridPosition(), shardPos))
@@ -66,7 +68,7 @@ public interface Shard<T> {
 		final int[] blkSize = getBlockSize();
 		final int[] blkGridSize = getBlockGridSize();
 
-		final int[] blockShardPos = new int[shardSize.length];
+		final long[] blockShardPos = new long[shardSize.length];
 		for (int i = 0; i < shardSize.length; i++) {
 			final long shardP = shardPos[i] * shardSize[i];
 			final long blockP = blockPosition[i] * blkSize[i];
@@ -92,9 +94,9 @@ public interface Shard<T> {
 		return shardGridPosition;
 	}
 
-	public DataBlock<T> getBlock(int... position);
+	public DataBlock<T> getBlock(long... position);
 
-	default DataBlock<T>[] getAllBlocks(int... position) {
+	default DataBlock<T>[] getAllBlocks(long... position) {
 		//TODO Caleb: Do we want this?
 		return null;
 	}
@@ -106,12 +108,18 @@ public interface Shard<T> {
 		final long[] emptyIndex = new long[(int)(2 * attributes.getNumBlocks())];
 		Arrays.fill(emptyIndex, EMPTY_INDEX_NBYTES);
 		final ShardIndex shardIndex = new ShardIndex(attributes.getShardBlockGridSize(), emptyIndex);
+		return new InMemoryShard<T>(attributes, shardPosition, shardIndex);
+	}
 
-		return new InMemoryShard<T>(
-				attributes.getShardSize(),
-				shardPosition,
-				attributes.getBlockSize(),
-				shardIndex);
+	public static long flatIndex(long[] gridPosition, int[] gridSize) {
+
+		long index = gridPosition[0];
+		long cumSizes = gridSize[0];
+		for (int i = 1; i < gridSize.length; i++) {
+			index += gridPosition[i] * cumSizes;
+			cumSizes *= gridSize[i];
+		}
+		return index;
 	}
 
 	/**
