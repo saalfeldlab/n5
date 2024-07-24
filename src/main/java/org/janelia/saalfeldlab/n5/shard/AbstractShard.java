@@ -19,6 +19,7 @@ public abstract class AbstractShard<T> implements Shard<T> {
 		this.index = index;
 	}
 
+	@Override
 	public ShardedDatasetAttributes getDatasetAttributes() {
 
 		return datasetAttributes;
@@ -33,7 +34,7 @@ public abstract class AbstractShard<T> implements Shard<T> {
 	@Override
 	public int[] getBlockSize() {
 
-		return datasetAttributes.getShardSize();
+		return datasetAttributes.getBlockSize();
 	}
 
 	@Override
