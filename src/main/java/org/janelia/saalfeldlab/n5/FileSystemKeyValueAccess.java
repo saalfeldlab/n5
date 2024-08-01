@@ -75,26 +75,28 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		protected LockedFileChannel(final String path, final boolean readOnly) throws IOException {
 
-			this(fileSystem.getPath(path), readOnly, -1, -1);
+			this(fileSystem.getPath(path), readOnly, 0, 0);
 		}
 
-		protected LockedFileChannel(final String path, final boolean readOnly, final long startByte, final long lastByte) throws IOException {
+		protected LockedFileChannel(final String path, final boolean readOnly, final long startByte, final long size) throws IOException {
 
-			this(fileSystem.getPath(path), readOnly, startByte, lastByte);
+			this(fileSystem.getPath(path), readOnly, startByte, size);
 		}
 
 		protected LockedFileChannel(final Path path, final boolean readOnly) throws IOException {
 
-			this(path, readOnly, -1, -1);
+			this(path, readOnly, 0, 0);
 		}
 
-		protected LockedFileChannel(final Path path, final boolean readOnly, final long startByte, final long endByte)
+		protected LockedFileChannel(final Path path, final boolean readOnly, final long startByte, final long size)
 				throws IOException {
 
-			truncate = (startByte < 0 && endByte < 0);
 
 			final long start = startByte < 0 ? 0L : startByte;
-			final long end = endByte < 0 ? Long.MAX_VALUE : endByte;
+			final long len = size < 0 ? 0L : size;
+
+			//TODO Caleb: How does this handle if manually overwriting the entire file? (e.g. len > file size)
+			truncate = (start == 0 && len == 0);
 
 			final OpenOption[] options;
 			if (readOnly) {
@@ -120,7 +122,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			for (boolean waiting = true; waiting;) {
 				waiting = false;
 				try {
-					channel.lock(start, end, readOnly);
+					channel.lock(start, len, readOnly);
 				} catch (final OverlappingFileLockException e) {
 					waiting = true;
 					try {
