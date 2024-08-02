@@ -68,11 +68,6 @@ public class VirtualShard<T> extends AbstractShard<T> {
 
 		// TODO this assumes that the block exists in the shard and
 		// that the available space is sufficient. Should generalize
-
-		// // A starting point:
-		// if (!idx.exists(block.getGridPosition())) {
-		//
-		// }
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForWriting(path, startByte, endByte)) {
 
 			// TODO codecs
@@ -89,6 +84,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	@Override
 	public void writeShard() {
 
+		// TODO
 	}
 
 	private static int numBlockElements(DatasetAttributes datasetAttributes) {
@@ -96,11 +92,18 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		return Arrays.stream(datasetAttributes.getBlockSize()).reduce(1, (x, y) -> x * y);
 	}
 
+	public ShardIndex createIndex() {
+
+		// Empty index of the correct size
+		return new ShardIndex(datasetAttributes.getShardBlockGridSize());
+	}
+
 	@Override
 	public ShardIndex getIndex() {
 
 		try {
-			return ShardIndex.read(keyValueAccess, path, datasetAttributes);
+			final ShardIndex result = ShardIndex.read(keyValueAccess, path, datasetAttributes);
+			return result == null ? createIndex() : result;
 		} catch (final IOException e) {
 			throw new N5IOException("Failed to read index at " + path, e);
 		}
