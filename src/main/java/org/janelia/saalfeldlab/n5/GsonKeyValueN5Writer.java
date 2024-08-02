@@ -39,6 +39,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import org.janelia.saalfeldlab.n5.shard.VirtualShard;
 
 /**
  * Default implementation of {@link N5Writer} with JSON attributes parsed with
@@ -216,6 +217,16 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final String path,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception {
+
+		/* Delegate to shard for writing block? How to know what type of shard? */
+		if (datasetAttributes instanceof ShardedDatasetAttributes) {
+			ShardedDatasetAttributes shardDatasetAttrs = (ShardedDatasetAttributes)datasetAttributes;
+			final long[] shardPos = shardDatasetAttrs.getShardPositionForBlock(dataBlock.getGridPosition());
+			final String shardPath = absoluteShardPath(N5URI.normalizeGroupPath(path), dataBlock.getGridPosition());
+			final VirtualShard<T> shard = new VirtualShard<>(shardDatasetAttrs, shardPos, getKeyValueAccess(), shardPath);
+			shard.writeBlock(dataBlock);
+			return;
+		}
 
 		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), dataBlock.getGridPosition());
 		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(blockPath)) {
