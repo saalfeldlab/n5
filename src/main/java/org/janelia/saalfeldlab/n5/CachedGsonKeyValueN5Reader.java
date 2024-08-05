@@ -52,8 +52,6 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 
 	N5JsonCache getCache();
 
-	public String getAttributesKey();
-
 	@Override
 	default JsonElement getAttributesFromContainer(final String normalPathName, final String normalCacheKey) {
 

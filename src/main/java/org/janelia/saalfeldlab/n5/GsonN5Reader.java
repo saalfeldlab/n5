@@ -42,6 +42,8 @@ public interface GsonN5Reader extends N5Reader {
 
 	Gson getGson();
 
+	public String getAttributesKey();
+
 	@Override
 	default Map<String, Class<?>> listAttributes(final String pathName) throws N5Exception {
 
