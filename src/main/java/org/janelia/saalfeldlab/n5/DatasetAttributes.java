@@ -35,6 +35,10 @@ public class DatasetAttributes implements Serializable {
 	public static final String COMPRESSION_KEY = "compression";
 	public static final String CODEC_KEY = "codecs";
 
+	public static final String[] N5_DATASET_ATTRIBUTES = new String[]{
+			DIMENSIONS_KEY, BLOCK_SIZE_KEY, DATA_TYPE_KEY, COMPRESSION_KEY, CODEC_KEY
+	};
+
 	/* version 0 */
 	protected static final String compressionTypeKey = "compressionType";
 
@@ -54,8 +58,8 @@ public class DatasetAttributes implements Serializable {
 		this.dimensions = dimensions;
 		this.blockSize = blockSize;
 		this.dataType = dataType;
-		this.compression = compression;
 		this.codecs = codecs;
+		this.compression = compression;
 	}
 
 	public DatasetAttributes(
