@@ -103,18 +103,16 @@ public class DatasetAttributes implements Serializable {
 
 	public Codec collectCodecs() {
 
-		final Codec compressionCodec = Compression.getCompressionAsCodec(compression);
-
 		if (codecs == null || codecs.length == 0)
-			return compressionCodec;
+			return compression;
 		else if (codecs.length == 1)
-			return new ComposedCodec(codecs[0], compressionCodec);
+			return new ComposedCodec(codecs[0], compression);
 		else {
 			final Codec[] codecsAndCompresor = new Codec[codecs.length + 1];
 			for (int i = 0; i < codecs.length; i++)
 				codecsAndCompresor[i] = codecs[i];
 
-			codecsAndCompresor[codecs.length] = compressionCodec;
+			codecsAndCompresor[codecs.length] = compression;
 			return new ComposedCodec(codecsAndCompresor);
 		}
 	}

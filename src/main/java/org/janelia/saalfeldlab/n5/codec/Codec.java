@@ -32,6 +32,6 @@ public interface Codec extends Serializable {
 	 */
 	public OutputStream encode(OutputStream out) throws IOException;
 
-	public String getName();
+	public String getType();
 
 }

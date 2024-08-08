@@ -43,13 +43,7 @@ import org.scijava.annotations.Indexable;
  *
  * @author Stephan Saalfeld
  */
-public interface Compression extends Serializable {
-
-	// @Override
-	// public default String getId() {
-	//
-	// return getType();
-	// }
+public interface Compression extends Serializable, Codec {
 
 	/**
 	 * Annotation for runtime discovery of compression schemes.
@@ -73,6 +67,7 @@ public interface Compression extends Serializable {
 	@Target(ElementType.FIELD)
 	public static @interface CompressionParameter {}
 
+	@Override
 	public default String getType() {
 
 		final CompressionType compressionType = getClass().getAnnotation(CompressionType.class);
@@ -94,6 +89,7 @@ public interface Compression extends Serializable {
 	 *            input stream
 	 * @return the decoded input stream
 	 */
+	@Override
 	public InputStream decode(InputStream in) throws IOException;
 
 	/**
@@ -103,40 +99,7 @@ public interface Compression extends Serializable {
 	 *            the output stream
 	 * @return the encoded output stream
 	 */
+	@Override
 	public OutputStream encode(OutputStream out) throws IOException;
 
-	public static Codec getCompressionAsCodec(Compression compression) {
-
-		return new CompressionCodec(compression);
-	}
-
-	public static class CompressionCodec implements Codec {
-
-		private static final long serialVersionUID = -7931131454184340637L;
-		private Compression compression;
-
-		public CompressionCodec(Compression compression) {
-
-			this.compression = compression;
-		}
-
-		@Override
-		public InputStream decode(InputStream in) throws IOException {
-
-			return compression.decode(in);
-		}
-
-		@Override
-		public OutputStream encode(OutputStream out) throws IOException {
-
-			return compression.encode(out);
-		}
-
-		@Override
-		public String getName() {
-
-			return compression.getType();
-		}
-
-	}
 }

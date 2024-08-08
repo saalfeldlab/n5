@@ -8,13 +8,7 @@ public class IdentityCodec implements Codec {
 
 	private static final long serialVersionUID = 8354269325800855621L;
 
-	protected final String name = "id";
-
-	@Override
-	public String getName() {
-
-		return name;
-	}
+	protected static final String TYPE = "id";
 
 	@Override
 	public InputStream decode(InputStream in) throws IOException {
@@ -26,6 +20,12 @@ public class IdentityCodec implements Codec {
 	public OutputStream encode(OutputStream out) throws IOException {
 
 		return out;
+	}
+
+	@Override
+	public String getType() {
+
+		return TYPE;
 	}
 
 }

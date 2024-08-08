@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 
-import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DefaultBlockReader;
@@ -82,7 +81,7 @@ public class ShardReader {
 				new ShardingCodec(
 						new ShardingConfiguration(
 								new int[]{2, 2},
-								new Codec[]{new Compression.CompressionCodec(new RawCompression()), new IdentityCodec()},
+								new Codec[]{new RawCompression(), new IdentityCodec()},
 								new Codec[]{new Crc32cChecksumCodec()},
 								IndexLocation.END)
 				)

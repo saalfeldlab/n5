@@ -12,13 +12,10 @@ public class FixedScaleOffsetCodec extends AsTypeCodec {
 
 	private static final long serialVersionUID = 8024945290803548528L;
 
-	public static transient final String FIXED_SCALE_OFFSET_CODEC_ID = "fixedscaleoffset";
+	public static transient final String TYPE = "fixedscaleoffset";
 
 	private final double scale;
-
 	private final double offset;
-
-	protected final String name = FIXED_SCALE_OFFSET_CODEC_ID;
 
 	private transient final ByteBuffer tmpEncoder;
 	private transient final ByteBuffer tmpDecoder;
@@ -82,20 +79,20 @@ public class FixedScaleOffsetCodec extends AsTypeCodec {
 		return offset;
 	}
 
-	public DataType getType() {
+	public DataType getDataType() {
 
 		return super.type;
 	}
 
-	public DataType getEncodedType() {
+	public DataType getEncodedDataType() {
 
 		return encodedType;
 	}
 
 	@Override
-	public String getName() {
+	public String getType() {
 
-		return name;
+		return TYPE;
 	}
 
 	@Override

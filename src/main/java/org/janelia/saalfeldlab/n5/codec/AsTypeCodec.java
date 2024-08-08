@@ -13,6 +13,8 @@ public class AsTypeCodec implements Codec {
 
 	private static final long serialVersionUID = 1031322606191894484L;
 
+	public static final String TYPE = "astype";
+
 	protected transient final int numBytes;
 	protected transient final int numEncodedBytes;
 
@@ -22,7 +24,6 @@ public class AsTypeCodec implements Codec {
 	protected final DataType type;
 	protected final DataType encodedType;
 
-	protected final String name = "astype";
 
 	public AsTypeCodec( DataType type, DataType encodedType )
 	{
@@ -37,9 +38,9 @@ public class AsTypeCodec implements Codec {
 	}
 
 	@Override
-	public String getName() {
+	public String getType() {
 
-		return name;
+		return TYPE;
 	}
 
 	@Override

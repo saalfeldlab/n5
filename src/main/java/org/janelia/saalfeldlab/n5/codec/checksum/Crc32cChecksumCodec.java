@@ -7,19 +7,11 @@ public class Crc32cChecksumCodec extends ChecksumCodec {
 
 	private static final long serialVersionUID = 7424151868725442500L;
 
-	public static transient final String CRC32C_CHECKSUM_CODEC_ID = "crc32c";
-
-	private final String name = CRC32C_CHECKSUM_CODEC_ID;
+	public static transient final String TYPE = "crc32c";
 
 	public Crc32cChecksumCodec() {
 
 		super(new CRC32(), 4);
-	}
-
-	@Override
-	public String getName() {
-
-		return name;
 	}
 
 	@Override
@@ -40,6 +32,12 @@ public class Crc32cChecksumCodec extends ChecksumCodec {
 		final ByteBuffer buf = ByteBuffer.allocate(numChecksumBytes());
 		buf.putInt((int)getChecksum().getValue());
 		return buf;
+	}
+
+	@Override
+	public String getType() {
+
+		return TYPE;
 	}
 
 }

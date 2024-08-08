@@ -50,30 +50,30 @@ public class CodecAdapter implements JsonDeserializer<Codec>, JsonSerializer<Cod
 			final Type typeOfSrc,
 			final JsonSerializationContext context) {
 
-		if (codec.getName().equals(FixedScaleOffsetCodec.FIXED_SCALE_OFFSET_CODEC_ID)) {
+		if (codec.getType().equals(FixedScaleOffsetCodec.TYPE)) {
 			final FixedScaleOffsetCodec c = (FixedScaleOffsetCodec)codec;
 			final JsonObject obj = new JsonObject();
-			obj.addProperty("name", c.getName());
+			obj.addProperty("name", c.getType());
 			obj.addProperty("scale", c.getScale());
 			obj.addProperty("offset", c.getOffset());
 			obj.addProperty("type", c.getType().toString().toLowerCase());
-			obj.addProperty("encodedType", c.getEncodedType().toString().toLowerCase());
+			obj.addProperty("encodedType", c.getEncodedDataType().toString().toLowerCase());
 			return obj;
 		}
-		else if (codec.getName().equals(ShardingCodec.ID)) {
+		else if (codec.getType().equals(ShardingCodec.TYPE)) {
 			final ShardingCodec sharding = (ShardingCodec)codec;
 			final JsonObject obj = new JsonObject();
-			obj.addProperty("name", sharding.getName());
+			obj.addProperty("name", sharding.getType());
 			obj.add("configuration", context.serialize(sharding.getConfiguration()));
 			return obj;
 		}
-		else if (codec.getName().equals(BytesCodec.ID)) {
+		else if (codec.getType().equals(BytesCodec.TYPE)) {
 			final BytesCodec bytes = (BytesCodec)codec;
 			final JsonObject obj = new JsonObject();
-			obj.addProperty("name", bytes.getName());
+			obj.addProperty("type", bytes.getType());
 
 			final JsonObject config = new JsonObject();
-			config.addProperty("endian", bytes.getName());
+			config.addProperty("endian", bytes.getType());
 			obj.add("configuration", config);
 
 			return obj;
@@ -94,10 +94,10 @@ public class CodecAdapter implements JsonDeserializer<Codec>, JsonSerializer<Cod
 			return null;
 
 		final JsonObject jsonObject = json.getAsJsonObject();
-		if (jsonObject.has("name")) {
+		if (jsonObject.has("type")) {
 
-			final String id = jsonObject.get("name").getAsString();
-			if (id.equals(FixedScaleOffsetCodec.FIXED_SCALE_OFFSET_CODEC_ID)) {
+			final String type = jsonObject.get("type").getAsString();
+			if (type.equals(FixedScaleOffsetCodec.TYPE)) {
 
 				return new FixedScaleOffsetCodec(
 						jsonObject.get("scale").getAsDouble(),
@@ -105,12 +105,12 @@ public class CodecAdapter implements JsonDeserializer<Codec>, JsonSerializer<Cod
 						DataType.valueOf(jsonObject.get("type").getAsString().toUpperCase()),
 						DataType.valueOf(jsonObject.get("encodedType").getAsString().toUpperCase()));
 			}
-			else if (id.equals(ShardingCodec.ID)) {
+			else if (type.equals(ShardingCodec.TYPE)) {
 				return new ShardingCodec(
 						context.deserialize(jsonObject.get("configuration"), ShardingConfiguration.class));
-			} else if (id.equals(BytesCodec.ID)) {
+			} else if (type.equals(BytesCodec.TYPE)) {
 
-				// TODO
+				// TODO implement
 				return new BytesCodec();
 			}
 		}

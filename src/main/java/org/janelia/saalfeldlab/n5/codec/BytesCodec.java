@@ -5,17 +5,28 @@ public class BytesCodec extends IdentityCodec {
 
 	private static final long serialVersionUID = 3523505403978222360L;
 
-	public static final String ID = "bytes";
+	public static final String TYPE = "bytes";
 
-	protected final String name = ID;
+	private final String endian;
 
-	protected final String endian = "little";
+	public BytesCodec() {
 
-	// TODO implement me
+		this("little");
+	}
+
+	public BytesCodec(final String endian) {
+
+		this.endian = endian;
+	}
 
 	@Override
-	public String getName() {
+	public String getType() {
 
-		return name;
+		return TYPE;
+	}
+
+	public String getEndian() {
+
+		return endian;
 	}
 }

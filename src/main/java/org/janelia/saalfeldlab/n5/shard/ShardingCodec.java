@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Type;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration.IndexLocation;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -19,15 +20,22 @@ public class ShardingCodec implements Codec {
 
 	private static final long serialVersionUID = -5879797314954717810L;
 
-	public static final String ID = "sharding_indexed";
+	public static final String TYPE = "sharding_indexed";
 
 	private final ShardingConfiguration configuration;
-
-	private final String name = ID;
 
 	public ShardingCodec(ShardingConfiguration configuration) {
 
 		this.configuration = configuration;
+	}
+
+	public ShardingCodec(
+			final int[] blockSize,
+			final Codec[] codecs,
+			final Codec[] indexCodecs,
+			final IndexLocation indexLocation) {
+
+		this.configuration = new ShardingConfiguration(blockSize, codecs, indexCodecs, indexLocation);
 	}
 
 	public ShardingConfiguration getConfiguration() {
@@ -39,6 +47,7 @@ public class ShardingCodec implements Codec {
 	public InputStream decode(InputStream in) throws IOException {
 
 		// TODO Auto-generated method stub
+		// This method actually makes no sense for a sharding codec
 		return in;
 	}
 
@@ -46,13 +55,8 @@ public class ShardingCodec implements Codec {
 	public OutputStream encode(OutputStream out) throws IOException {
 
 		// TODO Auto-generated method stub
+		// This method actually makes no sense for a sharding codec
 		return out;
-	}
-
-	@Override
-	public String getName() {
-
-		return name;
 	}
 
 	public static boolean isShardingCodec(final Codec codec) {
@@ -68,7 +72,7 @@ public class ShardingCodec implements Codec {
 
 			final JsonObject jsonObj = new JsonObject();
 
-			jsonObj.addProperty("name", ShardingCodec.ID);
+			jsonObj.addProperty("name", ShardingCodec.TYPE);
 			// context.serialize(typeOfSrc);
 
 			return jsonObj;
@@ -81,6 +85,12 @@ public class ShardingCodec implements Codec {
 			return null;
 		}
 
+	}
+
+	@Override
+	public String getType() {
+
+		return TYPE;
 	}
 
 }
