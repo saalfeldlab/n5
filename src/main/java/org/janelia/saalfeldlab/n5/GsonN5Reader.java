@@ -28,7 +28,7 @@ package org.janelia.saalfeldlab.n5;
 import java.lang.reflect.Type;
 import java.util.Map;
 
-import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.ByteStreamCodec;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -73,7 +73,7 @@ public interface GsonN5Reader extends N5Reader {
 
 			final int[] blockSize = GsonUtils.readAttribute(attributes, DatasetAttributes.BLOCK_SIZE_KEY, int[].class, getGson());
 			final Compression compression = GsonUtils.readAttribute(attributes, DatasetAttributes.COMPRESSION_KEY, Compression.class, getGson());
-			final Codec[] codecs = GsonUtils.readAttribute(attributes, DatasetAttributes.CODEC_KEY, Codec[].class, getGson());
+			final ByteStreamCodec[] codecs = GsonUtils.readAttribute(attributes, DatasetAttributes.CODEC_KEY, ByteStreamCodec[].class, getGson());
 
 			/* version 0 */
 			final String compressionVersion0Name = compression == null

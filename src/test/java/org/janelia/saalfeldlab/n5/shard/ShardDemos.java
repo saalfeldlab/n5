@@ -1,34 +1,32 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
-import org.janelia.saalfeldlab.n5.Compression;
-import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
-import org.janelia.saalfeldlab.n5.N5Reader;
-import org.janelia.saalfeldlab.n5.N5Writer;
-import org.janelia.saalfeldlab.n5.RawCompression;
-import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
-import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.codec.IdentityCodec;
-import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
-import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration.IndexLocation;
-import org.janelia.saalfeldlab.n5.universe.N5Factory;
-import org.junit.Test;
-
 import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+
+import org.janelia.saalfeldlab.n5.Codec;
+import org.janelia.saalfeldlab.n5.Compression;
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
+import org.janelia.saalfeldlab.n5.N5Writer;
+import org.janelia.saalfeldlab.n5.RawCompression;
+import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
+import org.janelia.saalfeldlab.n5.codec.IdentityCodec;
+import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
+import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration.IndexLocation;
+import org.janelia.saalfeldlab.n5.universe.N5Factory;
+import org.junit.Test;
+
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
 
 public class ShardDemos {
 
@@ -60,6 +58,7 @@ public class ShardDemos {
 		final DataBlock<byte[]> blkReread = shard.getBlock(0, 0);
 		final byte[] dataReRead = (byte[])blkReread.getData();
 		System.out.println(Arrays.toString(dataReRead));
+
 	}
 
 	@Test
@@ -77,11 +76,11 @@ public class ShardDemos {
 				new Codec[]{
 						new IdentityCodec(),
 						new ShardingCodec(
-								new ShardingConfiguration(
 										new int[]{2, 2},
-										new Codec[]{new Compression.CompressionCodec(new RawCompression()), new IdentityCodec()},
+										new Codec[]{new Compression.CompressionCodec(new RawCompression()),
+												new IdentityCodec()},
 										new Codec[]{new Crc32cChecksumCodec()},
-										IndexLocation.END)
+								IndexLocation.END
 						)
 				}
 		);
@@ -144,13 +143,12 @@ public class ShardDemos {
 		final N5Factory factory = new N5Factory();
 		final GsonBuilder gson = new GsonBuilder();
 
-
-		gson.registerTypeHierarchyAdapter()
-		factory.gsonBuilder(gson);
-		final N5Reader n5 = factory.openReader("src/test/resources/shardExamples/test.zarr/mid_sharded");
-
-		final JsonObject zarrJson = n5.getAttribute("/", "/", JsonObject.class);
-		zarrJson.remove("shard")
+//		gson.registerTypeHierarchyAdapter()
+// factory.gsonBuilder(gson);
+// final N5Reader n5 = factory.openReader("src/test/resources/shardExamples/test.zarr/mid_sharded");
+//
+// final JsonObject zarrJson = n5.getAttribute("/", "/", JsonObject.class);
+// zarrJson.remove("shard")
 	}
 
 }

@@ -3,23 +3,16 @@ package org.janelia.saalfeldlab.n5.codec.checksum;
 import java.nio.ByteBuffer;
 import java.util.zip.CRC32;
 
+import org.janelia.saalfeldlab.n5.serialization.N5NameConfig;
+
+@N5NameConfig.Type("crc32c")
 public class Crc32cChecksumCodec extends ChecksumCodec {
 
 	private static final long serialVersionUID = 7424151868725442500L;
 
-	public static transient final String CRC32C_CHECKSUM_CODEC_ID = "crc32c";
-
-	private final String name = CRC32C_CHECKSUM_CODEC_ID;
-
 	public Crc32cChecksumCodec() {
 
 		super(new CRC32(), 4);
-	}
-
-	@Override
-	public String getName() {
-
-		return name;
 	}
 
 	@Override

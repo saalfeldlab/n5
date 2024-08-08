@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 
+import org.janelia.saalfeldlab.n5.Codec;
 import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
@@ -13,7 +14,7 @@ import org.janelia.saalfeldlab.n5.N5FSReader;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
-import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.ByteStreamCodec;
 import org.janelia.saalfeldlab.n5.codec.IdentityCodec;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration.IndexLocation;
@@ -80,12 +81,10 @@ public class ShardReader {
 		final Codec[] codecs = new Codec[]{
 				new IdentityCodec(),
 				new ShardingCodec(
-						new ShardingConfiguration(
 								new int[]{2, 2},
-								new Codec[]{new Compression.CompressionCodec(new RawCompression()), new IdentityCodec()},
-								new Codec[]{new Crc32cChecksumCodec()},
+								new ByteStreamCodec[]{new Compression.CompressionCodec(new RawCompression()), new IdentityCodec()},
+								new ByteStreamCodec[]{new Crc32cChecksumCodec()},
 								IndexLocation.END)
-				)
 		};
 
 		return new ShardedDatasetAttributes(new long[]{4, 4}, new int[]{2, 2}, new int[]{2, 2}, IndexLocation.END, DataType.INT32, new RawCompression(), codecs);

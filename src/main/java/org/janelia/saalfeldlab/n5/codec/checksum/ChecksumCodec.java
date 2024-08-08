@@ -8,11 +8,14 @@ import java.util.zip.CheckedInputStream;
 import java.util.zip.CheckedOutputStream;
 import java.util.zip.Checksum;
 
+import org.janelia.saalfeldlab.n5.codec.ByteStreamCodec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.serialization.N5NameConfig;
 
 /**
- * A {@link Codec} that appends a checksum to data when encoding and can validate against that checksum when decoding.
+ * A {@link ByteStreamCodec} that appends a checksum to data when encoding and can validate against that checksum when decoding.
  */
+@N5NameConfig.Prefix("codec")
 public abstract class ChecksumCodec implements DeterministicSizeCodec {
 
 	private static final long serialVersionUID = 3141427377277375077L;

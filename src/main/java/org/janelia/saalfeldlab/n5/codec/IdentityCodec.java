@@ -4,17 +4,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class IdentityCodec implements Codec {
+import org.janelia.saalfeldlab.n5.serialization.N5NameConfig;
+
+@N5NameConfig.Type("identity")
+@N5NameConfig.Prefix("identity-codec")
+public class IdentityCodec implements ByteStreamCodec {
 
 	private static final long serialVersionUID = 8354269325800855621L;
-
-	protected final String name = "id";
-
-	@Override
-	public String getName() {
-
-		return name;
-	}
 
 	@Override
 	public InputStream decode(InputStream in) throws IOException {

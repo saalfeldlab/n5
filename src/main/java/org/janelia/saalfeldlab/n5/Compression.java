@@ -35,7 +35,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.ByteStreamCodec;
 import org.scijava.annotations.Indexable;
 
 /**
@@ -43,7 +43,7 @@ import org.scijava.annotations.Indexable;
  *
  * @author Stephan Saalfeld
  */
-public interface Compression extends Serializable {
+public interface Compression extends Serializable, ByteStreamCodec {
 
 	// @Override
 	// public default String getId() {
@@ -73,6 +73,7 @@ public interface Compression extends Serializable {
 	@Target(ElementType.FIELD)
 	public static @interface CompressionParameter {}
 
+	@Override
 	public default String getType() {
 
 		final CompressionType compressionType = getClass().getAnnotation(CompressionType.class);
@@ -94,6 +95,7 @@ public interface Compression extends Serializable {
 	 *            input stream
 	 * @return the decoded input stream
 	 */
+	@Override
 	public InputStream decode(InputStream in) throws IOException;
 
 	/**
@@ -103,14 +105,15 @@ public interface Compression extends Serializable {
 	 *            the output stream
 	 * @return the encoded output stream
 	 */
+	@Override
 	public OutputStream encode(OutputStream out) throws IOException;
 
-	public static Codec getCompressionAsCodec(Compression compression) {
+	public static ByteStreamCodec getCompressionAsCodec(Compression compression) {
 
 		return new CompressionCodec(compression);
 	}
 
-	public static class CompressionCodec implements Codec {
+	public static class CompressionCodec implements ByteStreamCodec {
 
 		private static final long serialVersionUID = -7931131454184340637L;
 		private Compression compression;
@@ -130,12 +133,6 @@ public interface Compression extends Serializable {
 		public OutputStream encode(OutputStream out) throws IOException {
 
 			return compression.encode(out);
-		}
-
-		@Override
-		public String getName() {
-
-			return compression.getType();
 		}
 
 	}

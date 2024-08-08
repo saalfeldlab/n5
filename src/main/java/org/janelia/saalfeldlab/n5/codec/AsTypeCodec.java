@@ -7,49 +7,57 @@ import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 
 import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.serialization.N5NameConfig;
 
-
-public class AsTypeCodec implements Codec {
+@N5NameConfig.Type("astype")
+@N5NameConfig.Prefix("codec")
+public class AsTypeCodec implements ByteStreamCodec {
 
 	private static final long serialVersionUID = 1031322606191894484L;
 
-	protected transient final int numBytes;
-	protected transient final int numEncodedBytes;
+	protected transient int numBytes;
+	protected transient int numEncodedBytes;
 
-	protected transient final BiConsumer<ByteBuffer, ByteBuffer> encoder;
-	protected transient final BiConsumer<ByteBuffer, ByteBuffer> decoder;
+	protected transient BiConsumer<ByteBuffer, ByteBuffer> encoder;
+	protected transient BiConsumer<ByteBuffer, ByteBuffer> decoder;
 
+	@N5NameConfig.Parameter
 	protected final DataType type;
-	protected final DataType encodedType;
 
-	protected final String name = "astype";
+	@N5NameConfig.Parameter
+	protected final DataType encodedType;
 
 	public AsTypeCodec( DataType type, DataType encodedType )
 	{
 		this.type = type;
 		this.encodedType = encodedType;
+	}
+
+	private AsTypeCodec() {
+
+		this(null, null);
+	}
+
+	@Override
+	public InputStream decode(InputStream in) throws IOException {
 
 		numBytes = bytes(type);
 		numEncodedBytes = bytes(encodedType);
 
 		encoder = converter(type, encodedType);
 		decoder = converter(encodedType, type);
-	}
-
-	@Override
-	public String getName() {
-
-		return name;
-	}
-
-	@Override
-	public InputStream decode(InputStream in) throws IOException {
 
 		return new FixedLengthConvertedInputStream(numEncodedBytes, numBytes, decoder, in);
 	}
 
 	@Override
 	public OutputStream encode(OutputStream out) throws IOException {
+
+		numBytes = bytes(type);
+		numEncodedBytes = bytes(encodedType);
+
+		encoder = converter(type, encodedType);
+		decoder = converter(encodedType, type);
 
 		return new FixedLengthConvertedOutputStream(numBytes, numEncodedBytes, encoder, out);
 	}

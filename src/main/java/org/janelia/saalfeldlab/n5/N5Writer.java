@@ -34,10 +34,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.ByteStreamCodec;
 import org.janelia.saalfeldlab.n5.shard.Shard;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
-import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration;
 import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration.IndexLocation;
 
 /**
@@ -220,9 +219,7 @@ public interface N5Writer extends N5Reader {
 			final DataType dataType,
 			final Compression compression) throws N5Exception {
 
-		final Codec[] codecs = new Codec[]{new ShardingCodec(
-				new ShardingConfiguration(blockSize, null, null, IndexLocation.END))};
-
+		final Codec[] codecs = new Codec[]{new ShardingCodec(blockSize, null, null, IndexLocation.END)};
 		createDataset(datasetPath, new DatasetAttributes(dimensions, shardSize, dataType, compression, codecs));
 	}
 
@@ -244,7 +241,7 @@ public interface N5Writer extends N5Reader {
 			final int[] blockSize,
 			final DataType dataType,
 			final Compression compression,
-			final Codec[] codecs) throws N5Exception {
+			final ByteStreamCodec[] codecs) throws N5Exception {
 
 		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, compression, codecs));
 	}

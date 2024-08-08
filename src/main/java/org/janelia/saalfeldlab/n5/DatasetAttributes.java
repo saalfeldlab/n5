@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.ByteStreamCodec;
 import org.janelia.saalfeldlab.n5.codec.ComposedCodec;
 
 /**
@@ -19,7 +19,7 @@ import org.janelia.saalfeldlab.n5.codec.ComposedCodec;
  *
  * Optional dataset attributes:
  * <ol>
- * <li>{@link Codec}[] : codecs</li>
+ * <li>{@link ByteStreamCodec}[] : codecs</li>
  * </ol>
  *
  * @author Stephan Saalfeld
@@ -53,7 +53,7 @@ public class DatasetAttributes implements Serializable {
 			final int[] blockSize,
 			final DataType dataType,
 			final Compression compression,
-			final Codec[] codecs ) {
+			final Codec[] codecs) {
 
 		this.dimensions = dimensions;
 		this.blockSize = blockSize;
@@ -101,18 +101,24 @@ public class DatasetAttributes implements Serializable {
 		return codecs;
 	}
 
-	public Codec collectCodecs() {
+	/**
+	 * Assumes a valid collection of codecs.
+	 *
+	 * @return the ByteStreamCodec
+	 */
+	public ByteStreamCodec collectCodecs() {
 
-		final Codec compressionCodec = Compression.getCompressionAsCodec(compression);
+		final ByteStreamCodec compressionCodec = Compression.getCompressionAsCodec(compression);
 
-		if (codecs == null || codecs.length == 0)
+		// if there is exactly one codec, then it must be an array->bytes
+		if (codecs == null || codecs.length <= 1)
 			return compressionCodec;
-		else if (codecs.length == 1)
-			return new ComposedCodec(codecs[0], compressionCodec);
 		else {
-			final Codec[] codecsAndCompresor = new Codec[codecs.length + 1];
-			for (int i = 0; i < codecs.length; i++)
-				codecsAndCompresor[i] = codecs[i];
+
+			final ByteStreamCodec[] codecsAndCompresor = new ByteStreamCodec[codecs.length + 1];
+			final ByteStreamCodec[] byteCodecs = Codec.extractByteCodecs(getCodecs());
+			for (int i = 0; i < byteCodecs.length; i++)
+				codecsAndCompresor[i] = byteCodecs[i];
 
 			codecsAndCompresor[codecs.length] = compressionCodec;
 			return new ComposedCodec(codecsAndCompresor);
@@ -146,7 +152,7 @@ public class DatasetAttributes implements Serializable {
 			int[] blockSize,
 			Compression compression,
 			final String compressionVersion0Name,
-			Codec[] codecs) {
+			ByteStreamCodec[] codecs) {
 
 		if (blockSize == null)
 			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();

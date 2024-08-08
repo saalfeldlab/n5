@@ -4,25 +4,27 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.janelia.saalfeldlab.n5.serialization.N5NameConfig;
+
 /**
- * A {@link Codec} that is composition of a collection of codecs.
+ * A {@link ByteStreamCodec} that is composition of a collection of codecs.
  */
-public class ComposedCodec implements Codec {
+@N5NameConfig.Type("composed")
+@N5NameConfig.Prefix("codec")
+public class ComposedCodec implements ByteStreamCodec {
 
 	private static final long serialVersionUID = 5068349140842235924L;
-	private final Codec[] filters;
 
-	protected String name = "composed";
+	private final ByteStreamCodec[] codecs;
 
-	public ComposedCodec(final Codec... filters) {
+	public ComposedCodec(final ByteStreamCodec... codecs) {
 
-		this.filters = filters;
+		this.codecs = codecs;
 	}
 
-	@Override
-	public String getName() {
+	private ComposedCodec() {
 
-		return name;
+		this(null);
 	}
 
 	@Override
@@ -30,8 +32,8 @@ public class ComposedCodec implements Codec {
 
 		// note that decoding is in reverse order
 		InputStream decoded = in;
-		for (int i = filters.length - 1; i >= 0; i--)
-			decoded = filters[i].decode(decoded);
+		for (int i = codecs.length - 1; i >= 0; i--)
+			decoded = codecs[i].decode(decoded);
 
 		return decoded;
 	}
@@ -40,8 +42,8 @@ public class ComposedCodec implements Codec {
 	public OutputStream encode(OutputStream out) throws IOException {
 
 		OutputStream encoded = out;
-		for (int i = 0; i < filters.length; i++)
-			encoded = filters[i].encode(encoded);
+		for (int i = 0; i < codecs.length; i++)
+			encoded = codecs[i].encode(encoded);
 
 		return encoded;
 	}

@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 
+import org.janelia.saalfeldlab.n5.Codec;
+
 /**
  * Interface representing a filter can encode a {@link OutputStream}s when writing data, and decode
  * the {@link InputStream}s when reading data.
@@ -12,7 +14,7 @@ import java.io.Serializable;
  * Modeled after <a href="https://zarr.readthedocs.io/en/v2.0.1/api/codecs.html">Filters</a> in
  * Zarr.
  */
-public interface Codec extends Serializable {
+public interface ByteStreamCodec extends Serializable, Codec {
 
 	/**
 	 * Decode an {@link InputStream}.
@@ -32,6 +34,5 @@ public interface Codec extends Serializable {
 	 */
 	public OutputStream encode(OutputStream out) throws IOException;
 
-	public String getName();
 
 }

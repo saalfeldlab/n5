@@ -3,7 +3,7 @@ package org.janelia.saalfeldlab.n5.shard;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 
-import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.Codec;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
