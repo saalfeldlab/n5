@@ -1,6 +1,5 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -10,7 +9,6 @@ import java.util.Arrays;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
-import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
@@ -21,12 +19,6 @@ import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration.IndexLocation;
 import org.janelia.saalfeldlab.n5.universe.N5Factory;
 import org.junit.Test;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
 
 public class ShardDemos {
 
@@ -77,7 +69,7 @@ public class ShardDemos {
 						new ShardingCodec(
 								new ShardingConfiguration(
 										new int[]{2, 2},
-										new Codec[]{new RawCompression(), new IdentityCodec()},
+										new Codec[]{new Compression.CompressionCodec(new RawCompression()), new IdentityCodec()},
 										new Codec[]{new Crc32cChecksumCodec()},
 										IndexLocation.END)
 						)
@@ -88,65 +80,6 @@ public class ShardDemos {
 
 		writer.writeBlock("shard", datasetAttributes, dataBlock);
 		writer.readBlock("shard", datasetAttributes, 0,0);
-	}
-
-	private static class ZarrConfig<T> {
-		final String name;
-		final T configuration;
-
-		private ZarrConfig() {
-			name = "";
-			configuration = null;
-		}
-	}
-
-	private class GridConfig<T> extends ZarrConfig<T> {}
-	private class KeyEncodingConfig<T> extends ZarrConfig<T> {}
-
-	private class ZarrChunk {}
-
-	private class ZarrChunkAdapter implements com.google.gson.JsonSerializer<ZarrChunk>, com.google.gson.JsonDeserializer<ZarrChunk> {
-		final ZarrConfig<GridConfig> grid;
-		final ZarrConfig<KeyEncodingConfig> keyEncoding;
-
-		public ZarrChunkAdapter() {
-			grid = null;
-			keyEncoding = null;
-		}
-		public ZarrChunkAdapter(ZarrConfig<GridConfig> grid, ZarrConfig<KeyEncodingConfig> key_encoding) {
-
-			this.grid = grid;
-			this.keyEncoding = key_encoding;
-		}
-
-		@Override public ZarrChunk deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-
-			if (!json.isJsonObject()) return null;
-
-			final JsonObject obj = json.getAsJsonObject();
-			final JsonObject grid = obj.getAsJsonObject("chunk_grid");
-
-			return null;
-		}
-
-		@Override public JsonElement serialize(ZarrChunk src, Type typeOfSrc, JsonSerializationContext context) {
-
-			return null;
-		}
-	}
-
-
-	@Test
-	public void nameConfigurationGsonTest() {
-
-		final N5Factory factory = new N5Factory();
-		final GsonBuilder gson = new GsonBuilder();
-
-		factory.gsonBuilder(gson);
-		final N5Reader n5 = factory.openReader("src/test/resources/shardExamples/test.zarr/mid_sharded");
-
-		final JsonObject zarrJson = n5.getAttribute("/", "/", JsonObject.class);
-		zarrJson.remove("shard");
 	}
 
 }
