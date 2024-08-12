@@ -3,6 +3,7 @@ package org.janelia.saalfeldlab.n5.serialization;
 import static org.junit.Assert.assertEquals;
 
 import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.GzipCompression;
 import org.janelia.saalfeldlab.n5.NameConfigAdapter;
 import org.janelia.saalfeldlab.n5.codec.AsTypeCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
@@ -55,15 +56,25 @@ public class CodecSerialization {
 	@Test
 	public void testSerializeCodecArray() {
 
-		final Codec[] codecs = new Codec[]{
+		Codec[] codecs = new Codec[]{
 				new IdentityCodec(),
 				new AsTypeCodec(DataType.FLOAT64, DataType.INT16)
 		};
-		final JsonArray jsonCodecArray = gson.toJsonTree(codecs).getAsJsonArray();
-		final JsonElement expected = gson.fromJson(
+		JsonArray jsonCodecArray = gson.toJsonTree(codecs).getAsJsonArray();
+		JsonElement expected = gson.fromJson(
 				"[{\"name\":\"id\",\"configuration\":{}},{\"name\":\"astype\",\"configuration\":{\"dataType\":\"FLOAT64\",\"encodedType\":\"INT16\"}}]",
 				JsonElement.class);
+		assertEquals("codec array", expected, jsonCodecArray.getAsJsonArray());
 
+
+		codecs = new Codec[]{
+				new AsTypeCodec(DataType.FLOAT64, DataType.INT16),
+				new GzipCompression()
+		};
+		jsonCodecArray = gson.toJsonTree(codecs).getAsJsonArray();
+		expected = gson.fromJson(
+				"[{\"name\":\"astype\",\"configuration\":{\"dataType\":\"FLOAT64\",\"encodedType\":\"INT16\"}},{\"level\":-1,\"useZlib\":false}]",
+				JsonElement.class);
 		assertEquals("codec array", expected, jsonCodecArray.getAsJsonArray());
 	}
 
