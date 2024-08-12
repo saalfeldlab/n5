@@ -174,11 +174,11 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 
 		final String prefix = type.getAnnotation(NameConfig.Prefix.class).value();
 
-		final JsonObject chunkGridJson = json.getAsJsonObject();
-		final String name = chunkGridJson.getAsJsonPrimitive("name").getAsString();
+		final JsonObject objectJson = json.getAsJsonObject();
+		final String name = objectJson.getAsJsonPrimitive("name").getAsString();
 		if (name == null)
 			return null;
-		final JsonObject configuration = chunkGridJson.getAsJsonObject("configuration");
+		final JsonObject configuration = objectJson.getAsJsonObject("configuration");
 		if (configuration == null)
 			return null;
 
@@ -186,9 +186,9 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 
 		final Constructor<? extends T> constructor = constructors.get(type);
 		constructor.setAccessible(true);
-		final T chunkGrid;
+		final T object;
 		try {
-			chunkGrid = constructor.newInstance();
+			object = constructor.newInstance();
 			final HashMap<String, Field> parameterTypes = parameters.get(type);
 			final HashMap<String, String> parameterNameMap = parameterNames.get(type);
 			for (final Entry<String, Field> parameterType : parameterTypes.entrySet()) {
@@ -203,7 +203,7 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 						parameter = context.deserialize(reversedArray, field.getType());
 					} else
 						parameter = context.deserialize(paramJson, field.getType());
-					ReflectionUtils.setFieldValue(chunkGrid, fieldName, parameter);
+					ReflectionUtils.setFieldValue(object, fieldName, parameter);
 				}
 			}
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
@@ -212,7 +212,7 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 			return null;
 		}
 
-		return chunkGrid;
+		return object;
 	}
 
 	private static JsonArray reverseJsonArray(JsonElement paramJson) {
