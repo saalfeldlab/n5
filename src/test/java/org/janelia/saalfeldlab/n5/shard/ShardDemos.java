@@ -69,7 +69,7 @@ public class ShardDemos {
 						new ShardingCodec(
 								new ShardingConfiguration(
 										new int[]{2, 2},
-										new Codec[]{new Compression.CompressionCodec(new RawCompression()), new IdentityCodec()},
+										new Codec[]{new RawCompression(), new IdentityCodec()},
 										new Codec[]{new Crc32cChecksumCodec()},
 										IndexLocation.END)
 						)

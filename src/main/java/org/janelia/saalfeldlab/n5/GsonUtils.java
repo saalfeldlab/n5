@@ -56,10 +56,9 @@ public interface GsonUtils {
 	static Gson registerGson(final GsonBuilder gsonBuilder) {
 
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
+		gsonBuilder.registerTypeHierarchyAdapter(ShardingConfiguration.class, new ShardingConfiguration.ShardingConfigurationAdapter());
+		gsonBuilder.registerTypeHierarchyAdapter(Codec.class, NameConfigAdapter.getJsonAdapter(Codec.class));
 		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
-		gsonBuilder.registerTypeHierarchyAdapter(ShardingConfiguration.class,
-				new ShardingConfiguration.ShardingConfigurationAdapter());
-		gsonBuilder.registerTypeHierarchyAdapter(Codec.class, new CodecAdapter());
 		gsonBuilder.disableHtmlEscaping();
 		return gsonBuilder.create();
 	}

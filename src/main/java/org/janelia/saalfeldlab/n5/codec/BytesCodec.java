@@ -12,13 +12,16 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
+@NameConfig.Name("bytes")
 public class BytesCodec implements Codec {
 
 	private static final long serialVersionUID = 3523505403978222360L;
 
 	public static String TYPE = "bytes";
 
+	@NameConfig.Parameter("endian")
 	protected final ByteOrder byteOrder;
 
 	protected transient final byte[] array;
