@@ -25,12 +25,15 @@ public class CodecSerialization {
 	@Before
 	public void before() {
 
-		final GsonBuilder builder = new GsonBuilder();
-		builder.registerTypeAdapter(IdentityCodec.class, NameConfigAdapter.getJsonAdapter(IdentityCodec.class));
-		builder.registerTypeAdapter(AsTypeCodec.class, NameConfigAdapter.getJsonAdapter(AsTypeCodec.class));
-		builder.registerTypeAdapter(FixedScaleOffsetCodec.class,
+		final GsonBuilder gsonBuilder = new GsonBuilder();
+		gsonBuilder.registerTypeAdapter(IdentityCodec.class, NameConfigAdapter.getJsonAdapter(IdentityCodec.class));
+		gsonBuilder.registerTypeAdapter(AsTypeCodec.class, NameConfigAdapter.getJsonAdapter(AsTypeCodec.class));
+		gsonBuilder.registerTypeAdapter(FixedScaleOffsetCodec.class,
 				NameConfigAdapter.getJsonAdapter(FixedScaleOffsetCodec.class));
-		gson = builder.create();
+		// gsonBuilder.registerTypeAdapter(Codec.class,
+		// NameConfigAdapter.getJsonAdapter(Codec.class));
+
+		gson = gsonBuilder.create();
 	}
 
 	@Test
@@ -66,6 +69,8 @@ public class CodecSerialization {
 				JsonElement.class);
 		assertEquals("codec array", expected, jsonCodecArray.getAsJsonArray());
 
+		// final Codec[] codecsDeserialized = gson.fromJson(expected, Codec[].class);
+		// System.out.println(Arrays.toString(codecsDeserialized));
 
 		codecs = new Codec[]{
 				new AsTypeCodec(DataType.FLOAT64, DataType.INT16),
