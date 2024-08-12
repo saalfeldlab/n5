@@ -7,25 +7,35 @@ import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 
 import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
+@NameConfig.Name(FixedScaleOffsetCodec.TYPE)
 public class FixedScaleOffsetCodec extends AsTypeCodec {
 
 	private static final long serialVersionUID = 8024945290803548528L;
 
 	public static transient final String TYPE = "fixedscaleoffset";
 
-	private final double scale;
-	private final double offset;
+	@NameConfig.Parameter
+	protected final double scale;
 
-	private transient final ByteBuffer tmpEncoder;
-	private transient final ByteBuffer tmpDecoder;
+	@NameConfig.Parameter
+	protected final double offset;
 
-	public transient final BiConsumer<ByteBuffer, ByteBuffer> encoder;
-	public transient final BiConsumer<ByteBuffer, ByteBuffer> encoderPre;
-	public transient final BiConsumer<ByteBuffer, ByteBuffer> encoderPost;
-	public transient final BiConsumer<ByteBuffer, ByteBuffer> decoder;
-	public transient final BiConsumer<ByteBuffer, ByteBuffer> decoderPre;
-	public transient final BiConsumer<ByteBuffer, ByteBuffer> decoderPost;
+	private transient ByteBuffer tmpEncoder;
+	private transient ByteBuffer tmpDecoder;
+
+	public transient BiConsumer<ByteBuffer, ByteBuffer> encoder;
+	public transient BiConsumer<ByteBuffer, ByteBuffer> encoderPre;
+	public transient BiConsumer<ByteBuffer, ByteBuffer> encoderPost;
+	public transient BiConsumer<ByteBuffer, ByteBuffer> decoder;
+	public transient BiConsumer<ByteBuffer, ByteBuffer> decoderPre;
+	public transient BiConsumer<ByteBuffer, ByteBuffer> decoderPost;
+
+	private FixedScaleOffsetCodec() {
+
+		this(1, 0, null, null);
+	}
 
 	public FixedScaleOffsetCodec(final double scale, final double offset, DataType type, DataType encodedType) {
 
@@ -77,16 +87,6 @@ public class FixedScaleOffsetCodec extends AsTypeCodec {
 	public double getOffset() {
 
 		return offset;
-	}
-
-	public DataType getDataType() {
-
-		return super.type;
-	}
-
-	public DataType getEncodedDataType() {
-
-		return encodedType;
 	}
 
 	@Override

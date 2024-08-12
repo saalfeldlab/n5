@@ -7,34 +7,37 @@ import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 
 import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
-
+@NameConfig.Name(AsTypeCodec.TYPE)
+@NameConfig.Prefix("codec")
 public class AsTypeCodec implements Codec {
 
 	private static final long serialVersionUID = 1031322606191894484L;
 
 	public static final String TYPE = "astype";
 
-	protected transient final int numBytes;
-	protected transient final int numEncodedBytes;
+	protected transient int numBytes;
+	protected transient int numEncodedBytes;
 
-	protected transient final BiConsumer<ByteBuffer, ByteBuffer> encoder;
-	protected transient final BiConsumer<ByteBuffer, ByteBuffer> decoder;
+	protected transient BiConsumer<ByteBuffer, ByteBuffer> encoder;
+	protected transient BiConsumer<ByteBuffer, ByteBuffer> decoder;
 
-	protected final DataType type;
+	@NameConfig.Parameter
+	protected final DataType dataType;
+
+	@NameConfig.Parameter
 	protected final DataType encodedType;
 
+	private AsTypeCodec() {
 
-	public AsTypeCodec( DataType type, DataType encodedType )
-	{
-		this.type = type;
+		this(null, null);
+	}
+
+	public AsTypeCodec(DataType dataType, DataType encodedType) {
+
+		this.dataType = dataType;
 		this.encodedType = encodedType;
-
-		numBytes = bytes(type);
-		numEncodedBytes = bytes(encodedType);
-
-		encoder = converter(type, encodedType);
-		decoder = converter(encodedType, type);
 	}
 
 	@Override
@@ -43,14 +46,36 @@ public class AsTypeCodec implements Codec {
 		return TYPE;
 	}
 
+	public DataType getDataType() {
+
+		return dataType;
+	}
+
+	public DataType getEncodedDataType() {
+
+		return encodedType;
+	}
+
 	@Override
 	public InputStream decode(InputStream in) throws IOException {
+
+		numBytes = bytes(dataType);
+		numEncodedBytes = bytes(encodedType);
+
+		encoder = converter(dataType, encodedType);
+		decoder = converter(encodedType, dataType);
 
 		return new FixedLengthConvertedInputStream(numEncodedBytes, numBytes, decoder, in);
 	}
 
 	@Override
 	public OutputStream encode(OutputStream out) throws IOException {
+
+		numBytes = bytes(dataType);
+		numEncodedBytes = bytes(encodedType);
+
+		encoder = converter(dataType, encodedType);
+		decoder = converter(encodedType, dataType);
 
 		return new FixedLengthConvertedOutputStream(numBytes, numEncodedBytes, encoder, out);
 	}
