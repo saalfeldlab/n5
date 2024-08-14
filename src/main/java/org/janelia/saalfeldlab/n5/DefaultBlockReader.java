@@ -47,13 +47,9 @@ public interface DefaultBlockReader extends BlockReader {
 			final B dataBlock,
 			final InputStream in) throws IOException {
 
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-
 		// do not try with this input stream because subsequent block reads may happen if the stream points to a shard
 		final InputStream inflater = getInputStream(in);
-		final DataInputStream dis = new DataInputStream(inflater);
-		dis.readFully(buffer.array());
-		dataBlock.readData(buffer);
+		readFromStream(dataBlock, inflater);
 	}
 
 	/**
