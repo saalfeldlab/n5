@@ -54,7 +54,7 @@ public class ShardWriter {
 		// TODO need codecs
 
 		// prepareForWriting();
-		// if (datasetAttributes.getShardingConfiguration().areIndexesAtStart()) {
+		// if (datasetAttributes.getShardingConfiguration().getIndexLocation()) {
 		// writeIndexes(out);
 		// writeBlocks(out);
 		// } else {
@@ -63,7 +63,7 @@ public class ShardWriter {
 		// }
 
 		prepareForWritingDataBlock();
-		if (datasetAttributes.getIndexLocation() == ShardingConfiguration.IndexLocation.START) {
+		if (datasetAttributes.getIndexLocation() == ShardingCodec.IndexLocation.START) {
 			writeIndexBlock(out);
 			writeBlocks(out);
 		} else {

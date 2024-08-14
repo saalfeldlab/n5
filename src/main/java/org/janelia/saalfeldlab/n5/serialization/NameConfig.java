@@ -31,6 +31,7 @@ public interface NameConfig extends Serializable {
 	@Target(ElementType.FIELD)
 	@interface Parameter {
 		String value() default "";
+		boolean optional() default false;
 	}
 
 	default String getType() {

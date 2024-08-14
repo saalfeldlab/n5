@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 
 /**
  * Default implementation of {@link BlockReader}.
@@ -149,7 +149,7 @@ public interface DefaultBlockReader extends BlockReader {
 		dataBlock.readData(buffer);
 	}
 
-	public static long getShardIndex(final ShardingConfiguration shardingConfiguration, final long[] gridPosition) {
+	public static long getShardIndex(final ShardingCodec shardingCodec, final long[] gridPosition) {
 
 		// TODO implement
 		return -1;

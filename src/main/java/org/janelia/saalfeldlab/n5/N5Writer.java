@@ -37,8 +37,7 @@ import java.util.Map;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.shard.Shard;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
-import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration;
-import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration.IndexLocation;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
 /**
  * A simple structured container API for hierarchies of chunked
@@ -141,7 +140,7 @@ public interface N5Writer extends N5Reader {
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes) throws N5Exception {
 
-		setAttributes(datasetPath, datasetAttributes.asMap());
+		setAttribute(datasetPath, "/", datasetAttributes);
 	}
 
 	/**
@@ -220,8 +219,7 @@ public interface N5Writer extends N5Reader {
 			final DataType dataType,
 			final Compression compression) throws N5Exception {
 
-		final Codec[] codecs = new Codec[]{new ShardingCodec(
-				new ShardingConfiguration(blockSize, null, null, IndexLocation.END))};
+		final Codec[] codecs = new Codec[]{new ShardingCodec(blockSize, null, null, IndexLocation.END)};
 
 		createDataset(datasetPath, new DatasetAttributes(dimensions, shardSize, dataType, compression, codecs));
 	}
@@ -283,6 +281,22 @@ public interface N5Writer extends N5Reader {
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception;
+
+	/**
+	 * Write multiple data blocks, useful for request aggregation .
+	 *
+	 * @param datasetPath dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param dataBlocks the data block
+	 * @param <T> the data block data type
+	 * @throws N5Exception the exception
+	 */
+	default <T> void writeBlocks(
+			final String datasetPath,
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T>... dataBlocks) throws N5Exception {
+		//TODO Caleb: write this
+	}
 
 	/**
 	 * Writes a complete {@link Shard} to a dataset.

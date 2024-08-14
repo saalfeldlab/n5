@@ -14,17 +14,15 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
-@NameConfig.Name("bytes")
+@NameConfig.Name(value = BytesCodec.TYPE)
 public class BytesCodec implements Codec {
 
 	private static final long serialVersionUID = 3523505403978222360L;
 
-	public static String TYPE = "bytes";
+	public static final String TYPE = "bytes";
 
-	@NameConfig.Parameter("endian")
+	@NameConfig.Parameter(value = "endian", optional = true)
 	protected final ByteOrder byteOrder;
-
-	protected transient final byte[] array;
 
 	public BytesCodec() {
 
@@ -33,13 +31,8 @@ public class BytesCodec implements Codec {
 
 	public BytesCodec(final ByteOrder byteOrder) {
 
-		this(byteOrder, 256);
-	}
-
-	public BytesCodec(final ByteOrder byteOrder, final int N) {
-
 		this.byteOrder = byteOrder;
-		this.array = new byte[N];
+
 	}
 
 	@Override

@@ -4,8 +4,7 @@ import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
-import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration;
-import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration.IndexLocation;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
 public class ShardedDatasetAttributes extends DatasetAttributes {
 
@@ -24,7 +23,7 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 			final Compression compression,
 			final Codec[] codecs) {
 
-		super(dimensions, blockSize, dataType, compression, codecs);
+		super(dimensions, shardSize, dataType, compression, codecs);
 		this.shardSize = shardSize;
 		this.indexLocation = shardIndexLocation;
 
@@ -106,11 +105,11 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 
 	public static int[] getBlockSize(Codec[] codecs) {
 
-		//TODO Caleb: Move this?
-		return Arrays.stream(codecs)
-				.filter(ShardingCodec::isShardingCodec)
-				.map(x -> ((ShardingCodec)x).getConfiguration())
-				.map(ShardingConfiguration::getBlockSize).findFirst().orElse(null);
+		for (Codec codec : codecs)
+			if (codec instanceof ShardingCodec)
+				return ((ShardingCodec)codec).getBlockSize();
+
+		return null;
 	}
 
 	public IndexLocation getIndexLocation() {

@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @CompressionType("raw")
 public class RawCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {

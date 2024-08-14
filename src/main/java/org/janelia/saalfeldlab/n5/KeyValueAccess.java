@@ -180,7 +180,7 @@ public interface KeyValueAccess {
 	 */
 	public LockedChannel lockForWriting(final String normalPath) throws IOException;
 
-	public LockedChannel lockForWriting(String normalPath, final long startByte, final long endByte)
+	public LockedChannel lockForWriting(String normalPath, final long startByte, final long size)
 			throws IOException;
 
 	/**

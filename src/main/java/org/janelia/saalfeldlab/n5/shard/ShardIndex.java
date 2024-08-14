@@ -20,7 +20,7 @@ import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
-import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration.IndexLocation;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
 public class ShardIndex extends LongArrayDataBlock {
 
@@ -83,8 +83,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	public static ShardIndex read(final KeyValueAccess keyValueAccess, final String key,
 			final ShardedDatasetAttributes datasetAttributes) throws IOException {
 
-		return read(keyValueAccess, key, datasetAttributes.getShardBlockGridSize(),
-				datasetAttributes.getIndexLocation());
+		return read(keyValueAccess, key, datasetAttributes.getShardBlockGridSize(), datasetAttributes.getIndexLocation());
 	}
 
 	public static ShardIndex read(
@@ -144,8 +143,7 @@ public class ShardIndex extends LongArrayDataBlock {
 		return byteBounds(indexShape, datasetAttributes.getIndexLocation(), objectSize);
 	}
 
-	public static IndexByteBounds byteBounds(final int[] indexShape, final IndexLocation indexLocation,
-			final long objectSize) {
+	public static IndexByteBounds byteBounds(final int[] indexShape, final IndexLocation indexLocation, final long objectSize) {
 
 		final int indexSize = (int)Arrays.stream(indexShape).reduce(1, (x, y) -> x * y);
 

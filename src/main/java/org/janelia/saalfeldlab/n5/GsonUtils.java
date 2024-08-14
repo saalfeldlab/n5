@@ -30,12 +30,13 @@ import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Array;
 import java.lang.reflect.Type;
+import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 
+import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -45,6 +46,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 
 /**
  * Utility class for working with  JSON.
@@ -56,9 +58,11 @@ public interface GsonUtils {
 	static Gson registerGson(final GsonBuilder gsonBuilder) {
 
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
-		gsonBuilder.registerTypeHierarchyAdapter(ShardingConfiguration.class, new ShardingConfiguration.ShardingConfigurationAdapter());
-		gsonBuilder.registerTypeHierarchyAdapter(Codec.class, NameConfigAdapter.getJsonAdapter(Codec.class));
 		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
+		gsonBuilder.registerTypeHierarchyAdapter(DatasetAttributes.class, DatasetAttributes.getJsonAdapter());
+		gsonBuilder.registerTypeHierarchyAdapter(Codec.class, NameConfigAdapter.getJsonAdapter(Codec.class));
+		gsonBuilder.registerTypeHierarchyAdapter(ByteOrder.class, BytesCodec.byteOrderAdapter);
+		gsonBuilder.registerTypeHierarchyAdapter(ShardingCodec.IndexLocation.class, ShardingCodec.indexLocationAdapter);
 		gsonBuilder.disableHtmlEscaping();
 		return gsonBuilder.create();
 	}

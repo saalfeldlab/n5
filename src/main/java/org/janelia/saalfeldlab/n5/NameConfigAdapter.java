@@ -131,6 +131,7 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 			final JsonSerializationContext context) {
 
 		final Class<T> clazz = (Class<T>)object.getClass();
+
 		final String name = clazz.getAnnotation(NameConfig.Name.class).value();
 		final String prefix = type.getAnnotation(NameConfig.Prefix.class).value();
 		final String type = prefix + "." + name;
@@ -138,7 +139,6 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 		final JsonObject json = new JsonObject();
 		json.addProperty("name", name);
 		final JsonObject configuration = new JsonObject();
-		json.add("configuration", configuration);
 
 		final HashMap<String, Field> parameterTypes = parameters.get(type);
 		final HashMap<String, String> parameterNameMap = parameterNames.get(type);
@@ -158,6 +158,8 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 					configuration.add(parameterNameMap.get(fieldName), serialized);
 
 			}
+			if (!configuration.isEmpty())
+				json.add("configuration", configuration);
 		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
 			e.printStackTrace(System.err);
 			return null;
@@ -176,13 +178,21 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 
 		final JsonObject objectJson = json.getAsJsonObject();
 		final String name = objectJson.getAsJsonPrimitive("name").getAsString();
-		if (name == null)
+		if (name == null) {
 			return null;
-		final JsonObject configuration = objectJson.getAsJsonObject("configuration");
-		if (configuration == null)
-			return null;
+		}
 
 		final String type = prefix + "." + name;
+
+		final JsonObject configuration = objectJson.getAsJsonObject("configuration");
+		/* It's ok to be null if all parameters are optional.
+		* Otherwise, return*/
+		if (configuration == null) {
+			for (Field field : parameters.get(type).values()) {
+				if (!field.getAnnotation(NameConfig.Parameter.class).optional())
+					return null;
+			}
+		}
 
 		final Constructor<? extends T> constructor = constructors.get(type);
 		constructor.setAccessible(true);
@@ -195,8 +205,8 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 				final String fieldName = parameterType.getKey();
 				final String paramName = parameterNameMap.get(fieldName);
 				final JsonElement paramJson = configuration.get(paramName);
+				final Field field = parameterType.getValue();
 				if (paramJson != null) {
-					final Field field = parameterType.getValue();
 					final Object parameter;
 					if (field.getAnnotation(N5Annotations.ReverseArray.class) != null) {
 						final JsonArray reversedArray = reverseJsonArray(paramJson);
@@ -204,6 +214,9 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 					} else
 						parameter = context.deserialize(paramJson, field.getType());
 					ReflectionUtils.setFieldValue(object, fieldName, parameter);
+				} else if (!field.getAnnotation(NameConfig.Parameter.class).optional()) {
+					/* if param is null, and not optional, return null */
+					return null;
 				}
 			}
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException

@@ -1,11 +1,20 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.Serializable;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.ComposedCodec;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 
 /**
  * Mandatory dataset attributes:
@@ -171,5 +180,64 @@ public class DatasetAttributes implements Serializable {
 		}
 
 		return new DatasetAttributes(dimensions, blockSize, dataType, compression, codecs);
+	}
+
+	private static DatasetAttributesAdapter adapter = null;
+	public static DatasetAttributesAdapter getJsonAdapter() {
+		if (adapter == null) {
+			adapter = new DatasetAttributesAdapter();
+		}
+		return adapter;
+	}
+
+	public static class DatasetAttributesAdapter implements JsonSerializer<DatasetAttributes>, JsonDeserializer<DatasetAttributes> {
+
+		@Override public DatasetAttributes deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+
+			final JsonObject obj = json.getAsJsonObject();
+			if (!obj.has(DIMENSIONS_KEY) || !obj.has(BLOCK_SIZE_KEY) || !obj.has(DATA_TYPE_KEY) || !obj.has(COMPRESSION_KEY))
+				return null;
+
+			final long[] dimensions = context.deserialize(obj.get(DIMENSIONS_KEY), long[].class);
+			final int[] blockSize = context.deserialize(obj.get(BLOCK_SIZE_KEY), int[].class);
+			final DataType dataType = context.deserialize(obj.get(DATA_TYPE_KEY), DataType.class);
+			final Compression compression = context.deserialize(obj.get(COMPRESSION_KEY), Compression.class);
+			final Codec[] codecs;
+			if (obj.has(CODEC_KEY)) {
+				codecs = context.deserialize(obj.get(CODEC_KEY), Codec[].class);
+			} else codecs = new Codec[0];
+
+			for (Codec codec : codecs) {
+				if (codec instanceof ShardingCodec) {
+					ShardingCodec shardingCodec = (ShardingCodec)codec;
+					return new ShardedDatasetAttributes(
+							dimensions,
+							shardingCodec.getBlockSize(),
+							blockSize,
+							shardingCodec.getIndexLocation(),
+							dataType,
+							compression,
+							codecs
+					);
+				}
+			}
+			return new DatasetAttributes(dimensions, blockSize, dataType, compression);
+		}
+
+		@Override public JsonElement serialize(DatasetAttributes src, Type typeOfSrc, JsonSerializationContext context) {
+
+			final JsonObject obj = new JsonObject();
+			obj.add(DIMENSIONS_KEY, context.serialize(src.dimensions));
+			obj.add(BLOCK_SIZE_KEY, context.serialize(src.blockSize));
+			obj.add(DATA_TYPE_KEY, context.serialize(src.dataType));
+			obj.add(COMPRESSION_KEY, CompressionAdapter.getJsonAdapter().serialize(src.compression, src.compression.getClass(), context));
+
+			//TODO Caleb: Per the zarr v3 spec, codecs is necessary and cannot be an empty list, since it always needs at least
+			//	one array -> bytes codec. Even in the case of no compressor, there should always be at least the
+			//	`bytes` codec it seems. Consider how we want to handle this in N5
+			obj.add(CODEC_KEY, context.serialize(src.codecs));
+
+			return obj;
+		}
 	}
 }

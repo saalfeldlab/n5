@@ -218,10 +218,10 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public LockedFileChannel lockForWriting(final String normalPath, final long startByte, final long endByte)
+	public LockedFileChannel lockForWriting(final String normalPath, final long startByte, final long size)
 			throws IOException {
 
-		return new LockedFileChannel(normalPath, false, startByte, endByte);
+		return new LockedFileChannel(normalPath, false, startByte, size);
 	}
 
 	public LockedFileChannel lockForReading(final Path path) throws IOException {

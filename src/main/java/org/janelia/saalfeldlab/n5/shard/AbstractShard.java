@@ -7,7 +7,7 @@ public abstract class AbstractShard<T> implements Shard<T> {
 
 	protected final ShardedDatasetAttributes datasetAttributes;
 
-	protected final ShardIndex index;
+	protected ShardIndex index;
 
 	private final long[] gridPosition;
 

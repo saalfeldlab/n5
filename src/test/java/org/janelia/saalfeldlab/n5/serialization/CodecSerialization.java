@@ -18,6 +18,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import java.util.Arrays;
+
 public class CodecSerialization {
 
 	private Gson gson;
@@ -28,10 +30,9 @@ public class CodecSerialization {
 		final GsonBuilder gsonBuilder = new GsonBuilder();
 		gsonBuilder.registerTypeAdapter(IdentityCodec.class, NameConfigAdapter.getJsonAdapter(IdentityCodec.class));
 		gsonBuilder.registerTypeAdapter(AsTypeCodec.class, NameConfigAdapter.getJsonAdapter(AsTypeCodec.class));
-		gsonBuilder.registerTypeAdapter(FixedScaleOffsetCodec.class,
-				NameConfigAdapter.getJsonAdapter(FixedScaleOffsetCodec.class));
-		// gsonBuilder.registerTypeAdapter(Codec.class,
-		// NameConfigAdapter.getJsonAdapter(Codec.class));
+		gsonBuilder.registerTypeAdapter(FixedScaleOffsetCodec.class, NameConfigAdapter.getJsonAdapter(FixedScaleOffsetCodec.class));
+		 gsonBuilder.registerTypeAdapter(Codec.class,
+		 NameConfigAdapter.getJsonAdapter(Codec.class));
 
 		gson = gsonBuilder.create();
 	}
@@ -69,8 +70,8 @@ public class CodecSerialization {
 				JsonElement.class);
 		assertEquals("codec array", expected, jsonCodecArray.getAsJsonArray());
 
-		// final Codec[] codecsDeserialized = gson.fromJson(expected, Codec[].class);
-		// System.out.println(Arrays.toString(codecsDeserialized));
+		 final Codec[] codecsDeserialized = gson.fromJson(expected, Codec[].class);
+		 System.out.println(Arrays.toString(codecsDeserialized));
 
 		codecs = new Codec[]{
 				new AsTypeCodec(DataType.FLOAT64, DataType.INT16),

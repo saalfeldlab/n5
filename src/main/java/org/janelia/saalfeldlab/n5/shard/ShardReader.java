@@ -1,10 +1,5 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DefaultBlockReader;
@@ -15,7 +10,12 @@ import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.IdentityCodec;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
-import org.janelia.saalfeldlab.n5.shard.ShardingConfiguration.IndexLocation;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 
 public class ShardReader {
 
@@ -79,11 +79,10 @@ public class ShardReader {
 		final Codec[] codecs = new Codec[]{
 				new IdentityCodec(),
 				new ShardingCodec(
-						new ShardingConfiguration(
-								new int[]{2, 2},
-								new Codec[]{new RawCompression(), new IdentityCodec()},
-								new Codec[]{new Crc32cChecksumCodec()},
-								IndexLocation.END)
+						new int[]{2, 2},
+						new Codec[]{new RawCompression(), new IdentityCodec()},
+						new Codec[]{new Crc32cChecksumCodec()},
+						IndexLocation.END
 				)
 		};
 
