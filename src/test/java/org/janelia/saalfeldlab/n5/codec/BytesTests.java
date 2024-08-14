@@ -1,6 +1,10 @@
 package org.janelia.saalfeldlab.n5.codec;
 
-import com.google.gson.GsonBuilder;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.nio.ByteOrder;
+
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Writer;
@@ -9,10 +13,7 @@ import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.universe.N5Factory;
 import org.junit.Test;
 
-import java.nio.ByteOrder;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.google.gson.GsonBuilder;
 
 public class BytesTests {
 
