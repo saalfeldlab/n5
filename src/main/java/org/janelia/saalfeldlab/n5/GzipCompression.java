@@ -42,7 +42,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @CompressionType("gzip")
-@NameConfig.Name("gzip-compression")
+@NameConfig.Name("gzip")
 public class GzipCompression implements Compression {
 
 	private static final long serialVersionUID = 8630847239813334263L;

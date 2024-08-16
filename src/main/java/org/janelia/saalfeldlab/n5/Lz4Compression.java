@@ -35,7 +35,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @CompressionType("lz4")
-@NameConfig.Name("lz4-compression")
+@NameConfig.Name("lz4")
 public class Lz4Compression implements Compression {
 
 	private static final long serialVersionUID = -9071316415067427256L;
