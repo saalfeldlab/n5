@@ -25,7 +25,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataOutputStream;
+import org.janelia.saalfeldlab.n5.codec.Codec;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -70,75 +70,22 @@ public interface DefaultBlockWriter extends BlockWriter {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		final DataOutputStream dos = new DataOutputStream(out);
 
-		final int mode;
-		if (datasetAttributes.getDataType() == DataType.OBJECT || dataBlock.getSize() == null)
-			mode = 2;
-		else if (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize()))
-			mode = 0;
-		else
-			mode = 1;
-		dos.writeShort(mode);
-
-		if (mode != 2) {
-			dos.writeShort(datasetAttributes.getNumDimensions());
-			for (final int size : dataBlock.getSize())
-				dos.writeInt(size);
+		OutputStream stream = out;
+		final Codec[] codecs = datasetAttributes.getCodecs();
+		for (Codec codec : codecs) {
+			if (codec instanceof Codec.BytesToBytes)
+				stream = ((Codec.BytesToBytes)codec).encode(stream);
+			else if (codec instanceof Codec.ArrayToBytes)
+				stream = ((Codec.ArrayToBytes)codec).encode(datasetAttributes, dataBlock, stream);
 		}
 
-		if (mode != 0)
-			dos.writeInt(dataBlock.getNumElements());
+		writeFromStream(dataBlock, stream);
+		stream.flush();
 
-		dos.flush();
-
-		final BlockWriter writer = datasetAttributes.getCompression().getWriter();
-		writer.write(dataBlock, out);
-	}
-
-	/**
-	 * Writes a {@link DataBlock} into an {@link OutputStream}.
-	 *
-	 * @param <T>
-	 *            the type of data
-	 * @param out
-	 *            the output stream
-	 * @param datasetAttributes
-	 *            the dataset attributes
-	 * @param dataBlock
-	 *            the data block the block data type
-	 * @throws IOException
-	 *             the exception
-	 */
-	public static <T> void writeBlockWithCodecs(
-			final OutputStream out,
-			final DatasetAttributes datasetAttributes,
-			final DataBlock<T> dataBlock) throws IOException {
-
-		final DataOutputStream dos = new DataOutputStream(out);
-
-		final int mode;
-		if (datasetAttributes.getDataType() == DataType.OBJECT || dataBlock.getSize() == null)
-			mode = 2;
-		else if (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize()))
-			mode = 0;
-		else
-			mode = 1;
-		dos.writeShort(mode);
-
-		if (mode != 2) {
-			dos.writeShort(datasetAttributes.getNumDimensions());
-			for (final int size : dataBlock.getSize())
-				dos.writeInt(size);
-		}
-
-		if (mode != 0)
-			dos.writeInt(dataBlock.getNumElements());
-
-		try (final OutputStream encodedStream = datasetAttributes.collectCodecs().encode(out)) {
-			writeFromStream(dataBlock, encodedStream);
-			out.flush();
-		}
+		//FIXME Caleb: The stream must be closed BUT it shouldn't be `writeBlock`'s responsibility.
+		//	Whoever opens the stream should close it
+		stream.close();
 	}
 
 	public static <T> void writeFromStream(final DataBlock<T> dataBlock, final OutputStream out) throws IOException {

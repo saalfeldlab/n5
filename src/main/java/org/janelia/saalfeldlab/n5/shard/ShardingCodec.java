@@ -16,7 +16,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Type;
 
 @NameConfig.Name(ShardingCodec.TYPE)
-public class ShardingCodec implements Codec {
+public class ShardingCodec implements Codec.BytesToBytes { //TODO Caleb: should be ArrayToBytes
 
 	private static final long serialVersionUID = -5879797314954717810L;
 

@@ -8,7 +8,7 @@ import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @NameConfig.Name(IdentityCodec.TYPE)
 @NameConfig.Prefix("codec")
-public class IdentityCodec implements Codec {
+public class IdentityCodec implements Codec.BytesToBytes {
 
 	private static final long serialVersionUID = 8354269325800855621L;
 

@@ -32,8 +32,10 @@ import java.io.OutputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @CompressionType("bzip2")
+@NameConfig.Name("bzip2")
 public class Bzip2Compression implements DefaultBlockReader, DefaultBlockWriter, Compression {
 
 	private static final long serialVersionUID = -4873117458390529118L;

@@ -230,8 +230,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), dataBlock.getGridPosition());
 		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(blockPath)) {
-			DefaultBlockWriter.writeBlockWithCodecs(lock.newOutputStream(), datasetAttributes, dataBlock);
-			// DefaultBlockWriter.writeBlock(lock.newOutputStream(), datasetAttributes, dataBlock);
+			 DefaultBlockWriter.writeBlock(lock.newOutputStream(), datasetAttributes, dataBlock);
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,

@@ -32,8 +32,10 @@ import java.io.OutputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @CompressionType("xz")
+@NameConfig.Name("xz")
 public class XzCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
 
 	private static final long serialVersionUID = -7272153943564743774L;

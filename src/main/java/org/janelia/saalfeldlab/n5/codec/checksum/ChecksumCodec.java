@@ -38,16 +38,6 @@ public abstract class ChecksumCodec implements DeterministicSizeCodec {
 	}
 
 	@Override
-	public CheckedInputStream decode(final InputStream in) throws IOException {
-
-		// TODO get the correct expected checksum
-		// TODO write a test with nested checksum codecs
-
-		// has to know the number of it needs to read?
-		return new CheckedInputStream(in, getChecksum());
-	}
-
-	@Override
 	public CheckedOutputStream encode(final OutputStream out) throws IOException {
 
 		// when do we validate?
@@ -59,6 +49,16 @@ public abstract class ChecksumCodec implements DeterministicSizeCodec {
 		final CheckedOutputStream cout = new CheckedOutputStream(out, getChecksum());
 		cout.write(buffer.array());
 		writeChecksum(out);
+	}
+
+	@Override
+	public CheckedInputStream decode(final InputStream in) throws IOException {
+
+		// TODO get the correct expected checksum
+		// TODO write a test with nested checksum codecs
+
+		// has to know the number of it needs to read?
+		return new CheckedInputStream(in, getChecksum());
 	}
 
 	public ByteBuffer decodeAndValidate(final InputStream in, int numBytes) throws IOException, ChecksumException {

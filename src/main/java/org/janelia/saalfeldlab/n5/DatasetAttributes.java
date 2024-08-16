@@ -12,9 +12,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.codec.ComposedCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
+
+import javax.xml.crypto.Data;
 
 /**
  * Mandatory dataset attributes:
@@ -62,13 +64,19 @@ public class DatasetAttributes implements Serializable {
 			final int[] blockSize,
 			final DataType dataType,
 			final Compression compression,
-			final Codec[] codecs ) {
+			final Codec[] codecs) {
 
 		this.dimensions = dimensions;
 		this.blockSize = blockSize;
 		this.dataType = dataType;
-		this.codecs = codecs;
 		this.compression = compression;
+		if (codecs == null && !(compression instanceof RawCompression)) {
+			this.codecs = new Codec[]{new BytesCodec(), compression};
+		} else if (codecs == null) {
+			this.codecs = new Codec[]{new BytesCodec()};
+		} else {
+			this.codecs = codecs;
+		}
 	}
 
 	public DatasetAttributes(
@@ -110,22 +118,6 @@ public class DatasetAttributes implements Serializable {
 		return codecs;
 	}
 
-	public Codec collectCodecs() {
-
-		if (codecs == null || codecs.length == 0)
-			return compression;
-		else if (codecs.length == 1)
-			return new ComposedCodec(codecs[0], compression);
-		else {
-			final Codec[] codecsAndCompresor = new Codec[codecs.length + 1];
-			for (int i = 0; i < codecs.length; i++)
-				codecsAndCompresor[i] = codecs[i];
-
-			codecsAndCompresor[codecs.length] = compression;
-			return new ComposedCodec(codecsAndCompresor);
-		}
-	}
-
 	public HashMap<String, Object> asMap() {
 
 		final HashMap<String, Object> map = new HashMap<>();
@@ -160,26 +152,27 @@ public class DatasetAttributes implements Serializable {
 
 		/* version 0 */
 		if (compression == null) {
-			switch (compressionVersion0Name) {
-			case "raw":
-				compression = new RawCompression();
-				break;
-			case "gzip":
-				compression = new GzipCompression();
-				break;
-			case "bzip2":
-				compression = new Bzip2Compression();
-				break;
-			case "lz4":
-				compression = new Lz4Compression();
-				break;
-			case "xz":
-				compression = new XzCompression();
-				break;
-			}
+			compression = getCompressionVersion0(compressionVersion0Name);
 		}
 
 		return new DatasetAttributes(dimensions, blockSize, dataType, compression, codecs);
+	}
+
+	private static Compression getCompressionVersion0(final String compressionVersion0Name) {
+
+		switch (compressionVersion0Name) {
+		case "raw":
+			return new RawCompression();
+		case "gzip":
+			return new GzipCompression();
+		case "bzip2":
+			return new Bzip2Compression();
+		case "lz4":
+			return new Lz4Compression();
+		case "xz":
+			return new XzCompression();
+		}
+		return null;
 	}
 
 	private static DatasetAttributesAdapter adapter = null;
@@ -201,11 +194,20 @@ public class DatasetAttributes implements Serializable {
 			final long[] dimensions = context.deserialize(obj.get(DIMENSIONS_KEY), long[].class);
 			final int[] blockSize = context.deserialize(obj.get(BLOCK_SIZE_KEY), int[].class);
 			final DataType dataType = context.deserialize(obj.get(DATA_TYPE_KEY), DataType.class);
-			final Compression compression = context.deserialize(obj.get(COMPRESSION_KEY), Compression.class);
+
+			Compression compression = null;
+			if (obj.has(COMPRESSION_KEY)) {
+				compression = CompressionAdapter.getJsonAdapter().deserialize(obj.get(COMPRESSION_KEY), Compression.class, context);
+			} else if (obj.has(compressionTypeKey)) {
+				compression = DatasetAttributes.getCompressionVersion0(obj.get(compressionTypeKey).getAsString());
+			}
+			if (compression == null)
+				return null;
+
 			final Codec[] codecs;
 			if (obj.has(CODEC_KEY)) {
 				codecs = context.deserialize(obj.get(CODEC_KEY), Codec[].class);
-			} else codecs = new Codec[0];
+			} else codecs = null;
 
 			for (Codec codec : codecs) {
 				if (codec instanceof ShardingCodec) {
@@ -221,7 +223,7 @@ public class DatasetAttributes implements Serializable {
 					);
 				}
 			}
-			return new DatasetAttributes(dimensions, blockSize, dataType, compression);
+			return new DatasetAttributes(dimensions, blockSize, dataType, compression, codecs);
 		}
 
 		@Override public JsonElement serialize(DatasetAttributes src, Type typeOfSrc, JsonSerializationContext context) {
@@ -231,10 +233,6 @@ public class DatasetAttributes implements Serializable {
 			obj.add(BLOCK_SIZE_KEY, context.serialize(src.blockSize));
 			obj.add(DATA_TYPE_KEY, context.serialize(src.dataType));
 			obj.add(COMPRESSION_KEY, CompressionAdapter.getJsonAdapter().serialize(src.compression, src.compression.getClass(), context));
-
-			//TODO Caleb: Per the zarr v3 spec, codecs is necessary and cannot be an empty list, since it always needs at least
-			//	one array -> bytes codec. Even in the case of no compressor, there should always be at least the
-			//	`bytes` codec it seems. Consider how we want to handle this in N5
 			obj.add(CODEC_KEY, context.serialize(src.codecs));
 
 			return obj;

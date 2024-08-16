@@ -28,6 +28,8 @@ package org.janelia.saalfeldlab.n5;
 import java.lang.reflect.Type;
 import java.util.Map;
 
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonParseException;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 
 import com.google.gson.Gson;
@@ -60,31 +62,15 @@ public interface GsonN5Reader extends N5Reader {
 
 	default DatasetAttributes createDatasetAttributes(final JsonElement attributes) {
 
-		try {
-			final long[] dimensions = GsonUtils.readAttribute(attributes, DatasetAttributes.DIMENSIONS_KEY, long[].class, getGson());
-			if (dimensions == null) {
-				return null;
+		final JsonDeserializationContext context = new JsonDeserializationContext() {
+
+			@Override public <T> T deserialize(JsonElement json, Type typeOfT) throws JsonParseException {
+
+				return getGson().fromJson(json, typeOfT);
 			}
+		};
 
-			final DataType dataType = GsonUtils.readAttribute(attributes, DatasetAttributes.DATA_TYPE_KEY, DataType.class, getGson());
-			if (dataType == null) {
-				return null;
-			}
-
-			final int[] blockSize = GsonUtils.readAttribute(attributes, DatasetAttributes.BLOCK_SIZE_KEY, int[].class, getGson());
-			final Compression compression = GsonUtils.readAttribute(attributes, DatasetAttributes.COMPRESSION_KEY, Compression.class, getGson());
-			final Codec[] codecs = GsonUtils.readAttribute(attributes, DatasetAttributes.CODEC_KEY, Codec[].class, getGson());
-
-			/* version 0 */
-			final String compressionVersion0Name = compression == null
-					? GsonUtils.readAttribute(attributes, DatasetAttributes.compressionTypeKey, String.class, getGson())
-					: null;
-
-			return DatasetAttributes.from(dimensions, dataType, blockSize, compression, compressionVersion0Name, codecs);
-		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
-			/* We cannot create a dataset, so return null. */
-			return null;
-		}
+		return DatasetAttributes.getJsonAdapter().deserialize(attributes, DatasetAttributes.class, context);
 	}
 
 	@Override

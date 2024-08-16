@@ -10,8 +10,7 @@ import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @NameConfig.Name(AsTypeCodec.TYPE)
-@NameConfig.Prefix("codec")
-public class AsTypeCodec implements Codec {
+public class AsTypeCodec implements Codec.BytesToBytes {
 
 	private static final long serialVersionUID = 1031322606191894484L;
 
@@ -141,15 +140,15 @@ public class AsTypeCodec implements Codec {
 			else if (to == DataType.INT16)
 				return AsTypeCodec::INT_TO_SHORT;
 			if (to == DataType.INT8)
-				return AsTypeCodec::DOUBLE_TO_BYTE;
+				return AsTypeCodec::INT_TO_BYTE;
 			else if (to == DataType.INT16)
-				return AsTypeCodec::DOUBLE_TO_SHORT;
+				return AsTypeCodec::INT_TO_SHORT;
 			else if (to == DataType.INT32)
-				return AsTypeCodec::DOUBLE_TO_INT;
+				return AsTypeCodec::IDENTITY;
 			else if (to == DataType.INT64)
-				return AsTypeCodec::DOUBLE_TO_LONG;
+				return AsTypeCodec::INT_TO_LONG;
 			else if (to == DataType.FLOAT32)
-				return AsTypeCodec::DOUBLE_TO_FLOAT;
+				return AsTypeCodec::INT_TO_FLOAT;
 			else if (to == DataType.INT64)
 				return AsTypeCodec::INT_TO_LONG;
 			else if (to == DataType.FLOAT32)
