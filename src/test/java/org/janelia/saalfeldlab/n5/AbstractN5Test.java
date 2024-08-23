@@ -250,8 +250,10 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testWriteReadByteBlockMultipleCompressors() {
+	public void testWriteReadByteBlockMultipleCodecs() {
 
+		/*TODO: this tests "passes" in the sense that we get the correct output, but it
+		*  maybe is not the behavior we actually want*/
 		try (final N5Writer n5 = createTempN5Writer()) {
 			final Codec[] codecs = {
 					new BytesCodec(),
@@ -262,15 +264,13 @@ public abstract class AbstractN5Test {
 			final long[] dimensions1 = new long[]{2,2,2};
 			final int[] blockSize1 = new int[]{2,2,2};
 			n5.createDataset(datasetName, dimensions1, blockSize1, DataType.INT8, new RawCompression(), codecs);
-//			n5.createDataset(datasetName, dimensions, blockSize, DataType.INT64, new RawCompression(), codecs);
 			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
-//			final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, longBlock);
 			final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize1, new long[]{0, 0, 0}, longBlock1);
 			n5.writeBlock(datasetName, attributes, dataBlock);
 
 			final DatasetAttributes fakeAttributes = new DatasetAttributes(dimensions1, blockSize1, DataType.INT64, new RawCompression(), codecs);
 			final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, fakeAttributes, 0, 0, 0);
-			assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
+			assertArrayEquals(longBlock1, (long[])loadedDataBlock.getData());
 			assertTrue(n5.remove(datasetName));
 
 		}

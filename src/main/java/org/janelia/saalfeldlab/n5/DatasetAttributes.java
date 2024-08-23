@@ -16,8 +16,6 @@ import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 
-import javax.xml.crypto.Data;
-
 /**
  * Mandatory dataset attributes:
  *
@@ -187,6 +185,7 @@ public class DatasetAttributes implements Serializable {
 
 		@Override public DatasetAttributes deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
 
+			if (json == null || !json.isJsonObject()) return null;
 			final JsonObject obj = json.getAsJsonObject();
 			if (!obj.has(DIMENSIONS_KEY) || !obj.has(BLOCK_SIZE_KEY) || !obj.has(DATA_TYPE_KEY) || !obj.has(COMPRESSION_KEY))
 				return null;
