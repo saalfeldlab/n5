@@ -188,7 +188,7 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 		/* It's ok to be null if all parameters are optional.
 		* Otherwise, return*/
 		if (configuration == null) {
-			for (Field field : parameters.get(type).values()) {
+			for (final Field field : parameters.get(type).values()) {
 				if (!field.getAnnotation(NameConfig.Parameter.class).optional())
 					return null;
 			}
@@ -204,7 +204,7 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 			for (final Entry<String, Field> parameterType : parameterTypes.entrySet()) {
 				final String fieldName = parameterType.getKey();
 				final String paramName = parameterNameMap.get(fieldName);
-				final JsonElement paramJson = configuration.get(paramName);
+				final JsonElement paramJson = configuration == null ? null : configuration.get(paramName);
 				final Field field = parameterType.getValue();
 				if (paramJson != null) {
 					final Object parameter;
