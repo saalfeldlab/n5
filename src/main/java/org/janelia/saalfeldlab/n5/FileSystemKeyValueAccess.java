@@ -75,7 +75,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		protected LockedFileChannel(final String path, final boolean readOnly) throws IOException {
 
-			this(fileSystem.getPath(path), readOnly, 0, 0);
+			this(fileSystem.getPath(path), readOnly, 0, Long.MAX_VALUE);
 		}
 
 		protected LockedFileChannel(final String path, final boolean readOnly, final long startByte, final long size) throws IOException {
@@ -85,7 +85,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		protected LockedFileChannel(final Path path, final boolean readOnly) throws IOException {
 
-			this(path, readOnly, 0, 0);
+			this(path, readOnly, 0, Long.MAX_VALUE);
 		}
 
 		protected LockedFileChannel(final Path path, final boolean readOnly, final long startByte, final long size)
