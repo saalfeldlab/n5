@@ -27,7 +27,6 @@ package org.janelia.saalfeldlab.n5;
 
 import java.lang.reflect.Type;
 
-import com.google.gson.reflect.TypeToken;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCacheableContainer;
@@ -83,7 +82,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 
 		final String normalPath = N5URI.normalizeGroupPath(pathName);
 		final JsonElement attributes = GsonKeyValueN5Reader.super.getAttributes(normalPath);
-		return getGson().fromJson(attributes, DatasetAttributes.class);
+		return createDatasetAttributes(attributes);
 	}
 
 	@Override
