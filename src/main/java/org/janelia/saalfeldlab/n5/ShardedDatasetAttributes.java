@@ -23,7 +23,7 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 			final Compression compression,
 			final Codec[] codecs) {
 
-		super(dimensions, shardSize, dataType, compression, codecs);
+		super(dimensions, blockSize, dataType, compression, codecs);
 		this.shardSize = shardSize;
 		this.indexLocation = shardIndexLocation;
 
@@ -105,7 +105,7 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 
 	public static int[] getBlockSize(Codec[] codecs) {
 
-		for (Codec codec : codecs)
+		for (final Codec codec : codecs)
 			if (codec instanceof ShardingCodec)
 				return ((ShardingCodec)codec).getBlockSize();
 

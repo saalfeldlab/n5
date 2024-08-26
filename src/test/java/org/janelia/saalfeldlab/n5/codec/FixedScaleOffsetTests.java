@@ -35,7 +35,7 @@ public class FixedScaleOffsetTests {
 	public void testLong2Short() throws IOException {
 
 		final int N = 16;
-		final ByteBuffer encodedLongs = ByteBuffer.allocate(Double.BYTES * N);
+		final ByteBuffer encodedLongs = ByteBuffer.allocate(Long.BYTES * N);
 		final ByteBuffer encodedShorts = ByteBuffer.allocate(Short.BYTES * N);
 
 		final long scale = 2;

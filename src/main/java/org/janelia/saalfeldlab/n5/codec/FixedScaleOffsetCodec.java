@@ -98,12 +98,16 @@ public class FixedScaleOffsetCodec extends AsTypeCodec {
 	@Override
 	public InputStream decode(InputStream in) throws IOException {
 
+		numBytes = bytes(dataType);
+		numEncodedBytes = bytes(encodedType);
 		return new FixedLengthConvertedInputStream(numEncodedBytes, numBytes, this.decoder, in);
 	}
 
 	@Override
 	public OutputStream encode(OutputStream out) throws IOException {
 
+		numBytes = bytes(dataType);
+		numEncodedBytes = bytes(encodedType);
 		return new FixedLengthConvertedOutputStream(numBytes, numEncodedBytes, this.encoder, out);
 	}
 
