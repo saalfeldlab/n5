@@ -93,10 +93,10 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 
 			final long start = startByte < 0 ? 0L : startByte;
-			final long len = size < 0 ? 0L : size;
+			final long len = size < 0 ? Long.MAX_VALUE : size;
 
 			//TODO Caleb: How does this handle if manually overwriting the entire file? (e.g. len > file size)
-			truncate = (start == 0 && len == 0);
+			truncate = (start == 0 && len == Long.MAX_VALUE);
 
 			final OpenOption[] options;
 			if (readOnly) {
