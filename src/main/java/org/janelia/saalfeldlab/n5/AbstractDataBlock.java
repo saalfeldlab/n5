@@ -25,6 +25,11 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
 /**
  * Abstract base class for {@link DataBlock} implementations.
  *
@@ -63,4 +68,20 @@ public abstract class AbstractDataBlock<T> implements DataBlock<T> {
 
 		return data;
 	}
+
+	@Override
+	public void readData(final DataInput input) throws IOException {
+
+		final ByteBuffer buffer = toByteBuffer();
+		input.readFully(buffer.array());
+		readData(buffer);
+	}
+
+	@Override
+	public void writeData(final DataOutput output) throws IOException {
+
+		final ByteBuffer buffer = toByteBuffer();
+		output.write(buffer.array());
+	}
+
 }
