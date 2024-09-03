@@ -25,6 +25,8 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.DataInput;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -44,6 +46,12 @@ public class ByteArrayDataBlock extends AbstractDataBlock<byte[]> {
 
 		if (buffer.array() != getData())
 			buffer.get(getData());
+	}
+
+	@Override
+	public void readData(final DataInput inputStream) throws IOException {
+
+		inputStream.readFully(data);
 	}
 
 	@Override
