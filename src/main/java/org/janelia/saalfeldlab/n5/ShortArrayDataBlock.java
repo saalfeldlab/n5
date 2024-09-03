@@ -25,9 +25,8 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataInputStream;
+import java.io.DataInput;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
@@ -51,13 +50,11 @@ public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
 		buffer.asShortBuffer().get(data);
 	}
 
+	@Override
+	public void readData(final DataInput dataInput) throws IOException {
 
-	public void readData(final InputStream stream) throws IOException {
-
-		final DataInputStream dis = new DataInputStream(stream);
-		for (int i = 0; i < data.length; i++) {
-			data[i] = dis.readShort();
-		}
+		for (int i = 0; i < data.length; i++)
+			data[i] = dataInput.readShort();
 	}
 
 	@Override
