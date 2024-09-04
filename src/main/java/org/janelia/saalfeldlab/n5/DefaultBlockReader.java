@@ -73,13 +73,10 @@ public interface DefaultBlockReader extends BlockReader {
 
 		Codec.DataBlockInputStream dataBlockStream = null;
 		InputStream stream = in;
-		for (Codec codec : datasetAttributes.getCodecs()) {
-			if (codec instanceof Codec.ArrayToBytes) {
-				stream = dataBlockStream = ((Codec.ArrayToBytes)codec).decode(datasetAttributes, gridPosition, stream);
-			}
-			if (codec instanceof Codec.BytesToBytes) {
-				stream = ((Codec.BytesToBytes)codec).decode(stream);
-			}
+		stream = dataBlockStream = datasetAttributes.getArrayToBytesCodec().decode(datasetAttributes, gridPosition,
+				stream);
+		for (final Codec codec : datasetAttributes.getCodecs()) {
+			stream = ((Codec.BytesToBytes)codec).decode(stream);
 		}
 
 		final DataBlock<?> dataBlock = dataBlockStream.allocateDataBlock();

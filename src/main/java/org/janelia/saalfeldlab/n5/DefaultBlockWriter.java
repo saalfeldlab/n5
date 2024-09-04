@@ -25,10 +25,11 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import org.janelia.saalfeldlab.n5.codec.Codec;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+
+import org.janelia.saalfeldlab.n5.codec.Codec;
 
 /**
  * Default implementation of {@link BlockWriter}.
@@ -70,14 +71,11 @@ public interface DefaultBlockWriter extends BlockWriter {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-
 		OutputStream stream = out;
 		final Codec[] codecs = datasetAttributes.getCodecs();
-		for (Codec codec : codecs) {
-			if (codec instanceof Codec.BytesToBytes)
-				stream = ((Codec.BytesToBytes)codec).encode(stream);
-			else if (codec instanceof Codec.ArrayToBytes)
-				stream = ((Codec.ArrayToBytes)codec).encode(datasetAttributes, dataBlock, stream);
+		stream = datasetAttributes.getArrayToBytesCodec().encode(datasetAttributes, dataBlock, stream);
+		for (final Codec codec : codecs) {
+			stream = ((Codec.BytesToBytes)codec).encode(stream);
 		}
 
 		writeFromStream(dataBlock, stream);
