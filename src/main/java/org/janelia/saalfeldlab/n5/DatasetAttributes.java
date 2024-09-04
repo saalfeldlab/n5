@@ -73,7 +73,7 @@ public class DatasetAttributes implements Serializable {
 		if (codecs == null && !(compression instanceof RawCompression)) {
 			byteByteCodecs = new Codec[]{compression};
 			arrayToBytesCodec = new N5BytesCodec();
-		} else if (codecs == null) {
+		} else if (codecs == null || codecs.length == 0) {
 			byteByteCodecs = new Codec[]{};
 			arrayToBytesCodec = new N5BytesCodec();
 		} else {
