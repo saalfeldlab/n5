@@ -256,7 +256,7 @@ public abstract class AbstractN5Test {
 		*  maybe is not the behavior we actually want*/
 		try (final N5Writer n5 = createTempN5Writer()) {
 			final Codec[] codecs = {
-					new BytesCodec(),
+					new N5BytesCodec(),
 					new AsTypeCodec(DataType.INT32, DataType.INT8),
 					new AsTypeCodec(DataType.INT64, DataType.INT32),
 			};

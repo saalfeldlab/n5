@@ -5,6 +5,10 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.N5BytesCodec;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
+
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -12,9 +16,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import org.janelia.saalfeldlab.n5.codec.BytesCodec;
-import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 
 /**
  * Mandatory dataset attributes:
@@ -55,7 +56,8 @@ public class DatasetAttributes implements Serializable {
 	private final int[] blockSize;
 	private final DataType dataType;
 	private final Compression compression;
-	private final Codec[] codecs;
+	private final Codec.ArrayToBytes arrayToBytesCodec;
+	private final Codec[] byteByteCodecs;
 
 	public DatasetAttributes(
 			final long[] dimensions,
@@ -69,11 +71,19 @@ public class DatasetAttributes implements Serializable {
 		this.dataType = dataType;
 		this.compression = compression;
 		if (codecs == null && !(compression instanceof RawCompression)) {
-			this.codecs = new Codec[]{new BytesCodec(), compression};
+			byteByteCodecs = new Codec[]{compression};
+			arrayToBytesCodec = new N5BytesCodec();
 		} else if (codecs == null) {
-			this.codecs = new Codec[]{new BytesCodec()};
+			byteByteCodecs = new Codec[]{};
+			arrayToBytesCodec = new N5BytesCodec();
 		} else {
-			this.codecs = codecs;
+			if (!(codecs[0] instanceof Codec.ArrayToBytes))
+				throw new N5Exception("Expected first element of codecs to be ArrayToBytes, but was: " + codecs[0]);
+
+			arrayToBytesCodec = (Codec.ArrayToBytes)codecs[0];
+			byteByteCodecs = new Codec[codecs.length - 1];
+			for (int i = 0; i < byteByteCodecs.length; i++)
+				byteByteCodecs[i] = codecs[i + 1];
 		}
 	}
 
@@ -111,9 +121,14 @@ public class DatasetAttributes implements Serializable {
 		return dataType;
 	}
 
+	public Codec.ArrayToBytes getArrayToBytesCodec() {
+
+		return arrayToBytesCodec;
+	}
+
 	public Codec[] getCodecs() {
 
-		return codecs;
+		return byteByteCodecs;
 	}
 
 	public HashMap<String, Object> asMap() {
@@ -123,7 +138,7 @@ public class DatasetAttributes implements Serializable {
 		map.put(BLOCK_SIZE_KEY, blockSize);
 		map.put(DATA_TYPE_KEY, dataType);
 		map.put(COMPRESSION_KEY, compression);
-		map.put(CODEC_KEY, codecs); // TODO : consider not adding to map when null
+		map.put(CODEC_KEY, concatenateCodecs()); // TODO : consider not adding to map when null
 		return map;
 	}
 
@@ -173,6 +188,16 @@ public class DatasetAttributes implements Serializable {
 		return null;
 	}
 
+	private Codec[] concatenateCodecs() {
+
+		final Codec[] allCodecs = new Codec[byteByteCodecs.length + 1];
+		allCodecs[0] = arrayToBytesCodec;
+		for (int i = 0; i < byteByteCodecs.length; i++)
+			allCodecs[i + 1] = byteByteCodecs[i];
+
+		return allCodecs;
+	}
+
 	private static DatasetAttributesAdapter adapter = null;
 	public static DatasetAttributesAdapter getJsonAdapter() {
 		if (adapter == null) {
@@ -208,9 +233,9 @@ public class DatasetAttributes implements Serializable {
 				codecs = context.deserialize(obj.get(CODEC_KEY), Codec[].class);
 			} else codecs = null;
 
-			for (Codec codec : codecs) {
+			for (final Codec codec : codecs) {
 				if (codec instanceof ShardingCodec) {
-					ShardingCodec shardingCodec = (ShardingCodec)codec;
+					final ShardingCodec shardingCodec = (ShardingCodec)codec;
 					return new ShardedDatasetAttributes(
 							dimensions,
 							shardingCodec.getBlockSize(),
@@ -232,7 +257,7 @@ public class DatasetAttributes implements Serializable {
 			obj.add(BLOCK_SIZE_KEY, context.serialize(src.blockSize));
 			obj.add(DATA_TYPE_KEY, context.serialize(src.dataType));
 			obj.add(COMPRESSION_KEY, CompressionAdapter.getJsonAdapter().serialize(src.compression, src.compression.getClass(), context));
-			obj.add(CODEC_KEY, context.serialize(src.codecs));
+			obj.add(CODEC_KEY, context.serialize(src.concatenateCodecs()));
 
 			return obj;
 		}

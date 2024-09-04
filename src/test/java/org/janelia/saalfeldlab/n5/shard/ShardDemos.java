@@ -8,7 +8,7 @@ import org.janelia.saalfeldlab.n5.GzipCompression;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
-import org.janelia.saalfeldlab.n5.codec.BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.N5BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.IdentityCodec;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
@@ -72,10 +72,10 @@ public class ShardDemos {
 				DataType.UINT8,
 				new RawCompression(),
 				new Codec[]{
-						new BytesCodec(),
+						new N5BytesCodec(),
 						new ShardingCodec(
 								new int[]{2, 2},
-								new Codec[]{new BytesCodec(), new GzipCompression(4)},
+								new Codec[]{new N5BytesCodec(), new GzipCompression(4)},
 								new Codec[]{new Crc32cChecksumCodec()},
 								IndexLocation.END
 						)
