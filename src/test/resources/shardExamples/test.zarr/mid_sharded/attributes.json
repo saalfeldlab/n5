@@ -32,7 +32,7 @@
         ],
         "codecs": [
           {
-            "name": "bytes",
+            "name": "n5bytes",
             "configuration": {
               "endian": "little"
             }
