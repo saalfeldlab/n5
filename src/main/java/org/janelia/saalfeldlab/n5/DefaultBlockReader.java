@@ -80,7 +80,7 @@ public interface DefaultBlockReader extends BlockReader {
 		}
 
 		final DataBlock<?> dataBlock = dataBlockStream.allocateDataBlock();
-		readFromStream(dataBlock, stream);
+		dataBlock.readData(dataBlockStream.getDataInput(stream));
 		return dataBlock;
 	}
 

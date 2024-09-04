@@ -1,15 +1,17 @@
 package org.janelia.saalfeldlab.n5.codec;
 
-import org.apache.commons.io.input.ProxyInputStream;
-import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.serialization.NameConfig;
-
-import java.io.FilterInputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+
+import org.apache.commons.io.input.ProxyInputStream;
+import org.apache.commons.io.output.ProxyOutputStream;
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 /**
  * Interface representing a filter can encode a {@link OutputStream}s when writing data, and decode
@@ -58,7 +60,8 @@ public interface Codec extends Serializable {
 		 *
 		 * @param datablock the datablock to encode
 		 */
-		public OutputStream encode(final DatasetAttributes attributes, final DataBlock<?> datablock, final OutputStream out) throws IOException;
+		public DataBlockOutputStream encode(final DatasetAttributes attributes, final DataBlock<?> datablock,
+				final OutputStream out) throws IOException;
 
 	}
 
@@ -71,6 +74,18 @@ public interface Codec extends Serializable {
 		}
 
 		public abstract DataBlock<?> allocateDataBlock() throws IOException;
+
+		public abstract DataInput getDataInput(final InputStream inputStream);
+	}
+
+	public abstract class DataBlockOutputStream extends ProxyOutputStream {
+
+		protected DataBlockOutputStream(final OutputStream out) {
+
+			super(out);
+		}
+
+		public abstract DataOutput getDataOutput(final OutputStream outputStream);
 	}
 
 	public String getType();

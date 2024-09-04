@@ -1,16 +1,21 @@
 package org.janelia.saalfeldlab.n5.codec;
 
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
-import org.apache.commons.io.output.ProxyOutputStream;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
+import com.google.common.io.LittleEndianDataInputStream;
+import com.google.common.io.LittleEndianDataOutputStream;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -59,17 +64,36 @@ public class BytesCodec implements Codec.ArrayToBytes {
 				return attributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
 			}
 
+			@Override
+			public DataInput getDataInput(final InputStream inputStream) {
+
+				if (byteOrder.equals(ByteOrder.BIG_ENDIAN))
+					return new DataInputStream(inputStream);
+				else
+					return new LittleEndianDataInputStream(inputStream);
+			}
+
 		};
 	}
 
 	@Override
-	public OutputStream encode(final DatasetAttributes attributes, final DataBlock<?> dataBlock, final OutputStream out)
+	public DataBlockOutputStream encode(final DatasetAttributes attributes, final DataBlock<?> dataBlock,
+			final OutputStream out)
 			throws IOException {
 
-		return new ProxyOutputStream(out) {
+		return new DataBlockOutputStream(out) {
 
 			@Override
 			protected void beforeWrite(int n) throws IOException {}
+
+			@Override
+			public DataOutput getDataOutput(OutputStream outputStream) {
+
+				if (byteOrder.equals(ByteOrder.BIG_ENDIAN))
+					return new DataOutputStream(outputStream);
+				else
+					return new LittleEndianDataOutputStream(outputStream);
+			}
 		};
 	}
 

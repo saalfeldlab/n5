@@ -30,6 +30,8 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.Codec.ArrayToBytes;
+import org.janelia.saalfeldlab.n5.codec.Codec.DataBlockOutputStream;
 
 /**
  * Default implementation of {@link BlockWriter}.
@@ -73,12 +75,14 @@ public interface DefaultBlockWriter extends BlockWriter {
 
 		OutputStream stream = out;
 		final Codec[] codecs = datasetAttributes.getCodecs();
-		stream = datasetAttributes.getArrayToBytesCodec().encode(datasetAttributes, dataBlock, stream);
+		final ArrayToBytes arrayToBytes = datasetAttributes.getArrayToBytesCodec();
+		final DataBlockOutputStream dataBlockOutput;
+		stream = dataBlockOutput = arrayToBytes.encode(datasetAttributes, dataBlock, stream);
 		for (final Codec codec : codecs) {
 			stream = ((Codec.BytesToBytes)codec).encode(stream);
 		}
 
-		writeFromStream(dataBlock, stream);
+		dataBlock.writeData(dataBlockOutput.getDataOutput(stream));
 		stream.flush();
 
 		//FIXME Caleb: The stream must be closed BUT it shouldn't be `writeBlock`'s responsibility.

@@ -1,17 +1,21 @@
 package org.janelia.saalfeldlab.n5.codec;
 
+import java.io.DataInput;
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteOrder;
 
-import org.apache.commons.io.output.ProxyOutputStream;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
+
+import com.google.common.io.LittleEndianDataInputStream;
+import com.google.common.io.LittleEndianDataOutputStream;
 
 @NameConfig.Name(value = N5BytesCodec.TYPE)
 public class N5BytesCodec implements Codec.ArrayToBytes {
@@ -83,15 +87,25 @@ public class N5BytesCodec implements Codec.ArrayToBytes {
 					numElements = dis.readInt();
 				}
 			}
+
+			@Override
+			public DataInput getDataInput(final InputStream inputStream) {
+
+				if (byteOrder.equals(ByteOrder.BIG_ENDIAN))
+					return new DataInputStream(inputStream);
+				else
+					return new LittleEndianDataInputStream(inputStream);
+			}
 		};
 	}
 
 
 	@Override
-	public OutputStream encode(final DatasetAttributes attributes, final DataBlock<?> dataBlock, final OutputStream out)
+	public DataBlockOutputStream encode(final DatasetAttributes attributes, final DataBlock<?> dataBlock,
+			final OutputStream out)
 			throws IOException {
 
-		return new ProxyOutputStream(out) {
+		return new DataBlockOutputStream(out) {
 
 			boolean start = true;
 
@@ -124,6 +138,15 @@ public class N5BytesCodec implements Codec.ArrayToBytes {
 
 				if (mode != 0)
 					dos.writeInt(dataBlock.getNumElements());
+			}
+
+			@Override
+			public DataOutput getDataOutput(final OutputStream outputStream) {
+
+				if (byteOrder.equals(ByteOrder.BIG_ENDIAN))
+					return new DataOutputStream(outputStream);
+				else
+					return new LittleEndianDataOutputStream(outputStream);
 			}
 		};
 	}
