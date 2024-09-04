@@ -1,21 +1,16 @@
 package org.janelia.saalfeldlab.n5.codec;
 
-import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.DataOutput;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
+import org.apache.commons.io.output.ProxyOutputStream;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
-import com.google.common.io.LittleEndianDataInputStream;
-import com.google.common.io.LittleEndianDataOutputStream;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -50,43 +45,31 @@ public class BytesCodec implements Codec.ArrayToBytes {
 
 		return new DataBlockInputStream(in) {
 
+			private int[] blockSize = attributes.getBlockSize();
+			private int numElements = Arrays.stream(blockSize).reduce(1, (x, y) -> {
+				return x * y;
+			});
+
+			@Override
+			protected void beforeRead(int n) throws IOException {}
+
 			@Override
 			public DataBlock<?> allocateDataBlock() throws IOException {
-				final int[] blockSize = attributes.getBlockSize();
-				final int numElements = Arrays.stream(blockSize).reduce(1, (x, y) -> x * y);
+
 				return attributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
 			}
 
-			@Override
-			public DataInput getDataInput() {
-
-				if (byteOrder.equals(ByteOrder.BIG_ENDIAN))
-					return new DataInputStream(super.in);
-				else
-					return new LittleEndianDataInputStream(super.in);
-			}
 		};
-
 	}
 
 	@Override
-	public DataBlockOutputStream encode(final DatasetAttributes attributes, final DataBlock<?> dataBlock,
-			final OutputStream out)
+	public OutputStream encode(final DatasetAttributes attributes, final DataBlock<?> dataBlock, final OutputStream out)
 			throws IOException {
 
-		return new DataBlockOutputStream(out) {
+		return new ProxyOutputStream(out) {
 
 			@Override
-			public void beforeWrite(OutputStream rawOut) throws IOException {}
-
-			@Override
-			public DataOutput getDataOutput() {
-
-				if (byteOrder.equals(ByteOrder.BIG_ENDIAN))
-					return new DataOutputStream(out);
-				else
-					return new LittleEndianDataOutputStream(out);
-			}
+			protected void beforeWrite(int n) throws IOException {}
 		};
 	}
 

@@ -1,21 +1,17 @@
 package org.janelia.saalfeldlab.n5.codec;
 
-import java.io.DataInput;
 import java.io.DataInputStream;
-import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteOrder;
 
+import org.apache.commons.io.output.ProxyOutputStream;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
-
-import com.google.common.io.LittleEndianDataInputStream;
-import com.google.common.io.LittleEndianDataOutputStream;
 
 @NameConfig.Name(value = N5BytesCodec.TYPE)
 public class N5BytesCodec implements Codec.ArrayToBytes {
@@ -36,6 +32,7 @@ public class N5BytesCodec implements Codec.ArrayToBytes {
 
 		this.byteOrder = byteOrder;
 	}
+
 
 	@Override public DataBlockInputStream decode(final DatasetAttributes attributes, final long[] gridPosition, InputStream in) throws IOException {
 
@@ -86,32 +83,28 @@ public class N5BytesCodec implements Codec.ArrayToBytes {
 					numElements = dis.readInt();
 				}
 			}
-
-			@Override
-			public DataInput getDataInput() {
-
-				if (byteOrder.equals(ByteOrder.BIG_ENDIAN))
-					return new DataInputStream(super.in);
-				else
-					return new LittleEndianDataInputStream(super.in);
-			}
 		};
 	}
 
+
 	@Override
-	public DataBlockOutputStream encode(final DatasetAttributes attributes, final DataBlock<?> dataBlock,
-			final OutputStream out)
+	public OutputStream encode(final DatasetAttributes attributes, final DataBlock<?> dataBlock, final OutputStream out)
 			throws IOException {
 
-		return new DataBlockOutputStream(out) {
+		return new ProxyOutputStream(out) {
+
+			boolean start = true;
 
 			@Override
-			public void beforeWrite(OutputStream rawOut) throws IOException {
+			protected void beforeWrite(int n) throws IOException {
 
-				writeHeader(rawOut);
+				if (start) {
+					writeHeader();
+					start = false;
+				}
 			}
 
-			private void writeHeader(OutputStream out) throws IOException {
+			private void writeHeader() throws IOException {
 				final DataOutputStream dos = new DataOutputStream(out);
 
 				final int mode;
@@ -131,15 +124,6 @@ public class N5BytesCodec implements Codec.ArrayToBytes {
 
 				if (mode != 0)
 					dos.writeInt(dataBlock.getNumElements());
-			}
-
-			@Override
-			public DataOutput getDataOutput() {
-
-				if (byteOrder.equals(ByteOrder.BIG_ENDIAN))
-					return new DataOutputStream(out);
-				else
-					return new LittleEndianDataOutputStream(out);
 			}
 		};
 	}
