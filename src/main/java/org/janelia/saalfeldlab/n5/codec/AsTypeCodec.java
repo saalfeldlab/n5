@@ -10,7 +10,7 @@ import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @NameConfig.Name(AsTypeCodec.TYPE)
-public class AsTypeCodec implements Codec.BytesToBytes {
+public class AsTypeCodec implements Codec.BytesCodec {
 
 	private static final long serialVersionUID = 1031322606191894484L;
 

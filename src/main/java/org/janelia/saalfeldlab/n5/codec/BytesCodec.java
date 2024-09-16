@@ -25,7 +25,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
 @NameConfig.Name(value = BytesCodec.TYPE)
-public class BytesCodec implements Codec.ArrayToBytes {
+public class BytesCodec implements Codec.ArrayCodec {
 
 	private static final long serialVersionUID = 3282569607795127005L;
 

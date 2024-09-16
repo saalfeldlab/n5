@@ -23,7 +23,7 @@ import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 @NameConfig.Prefix("codec")
 public interface Codec extends Serializable {
 
-	public interface BytesToBytes extends Codec {
+	public interface BytesCodec extends Codec {
 
 		/**
 		 * Decode an {@link InputStream}.
@@ -44,7 +44,7 @@ public interface Codec extends Serializable {
 		public OutputStream encode(final OutputStream out) throws IOException;
 	}
 
-	interface ArrayToBytes extends Codec {
+	interface ArrayCodec extends DeterministicSizeCodec {
 
 		/**
 		 * Decode an {@link InputStream}.
@@ -63,6 +63,15 @@ public interface Codec extends Serializable {
 		public DataBlockOutputStream encode(final DatasetAttributes attributes, final DataBlock<?> datablock,
 				final OutputStream out) throws IOException;
 
+		@Override default long encodedSize(long size) {
+
+			return size;
+		}
+
+		@Override default long decodedSize(long size) {
+
+			return size;
+		}
 	}
 
 	public abstract class DataBlockInputStream extends ProxyInputStream {

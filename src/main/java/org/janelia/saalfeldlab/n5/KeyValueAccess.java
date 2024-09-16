@@ -157,7 +157,7 @@ public interface KeyValueAccess {
 	 */
 	public LockedChannel lockForReading(final String normalPath) throws IOException;
 
-	public LockedChannel lockForReading(String normalPath, final long startByte, final long endByte)
+	public LockedChannel lockForReading(String normalPath, final long startByte, final long size)
 			throws IOException;
 
 	/**

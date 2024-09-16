@@ -58,7 +58,7 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 
 	private static <V> void registerAdapter(Class<V> cls) {
 
-		adapters.put(cls, new NameConfigAdapter<V>(cls));
+		adapters.put(cls, new NameConfigAdapter<>(cls));
 		update(adapters.get(cls));
 	}
 	private final HashMap<String, Constructor<? extends T>> constructors = new HashMap<>();
@@ -77,6 +77,7 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 	@SuppressWarnings("unchecked")
 	public static synchronized <T> void update(final NameConfigAdapter<T> adapter) {
 
+		final String prefix = adapter.type.getAnnotation(NameConfig.Prefix.class).value();
 		final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 		final Index<NameConfig.Name> annotationIndex = Index.load(NameConfig.Name.class, classLoader);
 		for (final IndexItem<NameConfig.Name> item : annotationIndex) {
@@ -84,7 +85,6 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 			try {
 				clazz = (Class<T>)Class.forName(item.className());
 				final String name = clazz.getAnnotation(NameConfig.Name.class).value();
-				final String prefix = adapter.type.getAnnotation(NameConfig.Prefix.class).value();
 				final String type = prefix + "." + name;
 
 				final Constructor<T> constructor = clazz.getDeclaredConstructor();

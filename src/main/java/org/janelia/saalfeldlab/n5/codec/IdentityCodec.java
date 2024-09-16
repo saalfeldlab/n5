@@ -7,8 +7,7 @@ import java.io.OutputStream;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @NameConfig.Name(IdentityCodec.TYPE)
-@NameConfig.Prefix("codec")
-public class IdentityCodec implements Codec.BytesToBytes {
+public class IdentityCodec implements Codec.BytesCodec {
 
 	private static final long serialVersionUID = 8354269325800855621L;
 

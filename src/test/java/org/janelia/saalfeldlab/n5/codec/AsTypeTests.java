@@ -47,20 +47,20 @@ public class AsTypeTests {
 		testEncodingAndDecoding(new AsTypeCodec(DataType.INT8, DataType.FLOAT64), decodedDoubles, encodedBytes);
 	}
 
-	public static void testEncodingAndDecoding(Codec.BytesToBytes codec, byte[] encodedBytes, byte[] decodedBytes) throws IOException {
+	public static void testEncodingAndDecoding(Codec.BytesCodec codec, byte[] encodedBytes, byte[] decodedBytes) throws IOException {
 
 		testEncoding(codec, encodedBytes, decodedBytes);
 		testDecoding(codec, decodedBytes, encodedBytes);
 	}
 
-	public static void testDecoding(final Codec.BytesToBytes codec, final byte[] expected, final byte[] input) throws IOException {
+	public static void testDecoding(final Codec.BytesCodec codec, final byte[] expected, final byte[] input) throws IOException {
 
 		final InputStream result = codec.decode(new ByteArrayInputStream(input));
 		for (int i = 0; i < expected.length; i++)
 			assertEquals(expected[i], (byte)result.read());
 	}
 
-	public static void testEncoding(final Codec.BytesToBytes codec, final byte[] expected, final byte[] data) throws IOException {
+	public static void testEncoding(final Codec.BytesCodec codec, final byte[] expected, final byte[] data) throws IOException {
 
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream(expected.length);
 		final OutputStream encodedStream = codec.encode(outputStream);

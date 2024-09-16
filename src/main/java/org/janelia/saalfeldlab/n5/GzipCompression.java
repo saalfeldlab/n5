@@ -48,11 +48,13 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	@CompressionParameter
 	@NameConfig.Parameter
 	//TODO Caleb: How to handle serialization of parameter-less constructor.
-	// For N5, default is -1, for zarr, range is 0-9 and is required.
+	// For N5 the default is -1.
+	// For zarr the range is 0-9 and is required.
 	// How to map -1 to some default (1?) when serializing to zarr?
 	private final int level;
 
 	@CompressionParameter
+	@NameConfig.Parameter
 	private final boolean useZlib;
 
 	private final transient GzipParameters parameters = new GzipParameters();

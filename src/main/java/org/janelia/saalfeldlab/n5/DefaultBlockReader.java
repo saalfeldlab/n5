@@ -30,7 +30,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.Codec.DataBlockInputStream;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 
 /**
@@ -71,16 +73,19 @@ public interface DefaultBlockReader extends BlockReader {
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition) throws IOException {
 
-		Codec.DataBlockInputStream dataBlockStream = null;
-		InputStream stream = in;
-		stream = dataBlockStream = datasetAttributes.getArrayToBytesCodec().decode(datasetAttributes, gridPosition,
-				stream);
-		for (final Codec codec : datasetAttributes.getCodecs()) {
-			stream = ((Codec.BytesToBytes)codec).decode(stream);
+		final BytesCodec[] codecs = datasetAttributes.getCodecs();
+		final ArrayCodec arrayCodec = datasetAttributes.getArrayCodec();
+		final DataBlockInputStream dataBlockStream = arrayCodec.decode(datasetAttributes, gridPosition, in);
+
+		InputStream stream = dataBlockStream;
+		for (final BytesCodec codec : codecs) {
+			stream = codec.decode(stream);
 		}
 
 		final DataBlock<?> dataBlock = dataBlockStream.allocateDataBlock();
 		dataBlock.readData(dataBlockStream.getDataInput(stream));
+		stream.close();
+
 		return dataBlock;
 	}
 

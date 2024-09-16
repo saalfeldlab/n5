@@ -8,12 +8,14 @@ import java.util.zip.CheckedInputStream;
 import java.util.zip.CheckedOutputStream;
 import java.util.zip.Checksum;
 
+import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 
 /**
  * A {@link Codec} that appends a checksum to data when encoding and can validate against that checksum when decoding.
  */
-public abstract class ChecksumCodec implements DeterministicSizeCodec {
+public abstract class ChecksumCodec implements BytesCodec, DeterministicSizeCodec {
 
 	private static final long serialVersionUID = 3141427377277375077L;
 
@@ -41,14 +43,18 @@ public abstract class ChecksumCodec implements DeterministicSizeCodec {
 	public CheckedOutputStream encode(final OutputStream out) throws IOException {
 
 		// when do we validate?
-		return new CheckedOutputStream(out, getChecksum());
-	}
+		return new CheckedOutputStream(out, getChecksum()) {
 
-	public void encode(final OutputStream out, ByteBuffer buffer) throws IOException {
+			private boolean closed = false;
+			@Override public void close() throws IOException {
 
-		final CheckedOutputStream cout = new CheckedOutputStream(out, getChecksum());
-		cout.write(buffer.array());
-		writeChecksum(out);
+				if (!closed) {
+					writeChecksum(out);
+					closed = true;
+					out.close();
+				}
+			}
+		};
 	}
 
 	@Override

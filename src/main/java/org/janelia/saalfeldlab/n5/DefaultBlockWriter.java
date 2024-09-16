@@ -29,8 +29,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.codec.Codec.ArrayToBytes;
+import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec.DataBlockOutputStream;
 
 /**
@@ -73,20 +73,15 @@ public interface DefaultBlockWriter extends BlockWriter {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		OutputStream stream = out;
-		final Codec[] codecs = datasetAttributes.getCodecs();
-		final ArrayToBytes arrayToBytes = datasetAttributes.getArrayToBytesCodec();
-		final DataBlockOutputStream dataBlockOutput;
-		stream = dataBlockOutput = arrayToBytes.encode(datasetAttributes, dataBlock, stream);
-		for (final Codec codec : codecs) {
-			stream = ((Codec.BytesToBytes)codec).encode(stream);
-		}
+		final BytesCodec[] codecs = datasetAttributes.getCodecs();
+		final ArrayCodec arrayCodec = datasetAttributes.getArrayCodec();
+		final DataBlockOutputStream dataBlockOutput = arrayCodec.encode(datasetAttributes, dataBlock, out);
+
+		OutputStream stream = dataBlockOutput;
+		for (final BytesCodec codec : codecs)
+			stream = codec.encode(stream);
 
 		dataBlock.writeData(dataBlockOutput.getDataOutput(stream));
-		stream.flush();
-
-		//FIXME Caleb: The stream must be closed BUT it shouldn't be `writeBlock`'s responsibility.
-		//	Whoever opens the stream should close it
 		stream.close();
 	}
 

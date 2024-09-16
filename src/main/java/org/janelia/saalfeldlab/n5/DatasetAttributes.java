@@ -6,7 +6,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.codec.N5BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 
 import com.google.gson.JsonDeserializationContext;
@@ -56,8 +58,8 @@ public class DatasetAttributes implements Serializable {
 	private final int[] blockSize;
 	private final DataType dataType;
 	private final Compression compression;
-	private final Codec.ArrayToBytes arrayToBytesCodec;
-	private final Codec[] byteByteCodecs;
+	private final ArrayCodec arrayCodec;
+	private final BytesCodec[] byteCodecs;
 
 	public DatasetAttributes(
 			final long[] dimensions,
@@ -69,22 +71,37 @@ public class DatasetAttributes implements Serializable {
 		this.dimensions = dimensions;
 		this.blockSize = blockSize;
 		this.dataType = dataType;
-		this.compression = compression;
 		if (codecs == null && !(compression instanceof RawCompression)) {
-			byteByteCodecs = new Codec[]{compression};
-			arrayToBytesCodec = new N5BytesCodec();
+			byteCodecs = new BytesCodec[]{compression};
+			arrayCodec = new N5BlockCodec();
 		} else if (codecs == null || codecs.length == 0) {
-			byteByteCodecs = new Codec[]{};
-			arrayToBytesCodec = new N5BytesCodec();
+			byteCodecs = new BytesCodec[]{};
+			arrayCodec = new N5BlockCodec();
 		} else {
-			if (!(codecs[0] instanceof Codec.ArrayToBytes))
-				throw new N5Exception("Expected first element of codecs to be ArrayToBytes, but was: " + codecs[0]);
+			if (!(codecs[0] instanceof ArrayCodec))
+				throw new N5Exception("Expected first element of codecs to be ArrayCodec, but was: " + codecs[0]);
 
-			arrayToBytesCodec = (Codec.ArrayToBytes)codecs[0];
-			byteByteCodecs = new Codec[codecs.length - 1];
-			for (int i = 0; i < byteByteCodecs.length; i++)
-				byteByteCodecs[i] = codecs[i + 1];
+			arrayCodec = (ArrayCodec)codecs[0];
+			byteCodecs = new BytesCodec[codecs.length - 1];
+			for (int i = 0; i < byteCodecs.length; i++)
+				byteCodecs[i] = (BytesCodec)codecs[i + 1];
 		}
+
+		//TODO Caleb: Do we want to do this?
+		this.compression = Arrays.stream(byteCodecs)
+				.filter(codec -> codec instanceof Compression)
+				.map(codec -> (Compression)codec)
+				.findFirst()
+				.orElse(compression == null ? new RawCompression() : compression);
+
+	}
+
+	public DatasetAttributes(
+			final long[] dimensions,
+			final int[] blockSize,
+			final DataType dataType,
+			final Codec[] codecs) {
+		this(dimensions, blockSize, dataType, null, codecs);
 	}
 
 	public DatasetAttributes(
@@ -121,14 +138,14 @@ public class DatasetAttributes implements Serializable {
 		return dataType;
 	}
 
-	public Codec.ArrayToBytes getArrayToBytesCodec() {
+	public ArrayCodec getArrayCodec() {
 
-		return arrayToBytesCodec;
+		return arrayCodec;
 	}
 
-	public Codec[] getCodecs() {
+	public BytesCodec[] getCodecs() {
 
-		return byteByteCodecs;
+		return byteCodecs;
 	}
 
 	public HashMap<String, Object> asMap() {
@@ -190,10 +207,10 @@ public class DatasetAttributes implements Serializable {
 
 	private Codec[] concatenateCodecs() {
 
-		final Codec[] allCodecs = new Codec[byteByteCodecs.length + 1];
-		allCodecs[0] = arrayToBytesCodec;
-		for (int i = 0; i < byteByteCodecs.length; i++)
-			allCodecs[i + 1] = byteByteCodecs[i];
+		final Codec[] allCodecs = new Codec[byteCodecs.length + 1];
+		allCodecs[0] = arrayCodec;
+		for (int i = 0; i < byteCodecs.length; i++)
+			allCodecs[i + 1] = byteCodecs[i];
 
 		return allCodecs;
 	}
@@ -233,19 +250,18 @@ public class DatasetAttributes implements Serializable {
 				codecs = context.deserialize(obj.get(CODEC_KEY), Codec[].class);
 			} else codecs = null;
 
-			for (final Codec codec : codecs) {
-				if (codec instanceof ShardingCodec) {
-					final ShardingCodec shardingCodec = (ShardingCodec)codec;
-					return new ShardedDatasetAttributes(
-							dimensions,
-							shardingCodec.getBlockSize(),
-							blockSize,
-							shardingCodec.getIndexLocation(),
-							dataType,
-							compression,
-							codecs
-					);
-				}
+			if (codecs != null && codecs.length == 1 && codecs[0] instanceof ShardingCodec) {
+				final ShardingCodec shardingCodec = (ShardingCodec)codecs[0];
+				final int[] blocksPerShard = shardingCodec.getBlockSize();
+				final int[] shardSize = new int[blockSize.length];
+				Arrays.setAll(shardSize, i -> blocksPerShard[i] * blockSize[i]);
+				return new ShardedDatasetAttributes(
+						dimensions,
+						shardSize,
+						blockSize,
+						dataType,
+						shardingCodec
+				);
 			}
 			return new DatasetAttributes(dimensions, blockSize, dataType, compression, codecs);
 		}

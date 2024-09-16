@@ -60,22 +60,8 @@ public interface Shard<T> {
 	 */
 	default long[] getBlockPosition(long... blockPosition) {
 
-		final long[] shardPos = getShard(blockPosition);
-		if (!Arrays.equals(getGridPosition(), shardPos))
-			return null;
-
-		final int[] shardSize = getSize();
-		final int[] blkSize = getBlockSize();
-		final int[] blkGridSize = getBlockGridSize();
-
-		final long[] blockShardPos = new long[shardSize.length];
-		for (int i = 0; i < shardSize.length; i++) {
-			final long shardP = shardPos[i] * shardSize[i];
-			final long blockP = blockPosition[i] * blkSize[i];
-			blockShardPos[i] = (int)((blockP - shardP) / blkGridSize[i]);
-		}
-
-		return blockShardPos;
+		final long[] shardPos = getDatasetAttributes().getShardPositionForBlock(blockPosition);
+		return getDatasetAttributes().getBlockPositionInShard(shardPos, blockPosition);
 	}
 
 	/**
@@ -111,7 +97,7 @@ public interface Shard<T> {
 
 		final long[] emptyIndex = new long[(int)(2 * attributes.getNumBlocks())];
 		Arrays.fill(emptyIndex, EMPTY_INDEX_NBYTES);
-		final ShardIndex shardIndex = new ShardIndex(attributes.getShardBlockGridSize(), emptyIndex);
+		final ShardIndex shardIndex = new ShardIndex(attributes.getBlocksPerShard(), emptyIndex);
 		return new InMemoryShard<T>(attributes, shardPosition, shardIndex);
 	}
 
