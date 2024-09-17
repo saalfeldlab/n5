@@ -70,7 +70,7 @@ public class N5BlockCodec implements Codec.ArrayCodec {
 			}
 
 			private void readHeader() throws IOException {
-				final DataInputStream dis = new DataInputStream(in);
+				final DataInput dis = getDataInput(in);
 				mode = dis.readShort();
 				if (mode != 2) {
 					final int nDim = dis.readShort();
@@ -119,7 +119,7 @@ public class N5BlockCodec implements Codec.ArrayCodec {
 			}
 
 			private void writeHeader() throws IOException {
-				final DataOutputStream dos = new DataOutputStream(out);
+				final DataOutput dos = getDataOutput(out);
 
 				final int mode;
 				if (attributes.getDataType() == DataType.OBJECT || dataBlock.getSize() == null)

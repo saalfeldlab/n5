@@ -78,7 +78,7 @@ public class ShardDemos {
 				new int[]{4, 4},
 				new int[]{2, 2},
 				DataType.UINT8,
-				new Codec[]{new N5BlockCodec(), new GzipCompression(4)},
+				new Codec[]{new N5BlockCodec(ByteOrder.LITTLE_ENDIAN), new GzipCompression(4)},
 				new DeterministicSizeCodec[]{new BytesCodec(ByteOrder.BIG_ENDIAN), new Crc32cChecksumCodec()},
 				IndexLocation.END
 		);

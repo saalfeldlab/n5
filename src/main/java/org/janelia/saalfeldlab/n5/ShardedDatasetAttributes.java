@@ -132,7 +132,10 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 
 		final int[] shardSize = getShardSize();
 		final int[] blkSize = getBlockSize();
-		final int[] blkGridSize = getShardBlockGridSize();
+		final int[] blkGridSize = getBlocksPerShard();
+//		final int[] shardSize = getSize();
+//		final int[] blkSize = getBlockSize();
+//		final int[] blkGridSize = getBlockGridSize();
 
 		final long[] blockShardPos = new long[shardSize.length];
 		for (int i = 0; i < shardSize.length; i++) {
@@ -142,6 +145,9 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 		}
 
 		return blockShardPos;
+
+
+
 	}
 
 	/**
@@ -167,14 +173,6 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 	}
 
 	public ShardIndex createIndex() {
-		return new ShardIndex(getBlocksPerShard(), getShardingCodec().getIndexCodecs());
-	}
-
-	public DatasetAttributes getIndexAttributes() {
-		return createShardIndexAttributes(getShardingCodec().getIndexCodecs());
-	}
-
-	private static DatasetAttributes createShardIndexAttributes(Codec[] indexCodecs) {
-		return new DatasetAttributes(null, null, null, null, indexCodecs);
+		return new ShardIndex(getBlocksPerShard(), getIndexLocation(), getShardingCodec().getIndexCodecs());
 	}
 }

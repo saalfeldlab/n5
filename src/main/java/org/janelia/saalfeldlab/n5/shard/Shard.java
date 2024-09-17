@@ -97,7 +97,7 @@ public interface Shard<T> {
 
 		final long[] emptyIndex = new long[(int)(2 * attributes.getNumBlocks())];
 		Arrays.fill(emptyIndex, EMPTY_INDEX_NBYTES);
-		final ShardIndex shardIndex = new ShardIndex(attributes.getBlocksPerShard(), emptyIndex);
+		final ShardIndex shardIndex = new ShardIndex(attributes.getBlocksPerShard(), emptyIndex, ShardingCodec.IndexLocation.END);
 		return new InMemoryShard<T>(attributes, shardPosition, shardIndex);
 	}
 

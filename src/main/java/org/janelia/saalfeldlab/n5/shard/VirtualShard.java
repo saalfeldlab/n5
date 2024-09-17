@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5.shard;
 
+import java.io.DataOutput;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,6 +40,8 @@ public class VirtualShard<T> extends AbstractShard<T> {
 			throw new N5IOException("Attempted to read a block from the wrong shard.");
 
 		final ShardIndex idx = getIndex();
+
+
 		final long startByte = idx.getOffset(relativePosition);
 
 		if (startByte == Shard.EMPTY_INDEX_NBYTES )
@@ -63,19 +66,14 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		if (relativePosition == null)
 			throw new N5IOException("Attempted to write block in the wrong shard.");
 
-		final ShardIndex idx = getIndex();
-
-
-		//TODO Caleb: reusing the offset of a prior block write is only safe when writing the same amount, or less, data.
-		//	This is not generally guaranteed, since we compress the data.
-		//	Either need to known the compressed size before writing, append only, or only overwrite when not compressing
-		final long getBlockOffset = idx.getOffset(relativePosition);
-		final long startByte;
-		if (getBlockOffset == Shard.EMPTY_INDEX_NBYTES) {
-			final long indexByteOffset = idx.getByteOffset();
-			startByte = indexByteOffset == -1 ? 0 : idx.getByteOffset();
-		} else {
-			startByte = getBlockOffset;
+		final ShardIndex index = getIndex();
+		long startByte = 0;
+		try {
+			startByte = keyValueAccess.size(path);
+		} catch (N5Exception.N5NoSuchKeyException e) {
+			startByte = index.getLocation() == ShardingCodec.IndexLocation.START ? index.numBytes() : 0;
+		} catch (IOException e) {
+			throw new N5IOException(e);
 		}
 		final long size = Long.MAX_VALUE - startByte;
 
@@ -85,14 +83,18 @@ public class VirtualShard<T> extends AbstractShard<T> {
 					DefaultBlockWriter.writeBlock(out, datasetAttributes, block);
 
 					/* Update and write the index to the shard*/
-					idx.set(startByte, out.getNumBytes(), relativePosition);
-					DefaultBlockWriter.writeBlock(out, datasetAttributes.getIndexAttributes(), idx);
+					index.set(startByte, out.getNumBytes(), relativePosition);
 				}
 			}
 		} catch (final IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to read block from " + path, e);
+			throw new N5IOException("Failed to write block to shard " + path, e);
 		}
 
+		try {
+			ShardIndex.write(index, keyValueAccess, path);
+		} catch (IOException e) {
+			throw new N5IOException("Failed to write index to shard " + path, e);
+		}
 	}
 
 	@Override
@@ -116,9 +118,9 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	public ShardIndex getIndex() {
 
 		try {
-			final ShardIndex readIndex = ShardIndex.read(keyValueAccess, path, datasetAttributes);
+			final ShardIndex readIndex = ShardIndex.read(keyValueAccess, path, datasetAttributes.createIndex());
 			index = readIndex == null ? createIndex() : readIndex;
-		} catch (final NoSuchFileException e) {
+		} catch (final N5Exception.N5NoSuchKeyException e) {
 			index = createIndex();
 		} catch (IOException e) {
 			throw new N5IOException("Failed to read index at " + path, e);
