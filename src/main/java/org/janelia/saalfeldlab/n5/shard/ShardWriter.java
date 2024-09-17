@@ -1,5 +1,9 @@
 package org.janelia.saalfeldlab.n5.shard;
 
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
+import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -8,10 +12,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
-import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 
 public class ShardWriter {
 
@@ -77,21 +77,22 @@ public class ShardWriter {
 		// final ShardingProperties shardProps = new ShardingProperties(datasetAttributes);
 		// indexData = new ShardIndexDataBlock(shardProps.getIndexDimensions());
 
-		indexData = new ShardIndex(new int[]{blocks.size()});
+		indexData = datasetAttributes.createIndex();
 		blockBytes = new ArrayList<>();
 		long cumulativeBytes = 0;
 		final long[] shardPosition = new long[1];
 		for (int i = 0; i < blocks.size(); i++) {
 
-			final ByteArrayOutputStream blockOut = new ByteArrayOutputStream();
-			DefaultBlockWriter.writeBlock(blockOut, datasetAttributes, blocks.get(i));
-			System.out.println(String.format("block %d is %d bytes", i, blockOut.size()));
+			try (final ByteArrayOutputStream blockOut = new ByteArrayOutputStream()) {
+				DefaultBlockWriter.writeBlock(blockOut, datasetAttributes, blocks.get(i));
+				System.out.println(String.format("block %d is %d bytes", i, blockOut.size()));
 
-			shardPosition[0] = i;
-			indexData.set(cumulativeBytes, blockOut.size(), shardPosition);
-			cumulativeBytes += blockOut.size();
+				shardPosition[0] = i;
+				indexData.set(cumulativeBytes, blockOut.size(), shardPosition);
+				cumulativeBytes += blockOut.size();
 
-			blockBytes.add(blockOut.toByteArray());
+				blockBytes.add(blockOut.toByteArray());
+			}
 		}
 
 		System.out.println(Arrays.toString(indexData.getData()));
@@ -105,15 +106,17 @@ public class ShardWriter {
 		long cumulativeBytes = 0;
 		for (int i = 0; i < blocks.size(); i++) {
 
-			final ByteArrayOutputStream blockOut = new ByteArrayOutputStream();
-			DefaultBlockWriter.writeBlock(blockOut, datasetAttributes, blocks.get(i));
-			System.out.println(String.format("block %d is %d bytes", i, blockOut.size()));
+			try (final ByteArrayOutputStream blockOut = new ByteArrayOutputStream()) {
 
-			blockIndexes.putLong(cumulativeBytes);
-			blockSizes.putLong(blockOut.size());
-			cumulativeBytes += blockOut.size();
+				DefaultBlockWriter.writeBlock(blockOut, datasetAttributes, blocks.get(i));
+				System.out.println(String.format("block %d is %d bytes", i, blockOut.size()));
 
-			blockBytes.add(blockOut.toByteArray());
+				blockIndexes.putLong(cumulativeBytes);
+				blockSizes.putLong(blockOut.size());
+				cumulativeBytes += blockOut.size();
+
+				blockBytes.add(blockOut.toByteArray());
+			}
 		}
 	}
 

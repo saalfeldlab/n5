@@ -1,9 +1,11 @@
 package org.janelia.saalfeldlab.n5.serialization;
 
+import static org.janelia.saalfeldlab.n5.NameConfigAdapter.getJsonAdapter;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.GsonUtils;
 import org.janelia.saalfeldlab.n5.GzipCompression;
 import org.janelia.saalfeldlab.n5.NameConfigAdapter;
 import org.janelia.saalfeldlab.n5.codec.AsTypeCodec;
@@ -26,16 +28,9 @@ public class CodecSerialization {
 	@Before
 	public void before() {
 
-		final GsonBuilder gsonBuilder = new GsonBuilder();
-		gsonBuilder.registerTypeAdapter(IdentityCodec.class, NameConfigAdapter.getJsonAdapter(IdentityCodec.class));
-		gsonBuilder.registerTypeAdapter(AsTypeCodec.class, NameConfigAdapter.getJsonAdapter(AsTypeCodec.class));
-		gsonBuilder.registerTypeAdapter(FixedScaleOffsetCodec.class,
-				NameConfigAdapter.getJsonAdapter(FixedScaleOffsetCodec.class));
-		gsonBuilder.registerTypeAdapter(GzipCompression.class,
-				NameConfigAdapter.getJsonAdapter(GzipCompression.class));
-		gsonBuilder.registerTypeAdapter(Codec.class,
-				NameConfigAdapter.getJsonAdapter(Codec.class));
 
+		final GsonBuilder gsonBuilder = new GsonBuilder();
+		GsonUtils.registerGson(gsonBuilder);
 		gson = gsonBuilder.create();
 	}
 
@@ -44,7 +39,7 @@ public class CodecSerialization {
 
 		final IdentityCodec id = new IdentityCodec();
 		final JsonObject jsonId = gson.toJsonTree(id).getAsJsonObject();
-		final JsonElement expected = gson.fromJson("{\"name\":\"id\", \"configuration\":{}}", JsonElement.class);
+		final JsonElement expected = gson.fromJson("{\"name\":\"id\"}", JsonElement.class);
 		assertEquals("identity", expected, jsonId.getAsJsonObject());
 	}
 
@@ -54,7 +49,7 @@ public class CodecSerialization {
 		final AsTypeCodec asTypeCodec = new AsTypeCodec(DataType.FLOAT64, DataType.INT16);
 		final JsonObject jsonAsType = gson.toJsonTree(asTypeCodec).getAsJsonObject();
 		final JsonElement expected = gson.fromJson(
-				"{\"name\":\"astype\",\"configuration\":{\"dataType\":\"FLOAT64\",\"encodedType\":\"INT16\"}}",
+				"{\"name\":\"astype\",\"configuration\":{\"dataType\":\"float64\",\"encodedType\":\"int16\"}}",
 				JsonElement.class);
 		assertEquals("asType", expected, jsonAsType.getAsJsonObject());
 	}
@@ -68,7 +63,7 @@ public class CodecSerialization {
 		};
 		JsonArray jsonCodecArray = gson.toJsonTree(codecs).getAsJsonArray();
 		JsonElement expected = gson.fromJson(
-				"[{\"name\":\"id\",\"configuration\":{}},{\"name\":\"astype\",\"configuration\":{\"dataType\":\"FLOAT64\",\"encodedType\":\"INT16\"}}]",
+				"[{\"name\":\"id\"},{\"name\":\"astype\",\"configuration\":{\"dataType\":\"float64\",\"encodedType\":\"int16\"}}]",
 				JsonElement.class);
 		assertEquals("codec array", expected, jsonCodecArray.getAsJsonArray());
 
@@ -83,7 +78,7 @@ public class CodecSerialization {
 		};
 		jsonCodecArray = gson.toJsonTree(codecs).getAsJsonArray();
 		expected = gson.fromJson(
-				"[{\"name\":\"astype\",\"configuration\":{\"dataType\":\"FLOAT64\",\"encodedType\":\"INT16\"}},{\"name\":\"gzip\",\"configuration\":{\"level\":-1,\"use_z_lib\":false}}]",
+				"[{\"name\":\"astype\",\"configuration\":{\"dataType\":\"float64\",\"encodedType\":\"int16\"}},{\"name\":\"gzip\",\"configuration\":{\"level\":-1,\"useZlib\":false}}]",
 				JsonElement.class);
 		assertEquals("codec array", expected, jsonCodecArray.getAsJsonArray());
 

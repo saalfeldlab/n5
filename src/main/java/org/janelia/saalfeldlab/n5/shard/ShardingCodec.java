@@ -7,7 +7,10 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 import java.io.IOException;
@@ -16,7 +19,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Type;
 
 @NameConfig.Name(ShardingCodec.TYPE)
-public class ShardingCodec implements Codec.BytesToBytes { //TODO Caleb: should be ArrayToBytes
+public class ShardingCodec implements Codec.ArrayCodec {
 
 	private static final long serialVersionUID = -5879797314954717810L;
 
@@ -28,7 +31,7 @@ public class ShardingCodec implements Codec.BytesToBytes { //TODO Caleb: should 
 	public static final String INDEX_CODECS_KEY = "index_codecs";
 
 	public enum IndexLocation {
-		START, END
+		START, END;
 	}
 
 	@NameConfig.Parameter(CHUNK_SHAPE_KEY)
@@ -38,7 +41,7 @@ public class ShardingCodec implements Codec.BytesToBytes { //TODO Caleb: should 
 	private final Codec[] codecs;
 
 	@NameConfig.Parameter(INDEX_CODECS_KEY)
-	private final Codec[] indexCodecs;
+	private final DeterministicSizeCodec[] indexCodecs;
 
 	@NameConfig.Parameter(INDEX_LOCATION_KEY)
 	private final IndexLocation indexLocation;
@@ -54,7 +57,7 @@ public class ShardingCodec implements Codec.BytesToBytes { //TODO Caleb: should 
 	public ShardingCodec(
 			final int[] blockSize,
 			final Codec[] codecs,
-			final Codec[] indexCodecs,
+			final DeterministicSizeCodec[] indexCodecs,
 			final IndexLocation indexLocation) {
 
 		this.blockSize = blockSize;
@@ -73,25 +76,31 @@ public class ShardingCodec implements Codec.BytesToBytes { //TODO Caleb: should 
 		return indexLocation;
 	}
 
-	@Override
-	public InputStream decode(InputStream in) throws IOException {
+	public ArrayCodec getArrayCodec() {
 
-		// TODO Auto-generated method stub
-		// This method actually makes no sense for a sharding codec
-		return in;
+		return (Codec.ArrayCodec)codecs[0];
 	}
 
-	@Override
-	public OutputStream encode(OutputStream out) throws IOException {
+	public BytesCodec[] getCodecs() {
 
-		// TODO Auto-generated method stub
-		// This method actually makes no sense for a sharding codec
-		return out;
+		final BytesCodec[] bytesCodecs = new BytesCodec[codecs.length - 1];
+		System.arraycopy(codecs, 1, bytesCodecs, 0, bytesCodecs.length);
+		return bytesCodecs;
 	}
 
-	public static boolean isShardingCodec(final Codec codec) {
+	public DeterministicSizeCodec[] getIndexCodecs() {
 
-		return codec instanceof ShardingCodec;
+		return indexCodecs;
+	}
+
+	@Override public DataBlockInputStream decode(DatasetAttributes attributes, long[] gridPosition, InputStream in) throws IOException {
+
+		return getArrayCodec().decode(attributes, gridPosition, in);
+	}
+
+	@Override public DataBlockOutputStream encode(DatasetAttributes attributes, DataBlock<?> datablock, OutputStream out) throws IOException {
+
+		return getArrayCodec().encode(attributes, datablock, out);
 	}
 
 	@Override
@@ -106,7 +115,8 @@ public class ShardingCodec implements Codec.BytesToBytes { //TODO Caleb: should 
 
 		@Override public IndexLocation deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
 
-			if (!json.isJsonPrimitive()) return null;
+			if (!json.isJsonPrimitive())
+				return null;
 
 			return IndexLocation.valueOf(json.getAsString().toUpperCase());
 		}

@@ -17,8 +17,8 @@ import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 import com.google.common.io.LittleEndianDataInputStream;
 import com.google.common.io.LittleEndianDataOutputStream;
 
-@NameConfig.Name(value = N5BytesCodec.TYPE)
-public class N5BytesCodec implements Codec.ArrayToBytes {
+@NameConfig.Name(value = N5BlockCodec.TYPE)
+public class N5BlockCodec implements Codec.ArrayCodec {
 
 	private static final long serialVersionUID = 3523505403978222360L;
 
@@ -27,12 +27,12 @@ public class N5BytesCodec implements Codec.ArrayToBytes {
 	@NameConfig.Parameter(value = "endian", optional = true)
 	protected final ByteOrder byteOrder;
 
-	public N5BytesCodec() {
+	public N5BlockCodec() {
 
 		this(ByteOrder.BIG_ENDIAN);
 	}
 
-	public N5BytesCodec(final ByteOrder byteOrder) {
+	public N5BlockCodec(final ByteOrder byteOrder) {
 
 		this.byteOrder = byteOrder;
 	}
@@ -70,7 +70,7 @@ public class N5BytesCodec implements Codec.ArrayToBytes {
 			}
 
 			private void readHeader() throws IOException {
-				final DataInputStream dis = new DataInputStream(in);
+				final DataInput dis = getDataInput(in);
 				mode = dis.readShort();
 				if (mode != 2) {
 					final int nDim = dis.readShort();
@@ -119,7 +119,7 @@ public class N5BytesCodec implements Codec.ArrayToBytes {
 			}
 
 			private void writeHeader() throws IOException {
-				final DataOutputStream dos = new DataOutputStream(out);
+				final DataOutput dos = getDataOutput(out);
 
 				final int mode;
 				if (attributes.getDataType() == DataType.OBJECT || dataBlock.getSize() == null)

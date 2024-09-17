@@ -5,10 +5,11 @@ import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DefaultBlockReader;
 import org.janelia.saalfeldlab.n5.N5FSReader;
 import org.janelia.saalfeldlab.n5.N5Reader;
-import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.codec.IdentityCodec;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
@@ -50,7 +51,7 @@ public class ShardReader {
 
 	private long getIndexIndex(long... shardPosition) {
 
-		final int[] indexDimensions = datasetAttributes.getShardBlockGridSize();
+		final int[] indexDimensions = datasetAttributes.getBlocksPerShard();
 		long idx = 0;
 		for (int i = 0; i < indexDimensions.length; i++) {
 			idx += shardPosition[i] * indexDimensions[i];
@@ -76,17 +77,14 @@ public class ShardReader {
 
 	private static ShardedDatasetAttributes buildTestAttributes() {
 
-		final Codec[] codecs = new Codec[]{
-				new IdentityCodec(),
-				new ShardingCodec(
-						new int[]{2, 2},
-						new Codec[]{new RawCompression(), new IdentityCodec()},
-						new Codec[]{new Crc32cChecksumCodec()},
-						IndexLocation.END
-				)
-		};
-
-		return new ShardedDatasetAttributes(new long[]{4, 4}, new int[]{2, 2}, new int[]{2, 2}, IndexLocation.END, DataType.INT32, new RawCompression(), codecs);
+		return new ShardedDatasetAttributes(
+				new long[]{4, 4},
+				new int[]{2, 2},
+				new int[]{2, 2},
+				DataType.INT32,
+				new Codec[]{new N5BlockCodec(), new IdentityCodec()},
+				new DeterministicSizeCodec[]{new Crc32cChecksumCodec()},
+				IndexLocation.END);
 	}
 
 }

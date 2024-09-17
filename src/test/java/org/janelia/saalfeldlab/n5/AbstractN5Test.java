@@ -52,7 +52,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
 import org.janelia.saalfeldlab.n5.codec.AsTypeCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.codec.N5BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -257,7 +257,7 @@ public abstract class AbstractN5Test {
 		*  maybe is not the behavior we actually want*/
 		try (final N5Writer n5 = createTempN5Writer()) {
 			final Codec[] codecs = {
-					new N5BytesCodec(),
+					new N5BlockCodec(),
 					new AsTypeCodec(DataType.INT32, DataType.INT8),
 					new AsTypeCodec(DataType.INT64, DataType.INT32),
 			};

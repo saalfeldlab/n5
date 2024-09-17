@@ -43,7 +43,7 @@ import org.scijava.annotations.Indexable;
  *
  * @author Stephan Saalfeld
  */
-public interface Compression extends Serializable, Codec.BytesToBytes {
+public interface Compression extends Serializable, Codec.BytesCodec {
 
 	/**
 	 * Annotation for runtime discovery of compression schemes.

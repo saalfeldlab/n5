@@ -3,6 +3,10 @@ package org.janelia.saalfeldlab.n5;
 import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.shard.ShardIndex;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
@@ -12,22 +16,51 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 
 	private final int[] shardSize;
 
-	private final IndexLocation indexLocation;
+	private final ShardingCodec shardingCodec;
+
+
+	public ShardedDatasetAttributes (
+			final long[] dimensions,
+			final int[] shardSize, //in pixels
+			final int[] blockSize, //in pixels
+			final DataType dataType,
+			final Codec[] blocksCodecs,
+			final DeterministicSizeCodec[] indexCodecs,
+			final IndexLocation indexLocation
+	) {
+		super(dimensions, blockSize, dataType, null, blocksCodecs);
+		this.shardSize = shardSize;
+		this.shardingCodec = new ShardingCodec(
+				blockSize,
+				blocksCodecs,
+				indexCodecs,
+				indexLocation
+		);
+	}
 
 	public ShardedDatasetAttributes(
 			final long[] dimensions,
-			final int[] shardSize,
-			final int[] blockSize,
-			final IndexLocation shardIndexLocation,
+			final int[] shardSize, //in pixels
+			final int[] blockSize, //in pixels
 			final DataType dataType,
-			final Compression compression,
-			final Codec[] codecs) {
-
-		super(dimensions, blockSize, dataType, compression, codecs);
+			final ShardingCodec codec) {
+		super(dimensions, blockSize, dataType, null, codec.getCodecs());
 		this.shardSize = shardSize;
-		this.indexLocation = shardIndexLocation;
+		this.shardingCodec = codec;
+	}
 
-		// TODO figure out codecs
+	public ShardingCodec getShardingCodec() {
+		return shardingCodec;
+	}
+
+	@Override public ArrayCodec getArrayCodec() {
+
+		return shardingCodec.getArrayCodec();
+	}
+
+	@Override public BytesCodec[] getCodecs() {
+
+		return shardingCodec.getCodecs();
 	}
 
 	public int[] getShardSize() {
@@ -36,9 +69,9 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 	}
 
 	/**
-	 * Returns the number of blocks a shard contains along all dimensions.
+	 * Returns the number of shards per dimension for the dataset.
 	 *
-	 * @return the size of the block grid of a shard
+	 * @return the size of the shard grid of a dataset
 	 */
 	public int[] getShardBlockGridSize() {
 
@@ -52,6 +85,22 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 	}
 
 	/**
+	 * Returns the number of blocks per dimension for a shard.
+	 *
+	 * @return the size of the block grid of a shard
+	 */
+	public int[] getBlocksPerShard() {
+
+		final int nd = getNumDimensions();
+		final int[] blocksPerShard = new int[nd];
+		final int[] blockSize = getBlockSize();
+		for (int i = 0; i < nd; i++)
+			blocksPerShard[i] = getShardSize()[i] / blockSize[i];
+
+		return blocksPerShard;
+	}
+
+	/**
 	 * Given a block's position relative to the array, returns the position of the shard containing that block relative to the shard grid.
 	 *
 	 * @param blockGridPosition
@@ -61,10 +110,10 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 	public long[] getShardPositionForBlock(final long... blockGridPosition) {
 
 		// TODO have this return a shard
-		final int[] shardBlockDimensions = getShardBlockGridSize();
+		final int[] blocksPerShard = getBlocksPerShard();
 		final long[] shardGridPosition = new long[blockGridPosition.length];
 		for (int i = 0; i < shardGridPosition.length; i++) {
-			shardGridPosition[i] = (int)Math.floor((double)blockGridPosition[i] / shardBlockDimensions[i]);
+			shardGridPosition[i] = (int)Math.floor((double)blockGridPosition[i] / blocksPerShard[i]);
 		}
 
 		return shardGridPosition;
@@ -75,7 +124,7 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 	 *
 	 * @return the shard position
 	 */
-	public int[] getBlockPositionInShard(final long[] shardPosition, final long[] blockPosition) {
+	public long[] getBlockPositionInShard(final long[] shardPosition, final long[] blockPosition) {
 
 		final long[] shardPos = getShardPositionForBlock(blockPosition);
 		if (!Arrays.equals(shardPosition, shardPos))
@@ -83,9 +132,12 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 
 		final int[] shardSize = getShardSize();
 		final int[] blkSize = getBlockSize();
-		final int[] blkGridSize = getShardBlockGridSize();
+		final int[] blkGridSize = getBlocksPerShard();
+//		final int[] shardSize = getSize();
+//		final int[] blkSize = getBlockSize();
+//		final int[] blkGridSize = getBlockGridSize();
 
-		final int[] blockShardPos = new int[shardSize.length];
+		final long[] blockShardPos = new long[shardSize.length];
 		for (int i = 0; i < shardSize.length; i++) {
 			final long shardP = shardPos[i] * shardSize[i];
 			final long blockP = blockPosition[i] * blkSize[i];
@@ -93,6 +145,9 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 		}
 
 		return blockShardPos;
+
+
+
 	}
 
 	/**
@@ -100,7 +155,7 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 	 */
 	public long getNumBlocks() {
 
-		return Arrays.stream(getShardBlockGridSize()).reduce(1, (x, y) -> x * y);
+		return Arrays.stream(getBlocksPerShard()).reduce(1, (x, y) -> x * y);
 	}
 
 	public static int[] getBlockSize(Codec[] codecs) {
@@ -114,6 +169,10 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 
 	public IndexLocation getIndexLocation() {
 
-		return indexLocation;
+		return getShardingCodec().getIndexLocation();
+	}
+
+	public ShardIndex createIndex() {
+		return new ShardIndex(getBlocksPerShard(), getIndexLocation(), getShardingCodec().getIndexCodecs());
 	}
 }

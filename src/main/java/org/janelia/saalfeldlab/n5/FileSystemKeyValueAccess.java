@@ -25,6 +25,8 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import org.apache.commons.io.input.BoundedInputStream;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -73,6 +75,8 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		protected final boolean truncate;
 
+		protected long len;
+
 		protected LockedFileChannel(final String path, final boolean readOnly) throws IOException {
 
 			this(fileSystem.getPath(path), readOnly, 0, Long.MAX_VALUE);
@@ -93,7 +97,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 
 			final long start = startByte < 0 ? 0L : startByte;
-			final long len = size < 0 ? Long.MAX_VALUE : size;
+			len = size < 0 ? Long.MAX_VALUE : size;
 
 			//TODO Caleb: How does this handle if manually overwriting the entire file? (e.g. len > file size)
 			truncate = (start == 0 && len == Long.MAX_VALUE);
@@ -159,7 +163,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		@Override
 		public InputStream newInputStream() throws IOException {
 
-			return Channels.newInputStream(channel);
+			return new BoundedInputStream(Channels.newInputStream(channel), len);
 		}
 
 		@Override
@@ -201,11 +205,11 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public LockedFileChannel lockForReading(final String normalPath, final long startByte, final long endByte)
+	public LockedFileChannel lockForReading(final String normalPath, final long startByte, final long size)
 			throws IOException {
 
 		try {
-			return new LockedFileChannel(normalPath, true, startByte, endByte);
+			return new LockedFileChannel(normalPath, true, startByte, size);
 		} catch (final NoSuchFileException e) {
 			throw new N5Exception.N5NoSuchKeyException("No such file", e);
 		}
@@ -262,8 +266,11 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	@Override
 	public long size(final String normalPath) throws IOException {
 
-		final Path path = fileSystem.getPath(normalPath);
-		return Files.size(path);
+		try {
+			return Files.size(fileSystem.getPath(normalPath));
+		} catch (NoSuchFileException e) {
+			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+		}
 	}
 
 	@Override

@@ -1,6 +1,8 @@
 package org.janelia.saalfeldlab.n5.shard;
 
+import java.io.DataOutput;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
@@ -9,6 +11,7 @@ import java.util.Arrays;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.DefaultBlockReader;
+import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
@@ -17,8 +20,8 @@ import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 
 public class VirtualShard<T> extends AbstractShard<T> {
 
-	private KeyValueAccess keyValueAccess;
-	private String path;
+	final private KeyValueAccess keyValueAccess;
+	final private String path;
 
 	public VirtualShard(final ShardedDatasetAttributes datasetAttributes, long[] gridPosition,
 			final KeyValueAccess keyValueAccess, final String path) {
@@ -37,19 +40,18 @@ public class VirtualShard<T> extends AbstractShard<T> {
 			throw new N5IOException("Attempted to read a block from the wrong shard.");
 
 		final ShardIndex idx = getIndex();
+
+
 		final long startByte = idx.getOffset(relativePosition);
-		final long endByte = startByte + idx.getNumBytes(relativePosition);
-		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(path, startByte, endByte)) {
 
-			// TODO add codecs, generalize to use any BlockReader
-			final DataBlock<T> dataBlock = (DataBlock<T>)datasetAttributes.getDataType().createDataBlock(
-					datasetAttributes.getBlockSize(),
-					blockGridPosition,
-					numBlockElements(datasetAttributes));
+		if (startByte == Shard.EMPTY_INDEX_NBYTES )
+			return null;
 
-			DefaultBlockReader.readFromStream(dataBlock, lockedChannel.newInputStream());
-			return dataBlock;
-
+		final long size = idx.getNumBytes(relativePosition);
+		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(path, startByte, size)) {
+			try ( final InputStream channelIn = lockedChannel.newInputStream()) {
+				return (DataBlock<T>)DefaultBlockReader.readBlock(channelIn, datasetAttributes, blockGridPosition);
+			}
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
 		} catch (final IOException | UncheckedIOException e) {
@@ -64,26 +66,35 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		if (relativePosition == null)
 			throw new N5IOException("Attempted to write block in the wrong shard.");
 
-		final ShardIndex idx = getIndex();
-		final long startByte = idx.getOffset(relativePosition) == Shard.EMPTY_INDEX_NBYTES ? 0 : idx.getOffset(relativePosition);
-		final long size = idx.getNumBytes(relativePosition) == Shard.EMPTY_INDEX_NBYTES ? Long.MAX_VALUE : idx.getNumBytes(relativePosition);
+		final ShardIndex index = getIndex();
+		long startByte = 0;
+		try {
+			startByte = keyValueAccess.size(path);
+		} catch (N5Exception.N5NoSuchKeyException e) {
+			startByte = index.getLocation() == ShardingCodec.IndexLocation.START ? index.numBytes() : 0;
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
+		final long size = Long.MAX_VALUE - startByte;
 
-		// TODO this assumes that the block exists in the shard and
-		// that the available space is sufficient. Should generalize
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForWriting(path, startByte, size)) {
+			try ( final OutputStream channelOut = lockedChannel.newOutputStream()) {
+				try (final CountingOutputStream out = new CountingOutputStream(channelOut)) {
+					DefaultBlockWriter.writeBlock(out, datasetAttributes, block);
 
-			// TODO codecs
-			final CountingOutputStream out = new CountingOutputStream(lockedChannel.newOutputStream());
-			datasetAttributes.getCompression().getWriter().write(block, out);
-
-			// TODO update index when we know how many bytes were written
-			idx.set(startByte, out.getNumBytes(), relativePosition);
-			out.write(index.toByteBuffer().array());
-			out.realClose();
+					/* Update and write the index to the shard*/
+					index.set(startByte, out.getNumBytes(), relativePosition);
+				}
+			}
 		} catch (final IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to read block from " + path, e);
+			throw new N5IOException("Failed to write block to shard " + path, e);
 		}
 
+		try {
+			ShardIndex.write(index, keyValueAccess, path);
+		} catch (IOException e) {
+			throw new N5IOException("Failed to write index to shard " + path, e);
+		}
 	}
 
 	@Override
@@ -100,21 +111,21 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	public ShardIndex createIndex() {
 
 		// Empty index of the correct size
-		index = new ShardIndex(datasetAttributes.getShardBlockGridSize());
-		return index;
+		return datasetAttributes.createIndex();
 	}
 
 	@Override
 	public ShardIndex getIndex() {
 
 		try {
-			final ShardIndex result = ShardIndex.read(keyValueAccess, path, datasetAttributes);
-			return result == null ? createIndex() : result;
-		} catch (final NoSuchFileException e) {
-			return createIndex();
+			final ShardIndex readIndex = ShardIndex.read(keyValueAccess, path, datasetAttributes.createIndex());
+			index = readIndex == null ? createIndex() : readIndex;
+		} catch (final N5Exception.N5NoSuchKeyException e) {
+			index = createIndex();
 		} catch (IOException e) {
 			throw new N5IOException("Failed to read index at " + path, e);
 		}
+		return index;
 	}
 
 
@@ -153,10 +164,6 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		@Override
 		public void close() throws IOException {
 
-		}
-
-		private void realClose() throws IOException {
-			out.close();
 		}
 
 		public long getNumBytes() {

@@ -29,7 +29,7 @@ public class BytesTests {
 
 		final N5Writer reader = factory.openWriter("n5:src/test/resources/shardExamples/test.zarr");
 		final Codec bytes = reader.getAttribute("mid_sharded", "codecs[0]/configuration/codecs[0]", Codec.class);
-		assertTrue("as BytesCodec", bytes instanceof N5BytesCodec);
+		assertTrue("as BytesCodec", bytes instanceof N5BlockCodec);
 
 		final N5Writer writer = factory.openWriter("n5:src/test/resources/shardExamples/test.n5");
 
@@ -39,7 +39,7 @@ public class BytesTests {
 				DataType.UINT8,
 				new RawCompression(),
 				new Codec[]{
-						new N5BytesCodec(ByteOrder.LITTLE_ENDIAN),
+						new N5BlockCodec(ByteOrder.LITTLE_ENDIAN),
 						new IdentityCodec()
 				}
 		);
@@ -48,8 +48,8 @@ public class BytesTests {
 
 		assertEquals("1 codecs", 1, deserialized.getCodecs().length);
 		assertTrue("Identity", deserialized.getCodecs()[0] instanceof IdentityCodec);
-		assertTrue("Bytes", deserialized.getArrayToBytesCodec() instanceof N5BytesCodec);
+		assertTrue("Bytes", deserialized.getArrayCodec() instanceof N5BlockCodec);
 		assertEquals("LittleEndian", ByteOrder.LITTLE_ENDIAN,
-				((N5BytesCodec)deserialized.getArrayToBytesCodec()).byteOrder);
+				((N5BlockCodec)deserialized.getArrayCodec()).byteOrder);
 	}
 }

@@ -1,26 +1,28 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.util.Arrays;
-
+import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.DefaultBlockReader;
+import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
+import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
+
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.util.Arrays;
 
 public class ShardIndex extends LongArrayDataBlock {
 
@@ -29,21 +31,36 @@ public class ShardIndex extends LongArrayDataBlock {
 	private static final int LONGS_PER_BLOCK = 2;
 
 	private static final long[] DUMMY_GRID_POSITION = null;
+	private final IndexLocation location;
 
-	public ShardIndex(int[] shardBlockGridSize, long[] data) {
+	private final DeterministicSizeCodec[] codecs;
+
+	public ShardIndex(int[] shardBlockGridSize, long[] data, IndexLocation location, final DeterministicSizeCodec... codecs) {
 
 		super(prepend(LONGS_PER_BLOCK, shardBlockGridSize), DUMMY_GRID_POSITION, data);
+		this.codecs = codecs;
+		this.location = location;
 	}
 
-	public ShardIndex(int[] shardBlockGridSize) {
+	public ShardIndex(int[] shardBlockGridSize, IndexLocation location, DeterministicSizeCodec... codecs) {
 
-		super(prepend(LONGS_PER_BLOCK, shardBlockGridSize), DUMMY_GRID_POSITION, emptyIndexData(shardBlockGridSize));
+		this(shardBlockGridSize, emptyIndexData(shardBlockGridSize), location, codecs);
+	}
+
+	public ShardIndex(int[] shardBlockGridSize, DeterministicSizeCodec... codecs) {
+
+		this(shardBlockGridSize, emptyIndexData(shardBlockGridSize), IndexLocation.END, codecs);
 	}
 
 	public boolean exists(long... gridPosition) {
 
 		return getOffset(gridPosition) != Shard.EMPTY_INDEX_NBYTES &&
 				getNumBytes(gridPosition) != Shard.EMPTY_INDEX_NBYTES;
+	}
+
+	public IndexLocation getLocation() {
+
+		return location;
 	}
 
 	public long getOffset(long... gridPosition) {
@@ -77,80 +94,92 @@ public class ShardIndex extends LongArrayDataBlock {
 
 	private int getNumBytesIndex(long... gridPosition) {
 
-		return getOffsetIndex() + 1;
+		return getOffsetIndex(gridPosition) + 1;
 	}
 
-	public static ShardIndex read(final KeyValueAccess keyValueAccess, final String key,
-			final ShardedDatasetAttributes datasetAttributes) throws IOException {
+	public long numBytes() {
 
-		return read(keyValueAccess, key, datasetAttributes.getShardBlockGridSize(), datasetAttributes.getIndexLocation());
+		final int numEntries = Arrays.stream(getSize()).reduce(1, (x, y) -> x * y);
+		final int numBytesFromBlocks = numEntries * BYTES_PER_LONG;
+		long totalNumBytes = numBytesFromBlocks;
+		for (Codec codec : codecs) {
+			if (codec instanceof DeterministicSizeCodec) {
+				totalNumBytes = ((DeterministicSizeCodec)codec).encodedSize(totalNumBytes);
+			}
+		}
+		return totalNumBytes;
 	}
 
 	public static ShardIndex read(
 			final KeyValueAccess keyValueAccess,
 			final String key,
-			final int[] shardBlockGridSize,
-			final IndexLocation indexLocation) throws IOException {
+			final ShardIndex index
+	) throws IOException {
 
-		final ShardIndex idx = new ShardIndex(shardBlockGridSize);
-		final IndexByteBounds byteBounds = byteBounds(idx.getSize(), indexLocation, keyValueAccess.size(key));
+		final IndexByteBounds byteBounds = byteBounds(index, keyValueAccess.size(key));
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(key, byteBounds.start, byteBounds.end)) {
-
-			final byte[] bytes = new byte[idx.getNumElements() * ShardIndex.BYTES_PER_LONG];
-			lockedChannel.newInputStream().read(bytes);
-			idx.readData(ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)); // TODO generalize byte order
-			return idx;
-
+			final long[] indexData;
+			try (final InputStream in = lockedChannel.newInputStream()) {
+				final DataBlock<long[]> indexBlock = (DataBlock<long[]>)DefaultBlockReader.readBlock(
+						in,
+						index.getIndexAttributes(),
+						index.gridPosition);
+				indexData = indexBlock.getData();
+			}
+			System.arraycopy(indexData, 0, index.data, 0, index.data.length);
+			return index;
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
 		} catch (final IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to read from " + key, e);
+			throw new N5IOException("Failed to read shard index from " + key, e);
 		}
 	}
 
-	public static void write(ShardIndex index,
+	public static void write(
+			final ShardIndex index,
 			final KeyValueAccess keyValueAccess,
-			final String key,
-			final int[] shardBlockGridSize,
-			final IndexLocation indexLocation) throws IOException {
+			final String key
+	) throws IOException {
 
-		final IndexByteBounds byteBounds = byteBounds(index.getSize(), indexLocation, keyValueAccess.size(key));
-		try (final LockedChannel lockedChannel = keyValueAccess.lockForWriting(key, byteBounds.start, byteBounds.end)) {
-
-			final OutputStream os = lockedChannel.newOutputStream();
-			os.write(index.toByteBuffer().array());
-
+		final long start = index.location == IndexLocation.START ? 0 : keyValueAccess.size(key);
+		try (final LockedChannel lockedChannel = keyValueAccess.lockForWriting(key, start, index.numBytes())) {
+			try (final OutputStream os = lockedChannel.newOutputStream()) {
+				DefaultBlockWriter.writeBlock(os, index.getIndexAttributes(), index);
+			}
 		} catch (final IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to read from " + key, e);
+			throw new N5IOException("Failed to write shard index to " + key, e);
 		}
 	}
 
-	public static DatasetAttributes indexDatasetAttributes(final int[] indexBlockSize) {
+	private DatasetAttributes getIndexAttributes() {
 
-		final int[] blkSize = new int[indexBlockSize.length];
-		final long[] size = new long[indexBlockSize.length];
-		for (int i = 0; i < blkSize.length; i++) {
-			blkSize[i] = (int)indexBlockSize[i];
-		}
-
-		// TODO codecs
-		return new DatasetAttributes(size, blkSize, DataType.UINT64, new RawCompression(), null);
+		final DatasetAttributes indexAttributes =
+				new DatasetAttributes(
+						Arrays.stream(getSize()).mapToLong(it -> it).toArray(),
+						getSize(),
+						DataType.UINT64,
+						null,
+						codecs
+				);
+		return indexAttributes;
 	}
 
 	public static IndexByteBounds byteBounds(ShardedDatasetAttributes datasetAttributes, final long objectSize) {
 
-		final int[] indexShape = prepend(2, datasetAttributes.getShardBlockGridSize());
-		return byteBounds(indexShape, datasetAttributes.getIndexLocation(), objectSize);
+		final long indexSize = datasetAttributes.createIndex().numBytes();
+		return byteBounds(indexSize, datasetAttributes.getIndexLocation(), objectSize);
 	}
 
-	public static IndexByteBounds byteBounds(final int[] indexShape, final IndexLocation indexLocation, final long objectSize) {
+	public static IndexByteBounds byteBounds(final ShardIndex index, long objectSize) {
+		return byteBounds(index.numBytes(), index.location, objectSize);
+	}
 
-		final int indexSize = (int)Arrays.stream(indexShape).reduce(1, (x, y) -> x * y);
+	public static IndexByteBounds byteBounds(final long indexSize, final IndexLocation indexLocation, final long objectSize) {
 
 		if (indexLocation == IndexLocation.START) {
 			return new IndexByteBounds(0L, indexSize);
 		} else {
-			return new IndexByteBounds(objectSize - (BYTES_PER_LONG * indexSize), objectSize - 1);
+			return new IndexByteBounds(objectSize - indexSize, objectSize - 1);
 		}
 	}
 
@@ -170,7 +199,7 @@ public class ShardIndex extends LongArrayDataBlock {
 
 		// TODO need codecs
 		// TODO FileChannel is too specific - generalize
-		final int[] indexShape = prepend(2, datasetAttributes.getShardBlockGridSize());
+		final int[] indexShape = prepend(2, datasetAttributes.getBlocksPerShard());
 		final int indexSize = (int)Arrays.stream(indexShape).reduce(1, (x, y) -> x * y);
 		final int indexBytes = BYTES_PER_LONG * indexSize;
 
@@ -186,7 +215,7 @@ public class ShardIndex extends LongArrayDataBlock {
 			indexes[i] = dis.readLong();
 		}
 
-		return new ShardIndex(indexShape, indexes);
+		return new ShardIndex(indexShape, indexes, IndexLocation.END);
 	}
 
 	private static long[] emptyIndexData(final int[] size) {
