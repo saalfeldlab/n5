@@ -266,8 +266,11 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	@Override
 	public long size(final String normalPath) throws IOException {
 
-		final Path path = fileSystem.getPath(normalPath);
-		return Files.size(path);
+		try {
+			return Files.size(fileSystem.getPath(normalPath));
+		} catch (NoSuchFileException e) {
+			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+		}
 	}
 
 	@Override
