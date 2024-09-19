@@ -25,7 +25,7 @@ public class ShardingCodec implements Codec.ArrayCodec {
 
 	public static final String TYPE = "sharding_indexed";
 
-	public final static String CHUNK_SHAPE_KEY = "chunk_shape";
+	public static final String CHUNK_SHAPE_KEY = "chunk_shape";
 	public static final String INDEX_LOCATION_KEY = "index_location";
 	public static final String CODECS_KEY = "codecs";
 	public static final String INDEX_CODECS_KEY = "index_codecs";
@@ -46,6 +46,7 @@ public class ShardingCodec implements Codec.ArrayCodec {
 	@NameConfig.Parameter(value = INDEX_LOCATION_KEY, optional = true)
 	private final IndexLocation indexLocation;
 
+	@SuppressWarnings("unused")
 	private ShardingCodec() {
 
 		blockSize = null;
