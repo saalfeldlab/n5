@@ -43,7 +43,7 @@ public class ShardingCodec implements Codec.ArrayCodec {
 	@NameConfig.Parameter(INDEX_CODECS_KEY)
 	private final DeterministicSizeCodec[] indexCodecs;
 
-	@NameConfig.Parameter(INDEX_LOCATION_KEY)
+	@NameConfig.Parameter(value = INDEX_LOCATION_KEY, optional = true)
 	private final IndexLocation indexLocation;
 
 	private ShardingCodec() {
@@ -51,7 +51,7 @@ public class ShardingCodec implements Codec.ArrayCodec {
 		blockSize = null;
 		codecs = null;
 		indexCodecs = null;
-		indexLocation = null;
+		indexLocation = IndexLocation.END;
 	}
 
 	public ShardingCodec(
