@@ -11,6 +11,7 @@ import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.serialization.N5Annotations;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 import java.io.IOException;
@@ -34,6 +35,7 @@ public class ShardingCodec implements Codec.ArrayCodec {
 		START, END;
 	}
 
+	@N5Annotations.ReverseArray // TODO need to reverse for zarr, not for n5
 	@NameConfig.Parameter(CHUNK_SHAPE_KEY)
 	private final int[] blockSize;
 
