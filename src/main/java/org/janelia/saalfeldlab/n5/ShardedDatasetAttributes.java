@@ -18,7 +18,6 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 
 	private final ShardingCodec shardingCodec;
 
-
 	public ShardedDatasetAttributes (
 			final long[] dimensions,
 			final int[] shardSize, //in pixels
@@ -44,7 +43,7 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 			final int[] blockSize, //in pixels
 			final DataType dataType,
 			final ShardingCodec codec) {
-		super(dimensions, blockSize, dataType, null, codec.getCodecs());
+		super(dimensions, blockSize, dataType, null, null);
 		this.shardSize = shardSize;
 		this.shardingCodec = codec;
 	}
@@ -131,23 +130,12 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 			return null;
 
 		final int[] shardSize = getShardSize();
-		final int[] blkSize = getBlockSize();
-		final int[] blkGridSize = getBlocksPerShard();
-//		final int[] shardSize = getSize();
-//		final int[] blkSize = getBlockSize();
-//		final int[] blkGridSize = getBlockGridSize();
-
 		final long[] blockShardPos = new long[shardSize.length];
 		for (int i = 0; i < shardSize.length; i++) {
-			final long shardP = shardPos[i] * shardSize[i];
-			final long blockP = blockPosition[i] * blkSize[i];
-			blockShardPos[i] = (int)((blockP - shardP) / blkGridSize[i]);
+			blockShardPos[i] = blockPosition[i] % shardSize[i];
 		}
 
 		return blockShardPos;
-
-
-
 	}
 
 	/**
