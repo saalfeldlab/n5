@@ -86,6 +86,9 @@ public class ShardingCodec implements Codec.ArrayCodec {
 
 	public BytesCodec[] getCodecs() {
 
+		if (codecs.length == 1)
+			return new BytesCodec[]{};
+
 		final BytesCodec[] bytesCodecs = new BytesCodec[codecs.length - 1];
 		System.arraycopy(codecs, 1, bytesCodecs, 0, bytesCodecs.length);
 		return bytesCodecs;

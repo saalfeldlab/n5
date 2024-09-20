@@ -148,6 +148,22 @@ public class DatasetAttributes implements Serializable {
 		return byteCodecs;
 	}
 
+	public ShardedDatasetAttributes getShardAttributes() {
+
+		if (getArrayCodec() instanceof ShardingCodec) {
+
+			final ShardingCodec shardingCodec = (ShardingCodec)getArrayCodec();
+			return new ShardedDatasetAttributes(
+					dimensions,
+					blockSize,
+					shardingCodec.getBlockSize(),
+					getDataType(),
+					shardingCodec);
+
+		} else
+			return null;
+	}
+
 	public HashMap<String, Object> asMap() {
 
 		final HashMap<String, Object> map = new HashMap<>();

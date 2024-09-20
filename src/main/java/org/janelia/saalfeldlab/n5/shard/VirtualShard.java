@@ -1,11 +1,9 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import java.io.DataOutput;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
