@@ -38,7 +38,7 @@ N5 group is not a single file but simply a directory on the file system.  Meta-d
      * xz with parameters
        * preset (integer, default 6).
        
-   Custom compression schemes with arbitrary parameters can be added using [compression annotations](#extensible-compression-schemes), e.g. [N5 Blosc](https://github.com/saalfeldlab/n5-blosc).
+   Custom compression schemes with arbitrary parameters can be added using [compression annotations](#extensible-compression-schemes), e.g. [N5 Blosc](https://github.com/saalfeldlab/n5-blosc) and [N5 ZStandard](https://github.com/JaneliaSciComp/n5-zstandard/).
 5. Chunks are stored in a directory hierarchy that enumerates their positive integer position in the chunk grid (e.g. `0/4/1/7` for chunk grid position p=(0, 4, 1, 7)).
 6. Datasets are sparse, i.e. there is no guarantee that all chunks of a dataset exist.
 7. Chunks cannot be larger than 2GB (2<sup>31</sup>Bytes).
