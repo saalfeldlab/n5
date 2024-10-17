@@ -22,7 +22,7 @@ N5 group is not a single file but simply a directory on the file system.  Meta-d
 
 1. All directories of the file system are N5 groups.
 2. A JSON file `attributes.json` in a directory contains arbitrary attributes.  A group without attributes may not have an `attributes.json` file.
-3. The version of this specification is 1.0.0 and is stored in the "n5" attribute of the root group "/".
+3. The version of this specification is 4.0.0 and is stored in the "n5" attribute of the root group "/".
 4. A dataset is a group with the mandatory attributes:
    * dimensions (e.g. [100, 200, 300]),
    * blockSize (e.g. [64, 64, 64]),
