@@ -119,7 +119,7 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 	}
 
 	/**
-	 * Returns of the block at the given position relative to this shard, or null if this shard does not contain the given block.
+	 * Returns the block at the given position relative to this shard, or null if this shard does not contain the given block.
 	 *
 	 * @return the shard position
 	 */

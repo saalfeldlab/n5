@@ -111,6 +111,22 @@ public interface Shard<T> {
 		}
 		return index;
 	}
+	
+	/**
+	 * 
+	 * @param <T>
+	 *            the type
+	 * @param dataBlocks
+	 *            an array
+	 * @return a shard containing the given blocks
+	 */
+	public static <T> Shard<T> fromDataBlocks(
+			final ShardedDatasetAttributes attributes,
+			final DataBlock<T>[] dataBlocks) {
+
+		// TODO implement me
+		return null; 
+	}
 
 	/**
 	 * Say we want async datablock access

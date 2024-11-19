@@ -304,7 +304,7 @@ public interface N5Writer extends N5Reader {
 	 * @param datasetPath
 	 *            dataset path
 	 * @param datasetAttributes
-	 *            the dataset attributes
+	 *            the sharded dataset attributes
 	 * @param dataBlock
 	 *            the data block
 	 * @param <T>
@@ -314,7 +314,7 @@ public interface N5Writer extends N5Reader {
 	 */
 	<T> void writeShard(
 			final String datasetPath,
-			final DatasetAttributes datasetAttributes,
+			final ShardedDatasetAttributes datasetAttributes,
 			final Shard<T> shard) throws N5Exception;
 
 	/**
