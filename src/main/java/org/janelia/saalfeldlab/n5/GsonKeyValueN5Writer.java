@@ -244,13 +244,10 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	@Override
 	default <T> void writeShard(
 			final String path,
-			final DatasetAttributes datasetAttributes,
+			final ShardedDatasetAttributes datasetAttributes,
 			final Shard<T> shard) throws N5Exception {
 
-		if (!(datasetAttributes instanceof ShardedDatasetAttributes))
-			throw new N5IOException("Can not write shard into non-sharded dataset " + path);
-
-		// TODO implement me
+		throw new N5Exception("not implemented");
 	}
 
 	@Override
