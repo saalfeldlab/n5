@@ -133,7 +133,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 
 		final String normalPathName = N5URI.normalizeGroupPath(pathName);
 		if (cacheMeta())
-			return getCache().isGroup(normalPathName, N5KeyValueReader.ATTRIBUTES_JSON);
+			return getCache().isGroup(normalPathName, null);
 		else {
 			return existsFromContainer(normalPathName, null);
 		}
