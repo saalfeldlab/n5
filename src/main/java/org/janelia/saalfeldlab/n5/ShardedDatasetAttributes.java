@@ -62,6 +62,11 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 		return shardingCodec.getCodecs();
 	}
 
+	/**
+	 * The size of the blocks in pixel units.
+	 *
+	 * @return the number of pixels per dimension for this shard.
+	 */
 	public int[] getShardSize() {
 
 		return shardSize;
