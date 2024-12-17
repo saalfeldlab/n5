@@ -565,10 +565,9 @@ public interface N5Reader extends AutoCloseable {
 		final LinkedBlockingQueue<Future<String>> datasetFutures = new LinkedBlockingQueue<>();
 		deepListHelper(this, normalPathName, false, filter, executor, datasetFutures);
 
-		datasetFutures.poll().get(); // skip self
 		while (!datasetFutures.isEmpty()) {
 			final String result = datasetFutures.poll().get();
-			if (result != null)
+			if (result != null && !result.isEmpty())
 				results.add(result.substring(normalPathName.length() + groupSeparator.length()));
 		}
 
