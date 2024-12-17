@@ -567,7 +567,7 @@ public interface N5Reader extends AutoCloseable {
 
 		while (!datasetFutures.isEmpty()) {
 			final String result = datasetFutures.poll().get();
-			if (result != null && !result.isEmpty())
+			if (result != null && !result.equals(normalPathName))
 				results.add(result.substring(normalPathName.length() + groupSeparator.length()));
 		}
 
