@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -55,6 +56,13 @@ public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 
 		for (int i = 0; i < data.length; i++)
 			data[i] = inputStream.readDouble();
+	}
+
+	@Override
+	public void writeData(final DataOutput output) throws IOException {
+
+		for (int i = 0; i < data.length; i++)
+			output.writeDouble(data[i]);
 	}
 
 	@Override
