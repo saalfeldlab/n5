@@ -62,6 +62,11 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 		return shardingCodec.getCodecs();
 	}
 
+	/**
+	 * The size of the blocks in pixel units.
+	 *
+	 * @return the number of pixels per dimension for this shard.
+	 */
 	public int[] getShardSize() {
 
 		return shardSize;
@@ -129,7 +134,7 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 		if (!Arrays.equals(shardPosition, shardPos))
 			return null;
 
-		final int[] shardSize = getShardSize();
+		final int[] shardSize = getBlocksPerShard();
 		final long[] blockShardPos = new long[shardSize.length];
 		for (int i = 0; i < shardSize.length; i++) {
 			blockShardPos[i] = blockPosition[i] % shardSize[i];
