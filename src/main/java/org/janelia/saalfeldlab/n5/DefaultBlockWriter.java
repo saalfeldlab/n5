@@ -82,7 +82,6 @@ public interface DefaultBlockWriter extends BlockWriter {
 			stream = codec.encode(stream);
 
 		dataBlock.writeData(dataBlockOutput.getDataOutput(stream));
-		stream.close();
 	}
 
 	public static <T> void writeFromStream(final DataBlock<T> dataBlock, final OutputStream out) throws IOException {
