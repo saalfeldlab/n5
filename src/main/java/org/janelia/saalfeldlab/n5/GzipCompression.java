@@ -54,7 +54,7 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	private final int level;
 
 	@CompressionParameter
-	@NameConfig.Parameter
+	@NameConfig.Parameter(optional = true)
 	private final boolean useZlib;
 
 	private final transient GzipParameters parameters = new GzipParameters();
