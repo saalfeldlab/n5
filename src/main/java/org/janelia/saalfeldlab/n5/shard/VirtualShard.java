@@ -42,7 +42,6 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		if (startByte == Shard.EMPTY_INDEX_NBYTES )
 			return null;
 
-		System.out.println("read from start: " + startByte);
 		final long size = idx.getNumBytes(relativePosition);
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(path, startByte, size)) {
 			try ( final InputStream channelIn = lockedChannel.newInputStream()) {
