@@ -163,7 +163,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		@Override
 		public InputStream newInputStream() throws IOException {
 
-			return new BoundedInputStream(Channels.newInputStream(channel), len);
+			return BoundedInputStream.builder().setInputStream(Channels.newInputStream(channel)).setMaxCount(len).get();
 		}
 
 		@Override
