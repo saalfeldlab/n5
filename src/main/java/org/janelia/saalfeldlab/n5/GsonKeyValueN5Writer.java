@@ -255,7 +255,6 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(shardPath)) {
 			try (final OutputStream out = lock.newOutputStream()) {
 				InMemoryShard.fromShard(shard).write(out);
-				out.close();
 			}
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(

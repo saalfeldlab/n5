@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.io.output.CountingOutputStream;
+import org.apache.commons.io.output.ProxyOutputStream;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
@@ -80,7 +81,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	public void write(final OutputStream out) throws IOException {
 
 		if (indexLocation() == IndexLocation.END)
-			writeShardEnd(out, this);
+			writeShardEndStream(out, this);
 		else
 			writeShardStart(out, this);
 	}
@@ -110,21 +111,31 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 
 		final ShardIndexBuilder indexBuilder = new ShardIndexBuilder(shard);
 		indexBuilder.indexLocation(IndexLocation.END);
+		indexBuilder.setCodecs(datasetAttributes.getShardingCodec().getIndexCodecs());
 
-		final CountingOutputStream cout = new CountingOutputStream(out);
-		
-		long offset = 0;
+		final ProxyOutputStream nop = new ProxyOutputStream(out) {
+
+			@Override public void close() {
+				//nop
+			}
+		};
+
+		final CountingOutputStream cout = new CountingOutputStream(nop);
+
+		long bytesWritten = 0;
 		for (int i = 0; i < shard.numBlocks(); i++) {
 
 			final DataBlock<T> block = shard.getBlock(i);
 			DefaultBlockWriter.writeBlock(cout, datasetAttributes, block);
-			
-			indexBuilder.addBlock( block.getGridPosition(), offset);
-			offset = cout.getByteCount();
+
+
+			final long size = cout.getByteCount() - bytesWritten;
+			bytesWritten = cout.getByteCount();
+
+			indexBuilder.addBlock( block.getGridPosition(), size);
 		}
 
-		final ShardIndex index = indexBuilder.build();
-		DefaultBlockWriter.writeBlock(out, datasetAttributes, index);
+		ShardIndex.write(indexBuilder.build(), out);
 	}
 
 	protected static <T> void writeShardEnd(
