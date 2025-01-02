@@ -4,10 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.DefaultBlockReader;
 import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
@@ -39,12 +37,12 @@ public class VirtualShard<T> extends AbstractShard<T> {
 
 		final ShardIndex idx = getIndex();
 
-
 		final long startByte = idx.getOffset(relativePosition);
 
 		if (startByte == Shard.EMPTY_INDEX_NBYTES )
 			return null;
 
+		System.out.println("read from start: " + startByte);
 		final long size = idx.getNumBytes(relativePosition);
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(path, startByte, size)) {
 			try ( final InputStream channelIn = lockedChannel.newInputStream()) {
@@ -93,17 +91,6 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		} catch (IOException e) {
 			throw new N5IOException("Failed to write index to shard " + path, e);
 		}
-	}
-
-	@Override
-	public void writeShard() {
-
-		// TODO
-	}
-
-	private static int numBlockElements(DatasetAttributes datasetAttributes) {
-
-		return Arrays.stream(datasetAttributes.getBlockSize()).reduce(1, (x, y) -> x * y);
 	}
 
 	public ShardIndex createIndex() {

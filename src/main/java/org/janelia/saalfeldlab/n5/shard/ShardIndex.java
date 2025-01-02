@@ -144,11 +144,16 @@ public class ShardIndex extends LongArrayDataBlock {
 		final long start = index.location == IndexLocation.START ? 0 : keyValueAccess.size(key);
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForWriting(key, start, index.numBytes())) {
 			try (final OutputStream os = lockedChannel.newOutputStream()) {
-				DefaultBlockWriter.writeBlock(os, index.getIndexAttributes(), index);
+				write(index, os);
 			}
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException("Failed to write shard index to " + key, e);
 		}
+	}
+
+	public static void write(final ShardIndex index, OutputStream out) throws IOException {
+
+		DefaultBlockWriter.writeBlock(out, index.getIndexAttributes(), index);
 	}
 
 	private DatasetAttributes getIndexAttributes() {

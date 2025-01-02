@@ -48,6 +48,10 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 		this.shardingCodec = codec;
 	}
 
+	public ShardedDatasetAttributes getShardAttributes() {
+		return this;
+	}
+
 	public ShardingCodec getShardingCodec() {
 		return shardingCodec;
 	}
@@ -60,6 +64,12 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 	@Override public BytesCodec[] getCodecs() {
 
 		return shardingCodec.getCodecs();
+	}
+
+	@Override
+	protected Codec[] concatenateCodecs() {
+
+		return new Codec[] { shardingCodec };
 	}
 
 	/**
@@ -126,10 +136,11 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 	/**
 	 * Returns the block at the given position relative to this shard, or null if this shard does not contain the given block.
 	 *
-	 * @return the shard position
+	 * @return the block position
 	 */
 	public long[] getBlockPositionInShard(final long[] shardPosition, final long[] blockPosition) {
 
+		// TODO check correctness 
 		final long[] shardPos = getShardPositionForBlock(blockPosition);
 		if (!Arrays.equals(shardPosition, shardPos))
 			return null;
@@ -141,6 +152,43 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 		}
 
 		return blockShardPos;
+	}
+
+	/**
+	 * Given a block's position relative to a shard, returns its position in pixels
+	 * relative to the image.
+	 *
+	 * @return the block position
+	 */
+	public long[] getBlockMinFromShardPosition(final long[] shardPosition, final long[] blockPosition) {
+
+		// is this useful?
+		final int[] blockSize = getBlockSize();
+		final int[] shardSize = getShardSize();
+		final long[] blockImagePos = new long[shardSize.length];
+		for (int i = 0; i < shardSize.length; i++) {
+			blockImagePos[i] = (shardPosition[i] * shardSize[i]) + (blockPosition[i] * blockSize[i]);
+		}
+
+		return blockImagePos;
+	}
+
+	/**
+	 * Given a block's position relative to a shard, returns its position relative
+	 * to the image.
+	 *
+	 * @return the block position
+	 */
+	public long[] getBlockPositionFromShardPosition(final long[] shardPosition, final long[] blockPosition) {
+
+		// is this useful?
+		final int[] shardBlockSize = getBlocksPerShard();
+		final long[] blockImagePos = new long[shardSize.length];
+		for (int i = 0; i < shardSize.length; i++) {
+			blockImagePos[i] = (shardPosition[i] * shardBlockSize[i]) + (blockPosition[i]);
+		}
+
+		return blockImagePos;
 	}
 
 	/**

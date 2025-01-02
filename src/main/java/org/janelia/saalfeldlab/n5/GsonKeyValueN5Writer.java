@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
 import org.janelia.saalfeldlab.n5.shard.Shard;
 
 import com.google.gson.Gson;
@@ -231,7 +232,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), dataBlock.getGridPosition());
 		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(blockPath)) {
-			try ( final OutputStream out = lock.newOutputStream()) {
+			try (final OutputStream out = lock.newOutputStream()) {
 				DefaultBlockWriter.writeBlock(out, datasetAttributes, dataBlock);
 			}
 		} catch (final IOException | UncheckedIOException e) {
@@ -244,10 +245,22 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	@Override
 	default <T> void writeShard(
 			final String path,
-			final ShardedDatasetAttributes datasetAttributes,
+			final DatasetAttributes datasetAttributes,
 			final Shard<T> shard) throws N5Exception {
 
-		throw new N5Exception("not implemented");
+		if( datasetAttributes.getShardAttributes() == null )
+			throw new N5IOException("Tried to write shard into a not-sharded dataset: " + path);
+
+		final String shardPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), shard.getGridPosition());
+		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(shardPath)) {
+			try (final OutputStream out = lock.newOutputStream()) {
+				InMemoryShard.fromShard(shard).write(out);
+				out.close();
+			}
+		} catch (final IOException | UncheckedIOException e) {
+			throw new N5IOException(
+					"Failed to write shard " + Arrays.toString(shard.getGridPosition()) + " into dataset " + path, e);
+		}
 	}
 
 	@Override

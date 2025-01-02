@@ -295,26 +295,26 @@ public interface N5Writer extends N5Reader {
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T>... dataBlocks) throws N5Exception {
-		//TODO Caleb: write this
+
+		// TODO Caleb: write this
+
+		// default method is naive
+		for (DataBlock<T> block : dataBlocks)
+			writeBlock(datasetPath, datasetAttributes, block);
 	}
 
 	/**
-	 * Writes a complete {@link Shard} to a dataset.
+	 * Writes a {@link Shard}.
 	 *
-	 * @param datasetPath
-	 *            dataset path
-	 * @param datasetAttributes
-	 *            the sharded dataset attributes
-	 * @param dataBlock
-	 *            the data block
-	 * @param <T>
-	 *            the data block data type
-	 * @throws N5Exception
-	 *             if the requested dataset is not sharded
+	 * @param datasetPath dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param shard the shard
+	 * @param <T> the data block data type
+	 * @throws N5Exception the exception
 	 */
 	<T> void writeShard(
 			final String datasetPath,
-			final ShardedDatasetAttributes datasetAttributes,
+			final DatasetAttributes datasetAttributes,
 			final Shard<T> shard) throws N5Exception;
 
 	/**

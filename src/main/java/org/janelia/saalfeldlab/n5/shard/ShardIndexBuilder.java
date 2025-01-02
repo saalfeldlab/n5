@@ -9,7 +9,7 @@ public class ShardIndexBuilder {
 
 	private final Shard<?> shard;
 
-	private final ShardIndex temporaryIndex;
+	private ShardIndex temporaryIndex;
 
 	private IndexLocation location = IndexLocation.END;
 
@@ -35,16 +35,30 @@ public class ShardIndexBuilder {
 	public ShardIndexBuilder indexLocation(IndexLocation location) {
 
 		this.location = location;
+		this.temporaryIndex = new ShardIndex(shard.getBlockGridSize(), location);
+
+		if (location == IndexLocation.END)
+			currentOffset = 0;
+		else
+			currentOffset = temporaryIndex.numBytes();
+
 		return this;
+	}
+
+	public IndexLocation getLocation() {
+
+		return this.location;
 	}
 
 	public ShardIndexBuilder setCodecs(DeterministicSizeCodec... codecs) {
 
 		this.codecs = codecs;
+		final ShardIndex newIndex = new ShardIndex(temporaryIndex.getSize(), temporaryIndex.getLocation(), codecs);
+		this.temporaryIndex = newIndex;
 		return this;
 	}
 
-	public ShardIndexBuilder addBLock(long[] blockPosition, long numBytes) {
+	public ShardIndexBuilder addBlock(long[] blockPosition, long numBytes) {
 
 		final long[] blockPositionInShard = shard.getDatasetAttributes().getBlockPositionInShard(
 				shard.getGridPosition(),

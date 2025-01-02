@@ -19,7 +19,7 @@ public class ShardWriter {
 
 	private final List<DataBlock<?>> blocks;
 
-	private final ShardedDatasetAttributes datasetAttributes;
+	private ShardedDatasetAttributes attributes;
 
 	private ByteBuffer blockSizes;
 
@@ -32,15 +32,14 @@ public class ShardWriter {
 	public ShardWriter(final ShardedDatasetAttributes datasetAttributes) {
 
 		blocks = new ArrayList<>();
-		this.datasetAttributes = datasetAttributes;
+		attributes = datasetAttributes;
 	}
 
 	public void reset() {
 
 		blocks.clear();
-		blockSizes = null;
 		blockBytes.clear();
-
+		blockSizes = null;
 		indexData = null;
 	}
 
@@ -49,21 +48,12 @@ public class ShardWriter {
 		blocks.add(block);
 	}
 
-	public void write(final OutputStream out) throws IOException {
-
-		// TODO need codecs
-
-		// prepareForWriting();
-		// if (datasetAttributes.getShardingConfiguration().getIndexLocation()) {
-		// writeIndexes(out);
-		// writeBlocks(out);
-		// } else {
-		// writeBlocks(out);
-		// writeIndexes(out);
-		// }
+	public void write(final Shard<?> shard, final OutputStream out) throws IOException {
+		
+		attributes = shard.getDatasetAttributes();
 
 		prepareForWritingDataBlock();
-		if (datasetAttributes.getIndexLocation() == ShardingCodec.IndexLocation.START) {
+		if (attributes.getIndexLocation() == ShardingCodec.IndexLocation.START) {
 			writeIndexBlock(out);
 			writeBlocks(out);
 		} else {
@@ -77,14 +67,14 @@ public class ShardWriter {
 		// final ShardingProperties shardProps = new ShardingProperties(datasetAttributes);
 		// indexData = new ShardIndexDataBlock(shardProps.getIndexDimensions());
 
-		indexData = datasetAttributes.createIndex();
+		indexData = attributes.createIndex();
 		blockBytes = new ArrayList<>();
 		long cumulativeBytes = 0;
 		final long[] shardPosition = new long[1];
 		for (int i = 0; i < blocks.size(); i++) {
 
 			try (final ByteArrayOutputStream blockOut = new ByteArrayOutputStream()) {
-				DefaultBlockWriter.writeBlock(blockOut, datasetAttributes, blocks.get(i));
+				DefaultBlockWriter.writeBlock(blockOut, attributes, blocks.get(i));
 				System.out.println(String.format("block %d is %d bytes", i, blockOut.size()));
 
 				shardPosition[0] = i;
@@ -108,7 +98,7 @@ public class ShardWriter {
 
 			try (final ByteArrayOutputStream blockOut = new ByteArrayOutputStream()) {
 
-				DefaultBlockWriter.writeBlock(blockOut, datasetAttributes, blocks.get(i));
+				DefaultBlockWriter.writeBlock(blockOut, attributes, blocks.get(i));
 				System.out.println(String.format("block %d is %d bytes", i, blockOut.size()));
 
 				blockIndexes.putLong(cumulativeBytes);
@@ -124,11 +114,6 @@ public class ShardWriter {
 
 		for (final byte[] bytes : blockBytes)
 			out.write(bytes);
-	}
-
-	private void writeIndexes(final OutputStream out) throws IOException {
-
-		out.write(blockSizes.array());
 	}
 
 	private void writeIndexBlock(final OutputStream out) throws IOException {

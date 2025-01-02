@@ -221,7 +221,7 @@ public class DatasetAttributes implements Serializable {
 		return null;
 	}
 
-	private Codec[] concatenateCodecs() {
+	protected Codec[] concatenateCodecs() {
 
 		final Codec[] allCodecs = new Codec[byteCodecs.length + 1];
 		allCodecs[0] = arrayCodec;

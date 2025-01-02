@@ -1,11 +1,13 @@
 package org.janelia.saalfeldlab.n5.shard;
 
 import java.util.Arrays;
+import java.util.Iterator;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
+import org.janelia.saalfeldlab.n5.util.GridIterator;
 
-public interface Shard<T> {
+public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 	long EMPTY_INDEX_NBYTES = 0xFFFFFFFFFFFFFFFFL;
 
@@ -63,6 +65,21 @@ public interface Shard<T> {
 		final long[] shardPos = getDatasetAttributes().getShardPositionForBlock(blockPosition);
 		return getDatasetAttributes().getBlockPositionInShard(shardPos, blockPosition);
 	}
+	
+	/**
+	 * Returns the position in pixels of the 
+	 * 
+	 * @return the min 
+	 */
+	default long[] getShardMinPosition(long... shardPosition) {
+
+		final int[] shardSize = getSize();
+		final long[] shardMin = new long[shardSize.length];
+		for (int i = 0; i < shardSize.length; i++) {
+			shardMin[i] = shardPosition[i] * shardSize[i];
+		}
+		return shardMin;
+	}
 
 	/**
 	 * Returns the position of the shard containing the block with the given block position.
@@ -84,7 +101,10 @@ public interface Shard<T> {
 
 	public void writeBlock(DataBlock<T> block);
 
-	public void writeShard();
+	default Iterator<DataBlock<T>> iterator() {
+
+		return new DataBlockIterator<T>(this);
+	}
 
 	default DataBlock<T>[] getAllBlocks(long... position) {
 		//TODO Caleb: Do we want this?
@@ -111,21 +131,27 @@ public interface Shard<T> {
 		}
 		return index;
 	}
-	
-	/**
-	 * 
-	 * @param <T>
-	 *            the type
-	 * @param dataBlocks
-	 *            an array
-	 * @return a shard containing the given blocks
-	 */
-	public static <T> Shard<T> fromDataBlocks(
-			final ShardedDatasetAttributes attributes,
-			final DataBlock<T>[] dataBlocks) {
 
-		// TODO implement me
-		return null; 
+	public static class DataBlockIterator<T> implements Iterator<DataBlock<T>> {
+
+		private final GridIterator it;
+		private final Shard<T> shard;
+
+		public DataBlockIterator(final Shard<T> shard) {
+
+			this.shard = shard;
+			it = new GridIterator(shard.getBlockGridSize());
+		}
+
+		@Override
+		public boolean hasNext() {
+			return it.hasNext();
+		}
+
+		@Override
+		public DataBlock<T> next() {
+			return shard.getBlock(it.next());
+		}
 	}
 
 	/**

@@ -103,8 +103,8 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		if (datasetAttributes instanceof ShardedDatasetAttributes) {
-			final ShardedDatasetAttributes shardedAttrs = (ShardedDatasetAttributes)datasetAttributes;
+		final ShardedDatasetAttributes shardedAttrs = datasetAttributes.getShardAttributes();
+		if (shardedAttrs != null) {
 			final long[] shardPosition = shardedAttrs.getShardPositionForBlock(gridPosition);
 			final Shard<?> shard = getShard(pathName, shardedAttrs, shardPosition);
 			return shard.getBlock(gridPosition);
