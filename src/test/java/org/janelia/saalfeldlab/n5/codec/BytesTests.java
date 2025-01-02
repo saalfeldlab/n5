@@ -43,6 +43,7 @@ public class BytesTests {
 						new IdentityCodec()
 				}
 		);
+		writer.createGroup("shard"); //Should already exist, but this will ensure.
 		writer.setAttribute("shard", "/", datasetAttributes);
 		final DatasetAttributes deserialized = writer.getAttribute("shard", "/", DatasetAttributes.class);
 
