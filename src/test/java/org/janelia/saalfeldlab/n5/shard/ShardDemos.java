@@ -1,15 +1,12 @@
 package org.janelia.saalfeldlab.n5.shard;
 
 import com.google.gson.GsonBuilder;
-import org.janelia.saalfeldlab.n5.Bzip2Compression;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
 import org.janelia.saalfeldlab.n5.GzipCompression;
-import org.janelia.saalfeldlab.n5.Lz4Compression;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
-import org.janelia.saalfeldlab.n5.XzCompression;
 import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
@@ -147,6 +144,61 @@ public class ShardDemos {
 
 				writtenBlocks.put(gridPosition, data);
 			}
+		}
+	}
+
+	@Test
+	public void writeReadShardTest() {
+
+		final N5Factory factory = new N5Factory();
+		final GsonBuilder gsonBuilder = new GsonBuilder();
+		gsonBuilder.setPrettyPrinting();
+		factory.gsonBuilder(gsonBuilder);
+		factory.cacheAttributes(false);
+
+		final N5Writer writer = factory.openWriter("src/test/resources/shardExamples/test.n5");
+
+		final ShardedDatasetAttributes datasetAttributes = new ShardedDatasetAttributes(
+				new long[]{4, 4},
+				new int[]{4, 4},
+				new int[]{2, 2},
+				DataType.UINT8,
+				new Codec[]{new N5BlockCodec(dataByteOrder)},
+				new DeterministicSizeCodec[]{new BytesCodec(indexByteOrder), new Crc32cChecksumCodec()},
+				indexLocation
+		);
+		writer.createDataset("wholeShard", datasetAttributes);
+		writer.deleteBlock("wholeShard", 0, 0);
+
+		final int[] blockSize = datasetAttributes.getBlockSize();
+		final DataType dataType = datasetAttributes.getDataType();
+		final int numElements = 2 * 2;
+
+		final HashMap<long[], byte[]> writtenBlocks = new HashMap<>();
+
+		final InMemoryShard<byte[]> shard = new InMemoryShard<byte[]>(datasetAttributes, new long[]{0, 0});
+
+		for (int idx1 = 1; idx1 >= 0; idx1--) {
+			for (int idx2 = 1; idx2 >= 0; idx2--) {
+				final long[] gridPosition = {idx1, idx2};
+				final DataBlock<byte[]> dataBlock = (DataBlock<byte[]>)dataType.createDataBlock(blockSize, gridPosition, numElements);
+				byte[] data = dataBlock.getData();
+				for (int i = 0; i < data.length; i++) {
+					data[i] = (byte)((idx1 * 100) + (idx2 * 10) + i);
+				}
+
+				shard.addBlock(dataBlock);
+				writtenBlocks.put(gridPosition, data);
+			}
+		}
+
+		writer.writeShard("wholeShard", datasetAttributes, shard);
+
+		for (Map.Entry<long[], byte[]> entry : writtenBlocks.entrySet()) {
+			final long[] otherGridPosition = entry.getKey();
+			final byte[] otherData = entry.getValue();
+			final DataBlock<byte[]> otherBlock = (DataBlock<byte[]>)writer.readBlock("wholeShard", datasetAttributes, otherGridPosition);
+			Assert.assertArrayEquals("Read prior write from shard no loner matches", otherData, otherBlock.getData());
 		}
 	}
 

@@ -36,12 +36,7 @@ public class ShardIndexBuilder {
 
 		this.location = location;
 		this.temporaryIndex = new ShardIndex(shard.getBlockGridSize(), location);
-
-		if (location == IndexLocation.END)
-			currentOffset = 0;
-		else
-			currentOffset = temporaryIndex.numBytes();
-
+		updateInitialOffset();
 		return this;
 	}
 
@@ -53,8 +48,9 @@ public class ShardIndexBuilder {
 	public ShardIndexBuilder setCodecs(DeterministicSizeCodec... codecs) {
 
 		this.codecs = codecs;
-		final ShardIndex newIndex = new ShardIndex(temporaryIndex.getSize(), temporaryIndex.getLocation(), codecs);
+		final ShardIndex newIndex = new ShardIndex(shard.getBlockGridSize(), temporaryIndex.getLocation(), codecs);
 		this.temporaryIndex = newIndex;
+		updateInitialOffset();
 		return this;
 	}
 
@@ -76,6 +72,15 @@ public class ShardIndexBuilder {
 		currentOffset += numBytes;
 
 		return this;
+	}
+
+	private void updateInitialOffset() {
+
+		if (location == IndexLocation.END)
+			currentOffset = 0;
+		else
+			currentOffset = temporaryIndex.numBytes();
+
 	}
 
 }
