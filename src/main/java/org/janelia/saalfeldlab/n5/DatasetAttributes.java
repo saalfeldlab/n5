@@ -43,6 +43,7 @@ public class DatasetAttributes implements Serializable {
 
 	public static final String DIMENSIONS_KEY = "dimensions";
 	public static final String BLOCK_SIZE_KEY = "blockSize";
+	public static final String SHARD_SIZE_KEY = "shardSize";
 	public static final String DATA_TYPE_KEY = "dataType";
 	public static final String COMPRESSION_KEY = "compression";
 	public static final String CODEC_KEY = "codecs";
@@ -250,6 +251,12 @@ public class DatasetAttributes implements Serializable {
 
 			final long[] dimensions = context.deserialize(obj.get(DIMENSIONS_KEY), long[].class);
 			final int[] blockSize = context.deserialize(obj.get(BLOCK_SIZE_KEY), int[].class);
+
+			int[] shardSize = null;
+			if (obj.has(SHARD_SIZE_KEY)) {
+				shardSize = context.deserialize(obj.get(SHARD_SIZE_KEY), int[].class);
+			}
+
 			final DataType dataType = context.deserialize(obj.get(DATA_TYPE_KEY), DataType.class);
 
 			Compression compression = null;
@@ -268,9 +275,6 @@ public class DatasetAttributes implements Serializable {
 
 			if (codecs != null && codecs.length == 1 && codecs[0] instanceof ShardingCodec) {
 				final ShardingCodec shardingCodec = (ShardingCodec)codecs[0];
-				final int[] blocksPerShard = shardingCodec.getBlockSize();
-				final int[] shardSize = new int[blockSize.length];
-				Arrays.setAll(shardSize, i -> blocksPerShard[i] * blockSize[i]);
 				return new ShardedDatasetAttributes(
 						dimensions,
 						shardSize,
@@ -287,6 +291,12 @@ public class DatasetAttributes implements Serializable {
 			final JsonObject obj = new JsonObject();
 			obj.add(DIMENSIONS_KEY, context.serialize(src.dimensions));
 			obj.add(BLOCK_SIZE_KEY, context.serialize(src.blockSize));
+
+			final ShardedDatasetAttributes shardedAttrs = src.getShardAttributes();
+			if (shardedAttrs != null) {
+				obj.add(SHARD_SIZE_KEY, context.serialize(shardedAttrs.getShardSize()));
+			}
+
 			obj.add(DATA_TYPE_KEY, context.serialize(src.dataType));
 			obj.add(COMPRESSION_KEY, CompressionAdapter.getJsonAdapter().serialize(src.compression, src.compression.getClass(), context));
 			obj.add(CODEC_KEY, context.serialize(src.concatenateCodecs()));
