@@ -82,14 +82,11 @@ public class ShardIndex extends LongArrayDataBlock {
 
 	private int getOffsetIndex(long... gridPosition) {
 
-		int idx = 0;
-		long stride = 2;
-		for (int i = 0; i < gridPosition.length; i++) {
-			idx += gridPosition[i] * stride;
-			stride *= size[i];
+		int idx = (int) gridPosition[0];
+		for (int i = 1; i < gridPosition.length; i++) {
+			idx += gridPosition[i] * size[i];
 		}
-
-		return idx;
+		return idx * 2;
 	}
 
 	private int getNumBytesIndex(long... gridPosition) {
