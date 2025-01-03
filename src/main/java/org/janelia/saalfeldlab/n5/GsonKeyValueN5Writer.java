@@ -245,11 +245,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	@Override
 	default <T> void writeShard(
 			final String path,
-			final DatasetAttributes datasetAttributes,
+			final ShardedDatasetAttributes datasetAttributes,
 			final Shard<T> shard) throws N5Exception {
-
-		if( datasetAttributes.getShardAttributes() == null )
-			throw new N5IOException("Tried to write shard into a not-sharded dataset: " + path);
 
 		final String shardPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), shard.getGridPosition());
 		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(shardPath)) {

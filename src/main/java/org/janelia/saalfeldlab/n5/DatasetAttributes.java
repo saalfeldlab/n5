@@ -149,22 +149,6 @@ public class DatasetAttributes implements Serializable {
 		return byteCodecs;
 	}
 
-	public ShardedDatasetAttributes getShardAttributes() {
-
-		if (getArrayCodec() instanceof ShardingCodec) {
-
-			final ShardingCodec shardingCodec = (ShardingCodec)getArrayCodec();
-			return new ShardedDatasetAttributes(
-					dimensions,
-					blockSize,
-					shardingCodec.getBlockSize(),
-					getDataType(),
-					shardingCodec);
-
-		} else
-			return null;
-	}
-
 	public HashMap<String, Object> asMap() {
 
 		final HashMap<String, Object> map = new HashMap<>();
@@ -292,9 +276,8 @@ public class DatasetAttributes implements Serializable {
 			obj.add(DIMENSIONS_KEY, context.serialize(src.dimensions));
 			obj.add(BLOCK_SIZE_KEY, context.serialize(src.blockSize));
 
-			final ShardedDatasetAttributes shardedAttrs = src.getShardAttributes();
-			if (shardedAttrs != null) {
-				obj.add(SHARD_SIZE_KEY, context.serialize(shardedAttrs.getShardSize()));
+			if (src instanceof ShardedDatasetAttributes) {
+				obj.add(SHARD_SIZE_KEY, context.serialize(((ShardedDatasetAttributes)src).getShardSize()));
 			}
 
 			obj.add(DATA_TYPE_KEY, context.serialize(src.dataType));
