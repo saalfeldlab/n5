@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -212,6 +213,34 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			removed |= removeAttribute(normalPath, normalKey);
 		}
 		return removed;
+	}
+
+	@Override default <T> void writeBlocks(final String datasetPath, final DatasetAttributes datasetAttributes, final DataBlock<T>... dataBlocks) throws N5Exception {
+
+		if (datasetAttributes instanceof ShardedDatasetAttributes) {
+			final ShardedDatasetAttributes shardAttributes = (ShardedDatasetAttributes)datasetAttributes;
+			/* Group by shard index */
+			final HashMap<Integer, InMemoryShard<T>> shardBlockMap = new HashMap<>();
+
+			for (DataBlock<T> dataBlock : dataBlocks) {
+				final long[] shardPosition = shardAttributes.getShardPositionForBlock(dataBlock.getGridPosition());
+				final int shardHash = Arrays.hashCode(shardPosition);
+				if (!shardBlockMap.containsKey(shardHash))
+					shardBlockMap.put(shardHash, new InMemoryShard<>(shardAttributes, shardPosition));
+				final InMemoryShard<T> shard = shardBlockMap.get(shardHash);
+				shard.addBlock(dataBlock);
+			}
+
+			for (InMemoryShard<T> shard : shardBlockMap.values()) {
+				writeShard(datasetPath, shardAttributes, shard);
+			}
+		} else {
+			/* Just write each block */
+			for (DataBlock<T> dataBlock : dataBlocks) {
+				writeBlock(datasetPath, datasetAttributes, dataBlock);
+			}
+		}
+
 	}
 
 	@Override

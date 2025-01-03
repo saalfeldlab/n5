@@ -97,7 +97,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		return shardGridPosition;
 	}
 
-	public DataBlock<T> getBlock(long... position);
+	public DataBlock<T> getBlock(long... blockGridPosition);
 
 	public void writeBlock(DataBlock<T> block);
 

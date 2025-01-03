@@ -44,12 +44,6 @@ public abstract class AbstractShard<T> implements Shard<T> {
 	}
 
 	@Override
-	public DataBlock<T> getBlock(long... position) {
-
-		return null;
-	}
-
-	@Override
 	public ShardIndex getIndex() {
 
 		return index;

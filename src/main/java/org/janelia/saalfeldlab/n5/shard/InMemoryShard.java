@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -16,8 +17,8 @@ import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
 public class InMemoryShard<T> extends AbstractShard<T> {
 
-	private List<DataBlock<T>> blocks;
-	
+	/* Map of a hash of the DataBlocks `gridPosition` to the block */
+	private final HashMap<Integer, DataBlock<T>> blocks;
 	private ShardIndexBuilder indexBuilder;
 	
 	/*
@@ -26,9 +27,9 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	 * (later)
 	 */
 
-	public InMemoryShard(final ShardedDatasetAttributes datasetAttributes, final long[] gridPosition) {
+	public InMemoryShard(final ShardedDatasetAttributes datasetAttributes, final long[] shardPosition) {
 
-		this( datasetAttributes, gridPosition, null);
+		this( datasetAttributes, shardPosition, null);
 		indexBuilder = new ShardIndexBuilder(this);
 		indexBuilder.indexLocation(datasetAttributes.getIndexLocation());
 	}
@@ -37,7 +38,17 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 			ShardIndex index) {
 
 		super(datasetAttributes, gridPosition, index);
-		blocks = new ArrayList<>();
+		blocks = new HashMap<>();
+	}
+
+	private void storeBlock(DataBlock<T> block) {
+
+		blocks.put(Arrays.hashCode(block.getGridPosition()), block);
+	}
+
+	@Override public DataBlock<T> getBlock(long... blockGridPosition) {
+
+		return blocks.get(Arrays.hashCode(blockGridPosition));
 	}
 
 	@Override
@@ -48,7 +59,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 
 	public void addBlock(DataBlock<T> block) {
 
-		blocks.add(block);
+		storeBlock(block);
 	}
 
 	public int numBlocks() {
@@ -56,9 +67,9 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		return blocks.size();
 	}
 	
-	public DataBlock<T> getBlock(int i) {
+	public List<DataBlock<T>> getBlocks() {
 
-		return blocks.get(i);
+		return new ArrayList<>(blocks.values());
 	}
 
 	protected IndexLocation indexLocation() {
@@ -113,8 +124,8 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		indexBuilder.indexLocation(IndexLocation.END);
 		indexBuilder.setCodecs(datasetAttributes.getShardingCodec().getIndexCodecs());
 
+		// Neccesary to stop `close()` when writing blocks from closing out base OutputStream
 		final ProxyOutputStream nop = new ProxyOutputStream(out) {
-
 			@Override public void close() {
 				//nop
 			}
@@ -123,12 +134,8 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		final CountingOutputStream cout = new CountingOutputStream(nop);
 
 		long bytesWritten = 0;
-		for (int i = 0; i < shard.numBlocks(); i++) {
-
-			final DataBlock<T> block = shard.getBlock(i);
+		for (DataBlock<T> block : shard.getBlocks()) {
 			DefaultBlockWriter.writeBlock(cout, datasetAttributes, block);
-
-
 			final long size = cout.getByteCount() - bytesWritten;
 			bytesWritten = cout.getByteCount();
 
@@ -148,10 +155,8 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		indexBuilder.indexLocation(IndexLocation.END);
 		indexBuilder.setCodecs(datasetAttributes.getShardingCodec().getIndexCodecs());
 
-		for (int i = 0; i < shard.numBlocks(); i++) {
-
+		for (DataBlock<T> block : shard.getBlocks()) {
 			final ByteArrayOutputStream os = new ByteArrayOutputStream();
-			final DataBlock<T> block = shard.getBlock(i);
 			DefaultBlockWriter.writeBlock(os, datasetAttributes, block);
 
 			indexBuilder.addBlock(block.getGridPosition(), os.size());
@@ -171,10 +176,8 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		indexBuilder.setCodecs(datasetAttributes.getShardingCodec().getIndexCodecs());
 
 		final List<byte[]> blockData = new ArrayList<>(shard.numBlocks());
-		for (int i = 0; i < shard.numBlocks(); i++) {
-
+		for (DataBlock<T> block : shard.getBlocks()) {
 			final ByteArrayOutputStream os = new ByteArrayOutputStream();
-			final DataBlock<T> block = shard.getBlock(i);
 			DefaultBlockWriter.writeBlock(os, datasetAttributes, block);
 
 			blockData.add(os.toByteArray());

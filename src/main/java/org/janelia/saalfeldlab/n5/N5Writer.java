@@ -296,8 +296,6 @@ public interface N5Writer extends N5Reader {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T>... dataBlocks) throws N5Exception {
 
-		// TODO Caleb: write this
-
 		// default method is naive
 		for (DataBlock<T> block : dataBlocks)
 			writeBlock(datasetPath, datasetAttributes, block);

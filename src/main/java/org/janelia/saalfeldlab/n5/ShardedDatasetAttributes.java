@@ -150,7 +150,6 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 	 */
 	public long[] getShardPositionForBlock(final long... blockGridPosition) {
 
-		// TODO have this return a shard
 		final int[] blocksPerShard = getBlocksPerShard();
 		final long[] shardGridPosition = new long[blockGridPosition.length];
 		for (int i = 0; i < shardGridPosition.length; i++) {
