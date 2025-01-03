@@ -27,9 +27,9 @@ public class BytesTests {
 		gsonBuilder.registerTypeAdapter(ByteOrder.class, BytesCodec.byteOrderAdapter);
 		factory.gsonBuilder(gsonBuilder);
 
-		final N5Writer reader = factory.openWriter("n5:src/test/resources/shardExamples/test.zarr");
+		final N5Writer reader = factory.openWriter("n5:src/test/resources/shardExamples/test.n5");
 		final Codec bytes = reader.getAttribute("mid_sharded", "codecs[0]/configuration/codecs[0]", Codec.class);
-		assertTrue("as BytesCodec", bytes instanceof N5BlockCodec);
+		assertTrue("as BytesCodec", bytes instanceof BytesCodec);
 
 		final N5Writer writer = factory.openWriter("n5:src/test/resources/shardExamples/test.n5");
 
