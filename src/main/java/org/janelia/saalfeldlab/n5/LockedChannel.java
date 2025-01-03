@@ -40,6 +40,8 @@ import java.io.Writer;
  */
 public interface LockedChannel extends Closeable {
 
+	public long size() throws IOException;
+
 	/**
 	 * Create a UTF-8 {@link Reader}.
 	 *

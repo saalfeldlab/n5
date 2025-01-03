@@ -26,18 +26,22 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
+import org.janelia.saalfeldlab.n5.shard.Shard;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
+import org.janelia.saalfeldlab.n5.shard.VirtualShard;
 
 /**
  * Default implementation of {@link N5Writer} with JSON attributes parsed with
@@ -193,7 +197,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			throw new N5Exception.N5ClassCastException(e);
 		}
 		if (obj != null) {
-			writeAttributes(normalPath, attributes);
+			setAttributes(normalPath, attributes);
 		}
 		return obj;
 	}
@@ -216,13 +220,45 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception {
 
+		/* Delegate to shard for writing block? How to know what type of shard? */
+		if (datasetAttributes instanceof ShardedDatasetAttributes) {
+			ShardedDatasetAttributes shardDatasetAttrs = (ShardedDatasetAttributes)datasetAttributes;
+			final long[] shardPos = shardDatasetAttrs.getShardPositionForBlock(dataBlock.getGridPosition());
+			final String shardPath = absoluteShardPath(N5URI.normalizeGroupPath(path), shardPos);
+			final VirtualShard<T> shard = new VirtualShard<>(shardDatasetAttrs, shardPos, getKeyValueAccess(), shardPath);
+			shard.writeBlock(dataBlock);
+			return;
+		}
+
 		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), dataBlock.getGridPosition());
 		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(blockPath)) {
-			DefaultBlockWriter.writeBlock(lock.newOutputStream(), datasetAttributes, dataBlock);
+			try (final OutputStream out = lock.newOutputStream()) {
+				DefaultBlockWriter.writeBlock(out, datasetAttributes, dataBlock);
+			}
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
 					e);
+		}
+	}
+
+	@Override
+	default <T> void writeShard(
+			final String path,
+			final DatasetAttributes datasetAttributes,
+			final Shard<T> shard) throws N5Exception {
+
+		if( datasetAttributes.getShardAttributes() == null )
+			throw new N5IOException("Tried to write shard into a not-sharded dataset: " + path);
+
+		final String shardPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), shard.getGridPosition());
+		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(shardPath)) {
+			try (final OutputStream out = lock.newOutputStream()) {
+				InMemoryShard.fromShard(shard).write(out);
+			}
+		} catch (final IOException | UncheckedIOException e) {
+			throw new N5IOException(
+					"Failed to write shard " + Arrays.toString(shard.getGridPosition()) + " into dataset " + path, e);
 		}
 	}
 

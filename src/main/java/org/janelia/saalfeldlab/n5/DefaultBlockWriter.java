@@ -25,10 +25,13 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+
+import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.Codec.DataBlockOutputStream;
 
 /**
  * Default implementation of {@link BlockWriter}.
@@ -70,29 +73,21 @@ public interface DefaultBlockWriter extends BlockWriter {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		final DataOutputStream dos = new DataOutputStream(out);
+		final BytesCodec[] codecs = datasetAttributes.getCodecs();
+		final ArrayCodec arrayCodec = datasetAttributes.getArrayCodec();
+		final DataBlockOutputStream dataBlockOutput = arrayCodec.encode(datasetAttributes, dataBlock, out);
 
-		final int mode;
-		if (datasetAttributes.getDataType() == DataType.OBJECT || dataBlock.getSize() == null)
-			mode = 2;
-		else if (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize()))
-			mode = 0;
-		else
-			mode = 1;
-		dos.writeShort(mode);
+		OutputStream stream = dataBlockOutput;
+		for (final BytesCodec codec : codecs)
+			stream = codec.encode(stream);
 
-		if (mode != 2) {
-			dos.writeShort(datasetAttributes.getNumDimensions());
-			for (final int size : dataBlock.getSize())
-				dos.writeInt(size);
-		}
+		dataBlock.writeData(dataBlockOutput.getDataOutput(stream));
+		stream.close();
+	}
 
-		if (mode != 0)
-			dos.writeInt(dataBlock.getNumElements());
+	public static <T> void writeFromStream(final DataBlock<T> dataBlock, final OutputStream out) throws IOException {
 
-		dos.flush();
-
-		final BlockWriter writer = datasetAttributes.getCompression().getWriter();
-		writer.write(dataBlock, out);
+		final ByteBuffer buffer = dataBlock.toByteBuffer();
+		out.write(buffer.array());
 	}
 }

@@ -34,6 +34,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
+
 /**
  * A simple structured container API for hierarchies of chunked
  * n-dimensional datasets and attributes.
@@ -135,7 +140,7 @@ public interface N5Writer extends N5Reader {
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes) throws N5Exception {
 
-		setAttributes(datasetPath, datasetAttributes.asMap());
+		setAttribute(datasetPath, "/", datasetAttributes);
 	}
 
 	/**
@@ -206,10 +211,45 @@ public interface N5Writer extends N5Reader {
 		setDatasetAttributes(normalPath, datasetAttributes);
 	}
 
+	default void createDataset(
+			final String datasetPath,
+			final long[] dimensions,
+			final int[] shardSize,
+			final int[] blockSize,
+			final DataType dataType,
+			final Compression compression) throws N5Exception {
+
+		final Codec[] codecs = new Codec[]{new ShardingCodec(blockSize, null, null, IndexLocation.END)};
+
+		createDataset(datasetPath, new DatasetAttributes(dimensions, shardSize, dataType, compression, codecs));
+	}
+
 	/**
 	 * Creates a dataset. This does not create any data but the path and
-	 * mandatory
-	 * attributes only.
+	 * mandatory attributes only.
+	 *
+	 * @param datasetPath dataset path
+	 * @param dimensions the dataset dimensions
+	 * @param blockSize the block size
+	 * @param dataType the data type
+	 * @param compression the compression
+	 * @param codecs optional codecs (may be null)
+	 * @throws N5Exception the exception
+	 */
+	default void createDataset(
+			final String datasetPath,
+			final long[] dimensions,
+			final int[] blockSize,
+			final DataType dataType,
+			final Compression compression,
+			final Codec[] codecs) throws N5Exception {
+
+		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, compression, codecs));
+	}
+
+	/**
+	 * Creates a dataset. This does not create any data but the path and
+	 * mandatory attributes only.
 	 *
 	 * @param datasetPath dataset path
 	 * @param dimensions the dataset dimensions
@@ -225,7 +265,7 @@ public interface N5Writer extends N5Reader {
 			final DataType dataType,
 			final Compression compression) throws N5Exception {
 
-		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, compression));
+		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, compression, null));
 	}
 
 	/**
@@ -241,6 +281,41 @@ public interface N5Writer extends N5Reader {
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception;
+
+	/**
+	 * Write multiple data blocks, useful for request aggregation .
+	 *
+	 * @param datasetPath dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param dataBlocks the data block
+	 * @param <T> the data block data type
+	 * @throws N5Exception the exception
+	 */
+	default <T> void writeBlocks(
+			final String datasetPath,
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T>... dataBlocks) throws N5Exception {
+
+		// TODO Caleb: write this
+
+		// default method is naive
+		for (DataBlock<T> block : dataBlocks)
+			writeBlock(datasetPath, datasetAttributes, block);
+	}
+
+	/**
+	 * Writes a {@link Shard}.
+	 *
+	 * @param datasetPath dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param shard the shard
+	 * @param <T> the data block data type
+	 * @throws N5Exception the exception
+	 */
+	<T> void writeShard(
+			final String datasetPath,
+			final DatasetAttributes datasetAttributes,
+			final Shard<T> shard) throws N5Exception;
 
 	/**
 	 * Deletes the block at {@code gridPosition}

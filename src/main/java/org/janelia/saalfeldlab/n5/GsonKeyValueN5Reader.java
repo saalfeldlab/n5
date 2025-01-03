@@ -30,6 +30,8 @@ import java.io.UncheckedIOException;
 import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.VirtualShard;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -86,11 +88,27 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	}
 
+	@SuppressWarnings("rawtypes")
+	default Shard<?> getShard(final String pathName,
+			final ShardedDatasetAttributes datasetAttributes,
+			long... shardGridPosition) {
+
+		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), shardGridPosition);
+		return new VirtualShard(datasetAttributes, shardGridPosition, getKeyValueAccess(), path);
+	}
+
 	@Override
 	default DataBlock<?> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
+
+		final ShardedDatasetAttributes shardedAttrs = datasetAttributes.getShardAttributes();
+		if (shardedAttrs != null) {
+			final long[] shardPosition = shardedAttrs.getShardPositionForBlock(gridPosition);
+			final Shard<?> shard = getShard(pathName, shardedAttrs, shardPosition);
+			return shard.getBlock(gridPosition);
+		}
 
 		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), gridPosition);
 
@@ -146,6 +164,35 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	/**
+	 * Constructs the path for a shard in a dataset at a given grid position.
+	 * <p>
+	 * The returned path is
+	 *
+	 * <pre>
+	 * $basePath/datasetPathName/$shardPosition[0]/$shardPosition[1]/.../$shardPosition[n]
+	 * </pre>
+	 * <p>
+	 * This is the file into which the shard will be stored.
+	 *
+	 * @param normalPath normalized dataset path
+	 * @param shardGridPosition to the target shard
+	 * @return the absolute path to the shard at shardGridPosition
+	 */
+	default String absoluteShardPath(
+			final String normalPath,
+			final long... shardGridPosition) {
+
+		final String[] components = new String[shardGridPosition.length + 1];
+		components[0] = normalPath;
+		int i = 0;
+		for (final long p : shardGridPosition)
+			components[++i] = Long.toString(p);
+
+		return getKeyValueAccess().compose(getURI(), components);
+	}
+
+
+	/**
 	 * Constructs the absolute path (in terms of this store) for the group or
 	 * dataset.
 	 *
@@ -168,6 +215,6 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 */
 	default String absoluteAttributesPath(final String normalPath) {
 
-		return getKeyValueAccess().compose(getURI(), normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
+		return getKeyValueAccess().compose(getURI(), normalPath, getAttributesKey());
 	}
 }

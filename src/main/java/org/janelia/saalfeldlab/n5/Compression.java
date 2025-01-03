@@ -25,6 +25,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -32,6 +35,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.scijava.annotations.Indexable;
 
 /**
@@ -39,7 +43,7 @@ import org.scijava.annotations.Indexable;
  *
  * @author Stephan Saalfeld
  */
-public interface Compression extends Serializable {
+public interface Compression extends Serializable, Codec.BytesCodec {
 
 	/**
 	 * Annotation for runtime discovery of compression schemes.
@@ -63,6 +67,7 @@ public interface Compression extends Serializable {
 	@Target(ElementType.FIELD)
 	public static @interface CompressionParameter {}
 
+	@Override
 	public default String getType() {
 
 		final CompressionType compressionType = getClass().getAnnotation(CompressionType.class);
@@ -72,7 +77,29 @@ public interface Compression extends Serializable {
 			return compressionType.value();
 	}
 
+
 	public BlockReader getReader();
 
 	public BlockWriter getWriter();
+
+	/**
+	 * Decode an {@link InputStream}.
+	 *
+	 * @param in
+	 *            input stream
+	 * @return the decoded input stream
+	 */
+	@Override
+	public InputStream decode(InputStream in) throws IOException;
+
+	/**
+	 * Encode an {@link OutputStream}.
+	 *
+	 * @param out
+	 *            the output stream
+	 * @return the encoded output stream
+	 */
+	@Override
+	public OutputStream encode(OutputStream out) throws IOException;
+
 }
