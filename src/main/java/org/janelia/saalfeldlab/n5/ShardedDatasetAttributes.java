@@ -28,6 +28,13 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 			final IndexLocation indexLocation
 	) {
 		super(dimensions, blockSize, dataType, null, blocksCodecs);
+
+		if (!validateShardBlockSize(shardSize, blockSize)) {
+			throw new N5Exception(String.format("Invalid shard %s / block size %s",
+					Arrays.toString(shardSize),
+					Arrays.toString(blockSize)));
+		}
+
 		this.shardSize = shardSize;
 		this.shardingCodec = new ShardingCodec(
 				blockSize,
@@ -46,6 +53,26 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 		super(dimensions, blockSize, dataType, null, null);
 		this.shardSize = shardSize;
 		this.shardingCodec = codec;
+	}
+
+	/**
+	 * Returns whether the given shard and block sizes are valid. Specifically, is
+	 * the shard size a multiple of the block size in every dimension.
+	 *
+	 * @param shardSize size of the shard in pixels
+	 * @param blockSize size of a block in pixels
+	 * @return
+	 */
+	public static boolean validateShardBlockSize(final int[] shardSize, final int[] blockSize) {
+
+		if (shardSize.length != blockSize.length)
+			return false;
+
+		for (int i = 0; i < shardSize.length; i++) {
+			if (shardSize[i] % blockSize[i] != 0)
+				return false;
+		}
+		return true;
 	}
 
 	public ShardedDatasetAttributes getShardAttributes() {
