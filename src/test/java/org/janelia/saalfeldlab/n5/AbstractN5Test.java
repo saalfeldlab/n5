@@ -92,7 +92,7 @@ public abstract class AbstractN5Test {
 
 	protected final HashSet<N5Writer> tempWriters = new HashSet<>();
 
-	protected final N5Writer createTempN5Writer() {
+	public final N5Writer createTempN5Writer() {
 
 		try {
 			return createTempN5Writer(tempN5Location());

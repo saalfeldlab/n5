@@ -1,10 +1,12 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import com.google.gson.GsonBuilder;
+import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
 import org.janelia.saalfeldlab.n5.GzipCompression;
+import org.janelia.saalfeldlab.n5.KeyValueAccess;
+import org.janelia.saalfeldlab.n5.N5FSTest;
+import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.BytesCodec;
@@ -13,17 +15,13 @@ import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
-import org.janelia.saalfeldlab.n5.universe.N5Factory;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.net.MalformedURLException;
 import java.nio.ByteOrder;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,43 +29,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RunWith(Parameterized.class)
-public class ShardDemos {
+public class ShardTest {
 
-	public static void main(String[] args) throws MalformedURLException {
-
-		final Path p = Paths.get("src/test/resources/shardExamples/test.zarr/mid_sharded/c/0/0");
-		System.out.println(p);
-
-		final String key = p.toString();
-		final ShardedDatasetAttributes dsetAttrs = new ShardedDatasetAttributes(
-				new long[]{6, 4},
-				new int[]{6, 4},
-				new int[]{3, 2},
-				DataType.UINT8,
-				new Codec[]{new N5BlockCodec()},
-				new DeterministicSizeCodec[]{new BytesCodec(), new Crc32cChecksumCodec()},
-				IndexLocation.END
-		);
-
-		final FileSystemKeyValueAccess kva = new FileSystemKeyValueAccess(FileSystems.getDefault());
-		final VirtualShard<byte[]> shard = new VirtualShard<>(dsetAttrs, new long[]{0, 0}, kva, key);
-
-		final DataBlock<byte[]> blk = shard.getBlock(0, 0);
-
-		final byte[] data = blk.getData();
-		System.out.println(Arrays.toString(data));
-
-		// fill the block with a weird value
-		Arrays.fill(data, (byte)123);
-
-		// write the block
-		shard.writeBlock(blk);
-
-		// re-read the block and check the data it contains
-		final DataBlock<byte[]> blkReread = shard.getBlock(0, 0);
-		final byte[] dataReRead = blkReread.getData();
-		System.out.println(Arrays.toString(dataReRead));
-	}
+	private static final N5FSTest tempN5Factory = new N5FSTest();
 
 	@Parameterized.Parameters(name = "IndexLocation({0}), Block ByteOrder({1}), Index ByteOrder({2})")
 	public static Collection<Object[]> data() {
@@ -94,26 +58,82 @@ public class ShardDemos {
 	@Parameterized.Parameter(2)
 	public ByteOrder indexByteOrder;
 
-	@Test
-	public void writeReadBlockTest() {
+	@After
+	public void removeTempWriters() {
+		tempN5Factory.removeTempWriters();
+	}
 
-		final N5Factory factory = new N5Factory();
-		final GsonBuilder gsonBuilder = new GsonBuilder();
-		gsonBuilder.setPrettyPrinting();
-		factory.gsonBuilder(gsonBuilder);
-		factory.cacheAttributes(false);
-
-		final N5Writer writer = factory.openWriter("src/test/resources/shardExamples/test.n5");
-
-		final ShardedDatasetAttributes datasetAttributes = new ShardedDatasetAttributes(
-				new long[]{8, 8},
-				new int[]{4, 4},
-				new int[]{2, 2},
+	private ShardedDatasetAttributes getTestAttributes(long[] dimensions, int[] shardSize, int[] blockSize) {
+		return new ShardedDatasetAttributes(
+				dimensions,
+				shardSize,
+				blockSize,
 				DataType.UINT8,
-				new Codec[]{new N5BlockCodec(dataByteOrder), new GzipCompression(4)},
+				new Codec[]{new N5BlockCodec(dataByteOrder) , new GzipCompression(4)},
 				new DeterministicSizeCodec[]{new BytesCodec(indexByteOrder), new Crc32cChecksumCodec()},
 				indexLocation
 		);
+	}
+
+	private ShardedDatasetAttributes getTestAttributes() {
+			return getTestAttributes(new long[]{8, 8}, new int[]{4, 4}, new int[]{2, 2});
+	}
+
+	@Test
+	public void writeReadBlocksTest() {
+
+		final N5Writer writer = tempN5Factory.createTempN5Writer();
+		final ShardedDatasetAttributes datasetAttributes = getTestAttributes(
+				new long[]{24,24},
+				new int[]{8,8},
+				new int[]{2,2}
+		);
+
+		writer.createDataset("shard", datasetAttributes);
+
+		final int[] blockSize = datasetAttributes.getBlockSize();
+		final int numElements = blockSize[0] * blockSize[1];
+
+		final byte[] data = new byte[numElements];
+		for (int i = 0; i < data.length; i++) {
+			data[i] = (byte)((100) + (10) + i);
+		}
+
+		writer.writeBlocks(
+				"shard",
+				datasetAttributes,
+				/* shard (0, 0) */
+				new ByteArrayDataBlock(blockSize, new long[]{0,0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{0,1}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{1,0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{1,1}, data),
+
+				/* shard (1, 0) */
+				new ByteArrayDataBlock(blockSize, new long[]{4,0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{5,0}, data),
+
+				/* shard (2, 2) */
+				new ByteArrayDataBlock(blockSize, new long[]{11,11}, data)
+		);
+
+		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
+		String p = writer.getURI().getPath();
+		final String shard00 = kva.compose(writer.getURI(), "shard", "0", "0");
+		kva.exists(shard00);
+
+		final String shard10 = kva.compose(writer.getURI(), "shard", "0", "0");
+		kva.exists(shard10);
+
+		final String shard33 = kva.compose(writer.getURI(), "shard", "0", "0");
+		kva.exists(shard33);
+	}
+
+	@Test
+	public void writeReadBlockTest() {
+
+		final N5Writer writer = tempN5Factory.createTempN5Writer();
+		final ShardedDatasetAttributes datasetAttributes = getTestAttributes();
+
 		writer.createDataset("shard", datasetAttributes);
 		writer.deleteBlock("shard", 0, 0);
 
@@ -126,21 +146,21 @@ public class ShardDemos {
 		for (int idx1 = 1; idx1 >= 0; idx1--) {
 			for (int idx2 = 1; idx2 >= 0; idx2--) {
 				final long[] gridPosition = {idx1, idx2};
-				final DataBlock<byte[]> dataBlock = (DataBlock<byte[]>)dataType.createDataBlock(blockSize, gridPosition, numElements);
-				byte[] data = dataBlock.getData();
+				final DataBlock<?> dataBlock = dataType.createDataBlock(blockSize, gridPosition, numElements);
+				byte[] data = (byte[])dataBlock.getData();
 				for (int i = 0; i < data.length; i++) {
 					data[i] = (byte)((idx1 * 100) + (idx2 * 10) + i);
 				}
 				writer.writeBlock("shard", datasetAttributes, dataBlock);
 
-				final DataBlock<byte[]> block = (DataBlock<byte[]>)writer.readBlock("shard", datasetAttributes, gridPosition);
-				Assert.assertArrayEquals("Read from shard doesn't match", data, block.getData());
+				final DataBlock<?> block = writer.readBlock("shard", datasetAttributes, gridPosition);
+				Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
 
 				for (Map.Entry<long[], byte[]> entry : writtenBlocks.entrySet()) {
 					final long[] otherGridPosition = entry.getKey();
 					final byte[] otherData = entry.getValue();
-					final DataBlock<byte[]> otherBlock = (DataBlock<byte[]>)writer.readBlock("shard", datasetAttributes, otherGridPosition);
-					Assert.assertArrayEquals("Read prior write from shard no loner matches", otherData, otherBlock.getData());
+					final DataBlock<?> otherBlock = writer.readBlock("shard", datasetAttributes, otherGridPosition);
+					Assert.assertArrayEquals("Read prior write from shard no loner matches", otherData, (byte[])otherBlock.getData());
 				}
 
 				writtenBlocks.put(gridPosition, data);
@@ -151,13 +171,7 @@ public class ShardDemos {
 	@Test
 	public void writeReadShardTest() {
 
-		final N5Factory factory = new N5Factory();
-		final GsonBuilder gsonBuilder = new GsonBuilder();
-		gsonBuilder.setPrettyPrinting();
-		factory.gsonBuilder(gsonBuilder);
-		factory.cacheAttributes(false);
-
-		final N5Writer writer = factory.openWriter("src/test/resources/shardExamples/test.n5");
+		final N5Writer writer = tempN5Factory.createTempN5Writer();
 
 		final ShardedDatasetAttributes datasetAttributes = new ShardedDatasetAttributes(
 				new long[]{4, 4},
@@ -182,13 +196,12 @@ public class ShardDemos {
 		for (int idx1 = 1; idx1 >= 0; idx1--) {
 			for (int idx2 = 1; idx2 >= 0; idx2--) {
 				final long[] gridPosition = {idx1, idx2};
-				final DataBlock<byte[]> dataBlock = (DataBlock<byte[]>)dataType.createDataBlock(blockSize, gridPosition, numElements);
-				byte[] data = dataBlock.getData();
+				final DataBlock<?> dataBlock = dataType.createDataBlock(blockSize, gridPosition, numElements);
+				byte[] data = (byte[])dataBlock.getData();
 				for (int i = 0; i < data.length; i++) {
 					data[i] = (byte)((idx1 * 100) + (idx2 * 10) + i);
 				}
-
-				shard.addBlock(dataBlock);
+				shard.addBlock((DataBlock<byte[]>)dataBlock);
 				writtenBlocks.put(gridPosition, data);
 			}
 		}
@@ -198,8 +211,8 @@ public class ShardDemos {
 		for (Map.Entry<long[], byte[]> entry : writtenBlocks.entrySet()) {
 			final long[] otherGridPosition = entry.getKey();
 			final byte[] otherData = entry.getValue();
-			final DataBlock<byte[]> otherBlock = (DataBlock<byte[]>)writer.readBlock("wholeShard", datasetAttributes, otherGridPosition);
-			Assert.assertArrayEquals("Read prior write from shard no loner matches", otherData, otherBlock.getData());
+			final DataBlock<?> otherBlock = writer.readBlock("wholeShard", datasetAttributes, otherGridPosition);
+			Assert.assertArrayEquals("Read prior write from shard no loner matches", otherData, (byte[])otherBlock.getData());
 		}
 	}
 
