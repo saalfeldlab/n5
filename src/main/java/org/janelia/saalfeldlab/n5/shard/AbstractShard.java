@@ -1,17 +1,16 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
 
-public abstract class AbstractShard<T> implements Shard<T> {
+public abstract class AbstractShard<T, A extends DatasetAttributes & ShardParameters> implements Shard<T,A> {
 
-	protected final ShardedDatasetAttributes datasetAttributes;
+	protected final A datasetAttributes;
 
 	protected ShardIndex index;
 
 	private final long[] gridPosition;
 
-	public AbstractShard(final ShardedDatasetAttributes datasetAttributes, final long[] gridPosition,
+	public AbstractShard(final A datasetAttributes, final long[] gridPosition,
 			final ShardIndex index) {
 
 		this.datasetAttributes = datasetAttributes;
@@ -20,7 +19,7 @@ public abstract class AbstractShard<T> implements Shard<T> {
 	}
 
 	@Override
-	public ShardedDatasetAttributes getDatasetAttributes() {
+	public A getDatasetAttributes() {
 
 		return datasetAttributes;
 	}
@@ -48,6 +47,5 @@ public abstract class AbstractShard<T> implements Shard<T> {
 
 		return index;
 	}
-
 
 }

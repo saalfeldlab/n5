@@ -37,7 +37,7 @@ import com.google.gson.JsonSerializer;
  * @author Stephan Saalfeld
  *
  */
-public class DatasetAttributes implements Serializable {
+public class DatasetAttributes implements BlockParameters, Serializable {
 
 	private static final long serialVersionUID = -4521467080388947553L;
 
@@ -114,16 +114,19 @@ public class DatasetAttributes implements Serializable {
 		this(dimensions, blockSize, dataType, compression, null);
 	}
 
+	@Override
 	public long[] getDimensions() {
 
 		return dimensions;
 	}
 
+	@Override
 	public int getNumDimensions() {
 
 		return dimensions.length;
 	}
 
+	@Override
 	public int[] getBlockSize() {
 
 		return blockSize;

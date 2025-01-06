@@ -4,10 +4,10 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 
-public interface Shard<T> extends Iterable<DataBlock<T>> {
+public interface Shard<T,A extends DatasetAttributes & ShardParameters> extends Iterable<DataBlock<T>> {
 
 	long EMPTY_INDEX_NBYTES = 0xFFFFFFFFFFFFFFFFL;
 
@@ -30,7 +30,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		return blockGridSize;
 	}
 
-	public ShardedDatasetAttributes getDatasetAttributes();
+	public A getDatasetAttributes();
 
 	/**
 	 * Returns the size of shards in pixel units.
@@ -113,12 +113,12 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 	public ShardIndex getIndex();
 
-	public static <T> Shard<T> createEmpty(final ShardedDatasetAttributes attributes, long... shardPosition) {
+	public static <T,A extends DatasetAttributes & ShardParameters> Shard<T,A> createEmpty(final A attributes, long... shardPosition) {
 
 		final long[] emptyIndex = new long[(int)(2 * attributes.getNumBlocks())];
 		Arrays.fill(emptyIndex, EMPTY_INDEX_NBYTES);
 		final ShardIndex shardIndex = new ShardIndex(attributes.getBlocksPerShard(), emptyIndex, ShardingCodec.IndexLocation.END);
-		return new InMemoryShard<T>(attributes, shardPosition, shardIndex);
+		return new InMemoryShard<T,A>(attributes, shardPosition, shardIndex);
 	}
 
 	public static long flatIndex(long[] gridPosition, int[] gridSize) {
@@ -135,9 +135,9 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	public static class DataBlockIterator<T> implements Iterator<DataBlock<T>> {
 
 		private final GridIterator it;
-		private final Shard<T> shard;
+		private final Shard<T,?> shard;
 
-		public DataBlockIterator(final Shard<T> shard) {
+		public DataBlockIterator(final Shard<T,?> shard) {
 
 			this.shard = shard;
 			it = new GridIterator(shard.getBlockGridSize());

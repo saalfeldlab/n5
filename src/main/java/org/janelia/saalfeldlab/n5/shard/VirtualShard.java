@@ -6,20 +6,20 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.DefaultBlockReader;
 import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 
-public class VirtualShard<T> extends AbstractShard<T> {
+public class VirtualShard<T, A extends DatasetAttributes & ShardParameters> extends AbstractShard<T,A> {
 
 	final private KeyValueAccess keyValueAccess;
 	final private String path;
 
-	public VirtualShard(final ShardedDatasetAttributes datasetAttributes, long[] gridPosition,
+	public VirtualShard(final A datasetAttributes, long[] gridPosition,
 			final KeyValueAccess keyValueAccess, final String path) {
 
 		super(datasetAttributes, gridPosition, null);

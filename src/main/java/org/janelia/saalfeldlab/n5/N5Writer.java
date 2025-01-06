@@ -36,6 +36,7 @@ import java.util.Map;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.ShardParameters;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
@@ -308,12 +309,13 @@ public interface N5Writer extends N5Reader {
 	 * @param datasetAttributes the dataset attributes
 	 * @param shard the shard
 	 * @param <T> the data block data type
+	 * @param <A> the attribute type
 	 * @throws N5Exception the exception
 	 */
-	<T> void writeShard(
+	<T,A extends DatasetAttributes & ShardParameters> void writeShard(
 			final String datasetPath,
-			final ShardedDatasetAttributes datasetAttributes,
-			final Shard<T> shard) throws N5Exception;
+			final A datasetAttributes,
+			final Shard<T,A> shard) throws N5Exception;
 
 	/**
 	 * Deletes the block at {@code gridPosition}

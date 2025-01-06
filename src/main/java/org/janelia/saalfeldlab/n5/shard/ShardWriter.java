@@ -1,8 +1,8 @@
 package org.janelia.saalfeldlab.n5.shard;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
-import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -13,13 +13,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class ShardWriter {
+public class ShardWriter <A extends DatasetAttributes & ShardParameters> {
 
 	private static final int BYTES_PER_LONG = 8;
 
 	private final List<DataBlock<?>> blocks;
 
-	private ShardedDatasetAttributes attributes;
+	private A attributes;
 
 	private ByteBuffer blockSizes;
 
@@ -29,7 +29,7 @@ public class ShardWriter {
 
 	private List<byte[]> blockBytes;
 
-	public ShardWriter(final ShardedDatasetAttributes datasetAttributes) {
+	public ShardWriter(final A datasetAttributes) {
 
 		blocks = new ArrayList<>();
 		attributes = datasetAttributes;
@@ -48,7 +48,7 @@ public class ShardWriter {
 		blocks.add(block);
 	}
 
-	public void write(final Shard<?> shard, final OutputStream out) throws IOException {
+	public void write(final Shard<?,A> shard, final OutputStream out) throws IOException {
 		
 		attributes = shard.getDatasetAttributes();
 
