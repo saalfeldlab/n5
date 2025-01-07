@@ -102,11 +102,6 @@ public class ShardedDatasetAttributes extends DatasetAttributes implements Shard
 		return getShardingCodec().getIndexLocation();
 	}
 
-	@Override
-	public ShardIndex createIndex() {
-		return new ShardIndex(getBlocksPerShard(), getIndexLocation(), getShardingCodec().getIndexCodecs());
-	}
-
 	/**
 	 * The size of the blocks in pixel units.
 	 *

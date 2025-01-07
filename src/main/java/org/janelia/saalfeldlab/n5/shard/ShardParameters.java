@@ -18,7 +18,9 @@ public interface ShardParameters extends BlockParameters {
 
 	public IndexLocation getIndexLocation();
 
-	public ShardIndex createIndex();
+	default ShardIndex createIndex() {
+		return new ShardIndex(getBlocksPerShard(), getIndexLocation(), getShardingCodec().getIndexCodecs());
+	}
 
 	/**
 	 * Returns the number of blocks per dimension for a shard.
