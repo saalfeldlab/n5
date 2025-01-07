@@ -44,6 +44,10 @@ public class BytesCodec implements Codec.ArrayCodec {
 		this.byteOrder = byteOrder;
 	}
 
+	public ByteOrder getByteOrder() {
+		return byteOrder;
+	}
+
 	@Override
 	public DataBlockInputStream decode(final DatasetAttributes attributes, final long[] gridPosition, InputStream in)
 			throws IOException {
