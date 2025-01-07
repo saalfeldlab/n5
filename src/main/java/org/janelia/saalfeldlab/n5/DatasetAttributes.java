@@ -73,7 +73,7 @@ public class DatasetAttributes implements BlockParameters, Serializable {
 		this.blockSize = blockSize;
 		this.dataType = dataType;
 		if (codecs == null && !(compression instanceof RawCompression)) {
-			byteCodecs = new BytesCodec[]{compression};
+			byteCodecs = new BytesCodec[]{};
 			arrayCodec = new N5BlockCodec();
 		} else if (codecs == null || codecs.length == 0) {
 			byteCodecs = new BytesCodec[]{};
