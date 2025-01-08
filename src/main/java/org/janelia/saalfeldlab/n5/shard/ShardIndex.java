@@ -236,18 +236,31 @@ public class ShardIndex extends LongArrayDataBlock {
 		return indexBlockSize;
 	}
 
-	public static void main(String[] args) {
+	/**
+	 * Calculate the block position in the shard grid for a given index offset.
+	 *
+	 * @param offset          the offset into the index
+	 * @param blocksPerShard the dimensions of the shard in blocks
+	 * @return the relative position in the shard grid
+	 */
+	public static long[] shardPositionFromIndexOffset(int offset, int[] blocksPerShard) {
 
-		final ShardIndex ib = new ShardIndex(new int[]{2, 2});
+		int maxOffset = 1;
+		for (int i = 0; i < blocksPerShard.length; i++) {
+			maxOffset *= blocksPerShard[i];
+		}
+		if (offset >= maxOffset*2) {
+			throw new IllegalArgumentException("Shard Index Offset " + offset + " is out of bounds for shard dimensions " + Arrays.toString(blocksPerShard));
+		}
 
-		ib.set(8, 9, new long[]{1, 1});
+		final long[] position = new long[blocksPerShard.length];
+		int remainder = offset / 2;
 
-		// System.out.println(ib.getIndex(0, 0));
-		// System.out.println(ib.getIndex(1, 0));
-		// System.out.println(ib.getIndex(0, 1));
-		// System.out.println(ib.getIndex(1, 1));
+		for (int dim = blocksPerShard.length - 1; dim >= 0; dim--) { // Iterate backwards
+			position[dim] = remainder % blocksPerShard[dim]; // Calculate position for this dimension
+			remainder /= blocksPerShard[dim]; // Update the remainder
+		}
 
-		System.out.println("done");
+		return position;
 	}
-
 }

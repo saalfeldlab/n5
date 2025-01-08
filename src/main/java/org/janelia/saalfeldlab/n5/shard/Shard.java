@@ -1,7 +1,9 @@
 package org.janelia.saalfeldlab.n5.shard;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
@@ -106,9 +108,23 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		return new DataBlockIterator<T>(this);
 	}
 
-	default DataBlock<T>[] getAllBlocks(long... position) {
-		//TODO Caleb: Do we want this?
-		return null;
+	default List<DataBlock<T>> getBlocks() {
+
+		final ShardIndex shardIndex = getIndex();
+		final ShardedDatasetAttributes attrs = getDatasetAttributes();
+		final List<DataBlock<T>> blocks = new ArrayList<>();
+		for (long blockIdx = 0; blockIdx < attrs.getNumBlocks(); blockIdx++) {
+			int shardOffset = (int)blockIdx * 2;
+			final long[] index = shardIndex.getData();
+			if (index[shardOffset] == Shard.EMPTY_INDEX_NBYTES || index[shardOffset+1] == EMPTY_INDEX_NBYTES)
+				continue;
+
+			final long[] blockPosInShard = ShardIndex.shardPositionFromIndexOffset(shardOffset, attrs.getBlocksPerShard());
+			final long[] blockPosInImg = attrs.getBlockPositionFromShardPosition(getGridPosition(), blockPosInShard);
+			blocks.add(getBlock(blockPosInImg));
+		}
+
+		return blocks;
 	}
 
 	public ShardIndex getIndex();

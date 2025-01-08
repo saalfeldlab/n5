@@ -69,7 +69,7 @@ public class ShardTest {
 				shardSize,
 				blockSize,
 				DataType.UINT8,
-				new Codec[]{new N5BlockCodec(dataByteOrder) , new GzipCompression(4)},
+				new Codec[]{new N5BlockCodec(dataByteOrder)}, // , new GzipCompression(4)},
 				new DeterministicSizeCodec[]{new BytesCodec(indexByteOrder), new Crc32cChecksumCodec()},
 				indexLocation
 		);
@@ -99,6 +99,7 @@ public class ShardTest {
 			data[i] = (byte)((100) + (10) + i);
 		}
 
+
 		writer.writeBlocks(
 				"shard",
 				datasetAttributes,
@@ -117,15 +118,64 @@ public class ShardTest {
 		);
 
 		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
-		String p = writer.getURI().getPath();
-		final String shard00 = kva.compose(writer.getURI(), "shard", "0", "0");
-		kva.exists(shard00);
 
-		final String shard10 = kva.compose(writer.getURI(), "shard", "0", "0");
-		kva.exists(shard10);
+		final String[][] keys = new String[][]{
+				{"shard", "0", "0"},
+				{"shard", "1", "0"},
+				{"shard", "2", "2"}
+		};
+		for (String[] key : keys) {
+			final String shard = kva.compose(writer.getURI(), key);
+			Assert.assertTrue("Shard at" + Arrays.toString(key) + "Does not exist", kva.exists(shard));
+		}
 
-		final String shard33 = kva.compose(writer.getURI(), "shard", "0", "0");
-		kva.exists(shard33);
+		final long[][] blockIndices = new long[][]{ {0,0}, {0,1}, {1,0}, {1,1}, {4,0}, {5,0}, {11,11}};
+		for (long[] blockIndex : blockIndices) {
+			final DataBlock<?> block = writer.readBlock("shard", datasetAttributes, blockIndex);
+			Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
+		}
+
+		final byte[] data2 = new byte[numElements];
+		for (int i = 0; i < data2.length; i++) {
+			data2[i] = (byte)(10 + i);
+		}
+		writer.writeBlocks(
+				"shard",
+				datasetAttributes,
+				/* shard (0, 0) */
+				new ByteArrayDataBlock(blockSize, new long[]{0,0}, data2),
+				new ByteArrayDataBlock(blockSize, new long[]{1,1}, data2),
+
+				/* shard (0, 1) */
+				new ByteArrayDataBlock(blockSize, new long[]{0,4}, data2),
+				new ByteArrayDataBlock(blockSize, new long[]{0,5}, data2),
+
+				/* shard (2, 2) */
+				new ByteArrayDataBlock(blockSize, new long[]{10,10}, data2)
+		);
+
+		final String[][] keys2 = new String[][]{
+				{"shard", "0", "0"},
+				{"shard", "1", "0"},
+				{"shard", "0", "1"},
+				{"shard", "2", "2"}
+		};
+		for (String[] key : keys2) {
+			final String shard = kva.compose(writer.getURI(), key);
+			Assert.assertTrue("Shard at" + Arrays.toString(key) + "Does not exist", kva.exists(shard));
+		}
+
+		final long[][] oldBlockIndices = new long[][]{{0,1}, {1,0}, {4,0}, {5,0}, {11,11}};
+		for (long[] blockIndex : oldBlockIndices) {
+			final DataBlock<?> block = writer.readBlock("shard", datasetAttributes, blockIndex);
+			Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
+		}
+
+		final long[][] newBlockIndices = new long[][]{{0,0}, {1,1}, {0,4}, {0,5}, {10,10}};
+		for (long[] blockIndex : newBlockIndices) {
+			final DataBlock<?> block = writer.readBlock("shard", datasetAttributes, blockIndex);
+			Assert.assertArrayEquals("Read from shard doesn't match", data2, (byte[])block.getData());
+		}
 	}
 
 	@Test

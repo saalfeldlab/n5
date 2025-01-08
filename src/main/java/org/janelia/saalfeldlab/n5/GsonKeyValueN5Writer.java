@@ -232,6 +232,14 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			}
 
 			for (InMemoryShard<T> shard : shardBlockMap.values()) {
+
+				/* Add existing blocks before overwriting shard */
+				final Shard<T> currentShard = (Shard<T>)getShard(datasetPath, shardAttributes, shard.getGridPosition());
+				for (DataBlock<T> currentBlock : currentShard.getBlocks()) {
+					if (shard.getBlock(currentBlock.getGridPosition()) == null)
+						shard.addBlock(currentBlock);
+				}
+
 				writeShard(datasetPath, shardAttributes, shard);
 			}
 		} else {
@@ -240,7 +248,6 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 				writeBlock(datasetPath, datasetAttributes, dataBlock);
 			}
 		}
-
 	}
 
 	@Override
