@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5.shard;
 
+import org.apache.commons.io.input.BoundedInputStream;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
@@ -15,6 +16,7 @@ import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -113,6 +115,28 @@ public class ShardIndex extends LongArrayDataBlock {
 		return totalNumBytes;
 	}
 
+	public static ShardIndex read(byte[] data, final ShardIndex index) throws IOException {
+
+		final IndexByteBounds byteBounds = byteBounds(index, data.length);
+		final ByteArrayInputStream is = new ByteArrayInputStream(data);
+		is.skip(byteBounds.start);
+		BoundedInputStream bIs = BoundedInputStream.builder()
+				.setInputStream(is)
+				.setMaxCount(byteBounds.size).get();
+
+		return read(bIs, index);
+	}
+
+	public static ShardIndex read(InputStream in, final ShardIndex index) throws IOException {
+
+		@SuppressWarnings("unchecked")
+		final DataBlock<long[]> indexBlock = (DataBlock<long[]>) DefaultBlockReader.readBlock(in,
+				index.getIndexAttributes(), index.gridPosition);
+		final long[] indexData = indexBlock.getData();
+		System.arraycopy(indexData, 0, index.data, 0, index.data.length);
+		return index;
+	}
+
 	public static ShardIndex read(
 			final KeyValueAccess keyValueAccess,
 			final String key,
@@ -121,16 +145,9 @@ public class ShardIndex extends LongArrayDataBlock {
 
 		final IndexByteBounds byteBounds = byteBounds(index, keyValueAccess.size(key));
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(key, byteBounds.start, byteBounds.end)) {
-			final long[] indexData;
 			try (final InputStream in = lockedChannel.newInputStream()) {
-				final DataBlock<long[]> indexBlock = (DataBlock<long[]>)DefaultBlockReader.readBlock(
-						in,
-						index.getIndexAttributes(),
-						index.gridPosition);
-				indexData = indexBlock.getData();
+				return read(in,index);
 			}
-			System.arraycopy(indexData, 0, index.data, 0, index.data.length);
-			return index;
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
 		} catch (final IOException | UncheckedIOException e) {
@@ -144,13 +161,21 @@ public class ShardIndex extends LongArrayDataBlock {
 			final String key
 	) throws IOException {
 
-		final long start = index.location == IndexLocation.START ? 0 : keyValueAccess.size(key);
+		final long start = index.location == IndexLocation.START ? 0 : sizeOrZero( keyValueAccess, key) ;
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForWriting(key, start, index.numBytes())) {
 			try (final OutputStream os = lockedChannel.newOutputStream()) {
 				write(index, os);
 			}
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException("Failed to write shard index to " + key, e);
+		}
+	}
+
+	private static long sizeOrZero(final KeyValueAccess keyValueAccess, final String key) {
+		try {
+			return keyValueAccess.size(key);
+		} catch (Exception e) {
+			return 0;
 		}
 	}
 
@@ -191,15 +216,17 @@ public class ShardIndex extends LongArrayDataBlock {
 		}
 	}
 
-	private static class IndexByteBounds {
+	public static class IndexByteBounds {
 
-		private final long start;
-		private final long end;
+		public final long start;
+		public final long end;
+		public final long size;
 
-		private IndexByteBounds(long start, long end) {
+		public IndexByteBounds(long start, long end) {
 
 			this.start = start;
 			this.end = end;
+			this.size = end - start + 1;
 		}
 	}
 
@@ -241,4 +268,25 @@ public class ShardIndex extends LongArrayDataBlock {
 		System.arraycopy(array, 0, indexBlockSize, 1, array.length);
 		return indexBlockSize;
 	}
+
+	@Override
+	public boolean equals(Object other) {
+
+		if (other instanceof ShardIndex) {
+
+			final ShardIndex index = (ShardIndex) other;
+			if (this.location != index.location)
+				return false;
+
+			if (!Arrays.equals(this.size, index.size))
+				return false;
+
+			if (!Arrays.equals(this.data, index.data))
+				return false;
+
+		}
+		return true;
+	}
+
 }
+
