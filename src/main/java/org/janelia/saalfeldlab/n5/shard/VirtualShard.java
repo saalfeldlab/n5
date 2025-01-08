@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.util.function.Supplier;
 
 import org.checkerframework.checker.units.qual.A;
 import org.janelia.saalfeldlab.n5.DataBlock;
@@ -26,6 +27,20 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		super(datasetAttributes, gridPosition, null);
 		this.keyValueAccess = keyValueAccess;
 		this.path = path;
+	}
+
+	public <A extends DatasetAttributes & ShardParameters> VirtualShard(final A datasetAttributes, long[] gridPosition) {
+
+		this(datasetAttributes, gridPosition, null, null);
+	}
+
+	@SuppressWarnings("unchecked")
+	public DataBlock<T> getBlock(Supplier<InputStream> inputSupplier, long... blockGridPosition) throws IOException {
+
+		// TODO this method is just a wrapper around readBlock and probably not worth keeping
+		try (InputStream is = inputSupplier.get()) {
+			return (DataBlock<T>) DefaultBlockReader.readBlock(is, datasetAttributes, blockGridPosition);
+		}
 	}
 
 	@SuppressWarnings("unchecked")

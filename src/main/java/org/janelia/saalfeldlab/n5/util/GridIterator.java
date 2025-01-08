@@ -63,6 +63,10 @@ public class GridIterator implements Iterator<long[]> {
 		return position;
 	}
 
+	public int[] nextAsInt() {
+		return long2int(next());
+	}
+
 	public int getIndex() {
 		return index;
 	}
@@ -93,11 +97,4 @@ public class GridIterator implements Iterator<long[]> {
 		return l;
 	}
 
-	public static void main(String[] args) {
-
-		final GridIterator it = new GridIterator(new int[]{2, 2, 2});
-		while (it.hasNext()) {
-			System.out.println(Arrays.toString(it.next()));
-		}
-	}
 }

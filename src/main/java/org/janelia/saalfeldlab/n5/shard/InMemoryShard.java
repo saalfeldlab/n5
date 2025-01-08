@@ -1,20 +1,27 @@
 package org.janelia.saalfeldlab.n5.shard;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.io.output.ProxyOutputStream;
 import org.checkerframework.checker.units.qual.A;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.DefaultBlockReader;
 import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
+import org.janelia.saalfeldlab.n5.KeyValueAccess;
+import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
+import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 public class InMemoryShard<T> extends AbstractShard<T> {
 
@@ -27,7 +34,6 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	 * Use morton- or c-ording instead of writing blocks out in the order they're added?
 	 * (later)
 	 */
-
 	public <A extends DatasetAttributes & ShardParameters> InMemoryShard(final A datasetAttributes, final long[] shardPosition) {
 
 		this( datasetAttributes, shardPosition, null);
@@ -97,6 +103,61 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 			writeShardEndStream(out, this);
 		else
 			writeShardStart(out, this);
+	}
+
+	public static <T, A extends DatasetAttributes & ShardParameters> InMemoryShard<T> readShard(
+			final KeyValueAccess kva, final String key, final long[] gridPosition, final A attributes)
+			throws IOException {
+
+		try (final LockedChannel lockedChannel = kva.lockForReading(key)) {
+			try (final InputStream is = lockedChannel.newInputStream()) {
+				return readShard(is, gridPosition, attributes);
+			}
+		}
+	}
+
+	public static <T, A extends DatasetAttributes & ShardParameters> InMemoryShard<T> readShard(
+			final InputStream inputStream, final long[] gridPosition, final A attributes) throws IOException {
+
+		try (ByteArrayOutputStream result = new ByteArrayOutputStream()) {
+			byte[] buffer = new byte[1024];
+			for (int length; (length = inputStream.read(buffer)) != -1;) {
+				result.write(buffer, 0, length);
+			}
+			return readShard(result.toByteArray(), gridPosition, attributes);
+		}
+	}
+
+	public static <T, A extends DatasetAttributes & ShardParameters> InMemoryShard<T> readShard(final byte[] data,
+			long[] shardPosition, final A attributes) throws IOException {
+
+		final ShardIndex index = attributes.createIndex();
+		ShardIndex.read(data, index);
+
+		final InMemoryShard<T> shard = new InMemoryShard<T>(attributes, shardPosition, index);
+		final GridIterator it = new GridIterator(attributes.getBlocksPerShard());
+		while (it.hasNext()) {
+
+			final long[] p = it.next();
+			final int[] pInt = GridIterator.long2int(p);
+
+			if (index.exists(pInt)) {
+
+				final ByteArrayInputStream is = new ByteArrayInputStream(data);
+				is.skip(index.getOffset(pInt));
+				BoundedInputStream bIs = BoundedInputStream.builder().setInputStream(is)
+						.setMaxCount(index.getNumBytes(pInt)).get();
+
+				final long[] blockGridPosition = attributes.getBlockPositionFromShardPosition(shardPosition, p);
+				@SuppressWarnings("unchecked")
+				final DataBlock<T> blk = (DataBlock<T>) DefaultBlockReader.readBlock(bIs, attributes,
+						blockGridPosition);
+				shard.addBlock(blk);
+				bIs.close();
+			}
+		}
+
+		return shard;
 	}
 
 	public static <T> void writeShard(final OutputStream out, final Shard<T> shard) throws IOException {
