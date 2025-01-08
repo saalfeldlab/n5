@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 
+import org.checkerframework.checker.units.qual.A;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.DefaultBlockReader;
@@ -14,12 +15,12 @@ import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
-public class VirtualShard<T, A extends DatasetAttributes & ShardParameters> extends AbstractShard<T,A> {
+public class VirtualShard<T> extends AbstractShard<T> {
 
 	final private KeyValueAccess keyValueAccess;
 	final private String path;
 
-	public VirtualShard(final A datasetAttributes, long[] gridPosition,
+	public <A extends DatasetAttributes & ShardParameters> VirtualShard(final A datasetAttributes, long[] gridPosition,
 			final KeyValueAccess keyValueAccess, final String path) {
 
 		super(datasetAttributes, gridPosition, null);
@@ -95,14 +96,14 @@ public class VirtualShard<T, A extends DatasetAttributes & ShardParameters> exte
 	public ShardIndex createIndex() {
 
 		// Empty index of the correct size
-		return datasetAttributes.createIndex();
+		return getDatasetAttributes().createIndex();
 	}
 
 	@Override
 	public ShardIndex getIndex() {
 
 		try {
-			final ShardIndex readIndex = ShardIndex.read(keyValueAccess, path, datasetAttributes.createIndex());
+			final ShardIndex readIndex = ShardIndex.read(keyValueAccess, path, getDatasetAttributes().createIndex());
 			index = readIndex == null ? createIndex() : readIndex;
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			index = createIndex();

@@ -221,7 +221,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		if (datasetAttributes instanceof ShardParameters) {
 			/* Group by shard index */
-			final HashMap<Integer, InMemoryShard<T,?>> shardBlockMap = new HashMap<>();
+			final HashMap<Integer, InMemoryShard<T>> shardBlockMap = new HashMap<>();
 			final ShardParameters shardAttributes = (ShardParameters)datasetAttributes;
 
 			for (DataBlock<T> dataBlock : dataBlocks) {
@@ -230,11 +230,11 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 				if (!shardBlockMap.containsKey(shardHash))
 					shardBlockMap.put(shardHash, new InMemoryShard<>((DatasetAttributes & ShardParameters)shardAttributes, shardPosition));
 
-				final InMemoryShard<T,?> shard = shardBlockMap.get(shardHash);
+				final InMemoryShard<T> shard = shardBlockMap.get(shardHash);
 				shard.addBlock(dataBlock);
 			}
 
-			for (InMemoryShard<T,?> shard : shardBlockMap.values()) {
+			for (InMemoryShard<T> shard : shardBlockMap.values()) {
 				writeShard(datasetPath, (DatasetAttributes & ShardParameters)shardAttributes, (Shard)shard);
 			}
 
@@ -257,7 +257,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			ShardParameters shardDatasetAttrs = (ShardParameters)datasetAttributes;
 			final long[] shardPos = shardDatasetAttrs.getShardPositionForBlock(dataBlock.getGridPosition());
 			final String shardPath = absoluteShardPath(N5URI.normalizeGroupPath(path), shardPos);
-			final VirtualShard<T,?> shard = new VirtualShard<>((DatasetAttributes & ShardParameters)shardDatasetAttrs, shardPos, getKeyValueAccess(), shardPath);
+			final VirtualShard<T> shard = new VirtualShard<>((DatasetAttributes & ShardParameters)shardDatasetAttrs, shardPos, getKeyValueAccess(), shardPath);
 			shard.writeBlock(dataBlock);
 			return;
 		}
@@ -278,7 +278,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	default <T,A extends DatasetAttributes & ShardParameters> void writeShard(
 			final String path,
 			final A datasetAttributes,
-			final Shard<T,A> shard) throws N5Exception {
+			final Shard<T> shard) throws N5Exception {
 
 		final String shardPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), shard.getGridPosition());
 		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(shardPath)) {

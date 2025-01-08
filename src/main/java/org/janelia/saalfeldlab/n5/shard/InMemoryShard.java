@@ -10,12 +10,13 @@ import java.util.List;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.io.output.ProxyOutputStream;
+import org.checkerframework.checker.units.qual.A;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
-public class InMemoryShard<T,A extends DatasetAttributes & ShardParameters> extends AbstractShard<T,A> {
+public class InMemoryShard<T> extends AbstractShard<T> {
 
 	/* Map of a hash of the DataBlocks `gridPosition` to the block */
 	private final HashMap<Integer, DataBlock<T>> blocks;
@@ -27,14 +28,14 @@ public class InMemoryShard<T,A extends DatasetAttributes & ShardParameters> exte
 	 * (later)
 	 */
 
-	public InMemoryShard(final A datasetAttributes, final long[] shardPosition) {
+	public <A extends DatasetAttributes & ShardParameters> InMemoryShard(final A datasetAttributes, final long[] shardPosition) {
 
 		this( datasetAttributes, shardPosition, null);
 		indexBuilder = new ShardIndexBuilder(this);
 		indexBuilder.indexLocation(datasetAttributes.getIndexLocation());
 	}
 
-	public InMemoryShard(final A datasetAttributes, final long[] gridPosition,
+	public <A extends DatasetAttributes & ShardParameters> InMemoryShard(final A datasetAttributes, final long[] gridPosition,
 			ShardIndex index) {
 
 		super(datasetAttributes, gridPosition, index);
@@ -97,17 +98,17 @@ public class InMemoryShard<T,A extends DatasetAttributes & ShardParameters> exte
 			writeShardStart(out, this);
 	}
 
-	public static <T, A extends DatasetAttributes & ShardParameters> void writeShard(final OutputStream out, final Shard<T,A> shard) throws IOException {
+	public static <T> void writeShard(final OutputStream out, final Shard<T> shard) throws IOException {
 
 		fromShard(shard).write(out);
 	}
 
-	public static <T, A extends DatasetAttributes & ShardParameters> InMemoryShard<T,A> fromShard(Shard<T,A> shard) {
+	public static <T> InMemoryShard<T> fromShard(Shard<T> shard) {
 
 		if (shard instanceof InMemoryShard)
-			return (InMemoryShard<T,A>) shard;
+			return (InMemoryShard<T>) shard;
 
-		final InMemoryShard<T,A> inMemoryShard = new InMemoryShard<T,A>(
+		final InMemoryShard<T> inMemoryShard = new InMemoryShard<T>(
 				shard.getDatasetAttributes(),
 				shard.getGridPosition());
 
@@ -117,7 +118,7 @@ public class InMemoryShard<T,A extends DatasetAttributes & ShardParameters> exte
 
 	protected static <T, A extends DatasetAttributes & ShardParameters> void writeShardEndStream(
 			final OutputStream out,
-			InMemoryShard<T,A> shard ) throws IOException {
+			InMemoryShard<T> shard ) throws IOException {
 
 		final A datasetAttributes = shard.getDatasetAttributes();
 
@@ -148,7 +149,7 @@ public class InMemoryShard<T,A extends DatasetAttributes & ShardParameters> exte
 
 	protected static <T, A extends DatasetAttributes & ShardParameters> void writeShardEnd(
 			final OutputStream out,
-			InMemoryShard<T,A> shard ) throws IOException {
+			InMemoryShard<T> shard ) throws IOException {
 
 		final A datasetAttributes = shard.getDatasetAttributes();
 
@@ -169,7 +170,7 @@ public class InMemoryShard<T,A extends DatasetAttributes & ShardParameters> exte
 
 	protected static <T, A extends DatasetAttributes & ShardParameters> void writeShardStart(
 			final OutputStream out,
-			InMemoryShard<T,A> shard ) throws IOException {
+			InMemoryShard<T> shard ) throws IOException {
 
 		final A datasetAttributes = shard.getDatasetAttributes();
 		final ShardIndexBuilder indexBuilder = new ShardIndexBuilder(shard);

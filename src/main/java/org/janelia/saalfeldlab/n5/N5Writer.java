@@ -315,7 +315,7 @@ public interface N5Writer extends N5Reader {
 	<T,A extends DatasetAttributes & ShardParameters> void writeShard(
 			final String datasetPath,
 			final A datasetAttributes,
-			final Shard<T,A> shard) throws N5Exception;
+			final Shard<T> shard) throws N5Exception;
 
 	/**
 	 * Deletes the block at {@code gridPosition}

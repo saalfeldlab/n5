@@ -90,7 +90,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	@SuppressWarnings("rawtypes")
-	default <A extends DatasetAttributes & ShardParameters> Shard<?,?> getShard(final String pathName,
+	default <A extends DatasetAttributes & ShardParameters> Shard<?> getShard(final String pathName,
 			final A datasetAttributes,
 			long... shardGridPosition) {
 
@@ -107,7 +107,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		if (datasetAttributes instanceof ShardedDatasetAttributes) {
 			final ShardedDatasetAttributes shardedAttrs = (ShardedDatasetAttributes) datasetAttributes;
 			final long[] shardPosition = shardedAttrs.getShardPositionForBlock(gridPosition);
-			final Shard<?,?> shard = getShard(pathName, shardedAttrs, shardPosition);
+			final Shard<?> shard = getShard(pathName, shardedAttrs, shardPosition);
 			return shard.getBlock(gridPosition);
 		}
 

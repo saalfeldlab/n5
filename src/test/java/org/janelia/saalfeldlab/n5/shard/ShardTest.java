@@ -191,7 +191,7 @@ public class ShardTest {
 
 		final HashMap<long[], byte[]> writtenBlocks = new HashMap<>();
 
-		final InMemoryShard<byte[],ShardedDatasetAttributes> shard = new InMemoryShard<>(datasetAttributes, new long[]{0, 0});
+		final InMemoryShard<byte[]> shard = new InMemoryShard<>(datasetAttributes, new long[]{0, 0});
 
 		for (int idx1 = 1; idx1 >= 0; idx1--) {
 			for (int idx2 = 1; idx2 >= 0; idx2--) {

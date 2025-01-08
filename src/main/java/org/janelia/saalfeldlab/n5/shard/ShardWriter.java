@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5.shard;
 
+import org.checkerframework.checker.units.qual.A;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
@@ -13,13 +14,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class ShardWriter <A extends DatasetAttributes & ShardParameters> {
+public class ShardWriter {
 
 	private static final int BYTES_PER_LONG = 8;
 
 	private final List<DataBlock<?>> blocks;
 
-	private A attributes;
+	private DatasetAttributes attributes;
 
 	private ByteBuffer blockSizes;
 
@@ -29,10 +30,15 @@ public class ShardWriter <A extends DatasetAttributes & ShardParameters> {
 
 	private List<byte[]> blockBytes;
 
-	public ShardWriter(final A datasetAttributes) {
+	public <A extends DatasetAttributes & ShardParameters> ShardWriter(final A datasetAttributes) {
 
 		blocks = new ArrayList<>();
 		attributes = datasetAttributes;
+	}
+
+	public <A extends DatasetAttributes & ShardParameters> A getAttributes() {
+
+		return (A)attributes;
 	}
 
 	public void reset() {
@@ -48,12 +54,10 @@ public class ShardWriter <A extends DatasetAttributes & ShardParameters> {
 		blocks.add(block);
 	}
 
-	public void write(final Shard<?,A> shard, final OutputStream out) throws IOException {
-		
-		attributes = shard.getDatasetAttributes();
+	public void write(final Shard<?> shard, final OutputStream out) throws IOException {
 
 		prepareForWritingDataBlock();
-		if (attributes.getIndexLocation() == ShardingCodec.IndexLocation.START) {
+		if (shard.getDatasetAttributes().getIndexLocation() == ShardingCodec.IndexLocation.START) {
 			writeIndexBlock(out);
 			writeBlocks(out);
 		} else {
@@ -67,7 +71,6 @@ public class ShardWriter <A extends DatasetAttributes & ShardParameters> {
 		// final ShardingProperties shardProps = new ShardingProperties(datasetAttributes);
 		// indexData = new ShardIndexDataBlock(shardProps.getIndexDimensions());
 
-		indexData = attributes.createIndex();
 		blockBytes = new ArrayList<>();
 		long cumulativeBytes = 0;
 		final long[] shardPosition = new long[1];

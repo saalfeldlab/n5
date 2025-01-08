@@ -2,15 +2,16 @@ package org.janelia.saalfeldlab.n5.shard;
 
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 
-public abstract class AbstractShard<T, A extends DatasetAttributes & ShardParameters> implements Shard<T,A> {
 
-	protected final A datasetAttributes;
+public abstract class AbstractShard<T> implements Shard<T> {
+
+	protected final DatasetAttributes datasetAttributes;
 
 	protected ShardIndex index;
 
 	private final long[] gridPosition;
 
-	public AbstractShard(final A datasetAttributes, final long[] gridPosition,
+	public <A extends DatasetAttributes & ShardParameters> AbstractShard(final A datasetAttributes, final long[] gridPosition,
 			final ShardIndex index) {
 
 		this.datasetAttributes = datasetAttributes;
@@ -19,15 +20,15 @@ public abstract class AbstractShard<T, A extends DatasetAttributes & ShardParame
 	}
 
 	@Override
-	public A getDatasetAttributes() {
+	public <A extends DatasetAttributes & ShardParameters> A getDatasetAttributes() {
 
-		return datasetAttributes;
+		return (A)datasetAttributes;
 	}
 
 	@Override
 	public int[] getSize() {
 
-		return datasetAttributes.getShardSize();
+		return getDatasetAttributes().getShardSize();
 	}
 
 	@Override

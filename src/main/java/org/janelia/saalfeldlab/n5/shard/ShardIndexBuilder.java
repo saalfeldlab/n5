@@ -7,7 +7,7 @@ import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
 public class ShardIndexBuilder {
 
-	private final Shard<?,?> shard;
+	private final Shard<?> shard;
 
 	private ShardIndex temporaryIndex;
 
@@ -17,7 +17,7 @@ public class ShardIndexBuilder {
 	
 	private long currentOffset = 0;
 
-	public ShardIndexBuilder(Shard<?,?> shard) {
+	public ShardIndexBuilder(Shard<?> shard) {
 
 		this.shard = shard;
 		this.temporaryIndex = new ShardIndex(shard.getBlockGridSize(), location);
