@@ -56,7 +56,7 @@ public class ShardIndexBuilder {
 
 	public ShardIndexBuilder addBlock(long[] blockPosition, long numBytes) {
 		//TODO Caleb: Maybe move to ShardIndex?
-		final long[] blockPositionInShard = shard.getDatasetAttributes().getBlockPositionInShard(
+		final int[] blockPositionInShard = shard.getDatasetAttributes().getBlockPositionInShard(
 				shard.getGridPosition(),
 				blockPosition);
 

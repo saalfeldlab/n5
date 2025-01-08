@@ -37,16 +37,7 @@ public class ShardReader {
 			final FileChannel in,
 			long... blockPosition) throws IOException {
 
-		// TODO generalize from FileChannel
-		// TODO this assumes the "file" holding the shard is known,
-		// the logic to figure that out will have to go somewhere
-
-		final ShardIndex index = readIndexes(in);
-
-		final long[] shardPosition = datasetAttributes.getShardPositionForBlock(blockPosition);
-		in.position(index.getOffset(shardPosition));
-		final InputStream is = Channels.newInputStream(in);
-		return DefaultBlockReader.readBlock(is, datasetAttributes, indexes);
+		throw new IOException("Remove this!");
 	}
 
 	private long getIndexIndex(long... shardPosition) {

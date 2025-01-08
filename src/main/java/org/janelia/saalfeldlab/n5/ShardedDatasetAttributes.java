@@ -164,7 +164,7 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 	 *
 	 * @return the block position
 	 */
-	public long[] getBlockPositionInShard(final long[] shardPosition, final long[] blockPosition) {
+	public int[] getBlockPositionInShard(final long[] shardPosition, final long[] blockPosition) {
 
 		// TODO check correctness 
 		final long[] shardPos = getShardPositionForBlock(blockPosition);
@@ -172,9 +172,9 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 			return null;
 
 		final int[] shardSize = getBlocksPerShard();
-		final long[] blockShardPos = new long[shardSize.length];
+		final int[] blockShardPos = new int[shardSize.length];
 		for (int i = 0; i < shardSize.length; i++) {
-			blockShardPos[i] = blockPosition[i] % shardSize[i];
+			blockShardPos[i] = (int)(blockPosition[i] % shardSize[i]);
 		}
 
 		return blockShardPos;
@@ -205,7 +205,7 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 	 *
 	 * @return the block position
 	 */
-	public long[] getBlockPositionFromShardPosition(final long[] shardPosition, final long[] blockPosition) {
+	public long[] getBlockPositionFromShardPosition(final long[] shardPosition, final int[] blockPosition) {
 
 		// is this useful?
 		final int[] shardBlockSize = getBlocksPerShard();
@@ -220,7 +220,7 @@ public class ShardedDatasetAttributes extends DatasetAttributes {
 	/**
 	 * @return the number of blocks per shard
 	 */
-	public long getNumBlocks() {
+	public int getNumBlocks() {
 
 		return Arrays.stream(getBlocksPerShard()).reduce(1, (x, y) -> x * y);
 	}

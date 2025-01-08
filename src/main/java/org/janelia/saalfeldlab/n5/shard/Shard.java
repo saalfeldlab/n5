@@ -62,7 +62,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	 *
 	 * @return the shard position
 	 */
-	default long[] getBlockPosition(long... blockPosition) {
+	default int[] getBlockPosition(long... blockPosition) {
 
 		final long[] shardPos = getDatasetAttributes().getShardPositionForBlock(blockPosition);
 		return getDatasetAttributes().getBlockPositionInShard(shardPos, blockPosition);
@@ -113,13 +113,11 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		final ShardIndex shardIndex = getIndex();
 		final ShardedDatasetAttributes attrs = getDatasetAttributes();
 		final List<DataBlock<T>> blocks = new ArrayList<>();
-		for (long blockIdx = 0; blockIdx < attrs.getNumBlocks(); blockIdx++) {
-			int shardOffset = (int)blockIdx * 2;
-			final long[] index = shardIndex.getData();
-			if (index[shardOffset] == Shard.EMPTY_INDEX_NBYTES || index[shardOffset+1] == EMPTY_INDEX_NBYTES)
+		for (int blockIdx = 0; blockIdx < attrs.getNumBlocks(); blockIdx++) {
+			if (!shardIndex.exists(blockIdx))
 				continue;
 
-			final long[] blockPosInShard = ShardIndex.shardPositionFromIndexOffset(shardOffset, attrs.getBlocksPerShard());
+			final int[] blockPosInShard = ShardIndex.blockPosition(blockIdx, attrs.getBlocksPerShard());
 			final long[] blockPosInImg = attrs.getBlockPositionFromShardPosition(getGridPosition(), blockPosInShard);
 			blocks.add(getBlock(blockPosInImg));
 		}

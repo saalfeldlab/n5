@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+@Deprecated
 public class ShardWriter {
 
 	private static final int BYTES_PER_LONG = 8;
@@ -66,11 +67,10 @@ public class ShardWriter {
 
 		// final ShardingProperties shardProps = new ShardingProperties(datasetAttributes);
 		// indexData = new ShardIndexDataBlock(shardProps.getIndexDimensions());
-
 		indexData = attributes.createIndex();
 		blockBytes = new ArrayList<>();
 		long cumulativeBytes = 0;
-		final long[] shardPosition = new long[1];
+		final int[] shardPosition = new int[1];
 		for (int i = 0; i < blocks.size(); i++) {
 
 			try (final ByteArrayOutputStream blockOut = new ByteArrayOutputStream()) {
@@ -86,6 +86,7 @@ public class ShardWriter {
 		}
 
 		System.out.println(Arrays.toString(indexData.getData()));
+		throw new IOException("Remove this!");
 	}
 
 	private void prepareForWriting() throws IOException {

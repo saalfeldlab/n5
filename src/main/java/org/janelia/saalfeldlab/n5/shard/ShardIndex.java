@@ -52,10 +52,16 @@ public class ShardIndex extends LongArrayDataBlock {
 		this(shardBlockGridSize, emptyIndexData(shardBlockGridSize), IndexLocation.END, codecs);
 	}
 
-	public boolean exists(long... gridPosition) {
+	public boolean exists(int[] gridPosition) {
 
-		return getOffset(gridPosition) != Shard.EMPTY_INDEX_NBYTES &&
+		return getOffset(gridPosition) != Shard.EMPTY_INDEX_NBYTES ||
 				getNumBytes(gridPosition) != Shard.EMPTY_INDEX_NBYTES;
+	}
+
+	public boolean exists(int blockNum) {
+
+		return data[blockNum * 2] != Shard.EMPTY_INDEX_NBYTES ||
+				data[blockNum * 2 + 1] != Shard.EMPTY_INDEX_NBYTES;
 	}
 
 	public IndexLocation getLocation() {
@@ -63,24 +69,24 @@ public class ShardIndex extends LongArrayDataBlock {
 		return location;
 	}
 
-	public long getOffset(long... gridPosition) {
+	public long getOffset(int... gridPosition) {
 
 		return data[getOffsetIndex(gridPosition)];
 	}
 
-	public long getNumBytes(long... gridPosition) {
+	public long getNumBytes(int... gridPosition) {
 
 		return data[getNumBytesIndex(gridPosition)];
 	}
 
-	public void set(long offset, long nbytes, long[] gridPosition) {
+	public void set(long offset, long nbytes, int[] gridPosition) {
 
 		final int i = getOffsetIndex(gridPosition);
 		data[i] = offset;
 		data[i + 1] = nbytes;
 	}
 
-	private int getOffsetIndex(long... gridPosition) {
+	private int getOffsetIndex(int... gridPosition) {
 
 		int idx = (int) gridPosition[0];
 		for (int i = 1; i < gridPosition.length; i++) {
@@ -89,7 +95,7 @@ public class ShardIndex extends LongArrayDataBlock {
 		return idx * 2;
 	}
 
-	private int getNumBytesIndex(long... gridPosition) {
+	private int getNumBytesIndex(int... gridPosition) {
 
 		return getOffsetIndex(gridPosition) + 1;
 	}
@@ -237,28 +243,25 @@ public class ShardIndex extends LongArrayDataBlock {
 	}
 
 	/**
-	 * Calculate the block position in the shard grid for a given index offset.
+	 * Calculate the relative block position in the shard for a given block index.
 	 *
-	 * @param offset          the offset into the index
-	 * @param blocksPerShard the dimensions of the shard in blocks
-	 * @return the relative position in the shard grid
+	 * @param blockIdx          the block index in the shard
+	 * @param blocksPerShard 	the dimensions of the shard in blocks
+	 * @return the relative position in the shard
 	 */
-	public static long[] shardPositionFromIndexOffset(int offset, int[] blocksPerShard) {
+	public static int[] blockPosition(int blockIdx, int[] blocksPerShard) {
 
-		int maxOffset = 1;
-		for (int i = 0; i < blocksPerShard.length; i++) {
-			maxOffset *= blocksPerShard[i];
-		}
-		if (offset >= maxOffset*2) {
-			throw new IllegalArgumentException("Shard Index Offset " + offset + " is out of bounds for shard dimensions " + Arrays.toString(blocksPerShard));
-		}
+		int numBlocks = Arrays.stream(blocksPerShard).reduce(1, (x, y) -> x * y);
+		if (blockIdx >= numBlocks)
+			throw new IllegalArgumentException("Shard Index Offset " + blockIdx + " is out of bounds for shard dimensions " + Arrays.toString(blocksPerShard));
 
-		final long[] position = new long[blocksPerShard.length];
-		int remainder = offset / 2;
 
-		for (int dim = blocksPerShard.length - 1; dim >= 0; dim--) { // Iterate backwards
-			position[dim] = remainder % blocksPerShard[dim]; // Calculate position for this dimension
-			remainder /= blocksPerShard[dim]; // Update the remainder
+		final int[] position = new int[blocksPerShard.length];
+		int remainder = blockIdx ;
+
+		for (int dim = blocksPerShard.length - 1; dim >= 0; dim--) {
+			position[dim] = remainder % blocksPerShard[dim];
+			remainder /= blocksPerShard[dim];
 		}
 
 		return position;

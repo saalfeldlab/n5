@@ -31,7 +31,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	@Override
 	public DataBlock<T> getBlock(long... blockGridPosition) {
 
-		final long[] relativePosition = getBlockPosition(blockGridPosition);
+		final int[] relativePosition = getBlockPosition(blockGridPosition);
 		if (relativePosition == null)
 			throw new N5IOException("Attempted to read a block from the wrong shard.");
 
@@ -57,7 +57,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	@Override
 	public void writeBlock(final DataBlock<T> block) {
 
-		final long[] relativePosition = getBlockPosition(block.getGridPosition());
+		final int[] relativePosition = getBlockPosition(block.getGridPosition());
 		if (relativePosition == null)
 			throw new N5IOException("Attempted to write block in the wrong shard.");
 
