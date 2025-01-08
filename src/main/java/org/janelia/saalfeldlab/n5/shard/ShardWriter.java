@@ -1,8 +1,8 @@
 package org.janelia.saalfeldlab.n5.shard;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
-import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -20,7 +20,7 @@ public class ShardWriter {
 
 	private final List<DataBlock<?>> blocks;
 
-	private ShardedDatasetAttributes attributes;
+	private DatasetAttributes attributes;
 
 	private ByteBuffer blockSizes;
 
@@ -30,10 +30,15 @@ public class ShardWriter {
 
 	private List<byte[]> blockBytes;
 
-	public ShardWriter(final ShardedDatasetAttributes datasetAttributes) {
+	public <A extends DatasetAttributes & ShardParameters> ShardWriter(final A datasetAttributes) {
 
 		blocks = new ArrayList<>();
 		attributes = datasetAttributes;
+	}
+
+	public <A extends DatasetAttributes & ShardParameters> A getAttributes() {
+
+		return (A)attributes;
 	}
 
 	public void reset() {
@@ -50,11 +55,9 @@ public class ShardWriter {
 	}
 
 	public void write(final Shard<?> shard, final OutputStream out) throws IOException {
-		
-		attributes = shard.getDatasetAttributes();
 
 		prepareForWritingDataBlock();
-		if (attributes.getIndexLocation() == ShardingCodec.IndexLocation.START) {
+		if (shard.getDatasetAttributes().getIndexLocation() == ShardingCodec.IndexLocation.START) {
 			writeIndexBlock(out);
 			writeBlocks(out);
 		} else {
@@ -67,7 +70,7 @@ public class ShardWriter {
 
 		// final ShardingProperties shardProps = new ShardingProperties(datasetAttributes);
 		// indexData = new ShardIndexDataBlock(shardProps.getIndexDimensions());
-		indexData = attributes.createIndex();
+
 		blockBytes = new ArrayList<>();
 		long cumulativeBytes = 0;
 		final int[] shardPosition = new int[1];

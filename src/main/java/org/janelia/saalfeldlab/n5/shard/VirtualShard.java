@@ -5,21 +5,22 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 
+import org.checkerframework.checker.units.qual.A;
 import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.DefaultBlockReader;
 import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 
 public class VirtualShard<T> extends AbstractShard<T> {
 
 	final private KeyValueAccess keyValueAccess;
 	final private String path;
 
-	public VirtualShard(final ShardedDatasetAttributes datasetAttributes, long[] gridPosition,
+	public <A extends DatasetAttributes & ShardParameters> VirtualShard(final A datasetAttributes, long[] gridPosition,
 			final KeyValueAccess keyValueAccess, final String path) {
 
 		super(datasetAttributes, gridPosition, null);
@@ -45,7 +46,8 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		final long size = idx.getNumBytes(relativePosition);
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(path, startByte, size)) {
 			try ( final InputStream channelIn = lockedChannel.newInputStream()) {
-				return (DataBlock<T>)DefaultBlockReader.readBlock(channelIn, datasetAttributes, blockGridPosition);
+				final long[] blockPosInImg = getDatasetAttributes().getBlockPositionFromShardPosition(getGridPosition(), blockGridPosition);
+				return (DataBlock<T>)DefaultBlockReader.readBlock(channelIn, datasetAttributes, blockPosInImg);
 			}
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
@@ -95,14 +97,14 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	public ShardIndex createIndex() {
 
 		// Empty index of the correct size
-		return datasetAttributes.createIndex();
+		return getDatasetAttributes().createIndex();
 	}
 
 	@Override
 	public ShardIndex getIndex() {
 
 		try {
-			final ShardIndex readIndex = ShardIndex.read(keyValueAccess, path, datasetAttributes.createIndex());
+			final ShardIndex readIndex = ShardIndex.read(keyValueAccess, path, getDatasetAttributes().createIndex());
 			index = readIndex == null ? createIndex() : readIndex;
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			index = createIndex();

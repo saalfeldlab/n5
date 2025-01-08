@@ -37,6 +37,9 @@ public class N5BlockCodec implements Codec.ArrayCodec {
 		this.byteOrder = byteOrder;
 	}
 
+	public ByteOrder getByteOrder() {
+		return byteOrder;
+	}
 
 	@Override public DataBlockInputStream decode(final DatasetAttributes attributes, final long[] gridPosition, InputStream in) throws IOException {
 
@@ -63,9 +66,9 @@ public class N5BlockCodec implements Codec.ArrayCodec {
 					start = false;
 				}
 				if (mode != 2) {
-					return attributes.getDataType().createDataBlock(blockSize, gridPosition.clone(), numElements);
+					return attributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
 				} else {
-					return attributes.getDataType().createDataBlock(null, gridPosition.clone(), numElements);
+					return attributes.getDataType().createDataBlock(null, gridPosition, numElements);
 				}
 			}
 

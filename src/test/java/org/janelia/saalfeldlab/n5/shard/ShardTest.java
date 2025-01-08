@@ -122,6 +122,10 @@ public class ShardTest {
 
 		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
 
+		final String shardKey = ((N5KeyValueWriter)writer).absoluteDataBlockPath("shard", 2, 2);
+		final VirtualShard<byte[]> vs = new VirtualShard<>(datasetAttributes, new long[]{2, 2}, kva, shardKey);
+		final List<DataBlock<byte[]>> blocks = vs.getBlocks();
+
 		final String[][] keys = new String[][]{
 				{"shard", "0", "0"},
 				{"shard", "1", "0"},
@@ -244,7 +248,7 @@ public class ShardTest {
 
 		final HashMap<long[], byte[]> writtenBlocks = new HashMap<>();
 
-		final InMemoryShard<byte[]> shard = new InMemoryShard<byte[]>(datasetAttributes, new long[]{0, 0});
+		final InMemoryShard<byte[]> shard = new InMemoryShard<>(datasetAttributes, new long[]{0, 0});
 
 		for (int idx1 = 1; idx1 >= 0; idx1--) {
 			for (int idx2 = 1; idx2 >= 0; idx2--) {

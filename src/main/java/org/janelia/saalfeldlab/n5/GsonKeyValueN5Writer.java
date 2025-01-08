@@ -36,6 +36,7 @@ import java.util.Map;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
 import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.ShardParameters;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -215,33 +216,35 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		return removed;
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override default <T> void writeBlocks(final String datasetPath, final DatasetAttributes datasetAttributes, final DataBlock<T>... dataBlocks) throws N5Exception {
 
-		if (datasetAttributes instanceof ShardedDatasetAttributes) {
-			final ShardedDatasetAttributes shardAttributes = (ShardedDatasetAttributes)datasetAttributes;
+		if (datasetAttributes instanceof ShardParameters) {
 			/* Group by shard index */
 			final HashMap<Integer, InMemoryShard<T>> shardBlockMap = new HashMap<>();
+			final ShardParameters shardAttributes = (ShardParameters)datasetAttributes;
 
 			for (DataBlock<T> dataBlock : dataBlocks) {
 				final long[] shardPosition = shardAttributes.getShardPositionForBlock(dataBlock.getGridPosition());
 				final int shardHash = Arrays.hashCode(shardPosition);
 				if (!shardBlockMap.containsKey(shardHash))
-					shardBlockMap.put(shardHash, new InMemoryShard<>(shardAttributes, shardPosition));
+					shardBlockMap.put(shardHash, new InMemoryShard<>((DatasetAttributes & ShardParameters)shardAttributes, shardPosition));
+
 				final InMemoryShard<T> shard = shardBlockMap.get(shardHash);
 				shard.addBlock(dataBlock);
 			}
 
 			for (InMemoryShard<T> shard : shardBlockMap.values()) {
-
 				/* Add existing blocks before overwriting shard */
-				final Shard<T> currentShard = (Shard<T>)getShard(datasetPath, shardAttributes, shard.getGridPosition());
+				final Shard<T> currentShard = (Shard<T>)getShard(datasetPath, (DatasetAttributes & ShardParameters)shardAttributes, shard.getGridPosition());
 				for (DataBlock<T> currentBlock : currentShard.getBlocks()) {
 					if (shard.getBlock(currentBlock.getGridPosition()) == null)
 						shard.addBlock(currentBlock);
 				}
 
-				writeShard(datasetPath, shardAttributes, shard);
+				writeShard(datasetPath, (DatasetAttributes & ShardParameters)shardAttributes, shard);
 			}
+
 		} else {
 			/* Just write each block */
 			for (DataBlock<T> dataBlock : dataBlocks) {
@@ -257,11 +260,11 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DataBlock<T> dataBlock) throws N5Exception {
 
 		/* Delegate to shard for writing block? How to know what type of shard? */
-		if (datasetAttributes instanceof ShardedDatasetAttributes) {
-			ShardedDatasetAttributes shardDatasetAttrs = (ShardedDatasetAttributes)datasetAttributes;
+		if (datasetAttributes instanceof ShardParameters) {
+			ShardParameters shardDatasetAttrs = (ShardParameters)datasetAttributes;
 			final long[] shardPos = shardDatasetAttrs.getShardPositionForBlock(dataBlock.getGridPosition());
 			final String shardPath = absoluteShardPath(N5URI.normalizeGroupPath(path), shardPos);
-			final VirtualShard<T> shard = new VirtualShard<>(shardDatasetAttrs, shardPos, getKeyValueAccess(), shardPath);
+			final VirtualShard<T> shard = new VirtualShard<>((DatasetAttributes & ShardParameters)shardDatasetAttrs, shardPos, getKeyValueAccess(), shardPath);
 			shard.writeBlock(dataBlock);
 			return;
 		}
@@ -279,9 +282,9 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	}
 
 	@Override
-	default <T> void writeShard(
+	default <T,A extends DatasetAttributes & ShardParameters> void writeShard(
 			final String path,
-			final ShardedDatasetAttributes datasetAttributes,
+			final A datasetAttributes,
 			final Shard<T> shard) throws N5Exception {
 
 		final String shardPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), shard.getGridPosition());

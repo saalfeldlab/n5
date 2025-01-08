@@ -6,14 +6,12 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 	long EMPTY_INDEX_NBYTES = 0xFFFFFFFFFFFFFFFFL;
-
-	public ShardedDatasetAttributes getDatasetAttributes();
 
 	/**
 	 * Returns the number of blocks this shard contains along all dimensions.
@@ -27,6 +25,8 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 		return getDatasetAttributes().getBlocksPerShard();
 	}
+
+	public <A extends DatasetAttributes & ShardParameters> A getDatasetAttributes();
 
 	/**
 	 * Returns the size of shards in pixel units.
@@ -118,7 +118,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 	public ShardIndex getIndex();
 
-	public static <T> Shard<T> createEmpty(final ShardedDatasetAttributes attributes, long... shardPosition) {
+	public static <T,A extends DatasetAttributes & ShardParameters> Shard<T> createEmpty(final A attributes, long... shardPosition) {
 
 		final long[] emptyIndex = new long[(int)(2 * attributes.getNumBlocks())];
 		Arrays.fill(emptyIndex, EMPTY_INDEX_NBYTES);
