@@ -63,9 +63,9 @@ public class N5BlockCodec implements Codec.ArrayCodec {
 					start = false;
 				}
 				if (mode != 2) {
-					return attributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
+					return attributes.getDataType().createDataBlock(blockSize, gridPosition.clone(), numElements);
 				} else {
-					return attributes.getDataType().createDataBlock(null, gridPosition, numElements);
+					return attributes.getDataType().createDataBlock(null, gridPosition.clone(), numElements);
 				}
 			}
 

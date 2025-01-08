@@ -241,29 +241,4 @@ public class ShardIndex extends LongArrayDataBlock {
 		System.arraycopy(array, 0, indexBlockSize, 1, array.length);
 		return indexBlockSize;
 	}
-
-	/**
-	 * Calculate the relative block position in the shard for a given block index.
-	 *
-	 * @param blockIdx          the block index in the shard
-	 * @param blocksPerShard 	the dimensions of the shard in blocks
-	 * @return the relative position in the shard
-	 */
-	public static int[] blockPosition(int blockIdx, int[] blocksPerShard) {
-
-		int numBlocks = Arrays.stream(blocksPerShard).reduce(1, (x, y) -> x * y);
-		if (blockIdx >= numBlocks)
-			throw new IllegalArgumentException("Shard Index Offset " + blockIdx + " is out of bounds for shard dimensions " + Arrays.toString(blocksPerShard));
-
-
-		final int[] position = new int[blocksPerShard.length];
-		int remainder = blockIdx ;
-
-		for (int dim = blocksPerShard.length - 1; dim >= 0; dim--) {
-			position[dim] = remainder % blocksPerShard[dim];
-			remainder /= blocksPerShard[dim];
-		}
-
-		return position;
-	}
 }

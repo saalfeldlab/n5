@@ -7,6 +7,7 @@ import org.janelia.saalfeldlab.n5.GzipCompression;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5FSTest;
 import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
+import org.janelia.saalfeldlab.n5.N5URI;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.BytesCodec;
@@ -26,6 +27,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 @RunWith(Parameterized.class)

@@ -13,6 +13,8 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 	long EMPTY_INDEX_NBYTES = 0xFFFFFFFFFFFFFFFFL;
 
+	public ShardedDatasetAttributes getDatasetAttributes();
+
 	/**
 	 * Returns the number of blocks this shard contains along all dimensions.
 	 *
@@ -23,30 +25,26 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	 */
 	default int[] getBlockGridSize() {
 
-		final int[] sz = getSize();
-		final int[] blkSz = getBlockSize();
-		final int[] blockGridSize = new int[sz.length];
-		for (int i = 0; i < sz.length; i++)
-			blockGridSize[i] = (int)(sz[i] / blkSz[i]);
-
-		return blockGridSize;
+		return getDatasetAttributes().getBlocksPerShard();
 	}
-
-	public ShardedDatasetAttributes getDatasetAttributes();
 
 	/**
 	 * Returns the size of shards in pixel units.
 	 *
 	 * @return shard size
 	 */
-	public int[] getSize();
+	default int[] getSize() {
+		return getDatasetAttributes().getShardSize();
+	}
 
 	/**
 	 * Returns the size of blocks in pixel units.
 	 *
 	 * @return block size
 	 */
-	public int[] getBlockSize();
+	default int[] getBlockSize() {
+		return getDatasetAttributes().getBlockSize();
+	}
 
 	/**
 	 * Returns the position of this shard on the shard grid.
@@ -105,23 +103,16 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 	default Iterator<DataBlock<T>> iterator() {
 
-		return new DataBlockIterator<T>(this);
+		return new DataBlockIterator<>(this);
 	}
 
 	default List<DataBlock<T>> getBlocks() {
 
-		final ShardIndex shardIndex = getIndex();
-		final ShardedDatasetAttributes attrs = getDatasetAttributes();
 		final List<DataBlock<T>> blocks = new ArrayList<>();
-		for (int blockIdx = 0; blockIdx < attrs.getNumBlocks(); blockIdx++) {
-			if (!shardIndex.exists(blockIdx))
-				continue;
-
-			final int[] blockPosInShard = ShardIndex.blockPosition(blockIdx, attrs.getBlocksPerShard());
-			final long[] blockPosInImg = attrs.getBlockPositionFromShardPosition(getGridPosition(), blockPosInShard);
-			blocks.add(getBlock(blockPosInImg));
+		for (DataBlock<T> block : this) {
+			if (block != null)
+				blocks.add(block);
 		}
-
 		return blocks;
 	}
 
@@ -167,15 +158,4 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 			return shard.getBlock(it.next());
 		}
 	}
-
-	/**
-	 * Say we want async datablock access
-	 *
-	 * Say we construct shard then getBlockAt
-	 *
-	 * (this could be how we do the aggregation) multiple getblockAt calls don't trigger reading read triggers reading of all blocks that were requested
-	 *
-	 * Shard doesn't hold the data directly, but is the metadata about how the blocks are stored
-	 *
-	 */
 }

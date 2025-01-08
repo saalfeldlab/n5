@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5.util;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 /**
@@ -68,13 +69,10 @@ public class GridIterator implements Iterator<long[]> {
 
 	final static public void indexToPosition(long index, final long[] dimensions, final long[] position) {
 		final int maxDim = dimensions.length - 1;
-		for (int d = 0; d < maxDim; ++d) {
-			final long j = index / dimensions[d];
-			position[d] = index - j * dimensions[d];
-			index = j;
+		for (int dim = maxDim; dim >= 0; dim--) {
+			position[dim] = index % dimensions[dim];
+			index /= dimensions[dim];
 		}
-		position[maxDim] = index;
-
 	}
 
 	final static public int[] long2int(final long[] a) {
@@ -95,4 +93,11 @@ public class GridIterator implements Iterator<long[]> {
 		return l;
 	}
 
+	public static void main(String[] args) {
+
+		final GridIterator it = new GridIterator(new int[]{2, 2, 2});
+		while (it.hasNext()) {
+			System.out.println(Arrays.toString(it.next()));
+		}
+	}
 }
