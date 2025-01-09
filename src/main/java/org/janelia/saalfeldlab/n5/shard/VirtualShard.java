@@ -4,9 +4,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.util.function.Supplier;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import org.checkerframework.checker.units.qual.A;
+import org.apache.commons.io.input.BoundedInputStream;
+import org.apache.commons.io.input.ProxyInputStream;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.DefaultBlockReader;
@@ -15,6 +20,7 @@ import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 public class VirtualShard<T> extends AbstractShard<T> {
 
@@ -35,15 +41,79 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public DataBlock<T> getBlock(Supplier<InputStream> inputSupplier, long... blockGridPosition) throws IOException {
+	public DataBlock<T> getBlock(InputStream inputStream, long... blockGridPosition) throws IOException {
 
-		// TODO this method is just a wrapper around readBlock and probably not worth keeping
-		try (InputStream is = inputSupplier.get()) {
-			return (DataBlock<T>) DefaultBlockReader.readBlock(is, datasetAttributes, blockGridPosition);
-		}
+		// TODO this method is just a wrapper around readBlock 
+		// is it worth keeping/
+		return (DataBlock<T>) DefaultBlockReader.readBlock(
+				new ProxyInputStream( inputStream ) {
+					@Override
+					public void close( ) {
+						//nop
+					}
+				}, datasetAttributes, blockGridPosition);
 	}
 
-	@SuppressWarnings("unchecked")
+	@Override
+	public List<DataBlock<T>> getBlocks() {
+
+		// will not contain nulls
+
+		final ShardIndex index = getIndex();
+		// TODO if the index is completely empty, can return right away
+
+		final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
+
+		// sort index offsets
+		// and keep track of relevant positions
+		final long[] indexData = index.getData();
+		List<long[]> sortedOffsets = IntStream.range(0, index.getNumElements() / 2).mapToObj(i -> {
+			return new long[] { indexData[i * 2], i };
+		}).filter(x -> {
+			return x[0] != Shard.EMPTY_INDEX_NBYTES;
+		}).collect(Collectors.toList());
+
+		Collections.sort(sortedOffsets, (a, b) -> Long.compare(((long[]) a)[0], ((long[]) b)[0]));
+
+		final int nd = getDatasetAttributes().getNumDimensions();
+		long[] position = new long[nd];
+
+		final int[] blocksPerShard = getDatasetAttributes().getBlocksPerShard();
+		final long[] blockGridMin = IntStream.range(0, nd).mapToLong(i -> {
+			return blocksPerShard[i] * getGridPosition()[i];
+		}).toArray();
+
+		long streamPosition = 0;
+		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(path)) {
+			try (final InputStream channelIn = lockedChannel.newInputStream()) {
+
+				for (long[] offsetIndex : sortedOffsets) {
+
+					final long offset = offsetIndex[0];
+					if (offset < 0)
+						continue;
+
+					final long idx = offsetIndex[1];
+					GridIterator.indexToPosition(idx, blocksPerShard, blockGridMin, position);
+
+					channelIn.skip(offset - streamPosition);
+					final long numBytes = index.getNumBytesByBlockIndex((int) idx);
+					final BoundedInputStream bIs = BoundedInputStream.builder().setInputStream(channelIn)
+							.setMaxCount(numBytes).get();
+
+					blocks.add(getBlock(bIs, position.clone()));
+					streamPosition = offset + numBytes;
+				}
+			}
+		} catch (final N5Exception.N5NoSuchKeyException e) {
+			return blocks;
+		} catch (final IOException | UncheckedIOException e) {
+			throw new N5IOException("Failed to read block from " + path, e);
+		}
+
+		return blocks;
+	}
+
 	@Override
 	public DataBlock<T> getBlock(long... blockGridPosition) {
 
@@ -62,7 +132,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(path, startByte, size)) {
 			try ( final InputStream channelIn = lockedChannel.newInputStream()) {
 				final long[] blockPosInImg = getDatasetAttributes().getBlockPositionFromShardPosition(getGridPosition(), blockGridPosition);
-				return (DataBlock<T>)DefaultBlockReader.readBlock(channelIn, datasetAttributes, blockPosInImg);
+				return getBlock( channelIn, blockPosInImg );
 			}
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
@@ -126,9 +196,9 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		} catch (IOException e) {
 			throw new N5IOException("Failed to read index at " + path, e);
 		}
+
 		return index;
 	}
-
 
 	static class CountingOutputStream extends OutputStream {
 		private final OutputStream out;
