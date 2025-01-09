@@ -97,8 +97,10 @@ public interface ShardParameters extends BlockParameters {
 	/**
 	 * Given a block's position relative to a shard, returns its position in pixels
 	 * relative to the image.
-	 *
-	 * @return the block position
+	 * 
+	 * @param shardPosition shard position in the shard grid
+	 * @param blockPosition block position the 
+	 * @return the block's min pixel coordinate
 	 */
 	default long[] getBlockMinFromShardPosition(final long[] shardPosition, final long[] blockPosition) {
 
@@ -117,7 +119,9 @@ public interface ShardParameters extends BlockParameters {
 	 * Given a block's position relative to a shard, returns its position relative
 	 * to the image.
 	 *
-	 * @return the block position
+	 * @param shardPosition shard position in the shard grid
+	 * @param blockPosition block position relative to the shard 
+	 * @return the block position in the block grid
 	 */
 	default long[] getBlockPositionFromShardPosition(final long[] shardPosition, final long[] blockPosition) {
 

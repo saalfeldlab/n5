@@ -1,6 +1,5 @@
 package org.janelia.saalfeldlab.n5.util;
 
-import java.util.Arrays;
 import java.util.Iterator;
 
 /**
@@ -14,15 +13,18 @@ public class GridIterator implements Iterator<long[]> {
 
 	final protected long[] position;
 
+	final protected long[] min;
+
 	final protected int lastIndex;
 
 	protected int index = -1;
 
-	public GridIterator(final long[] dimensions) {
+	public GridIterator(final long[] dimensions, final long[] min) {
 
 		final int n = dimensions.length;
 		this.dimensions = new long[n];
 		this.position = new long[n];
+		this.min = min;
 		steps = new long[n];
 
 		final int m = n - 1;
@@ -36,6 +38,11 @@ public class GridIterator implements Iterator<long[]> {
 		final long dimm = dimensions[m];
 		this.dimensions[m] = dimm;
 		lastIndex = (int)(k * dimm - 1);
+	}
+
+	public GridIterator(final long[] dimensions) {
+
+		this(dimensions, new long[dimensions.length]);
 	}
 
 	public GridIterator(final int[] dimensions) {
@@ -59,7 +66,7 @@ public class GridIterator implements Iterator<long[]> {
 	@Override
 	public long[] next() {
 		fwd();
-		indexToPosition(index, dimensions, position);
+		indexToPosition(index, dimensions, min, position);
 		return position;
 	}
 
@@ -71,10 +78,10 @@ public class GridIterator implements Iterator<long[]> {
 		return index;
 	}
 
-	final static public void indexToPosition(long index, final long[] dimensions, final long[] position) {
+	final static public void indexToPosition(long index, final long[] dimensions, final long[] min, final long[] position) {
 		final int maxDim = dimensions.length - 1;
 		for (int dim = maxDim; dim >= 0; dim--) {
-			position[dim] = index % dimensions[dim];
+			position[dim] = index % dimensions[dim] + min[dim];
 			index /= dimensions[dim];
 		}
 	}

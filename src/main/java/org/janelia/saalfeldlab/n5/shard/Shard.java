@@ -116,6 +116,18 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		return blocks;
 	}
 
+	/**
+	 * Returns an {@link Iterator} over block positions contained in this shard.
+	 * 
+	 * @return
+	 */
+	default Iterator<long[]> blockPositionIterator() {
+
+		final int nd = getSize().length;
+		long[] min = getDatasetAttributes().getBlockPositionFromShardPosition( getGridPosition(), new long[nd]);
+		return new GridIterator(GridIterator.int2long(getBlockGridSize()), min);
+	}
+
 	public ShardIndex getIndex();
 
 	public static <T,A extends DatasetAttributes & ShardParameters> Shard<T> createEmpty(final A attributes, long... shardPosition) {
@@ -158,4 +170,5 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 			return shard.getBlock(it.next());
 		}
 	}
+
 }
