@@ -106,6 +106,11 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		return new DataBlockIterator<>(this);
 	}
 
+	default int getNumBlocks() {
+
+		return Arrays.stream(getBlockGridSize()).reduce(1, (x, y) -> x * y);
+	}
+
 	default List<DataBlock<T>> getBlocks() {
 
 		final List<DataBlock<T>> blocks = new ArrayList<>();
