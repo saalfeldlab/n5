@@ -76,9 +76,18 @@ public class ShardIndex extends LongArrayDataBlock {
 		return data[getOffsetIndex(gridPosition)];
 	}
 
+	public long getOffsetByBlockIndex(int index) {
+		return data[index * 2];
+	}
+
 	public long getNumBytes(int... gridPosition) {
 
 		return data[getNumBytesIndex(gridPosition)];
+	}
+
+	public long getNumBytesByBlockIndex(int index) {
+
+		return data[index * 2 + 1];
 	}
 
 	public void set(long offset, long nbytes, int[] gridPosition) {
