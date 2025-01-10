@@ -2,8 +2,10 @@ package org.janelia.saalfeldlab.n5.shard;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
@@ -115,8 +117,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 		final List<DataBlock<T>> blocks = new ArrayList<>();
 		for (DataBlock<T> block : this) {
-			if (block != null)
-				blocks.add(block);
+			blocks.add(block);
 		}
 		return blocks;
 	}
@@ -158,20 +159,34 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 		private final GridIterator it;
 		private final Shard<T> shard;
+		private final ShardIndex index;
+		private final ShardParameters attributes;
+		private int blockIndex = 0;
 
 		public DataBlockIterator(final Shard<T> shard) {
 
 			this.shard = shard;
+			this.index = shard.getIndex();
+			this.attributes = shard.getDatasetAttributes();
+			this.blockIndex = 0;
 			it = new GridIterator(shard.getBlockGridSize());
 		}
 
 		@Override
 		public boolean hasNext() {
-			return it.hasNext();
+
+			for (int i = blockIndex; i < attributes.getNumBlocks(); i++) {
+				if (index.exists(i))
+					return true;
+			}
+			return false;
 		}
 
 		@Override
 		public DataBlock<T> next() {
+			while (!index.exists(blockIndex++))
+				it.fwd();
+
 			return shard.getBlock(it.next());
 		}
 	}
