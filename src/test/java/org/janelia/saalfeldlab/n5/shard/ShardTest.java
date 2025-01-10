@@ -7,7 +7,6 @@ import org.janelia.saalfeldlab.n5.GzipCompression;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5FSTest;
 import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
-import org.janelia.saalfeldlab.n5.N5URI;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.BytesCodec;
@@ -72,7 +71,7 @@ public class ShardTest {
 				shardSize,
 				blockSize,
 				DataType.UINT8,
-				new Codec[]{new N5BlockCodec(dataByteOrder)}, // , new GzipCompression(4)},
+				new Codec[]{new N5BlockCodec(dataByteOrder), new GzipCompression(4)},
 				new DeterministicSizeCodec[]{new BytesCodec(indexByteOrder), new Crc32cChecksumCodec()},
 				indexLocation
 		);
@@ -210,7 +209,7 @@ public class ShardTest {
 				}
 				writer.writeBlock("shard", datasetAttributes, dataBlock);
 
-				final DataBlock<?> block = writer.readBlock("shard", datasetAttributes, gridPosition);
+				final DataBlock<?> block = writer.readBlock("shard", datasetAttributes, gridPosition.clone());
 				Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
 
 				for (Map.Entry<long[], byte[]> entry : writtenBlocks.entrySet()) {
