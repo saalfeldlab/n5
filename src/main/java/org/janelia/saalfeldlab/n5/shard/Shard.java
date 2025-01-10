@@ -13,7 +13,6 @@ import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 public interface Shard<T> extends Iterable<DataBlock<T>> {
 
-	long EMPTY_INDEX_NBYTES = 0xFFFFFFFFFFFFFFFFL;
 
 	/**
 	 * Returns the number of blocks this shard contains along all dimensions.

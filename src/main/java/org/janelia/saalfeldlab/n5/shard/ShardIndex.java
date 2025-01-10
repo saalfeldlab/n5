@@ -28,11 +28,11 @@ import java.util.Arrays;
 
 public class ShardIndex extends LongArrayDataBlock {
 
+	public static final long EMPTY_INDEX_NBYTES = 0xFFFFFFFFFFFFFFFFL;
 	private static final int BYTES_PER_LONG = 8;
-
 	private static final int LONGS_PER_BLOCK = 2;
-
 	private static final long[] DUMMY_GRID_POSITION = null;
+
 	private final IndexLocation location;
 
 	private final DeterministicSizeCodec[] codecs;
@@ -56,14 +56,14 @@ public class ShardIndex extends LongArrayDataBlock {
 
 	public boolean exists(int[] gridPosition) {
 
-		return getOffset(gridPosition) != Shard.EMPTY_INDEX_NBYTES ||
-				getNumBytes(gridPosition) != Shard.EMPTY_INDEX_NBYTES;
+		return getOffset(gridPosition) != EMPTY_INDEX_NBYTES ||
+				getNumBytes(gridPosition) != EMPTY_INDEX_NBYTES;
 	}
 
 	public boolean exists(int blockNum) {
 
-		return data[blockNum * 2] != Shard.EMPTY_INDEX_NBYTES ||
-				data[blockNum * 2 + 1] != Shard.EMPTY_INDEX_NBYTES;
+		return data[blockNum * 2] != EMPTY_INDEX_NBYTES ||
+				data[blockNum * 2 + 1] != EMPTY_INDEX_NBYTES;
 	}
 
 	public IndexLocation getLocation() {
@@ -266,7 +266,7 @@ public class ShardIndex extends LongArrayDataBlock {
 
 		final int N = 2 * Arrays.stream(size).reduce(1, (x, y) -> x * y);
 		final long[] data = new long[N];
-		Arrays.fill(data, Shard.EMPTY_INDEX_NBYTES);
+		Arrays.fill(data, EMPTY_INDEX_NBYTES);
 		return data;
 	}
 
