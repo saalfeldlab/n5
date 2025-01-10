@@ -13,7 +13,6 @@ import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 public interface Shard<T> extends Iterable<DataBlock<T>> {
 
-	long EMPTY_INDEX_NBYTES = 0xFFFFFFFFFFFFFFFFL;
 
 	/**
 	 * Returns the number of blocks this shard contains along all dimensions.
@@ -139,7 +138,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	public static <T,A extends DatasetAttributes & ShardParameters> Shard<T> createEmpty(final A attributes, long... shardPosition) {
 
 		final long[] emptyIndex = new long[(int)(2 * attributes.getNumBlocks())];
-		Arrays.fill(emptyIndex, EMPTY_INDEX_NBYTES);
+		Arrays.fill(emptyIndex, ShardIndex.EMPTY_INDEX_NBYTES);
 		final ShardIndex shardIndex = new ShardIndex(attributes.getBlocksPerShard(), emptyIndex, ShardingCodec.IndexLocation.END);
 		return new InMemoryShard<T>(attributes, shardPosition, shardIndex);
 	}
