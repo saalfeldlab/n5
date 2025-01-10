@@ -33,7 +33,6 @@ import java.nio.ByteBuffer;
 import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec.DataBlockInputStream;
-import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 
 /**
  * Default implementation of {@link BlockReader}.
@@ -95,12 +94,6 @@ public interface DefaultBlockReader extends BlockReader {
 		final DataInputStream dis = new DataInputStream(in);
 		dis.readFully(buffer.array());
 		dataBlock.readData(buffer);
-	}
-
-	public static long getShardIndex(final ShardingCodec shardingCodec, final long[] gridPosition) {
-
-		// TODO implement
-		return -1;
 	}
 
 }
