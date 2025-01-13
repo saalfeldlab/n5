@@ -23,6 +23,22 @@ import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 @NameConfig.Prefix("codec")
 public interface Codec extends Serializable {
 
+	public static OutputStream encode(OutputStream out, Codec.BytesCodec... bytesCodecs) throws IOException {
+		OutputStream stream = out;
+		for (final BytesCodec codec : bytesCodecs)
+			stream = codec.encode(stream);
+
+		return stream;
+	}
+
+	public static InputStream decode(InputStream out, Codec.BytesCodec... bytesCodecs) throws IOException {
+		InputStream stream = out;
+		for (final BytesCodec codec : bytesCodecs)
+			stream = codec.decode(stream);
+
+		return stream;
+	}
+
 	public interface BytesCodec extends Codec {
 
 		/**
