@@ -112,6 +112,15 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 			return indexBuilder.build();
 	}
 
+	public void write(final KeyValueAccess keyValueAccess, final String path) throws IOException {
+
+		try (final LockedChannel lockedChannel = keyValueAccess.lockForWriting(path)) {
+			try (final OutputStream os = lockedChannel.newOutputStream()) {
+				write(os);
+			}
+		}
+	}
+
 	public void write(final OutputStream out) throws IOException {
 
 		if (indexLocation() == IndexLocation.END)
@@ -130,6 +139,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 			}
 		}
 
+		// Another possible implementation
 //		return fromShard(new VirtualShard<>(attributes, gridPosition, kva, key));
 	}
 
@@ -177,6 +187,15 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		}
 
 		return shard;
+	}
+
+	public static <T> void writeShard(final KeyValueAccess keyValueAccess, final String path, final InMemoryShard<T> shard) throws IOException {
+
+		try (final LockedChannel lockedChannel = keyValueAccess.lockForWriting(path)) {
+			try (final OutputStream os = lockedChannel.newOutputStream()) {
+				writeShard(os, shard);
+			}
+		}
 	}
 
 	public static <T> void writeShard(final OutputStream out, final Shard<T> shard) throws IOException {
