@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -67,10 +68,10 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		// sort index offsets
 		// and keep track of relevant positions
 		final long[] indexData = index.getData();
-		List<long[]> sortedOffsets = IntStream.range(0, index.getNumElements() / 2).mapToObj(i -> {
+		List<long[]> sortedOffsets = Arrays.stream(blockIndexes).mapToObj(i -> {
 			return new long[] { indexData[i * 2], i };
 		}).filter(x -> {
-			return x[0] != Shard.EMPTY_INDEX_NBYTES;
+			return x[0] != ShardIndex.EMPTY_INDEX_NBYTES;
 		}).collect(Collectors.toList());
 
 		Collections.sort(sortedOffsets, (a, b) -> Long.compare(((long[]) a)[0], ((long[]) b)[0]));
@@ -125,7 +126,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 
 		final long startByte = idx.getOffset(relativePosition);
 
-		if (startByte == Shard.EMPTY_INDEX_NBYTES )
+		if (startByte == ShardIndex.EMPTY_INDEX_NBYTES )
 			return null;
 
 		final long size = idx.getNumBytes(relativePosition);
