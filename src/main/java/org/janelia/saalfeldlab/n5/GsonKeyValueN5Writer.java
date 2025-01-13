@@ -216,8 +216,10 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		return removed;
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	@Override default <T> void writeBlocks(final String datasetPath, final DatasetAttributes datasetAttributes, final DataBlock<T>... dataBlocks) throws N5Exception {
+	@Override default <T> void writeBlocks(
+			final String datasetPath,
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T>... dataBlocks) throws N5Exception {
 
 		if (datasetAttributes instanceof ShardParameters) {
 			/* Group by shard index */
@@ -236,6 +238,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 			for (InMemoryShard<T> shard : shardBlockMap.values()) {
 				/* Add existing blocks before overwriting shard */
+				@SuppressWarnings("unchecked")
 				final Shard<T> currentShard = (Shard<T>)getShard(datasetPath, (DatasetAttributes & ShardParameters)shardAttributes, shard.getGridPosition());
 				for (DataBlock<T> currentBlock : currentShard.getBlocks()) {
 					if (shard.getBlock(currentBlock.getGridPosition()) == null)
@@ -246,10 +249,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			}
 
 		} else {
-			/* Just write each block */
-			for (DataBlock<T> dataBlock : dataBlocks) {
-				writeBlock(datasetPath, datasetAttributes, dataBlock);
-			}
+			GsonN5Writer.super.writeBlocks(datasetPath, datasetAttributes, dataBlocks);
 		}
 	}
 

@@ -294,6 +294,34 @@ public interface N5Reader extends AutoCloseable {
 			final long... gridPosition) throws N5Exception;
 
 	/**
+	 * Reads multiple {@link DataBlock}s.
+	 * <p>
+	 * Implementations may optimize / batch read operations when possible, e.g.
+	 * in the case that the datasets are sharded.
+	 *
+	 * @param pathName
+	 *            dataset path
+	 * @param datasetAttributes
+	 *            the dataset attributes
+	 * @param gridPositions
+	 *            a list of grid positions
+	 * @return a list of data blocks
+	 * @throws N5Exception
+	 *             the exception
+	 */
+	default List<DataBlock<?>> readBlocks(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final List<long[]> gridPositions) throws N5Exception {
+
+		final ArrayList<DataBlock<?>> blocks = new ArrayList<>();
+		for( final long[] p : gridPositions )
+			blocks.add(readBlock(pathName, datasetAttributes, p));
+
+		return blocks;
+	}
+
+	/**
 	 * Load a {@link DataBlock} as a {@link Serializable}. The offset is given
 	 * in
 	 * {@link DataBlock} grid coordinates.
