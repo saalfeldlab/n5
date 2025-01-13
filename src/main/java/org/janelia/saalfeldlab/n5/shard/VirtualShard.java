@@ -56,7 +56,11 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	}
 
 	@Override
-	public List<DataBlock<T>> getBlocks() {
+	public List<DataBlock<T>> getBlocks()  {
+		return getBlocks(IntStream.range(0, getNumBlocks()).toArray());
+	}
+
+	public List<DataBlock<T>> getBlocks(final int[] blockIndexes) {
 
 		// will not contain nulls
 

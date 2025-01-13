@@ -1,18 +1,16 @@
 package org.janelia.saalfeldlab.n5.shard;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 public interface Shard<T> extends Iterable<DataBlock<T>> {
-
 
 	/**
 	 * Returns the number of blocks this shard contains along all dimensions.

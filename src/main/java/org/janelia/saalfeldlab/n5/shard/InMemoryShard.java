@@ -80,6 +80,21 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		return new ArrayList<>(blocks.values());
 	}
 
+	public List<DataBlock<T>> getBlocks( int[] blockIndexes ) {
+
+		final ArrayList<DataBlock<T>> out = new ArrayList<>();
+		final int[] blocksPerShard = getDatasetAttributes().getBlocksPerShard();
+
+		long[] position = new long[ getSize().length ];
+		for( int idx : blockIndexes ) {
+			GridIterator.indexToPosition(idx, blocksPerShard, position);
+			DataBlock<T> blk = blocks.get(Arrays.hashCode(position));
+			if( blk != null );
+				out.add(blk);
+		}
+		return out;
+	}
+
 	protected IndexLocation indexLocation() {
 
 		if (index != null)
@@ -114,8 +129,11 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 				return readShard(is, gridPosition, attributes);
 			}
 		}
+
+//		return fromShard(new VirtualShard<>(attributes, gridPosition, kva, key));
 	}
 
+	@SuppressWarnings("hiding")
 	public static <T, A extends DatasetAttributes & ShardParameters> InMemoryShard<T> readShard(
 			final InputStream inputStream, final long[] gridPosition, final A attributes) throws IOException {
 
@@ -128,7 +146,8 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		}
 	}
 
-	public static <T, A extends DatasetAttributes & ShardParameters> InMemoryShard<T> readShard(final byte[] data,
+	public static <T, A extends DatasetAttributes & ShardParameters> InMemoryShard<T> readShard(
+			final byte[] data,
 			long[] shardPosition, final A attributes) throws IOException {
 
 		final ShardIndex index = attributes.createIndex();
