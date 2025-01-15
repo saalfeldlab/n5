@@ -97,16 +97,18 @@ public class ShardIndex extends LongArrayDataBlock {
 		data[i + 1] = nbytes;
 	}
 
-	private int getOffsetIndex(int... gridPosition) {
+	protected int getOffsetIndex(int... gridPosition) {
 
 		int idx = (int) gridPosition[0];
+		int cumulativeSize = 1;
 		for (int i = 1; i < gridPosition.length; i++) {
-			idx += gridPosition[i] * size[i];
+			cumulativeSize *= size[i];
+			idx += gridPosition[i] * cumulativeSize;
 		}
 		return idx * 2;
 	}
 
-	private int getNumBytesIndex(int... gridPosition) {
+	protected int getNumBytesIndex(int... gridPosition) {
 
 		return getOffsetIndex(gridPosition) + 1;
 	}
