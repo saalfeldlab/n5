@@ -27,16 +27,9 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
-import org.janelia.saalfeldlab.n5.shard.Shard;
-import org.janelia.saalfeldlab.n5.shard.ShardParameters;
-import org.janelia.saalfeldlab.n5.shard.VirtualShard;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -93,27 +86,11 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	}
 
-	@SuppressWarnings("rawtypes")
-	default <A extends DatasetAttributes & ShardParameters> Shard<?> getShard(final String pathName,
-			final A datasetAttributes,
-			long... shardGridPosition) {
-
-		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), shardGridPosition);
-		return new VirtualShard(datasetAttributes, shardGridPosition, getKeyValueAccess(), path);
-	}
-
 	@Override
 	default DataBlock<?> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
-
-		if (datasetAttributes instanceof ShardedDatasetAttributes) {
-			final ShardedDatasetAttributes shardedAttrs = (ShardedDatasetAttributes) datasetAttributes;
-			final long[] shardPosition = shardedAttrs.getShardPositionForBlock(gridPosition);
-			final Shard<?> shard = getShard(pathName, shardedAttrs, shardPosition);
-			return shard.getBlock(gridPosition);
-		}
 
 		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), gridPosition);
 
@@ -126,49 +103,6 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 					"Failed to read block " + Arrays.toString(gridPosition) + " from dataset " + path,
 					e);
 		}
-	}
-
-	@Override
-	default List<DataBlock<?>> readBlocks(
-			final String pathName,
-			final DatasetAttributes datasetAttributes,
-			final List<long[]> blockPositions) throws N5Exception {
-
-		// TODO which interface should have this implementation?
-		if (datasetAttributes instanceof ShardParameters) {
-
-			/* Group by shard index */
-			final HashMap<Integer, Shard<?>> shardBlockMap = new HashMap<>();
-			final HashMap<Integer, List<long[]>> shardPositionMap = new HashMap<>();
-			final ShardParameters shardAttributes = (ShardParameters)datasetAttributes;
-
-			for ( long[] blockPosition : blockPositions ) {
-				final long[] shardPosition = shardAttributes.getShardPositionForBlock(blockPosition);
-				final int shardHash = Arrays.hashCode(shardPosition);
-				if (!shardBlockMap.containsKey(shardHash)) {
-					final Shard<?> shard = getShard(pathName, (DatasetAttributes & ShardParameters)shardAttributes, shardPosition);
-					shardBlockMap.put(shardHash, shard);
-
-					final ArrayList<long[]> positionList = new ArrayList<>();
-					positionList.add(blockPosition);
-					shardPositionMap.put(shardHash, positionList);
-				}
-				else
-					shardPositionMap.get(shardBlockMap.get(shardHash)).add(blockPosition);
-			}
-
-			final ArrayList<DataBlock<?>> blocks = new ArrayList<>();
-			for (Shard<?> shard : shardBlockMap.values()) {
-				/* Add existing blocks before overwriting shard */
-				final int shardHash = Arrays.hashCode(shard.getGridPosition());
-				for( final long[] blkPosition : shardPositionMap.get(shardHash)) {
-					blocks.add(shard.getBlock(blkPosition));
-				}
-			}
-			return blocks;
-		} else
-			return GsonN5Reader.super.readBlocks(pathName, datasetAttributes, blockPositions);
-
 	}
 
 	@Override

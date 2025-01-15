@@ -32,7 +32,7 @@ import com.google.gson.GsonBuilder;
  *
  * @author Stephan Saalfeld
  */
-public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyValueN5Writer {
+public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyValueN5ShardWriter {
 
 	/**
 	 * Opens an {@link N5KeyValueWriter} at a given base path with a custom

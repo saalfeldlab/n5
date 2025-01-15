@@ -303,21 +303,6 @@ public interface N5Writer extends N5Reader {
 	}
 
 	/**
-	 * Writes a {@link Shard}.
-	 *
-	 * @param datasetPath dataset path
-	 * @param datasetAttributes the dataset attributes
-	 * @param shard the shard
-	 * @param <T> the data block data type
-	 * @param <A> the attribute type
-	 * @throws N5Exception the exception
-	 */
-	<T,A extends DatasetAttributes & ShardParameters> void writeShard(
-			final String datasetPath,
-			final A datasetAttributes,
-			final Shard<T> shard) throws N5Exception;
-
-	/**
 	 * Deletes the block at {@code gridPosition}
 	 *
 	 * @param datasetPath dataset path

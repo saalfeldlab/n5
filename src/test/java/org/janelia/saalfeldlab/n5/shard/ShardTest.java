@@ -7,6 +7,7 @@ import org.janelia.saalfeldlab.n5.GzipCompression;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5FSTest;
 import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
+import org.janelia.saalfeldlab.n5.N5ShardWriter;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.BytesCodec;
@@ -227,7 +228,7 @@ public class ShardTest {
 	@Test
 	public void writeReadShardTest() {
 
-		final N5Writer writer = tempN5Factory.createTempN5Writer();
+		final N5ShardWriter writer = (N5ShardWriter)tempN5Factory.createTempN5Writer();
 
 		final ShardedDatasetAttributes datasetAttributes = new ShardedDatasetAttributes(
 				new long[]{4, 4},
