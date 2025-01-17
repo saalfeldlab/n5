@@ -2,15 +2,18 @@ package org.janelia.saalfeldlab.n5.shard;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
+import org.janelia.saalfeldlab.n5.util.Position;
 import org.junit.Test;
 
 public class ShardPropertiesTests {
@@ -84,7 +87,32 @@ public class ShardPropertiesTests {
 		}
 		assertEquals(16,i);
 		assertArrayEquals(new long[]{7,7}, p);
+	}
 
+	@Test
+	public void testShardGrouping() {
+
+		final long[] arraySize = new long[]{8, 12};
+		final int[] shardSize = new int[]{4, 6};
+		final int[] blkSize = new int[]{2, 3};
+
+		final ShardedDatasetAttributes attrs = new ShardedDatasetAttributes(
+				arraySize,
+				shardSize,
+				blkSize,
+				DataType.UINT8,
+				new Codec[]{},
+				new DeterministicSizeCodec[]{},
+				IndexLocation.END);
+
+		List<long[]> blockPositions = attrs.blockPositions().collect(Collectors.toList());
+		final Map<Position, List<long[]>> result = attrs.groupBlockPositions(blockPositions);
+
+		// there are four shards in this image
+		assertEquals(4, result.keySet().size());
+
+		// there are four blocks per shard in this image
+		result.values().stream().forEach( x -> assertEquals(4, x.size()));
 	}
 
 }
