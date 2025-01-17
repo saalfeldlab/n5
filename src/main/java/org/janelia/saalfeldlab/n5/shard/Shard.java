@@ -1,6 +1,5 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -139,17 +138,6 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		Arrays.fill(emptyIndex, ShardIndex.EMPTY_INDEX_NBYTES);
 		final ShardIndex shardIndex = new ShardIndex(attributes.getBlocksPerShard(), emptyIndex, ShardingCodec.IndexLocation.END);
 		return new InMemoryShard<T>(attributes, shardPosition, shardIndex);
-	}
-
-	public static long flatIndex(long[] gridPosition, int[] gridSize) {
-
-		long index = gridPosition[0];
-		long cumSizes = gridSize[0];
-		for (int i = 1; i < gridSize.length; i++) {
-			index += gridPosition[i] * cumSizes;
-			cumSizes *= gridSize[i];
-		}
-		return index;
 	}
 
 	public static class DataBlockIterator<T> implements Iterator<DataBlock<T>> {
