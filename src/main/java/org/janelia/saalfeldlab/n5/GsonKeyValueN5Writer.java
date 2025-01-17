@@ -29,9 +29,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
@@ -44,6 +45,7 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.shard.VirtualShard;
+import org.janelia.saalfeldlab.n5.util.Position;
 
 /**
  * Default implementation of {@link N5Writer} with JSON attributes parsed with
@@ -222,30 +224,25 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DataBlock<T>... dataBlocks) throws N5Exception {
 
 		if (datasetAttributes instanceof ShardParameters) {
-			/* Group by shard index */
-			final HashMap<Integer, InMemoryShard<T>> shardBlockMap = new HashMap<>();
+
 			final ShardParameters shardAttributes = (ShardParameters)datasetAttributes;
 
-			for (DataBlock<T> dataBlock : dataBlocks) {
-				final long[] shardPosition = shardAttributes.getShardPositionForBlock(dataBlock.getGridPosition());
-				final int shardHash = Arrays.hashCode(shardPosition);
-				if (!shardBlockMap.containsKey(shardHash))
-					shardBlockMap.put(shardHash, new InMemoryShard<>((DatasetAttributes & ShardParameters)shardAttributes, shardPosition));
+			/* Group blocks by shard index */
+			final Map<Position, List<DataBlock<T>>> shardBlockMap = shardAttributes.groupBlocks(
+					Arrays.stream(dataBlocks).collect(Collectors.toList()));
 
-				final InMemoryShard<T> shard = shardBlockMap.get(shardHash);
-				shard.addBlock(dataBlock);
-			}
+			for( final Entry<Position, List<DataBlock<T>>> e : shardBlockMap.entrySet()) {
 
-			for (InMemoryShard<T> shard : shardBlockMap.values()) {
-				/* Add existing blocks before overwriting shard */
+				final long[] shardPosition = e.getKey().get();
 				@SuppressWarnings("unchecked")
-				final Shard<T> currentShard = (Shard<T>)getShard(datasetPath, (DatasetAttributes & ShardParameters)shardAttributes, shard.getGridPosition());
-				for (DataBlock<T> currentBlock : currentShard.getBlocks()) {
-					if (shard.getBlock(currentBlock.getGridPosition()) == null)
-						shard.addBlock(currentBlock);
-				}
+				final Shard<T> currentShard = (Shard<T>) readShard(datasetPath, (DatasetAttributes & ShardParameters)shardAttributes,
+						shardPosition);
 
-				writeShard(datasetPath, (DatasetAttributes & ShardParameters)shardAttributes, shard);
+				final InMemoryShard<T> newShard = InMemoryShard.fromShard(currentShard);
+				for( DataBlock<T> blk : e.getValue())
+					newShard.addBlock(blk);
+
+				writeShard(datasetPath, (DatasetAttributes & ShardParameters)shardAttributes, newShard);
 			}
 
 		} else {

@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -22,13 +24,14 @@ import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
+import org.janelia.saalfeldlab.n5.util.Position;
 
 public class InMemoryShard<T> extends AbstractShard<T> {
 
 	/* Map of a hash of the DataBlocks `gridPosition` to the block */
-	private final HashMap<Integer, DataBlock<T>> blocks;
+	private final Map<Position, DataBlock<T>> blocks;
 	private ShardIndexBuilder indexBuilder;
-	
+
 	/*
 	 * TODO:
 	 * Use morton- or c-ording instead of writing blocks out in the order they're added?
@@ -45,17 +48,22 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 			ShardIndex index) {
 
 		super(datasetAttributes, gridPosition, index);
-		blocks = new HashMap<>();
+		blocks = new TreeMap<>();
 	}
 
 	private void storeBlock(DataBlock<T> block) {
 
-		blocks.put(Arrays.hashCode(block.getGridPosition()), block);
+		blocks.put(Position.wrap(block.getGridPosition()), block);
 	}
 
+	/*
+	 * Returns the {@link DataBlock} given a block grid position.
+	 * <p>
+	 * The block grid position is relative to the image, not relative to this shard.
+	 */
 	@Override public DataBlock<T> getBlock(long... blockGridPosition) {
 
-		return blocks.get(Arrays.hashCode(blockGridPosition));
+		return blocks.get(Position.wrap(blockGridPosition));
 	}
 
 	@Override
@@ -88,7 +96,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		long[] position = new long[ getSize().length ];
 		for( int idx : blockIndexes ) {
 			GridIterator.indexToPosition(idx, blocksPerShard, position);
-			DataBlock<T> blk = blocks.get(Arrays.hashCode(position));
+			DataBlock<T> blk = getBlock(position);
 			if( blk != null );
 				out.add(blk);
 		}
