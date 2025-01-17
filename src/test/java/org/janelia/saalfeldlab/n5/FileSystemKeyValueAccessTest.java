@@ -61,7 +61,6 @@ public class FileSystemKeyValueAccessTest {
 		for (int i = 0; i < testPaths.length; ++i) {
 
 			final String[] components = access.components(testPaths[i]);
-			System.out.println(String.format("%d: %s -> %s", i, testPaths[i], Arrays.toString(components)));
 
 			assertArrayEquals(testPathComponents[i], components);
 		}

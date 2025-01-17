@@ -1,20 +1,20 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
+import org.janelia.saalfeldlab.n5.util.Position;
+import org.junit.Test;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
-import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
-import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
-import org.janelia.saalfeldlab.n5.util.Position;
-import org.junit.Test;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class ShardPropertiesTests {
 
@@ -26,17 +26,20 @@ public class ShardPropertiesTests {
 		final long[] shardPosition = new long[]{1, 1};
 		final int[] blkSize = new int[]{4, 4};
 
-		final ShardedDatasetAttributes dsetAttrs = new ShardedDatasetAttributes(
+		final DatasetAttributes dsetAttrs = new DatasetAttributes(
 				arraySize,
 				shardSize,
 				blkSize,
 				DataType.UINT8,
-				new Codec[]{},
-				new DeterministicSizeCodec[]{},
-				IndexLocation.END);
+				new ShardingCodec(
+						blkSize,
+						new Codec[]{},
+						new DeterministicSizeCodec[]{},
+						IndexLocation.END
+				)
+		);
 
-		@SuppressWarnings({"rawtypes", "unchecked"})
-		final InMemoryShard shard = new InMemoryShard(dsetAttrs, shardPosition, null);
+		@SuppressWarnings({"rawtypes", "unchecked"}) final InMemoryShard shard = new InMemoryShard(dsetAttrs, shardPosition, null);
 
 		assertArrayEquals(new int[]{4, 4}, shard.getBlockGridSize());
 
@@ -45,8 +48,8 @@ public class ShardPropertiesTests {
 		assertArrayEquals(new long[]{1, 0}, shard.getShard(5, 0));
 		assertArrayEquals(new long[]{0, 1}, shard.getShard(0, 5));
 
-//		assertNull(shard.getBlockPosition(0, 0));
-//		assertNull(shard.getBlockPosition(3, 3));
+		//		assertNull(shard.getBlockPosition(0, 0));
+		//		assertNull(shard.getBlockPosition(3, 3));
 
 		assertArrayEquals(new int[]{0, 0}, shard.getBlockPosition(4, 4));
 		assertArrayEquals(new int[]{1, 1}, shard.getBlockPosition(5, 5));
@@ -62,17 +65,20 @@ public class ShardPropertiesTests {
 		final long[] shardPosition = new long[]{1, 1};
 		final int[] blkSize = new int[]{4, 4};
 
-		final ShardedDatasetAttributes dsetAttrs = new ShardedDatasetAttributes(
+		final DatasetAttributes dsetAttrs = new DatasetAttributes(
 				arraySize,
 				shardSize,
 				blkSize,
 				DataType.UINT8,
-				new Codec[]{},
-				new DeterministicSizeCodec[]{},
-				IndexLocation.END);
+				new ShardingCodec(
+						blkSize,
+						new Codec[]{},
+						new DeterministicSizeCodec[]{},
+						IndexLocation.END
+				)
+		);
 
-		@SuppressWarnings({"rawtypes", "unchecked"})
-		final InMemoryShard shard = new InMemoryShard(dsetAttrs, shardPosition, null);
+		@SuppressWarnings({"rawtypes", "unchecked"}) final InMemoryShard shard = new InMemoryShard(dsetAttrs, shardPosition, null);
 
 		int i = 0;
 		Iterator<long[]> it = shard.blockPositionIterator();
@@ -80,13 +86,13 @@ public class ShardPropertiesTests {
 		while (it.hasNext()) {
 
 			p = it.next();
-			if( i == 0 )
-				assertArrayEquals(new long[]{4,4}, p);
+			if (i == 0)
+				assertArrayEquals(new long[]{4, 4}, p);
 
 			i++;
 		}
-		assertEquals(16,i);
-		assertArrayEquals(new long[]{7,7}, p);
+		assertEquals(16, i);
+		assertArrayEquals(new long[]{7, 7}, p);
 	}
 
 	@Test
@@ -96,14 +102,18 @@ public class ShardPropertiesTests {
 		final int[] shardSize = new int[]{4, 6};
 		final int[] blkSize = new int[]{2, 3};
 
-		final ShardedDatasetAttributes attrs = new ShardedDatasetAttributes(
+		final DatasetAttributes attrs = new DatasetAttributes(
 				arraySize,
 				shardSize,
 				blkSize,
 				DataType.UINT8,
-				new Codec[]{},
-				new DeterministicSizeCodec[]{},
-				IndexLocation.END);
+				new ShardingCodec(
+						blkSize,
+						new Codec[]{},
+						new DeterministicSizeCodec[]{},
+						IndexLocation.END
+				)
+		);
 
 		List<long[]> blockPositions = attrs.blockPositions().collect(Collectors.toList());
 		final Map<Position, List<long[]>> result = attrs.groupBlockPositions(blockPositions);
@@ -112,7 +122,7 @@ public class ShardPropertiesTests {
 		assertEquals(4, result.keySet().size());
 
 		// there are four blocks per shard in this image
-		result.values().stream().forEach( x -> assertEquals(4, x.size()));
+		result.values().stream().forEach(x -> assertEquals(4, x.size()));
 	}
 
 }

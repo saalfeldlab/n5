@@ -11,6 +11,7 @@ import java.util.TreeMap;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import java.util.Objects;
 
 import org.janelia.saalfeldlab.n5.BlockParameters;
 import org.janelia.saalfeldlab.n5.DataBlock;
@@ -18,22 +19,17 @@ import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 import org.janelia.saalfeldlab.n5.util.Position;
 
-public interface ShardParameters extends BlockParameters {
+import javax.annotation.CheckForNull;
 
-	public ShardingCodec getShardingCodec();
+public interface ShardParameters extends BlockParameters {
 
 	/**
 	 * The size of the blocks in pixel units.
 	 *
 	 * @return the number of pixels per dimension for this shard.
 	 */
+	@CheckForNull
 	public int[] getShardSize();
-
-	public IndexLocation getIndexLocation();
-
-	default ShardIndex createIndex() {
-		return new ShardIndex(getBlocksPerShard(), getIndexLocation(), getShardingCodec().getIndexCodecs());
-	}
 
 	/**
 	 * Returns the number of blocks per dimension for a shard.
@@ -42,11 +38,13 @@ public interface ShardParameters extends BlockParameters {
 	 */
 	default int[] getBlocksPerShard() {
 
+		final int[] shardSize = getShardSize();
+		Objects.requireNonNull(shardSize, "getShardSize() must not be null");
 		final int nd = getNumDimensions();
 		final int[] blocksPerShard = new int[nd];
 		final int[] blockSize = getBlockSize();
 		for (int i = 0; i < nd; i++)
-			blocksPerShard[i] = getShardSize()[i] / blockSize[i];
+			blocksPerShard[i] = shardSize[i] / blockSize[i];
 
 		return blocksPerShard;
 	}
@@ -141,6 +139,7 @@ public interface ShardParameters extends BlockParameters {
 		// is this useful?
 		final int[] blockSize = getBlockSize();
 		final int[] shardSize = getShardSize();
+		Objects.requireNonNull(shardSize, "getShardSize() must not be null");
 		final long[] blockImagePos = new long[shardSize.length];
 		for (int i = 0; i < shardSize.length; i++) {
 			blockImagePos[i] = (shardPosition[i] * shardSize[i]) + (blockPosition[i] * blockSize[i]);
@@ -182,7 +181,7 @@ public interface ShardParameters extends BlockParameters {
 
 		return map;
 	}
-	
+
 	default <T> Map<Position, List<DataBlock<T>>> groupBlocks(final List<DataBlock<T>> blocks) {
 
 		// figure out how to re-use groupBlockPositions here?

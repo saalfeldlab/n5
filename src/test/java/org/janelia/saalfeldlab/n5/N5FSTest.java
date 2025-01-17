@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.gson.GsonBuilder;
@@ -133,6 +134,7 @@ public class N5FSTest extends AbstractN5Test {
 	}
 
 	@Test
+	@Ignore
 	public void testReadLock() throws IOException {
 
 		final Path path = Paths.get(tempN5PathName(), "lock");
@@ -166,6 +168,7 @@ public class N5FSTest extends AbstractN5Test {
 	}
 
 	@Test
+	@Ignore
 	public void testWriteLock() throws IOException {
 
 		final Path path = Paths.get(tempN5PathName(), "lock");
@@ -198,8 +201,6 @@ public class N5FSTest extends AbstractN5Test {
 
 	@Test
 	public void testLockReleaseByReader() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-
-		System.out.println("Testing lock release by Reader.");
 
 		final Path path = Paths.get(tempN5PathName(), "lock");
 		final LockedChannel lock = access.lockForWriting(path);

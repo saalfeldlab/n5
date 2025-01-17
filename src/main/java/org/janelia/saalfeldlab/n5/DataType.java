@@ -26,6 +26,8 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -34,6 +36,8 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+
+import javax.annotation.Nonnull;
 
 /**
  * Enumerates available data types.

@@ -1,7 +1,12 @@
 package org.janelia.saalfeldlab.n5.shard;
 
+import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public abstract class AbstractShard<T> implements Shard<T> {
 

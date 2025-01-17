@@ -1,5 +1,16 @@
 package org.janelia.saalfeldlab.n5.shard;
 
+import org.apache.commons.io.input.BoundedInputStream;
+import org.apache.commons.io.input.ProxyInputStream;
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.KeyValueAccess;
+import org.janelia.saalfeldlab.n5.LockedChannel;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.util.GridIterator;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,25 +22,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.apache.commons.io.input.BoundedInputStream;
-import org.apache.commons.io.input.ProxyInputStream;
-import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.DefaultBlockReader;
-import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
-import org.janelia.saalfeldlab.n5.KeyValueAccess;
-import org.janelia.saalfeldlab.n5.LockedChannel;
-import org.janelia.saalfeldlab.n5.N5Exception;
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.util.GridIterator;
-
 public class VirtualShard<T> extends AbstractShard<T> {
 
 	final private KeyValueAccess keyValueAccess;
 	final private String path;
 
-	public <A extends DatasetAttributes & ShardParameters> VirtualShard(final A datasetAttributes, long[] gridPosition,
-			final KeyValueAccess keyValueAccess, final String path) {
+	public <A extends DatasetAttributes & ShardParameters> VirtualShard(
+			final A datasetAttributes,
+			long[] gridPosition,
+			final KeyValueAccess keyValueAccess,
+			final String path) {
 
 		super(datasetAttributes, gridPosition, null);
 		this.keyValueAccess = keyValueAccess;
@@ -42,17 +44,27 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public DataBlock<T> getBlock(InputStream inputStream, long... blockGridPosition) throws IOException {
+	public DataBlock<T> getBlock(InputStream in, long... blockGridPosition) throws IOException {
 
-		// TODO this method is just a wrapper around readBlock 
-		// is it worth keeping/
-		return (DataBlock<T>) DefaultBlockReader.readBlock(
-				new ProxyInputStream( inputStream ) {
-					@Override
-					public void close( ) {
-						//nop
-					}
-				}, datasetAttributes, blockGridPosition);
+		// TODO this method is just a wrapper around readBlock
+		ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
+		final Codec.BytesCodec[] codecs = shardingCodec.getCodecs();
+		final Codec.ArrayCodec arrayCodec = shardingCodec.getArrayCodec();
+
+		final ProxyInputStream proxyIn = new ProxyInputStream(in) {
+			@Override
+			public void close() {
+				//nop
+			}
+		};
+		final Codec.DataBlockInputStream dataBlockStream = arrayCodec.decode(datasetAttributes, blockGridPosition, proxyIn);
+
+		final InputStream stream = Codec.decode(in, codecs);
+		final DataBlock<T> dataBlock = dataBlockStream.allocateDataBlock();
+		dataBlock.readData(dataBlockStream.getDataInput(stream));
+		stream.close();
+
+		return dataBlock;
 	}
 
 	@Override
@@ -106,7 +118,8 @@ public class VirtualShard<T> extends AbstractShard<T> {
 					final BoundedInputStream bIs = BoundedInputStream.builder().setInputStream(channelIn)
 							.setMaxCount(numBytes).get();
 
-					blocks.add(getBlock(bIs, position.clone()));
+					final DataBlock<T> block = getBlock(bIs, position.clone());
+					blocks.add(block);
 					streamPosition = offset + numBytes;
 				}
 			}
@@ -166,8 +179,8 @@ public class VirtualShard<T> extends AbstractShard<T> {
 
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForWriting(path, startByte, size)) {
 			try ( final OutputStream channelOut = lockedChannel.newOutputStream()) {
-				try (final CountingOutputStream out = new CountingOutputStream(channelOut)) {
-					DefaultBlockWriter.writeBlock(out, datasetAttributes, block);
+				try (final CountingOutputStream out = new CountingOutputStream(channelOut)) {;
+					writeBlock(out, datasetAttributes, block);
 
 					/* Update and write the index to the shard*/
 					index.set(startByte, out.getNumBytes(), relativePosition);
@@ -184,24 +197,32 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		}
 	}
 
+	<T> void writeBlock(
+			final OutputStream out,
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T> dataBlock) throws IOException {
+
+		ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
+		final Codec.BytesCodec[] codecs = shardingCodec.getCodecs();
+		final Codec.ArrayCodec arrayCodec = shardingCodec.getArrayCodec();
+		final Codec.DataBlockOutputStream dataBlockOutput = arrayCodec.encode(datasetAttributes, dataBlock, out);
+		final OutputStream stream = Codec.encode(dataBlockOutput, codecs);
+
+		dataBlock.writeData(dataBlockOutput.getDataOutput(stream));
+		stream.close();
+	}
+
 	public ShardIndex createIndex() {
 
 		// Empty index of the correct size
-		return getDatasetAttributes().createIndex();
+		return ((ShardingCodec)getDatasetAttributes().getArrayCodec()).createIndex(getDatasetAttributes());
 	}
 
 	@Override
 	public ShardIndex getIndex() {
 
-		try {
-			final ShardIndex readIndex = ShardIndex.read(keyValueAccess, path, getDatasetAttributes().createIndex());
-			index = readIndex == null ? createIndex() : readIndex;
-		} catch (final N5Exception.N5NoSuchKeyException e) {
-			index = createIndex();
-		} catch (IOException e) {
-			throw new N5IOException("Failed to read index at " + path, e);
-		}
-
+		index = createIndex();
+		ShardIndex.read(keyValueAccess, path, index);
 		return index;
 	}
 

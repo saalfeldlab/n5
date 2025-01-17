@@ -35,7 +35,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 
-import org.janelia.saalfeldlab.n5.codec.BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.ZarrBlockCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 
 import com.google.gson.Gson;
@@ -61,7 +61,7 @@ public interface GsonUtils {
 		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
 		gsonBuilder.registerTypeHierarchyAdapter(DatasetAttributes.class, DatasetAttributes.getJsonAdapter());
 		gsonBuilder.registerTypeHierarchyAdapter(Codec.class, NameConfigAdapter.getJsonAdapter(Codec.class));
-		gsonBuilder.registerTypeHierarchyAdapter(ByteOrder.class, BytesCodec.byteOrderAdapter);
+		gsonBuilder.registerTypeHierarchyAdapter(ByteOrder.class, ZarrBlockCodec.byteOrderAdapter);
 		gsonBuilder.registerTypeHierarchyAdapter(ShardingCodec.IndexLocation.class, ShardingCodec.indexLocationAdapter);
 		gsonBuilder.disableHtmlEscaping();
 		return gsonBuilder.create();

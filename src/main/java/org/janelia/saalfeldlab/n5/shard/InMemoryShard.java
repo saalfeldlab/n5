@@ -15,16 +15,25 @@ import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.io.output.ProxyOutputStream;
-import org.checkerframework.checker.units.qual.A;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.DefaultBlockReader;
 import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
+import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 import org.janelia.saalfeldlab.n5.util.Position;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 
 public class InMemoryShard<T> extends AbstractShard<T> {
 
@@ -41,7 +50,8 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 
 		this( datasetAttributes, shardPosition, null);
 		indexBuilder = new ShardIndexBuilder(this);
-		indexBuilder.indexLocation(datasetAttributes.getIndexLocation());
+		final IndexLocation indexLocation = ((ShardingCodec)datasetAttributes.getArrayCodec()).getIndexLocation();
+		indexBuilder.indexLocation(indexLocation);
 	}
 
 	public <A extends DatasetAttributes & ShardParameters> InMemoryShard(final A datasetAttributes, final long[] gridPosition,
@@ -168,7 +178,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 			final byte[] data,
 			long[] shardPosition, final A attributes) throws IOException {
 
-		final ShardIndex index = attributes.createIndex();
+		final ShardIndex index = ((ShardingCodec)attributes.getArrayCodec()).createIndex(attributes);
 		ShardIndex.read(data, index);
 
 		final InMemoryShard<T> shard = new InMemoryShard<T>(attributes, shardPosition, index);
@@ -232,9 +242,10 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 
 		final ShardIndexBuilder indexBuilder = new ShardIndexBuilder(shard);
 		indexBuilder.indexLocation(IndexLocation.END);
-		indexBuilder.setCodecs(datasetAttributes.getShardingCodec().getIndexCodecs());
+		ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
+		indexBuilder.setCodecs(shardingCodec.getIndexCodecs());
 
-		// Neccesary to stop `close()` when writing blocks from closing out base OutputStream
+		// Necessary to stop `close()` when writing blocks from closing out base OutputStream
 		final ProxyOutputStream nop = new ProxyOutputStream(out) {
 			@Override public void close() {
 				//nop
@@ -263,7 +274,8 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 
 		final ShardIndexBuilder indexBuilder = new ShardIndexBuilder(shard);
 		indexBuilder.indexLocation(IndexLocation.END);
-		indexBuilder.setCodecs(datasetAttributes.getShardingCodec().getIndexCodecs());
+		final DeterministicSizeCodec[] indexCodecs = ((ShardingCodec)datasetAttributes.getArrayCodec()).getIndexCodecs();
+		indexBuilder.setCodecs(indexCodecs);
 
 		for (DataBlock<T> block : shard.getBlocks()) {
 			final ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -283,7 +295,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		final A datasetAttributes = shard.getDatasetAttributes();
 		final ShardIndexBuilder indexBuilder = new ShardIndexBuilder(shard);
 		indexBuilder.indexLocation(IndexLocation.START);
-		indexBuilder.setCodecs(datasetAttributes.getShardingCodec().getIndexCodecs());
+		indexBuilder.setCodecs(((ShardingCodec)datasetAttributes.getArrayCodec()).getIndexCodecs());
 
 		final List<byte[]> blockData = new ArrayList<>(shard.numBlocks());
 		for (DataBlock<T> block : shard.getBlocks()) {

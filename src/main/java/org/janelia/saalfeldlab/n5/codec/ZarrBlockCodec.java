@@ -24,26 +24,30 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-@NameConfig.Name(value = BytesCodec.TYPE)
-public class BytesCodec implements Codec.ArrayCodec {
+import javax.annotation.Nullable;
+
+@NameConfig.Name(value = ZarrBlockCodec.TYPE)
+public class ZarrBlockCodec implements Codec.ArrayCodec {
 
 	private static final long serialVersionUID = 3282569607795127005L;
 
 	public static final String TYPE = "bytes";
 
 	@NameConfig.Parameter(value = "endian", optional = true)
+	@Nullable
 	protected final ByteOrder byteOrder;
 
-	public BytesCodec() {
+	public ZarrBlockCodec() {
 
-		this(ByteOrder.LITTLE_ENDIAN);
+		this(ByteOrder.nativeOrder());
 	}
 
-	public BytesCodec(final ByteOrder byteOrder) {
+	public ZarrBlockCodec(@Nullable final ByteOrder byteOrder) {
 
 		this.byteOrder = byteOrder;
 	}
 
+	@Nullable
 	public ByteOrder getByteOrder() {
 		return byteOrder;
 	}
@@ -81,7 +85,9 @@ public class BytesCodec implements Codec.ArrayCodec {
 	}
 
 	@Override
-	public DataBlockOutputStream encode(final DatasetAttributes attributes, final DataBlock<?> dataBlock,
+	public DataBlockOutputStream encode(
+			final DatasetAttributes attributes,
+			final DataBlock<?> dataBlock,
 			final OutputStream out)
 			throws IOException {
 

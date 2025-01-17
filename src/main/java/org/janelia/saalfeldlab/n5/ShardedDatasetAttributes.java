@@ -28,7 +28,8 @@ public class ShardedDatasetAttributes extends DatasetAttributes implements Shard
 			final DeterministicSizeCodec[] indexCodecs,
 			final IndexLocation indexLocation
 	) {
-		super(dimensions, blockSize, dataType, null, blocksCodecs);
+		//TODO Caleb: Can we just let the super codecs() return this ShardCodec?
+		super(dimensions, blockSize, dataType, blocksCodecs);
 
 		if (!validateShardBlockSize(shardSize, blockSize)) {
 			throw new N5Exception(String.format("Invalid shard %s / block size %s",
@@ -96,7 +97,7 @@ public class ShardedDatasetAttributes extends DatasetAttributes implements Shard
 		return new Codec[] { shardingCodec };
 	}
 
-	@Override
+//	@Override
 	public IndexLocation getIndexLocation() {
 
 		return getShardingCodec().getIndexLocation();

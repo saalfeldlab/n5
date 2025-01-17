@@ -29,9 +29,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
-import org.janelia.saalfeldlab.n5.codec.Codec.DataBlockOutputStream;
+import static org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
+import static org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
+import static org.janelia.saalfeldlab.n5.codec.Codec.DataBlockOutputStream;
+import static org.janelia.saalfeldlab.n5.codec.Codec.encode;
 
 /**
  * Default implementation of {@link BlockWriter}.
@@ -77,9 +78,7 @@ public interface DefaultBlockWriter extends BlockWriter {
 		final ArrayCodec arrayCodec = datasetAttributes.getArrayCodec();
 		final DataBlockOutputStream dataBlockOutput = arrayCodec.encode(datasetAttributes, dataBlock, out);
 
-		OutputStream stream = dataBlockOutput;
-		for (final BytesCodec codec : codecs)
-			stream = codec.encode(stream);
+		OutputStream stream = encode(dataBlockOutput, codecs);
 
 		dataBlock.writeData(dataBlockOutput.getDataOutput(stream));
 		stream.close();

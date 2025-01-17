@@ -39,10 +39,15 @@ import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.scijava.annotations.Indexable;
 
 /**
+ * Deprecated: {@link Compression}s are no longer a special case.
+ * <br>
+ * Use {@link Codec.BytesCodec} for implementing compressors
+ * <p> </p>
  * Compression scheme interface.
  *
  * @author Stephan Saalfeld
  */
+@Deprecated
 public interface Compression extends Serializable, Codec.BytesCodec {
 
 	/**
