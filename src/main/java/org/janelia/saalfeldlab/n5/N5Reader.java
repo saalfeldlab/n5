@@ -43,6 +43,9 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.ShardParameters;
+
 /**
  * A simple structured container for hierarchies of chunked
  * n-dimensional datasets and attributes.
@@ -292,6 +295,18 @@ public interface N5Reader extends AutoCloseable {
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception;
+
+	/**
+	 * Reads the {@link Shard} at the corresponding grid position.
+	 *
+	 * @param <A>
+	 * @param datasetPath
+	 * @param datasetAttributes
+	 * @param shardGridPosition
+	 * @return the shard
+	 */
+	public <A extends DatasetAttributes & ShardParameters> Shard<?> readShard(final String datasetPath,
+			final A datasetAttributes, long... shardGridPosition);
 
 	/**
 	 * Reads multiple {@link DataBlock}s.
