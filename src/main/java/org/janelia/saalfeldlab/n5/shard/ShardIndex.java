@@ -25,6 +25,7 @@ import java.io.UncheckedIOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 public class ShardIndex extends LongArrayDataBlock {
 
@@ -64,6 +65,16 @@ public class ShardIndex extends LongArrayDataBlock {
 
 		return data[blockNum * 2] != EMPTY_INDEX_NBYTES ||
 				data[blockNum * 2 + 1] != EMPTY_INDEX_NBYTES;
+	}
+
+	public int getNumBlocks() {
+
+		return Arrays.stream(getSize()).reduce(1, (x, y) -> x * y);
+	}
+
+	public boolean isEmpty() {
+
+		return !IntStream.range(0, getNumBlocks()).anyMatch(i -> exists(i));
 	}
 
 	public IndexLocation getLocation() {

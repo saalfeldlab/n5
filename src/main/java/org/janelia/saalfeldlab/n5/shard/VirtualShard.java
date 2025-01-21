@@ -63,11 +63,11 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	public List<DataBlock<T>> getBlocks(final int[] blockIndexes) {
 
 		// will not contain nulls
-
 		final ShardIndex index = getIndex();
-		// TODO if the index is completely empty, can return right away
-
 		final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
+
+		if (index.isEmpty())
+			return blocks;
 
 		// sort index offsets
 		// and keep track of relevant positions
