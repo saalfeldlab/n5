@@ -96,7 +96,10 @@ public interface DefaultBlockReader extends BlockReader {
 
 		// variant 1
 //		final byte[] data = dataType.createSerializeArray(numElements);
-//		datasetAttributes.getCompression().decode(in).read(data);
+//		try (final InputStream inflater = datasetAttributes.getCompression().decode(in)) {
+//			final DataInputStream dis2 = new DataInputStream(inflater);
+//			dis2.readFully(data);
+//		}
 //		dataBlock.deserialize(data);
 
 		// variant 2
