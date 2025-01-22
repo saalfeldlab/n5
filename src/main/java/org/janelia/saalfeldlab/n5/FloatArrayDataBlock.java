@@ -34,7 +34,6 @@ public class FloatArrayDataBlock extends AbstractDataBlock<float[]> {
 		super(size, gridPosition, data);
 	}
 
-	@Override
 	public ByteBuffer toByteBuffer() {
 
 		final ByteBuffer buffer = ByteBuffer.allocate(data.length * 4);
@@ -42,7 +41,6 @@ public class FloatArrayDataBlock extends AbstractDataBlock<float[]> {
 		return buffer;
 	}
 
-	@Override
 	public void readData(final ByteBuffer buffer) {
 
 		buffer.asFloatBuffer().get(data);

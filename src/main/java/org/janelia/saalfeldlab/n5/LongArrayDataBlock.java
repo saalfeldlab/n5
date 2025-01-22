@@ -34,7 +34,6 @@ public class LongArrayDataBlock extends AbstractDataBlock<long[]> {
 		super(size, gridPosition, data);
 	}
 
-	@Override
 	public ByteBuffer toByteBuffer() {
 
 		final ByteBuffer buffer = ByteBuffer.allocate(data.length * 8);
@@ -42,7 +41,6 @@ public class LongArrayDataBlock extends AbstractDataBlock<long[]> {
 		return buffer;
 	}
 
-	@Override
 	public void readData(final ByteBuffer buffer) {
 
 		buffer.asLongBuffer().get(data);

@@ -34,13 +34,11 @@ public class ByteArrayDataBlock extends AbstractDataBlock<byte[]> {
 		super(size, gridPosition, data);
 	}
 
-	@Override
 	public ByteBuffer toByteBuffer() {
 
 		return ByteBuffer.wrap(getData());
 	}
 
-	@Override
 	public void readData(final ByteBuffer buffer) {
 
 		if (buffer.array() != getData())

@@ -34,7 +34,6 @@ public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
 		super(size, gridPosition, data);
 	}
 
-	@Override
 	public ByteBuffer toByteBuffer() {
 
 		final ByteBuffer buffer = ByteBuffer.allocate(data.length * 2);
@@ -42,7 +41,6 @@ public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
 		return buffer;
 	}
 
-	@Override
 	public void readData(final ByteBuffer buffer) {
 
 		buffer.asShortBuffer().get(data);
