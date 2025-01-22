@@ -34,7 +34,6 @@ public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 		super(size, gridPosition, data);
 	}
 
-	@Override
 	public ByteBuffer toByteBuffer() {
 
 		final ByteBuffer buffer = ByteBuffer.allocate(data.length * 8);
@@ -42,7 +41,6 @@ public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 		return buffer;
 	}
 
-	@Override
 	public void readData(final ByteBuffer buffer) {
 
 		buffer.asDoubleBuffer().get(data);

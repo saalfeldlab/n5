@@ -46,14 +46,12 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
         serializedData = data;
     }
 
-    @Override
     public ByteBuffer toByteBuffer() {
         if (serializedData == null)
             serializedData = serialize(actualData);
         return ByteBuffer.wrap(serializedData);
     }
 
-    @Override
     public void readData(final ByteBuffer buffer) {
 
 		if (buffer.hasArray()) {
