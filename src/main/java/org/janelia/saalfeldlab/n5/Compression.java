@@ -25,6 +25,11 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -75,4 +80,47 @@ public interface Compression extends Serializable {
 	public BlockReader getReader();
 
 	public BlockWriter getWriter();
+
+
+	// ---------------------------------------------------------------------------------
+	// TODO. clean up interface hierarchy.
+	//       getInputStream and getOutputStream are duplicated here from DefaultBlockReader/Writer
+	//       to allow for default implementation of decode/encode (which are copied from wip/codecsShards).
+	InputStream getInputStream(final InputStream in) throws IOException;
+
+	OutputStream getOutputStream(final OutputStream out) throws IOException;
+
+	/**
+	 * Decode an {@link InputStream}.
+	 *
+	 * @param in
+	 *            input stream
+	 * @return the decoded input stream
+	 */
+	default InputStream decode(InputStream in) throws IOException {
+		return getInputStream(in);
+	}
+
+	/**
+	 * Encode an {@link OutputStream}.
+	 *
+	 * @param out
+	 *            the output stream
+	 * @return the encoded output stream
+	 */
+	default OutputStream encode(OutputStream out) throws IOException {
+		return getOutputStream(out);
+	}
+
+	default byte[] encode(byte[] data) throws IOException {
+		final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+		final OutputStream encodedStream = encode(byteStream);
+		encodedStream.write(data);
+		encodedStream.close();
+		return byteStream.toByteArray();
+	}
+
+	default byte[] decode(byte[] data) throws IOException {
+		return Java9StreamMethods.readAllBytes(decode(new ByteArrayInputStream(data)));
+	}
 }
