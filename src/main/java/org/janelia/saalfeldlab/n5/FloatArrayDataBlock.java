@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class FloatArrayDataBlock extends AbstractDataBlock<float[]> {
 
@@ -44,6 +45,18 @@ public class FloatArrayDataBlock extends AbstractDataBlock<float[]> {
 	public void readData(final ByteBuffer buffer) {
 
 		buffer.asFloatBuffer().get(data);
+	}
+
+	@Override
+	public byte[] serialize(final ByteOrder byteOrder) {
+		final ByteBuffer buffer = ByteBuffer.allocate(Float.BYTES * data.length);
+		buffer.order(byteOrder).asFloatBuffer().put(data);
+		return buffer.array();
+	}
+
+	@Override
+	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
+		ByteBuffer.wrap(serialized).order(byteOrder).asFloatBuffer().get(data);
 	}
 
 	@Override

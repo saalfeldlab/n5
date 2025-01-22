@@ -322,7 +322,7 @@ public interface N5Reader extends AutoCloseable {
 		if (block == null)
 			return null;
 
-		final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(block.toByteBuffer().array());
+		final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(block.serialize());
 		try (ObjectInputStream in = new ObjectInputStream(byteArrayInputStream)) {
 			return (T)in.readObject();
 		} catch (final IOException | UncheckedIOException e) {

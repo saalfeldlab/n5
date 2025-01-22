@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class ByteArrayDataBlock extends AbstractDataBlock<byte[]> {
 
@@ -43,6 +44,16 @@ public class ByteArrayDataBlock extends AbstractDataBlock<byte[]> {
 
 		if (buffer.array() != getData())
 			buffer.get(getData());
+	}
+
+	@Override
+	public byte[] serialize(final ByteOrder byteOrder) {
+		return data;
+	}
+
+	@Override
+	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
+		System.arraycopy(serialized, 0, data, 0, data.length);
 	}
 
 	@Override

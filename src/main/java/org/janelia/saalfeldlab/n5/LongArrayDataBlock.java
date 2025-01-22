@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class LongArrayDataBlock extends AbstractDataBlock<long[]> {
 
@@ -44,6 +45,18 @@ public class LongArrayDataBlock extends AbstractDataBlock<long[]> {
 	public void readData(final ByteBuffer buffer) {
 
 		buffer.asLongBuffer().get(data);
+	}
+
+	@Override
+	public byte[] serialize(final ByteOrder byteOrder) {
+		final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * data.length);
+		buffer.order(byteOrder).asLongBuffer().put(data);
+		return buffer.array();
+	}
+
+	@Override
+	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
+		ByteBuffer.wrap(serialized).order(byteOrder).asLongBuffer().get(data);
 	}
 
 	@Override

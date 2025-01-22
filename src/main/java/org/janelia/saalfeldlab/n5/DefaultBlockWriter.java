@@ -38,8 +38,10 @@ import java.nio.ByteBuffer;
  */
 public interface DefaultBlockWriter extends BlockWriter {
 
+	@Deprecated
 	public OutputStream getOutputStream(final OutputStream out) throws IOException;
 
+	@Deprecated
 	@Override
 	public default <T> void write(
 			final DataBlock<T> dataBlock,
@@ -92,7 +94,16 @@ public interface DefaultBlockWriter extends BlockWriter {
 
 		dos.flush();
 
-		final BlockWriter writer = datasetAttributes.getCompression().getWriter();
-		writer.write(dataBlock, out);
+		// variant 1
+//		final byte[] data = dataBlock.serialize();
+//		datasetAttributes.getCompression().getOutputStream(out).write(data);
+
+		// variant 2
+		final byte[] data = datasetAttributes.getCompression().encode(dataBlock.serialize());
+		out.write(data);
+
+		// old
+//		final BlockWriter writer = datasetAttributes.getCompression().getWriter();
+//		writer.write(dataBlock, out);
 	}
 }

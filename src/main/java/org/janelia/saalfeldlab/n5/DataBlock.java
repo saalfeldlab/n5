@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 /**
  * Interface for data blocks. A data block has data, a position on the block
@@ -66,33 +67,27 @@ public interface DataBlock<T> {
 	 */
 	T getData();
 
-	/**
-	 * Creates a {@link ByteBuffer} that contains the data object of this data
-	 * block.
-	 *
-	 * The {@link ByteBuffer} may or may not map directly to the data
-	 * object of this data block. I.e. modifying the {@link ByteBuffer} after
-	 * calling this method may or may not change the data of this data block.
-	 * modifying the data object of this data block after calling this method
-	 * may or may not change the content of the {@link ByteBuffer}.
-	 *
-	 * @return {@link ByteBuffer} containing data
-	 */
-	ByteBuffer toByteBuffer();
+	default byte[] serialize() {
+		// TODO: LITTLE_ENDIAN would be preferable, but BIG_ENDIAN is backwards-compatible.
+		return serialize(ByteOrder.BIG_ENDIAN);
+	}
 
-	/**
-	 * Reads the data object of this data block from a {@link ByteBuffer}.
-	 *
-	 * The {@link ByteBuffer} may or may not map directly to the data
-	 * object of this data block. I.e. modifying the {@link ByteBuffer} after
-	 * calling this method may or may not change the data of this data block.
-	 * modifying the data object of this data block after calling this method
-	 * may or may not change the content of the {@link ByteBuffer}.
-	 *
-	 * @param buffer
-	 *            the byte buffer
-	 */
-	void readData(final ByteBuffer buffer);
+	default byte[] serialize(ByteOrder byteOrder) {
+		throw new UnsupportedOperationException("TODO: implement " + this.getClass().getName() + ".serialize(ByteOrder)");
+	}
+
+	default void deserialize(byte[] serialized) {
+		// TODO: LITTLE_ENDIAN would be preferable, but BIG_ENDIAN is backwards-compatible.
+		deserialize(ByteOrder.BIG_ENDIAN, serialized);
+	}
+
+	default void deserialize(ByteOrder byteOrder, byte[] serizalized) {
+		throw new UnsupportedOperationException("TODO: implement " + this.getClass().getName() + ".deserialize(ByteOrder, byte[])");
+	}
+
+	@Deprecated ByteBuffer toByteBuffer();
+
+	@Deprecated void readData(final ByteBuffer buffer);
 
 	/**
 	 * Returns the number of elements in this {@link DataBlock}. This number is
