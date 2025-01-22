@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -57,7 +58,7 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
 		if (buffer.hasArray()) {
 			if (buffer.array() != serializedData)
 				buffer.get(serializedData);
-			actualData = deserialize(buffer.array());
+			actualData = _deserialize(buffer.array());
 		} else
 			actualData = ENCODING.decode(buffer).toString().split(NULLCHAR);
     }
@@ -67,7 +68,7 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
         return flattenedArray.getBytes(ENCODING);
     }
 
-    protected String[] deserialize(byte[] rawBytes) {
+    protected String[] _deserialize(byte[] rawBytes) {
         final String rawChars = new String(rawBytes, ENCODING);
         return rawChars.split(NULLCHAR);
     }
@@ -82,7 +83,23 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
     @Override
     public String[] getData() {
         if (actualData == null)
-            actualData = deserialize(serializedData);
+            actualData = _deserialize(serializedData);
         return actualData;
     }
+
+
+
+
+
+	@Override
+	public byte[] serialize(final ByteOrder byteOrder) {
+		final String flattenedArray = String.join(NULLCHAR, actualData) + NULLCHAR;
+		return flattenedArray.getBytes(ENCODING);
+	}
+
+	@Override
+	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
+		final String rawChars = new String(serialized, ENCODING);
+		actualData = rawChars.split(NULLCHAR);
+	}
 }

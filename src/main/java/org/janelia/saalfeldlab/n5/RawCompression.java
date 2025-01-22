@@ -49,6 +49,16 @@ public class RawCompression implements DefaultBlockReader, DefaultBlockWriter, C
 	}
 
 	@Override
+	public byte[] encode(final byte[] data) throws IOException {
+		return data;
+	}
+
+	@Override
+	public byte[] decode(final byte[] data) throws IOException {
+		return data;
+	}
+
+	@Override
 	public RawCompression getReader() {
 
 		return this;

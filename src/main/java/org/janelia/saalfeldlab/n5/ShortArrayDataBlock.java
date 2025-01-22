@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
 
@@ -44,6 +45,18 @@ public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
 	public void readData(final ByteBuffer buffer) {
 
 		buffer.asShortBuffer().get(data);
+	}
+
+	@Override
+	public byte[] serialize(final ByteOrder byteOrder) {
+		final ByteBuffer buffer = ByteBuffer.allocate(Short.BYTES * data.length);
+		buffer.order(byteOrder).asShortBuffer().put(data);
+		return buffer.array();
+	}
+
+	@Override
+	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
+		ByteBuffer.wrap(serialized).order(byteOrder).asShortBuffer().get(data);
 	}
 
 	@Override

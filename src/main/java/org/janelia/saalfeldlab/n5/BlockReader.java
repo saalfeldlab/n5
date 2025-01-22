@@ -50,5 +50,6 @@ public interface BlockReader {
 	 * @throws IOException
 	 *             the exception
 	 */
+	@Deprecated
 	public <T, B extends DataBlock<T>> void read(final B dataBlock, final InputStream in) throws IOException;
 }

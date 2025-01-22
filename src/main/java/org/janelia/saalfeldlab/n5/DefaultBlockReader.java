@@ -38,8 +38,10 @@ import java.nio.ByteBuffer;
  */
 public interface DefaultBlockReader extends BlockReader {
 
+	@Deprecated
 	public InputStream getInputStream(final InputStream in) throws IOException;
 
+	@Deprecated
 	@Override
 	public default <T, B extends DataBlock<T>> void read(
 			final B dataBlock,
@@ -71,6 +73,7 @@ public interface DefaultBlockReader extends BlockReader {
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition) throws IOException {
 
+		final DataType dataType = datasetAttributes.getDataType();
 		final DataInputStream dis = new DataInputStream(in);
 		final short mode = dis.readShort();
 		final int numElements;
@@ -85,14 +88,25 @@ public interface DefaultBlockReader extends BlockReader {
 			} else {
 				numElements = dis.readInt();
 			}
-			dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
+			dataBlock = dataType.createDataBlock(blockSize, gridPosition, numElements);
 		} else {
 			numElements = dis.readInt();
-			dataBlock = datasetAttributes.getDataType().createDataBlock(null, gridPosition, numElements);
+			dataBlock = dataType.createDataBlock(null, gridPosition, numElements);
 		}
 
-		final BlockReader reader = datasetAttributes.getCompression().getReader();
-		reader.read(dataBlock, in);
+		// variant 1
+//		final byte[] data = dataType.createSerializeArray(numElements);
+//		datasetAttributes.getCompression().decode(in).read(data);
+//		dataBlock.deserialize(data);
+
+		// variant 2
+		final byte[] data = datasetAttributes.getCompression().decode(Java9StreamMethods.readAllBytes(in));
+		dataBlock.deserialize(data);
+
+		// old
+//		final BlockReader reader = datasetAttributes.getCompression().getReader();
+//		reader.read(dataBlock, in);
+
 		return dataBlock;
 	}
 }

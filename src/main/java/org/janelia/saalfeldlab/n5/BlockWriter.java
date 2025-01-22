@@ -48,5 +48,6 @@ public interface BlockWriter {
 	 * @throws IOException
 	 *             the exception
 	 */
+	@Deprecated
 	public <T> void write(final DataBlock<T> dataBlock, final OutputStream out) throws IOException;
 }
