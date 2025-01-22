@@ -34,6 +34,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import java.util.function.IntFunction;
 
 /**
  * Enumerates available data types.
@@ -47,82 +48,97 @@ public enum DataType {
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements])),
+					new byte[numElements]),
+			numElements -> new byte[Byte.BYTES * numElements]),
 	UINT16(
 			"uint16",
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new short[numElements])),
+					new short[numElements]),
+			numElements -> new byte[Short.BYTES * numElements]),
 	UINT32(
 			"uint32",
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new int[numElements])),
+					new int[numElements]),
+			numElements -> new byte[Integer.BYTES * numElements]),
 	UINT64(
 			"uint64",
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new long[numElements])),
+					new long[numElements]),
+			numElements -> new byte[Long.BYTES * numElements]),
 	INT8(
 			"int8",
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements])),
+					new byte[numElements]),
+			numElements -> new byte[Byte.BYTES * numElements]),
 	INT16(
 			"int16",
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new short[numElements])),
+					new short[numElements]),
+			numElements -> new byte[Short.BYTES * numElements]),
 	INT32(
 			"int32",
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new int[numElements])),
+					new int[numElements]),
+			numElements -> new byte[Integer.BYTES * numElements]),
 	INT64(
 			"int64",
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new long[numElements])),
+					new long[numElements]),
+			numElements -> new byte[Long.BYTES * numElements]),
 	FLOAT32(
 			"float32",
 			(blockSize, gridPosition, numElements) -> new FloatArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new float[numElements])),
+					new float[numElements]),
+			numElements -> new byte[Float.BYTES * numElements]),
 	FLOAT64(
 			"float64",
 			(blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new double[numElements])),
+					new double[numElements]),
+			numElements -> new byte[Double.BYTES * numElements]),
 	STRING(
 			"string",
 			(blockSize, gridPosition, numElements) -> new StringDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements])),
+					new byte[numElements]),
+			numElements -> new byte[numElements]),
 	OBJECT(
 			"object",
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements]));
+					new byte[numElements]),
+			numElements -> new byte[numElements]);
 
 	private final String label;
 
 	private final DataBlockFactory dataBlockFactory;
 
-	DataType(final String label, final DataBlockFactory dataBlockFactory) {
+	private final IntFunction<byte[]> serializeArrayFactory;
+
+	DataType(final String label, final DataBlockFactory dataBlockFactory, final IntFunction<byte[]> serializeArrayFactory) {
 
 		this.label = label;
 		this.dataBlockFactory = dataBlockFactory;
+		this.serializeArrayFactory = serializeArrayFactory;
 	}
 
 	@Override
@@ -169,6 +185,14 @@ public enum DataType {
 	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition) {
 
 		return dataBlockFactory.createDataBlock(blockSize, gridPosition, DataBlock.getNumElements(blockSize));
+	}
+
+	/**
+	 * TODO: javadoc
+	 */
+	public byte[] createSerializeArray(final int numElements) {
+
+		return serializeArrayFactory.apply(numElements);
 	}
 
 	private interface DataBlockFactory {
