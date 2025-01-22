@@ -72,18 +72,14 @@ public interface DataBlock<T> {
 		return serialize(ByteOrder.BIG_ENDIAN);
 	}
 
-	default byte[] serialize(ByteOrder byteOrder) {
-		throw new UnsupportedOperationException("TODO: implement " + this.getClass().getName() + ".serialize(ByteOrder)");
-	}
+	byte[] serialize(ByteOrder byteOrder);
 
 	default void deserialize(byte[] serialized) {
 		// TODO: LITTLE_ENDIAN would be preferable, but BIG_ENDIAN is backwards-compatible.
 		deserialize(ByteOrder.BIG_ENDIAN, serialized);
 	}
 
-	default void deserialize(ByteOrder byteOrder, byte[] serizalized) {
-		throw new UnsupportedOperationException("TODO: implement " + this.getClass().getName() + ".deserialize(ByteOrder, byte[])");
-	}
+	void deserialize(ByteOrder byteOrder, byte[] serialized);
 
 	@Deprecated ByteBuffer toByteBuffer();
 
