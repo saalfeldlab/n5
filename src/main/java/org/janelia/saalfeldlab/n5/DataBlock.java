@@ -47,7 +47,7 @@ public interface DataBlock<T> {
 	 *
 	 * @return size of the data block
 	 */
-	public int[] getSize();
+	int[] getSize();
 
 	/**
 	 * Returns the position of this data block on the block grid.
@@ -57,14 +57,14 @@ public interface DataBlock<T> {
 	 *
 	 * @return position on the block grid
 	 */
-	public long[] getGridPosition();
+	long[] getGridPosition();
 
 	/**
 	 * Returns the data object held by this data block.
 	 *
 	 * @return data object
 	 */
-	public T getData();
+	T getData();
 
 	/**
 	 * Creates a {@link ByteBuffer} that contains the data object of this data
@@ -78,7 +78,7 @@ public interface DataBlock<T> {
 	 *
 	 * @return {@link ByteBuffer} containing data
 	 */
-	public ByteBuffer toByteBuffer();
+	ByteBuffer toByteBuffer();
 
 	/**
 	 * Reads the data object of this data block from a {@link ByteBuffer}.
@@ -92,7 +92,7 @@ public interface DataBlock<T> {
 	 * @param buffer
 	 *            the byte buffer
 	 */
-	public void readData(final ByteBuffer buffer);
+	void readData(final ByteBuffer buffer);
 
 	/**
 	 * Returns the number of elements in this {@link DataBlock}. This number is
@@ -101,7 +101,7 @@ public interface DataBlock<T> {
 	 *
 	 * @return the number of elements
 	 */
-	public int getNumElements();
+	int getNumElements();
 
 	/**
 	 * Returns the number of elements in a box of given size.
@@ -110,7 +110,7 @@ public interface DataBlock<T> {
 	 *            the size
 	 * @return the number of elements
 	 */
-	public static int getNumElements(final int[] size) {
+	static int getNumElements(final int[] size) {
 
 		int n = size[0];
 		for (int i = 1; i < size.length; ++i)
