@@ -14,6 +14,7 @@ public final class Java9StreamMethods {
 	private Java9StreamMethods() {}
 
 	public static byte[] readAllBytes(final InputStream in) throws IOException {
+//		return in.readAllBytes();
 		return readNBytes(in, Integer.MAX_VALUE);
 	}
 
