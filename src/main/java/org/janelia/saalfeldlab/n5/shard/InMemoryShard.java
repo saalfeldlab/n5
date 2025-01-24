@@ -113,14 +113,6 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 			return indexBuilder.build();
 	}
 
-	public void write(final OutputStream out) throws IOException {
-
-		if (indexLocation() == IndexLocation.END)
-			writeShardEndStream(out, this);
-		else
-			writeShardStart(out, this);
-	}
-
 	public static <T> InMemoryShard<T> fromShard(Shard<T> shard) {
 
 		if (shard instanceof InMemoryShard)
@@ -133,100 +125,4 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		shard.forEach(blk -> inMemoryShard.addBlock(blk));
 		return inMemoryShard;
 	}
-
-	protected static <T> void writeShardEndStream(
-			final OutputStream out,
-			InMemoryShard<T> shard ) throws IOException {
-
-		final DatasetAttributes datasetAttributes = shard.getDatasetAttributes();
-
-		final ShardIndexBuilder indexBuilder = new ShardIndexBuilder(shard);
-		indexBuilder.indexLocation(IndexLocation.END);
-		final ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
-		indexBuilder.setCodecs(shardingCodec.getIndexCodecs());
-
-		// Neccesary to stop `close()` when writing blocks from closing out base OutputStream
-		final ProxyOutputStream nop = new ProxyOutputStream(out) {
-
-			@Override public void close() {
-				//nop
-			}
-		};
-
-		final CountingOutputStream cout = new CountingOutputStream(nop);
-
-		long bytesWritten = 0;
-		for (DataBlock<T> block : shard.getBlocks()) {
-			DefaultBlockWriter.writeBlock(cout, datasetAttributes, block);
-			final long size = cout.getByteCount() - bytesWritten;
-			bytesWritten = cout.getByteCount();
-
-			indexBuilder.addBlock(block.getGridPosition(), size);
-		}
-
-		ShardIndex.write(indexBuilder.build(), out);
-	}
-
-	protected static <T> void writeShardEnd(
-			final OutputStream out,
-			InMemoryShard<T> shard ) throws IOException {
-
-		final ShardIndexBuilder indexBuilder = new ShardIndexBuilder(shard);
-		indexBuilder.indexLocation(IndexLocation.END);
-		final DatasetAttributes datasetAttributes = shard.getDatasetAttributes();
-		final ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
-		indexBuilder.setCodecs(shardingCodec.getIndexCodecs());
-
-		for (DataBlock<T> block : shard.getBlocks()) {
-			final ByteArrayOutputStream os = new ByteArrayOutputStream();
-			DefaultBlockWriter.writeBlock(os, datasetAttributes, block);
-
-			indexBuilder.addBlock(block.getGridPosition(), os.size());
-			out.write(os.toByteArray());
-		}
-
-		ShardIndex.write(indexBuilder.build(), out);
-	}
-
-	protected static <T> void writeShardStart(
-			final OutputStream out,
-			InMemoryShard<T> shard ) throws IOException {
-
-		final DatasetAttributes datasetAttributes = shard.getDatasetAttributes();
-		final ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
-
-		final ShardIndexBuilder indexBuilder = new ShardIndexBuilder(shard);
-		indexBuilder.indexLocation(IndexLocation.START);
-		indexBuilder.setCodecs(((ShardingCodec)datasetAttributes.getArrayCodec()).getIndexCodecs());
-
-		final SplitByteBufferedData splitData = new SplitByteBufferedData();
-		try (final OutputStream blocksOut = splitData.newOutputStream()) {
-			for (DataBlock<T> block : shard.getBlocks()) {
-				//TODO
-			}
-		}
-
-		final List<byte[]> blockData = new ArrayList<>(shard.numBlocks());
-		for (DataBlock<T> block : shard.getBlocks()) {
-			final ByteArrayOutputStream os = new ByteArrayOutputStream();
-			DefaultBlockWriter.writeBlock(os, datasetAttributes, block);
-
-			blockData.add(os.toByteArray());
-			indexBuilder.addBlock(block.getGridPosition(), os.size());
-		}
-
-		try {
-			final ByteArrayOutputStream os = new ByteArrayOutputStream();
-			ShardIndex.write(indexBuilder.build(), os);
-			out.write(os.toByteArray());
-
-			for (byte[] data : blockData)
-				out.write(data);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-	}
-
 }

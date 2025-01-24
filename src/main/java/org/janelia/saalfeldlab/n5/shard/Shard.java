@@ -154,13 +154,17 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	default InputStream getAsStream() throws IOException {
 
 		final DatasetAttributes datasetAttributes = getDatasetAttributes();
+
 		final SplitableData splitData = new SplitByteBufferedData();
+
 		ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
 		final Codec.ArrayCodec arrayCodec = shardingCodec.getArrayCodec();
 		final Codec.BytesCodec[] codecs = shardingCodec.getCodecs();
+
 		final ShardIndex index = ShardIndex.createIndex(datasetAttributes);
 		long blocksOffset = index.getLocation() == ShardingCodec.IndexLocation.START ? index.numBytes() : 0;
-		final SplitableData blocksSplitData = splitData.split(blocksOffset, -1);
+
+		final SplitableData blocksSplitData = splitData.split(blocksOffset, Long.MAX_VALUE);
 		try (final OutputStream blocksOut = blocksSplitData.newOutputStream()) {
 			for (DataBlock<T> block : getBlocks()) {
 				try (final CountingOutputStream blockOut = new CountingOutputStream(blocksOut)) {
