@@ -85,7 +85,8 @@ public class N5ReadBenchmark {
 		System.out.println("basePath = " + basePath);
 
 		try (final N5Writer n5 = createTempN5Writer()) {
-			final Compression compression = new Lz4Compression();
+//			final Compression compression = new Lz4Compression();
+			final Compression compression = new RawCompression();
 			n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT64, compression);
 			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 			final DoubleArrayDataBlock dataBlock = new DoubleArrayDataBlock(blockSize, new long[] {0, 0, 0}, doubleBlock);
@@ -111,7 +112,7 @@ public class N5ReadBenchmark {
 	{
 		final Options opt = new OptionsBuilder()
 				.include( N5ReadBenchmark.class.getSimpleName() )
-				.warmupIterations( 4 )
+				.warmupIterations( 8 )
 				.measurementIterations( 8 )
 				.warmupTime( TimeValue.milliseconds( 500 ) )
 				.measurementTime( TimeValue.milliseconds( 500 ) )
