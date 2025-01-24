@@ -15,11 +15,15 @@ import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
+import org.janelia.saalfeldlab.n5.util.GridIterator;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.junit.Assert.assertArrayEquals;
 
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -120,10 +124,6 @@ public class ShardTest {
 		);
 
 		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
-
-		final String shardKey = ((N5KeyValueWriter)writer).absoluteDataBlockPath("shard", 2, 2);
-		final VirtualShard<byte[]> vs = new VirtualShard<>(datasetAttributes, new long[]{2, 2}, kva, shardKey);
-		final List<DataBlock<byte[]>> blocks = vs.getBlocks();
 
 		final String[][] keys = new String[][]{
 				{"shard", "0", "0"},
@@ -272,4 +272,49 @@ public class ShardTest {
 		}
 	}
 
+	@Test
+	@Ignore
+	public void writeReadNestedShards() {
+
+		int[] blockSize = new int[]{4, 4};
+		int N = Arrays.stream(blockSize).reduce(1, (x,y) -> x*y);
+
+		final N5Writer writer = tempN5Factory.createTempN5Writer();
+		final ShardedDatasetAttributes datasetAttributes = getNestedShardCodecsAttributes(blockSize);
+		writer.createDataset("nestedShards", datasetAttributes);
+
+		final byte[] data = new byte[N];
+		Arrays.fill(data, (byte)4);
+
+		writer.writeBlocks("nestedShards", datasetAttributes,
+				new ByteArrayDataBlock(blockSize, new long[] { 1, 1 }, data),
+				new ByteArrayDataBlock(blockSize, new long[] { 0, 2 }, data),
+				new ByteArrayDataBlock(blockSize, new long[] { 2, 1 }, data));
+
+		assertArrayEquals(data, (byte[]) writer.readBlock("nestedShards", datasetAttributes, 1, 1).getData());
+		assertArrayEquals(data, (byte[]) writer.readBlock("nestedShards", datasetAttributes, 0, 2).getData());
+		assertArrayEquals(data, (byte[]) writer.readBlock("nestedShards", datasetAttributes, 2, 1).getData());
+	}
+
+	private ShardedDatasetAttributes getNestedShardCodecsAttributes(int[] blockSize) {
+
+		final int[] innerShardSize = new int[] { 2 * blockSize[0], 2 * blockSize[1] };
+		final int[] shardSize = new int[] { 4 * blockSize[0], 4 * blockSize[1] };
+		final long[] dimensions = GridIterator.int2long(shardSize);
+
+		// TODO: its not even clear how we build this given
+		// this constructor. Is the block size of the sharded dataset attributes
+		// the innermost (block) size or the intermediate shard size?
+		// probably better to forget about this class - only use DatasetAttributes
+		// and detect shading in another way
+		final ShardingCodec innerShard = new ShardingCodec(innerShardSize,
+				new Codec[] { new BytesCodec() },
+				new DeterministicSizeCodec[] { new BytesCodec(indexByteOrder), new Crc32cChecksumCodec() },
+				IndexLocation.START);
+
+		return new ShardedDatasetAttributes(dimensions, shardSize, blockSize, DataType.UINT8,
+				new Codec[] { innerShard },
+				new DeterministicSizeCodec[] { new BytesCodec(indexByteOrder), new Crc32cChecksumCodec() },
+				IndexLocation.END);
+	}
 }
