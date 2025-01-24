@@ -6,11 +6,10 @@ import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.DefaultBlockReader;
 import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
-import org.janelia.saalfeldlab.n5.KeyValueAccess;
-import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.SplitableData;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
@@ -24,7 +23,6 @@ import java.io.UncheckedIOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.util.Arrays;
-import java.util.stream.IntStream;
 
 public class ShardIndex extends LongArrayDataBlock {
 
@@ -87,6 +85,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	}
 
 	public long getOffsetByBlockIndex(int index) {
+
 		return data[index * 2];
 	}
 
@@ -141,11 +140,11 @@ public class ShardIndex extends LongArrayDataBlock {
 		final IndexByteBounds byteBounds = byteBounds(index, data.length);
 		final ByteArrayInputStream is = new ByteArrayInputStream(data);
 		is.skip(byteBounds.start);
-		try {
-		BoundedInputStream bIs = BoundedInputStream.builder()
-				.setInputStream(is)
-				.setMaxCount(index.numBytes()).get();
 
+		try {
+			BoundedInputStream bIs = BoundedInputStream.builder()
+					.setInputStream(is)
+					.setMaxCount(index.numBytes()).get();
 			read(bIs, index);
 			return true;
 		} catch (IOException e) {
@@ -155,55 +154,35 @@ public class ShardIndex extends LongArrayDataBlock {
 
 	public static void read(InputStream in, final ShardIndex index) throws IOException {
 
-		@SuppressWarnings("unchecked")
-		final DataBlock<long[]> indexBlock = (DataBlock<long[]>) DefaultBlockReader.readBlock(in,
-				index.getIndexAttributes(), index.gridPosition);
+		@SuppressWarnings("unchecked") final DataBlock<long[]> indexBlock = (DataBlock<long[]>)DefaultBlockReader.readBlock(in, index.getIndexAttributes(), index.gridPosition);
 		final long[] indexData = indexBlock.getData();
 		System.arraycopy(indexData, 0, index.data, 0, index.data.length);
 	}
 
 	public static boolean read(
-			final KeyValueAccess keyValueAccess,
-			final String key,
+			final SplitableData indexData,
 			final ShardIndex index
 	) {
 
-		try {
-			final IndexByteBounds byteBounds = byteBounds(index, keyValueAccess.size(key));
-			try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(key, byteBounds.start, byteBounds.end)) {
-				try (final InputStream in = lockedChannel.newInputStream()) {
-						read(in,index);
-						return true;
-				}
-			} catch (final IOException | UncheckedIOException e) {
-				throw new N5IOException("Failed to read shard index from " + key, e);
-			}
-		} catch (final IOException | N5Exception.N5NoSuchKeyException e) {
+		try (final InputStream in = indexData.newInputStream()) {
+			read(in, index);
+			return true;
+		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return false;
+		} catch (final IOException | UncheckedIOException e) {
+			throw new N5IOException("Failed to read shard index", e);
 		}
 	}
 
 	public static void write(
-			final ShardIndex index,
-			final KeyValueAccess keyValueAccess,
-			final String key
+			final SplitableData indexData,
+			final ShardIndex index
 	) throws IOException {
 
-		final long start = index.location == IndexLocation.START ? 0 : sizeOrZero( keyValueAccess, key) ;
-		try (final LockedChannel lockedChannel = keyValueAccess.lockForWriting(key, start, index.numBytes())) {
-			try (final OutputStream os = lockedChannel.newOutputStream()) {
-				write(index, os);
-			}
+		try (final OutputStream os = indexData.newOutputStream()) {
+			write(index, os);
 		} catch (final IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to write shard index to " + key, e);
-		}
-	}
-
-	private static long sizeOrZero(final KeyValueAccess keyValueAccess, final String key) {
-		try {
-			return keyValueAccess.size(key);
-		} catch (Exception e) {
-			return 0;
+			throw new N5IOException("Failed to write shard index", e);
 		}
 	}
 
@@ -234,6 +213,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	}
 
 	public static IndexByteBounds byteBounds(final ShardIndex index, long objectSize) {
+
 		return byteBounds(index.numBytes(), index.location, objectSize);
 	}
 
@@ -306,7 +286,7 @@ public class ShardIndex extends LongArrayDataBlock {
 
 		if (other instanceof ShardIndex) {
 
-			final ShardIndex index = (ShardIndex) other;
+			final ShardIndex index = (ShardIndex)other;
 			if (this.location != index.location)
 				return false;
 
@@ -318,6 +298,12 @@ public class ShardIndex extends LongArrayDataBlock {
 
 		}
 		return true;
+	}
+
+	public static ShardIndex createIndex(final DatasetAttributes attributes) {
+
+		ShardingCodec shardingCodec = (ShardingCodec)attributes.getArrayCodec();
+		return shardingCodec.createIndex(attributes);
 	}
 }
 

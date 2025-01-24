@@ -53,6 +53,7 @@ import org.janelia.saalfeldlab.n5.N5Reader.Version;
 import org.janelia.saalfeldlab.n5.codec.AsTypeCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
+import org.janelia.saalfeldlab.n5.universe.N5Factory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -94,6 +95,7 @@ public abstract class AbstractN5Test {
 
 	public final N5Writer createTempN5Writer() {
 
+//			return N5Factory.createWriter("n5:src/test/resources/test.n5");
 		try {
 			return createTempN5Writer(tempN5Location());
 		} catch (URISyntaxException | IOException e) {
