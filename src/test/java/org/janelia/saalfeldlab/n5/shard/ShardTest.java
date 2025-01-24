@@ -5,16 +5,15 @@ import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.GzipCompression;
-import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5FSTest;
 import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
 import org.janelia.saalfeldlab.n5.N5Writer;
-import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
-import org.janelia.saalfeldlab.n5.codec.ZarrBlockCodec;
+import org.janelia.saalfeldlab.n5.SplitKeyValueAccessData;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
+import org.janelia.saalfeldlab.n5.codec.ZarrBlockCodec;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.universe.N5Factory;
@@ -24,6 +23,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,9 +31,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.IntUnaryOperator;
-import java.util.stream.IntStream;
 
 @RunWith(Parameterized.class)
 public class ShardTest {
@@ -44,9 +41,15 @@ public class ShardTest {
 	public static Collection<Object[]> data() {
 
 		final ArrayList<Object[]> params = new ArrayList<>();
-		for (IndexLocation indexLoc : IndexLocation.values()) {
-			for (ByteOrder blockByteOrder : new ByteOrder[]{ByteOrder.BIG_ENDIAN, ByteOrder.LITTLE_ENDIAN}) {
-				for (ByteOrder indexByteOrder : new ByteOrder[]{ByteOrder.BIG_ENDIAN, ByteOrder.LITTLE_ENDIAN}) {
+//		final IndexLocation[] locs = new IndexLocation[]{IndexLocation.END};
+//		final ByteOrder[] byteCodecs = {ByteOrder.BIG_ENDIAN};
+//		final ByteOrder[] indexCodecs = {ByteOrder.BIG_ENDIAN};
+		final IndexLocation[] locs = IndexLocation.values();
+		final ByteOrder[] byteCodecs = {ByteOrder.BIG_ENDIAN, ByteOrder.LITTLE_ENDIAN};
+		final ByteOrder[] indexCodecs = {ByteOrder.BIG_ENDIAN, ByteOrder.LITTLE_ENDIAN};
+		for (IndexLocation indexLoc : locs) {
+			for (ByteOrder blockByteOrder : byteCodecs) {
+				for (ByteOrder indexByteOrder : indexCodecs) {
 					params.add(new Object[]{indexLoc, blockByteOrder, indexByteOrder});
 				}
 			}
@@ -79,10 +82,10 @@ public class ShardTest {
 				blockSize,
 				DataType.UINT8,
 				new ShardingCodec(
-					blockSize,
-					new Codec[]{new N5BlockCodec(dataByteOrder)}, //, new GzipCompression(4)},
-					new DeterministicSizeCodec[]{new ZarrBlockCodec(indexByteOrder), new Crc32cChecksumCodec()},
-					indexLocation
+						blockSize,
+						new Codec[]{new N5BlockCodec(dataByteOrder), new GzipCompression(4)},
+						new DeterministicSizeCodec[]{new ZarrBlockCodec(indexByteOrder), new Crc32cChecksumCodec()},
+						indexLocation
 				)
 		);
 	}
@@ -93,7 +96,7 @@ public class ShardTest {
 	}
 
 	@Test
-	public void writeReadBlocksTest() {
+	public void writeReadBlocksTest() throws IOException {
 
 		final N5Writer writer = tempN5Factory.createTempN5Writer();
 		final DatasetAttributes datasetAttributes = getTestAttributes(
@@ -102,7 +105,9 @@ public class ShardTest {
 				new int[]{2, 2}
 		);
 
-		writer.createDataset("shard", datasetAttributes);
+		final String dataset = "writeReadBlocks";
+		writer.remove(dataset);
+		writer.createDataset(dataset, datasetAttributes);
 
 		final int[] blockSize = datasetAttributes.getBlockSize();
 		final int numElements = blockSize[0] * blockSize[1];
@@ -113,7 +118,7 @@ public class ShardTest {
 		}
 
 		writer.writeBlocks(
-				"shard",
+				dataset,
 				datasetAttributes,
 				/* shard (0, 0) */
 				new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data),
@@ -131,14 +136,15 @@ public class ShardTest {
 
 		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
 
-		final String shardKey = ((N5KeyValueWriter)writer).absoluteDataBlockPath("shard", 2, 2);
-		final VirtualShard<byte[]> vs = new VirtualShard<>(datasetAttributes, new long[]{2, 2}, kva, shardKey);
+		final String shardKey = ((N5KeyValueWriter)writer).absoluteDataBlockPath(dataset, 2, 2);
+		final SplitKeyValueAccessData splitData = new SplitKeyValueAccessData(kva, shardKey);
+		final VirtualShard<byte[]> vs = new VirtualShard<>(datasetAttributes, new long[]{2, 2}, splitData);
 		final List<DataBlock<byte[]>> blocks = vs.getBlocks();
 
 		final String[][] keys = new String[][]{
-				{"shard", "0", "0"},
-				{"shard", "1", "0"},
-				{"shard", "2", "2"}
+				{dataset, "0", "0"},
+				{dataset, "1", "0"},
+				{dataset, "2", "2"}
 		};
 		for (String[] key : keys) {
 			final String shard = kva.compose(writer.getURI(), key);
@@ -147,7 +153,7 @@ public class ShardTest {
 
 		final long[][] blockIndices = new long[][]{{0, 0}, {0, 1}, {1, 0}, {1, 1}, {4, 0}, {5, 0}, {11, 11}};
 		for (long[] blockIndex : blockIndices) {
-			final DataBlock<?> block = writer.readBlock("shard", datasetAttributes, blockIndex);
+			final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, blockIndex);
 			Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
 		}
 
@@ -156,7 +162,7 @@ public class ShardTest {
 			data2[i] = (byte)(10 + i);
 		}
 		writer.writeBlocks(
-				"shard",
+				dataset,
 				datasetAttributes,
 				/* shard (0, 0) */
 				new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data2),
@@ -171,10 +177,10 @@ public class ShardTest {
 		);
 
 		final String[][] keys2 = new String[][]{
-				{"shard", "0", "0"},
-				{"shard", "1", "0"},
-				{"shard", "0", "1"},
-				{"shard", "2", "2"}
+				{dataset, "0", "0"},
+				{dataset, "1", "0"},
+				{dataset, "0", "1"},
+				{dataset, "2", "2"}
 		};
 		for (String[] key : keys2) {
 			final String shard = kva.compose(writer.getURI(), key);
@@ -183,13 +189,13 @@ public class ShardTest {
 
 		final long[][] oldBlockIndices = new long[][]{{0, 1}, {1, 0}, {4, 0}, {5, 0}, {11, 11}};
 		for (long[] blockIndex : oldBlockIndices) {
-			final DataBlock<?> block = writer.readBlock("shard", datasetAttributes, blockIndex);
+			final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, blockIndex);
 			Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
 		}
 
 		final long[][] newBlockIndices = new long[][]{{0, 0}, {1, 1}, {0, 4}, {0, 5}, {10, 10}};
 		for (long[] blockIndex : newBlockIndices) {
-			final DataBlock<?> block = writer.readBlock("shard", datasetAttributes, blockIndex);
+			final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, blockIndex);
 			Assert.assertArrayEquals("Read from shard doesn't match", data2, (byte[])block.getData());
 		}
 	}
@@ -198,10 +204,12 @@ public class ShardTest {
 	public void writeReadBlockTest() {
 
 		final N5Writer writer = tempN5Factory.createTempN5Writer();
+//		final N5Writer writer = N5Factory.createWriter("n5:src/test/resources/shardExamples/writeReadBlockTest.n5");
 		final DatasetAttributes datasetAttributes = getTestAttributes();
 
-		writer.createDataset("shard", datasetAttributes);
-		writer.deleteBlock("shard", 0, 0);
+		final String dataset = "writeReadBlock";
+		writer.createDataset(dataset, datasetAttributes);
+		writer.deleteBlock(dataset, 0, 0); //TODO Caleb: We are abusing this here. It shouldn't delete the entire shard..
 
 		final int[] blockSize = datasetAttributes.getBlockSize();
 		final DataType dataType = datasetAttributes.getDataType();
@@ -217,15 +225,15 @@ public class ShardTest {
 				for (int i = 0; i < data.length; i++) {
 					data[i] = (byte)((idx1 * 100) + (idx2 * 10) + i);
 				}
-				writer.writeBlock("shard", datasetAttributes, dataBlock);
+				writer.writeBlock(dataset, datasetAttributes, dataBlock);
 
-				final DataBlock<?> block = writer.readBlock("shard", datasetAttributes, gridPosition.clone());
+				final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, dataBlock.getGridPosition().clone());
 				Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
 
 				for (Map.Entry<long[], byte[]> entry : writtenBlocks.entrySet()) {
 					final long[] otherGridPosition = entry.getKey();
 					final byte[] otherData = entry.getValue();
-					final DataBlock<?> otherBlock = writer.readBlock("shard", datasetAttributes, otherGridPosition);
+					final DataBlock<?> otherBlock = writer.readBlock(dataset, datasetAttributes, otherGridPosition);
 					Assert.assertArrayEquals("Read prior write from shard no loner matches", otherData, (byte[])otherBlock.getData());
 				}
 
@@ -241,8 +249,9 @@ public class ShardTest {
 
 		final DatasetAttributes datasetAttributes = getTestAttributes();
 
-		writer.createDataset("wholeShard", datasetAttributes);
-		writer.deleteBlock("wholeShard", 0, 0);
+		final String dataset = "writeReadShard";
+		writer.createDataset(dataset, datasetAttributes);
+		writer.deleteBlock(dataset, 0, 0);
 
 		final int[] blockSize = datasetAttributes.getBlockSize();
 		final DataType dataType = datasetAttributes.getDataType();
@@ -265,12 +274,12 @@ public class ShardTest {
 			}
 		}
 
-		writer.writeShard("wholeShard", datasetAttributes, shard);
+		writer.writeShard(dataset, datasetAttributes, shard);
 
 		for (Map.Entry<long[], byte[]> entry : writtenBlocks.entrySet()) {
 			final long[] otherGridPosition = entry.getKey();
 			final byte[] otherData = entry.getValue();
-			final DataBlock<?> otherBlock = writer.readBlock("wholeShard", datasetAttributes, otherGridPosition);
+			final DataBlock<?> otherBlock = writer.readBlock(dataset, datasetAttributes, otherGridPosition);
 			Assert.assertArrayEquals("Read prior write from shard no loner matches", otherData, (byte[])otherBlock.getData());
 		}
 	}
@@ -285,23 +294,6 @@ public class ShardTest {
 		try (final N5Writer n5 = new N5Factory().openWriter("n5:/tmp/tests/codeReview/sharded.n5")) {
 
 			final DatasetAttributes attributes = getDatasetAttributes(imageSize, shardSize, blockSize);
-
-			// manually create a dataset
-			n5.remove("midLevel");
-			n5.createDataset("midLevel", attributes);
-
-			final BiFunction<Integer, IntUnaryOperator, int[]> generateArray =
-					(size, f) -> IntStream.range(0, size).map(f).toArray();
-
-			// manually write a few blocks
-			n5.writeBlock("midLevel", attributes,
-					new IntArrayDataBlock(blockSize, new long[]{1, 1}, generateArray.apply(numBlockElements, x -> 1)));
-
-			n5.writeBlock("midLevel", attributes,
-					new IntArrayDataBlock(blockSize, new long[]{0, 1}, generateArray.apply(numBlockElements, x -> 2)));
-
-			n5.writeBlock("midLevel", attributes,
-					new IntArrayDataBlock(blockSize, new long[]{4, 0}, generateArray.apply(numBlockElements, x -> 3)));
 		}
 
 	}

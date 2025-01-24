@@ -28,12 +28,10 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.checkerframework.checker.units.qual.A;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.shard.Shard;
 import org.janelia.saalfeldlab.n5.shard.ShardParameters;
@@ -96,13 +94,22 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	default Shard<?> readShard(
+	default <T> Shard<T> readShard(
 			final String keyPath,
 			final DatasetAttributes datasetAttributes,
 			long... shardGridPosition) {
 
 		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(keyPath), shardGridPosition);
-		return new VirtualShard(datasetAttributes, shardGridPosition, getKeyValueAccess(), path);
+		final SplitKeyValueAccessData splitableData;
+		try {
+			splitableData = new SplitKeyValueAccessData(getKeyValueAccess(), path);
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
+		return new VirtualShard(
+				datasetAttributes,
+				shardGridPosition,
+				splitableData);
 	}
 
 	@Override
@@ -114,9 +121,14 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final long[] keyPos = datasetAttributes.getArrayCodec().getPositionForBlock(datasetAttributes, gridPosition);
 		final String keyPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), keyPos);
 
+		final SplitKeyValueAccessData splitData;
+		try {
+			splitData = new SplitKeyValueAccessData(getKeyValueAccess(), keyPath);
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
 		return datasetAttributes.getArrayCodec().readBlock(
-				getKeyValueAccess(),
-				keyPath,
+				splitData,
 				datasetAttributes,
 				gridPosition
 		);

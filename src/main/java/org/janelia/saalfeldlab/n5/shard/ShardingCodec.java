@@ -7,10 +7,11 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import org.apache.commons.lang3.NotImplementedException;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
-import org.janelia.saalfeldlab.n5.N5URI;
+import org.janelia.saalfeldlab.n5.SplitableData;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.serialization.N5Annotations;
@@ -123,21 +124,29 @@ public class ShardingCodec implements Codec.ArrayCodec {
 		return getArrayCodec().encode(attributes, dataBlock, out);
 	}
 
-	@Override public <T> void writeBlock(KeyValueAccess kva, String keyPath, DatasetAttributes datasetAttributes, DataBlock<T> dataBlock) {
+	@Override public <T> void writeBlock(
+			final SplitableData splitData,
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T> dataBlock) {
 
 		final long[] shardPos = datasetAttributes.getShardPositionForBlock(dataBlock.getGridPosition());
-		new VirtualShard<T>(datasetAttributes, shardPos, kva, keyPath).writeBlock(dataBlock);
+		new VirtualShard<T>(datasetAttributes, shardPos, splitData).writeBlock(dataBlock);
 	}
 
-	@Override public DataBlock<?> readBlock(final KeyValueAccess kva, final String keyPath, final DatasetAttributes datasetAttributes, final long... gridPosition) {
+	@Override
+	public DataBlock<?> readBlock(
+			final SplitableData splitData,
+			final DatasetAttributes datasetAttributes,
+			final long... gridPosition) {
 
 		final long[] shardPosition = datasetAttributes.getShardPositionForBlock(gridPosition);
-		return new VirtualShard<>(datasetAttributes, shardPosition, kva, keyPath).getBlock(gridPosition);
+		return new VirtualShard<>(datasetAttributes, shardPosition, splitData).getBlock(gridPosition);
 	}
 
-	ShardIndex createIndex(final DatasetAttributes attributes) {
+	public ShardIndex createIndex(final DatasetAttributes attributes) {
 		return new ShardIndex(attributes.getBlocksPerShard(), getIndexLocation(), getIndexCodecs());
 	}
+
 
 	@Override
 	public String getType() {

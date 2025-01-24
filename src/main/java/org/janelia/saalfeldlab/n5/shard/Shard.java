@@ -1,12 +1,21 @@
 package org.janelia.saalfeldlab.n5.shard;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.io.output.CountingOutputStream;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.SplitByteBufferedData;
+import org.janelia.saalfeldlab.n5.SplitableData;
+import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 public interface Shard<T> extends Iterable<DataBlock<T>> {
@@ -84,7 +93,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	 *
 	 * @return the shard position
 	 */
-	default long[] getShard(long... blockPosition) {
+	default long[] getShardPosition(long... blockPosition) {
 
 		final int[] shardBlockDimensions = getBlockGridSize();
 		final long[] shardGridPosition = new long[shardBlockDimensions.length];
@@ -138,6 +147,41 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		Arrays.fill(emptyIndex, ShardIndex.EMPTY_INDEX_NBYTES);
 		final ShardIndex shardIndex = new ShardIndex(attributes.getBlocksPerShard(), emptyIndex, ShardingCodec.IndexLocation.END);
 		return new InMemoryShard<T>(attributes, shardPosition, shardIndex);
+	}
+
+	public default InputStream getAsStream() throws IOException {
+
+		final DatasetAttributes datasetAttributes = getDatasetAttributes();
+		final SplitableData splitData = new SplitByteBufferedData();
+		ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
+		final Codec.ArrayCodec arrayCodec = shardingCodec.getArrayCodec();
+		final Codec.BytesCodec[] codecs = shardingCodec.getCodecs();
+		final ShardIndex index = ShardIndex.createIndex(datasetAttributes);
+		long blocksOffset = index.getLocation() == ShardingCodec.IndexLocation.START ? index.numBytes() : 0;
+		final SplitableData blocksSplitData = splitData.split(blocksOffset, -1);
+		try (final OutputStream blocksOut = blocksSplitData.newOutputStream()) {
+			for (DataBlock<T> block : getBlocks()) {
+				try (final CountingOutputStream blockOut = new CountingOutputStream(blocksOut)) {
+					final Codec.DataBlockOutputStream dataBlockOutput = arrayCodec.encode(datasetAttributes, block, blockOut);
+					try (final OutputStream stream = Codec.encode(dataBlockOutput, codecs)) {
+						block.writeData(dataBlockOutput.getDataOutput(stream));
+					}
+					index.set(blocksOffset, blockOut.getByteCount(), getBlockPosition(block.getGridPosition()));
+					blocksOffset += blockOut.getByteCount();
+				}
+			}
+		} catch (final IOException | UncheckedIOException e) {
+			throw new N5Exception.N5IOException(
+					"Failed to write block to shard " + Arrays.toString(getGridPosition()), e);
+		}
+		final long indexOffset = index.getLocation() == ShardingCodec.IndexLocation.START ? 0 : blocksOffset;
+		try {
+			ShardIndex.write(splitData.split(indexOffset, index.numBytes()), index);
+		} catch (final IOException | UncheckedIOException e) {
+			throw new N5Exception.N5IOException(
+					"Failed to write index to shard " + Arrays.toString(getGridPosition()), e);
+		}
+		return splitData.newInputStream();
 	}
 
 	public static class DataBlockIterator<T> implements Iterator<DataBlock<T>> {

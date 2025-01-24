@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
@@ -44,7 +45,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-import org.janelia.saalfeldlab.n5.shard.VirtualShard;
 import org.janelia.saalfeldlab.n5.util.Position;
 
 /**
@@ -234,8 +234,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 				final long[] shardPosition = e.getKey().get();
 				@SuppressWarnings("unchecked")
-				final Shard<T> currentShard = (Shard<T>) readShard(datasetPath, (DatasetAttributes & ShardParameters)datasetAttributes,
-						shardPosition);
+				final Shard<T> currentShard = readShard(datasetPath, datasetAttributes, shardPosition);
 
 				final InMemoryShard<T> newShard = InMemoryShard.fromShard(currentShard);
 				for( DataBlock<T> blk : e.getValue())
@@ -257,10 +256,14 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		final long[] keyPos = datasetAttributes.getArrayCodec().getPositionForBlock(datasetAttributes, dataBlock);
 		final String keyPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), keyPos);
-
+		final SplitKeyValueAccessData splitData;
+		try {
+			splitData = new SplitKeyValueAccessData(getKeyValueAccess(), keyPath);
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
 		datasetAttributes.getArrayCodec().writeBlock(
-				getKeyValueAccess(),
-				keyPath,
+				splitData,
 				datasetAttributes,
 				dataBlock);
 	}
@@ -272,9 +275,11 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final Shard<T> shard) throws N5Exception {
 
 		final String shardPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), shard.getGridPosition());
-		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(shardPath)) {
-			try (final OutputStream out = lock.newOutputStream()) {
-				InMemoryShard.fromShard(shard).write(out);
+		try (final OutputStream shardOut = new SplitKeyValueAccessData(getKeyValueAccess(), shardPath, 0, Long.MAX_VALUE).newOutputStream()) {
+			try (final InputStream shardIn = shard.getAsStream()) {
+				while (shardIn.available() > 0) {
+					shardOut.write(shardIn.read());
+				}
 			}
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(

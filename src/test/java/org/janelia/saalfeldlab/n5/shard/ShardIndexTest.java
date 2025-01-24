@@ -3,13 +3,13 @@ package org.janelia.saalfeldlab.n5.shard;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Paths;
 
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
-import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5FSTest;
 import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
+import org.janelia.saalfeldlab.n5.SplitKeyValueAccessData;
+import org.janelia.saalfeldlab.n5.SplitableData;
 import org.janelia.saalfeldlab.n5.codec.ZarrBlockCodec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
@@ -77,10 +77,13 @@ public class ShardIndexTest {
 		index.set(19, 32, new int[] { 1, 0 });
 		index.set(93, 111, new int[] { 3, 0 });
 		index.set(143, 1, new int[] { 1, 2 });
-		ShardIndex.write(index, kva, path);
+		final SplitKeyValueAccessData splitableData = new SplitKeyValueAccessData(kva, path);
+		final ShardIndex.IndexByteBounds bounds = ShardIndex.byteBounds(index, splitableData.getSize());
+		final SplitableData indexData = splitableData.split(bounds.start, index.numBytes());
+		ShardIndex.write(indexData, index);
 
 		final ShardIndex other = new ShardIndex(shardBlockGridSize, indexLocation, indexCodecs);
-		ShardIndex.read(kva, path, other);
+		ShardIndex.read(indexData, other);
 
 		assertEquals(index, other);
 	}
@@ -103,22 +106,14 @@ public class ShardIndexTest {
 		index.set(19, 32, new int[] { 1, 0 });
 		index.set(93, 111, new int[] { 3, 0 });
 		index.set(143, 1, new int[] { 1, 2 });
-		ShardIndex.write(index, kva, path);
+		SplitKeyValueAccessData splitableData = new SplitKeyValueAccessData(kva, path);
+		final ShardIndex.IndexByteBounds bounds = ShardIndex.byteBounds(index, splitableData.getSize());
+		final SplitableData indexData = splitableData.split(bounds.start, index.numBytes());
+		ShardIndex.write(indexData, index);
 
 		final ShardIndex indexRead = new ShardIndex(shardBlockGridSize, indexLocation, indexCodecs);
-		ShardIndex.read(rawBytes(kva, path), indexRead);
+		ShardIndex.read(indexData, indexRead);
 
 		assertEquals(index, indexRead);
-	}
-
-	private static byte[] rawBytes(KeyValueAccess kva, String path) throws IOException {
-
-		final byte[] rawBytes = new byte[(int) kva.size(path)];
-		try (final LockedChannel lockedChannel = kva.lockForReading(path)) {
-			try (final InputStream is = lockedChannel.newInputStream()) {
-				is.read(rawBytes);
-			}
-		}
-		return rawBytes;
 	}
 }
