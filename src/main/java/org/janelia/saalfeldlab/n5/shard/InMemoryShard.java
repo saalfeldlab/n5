@@ -82,21 +82,6 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		return new ArrayList<>(blocks.values());
 	}
 
-	public List<DataBlock<T>> getBlocks( int[] blockIndexes ) {
-
-		final ArrayList<DataBlock<T>> out = new ArrayList<>();
-		final int[] blocksPerShard = getDatasetAttributes().getBlocksPerShard();
-
-		long[] position = new long[ getSize().length ];
-		for( int idx : blockIndexes ) {
-			GridIterator.indexToPosition(idx, blocksPerShard, position);
-			DataBlock<T> blk = getBlock(position);
-			if( blk != null )
-				out.add(blk);
-		}
-		return out;
-	}
-
 	protected IndexLocation indexLocation() {
 
 		if (index != null)
@@ -112,14 +97,6 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 			return index;
 		else
 			return indexBuilder.build();
-	}
-
-	public void write(final OutputStream out) throws IOException {
-
-		if (indexLocation() == IndexLocation.END)
-			writeShardEndStream(out, this);
-		else
-			writeShardStart(out, this);
 	}
 
 	public static <T> InMemoryShard<T> fromShard(Shard<T> shard) {
@@ -162,28 +139,6 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 			bytesWritten = cout.getByteCount();
 
 			indexBuilder.addBlock( block.getGridPosition(), size);
-		}
-
-		ShardIndex.write(indexBuilder.build(), out);
-	}
-
-	protected static <T, A extends DatasetAttributes & ShardParameters> void writeShardEnd(
-			final OutputStream out,
-			InMemoryShard<T> shard ) throws IOException {
-
-		final A datasetAttributes = shard.getDatasetAttributes();
-
-		final ShardIndexBuilder indexBuilder = new ShardIndexBuilder(shard);
-		indexBuilder.indexLocation(IndexLocation.END);
-		final DeterministicSizeCodec[] indexCodecs = ((ShardingCodec)datasetAttributes.getArrayCodec()).getIndexCodecs();
-		indexBuilder.setCodecs(indexCodecs);
-
-		for (DataBlock<T> block : shard.getBlocks()) {
-			final ByteArrayOutputStream os = new ByteArrayOutputStream();
-			DefaultBlockWriter.writeBlock(os, datasetAttributes, block);
-
-			indexBuilder.addBlock(block.getGridPosition(), os.size());
-			out.write(os.toByteArray());
 		}
 
 		ShardIndex.write(indexBuilder.build(), out);

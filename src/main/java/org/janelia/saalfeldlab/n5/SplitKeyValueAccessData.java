@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5;
 
+import javax.annotation.Nonnegative;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -65,8 +66,9 @@ public class SplitKeyValueAccessData implements SplitableData {
 	}
 
 	@Override
-	public SplitableData split(long offset, long size) {
+	public SplitableData split(@Nonnegative long offset, long size) {
 
-		return new SplitKeyValueAccessData(access, key, getOffset() + offset, size);
+		final long newOffset = this.offset + offset;
+		return new SplitKeyValueAccessData(access, key, newOffset, size - newOffset);
 	}
 }

@@ -91,6 +91,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 			GridIterator.indexToPosition(idx, blocksPerShard, blockGridMin, position);
 
 			final long numBytes = index.getNumBytesByBlockIndex((int)idx);
+			//TODO Caleb: Do this with a single access (start at first offset, read through the last)
 			try (final InputStream in = splitableData.split(offset, numBytes).newInputStream()) {
 				final DataBlock<T> block = getBlock(in, position.clone());
 				blocks.add(block);
@@ -146,12 +147,11 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		else
 			blockOffset = splitableData.getSize();
 
-		final long size = Long.MAX_VALUE - blockOffset;
-		final SplitableData data = splitableData.split(blockOffset, size); //TODO Caleb: Should ideally remove offset also, but would need it to be absolute
+		final SplitableData blockData = splitableData.split(blockOffset, Long.MAX_VALUE);
 
 		final long sizeWritten;
-		try (final OutputStream channelOut = data.newOutputStream()) {
-			try (final CountingOutputStream out = new CountingOutputStream(channelOut)) {
+		try (final OutputStream blockOut = blockData.newOutputStream()) {
+			try (final CountingOutputStream out = new CountingOutputStream(blockOut)) {
 				writeBlock(out, datasetAttributes, block);
 
 				/* Update and write the index to the shard*/
@@ -162,13 +162,13 @@ public class VirtualShard<T> extends AbstractShard<T> {
 			throw new N5IOException("Failed to write block to shard ", e);
 		}
 
+		//TODO Caleb: Could do END in the blockOut block, to avoid an additional access
 		final long indexOffset = index.getLocation() == ShardingCodec.IndexLocation.START ? 0 : blockOffset + sizeWritten;
 
+
+		final SplitableData indexData = splitableData.split( indexOffset, index.numBytes());
 		try {
-			final SplitableData newSplitData = splitableData.split(
-					indexOffset,
-					index.numBytes());
-			ShardIndex.write(newSplitData, index);
+			ShardIndex.write(indexData, index);
 		} catch (IOException e) {
 			throw new N5IOException("Failed to write index to shard ", e);
 		}
@@ -199,6 +199,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	@Override
 	public ShardIndex getIndex() {
 
+		//TODO Caleb: How to handle whne this shard doesn't exist (splitableData.getSize() <= 0)
 		index = createIndex();
 		final ShardIndex.IndexByteBounds bounds = ShardIndex.byteBounds(index, splitableData.getSize());
 		ShardIndex.read(splitableData.split(bounds.start, index.numBytes()), index);

@@ -225,7 +225,6 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		if (datasetAttributes.getShardSize() != null) {
 
-
 			/* Group blocks by shard index */
 			final Map<Position, List<DataBlock<T>>> shardBlockMap = datasetAttributes.groupBlocks(
 					Arrays.stream(dataBlocks).collect(Collectors.toList()));
@@ -240,7 +239,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 				for( DataBlock<T> blk : e.getValue())
 					newShard.addBlock(blk);
 
-				writeShard(datasetPath, (DatasetAttributes & ShardParameters)datasetAttributes, newShard);
+				writeShard(datasetPath, datasetAttributes, newShard);
 			}
 
 		} else {

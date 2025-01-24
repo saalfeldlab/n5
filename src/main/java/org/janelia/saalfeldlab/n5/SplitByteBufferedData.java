@@ -119,8 +119,7 @@ public class SplitByteBufferedData implements SplitableData {
 				final Supplier<byte[]> getSharedBuffer,
 				final Consumer<byte[]> setSharedBuffer,
 				final Supplier<Integer> getMaxCount,
-				final Consumer<Integer> setMaxCount)
-		{
+				final Consumer<Integer> setMaxCount) {
 
 			this.getSharedBuffer = getSharedBuffer;
 			this.setSharedBuffer = setSharedBuffer;
