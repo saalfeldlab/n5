@@ -25,8 +25,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataInput;
+import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -37,23 +38,12 @@ public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
 		super(size, gridPosition, data);
 	}
 
+	@Deprecated
+	@Override
 	public ByteBuffer toByteBuffer() {
-
 		final ByteBuffer buffer = ByteBuffer.allocate(data.length * 2);
 		buffer.asShortBuffer().put(data);
 		return buffer;
-	}
-
-	public void readData(final ByteBuffer buffer) {
-
-		buffer.asShortBuffer().get(data);
-	}
-
-	@Override
-	public void readData(final DataInput dataInput) throws IOException {
-
-		for (int i = 0; i < data.length; i++)
-			data[i] = dataInput.readShort();
 	}
 
 	@Override
@@ -66,6 +56,13 @@ public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
 	@Override
 	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
 		ByteBuffer.wrap(serialized).order(byteOrder).asShortBuffer().get(data);
+	}
+
+	@Override
+	public void readData(final InputStream inputStream) throws IOException {
+		final byte[] bytes = DataType.INT16.createSerializeArray(data.length);
+		new DataInputStream(inputStream).readFully(bytes);
+		deserialize(bytes);
 	}
 
 	@Override

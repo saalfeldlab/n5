@@ -25,12 +25,11 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataInput;
-import java.io.DataOutput;
+import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
 
 public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 
@@ -39,16 +38,12 @@ public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 		super(size, gridPosition, data);
 	}
 
+	@Deprecated
+	@Override
 	public ByteBuffer toByteBuffer() {
-
 		final ByteBuffer buffer = ByteBuffer.allocate(data.length * 8);
 		buffer.asDoubleBuffer().put(data);
 		return buffer;
-	}
-
-	public void readData(final ByteBuffer buffer) {
-
-		buffer.asDoubleBuffer().get(data);
 	}
 
 	@Override
@@ -64,22 +59,14 @@ public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 	}
 
 	@Override
-	public void readData(final DataInput inputStream) throws IOException {
-
-		for (int i = 0; i < data.length; i++)
-			data[i] = inputStream.readDouble();
-	}
-
-	@Override
-	public void writeData(final DataOutput output) throws IOException {
-
-		for (int i = 0; i < data.length; i++)
-			output.writeDouble(data[i]);
+	public void readData(final InputStream inputStream) throws IOException {
+		final byte[] bytes = DataType.FLOAT64.createSerializeArray(getNumElements());
+		new DataInputStream(inputStream).readFully(bytes);
+		deserialize(bytes);
 	}
 
 	@Override
 	public int getNumElements() {
-
 		return data.length;
 	}
 }
