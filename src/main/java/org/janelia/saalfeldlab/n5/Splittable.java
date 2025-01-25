@@ -2,11 +2,11 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 public class Splittable {
-
 
 	public interface ReadData {
 
@@ -96,30 +96,16 @@ public class Splittable {
 		}
 	}
 
-	public static class InputStreamReadData implements ReadData {
+	// not thread-safe
+	private abstract static class AbstractInputStreamReadData implements ReadData {
 
-		private final InputStream inputStream;
-		private final int length;
 		private ByteArraySplittableReadData bytes;
-
-		InputStreamReadData(final InputStream inputStream, final int length) {
-			this.inputStream = inputStream;
-			this.length = length;
-		}
-
-		InputStreamReadData(final InputStream inputStream) {
-			this(inputStream, -1);
-		}
-
-		@Override
-		public long length() {
-			return length;
-		}
 
 		@Override
 		public SplittableReadData splittable() throws IOException {
 			if (bytes == null) {
 				final byte[] data;
+				final int length = (int) length();
 				if (length >= 0) {
 					data = new byte[length];
 					new DataInputStream(inputStream()).readFully(data);
@@ -130,13 +116,34 @@ public class Splittable {
 			}
 			return bytes;
 		}
+	}
+
+	// not thread-safe
+	public static class InputStreamReadData extends AbstractInputStreamReadData {
+
+		private final InputStream inputStream;
+		private final int length;
+
+		public InputStreamReadData(final InputStream inputStream, final int length) {
+			this.inputStream = inputStream;
+			this.length = length;
+		}
+
+		public InputStreamReadData(final InputStream inputStream) {
+			this(inputStream, -1);
+		}
+
+		@Override
+		public long length() {
+			return length;
+		}
 
 		private boolean inputStreamCalled = false;
 
 		@Override
-		public InputStream inputStream() throws IOException {
-			if ( inputStreamCalled ) {
-				throw new IOException("InputStream() already called");
+		public InputStream inputStream() throws IllegalStateException {
+			if (inputStreamCalled) {
+				throw new IllegalStateException("InputStream() already called");
 			} else {
 				inputStreamCalled = true;
 				return inputStream;
@@ -144,28 +151,39 @@ public class Splittable {
 		}
 	}
 
-	public static class KeyValueAccessReadData implements ReadData {
+	public static class KeyValueAccessReadData extends AbstractInputStreamReadData {
 
 		private final KeyValueAccess keyValueAccess;
 		private final String normalPath;
 
-		KeyValueAccessReadData(final KeyValueAccess keyValueAccess, final String normalPath) {
+		public KeyValueAccessReadData(final KeyValueAccess keyValueAccess, final String normalPath) {
 			this.keyValueAccess = keyValueAccess;
 			this.normalPath = normalPath;
 		}
 
+		/**
+		 * Open a {@code InputStream} on this data.
+		 * <p>
+		 * This will open a {@code LockedChannel} on the underlying {@code
+		 * KeyValueAccess}. Make sure to {@code close()} the returned {@code
+		 * InputStream} to release the underlying {@code LockedChannel}.
+		 *
+		 * @return an InputStream on this data
+		 *
+		 * @throws IOException
+		 * 		if any I/O error occurs
+		 */
 		@Override
-		public InputStream inputStream() throws IOException, IllegalStateException {
-			final LockedChannel lockedChannel = keyValueAccess.lockForReading(normalPath);
-			return lockedChannel.newInputStream();
-			// TODO bind close() of the InputStream to close of the lockedChannel
-		}
-
-		@Override
-		public SplittableReadData splittable() throws IOException {
-			return null;
+		public InputStream inputStream() throws IOException {
+			final LockedChannel channel = keyValueAccess.lockForReading(normalPath);
+			return new FilterInputStream(channel.newInputStream()) {
+				@Override
+				public void close() throws IOException {
+					in.close();
+					channel.close();
+				}
+			};
 		}
 	}
-
 
 }
