@@ -53,6 +53,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
@@ -98,7 +101,7 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
     @Override
     public int getNumElements() {
         if (serializedData == null)
-            serializedData = serialize(actualData);
+            serializedData = serialize();
         return serializedData.length;
     }
 
@@ -108,10 +111,6 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
             actualData = _deserialize(serializedData);
         return actualData;
     }
-
-
-
-
 
 	@Override
 	public byte[] serialize(final ByteOrder byteOrder) {
@@ -123,5 +122,11 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
 	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
 		final String rawChars = new String(serialized, ENCODING);
 		actualData = rawChars.split(NULLCHAR);
+	}
+
+	@Override
+	public void readData(final InputStream inputStream) throws IOException {
+		new DataInputStream(inputStream).readFully(serializedData);
+		deserialize(serializedData);
 	}
 }
