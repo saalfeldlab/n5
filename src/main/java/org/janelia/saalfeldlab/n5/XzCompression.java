@@ -34,7 +34,7 @@ import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 
 @CompressionType("xz")
-public class XzCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
+public class XzCompression implements Compression {
 
 	private static final long serialVersionUID = -7272153943564743774L;
 
@@ -64,18 +64,6 @@ public class XzCompression implements DefaultBlockReader, DefaultBlockWriter, Co
 	}
 
 	@Override
-	public XzCompression getReader() {
-
-		return this;
-	}
-
-	@Override
-	public XzCompression getWriter() {
-
-		return this;
-	}
-
-	@Override
 	public boolean equals(final Object other) {
 
 		if (other == null || other.getClass() != XzCompression.class)
@@ -83,5 +71,4 @@ public class XzCompression implements DefaultBlockReader, DefaultBlockWriter, Co
 		else
 			return preset == ((XzCompression)other).preset;
 	}
-
 }
