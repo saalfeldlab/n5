@@ -88,18 +88,6 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 		}
 	}
 
-	@Override
-	public GzipCompression getReader() {
-
-		return this;
-	}
-
-	@Override
-	public GzipCompression getWriter() {
-
-		return this;
-	}
-
 	private void readObject(final ObjectInputStream in) throws Exception {
 
 		in.defaultReadObject();

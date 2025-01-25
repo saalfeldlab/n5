@@ -64,18 +64,6 @@ public class Bzip2Compression implements DefaultBlockReader, DefaultBlockWriter,
 	}
 
 	@Override
-	public Bzip2Compression getReader() {
-
-		return this;
-	}
-
-	@Override
-	public Bzip2Compression getWriter() {
-
-		return this;
-	}
-
-	@Override
 	public boolean equals(final Object other) {
 
 		if (other == null || other.getClass() != Bzip2Compression.class)

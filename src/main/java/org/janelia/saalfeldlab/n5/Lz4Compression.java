@@ -65,18 +65,6 @@ public class Lz4Compression implements DefaultBlockReader, DefaultBlockWriter, C
 	}
 
 	@Override
-	public Lz4Compression getReader() {
-
-		return this;
-	}
-
-	@Override
-	public Lz4Compression getWriter() {
-
-		return this;
-	}
-
-	@Override
 	public boolean equals(final Object other) {
 
 		if (other == null || other.getClass() != Lz4Compression.class)

@@ -53,7 +53,7 @@ public interface Compression extends Serializable {
 	@Inherited
 	@Target(ElementType.TYPE)
 	@Indexable
-	public static @interface CompressionType {
+	@interface CompressionType {
 
 		String value();
 	}
@@ -65,9 +65,9 @@ public interface Compression extends Serializable {
 	@Retention(RetentionPolicy.RUNTIME)
 	@Inherited
 	@Target(ElementType.FIELD)
-	public static @interface CompressionParameter {}
+	@interface CompressionParameter {}
 
-	public default String getType() {
+	default String getType() {
 
 		final CompressionType compressionType = getClass().getAnnotation(CompressionType.class);
 		if (compressionType == null)
@@ -75,11 +75,6 @@ public interface Compression extends Serializable {
 		else
 			return compressionType.value();
 	}
-
-	public BlockReader getReader();
-
-	public BlockWriter getWriter();
-
 
 	// ---------------------------------------------------------------------------------
 	// TODO. clean up interface hierarchy.
@@ -111,6 +106,7 @@ public interface Compression extends Serializable {
 		return getOutputStream(out);
 	}
 
+	// TODO probably remove?
 	default byte[] encode(byte[] data) throws IOException {
 		final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
 		final OutputStream encodedStream = encode(byteStream);
@@ -119,6 +115,7 @@ public interface Compression extends Serializable {
 		return byteStream.toByteArray();
 	}
 
+	// TODO probably remove?
 	default byte[] decode(byte[] data) throws IOException {
 		return Java9StreamMethods.readAllBytes(decode(new ByteArrayInputStream(data)));
 	}
