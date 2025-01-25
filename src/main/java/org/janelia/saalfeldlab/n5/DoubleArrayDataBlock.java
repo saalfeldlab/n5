@@ -26,9 +26,11 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 
@@ -49,7 +51,6 @@ public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 		buffer.asDoubleBuffer().get(data);
 	}
 
-
 	@Override
 	public byte[] serialize(final ByteOrder byteOrder) {
 		final ByteBuffer buffer = ByteBuffer.allocate(Double.BYTES * data.length);
@@ -67,6 +68,13 @@ public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 
 		for (int i = 0; i < data.length; i++)
 			data[i] = inputStream.readDouble();
+	}
+
+	@Override
+	public void writeData(final DataOutput output) throws IOException {
+
+		for (int i = 0; i < data.length; i++)
+			output.writeDouble(data[i]);
 	}
 
 	@Override

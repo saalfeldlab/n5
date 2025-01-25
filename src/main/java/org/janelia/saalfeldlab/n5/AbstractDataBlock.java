@@ -69,9 +69,9 @@ public abstract class AbstractDataBlock<T> implements DataBlock<T> {
 		return data;
 	}
 
+	@Deprecated
 	@Override
 	public void readData(final DataInput input) throws IOException {
-
 		final ByteBuffer buffer = toByteBuffer();
 		input.readFully(buffer.array());
 		readData(buffer);
@@ -79,9 +79,7 @@ public abstract class AbstractDataBlock<T> implements DataBlock<T> {
 
 	@Override
 	public void writeData(final DataOutput output) throws IOException {
-
-		final ByteBuffer buffer = toByteBuffer();
-		output.write(buffer.array());
+		output.write(serialize());
 	}
 
 }
