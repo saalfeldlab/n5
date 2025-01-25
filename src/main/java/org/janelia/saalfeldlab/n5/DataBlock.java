@@ -28,6 +28,7 @@ package org.janelia.saalfeldlab.n5;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -44,7 +45,7 @@ public interface DataBlock<T> {
 
 	/**
 	 * Returns the size of this data block.
-	 *
+	 * <p>
 	 * The size of a data block is expected to be smaller than or equal to the
 	 * spacing of the block grid. The dimensionality of size is expected to be
 	 * equal to the dimensionality of the dataset. Consistency is not enforced.
@@ -55,7 +56,7 @@ public interface DataBlock<T> {
 
 	/**
 	 * Returns the position of this data block on the block grid.
-	 *
+	 * <p>
 	 * The dimensionality of the grid position is expected to be equal to the
 	 * dimensionality of the dataset. Consistency is not enforced.
 	 *
@@ -71,26 +72,22 @@ public interface DataBlock<T> {
 	T getData();
 
 	default byte[] serialize() {
-		// TODO: LITTLE_ENDIAN would be preferable, but BIG_ENDIAN is backwards-compatible.
 		return serialize(ByteOrder.BIG_ENDIAN);
 	}
 
 	byte[] serialize(ByteOrder byteOrder);
 
 	default void deserialize(byte[] serialized) {
-		// TODO: LITTLE_ENDIAN would be preferable, but BIG_ENDIAN is backwards-compatible.
 		deserialize(ByteOrder.BIG_ENDIAN, serialized);
 	}
 
 	void deserialize(ByteOrder byteOrder, byte[] serialized);
 
+	void readData(final InputStream inputStream) throws IOException;
+
 	@Deprecated ByteBuffer toByteBuffer();
 
-	@Deprecated void readData(final ByteBuffer buffer);
-
-	public void readData(final DataInput inputStream) throws IOException;
-
-	public void writeData(final DataOutput output) throws IOException;
+//	void writeData(final DataOutput output) throws IOException;
 
 	/**
 	 * Returns the number of elements in this {@link DataBlock}. This number is

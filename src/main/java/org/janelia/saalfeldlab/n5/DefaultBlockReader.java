@@ -37,24 +37,7 @@ import java.nio.ByteBuffer;
  * @author Stephan Saalfeld
  * @author Igor Pisarev
  */
-public interface DefaultBlockReader extends BlockReader {
-
-	@Deprecated
-	public InputStream getInputStream(final InputStream in) throws IOException;
-
-	@Deprecated
-	@Override
-	public default <T, B extends DataBlock<T>> void read(
-			final B dataBlock,
-			final InputStream in) throws IOException {
-
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final InputStream inflater = getInputStream(in)) {
-			final DataInputStream dis = new DataInputStream(inflater);
-			dis.readFully(buffer.array());
-		}
-		dataBlock.readData(buffer);
-	}
+public interface DefaultBlockReader {
 
 	/**
 	 * Reads a {@link DataBlock} from an {@link InputStream}.
@@ -69,7 +52,7 @@ public interface DefaultBlockReader extends BlockReader {
 	 * @throws IOException
 	 *             the exception
 	 */
-	public static DataBlock<?> readBlock(
+	static DataBlock<?> readBlock(
 			final InputStream in,
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition) throws IOException {
@@ -95,7 +78,6 @@ public interface DefaultBlockReader extends BlockReader {
 			dataBlock = dataType.createDataBlock(null, gridPosition, numElements);
 		}
 
-		// variant 1
 //		final byte[] data = dataType.createSerializeArray(numElements);
 //		try (final InputStream inflater = datasetAttributes.getCompression().decode(in)) {
 //			final DataInputStream dis2 = new DataInputStream(inflater);
@@ -103,19 +85,10 @@ public interface DefaultBlockReader extends BlockReader {
 //		}
 //		dataBlock.deserialize(data);
 
-		// variant 2
-//		final byte[] data = datasetAttributes.getCompression().decode(Java9StreamMethods.readAllBytes(in));
-//		dataBlock.deserialize(data);
-
-		// variant 3
-//		try (final InputStream inflater = datasetAttributes.getCompression().decode(in)) {
-//			final DataInputStream dis2 = new DataInputStream(inflater);
-//			dataBlock.readData(dis2);
-//		}
-
-		// old
-//		final BlockReader reader = datasetAttributes.getCompression().getReader();
-//		reader.read(dataBlock, in);
+		try (final InputStream inflater = datasetAttributes.getCompression().decode(in)) {
+			final DataInputStream dis2 = new DataInputStream(inflater);
+			dataBlock.readData(dis2);
+		}
 
 		return dataBlock;
 	}
