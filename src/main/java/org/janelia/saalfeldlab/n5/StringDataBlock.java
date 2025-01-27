@@ -28,6 +28,7 @@ package org.janelia.saalfeldlab.n5;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
@@ -50,21 +51,21 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
         serializedData = data;
     }
 
-    public ByteBuffer toByteBuffer() {
-        if (serializedData == null)
-            serializedData = serialize(actualData);
-        return ByteBuffer.wrap(serializedData);
-    }
+//    public ByteBuffer toByteBuffer() {
+//        if (serializedData == null)
+//            serializedData = serialize(actualData);
+//        return ByteBuffer.wrap(serializedData);
+//    }
 
-    public void readData(final ByteBuffer buffer) {
-
-		if (buffer.hasArray()) {
-			if (buffer.array() != serializedData)
-				buffer.get(serializedData);
-			actualData = _deserialize(buffer.array());
-		} else
-			actualData = ENCODING.decode(buffer).toString().split(NULLCHAR);
-    }
+//    public void readData(final ByteBuffer buffer) {
+//
+//		if (buffer.hasArray()) {
+//			if (buffer.array() != serializedData)
+//				buffer.get(serializedData);
+//			actualData = _deserialize(buffer.array());
+//		} else
+//			actualData = ENCODING.decode(buffer).toString().split(NULLCHAR);
+//    }
 
     protected byte[] serialize(String[] strings) {
         final String flattenedArray = String.join(NULLCHAR, strings) + NULLCHAR;
@@ -106,5 +107,12 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
 	public void readData(final InputStream inputStream) throws IOException {
 		new DataInputStream(inputStream).readFully(serializedData);
 		deserialize(serializedData);
+	}
+
+	@Override
+	public void writeData(final OutputStream outputStream) throws IOException {
+		if (serializedData == null)
+			serializedData = serialize();
+		outputStream.write(serializedData);
 	}
 }

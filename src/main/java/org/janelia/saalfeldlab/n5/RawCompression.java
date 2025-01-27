@@ -32,7 +32,7 @@ import java.io.OutputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 
 @CompressionType("raw")
-public class RawCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
+public class RawCompression implements DefaultBlockWriter, Compression {
 
 	private static final long serialVersionUID = 7526445806847086477L;
 

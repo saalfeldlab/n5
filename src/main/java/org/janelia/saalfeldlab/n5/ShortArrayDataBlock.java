@@ -38,14 +38,6 @@ public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
 		super(size, gridPosition, data);
 	}
 
-	@Deprecated
-	@Override
-	public ByteBuffer toByteBuffer() {
-		final ByteBuffer buffer = ByteBuffer.allocate(data.length * 2);
-		buffer.asShortBuffer().put(data);
-		return buffer;
-	}
-
 	@Override
 	public byte[] serialize(final ByteOrder byteOrder) {
 		final ByteBuffer buffer = ByteBuffer.allocate(Short.BYTES * data.length);

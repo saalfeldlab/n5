@@ -13,6 +13,7 @@ public final class Java9StreamMethods {
 
 	private Java9StreamMethods() {}
 
+	// TODO replace usage with IOUtils.toByteArray(in) and remove this class
 	public static byte[] readAllBytes(final InputStream in) throws IOException {
 //		return in.readAllBytes();
 		return readNBytes(in, Integer.MAX_VALUE);

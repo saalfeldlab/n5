@@ -25,10 +25,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -83,11 +82,13 @@ public interface DataBlock<T> {
 
 	void deserialize(ByteOrder byteOrder, byte[] serialized);
 
+	// TODO should have ByteOrder argument
 	void readData(final InputStream inputStream) throws IOException;
 
-	@Deprecated ByteBuffer toByteBuffer();
-
-//	void writeData(final DataOutput output) throws IOException;
+	// TODO should have ByteOrder argument
+	default void writeData(final OutputStream outputStream) throws IOException {
+		outputStream.write(serialize());
+	};
 
 	/**
 	 * Returns the number of elements in this {@link DataBlock}. This number is

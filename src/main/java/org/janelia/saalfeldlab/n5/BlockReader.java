@@ -34,6 +34,7 @@ import java.io.InputStream;
  *
  * @author Stephan Saalfeld
  */
+@Deprecated
 public interface BlockReader {
 
 	/**

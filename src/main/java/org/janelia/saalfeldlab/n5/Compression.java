@@ -43,7 +43,7 @@ import org.scijava.annotations.Indexable;
  *
  * @author Stephan Saalfeld
  */
-public interface Compression extends Serializable {
+public interface Compression extends BytesCodec, Serializable {
 
 	/**
 	 * Annotation for runtime discovery of compression schemes.
@@ -91,6 +91,7 @@ public interface Compression extends Serializable {
 	 *            input stream
 	 * @return the decoded input stream
 	 */
+	@Override
 	default InputStream decode(InputStream in) throws IOException {
 		return getInputStream(in);
 	}
@@ -102,6 +103,7 @@ public interface Compression extends Serializable {
 	 *            the output stream
 	 * @return the encoded output stream
 	 */
+	@Override
 	default OutputStream encode(OutputStream out) throws IOException {
 		return getOutputStream(out);
 	}

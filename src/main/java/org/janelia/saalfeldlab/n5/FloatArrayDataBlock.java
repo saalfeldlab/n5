@@ -39,13 +39,6 @@ public class FloatArrayDataBlock extends AbstractDataBlock<float[]> {
 		super(size, gridPosition, data);
 	}
 
-	public ByteBuffer toByteBuffer() {
-
-		final ByteBuffer buffer = ByteBuffer.allocate(data.length * 4);
-		buffer.asFloatBuffer().put(data);
-		return buffer;
-	}
-
 	@Override
 	public byte[] serialize(final ByteOrder byteOrder) {
 		final ByteBuffer buffer = ByteBuffer.allocate(Float.BYTES * data.length);
