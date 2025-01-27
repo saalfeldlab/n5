@@ -40,13 +40,6 @@ public class LongArrayDataBlock extends AbstractDataBlock<long[]> {
 		super(size, gridPosition, data);
 	}
 
-	public ByteBuffer toByteBuffer() {
-
-		final ByteBuffer buffer = ByteBuffer.allocate(data.length * 8);
-		buffer.asLongBuffer().put(data);
-		return buffer;
-	}
-
 	@Override
 	public byte[] serialize(final ByteOrder byteOrder) {
 		final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * data.length);

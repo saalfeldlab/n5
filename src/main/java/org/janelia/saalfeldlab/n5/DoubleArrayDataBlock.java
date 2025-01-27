@@ -38,14 +38,6 @@ public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 		super(size, gridPosition, data);
 	}
 
-	@Deprecated
-	@Override
-	public ByteBuffer toByteBuffer() {
-		final ByteBuffer buffer = ByteBuffer.allocate(data.length * 8);
-		buffer.asDoubleBuffer().put(data);
-		return buffer;
-	}
-
 	@Override
 	public byte[] serialize(final ByteOrder byteOrder) {
 		final ByteBuffer buffer = ByteBuffer.allocate(Double.BYTES * data.length);

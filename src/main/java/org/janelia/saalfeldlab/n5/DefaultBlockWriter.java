@@ -31,28 +31,12 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 /**
- * Default implementation of {@link BlockWriter}.
+ * Default implementation of block writing (N5 format).
  *
  * @author Stephan Saalfeld
  * @author Igor Pisarev
  */
-public interface DefaultBlockWriter extends BlockWriter {
-
-	@Deprecated
-	public OutputStream getOutputStream(final OutputStream out) throws IOException;
-
-	@Deprecated
-	@Override
-	public default <T> void write(
-			final DataBlock<T> dataBlock,
-			final OutputStream out) throws IOException {
-
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final OutputStream deflater = getOutputStream(out)) {
-			deflater.write(buffer.array());
-			deflater.flush();
-		}
-	}
+public interface DefaultBlockWriter {
 
 	/**
 	 * Writes a {@link DataBlock} into an {@link OutputStream}.
@@ -67,7 +51,7 @@ public interface DefaultBlockWriter extends BlockWriter {
 	 * @throws IOException
 	 *             the exception
 	 */
-	public static <T> void writeBlock(
+	static <T> void writeBlock(
 			final OutputStream out,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
@@ -94,16 +78,8 @@ public interface DefaultBlockWriter extends BlockWriter {
 
 		dos.flush();
 
-		// variant 1
-//		final byte[] data = dataBlock.serialize();
-//		datasetAttributes.getCompression().getOutputStream(out).write(data);
-
-		// variant 2
-		final byte[] data = datasetAttributes.getCompression().encode(dataBlock.serialize());
-		out.write(data);
-
-		// old
-//		final BlockWriter writer = datasetAttributes.getCompression().getWriter();
-//		writer.write(dataBlock, out);
+		try (final OutputStream deflater = datasetAttributes.getCompression().getOutputStream(out)) {
+			dataBlock.writeData(deflater);
+		}
 	}
 }

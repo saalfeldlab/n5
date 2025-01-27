@@ -32,7 +32,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 /**
- * Default implementation of {@link BlockReader}.
+ * Default implementation of block reading (N5 format).
  *
  * @author Stephan Saalfeld
  * @author Igor Pisarev
@@ -86,8 +86,7 @@ public interface DefaultBlockReader {
 //		dataBlock.deserialize(data);
 
 		try (final InputStream inflater = datasetAttributes.getCompression().decode(in)) {
-			final DataInputStream dis2 = new DataInputStream(inflater);
-			dataBlock.readData(dis2);
+			dataBlock.readData(inflater);
 		}
 
 		return dataBlock;
