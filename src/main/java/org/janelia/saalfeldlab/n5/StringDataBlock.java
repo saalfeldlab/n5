@@ -25,93 +25,43 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import org.janelia.saalfeldlab.n5.Splittable.ReadData;
 
 public class StringDataBlock extends AbstractDataBlock<String[]> {
 
-    protected static final Charset ENCODING = StandardCharsets.UTF_8;
-    protected static final String NULLCHAR = "\0";
-    protected byte[] serializedData = null;
-    protected String[] actualData = null;
+	protected static final Charset ENCODING = StandardCharsets.UTF_8;
+	protected static final String NULLCHAR = "\0";
+	protected byte[] serializedData = null;
 
-    public StringDataBlock(final int[] size, final long[] gridPosition, final String[] data) {
-        super(size, gridPosition, new String[0]);
-        actualData = data;
-    }
-
-    public StringDataBlock(final int[] size, final long[] gridPosition, final byte[] data) {
-        super(size, gridPosition, new String[0]);
-        serializedData = data;
-    }
-
-//    public ByteBuffer toByteBuffer() {
-//        if (serializedData == null)
-//            serializedData = serialize(actualData);
-//        return ByteBuffer.wrap(serializedData);
-//    }
-
-//    public void readData(final ByteBuffer buffer) {
-//
-//		if (buffer.hasArray()) {
-//			if (buffer.array() != serializedData)
-//				buffer.get(serializedData);
-//			actualData = _deserialize(buffer.array());
-//		} else
-//			actualData = ENCODING.decode(buffer).toString().split(NULLCHAR);
-//    }
-
-    protected byte[] serialize(String[] strings) {
-        final String flattenedArray = String.join(NULLCHAR, strings) + NULLCHAR;
-        return flattenedArray.getBytes(ENCODING);
-    }
-
-    protected String[] _deserialize(byte[] rawBytes) {
-        final String rawChars = new String(rawBytes, ENCODING);
-        return rawChars.split(NULLCHAR);
-    }
-
-    @Override
-    public int getNumElements() {
-        if (serializedData == null)
-            serializedData = serialize();
-        return serializedData.length;
-    }
-
-    @Override
-    public String[] getData() {
-        if (actualData == null)
-            actualData = _deserialize(serializedData);
-        return actualData;
-    }
+	public StringDataBlock(final int[] size, final long[] gridPosition, final String[] data) {
+		super(size, gridPosition, data);
+	}
 
 	@Override
 	public byte[] serialize(final ByteOrder byteOrder) {
-		final String flattenedArray = String.join(NULLCHAR, actualData) + NULLCHAR;
+		final String flattenedArray = String.join(NULLCHAR, data) + NULLCHAR;
 		return flattenedArray.getBytes(ENCODING);
 	}
 
 	@Override
 	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
+		// TODO: write benchmark, make more efficient
 		final String rawChars = new String(serialized, ENCODING);
-		actualData = rawChars.split(NULLCHAR);
-	}
-
-	@Override
-	public void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
-		new DataInputStream(readData.inputStream()).readFully(serializedData);
-		deserialize(byteOrder, serializedData);
+		final String[] actualData = rawChars.split(NULLCHAR);
+		System.arraycopy(actualData, 0, data, 0, actualData.length);
 	}
 
 	@Override
 	public void writeData(final OutputStream outputStream) throws IOException {
-		if (serializedData == null)
-			serializedData = serialize();
-		outputStream.write(serializedData);
+		outputStream.write(serialize());
+	}
+
+	@Override
+	public int getNumElements() {
+		return data.length;
 	}
 }

@@ -128,7 +128,7 @@ public enum DataType {
 			(blockSize, gridPosition, numElements) -> new StringDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements])
+					new String[numElements])
 	),
 	OBJECT(
 			"object",
