@@ -27,10 +27,8 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import org.janelia.saalfeldlab.n5.Splittable.ReadData;
 
 public class ByteArrayDataBlock extends AbstractDataBlock<byte[]> {
 
@@ -50,8 +48,8 @@ public class ByteArrayDataBlock extends AbstractDataBlock<byte[]> {
 	}
 
 	@Override
-	public void readData(final InputStream inputStream) throws IOException {
-		new DataInputStream(inputStream).readFully(data);
+	public void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
+		new DataInputStream(readData.inputStream()).readFully(data);
 	}
 
 	@Override

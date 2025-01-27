@@ -34,7 +34,6 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import java.util.function.IntFunction;
 
 /**
  * Enumerates available data types.
@@ -45,100 +44,112 @@ public enum DataType {
 
 	UINT8(
 			"uint8",
+			Byte.BYTES,
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements]),
-			numElements -> new byte[Byte.BYTES * numElements]),
+					new byte[numElements])
+	),
 	UINT16(
 			"uint16",
+			Short.BYTES,
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new short[numElements]),
-			numElements -> new byte[Short.BYTES * numElements]),
+					new short[numElements])
+	),
 	UINT32(
 			"uint32",
+			Integer.BYTES,
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new int[numElements]),
-			numElements -> new byte[Integer.BYTES * numElements]),
+					new int[numElements])
+	),
 	UINT64(
 			"uint64",
+			Long.BYTES,
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new long[numElements]),
-			numElements -> new byte[Long.BYTES * numElements]),
+					new long[numElements])
+	),
 	INT8(
 			"int8",
+			Byte.BYTES,
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements]),
-			numElements -> new byte[Byte.BYTES * numElements]),
+					new byte[numElements])
+	),
 	INT16(
 			"int16",
+			Short.BYTES,
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new short[numElements]),
-			numElements -> new byte[Short.BYTES * numElements]),
+					new short[numElements])
+	),
 	INT32(
 			"int32",
+			Integer.BYTES,
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new int[numElements]),
-			numElements -> new byte[Integer.BYTES * numElements]),
+					new int[numElements])
+	),
 	INT64(
 			"int64",
+			Long.BYTES,
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new long[numElements]),
-			numElements -> new byte[Long.BYTES * numElements]),
+					new long[numElements])
+	),
 	FLOAT32(
 			"float32",
+			Float.BYTES,
 			(blockSize, gridPosition, numElements) -> new FloatArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new float[numElements]),
-			numElements -> new byte[Float.BYTES * numElements]),
+					new float[numElements])
+	),
 	FLOAT64(
 			"float64",
+			Double.BYTES,
 			(blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new double[numElements]),
-			numElements -> new byte[Double.BYTES * numElements]),
+					new double[numElements])
+	),
 	STRING(
 			"string",
+			1,
 			(blockSize, gridPosition, numElements) -> new StringDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements]),
-			numElements -> new byte[numElements]),
+					new byte[numElements])
+	),
 	OBJECT(
 			"object",
+			1,
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements]),
-			numElements -> new byte[numElements]);
+					new byte[numElements])
+	);
 
 	private final String label;
 
 	private final DataBlockFactory dataBlockFactory;
 
-	private final IntFunction<byte[]> serializeArrayFactory;
+	private final int bytesPerElement;
 
-	DataType(final String label, final DataBlockFactory dataBlockFactory, final IntFunction<byte[]> serializeArrayFactory) {
+	DataType(final String label, final int bytesPerElement, final DataBlockFactory dataBlockFactory) {
 
 		this.label = label;
 		this.dataBlockFactory = dataBlockFactory;
-		this.serializeArrayFactory = serializeArrayFactory;
+		this.bytesPerElement = bytesPerElement;
 	}
 
 	@Override
@@ -189,10 +200,10 @@ public enum DataType {
 
 	/**
 	 * TODO: javadoc
+	 *       explain that STRING and OBJECT are a bit weird ...
 	 */
-	public byte[] createSerializeArray(final int numElements) {
-
-		return serializeArrayFactory.apply(numElements);
+	public int bytesPerElement() {
+		return bytesPerElement;
 	}
 
 	private interface DataBlockFactory {

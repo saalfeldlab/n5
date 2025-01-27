@@ -25,10 +25,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -49,13 +45,6 @@ public class FloatArrayDataBlock extends AbstractDataBlock<float[]> {
 	@Override
 	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
 		ByteBuffer.wrap(serialized).order(byteOrder).asFloatBuffer().get(data);
-	}
-
-	@Override
-	public void readData(final InputStream inputStream) throws IOException {
-		final byte[] bytes = DataType.FLOAT32.createSerializeArray(data.length);
-		new DataInputStream(inputStream).readFully(bytes);
-		deserialize(bytes);
 	}
 
 	@Override

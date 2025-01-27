@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import org.janelia.saalfeldlab.n5.Splittable.ReadData;
 
 /**
  * Interface for data blocks. A data block has data, a position on the block
@@ -70,20 +71,24 @@ public interface DataBlock<T> {
 	 */
 	T getData();
 
+	// TODO: Remove this later?
 	default byte[] serialize() {
 		return serialize(ByteOrder.BIG_ENDIAN);
 	}
 
 	byte[] serialize(ByteOrder byteOrder);
 
-	default void deserialize(byte[] serialized) {
-		deserialize(ByteOrder.BIG_ENDIAN, serialized);
-	}
-
 	void deserialize(ByteOrder byteOrder, byte[] serialized);
 
-	// TODO should have ByteOrder argument
-	void readData(final InputStream inputStream) throws IOException;
+	// TODO: Remove this? readData() is not called in many places, so maybe it
+	//       is not worth cluttering the interface with this overload?
+	default void readData(ReadData readData) throws IOException {
+		readData(ByteOrder.BIG_ENDIAN, readData);
+	}
+
+	default void readData(ByteOrder byteOrder, ReadData readData) throws IOException {
+		deserialize(byteOrder, readData.allBytes());
+	}
 
 	// TODO should have ByteOrder argument
 	default void writeData(final OutputStream outputStream) throws IOException {
