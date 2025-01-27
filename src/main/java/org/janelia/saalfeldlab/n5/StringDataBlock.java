@@ -30,38 +30,52 @@ import java.io.OutputStream;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class StringDataBlock extends AbstractDataBlock<String[]> {
 
 	protected static final Charset ENCODING = StandardCharsets.UTF_8;
 	protected static final String NULLCHAR = "\0";
-	protected byte[] serializedData = null;
+	protected byte[] serializedData;
+	protected String[] actualData;
 
 	public StringDataBlock(final int[] size, final long[] gridPosition, final String[] data) {
-		super(size, gridPosition, data);
+		super(size, gridPosition, null);
+		actualData = data;
 	}
 
 	@Override
 	public byte[] serialize(final ByteOrder byteOrder) {
-		final String flattenedArray = String.join(NULLCHAR, data) + NULLCHAR;
+		final String flattenedArray = String.join(NULLCHAR, actualData) + NULLCHAR;
 		return flattenedArray.getBytes(ENCODING);
 	}
 
 	@Override
 	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
 		// TODO: write benchmark, make more efficient
+		serializedData = serialized;
 		final String rawChars = new String(serialized, ENCODING);
-		final String[] actualData = rawChars.split(NULLCHAR);
-		System.arraycopy(actualData, 0, data, 0, actualData.length);
+		actualData = rawChars.split(NULLCHAR);
 	}
 
 	@Override
 	public void writeData(final OutputStream outputStream) throws IOException {
-		outputStream.write(serialize());
+		if (serializedData == null) {
+			serializedData = serialize(ByteOrder.BIG_ENDIAN);
+		}
+		outputStream.write(serializedData);
 	}
 
 	@Override
 	public int getNumElements() {
-		return data.length;
+		if (serializedData == null) {
+			serializedData = serialize(ByteOrder.BIG_ENDIAN);
+		}
+		return serializedData.length;
+	}
+
+	@Override
+	public String[] getData() {
+		return actualData;
 	}
 }

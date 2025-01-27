@@ -124,11 +124,11 @@ public enum DataType {
 	),
 	STRING(
 			"string",
-			1,
+			-1,
 			(blockSize, gridPosition, numElements) -> new StringDataBlock(
 					blockSize,
 					gridPosition,
-					new String[numElements])
+					null)
 	),
 	OBJECT(
 			"object",
@@ -201,9 +201,14 @@ public enum DataType {
 	/**
 	 * TODO: javadoc
 	 *       explain that STRING and OBJECT are a bit weird ...
+	 *       -1 means varlength
 	 */
 	public int bytesPerElement() {
 		return bytesPerElement;
+	}
+
+	public boolean isVarLength() {
+		return bytesPerElement < 0;
 	}
 
 	private interface DataBlockFactory {

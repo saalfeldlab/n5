@@ -25,11 +25,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import org.janelia.saalfeldlab.n5.Splittable.InputStreamReadData;
 import org.janelia.saalfeldlab.n5.Splittable.ReadData;
@@ -82,8 +80,10 @@ public interface DefaultBlockReader {
 		}
 
 		try (final InputStream inflater = datasetAttributes.getCompression().decode(in)) {
-			final int numBytes = numElements * dataType.bytesPerElement();
-			ReadData data = new InputStreamReadData(inflater, numBytes);
+			final int numBytes = dataType.isVarLength()
+					? numElements
+					: (numElements * dataType.bytesPerElement());
+			final ReadData data = new InputStreamReadData(inflater, numBytes);
 			dataBlock.readData(ByteOrder.BIG_ENDIAN, data);
 		}
 
