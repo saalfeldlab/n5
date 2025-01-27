@@ -30,6 +30,9 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import org.janelia.saalfeldlab.n5.Splittable.InputStreamReadData;
+import org.janelia.saalfeldlab.n5.Splittable.ReadData;
 
 /**
  * Default implementation of block reading (N5 format).
@@ -78,15 +81,10 @@ public interface DefaultBlockReader {
 			dataBlock = dataType.createDataBlock(null, gridPosition, numElements);
 		}
 
-//		final byte[] data = dataType.createSerializeArray(numElements);
-//		try (final InputStream inflater = datasetAttributes.getCompression().decode(in)) {
-//			final DataInputStream dis2 = new DataInputStream(inflater);
-//			dis2.readFully(data);
-//		}
-//		dataBlock.deserialize(data);
-
 		try (final InputStream inflater = datasetAttributes.getCompression().decode(in)) {
-			dataBlock.readData(inflater);
+			final int numBytes = numElements * dataType.bytesPerElement();
+			ReadData data = new InputStreamReadData(inflater, numBytes);
+			dataBlock.readData(ByteOrder.BIG_ENDIAN, data);
 		}
 
 		return dataBlock;

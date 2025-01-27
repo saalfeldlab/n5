@@ -5,6 +5,7 @@ import java.io.DataInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 
 public class Splittable {
 
@@ -40,6 +41,25 @@ public class Splittable {
 		 * 		if this method was already called once and cannot be called again.
 		 */
 		InputStream inputStream() throws IOException, IllegalStateException;
+
+		/**
+		 * Return the contained data as a {@code byte[]} array.
+		 * <p>
+		 * This may use {@link #inputStream()} to read the data.
+		 * Because repeatedly calling {@link #inputStream()} may not work,
+		 * <ol>
+		 * <li>this method may fail with {@code IllegalStateException} if {@code inputStream()} was already called</li>,
+		 * <li>subsequent {@code inputStream()} calls may fail with {@code IllegalStateException}</li>,
+		 * </ol>
+		 *
+		 * @return all contained data as a byte[] array
+		 *
+		 * @throws IOException
+		 * 		if any I/O error occurs
+		 * @throws IllegalStateException
+		 * 		if {@link #inputStream()} was already called once and cannot be called again.
+		 */
+		byte[] allBytes() throws IOException, IllegalStateException;
 
 		/**
 		 * If this {@code ReadData} is a {@code SplittableReadData}, just returns {@code this}.
@@ -81,6 +101,15 @@ public class Splittable {
 		}
 
 		@Override
+		public byte[] allBytes() {
+			if (offset == 0 && data.length == length) {
+				return data;
+			} else {
+				return Arrays.copyOfRange(data, offset, offset + length);
+			}
+		}
+
+		@Override
 		public SplittableReadData splittable() throws IOException {
 			return this;
 		}
@@ -115,6 +144,11 @@ public class Splittable {
 				bytes = new ByteArraySplittableReadData(data, 0, data.length);
 			}
 			return bytes;
+		}
+
+		@Override
+		public byte[] allBytes() throws IOException, IllegalStateException {
+			return splittable().allBytes();
 		}
 	}
 

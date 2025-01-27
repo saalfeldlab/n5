@@ -25,11 +25,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -50,13 +45,6 @@ public class LongArrayDataBlock extends AbstractDataBlock<long[]> {
 	@Override
 	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
 		ByteBuffer.wrap(serialized).order(byteOrder).asLongBuffer().get(data);
-	}
-
-	@Override
-	public void readData(final InputStream inputStream) throws IOException {
-		final byte[] bytes = DataType.INT64.createSerializeArray(data.length);
-		new DataInputStream(inputStream).readFully(bytes);
-		deserialize(bytes);
 	}
 
 	@Override

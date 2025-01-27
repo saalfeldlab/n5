@@ -25,9 +25,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -48,13 +45,6 @@ public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 	@Override
 	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
 		ByteBuffer.wrap(serialized).order(byteOrder).asDoubleBuffer().get(data);
-	}
-
-	@Override
-	public void readData(final InputStream inputStream) throws IOException {
-		final byte[] bytes = DataType.FLOAT64.createSerializeArray(getNumElements());
-		new DataInputStream(inputStream).readFully(bytes);
-		deserialize(bytes);
 	}
 
 	@Override

@@ -27,12 +27,11 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import org.janelia.saalfeldlab.n5.Splittable.ReadData;
 
 public class StringDataBlock extends AbstractDataBlock<String[]> {
 
@@ -104,9 +103,9 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
 	}
 
 	@Override
-	public void readData(final InputStream inputStream) throws IOException {
-		new DataInputStream(inputStream).readFully(serializedData);
-		deserialize(serializedData);
+	public void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
+		new DataInputStream(readData.inputStream()).readFully(serializedData);
+		deserialize(byteOrder, serializedData);
 	}
 
 	@Override
