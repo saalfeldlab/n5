@@ -29,6 +29,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 /**
  * Default implementation of block writing (N5 format).
@@ -79,7 +80,7 @@ public interface DefaultBlockWriter {
 		dos.flush();
 
 		try (final OutputStream deflater = datasetAttributes.getCompression().getOutputStream(out)) {
-			dataBlock.writeData(deflater);
+			dataBlock.writeData(ByteOrder.BIG_ENDIAN, deflater);
 		}
 	}
 }

@@ -86,13 +86,12 @@ public interface DataBlock<T> {
 		readData(ByteOrder.BIG_ENDIAN, readData);
 	}
 
-	default void readData(ByteOrder byteOrder, ReadData readData) throws IOException {
+	default void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
 		deserialize(byteOrder, readData.allBytes());
 	}
 
-	// TODO should have ByteOrder argument
-	default void writeData(final OutputStream outputStream) throws IOException {
-		outputStream.write(serialize());
+	default void writeData(final ByteOrder byteOrder, final OutputStream outputStream) throws IOException {
+		outputStream.write(serialize(byteOrder));
 	};
 
 	/**
