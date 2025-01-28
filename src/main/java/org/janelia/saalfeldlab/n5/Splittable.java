@@ -6,6 +6,7 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import org.apache.commons.io.IOUtils;
 
 public class Splittable {
 
@@ -139,7 +140,7 @@ public class Splittable {
 					data = new byte[length];
 					new DataInputStream(inputStream()).readFully(data);
 				} else {
-					data = Java9StreamMethods.readAllBytes(inputStream());
+					data = IOUtils.toByteArray(inputStream());
 				}
 				bytes = new ByteArraySplittableReadData(data, 0, data.length);
 			}
