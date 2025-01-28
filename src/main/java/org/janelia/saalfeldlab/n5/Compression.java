@@ -92,7 +92,7 @@ public interface Compression extends BytesCodec, Serializable {
 	 * @return the decoded input stream
 	 */
 	@Override
-	default InputStream decode(InputStream in) throws IOException {
+	default InputStream decode(final InputStream in) throws IOException {
 		return getInputStream(in);
 	}
 
@@ -104,21 +104,7 @@ public interface Compression extends BytesCodec, Serializable {
 	 * @return the encoded output stream
 	 */
 	@Override
-	default OutputStream encode(OutputStream out) throws IOException {
+	default OutputStream encode(final OutputStream out) throws IOException {
 		return getOutputStream(out);
-	}
-
-	// TODO probably remove?
-	default byte[] encode(byte[] data) throws IOException {
-		final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-		final OutputStream encodedStream = encode(byteStream);
-		encodedStream.write(data);
-		encodedStream.close();
-		return byteStream.toByteArray();
-	}
-
-	// TODO probably remove?
-	default byte[] decode(byte[] data) throws IOException {
-		return Java9StreamMethods.readAllBytes(decode(new ByteArrayInputStream(data)));
 	}
 }

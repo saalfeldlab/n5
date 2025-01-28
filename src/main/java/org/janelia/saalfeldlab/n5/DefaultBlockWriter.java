@@ -79,7 +79,7 @@ public interface DefaultBlockWriter {
 
 		dos.flush();
 
-		try (final OutputStream deflater = datasetAttributes.getCompression().getOutputStream(out)) {
+		try (final OutputStream deflater = datasetAttributes.getCompression().encode(out)) {
 			dataBlock.writeData(ByteOrder.BIG_ENDIAN, deflater);
 		}
 	}

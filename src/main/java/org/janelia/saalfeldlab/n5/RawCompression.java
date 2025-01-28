@@ -49,16 +49,6 @@ public class RawCompression implements DefaultBlockWriter, Compression {
 	}
 
 	@Override
-	public byte[] encode(final byte[] data) throws IOException {
-		return data;
-	}
-
-	@Override
-	public byte[] decode(final byte[] data) throws IOException {
-		return data;
-	}
-
-	@Override
 	public boolean equals(final Object other) {
 
 		if (other == null || other.getClass() != RawCompression.class)
