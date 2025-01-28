@@ -59,9 +59,9 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
 	}
 
 	@Override
-	public void writeData(final OutputStream outputStream) throws IOException {
+	public void writeData(final ByteOrder byteOrder, final OutputStream outputStream) throws IOException {
 		if (serializedData == null) {
-			serializedData = serialize(ByteOrder.BIG_ENDIAN);
+			serializedData = serialize(byteOrder);
 		}
 		outputStream.write(serializedData);
 	}
