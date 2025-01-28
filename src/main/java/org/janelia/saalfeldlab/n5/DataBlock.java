@@ -29,6 +29,10 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.stream.IntStream;
+
+import org.janelia.saalfeldlab.n5.shard.Shard;
 
 /**
  * Interface for data blocks. A data block has data, a position on the block
@@ -39,28 +43,7 @@ import java.nio.ByteBuffer;
  *
  * @author Stephan Saalfeld
  */
-public interface DataBlock<T> {
-
-	/**
-	 * Returns the size of this data block.
-	 *
-	 * The size of a data block is expected to be smaller than or equal to the
-	 * spacing of the block grid. The dimensionality of size is expected to be
-	 * equal to the dimensionality of the dataset. Consistency is not enforced.
-	 *
-	 * @return size of the data block
-	 */
-	public int[] getSize();
-
-	/**
-	 * Returns the position of this data block on the block grid.
-	 *
-	 * The dimensionality of the grid position is expected to be equal to the
-	 * dimensionality of the dataset. Consistency is not enforced.
-	 *
-	 * @return position on the block grid
-	 */
-	public long[] getGridPosition();
+public interface DataBlock<T> extends Shard<T> {
 
 	/**
 	 * Returns the data object held by this data block.
@@ -101,14 +84,27 @@ public interface DataBlock<T> {
 
 	public void writeData(final DataOutput output) throws IOException;
 
-	/**
-	 * Returns the number of elements in this {@link DataBlock}. This number is
-	 * not necessarily equal {@link #getNumElements(int[])
-	 * getNumElements(getSize())}.
-	 *
-	 * @return the number of elements
-	 */
-	public int getNumElements();
+	default int[] getBlockGridSize() {
+
+		final int numDimensions = getSize().length;
+		return IntStream.generate(() -> 1).limit(numDimensions).toArray();
+	}
+
+	@Override
+	default int[] getBlockSize() {
+
+		return getSize();
+	}
+
+	default int[] relativeBlockPosition(long... blockPosition) {
+
+		if (Arrays.equals(blockPosition, getGridPosition())) {
+			final int nd = getSize().length;
+			return new int[nd];
+		} else
+			return null;
+
+	}
 
 	/**
 	 * Returns the number of elements in a box of given size.

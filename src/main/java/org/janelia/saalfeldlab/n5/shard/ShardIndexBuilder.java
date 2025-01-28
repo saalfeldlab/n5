@@ -10,8 +10,8 @@ public class ShardIndexBuilder {
 	private final Shard<?> shard;
 
 	private ShardIndex temporaryIndex;
-
-	private IndexLocation location = IndexLocation.END;
+	
+	private IndexLocation location;
 
 	private DeterministicSizeCodec[] codecs;
 	
@@ -20,35 +20,29 @@ public class ShardIndexBuilder {
 	public ShardIndexBuilder(Shard<?> shard) {
 
 		this.shard = shard;
-		this.temporaryIndex = new ShardIndex(shard.getBlockGridSize(), location);
+		this.temporaryIndex = new ShardIndex(shard.getBlocksPerShard());
+		this.location = IndexLocation.END;
 	}
 
 	public ShardIndex build() {
 
 		return new ShardIndex(
-				shard.getBlockGridSize(),
+				shard.getBlocksPerShard(),
 				temporaryIndex.getData(),
-				location,
 				codecs);
 	}
 
 	public ShardIndexBuilder indexLocation(IndexLocation location) {
 
 		this.location = location;
-		this.temporaryIndex = new ShardIndex(shard.getBlockGridSize(), location);
 		updateInitialOffset();
 		return this;
-	}
-
-	public IndexLocation getLocation() {
-
-		return this.location;
 	}
 
 	public ShardIndexBuilder setCodecs(DeterministicSizeCodec... codecs) {
 
 		this.codecs = codecs;
-		final ShardIndex newIndex = new ShardIndex(shard.getBlockGridSize(), temporaryIndex.getLocation(), codecs);
+		final ShardIndex newIndex = new ShardIndex(shard.getBlocksPerShard(), codecs);
 		this.temporaryIndex = newIndex;
 		updateInitialOffset();
 		return this;
@@ -56,10 +50,8 @@ public class ShardIndexBuilder {
 
 	public ShardIndexBuilder addBlock(long[] blockPosition, long numBytes) {
 		//TODO Caleb: Maybe move to ShardIndex?
-		final int[] blockPositionInShard = shard.getDatasetAttributes().getBlockPositionInShard(
-				shard.getGridPosition(),
-				blockPosition);
 
+		final int[] blockPositionInShard = shard.relativeBlockPosition(blockPosition);
 		if (blockPositionInShard == null) {
 			throw new IllegalArgumentException(String.format(
 					"The block at position %s is not contained in the shard at position : %s and size : %s )",

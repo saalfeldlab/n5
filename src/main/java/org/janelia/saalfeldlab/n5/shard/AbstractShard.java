@@ -5,9 +5,13 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 
 public abstract class AbstractShard<T> implements Shard<T> {
 
-	protected final DatasetAttributes datasetAttributes;
+	protected DatasetAttributes datasetAttributes;
 
 	protected ShardIndex index;
+
+	private final int[] shardSize;
+
+	private final int[] blockSize;
 
 	private final long[] gridPosition;
 
@@ -15,26 +19,27 @@ public abstract class AbstractShard<T> implements Shard<T> {
 			final ShardIndex index) {
 
 		this.datasetAttributes = datasetAttributes;
+		this.shardSize = datasetAttributes.getShardSize();
+		this.blockSize = datasetAttributes.getBlockSize();
 		this.gridPosition = gridPosition;
 		this.index = index;
 	}
 
 	@Override
 	public <A extends DatasetAttributes & ShardParameters> A getDatasetAttributes() {
-
 		return (A)datasetAttributes;
 	}
 
 	@Override
 	public int[] getSize() {
 
-		return getDatasetAttributes().getShardSize();
+		return shardSize;
 	}
 
 	@Override
 	public int[] getBlockSize() {
 
-		return datasetAttributes.getBlockSize();
+		return blockSize;
 	}
 
 	@Override

@@ -29,6 +29,9 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+
+import org.janelia.saalfeldlab.n5.shard.ShardIndex;
 
 /**
  * Abstract base class for {@link DataBlock} implementations.
@@ -51,6 +54,11 @@ public abstract class AbstractDataBlock<T> implements DataBlock<T> {
 		this.data = data;
 	}
 
+	@SuppressWarnings("unchecked")
+	public DatasetAttributes getDatasetAttributes() {
+		return null;
+	}
+
 	@Override
 	public int[] getSize() {
 
@@ -67,6 +75,19 @@ public abstract class AbstractDataBlock<T> implements DataBlock<T> {
 	public T getData() {
 
 		return data;
+	}
+
+	public DataBlock<T> getBlock(long... blockGridPosition) {
+
+		if (Arrays.stream(blockGridPosition).anyMatch(x -> x != 0))
+			return null;
+		else
+			return this;
+	}
+	
+	public ShardIndex getIndex() {
+
+		return null;
 	}
 
 	@Override

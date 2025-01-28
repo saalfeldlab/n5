@@ -30,29 +30,22 @@ import java.util.stream.IntStream;
 public class ShardIndex extends LongArrayDataBlock {
 
 	public static final long EMPTY_INDEX_NBYTES = 0xFFFFFFFFFFFFFFFFL;
+	
 	private static final int BYTES_PER_LONG = 8;
 	private static final int LONGS_PER_BLOCK = 2;
 	private static final long[] DUMMY_GRID_POSITION = null;
 
-	private final IndexLocation location;
-
 	private final DeterministicSizeCodec[] codecs;
 
-	public ShardIndex(int[] shardBlockGridSize, long[] data, IndexLocation location, final DeterministicSizeCodec... codecs) {
+	public ShardIndex(int[] shardBlockGridSize, long[] data, final DeterministicSizeCodec... codecs) {
 
 		super(prepend(LONGS_PER_BLOCK, shardBlockGridSize), DUMMY_GRID_POSITION, data);
 		this.codecs = codecs;
-		this.location = location;
-	}
-
-	public ShardIndex(int[] shardBlockGridSize, IndexLocation location, DeterministicSizeCodec... codecs) {
-
-		this(shardBlockGridSize, emptyIndexData(shardBlockGridSize), location, codecs);
 	}
 
 	public ShardIndex(int[] shardBlockGridSize, DeterministicSizeCodec... codecs) {
 
-		this(shardBlockGridSize, emptyIndexData(shardBlockGridSize), IndexLocation.END, codecs);
+		this(shardBlockGridSize, emptyIndexData(shardBlockGridSize), codecs);
 	}
 
 	public boolean exists(int[] gridPosition) {
@@ -75,11 +68,6 @@ public class ShardIndex extends LongArrayDataBlock {
 	public boolean isEmpty() {
 
 		return !IntStream.range(0, getNumBlocks()).anyMatch(i -> exists(i));
-	}
-
-	public IndexLocation getLocation() {
-
-		return location;
 	}
 
 	public long getOffset(int... gridPosition) {
@@ -137,9 +125,9 @@ public class ShardIndex extends LongArrayDataBlock {
 		return totalNumBytes;
 	}
 
-	public static ShardIndex read(byte[] data, final ShardIndex index) throws IOException {
+	public static ShardIndex read(byte[] data, final IndexLocation location, final ShardIndex index) throws IOException {
 
-		final IndexByteBounds byteBounds = byteBounds(index, data.length);
+		final IndexByteBounds byteBounds = byteBounds(index.numBytes(), location, data.length);
 		final ByteArrayInputStream is = new ByteArrayInputStream(data);
 		is.skip(byteBounds.start);
 		BoundedInputStream bIs = BoundedInputStream.builder()
@@ -162,10 +150,11 @@ public class ShardIndex extends LongArrayDataBlock {
 	public static ShardIndex read(
 			final KeyValueAccess keyValueAccess,
 			final String key,
+			final IndexLocation location,
 			final ShardIndex index
 	) throws IOException {
 
-		final IndexByteBounds byteBounds = byteBounds(index, keyValueAccess.size(key));
+		final IndexByteBounds byteBounds = byteBounds(index.numBytes(), location, keyValueAccess.size(key));
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(key, byteBounds.start, byteBounds.end)) {
 			try (final InputStream in = lockedChannel.newInputStream()) {
 				return read(in,index);
@@ -179,11 +168,12 @@ public class ShardIndex extends LongArrayDataBlock {
 
 	public static void write(
 			final ShardIndex index,
+			final IndexLocation location,
 			final KeyValueAccess keyValueAccess,
 			final String key
 	) throws IOException {
 
-		final long start = index.location == IndexLocation.START ? 0 : sizeOrZero( keyValueAccess, key) ;
+		final long start = location == IndexLocation.START ? 0 : sizeOrZero( keyValueAccess, key) ;
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForWriting(key, start, index.numBytes())) {
 			try (final OutputStream os = lockedChannel.newOutputStream()) {
 				write(index, os);
@@ -223,10 +213,6 @@ public class ShardIndex extends LongArrayDataBlock {
 
 		final long indexSize = datasetAttributes.createIndex().numBytes();
 		return byteBounds(indexSize, datasetAttributes.getIndexLocation(), objectSize);
-	}
-
-	public static IndexByteBounds byteBounds(final ShardIndex index, long objectSize) {
-		return byteBounds(index.numBytes(), index.location, objectSize);
 	}
 
 	public static IndexByteBounds byteBounds(final long indexSize, final IndexLocation indexLocation, final long objectSize) {
@@ -272,7 +258,7 @@ public class ShardIndex extends LongArrayDataBlock {
 			indexes[i] = dis.readLong();
 		}
 
-		return new ShardIndex(indexShape, indexes, IndexLocation.END);
+		return new ShardIndex(indexShape, indexes);
 	}
 
 	private static long[] emptyIndexData(final int[] size) {
@@ -297,9 +283,6 @@ public class ShardIndex extends LongArrayDataBlock {
 		if (other instanceof ShardIndex) {
 
 			final ShardIndex index = (ShardIndex) other;
-			if (this.location != index.location)
-				return false;
-
 			if (!Arrays.equals(this.size, index.size))
 				return false;
 

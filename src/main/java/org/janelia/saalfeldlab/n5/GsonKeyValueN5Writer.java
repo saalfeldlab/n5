@@ -259,9 +259,9 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		/* Delegate to shard for writing block? How to know what type of shard? */
 		if (datasetAttributes instanceof ShardParameters) {
 			ShardParameters shardDatasetAttrs = (ShardParameters)datasetAttributes;
-			final long[] shardPos = shardDatasetAttrs.getShardPositionForBlock(dataBlock.getGridPosition());
-			final String shardPath = absoluteShardPath(N5URI.normalizeGroupPath(path), shardPos);
-			final VirtualShard<T> shard = new VirtualShard<>((DatasetAttributes & ShardParameters)shardDatasetAttrs, shardPos, getKeyValueAccess(), shardPath);
+			final long[] shardPosition = Shard.getShardPositionForBlock(shardDatasetAttrs.getBlocksPerShard(), dataBlock.getGridPosition());
+			final String shardPath = absoluteShardPath(N5URI.normalizeGroupPath(path), shardPosition);
+			final VirtualShard<T> shard = new VirtualShard<>((DatasetAttributes & ShardParameters)shardDatasetAttrs, shardPosition, getKeyValueAccess(), shardPath);
 			shard.writeBlock(dataBlock);
 			return;
 		}

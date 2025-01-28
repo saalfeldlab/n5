@@ -11,38 +11,25 @@ import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 public interface Shard<T> extends Iterable<DataBlock<T>> {
 
-	/**
-	 * Returns the number of blocks this shard contains along all dimensions.
-	 *
-	 * The size of a shard expected to be smaller than or equal to the spacing of the shard grid. The dimensionality of size is expected to be equal to the dimensionality of the
-	 * dataset. Consistency is not enforced.
-	 *
-	 * @return size of the shard in units of blocks
-	 */
-	default int[] getBlockGridSize() {
-
-		return getDatasetAttributes().getBlocksPerShard();
-	}
-
 	public <A extends DatasetAttributes & ShardParameters> A getDatasetAttributes();
 
 	/**
-	 * Returns the size of shards in pixel units.
+	 * Returns the size of this shard in pixels.
 	 *
-	 * @return shard size
+	 * The size of a shard is expected to be smaller than or equal to the
+	 * spacing of the shard grid. The dimensionality of size is expected to be
+	 * equal to the dimensionality of the dataset. Consistency is not enforced.
+	 *
+	 * @return size of the 
 	 */
-	default int[] getSize() {
-		return getDatasetAttributes().getShardSize();
-	}
+	public int[] getSize();
 
 	/**
-	 * Returns the size of blocks in pixel units.
+	 * Returns the size of sub-blocks in pixel units.
 	 *
 	 * @return block size
 	 */
-	default int[] getBlockSize() {
-		return getDatasetAttributes().getBlockSize();
-	}
+	public int[] getBlockSize();
 
 	/**
 	 * Returns the position of this shard on the shard grid.
@@ -54,14 +41,54 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	public long[] getGridPosition();
 
 	/**
-	 * Returns of the block at the given position relative to this shard, or null if this shard does not contain the given block.
+	 * Returns the number of blocks this shard contains along all dimensions.
 	 *
-	 * @return the shard position
+	 * The size of a shard expected to be smaller than or equal to the spacing of the shard grid. The dimensionality of size is expected to be equal to the dimensionality of the
+	 * dataset. Consistency is not enforced.
+	 *
+	 * @return size of the shard in units of blocks
 	 */
-	default int[] getBlockPosition(long... blockPosition) {
+	default int[] getBlocksPerShard() {
 
-		final long[] shardPos = getDatasetAttributes().getShardPositionForBlock(blockPosition);
-		return getDatasetAttributes().getBlockPositionInShard(shardPos, blockPosition);
+		final int nd = getSize().length;
+		final int[] blocksPerShard = new int[nd];
+		final int[] blockSize = getBlockSize();
+		for (int i = 0; i < nd; i++)
+			blocksPerShard[i] = getSize()[i] / blockSize[i];
+
+		return blocksPerShard;
+	}
+
+	public ShardIndex getIndex();
+
+	/**
+	 * Given an absolute block position, returns that block's position 
+	 * relative to this shard or null if this shard does not contain the given block.
+	 *
+	 * @return block positionr relative to this shard
+	 */
+	default int[] relativeBlockPosition(long... blockPosition) {
+
+		final long[] shardPos = getShardPositionForBlock(blockPosition);
+		return getRelativeBlockPosition(getBlocksPerShard(), shardPos, blockPosition);
+	}
+
+	/**
+	 * Given a block's position relative to the array, returns the position of the shard containing that block relative to the shard grid.
+	 *
+	 * @param blockGridPosition
+	 *            position of a block relative to the array
+	 * @return the position of the containing shard in the shard grid
+	 */
+	default long[] getShardPositionForBlock(final long... blockGridPosition) {
+
+		final int[] blocksPerShard = getBlocksPerShard();
+		final long[] shardGridPosition = new long[blockGridPosition.length];
+		for (int i = 0; i < shardGridPosition.length; i++) {
+			shardGridPosition[i] = (int)Math.floor((double)blockGridPosition[i] / blocksPerShard[i]);
+		}
+
+		return shardGridPosition;
 	}
 	
 	/**
@@ -86,10 +113,10 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	 */
 	default long[] getShard(long... blockPosition) {
 
-		final int[] shardBlockDimensions = getBlockGridSize();
-		final long[] shardGridPosition = new long[shardBlockDimensions.length];
+		final int[] blocksPerShard = getBlocksPerShard();
+		final long[] shardGridPosition = new long[blocksPerShard.length];
 		for (int i = 0; i < shardGridPosition.length; i++) {
-			shardGridPosition[i] = (long)Math.floor((double)(blockPosition[i]) / shardBlockDimensions[i]);
+			shardGridPosition[i] = (long)Math.floor((double)(blockPosition[i]) / blocksPerShard[i]);
 		}
 
 		return shardGridPosition;
@@ -97,16 +124,22 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 	public DataBlock<T> getBlock(long... blockGridPosition);
 
-	public void writeBlock(DataBlock<T> block);
+//	public void writeBlock(DataBlock<T> block);
 
 	default Iterator<DataBlock<T>> iterator() {
 
 		return new DataBlockIterator<>(this);
 	}
-
-	default int getNumBlocks() {
-
-		return Arrays.stream(getBlockGridSize()).reduce(1, (x, y) -> x * y);
+	
+	/**
+	 * Returns the number of elements in this {@link Shard}. This number is
+	 * not necessarily equal {@link #getNumElements(int[])
+	 * getNumElements(getSize())}.
+	 *
+	 * @return the number of elements
+	 */
+	default int getNumElements() {
+		return Arrays.stream(getBlocksPerShard()).reduce(1, (x, y) -> x * y);
 	}
 
 	default List<DataBlock<T>> getBlocks() {
@@ -126,17 +159,78 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	default Iterator<long[]> blockPositionIterator() {
 
 		final int nd = getSize().length;
-		long[] min = getDatasetAttributes().getBlockPositionFromShardPosition( getGridPosition(), new long[nd]);
-		return new GridIterator(GridIterator.int2long(getBlockGridSize()), min);
+		final long[] min = getAbsoluteBlockPosition( 
+				getBlocksPerShard(),
+				getGridPosition(),
+				new long[nd]);
+		return new GridIterator(GridIterator.int2long(getBlocksPerShard()), min);
 	}
 
-	public ShardIndex getIndex();
+	/**
+	 * Given a block's position relative to the array, returns the position of the
+	 * shard containing that block relative to the shard grid.
+	 *
+	 * @param blockGridSize     size of the shards block grid
+	 * @param blockGridPosition position of a block relative to the array
+	 * @return the position of the containing shard in the shard grid
+	 */
+	public static long[] getShardPositionForBlock(
+			final int[] blockGridSize,
+			final long[] blockGridPosition) {
+
+		final long[] shardGridPosition = new long[blockGridPosition.length];
+		for (int i = 0; i < shardGridPosition.length; i++) {
+			shardGridPosition[i] = (int)Math.floor((double)blockGridPosition[i] / blockGridSize[i]);
+		}
+
+		return shardGridPosition;
+	}
+	
+	/**
+	 * Returns the block at the given position relative to this shard, or null if this shard does not contain the given block.
+	 *
+	 * @return the block position
+	 */
+	public static int[] getRelativeBlockPosition(
+			final int[] blocksPerShard,
+			final long[] shardPosition,
+			final long[] absoluteBlockPosition) {
+
+		final long[] shardPos = Shard.getShardPositionForBlock(blocksPerShard, absoluteBlockPosition);
+		if (!Arrays.equals(shardPosition, shardPos))
+			return null;
+
+		final int[] blockShardPos = new int[blocksPerShard.length];
+		for (int i = 0; i < blocksPerShard.length; i++) {
+			blockShardPos[i] = (int)(absoluteBlockPosition[i] % blocksPerShard[i]);
+		}
+
+		return blockShardPos;
+	}
+	
+	/**
+	 * Given a block's position relative to a shard, returns its position relative
+	 * to the image.
+	 *
+	 */
+	public static long[] getAbsoluteBlockPosition(
+			final int[] blocksPerShard, final long[] shardPosition, final long[] relativeBlockPosition) {
+
+		// is this useful?
+		final int nd = relativeBlockPosition.length;
+		final long[] blockImagePos = new long[nd];
+		for (int i = 0; i < nd; i++) {
+			blockImagePos[i] = (shardPosition[i] * blocksPerShard[i]) + (relativeBlockPosition[i]);
+		}
+
+		return blockImagePos;
+	}
 
 	public static <T,A extends DatasetAttributes & ShardParameters> Shard<T> createEmpty(final A attributes, long... shardPosition) {
 
 		final long[] emptyIndex = new long[(int)(2 * attributes.getNumBlocks())];
 		Arrays.fill(emptyIndex, ShardIndex.EMPTY_INDEX_NBYTES);
-		final ShardIndex shardIndex = new ShardIndex(attributes.getBlocksPerShard(), emptyIndex, ShardingCodec.IndexLocation.END);
+		final ShardIndex shardIndex = new ShardIndex(attributes.getBlocksPerShard(), emptyIndex);
 		return new InMemoryShard<T>(attributes, shardPosition, shardIndex);
 	}
 
@@ -145,22 +239,20 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		private final GridIterator it;
 		private final Shard<T> shard;
 		private final ShardIndex index;
-		private final ShardParameters attributes;
 		private int blockIndex = 0;
 
 		public DataBlockIterator(final Shard<T> shard) {
 
 			this.shard = shard;
 			this.index = shard.getIndex();
-			this.attributes = shard.getDatasetAttributes();
 			this.blockIndex = 0;
-			it = new GridIterator(shard.getBlockGridSize());
+			it = new GridIterator(shard.getBlocksPerShard());
 		}
 
 		@Override
 		public boolean hasNext() {
 
-			for (int i = blockIndex; i < attributes.getNumBlocks(); i++) {
+			for (int i = blockIndex; i < shard.getNumElements(); i++) {
 				if (index.exists(i))
 					return true;
 			}

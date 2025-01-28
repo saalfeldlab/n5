@@ -9,6 +9,8 @@ import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
+import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
+import org.janelia.saalfeldlab.n5.shard.Shard;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 
 import com.google.gson.JsonDeserializationContext;
@@ -150,6 +152,14 @@ public class DatasetAttributes implements BlockParameters, Serializable {
 	public BytesCodec[] getCodecs() {
 
 		return byteCodecs;
+	}
+
+	public Shard<?> createShard(long[] gridPosition) {
+
+		if( getArrayCodec() instanceof ShardingCodec )
+			return new InMemoryShard(this, gridPosition);
+		else // TODO what about when numElements is not the product of block size
+			return getDataType().createDataBlock(blockSize, gridPosition); 
 	}
 
 	public HashMap<String, Object> asMap() {

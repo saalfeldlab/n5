@@ -38,7 +38,7 @@ public class ShardPropertiesTests {
 		@SuppressWarnings({"rawtypes", "unchecked"})
 		final InMemoryShard shard = new InMemoryShard(dsetAttrs, shardPosition, null);
 
-		assertArrayEquals(new int[]{4, 4}, shard.getBlockGridSize());
+		assertArrayEquals(new int[]{4, 4}, shard.getBlocksPerShard());
 
 		assertArrayEquals(new long[]{0, 0}, shard.getShard(0, 0));
 		assertArrayEquals(new long[]{1, 1}, shard.getShard(5, 5));
@@ -48,10 +48,10 @@ public class ShardPropertiesTests {
 //		assertNull(shard.getBlockPosition(0, 0));
 //		assertNull(shard.getBlockPosition(3, 3));
 
-		assertArrayEquals(new int[]{0, 0}, shard.getBlockPosition(4, 4));
-		assertArrayEquals(new int[]{1, 1}, shard.getBlockPosition(5, 5));
-		assertArrayEquals(new int[]{2, 2}, shard.getBlockPosition(6, 6));
-		assertArrayEquals(new int[]{3, 3}, shard.getBlockPosition(7, 7));
+		assertArrayEquals(new int[]{0, 0}, shard.relativeBlockPosition(4, 4));
+		assertArrayEquals(new int[]{1, 1}, shard.relativeBlockPosition(5, 5));
+		assertArrayEquals(new int[]{2, 2}, shard.relativeBlockPosition(6, 6));
+		assertArrayEquals(new int[]{3, 3}, shard.relativeBlockPosition(7, 7));
 	}
 
 	@Test

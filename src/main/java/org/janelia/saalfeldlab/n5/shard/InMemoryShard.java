@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import javax.xml.crypto.Data;
+
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.io.output.CountingOutputStream;
@@ -28,9 +30,10 @@ import org.janelia.saalfeldlab.n5.util.Position;
 
 public class InMemoryShard<T> extends AbstractShard<T> {
 
-	/* Map of a hash of the DataBlocks `gridPosition` to the block */
+	/* Map of the position of the DataBlocks `gridPosition` to the block */
 	private final Map<Position, DataBlock<T>> blocks;
 	private ShardIndexBuilder indexBuilder;
+	private DatasetAttributes datasetAttributes;
 
 	/*
 	 * TODO:
@@ -39,7 +42,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	 */
 	public <A extends DatasetAttributes & ShardParameters> InMemoryShard(final A datasetAttributes, final long[] shardPosition) {
 
-		this( datasetAttributes, shardPosition, null);
+		this(datasetAttributes, shardPosition, null);
 		indexBuilder = new ShardIndexBuilder(this);
 		indexBuilder.indexLocation(datasetAttributes.getIndexLocation());
 	}
@@ -48,6 +51,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 			ShardIndex index) {
 
 		super(datasetAttributes, gridPosition, index);
+		this.datasetAttributes = datasetAttributes;
 		blocks = new TreeMap<>();
 	}
 
@@ -64,12 +68,6 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	@Override public DataBlock<T> getBlock(long... blockGridPosition) {
 
 		return blocks.get(Position.wrap(blockGridPosition));
-	}
-
-	@Override
-	public void writeBlock(DataBlock<T> block) {
-		
-		addBlock(block);
 	}
 
 	public void addBlock(DataBlock<T> block) {
@@ -91,7 +89,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	public List<DataBlock<T>> getBlocks( int[] blockIndexes ) {
 
 		final ArrayList<DataBlock<T>> out = new ArrayList<>();
-		final int[] blocksPerShard = getDatasetAttributes().getBlocksPerShard();
+		final int[] blocksPerShard = getBlocksPerShard();
 
 		long[] position = new long[ getSize().length ];
 		for( int idx : blockIndexes ) {
@@ -105,10 +103,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 
 	protected IndexLocation indexLocation() {
 
-		if (index != null)
-			return index.getLocation();
-		else
-			return indexBuilder.getLocation();
+		return ((ShardParameters)datasetAttributes).getIndexLocation();
 	}
 
 	@Override
@@ -169,7 +164,9 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 			long[] shardPosition, final A attributes) throws IOException {
 
 		final ShardIndex index = attributes.createIndex();
-		ShardIndex.read(data, index);
+
+		final IndexLocation location = attributes.getIndexLocation();
+		ShardIndex.read(data, location, index);
 
 		final InMemoryShard<T> shard = new InMemoryShard<T>(attributes, shardPosition, index);
 		final GridIterator it = new GridIterator(attributes.getBlocksPerShard());
@@ -228,8 +225,8 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 			final OutputStream out,
 			InMemoryShard<T> shard ) throws IOException {
 
-		final A datasetAttributes = shard.getDatasetAttributes();
 
+		A datasetAttributes = (A) shard.getDatasetAttributes();
 		final ShardIndexBuilder indexBuilder = new ShardIndexBuilder(shard);
 		indexBuilder.indexLocation(IndexLocation.END);
 		indexBuilder.setCodecs(datasetAttributes.getShardingCodec().getIndexCodecs());
@@ -259,8 +256,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 			final OutputStream out,
 			InMemoryShard<T> shard ) throws IOException {
 
-		final A datasetAttributes = shard.getDatasetAttributes();
-
+		final A datasetAttributes = (A) shard.getDatasetAttributes();
 		final ShardIndexBuilder indexBuilder = new ShardIndexBuilder(shard);
 		indexBuilder.indexLocation(IndexLocation.END);
 		indexBuilder.setCodecs(datasetAttributes.getShardingCodec().getIndexCodecs());
@@ -280,7 +276,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 			final OutputStream out,
 			InMemoryShard<T> shard ) throws IOException {
 
-		final A datasetAttributes = shard.getDatasetAttributes();
+		final A datasetAttributes = (A)shard.getDatasetAttributes();
 		final ShardIndexBuilder indexBuilder = new ShardIndexBuilder(shard);
 		indexBuilder.indexLocation(IndexLocation.START);
 		indexBuilder.setCodecs(datasetAttributes.getShardingCodec().getIndexCodecs());

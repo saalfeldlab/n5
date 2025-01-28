@@ -111,7 +111,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		if (datasetAttributes instanceof ShardedDatasetAttributes) {
 			final ShardedDatasetAttributes shardedAttrs = (ShardedDatasetAttributes) datasetAttributes;
-			final long[] shardPosition = shardedAttrs.getShardPositionForBlock(gridPosition);
+			final long[] shardPosition = Shard.getShardPositionForBlock(shardedAttrs.getBlocksPerShard(), gridPosition);
 			final Shard<?> shard = readShard(pathName, shardedAttrs, shardPosition);
 			return shard.getBlock(gridPosition);
 		}

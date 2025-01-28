@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -32,7 +33,7 @@ public interface ShardParameters extends BlockParameters {
 	public IndexLocation getIndexLocation();
 
 	default ShardIndex createIndex() {
-		return new ShardIndex(getBlocksPerShard(), getIndexLocation(), getShardingCodec().getIndexCodecs());
+		return new ShardIndex(getBlocksPerShard(), getShardingCodec().getIndexCodecs());
 	}
 
 	/**
@@ -73,23 +74,7 @@ public interface ShardParameters extends BlockParameters {
 		}).toArray();
 	}
 
-	/**
-	 * Given a block's position relative to the array, returns the position of the shard containing that block relative to the shard grid.
-	 *
-	 * @param blockGridPosition
-	 *            position of a block relative to the array
-	 * @return the position of the containing shard in the shard grid
-	 */
-	default long[] getShardPositionForBlock(final long... blockGridPosition) {
 
-		final int[] blocksPerShard = getBlocksPerShard();
-		final long[] shardGridPosition = new long[blockGridPosition.length];
-		for (int i = 0; i < shardGridPosition.length; i++) {
-			shardGridPosition[i] = (int)Math.floor((double)blockGridPosition[i] / blocksPerShard[i]);
-		}
-
-		return shardGridPosition;
-	}
 	
 	/**
 	 * Returns the number of shards per dimension for the dataset.
@@ -114,15 +99,14 @@ public interface ShardParameters extends BlockParameters {
 	 */
 	default int[] getBlockPositionInShard(final long[] shardPosition, final long[] blockPosition) {
 
-		// TODO check correctness 
-		final long[] shardPos = getShardPositionForBlock(blockPosition);
+		final int[] blocksPerShard = getBlocksPerShard();
+		final long[] shardPos = Shard.getShardPositionForBlock(blocksPerShard, blockPosition);
 		if (!Arrays.equals(shardPosition, shardPos))
 			return null;
 
-		final int[] shardSize = getBlocksPerShard();
-		final int[] blockShardPos = new int[shardSize.length];
-		for (int i = 0; i < shardSize.length; i++) {
-			blockShardPos[i] = (int)(blockPosition[i] % shardSize[i]);
+		final int[] blockShardPos = new int[blocksPerShard.length];
+		for (int i = 0; i < blocksPerShard.length; i++) {
+			blockShardPos[i] = (int)(blockPosition[i] % blocksPerShard[i]);
 		}
 
 		return blockShardPos;
@@ -169,33 +153,31 @@ public interface ShardParameters extends BlockParameters {
 		return blockImagePos;
 	}
 
-	default Map<Position, List<long[]>> groupBlockPositions(final List<long[]> blockPositions) {
+	default <T> Map<Position, List<T>> groupByBlockPositions(final List<T> positionables,
+			final Function<T, long[]> getPosition) {
 
-		final TreeMap<Position, List<long[]>> map = new TreeMap<>();
-		for( final long[] blockPos : blockPositions ) {
-			Position shardPos = Position.wrap(getShardPositionForBlock(blockPos));
-			if( !map.containsKey(shardPos)) {
+		final int[] blocksPerShard = getBlocksPerShard();	
+		final TreeMap<Position, List<T>> map = new TreeMap<>();
+		for (final T t : positionables) {
+			final Position shardPos = Position.wrap(
+					Shard.getShardPositionForBlock(blocksPerShard, getPosition.apply(t)));
+			if (!map.containsKey(shardPos)) {
 				map.put(shardPos, new ArrayList<>());
 			}
-			map.get(shardPos).add(blockPos);
+			map.get(shardPos).add(t);
 		}
 
 		return map;
 	}
+
+	default Map<Position, List<long[]>> groupBlockPositions(final List<long[]> blockPositions) {
+
+		return groupByBlockPositions(blockPositions, x -> x);
+	}
 	
 	default <T> Map<Position, List<DataBlock<T>>> groupBlocks(final List<DataBlock<T>> blocks) {
 
-		// figure out how to re-use groupBlockPositions here?
-		final TreeMap<Position, List<DataBlock<T>>> map = new TreeMap<>();
-		for (final DataBlock<T> block : blocks) {
-			Position shardPos = Position.wrap(getShardPositionForBlock(block.getGridPosition()));
-			if (!map.containsKey(shardPos)) {
-				map.put(shardPos, new ArrayList<>());
-			}
-			map.get(shardPos).add(block);
-		}
-
-		return map;
+		return groupByBlockPositions(blocks, x -> x.getGridPosition());
 	}
 
 	/**

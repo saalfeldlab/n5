@@ -21,6 +21,7 @@ import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 public class VirtualShard<T> extends AbstractShard<T> {
@@ -57,7 +58,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 
 	@Override
 	public List<DataBlock<T>> getBlocks()  {
-		return getBlocks(IntStream.range(0, getNumBlocks()).toArray());
+		return getBlocks(IntStream.range(0, getNumElements()).toArray());
 	}
 
 	public List<DataBlock<T>> getBlocks(final int[] blockIndexes) {
@@ -122,7 +123,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	@Override
 	public DataBlock<T> getBlock(long... blockGridPosition) {
 
-		final int[] relativePosition = getBlockPosition(blockGridPosition);
+		final int[] relativePosition = relativeBlockPosition(blockGridPosition);
 		if (relativePosition == null)
 			throw new N5IOException("Attempted to read a block from the wrong shard.");
 
@@ -146,19 +147,19 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		}
 	}
 
-	@Override
 	public void writeBlock(final DataBlock<T> block) {
 
-		final int[] relativePosition = getBlockPosition(block.getGridPosition());
+		final int[] relativePosition = relativeBlockPosition(block.getGridPosition());
 		if (relativePosition == null)
 			throw new N5IOException("Attempted to write block in the wrong shard.");
 
 		final ShardIndex index = getIndex();
+		final IndexLocation indexLocation = getDatasetAttributes().getIndexLocation();
 		long startByte = 0;
 		try {
 			startByte = keyValueAccess.size(path);
 		} catch (N5Exception.N5NoSuchKeyException e) {
-			startByte = index.getLocation() == ShardingCodec.IndexLocation.START ? index.numBytes() : 0;
+			startByte = indexLocation == ShardingCodec.IndexLocation.START ? index.numBytes() : 0;
 		} catch (IOException e) {
 			throw new N5IOException(e);
 		}
@@ -178,7 +179,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		}
 
 		try {
-			ShardIndex.write(index, keyValueAccess, path);
+			ShardIndex.write(index, indexLocation, keyValueAccess, path);
 		} catch (IOException e) {
 			throw new N5IOException("Failed to write index to shard " + path, e);
 		}
@@ -194,7 +195,9 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	public ShardIndex getIndex() {
 
 		try {
-			final ShardIndex readIndex = ShardIndex.read(keyValueAccess, path, getDatasetAttributes().createIndex());
+			final ShardIndex readIndex = ShardIndex.read(keyValueAccess, path, 
+					getDatasetAttributes().getIndexLocation(),
+					getDatasetAttributes().createIndex());
 			index = readIndex == null ? createIndex() : readIndex;
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			index = createIndex();
