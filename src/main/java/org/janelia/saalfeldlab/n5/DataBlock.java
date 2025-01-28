@@ -71,20 +71,9 @@ public interface DataBlock<T> {
 	 */
 	T getData();
 
-	// TODO: Remove this later?
-	default byte[] serialize() {
-		return serialize(ByteOrder.BIG_ENDIAN);
-	}
-
 	byte[] serialize(ByteOrder byteOrder);
 
 	void deserialize(ByteOrder byteOrder, byte[] serialized);
-
-	// TODO: Remove this? readData() is not called in many places, so maybe it
-	//       is not worth cluttering the interface with this overload?
-	default void readData(ReadData readData) throws IOException {
-		readData(ByteOrder.BIG_ENDIAN, readData);
-	}
 
 	default void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
 		deserialize(byteOrder, readData.allBytes());
