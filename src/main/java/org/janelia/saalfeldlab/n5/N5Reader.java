@@ -32,6 +32,7 @@ import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 import java.net.URI;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -322,7 +323,7 @@ public interface N5Reader extends AutoCloseable {
 		if (block == null)
 			return null;
 
-		final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(block.serialize());
+		final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(block.serialize(ByteOrder.BIG_ENDIAN));
 		try (ObjectInputStream in = new ObjectInputStream(byteArrayInputStream)) {
 			return (T)in.readObject();
 		} catch (final IOException | UncheckedIOException e) {
