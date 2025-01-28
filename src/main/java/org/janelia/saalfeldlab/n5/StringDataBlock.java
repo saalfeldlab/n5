@@ -52,7 +52,6 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
 
 	@Override
 	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
-		// TODO: write benchmark, make more efficient
 		serializedData = serialized;
 		final String rawChars = new String(serialized, ENCODING);
 		actualData = rawChars.split(NULLCHAR);
