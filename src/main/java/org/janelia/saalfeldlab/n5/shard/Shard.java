@@ -9,7 +9,7 @@ import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 
-public interface Shard<T> extends Iterable<DataBlock<T>> {
+public interface Shard<T> extends Iterable<DataBlock<T>>, DataBlock<T> {
 
 	/**
 	 * Returns the number of blocks this shard contains along all dimensions.
@@ -95,7 +95,9 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		return shardGridPosition;
 	}
 
-	public DataBlock<T> getBlock(long... blockGridPosition);
+	public DataBlock<T> getChildBlock(long... relativeChildPosition);
+
+	public DataBlock<T> getBlock(long... absoluteBlockGridPosition);
 
 	public void writeBlock(DataBlock<T> block);
 
@@ -106,11 +108,21 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 	default int getNumBlocks() {
 
+		// TODO if we stick with having Shards be DataBlock<List<DataBlock>>
+		// then we can forget about this method and use getNumElements instead
 		return Arrays.stream(getBlockGridSize()).reduce(1, (x, y) -> x * y);
+	}
+
+	@Override
+	default int getNumElements() {
+
+		return getNumBlocks();
 	}
 
 	default List<DataBlock<T>> getBlocks() {
 
+		// TODO if we stick with having Shards be DataBlock<List<DataBlock>>
+		// then we can forget about this method and use getData
 		final List<DataBlock<T>> blocks = new ArrayList<>();
 		for (DataBlock<T> block : this) {
 			blocks.add(block);

@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -55,16 +56,17 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 
 		blocks.put(Position.wrap(block.getGridPosition()), block);
 	}
-
+	
 	/*
 	 * Returns the {@link DataBlock} given a block grid position.
 	 * <p>
 	 * The block grid position is relative to the image, not relative to this shard.
 	 */
-	@Override public DataBlock<T> getBlock(long... blockGridPosition) {
+	@Override public DataBlock<T> getChildBlock(long... relativeBlockPosition) {
 
-		return blocks.get(Position.wrap(blockGridPosition));
+		return blocks.get(Position.wrap(relativeBlockPosition));
 	}
+
 
 	@Override
 	public void writeBlock(DataBlock<T> block) {
@@ -81,11 +83,16 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 
 		return blocks.size();
 	}
-	
+
 	@Override
 	public List<DataBlock<T>> getBlocks() {
 
 		return new ArrayList<>(blocks.values());
+	}
+
+	@Override
+	public T getData() {
+		return null;
 	}
 
 	public List<DataBlock<T>> getBlocks( int[] blockIndexes ) {
@@ -307,5 +314,12 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		}
 
 	}
+
+	@Override
+	public ByteBuffer toByteBuffer() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 	
 }

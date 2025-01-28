@@ -29,6 +29,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * Interface for data blocks. A data block has data, a position on the block
@@ -39,7 +40,7 @@ import java.nio.ByteBuffer;
  *
  * @author Stephan Saalfeld
  */
-public interface DataBlock<T> {
+public interface DataBlock<T> extends DataBlockProvider<T> {
 
 	/**
 	 * Returns the size of this data block.
@@ -109,6 +110,14 @@ public interface DataBlock<T> {
 	 * @return the number of elements
 	 */
 	public int getNumElements();
+
+	default DataBlock<T> getBlock(long... blockGridPosition) {
+
+		if (Arrays.equals(blockGridPosition, getGridPosition()))
+			return this;
+		else
+			return null;
+	}
 
 	/**
 	 * Returns the number of elements in a box of given size.

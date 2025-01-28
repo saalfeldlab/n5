@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,6 +23,7 @@ import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
+import org.janelia.saalfeldlab.n5.util.Position;
 
 public class VirtualShard<T> extends AbstractShard<T> {
 
@@ -120,7 +122,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	}
 
 	@Override
-	public DataBlock<T> getBlock(long... blockGridPosition) {
+	public DataBlock<T> getChildBlock(long... blockGridPosition) {
 
 		final int[] relativePosition = getBlockPosition(blockGridPosition);
 		if (relativePosition == null)
@@ -245,5 +247,16 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		public long getNumBytes() {
 			return numBytes;
 		}
+	}
+
+	@Override
+	public T getData() {
+		return null;
+	}
+
+	@Override
+	public ByteBuffer toByteBuffer() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
