@@ -1,4 +1,5 @@
-# N5 [![Build Status](https://travis-ci.com/saalfeldlab/n5.svg?branch=master)](https://travis-ci.com/saalfeldlab/n5)
+# N5 [![Build Status](https://github.com/saalfeldlab/n5/actions/workflows/build.yml/badge.svg)](https://github.com/saalfeldlab/n5/actions/workflows/build.yml)
+
 
 The N5 API specifies the primitive operations needed to store large chunked n-dimensional tensors, and arbitrary meta-data in a hierarchy of groups similar to HDF5.
 
