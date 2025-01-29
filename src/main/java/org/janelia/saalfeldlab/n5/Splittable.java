@@ -49,8 +49,8 @@ public class Splittable {
 		 * This may use {@link #inputStream()} to read the data.
 		 * Because repeatedly calling {@link #inputStream()} may not work,
 		 * <ol>
-		 * <li>this method may fail with {@code IllegalStateException} if {@code inputStream()} was already called</li>,
-		 * <li>subsequent {@code inputStream()} calls may fail with {@code IllegalStateException}</li>,
+		 * <li>this method may fail with {@code IllegalStateException} if {@code inputStream()} was already called</li>
+		 * <li>subsequent {@code inputStream()} calls may fail with {@code IllegalStateException}</li>
 		 * </ol>
 		 *
 		 * @return all contained data as a byte[] array
