@@ -36,15 +36,15 @@ public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
 	}
 
 	@Override
-	public byte[] serialize(final ByteOrder byteOrder) {
+	public ByteBuffer serialize(final ByteOrder byteOrder) {
 		final ByteBuffer buffer = ByteBuffer.allocate(Short.BYTES * data.length);
 		buffer.order(byteOrder).asShortBuffer().put(data);
-		return buffer.array();
+		return buffer;
 	}
 
 	@Override
-	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
-		ByteBuffer.wrap(serialized).order(byteOrder).asShortBuffer().get(data);
+	public void deserialize(final ByteBuffer serialized) {
+		serialized.asShortBuffer().get(data);
 	}
 
 	@Override

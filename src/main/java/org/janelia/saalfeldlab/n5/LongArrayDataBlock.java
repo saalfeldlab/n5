@@ -36,15 +36,15 @@ public class LongArrayDataBlock extends AbstractDataBlock<long[]> {
 	}
 
 	@Override
-	public byte[] serialize(final ByteOrder byteOrder) {
+	public ByteBuffer serialize(final ByteOrder byteOrder) {
 		final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * data.length);
 		buffer.order(byteOrder).asLongBuffer().put(data);
-		return buffer.array();
+		return buffer;
 	}
 
 	@Override
-	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
-		ByteBuffer.wrap(serialized).order(byteOrder).asLongBuffer().get(data);
+	public void deserialize(final ByteBuffer serialized) {
+		serialized.asLongBuffer().get(data);
 	}
 
 	@Override

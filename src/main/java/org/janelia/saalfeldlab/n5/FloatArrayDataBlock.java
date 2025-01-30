@@ -36,15 +36,15 @@ public class FloatArrayDataBlock extends AbstractDataBlock<float[]> {
 	}
 
 	@Override
-	public byte[] serialize(final ByteOrder byteOrder) {
+	public ByteBuffer serialize(final ByteOrder byteOrder) {
 		final ByteBuffer buffer = ByteBuffer.allocate(Float.BYTES * data.length);
 		buffer.order(byteOrder).asFloatBuffer().put(data);
-		return buffer.array();
+		return buffer;
 	}
 
 	@Override
-	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
-		ByteBuffer.wrap(serialized).order(byteOrder).asFloatBuffer().get(data);
+	public void deserialize(final ByteBuffer serialized) {
+		serialized.asFloatBuffer().get(data);
 	}
 
 	@Override

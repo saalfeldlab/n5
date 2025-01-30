@@ -27,10 +27,10 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 public class StringDataBlock extends AbstractDataBlock<String[]> {
 
@@ -45,22 +45,22 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
 	}
 
 	@Override
-	public byte[] serialize(final ByteOrder byteOrder) {
+	public ByteBuffer serialize(final ByteOrder byteOrder) {
 		final String flattenedArray = String.join(NULLCHAR, actualData) + NULLCHAR;
-		return flattenedArray.getBytes(ENCODING);
+		return ByteBuffer.wrap(flattenedArray.getBytes(ENCODING));
 	}
 
 	@Override
-	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
-		serializedData = serialized;
-		final String rawChars = new String(serialized, ENCODING);
+	public void deserialize(final ByteBuffer serialized) {
+		serializedData = serialized.array();
+		final String rawChars = new String(serializedData, ENCODING);
 		actualData = rawChars.split(NULLCHAR);
 	}
 
 	@Override
 	public void writeData(final ByteOrder byteOrder, final OutputStream outputStream) throws IOException {
 		if (serializedData == null) {
-			serializedData = serialize(byteOrder);
+			serializedData = serialize(byteOrder).array();
 		}
 		outputStream.write(serializedData);
 	}
@@ -68,7 +68,7 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
 	@Override
 	public int getNumElements() {
 		if (serializedData == null) {
-			serializedData = serialize(ByteOrder.BIG_ENDIAN);
+			serializedData = serialize(ByteOrder.BIG_ENDIAN).array();
 		}
 		return serializedData.length;
 	}

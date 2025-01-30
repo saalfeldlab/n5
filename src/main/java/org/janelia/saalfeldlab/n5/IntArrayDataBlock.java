@@ -35,21 +35,16 @@ public class IntArrayDataBlock extends AbstractDataBlock<int[]> {
 		super(size, gridPosition, data);
 	}
 
-	public void readData(final ByteBuffer buffer) {
-
-		buffer.asIntBuffer().get(data);
-	}
-
 	@Override
-	public byte[] serialize(final ByteOrder byteOrder) {
+	public ByteBuffer serialize(final ByteOrder byteOrder) {
 		final ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES * data.length);
 		buffer.order(byteOrder).asIntBuffer().put(data);
-		return buffer.array();
+		return buffer;
 	}
 
 	@Override
-	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
-		ByteBuffer.wrap(serialized).order(byteOrder).asIntBuffer().get(data);
+	public void deserialize(final ByteBuffer serialized) {
+		serialized.asIntBuffer().get(data);
 	}
 
 	@Override
