@@ -36,15 +36,15 @@ public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 	}
 
 	@Override
-	public byte[] serialize(final ByteOrder byteOrder) {
+	public ByteBuffer serialize(final ByteOrder byteOrder) {
 		final ByteBuffer buffer = ByteBuffer.allocate(Double.BYTES * data.length);
 		buffer.order(byteOrder).asDoubleBuffer().put(data);
-		return buffer.array();
+		return buffer;
 	}
 
 	@Override
-	public void deserialize(final ByteOrder byteOrder, final byte[] serialized) {
-		ByteBuffer.wrap(serialized).order(byteOrder).asDoubleBuffer().get(data);
+	public void deserialize(final ByteBuffer serialized) {
+		serialized.asDoubleBuffer().get(data);
 	}
 
 	@Override

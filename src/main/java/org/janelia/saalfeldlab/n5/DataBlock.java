@@ -71,16 +71,16 @@ public interface DataBlock<T> {
 	 */
 	T getData();
 
-	byte[] serialize(ByteOrder byteOrder);
+	ByteBuffer serialize(ByteOrder byteOrder);
 
-	void deserialize(ByteOrder byteOrder, byte[] serialized);
+	void deserialize(ByteBuffer serialized);
 
 	default void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
-		deserialize(byteOrder, readData.allBytes());
+		deserialize(ByteBuffer.wrap(readData.allBytes()).order(byteOrder));
 	}
 
 	default void writeData(final ByteOrder byteOrder, final OutputStream outputStream) throws IOException {
-		outputStream.write(serialize(byteOrder));
+		outputStream.write(serialize(byteOrder).array());
 	};
 
 	/**
