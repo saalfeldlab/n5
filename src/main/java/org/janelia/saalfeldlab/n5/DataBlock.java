@@ -26,11 +26,10 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import org.janelia.saalfeldlab.n5.Splittable.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.ByteArraySplittableReadData;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
  * Interface for data blocks. A data block has data, a position on the block
@@ -79,9 +78,9 @@ public interface DataBlock<T> {
 		deserialize(ByteBuffer.wrap(readData.allBytes()).order(byteOrder));
 	}
 
-	default void writeData(final ByteOrder byteOrder, final OutputStream outputStream) throws IOException {
-		outputStream.write(serialize(byteOrder).array());
-	};
+	default ReadData writeData(final ByteOrder byteOrder) {
+		return new ByteArraySplittableReadData(serialize(byteOrder).array());
+	}
 
 	/**
 	 * Returns the number of elements in this {@link DataBlock}. This number is

@@ -29,7 +29,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import org.janelia.saalfeldlab.n5.Splittable.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 public class ByteArrayDataBlock extends AbstractDataBlock<byte[]> {
 

@@ -32,11 +32,13 @@ import java.io.OutputStream;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
-
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipParameters;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.readdata.EncodedReadData;
+import org.janelia.saalfeldlab.n5.readdata.EncodedReadData.EncodedOutputStream;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 @CompressionType("gzip")
 public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
@@ -102,6 +104,22 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 		else {
 			final GzipCompression gz = ((GzipCompression)other);
 			return useZlib == gz.useZlib && level == gz.level;
+		}
+	}
+
+	@Override
+	public ReadData encode(final ReadData readData) {
+		if (useZlib) {
+			return new EncodedReadData(readData, out -> {
+				final DeflaterOutputStream deflater = new DeflaterOutputStream(out, new Deflater(level));
+				return new EncodedOutputStream(deflater, deflater::finish);
+			});
+		} else {
+			return new EncodedReadData(readData, out -> {
+				parameters.setCompressionLevel(level);
+				final GzipCompressorOutputStream deflater = new GzipCompressorOutputStream(out, parameters);
+				return new EncodedOutputStream(deflater, deflater::finish);
+			});
 		}
 	}
 }

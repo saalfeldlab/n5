@@ -28,10 +28,11 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.readdata.EncodedReadData;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 @CompressionType("xz")
 public class XzCompression implements Compression {
@@ -70,5 +71,13 @@ public class XzCompression implements Compression {
 			return false;
 		else
 			return preset == ((XzCompression)other).preset;
+	}
+
+	@Override
+	public ReadData encode(final ReadData readData) {
+		return new EncodedReadData(readData, out -> {
+			final XZCompressorOutputStream deflater = new XZCompressorOutputStream(out, preset);
+			return new EncodedReadData.EncodedOutputStream(deflater, deflater::finish);
+		});
 	}
 }
