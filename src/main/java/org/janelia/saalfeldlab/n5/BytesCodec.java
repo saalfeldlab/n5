@@ -3,6 +3,7 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 public interface BytesCodec {
 
@@ -23,4 +24,22 @@ public interface BytesCodec {
 	 * @return the encoded output stream
 	 */
 	OutputStream encode(OutputStream out) throws IOException;
+
+	/**
+	 * TODO javadoc
+	 *
+	 * @param readData
+	 * @return
+	 */
+	ReadData encode(ReadData readData) throws IOException;
+
+	/**
+	 * TODO javadoc
+	 *
+	 * @param readData
+	 * @return
+	 */
+	default ReadData decode(ReadData readData) {
+		throw new UnsupportedOperationException();
+	}
 }

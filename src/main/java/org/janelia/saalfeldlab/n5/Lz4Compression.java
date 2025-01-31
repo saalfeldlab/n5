@@ -33,6 +33,9 @@ import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
+import org.janelia.saalfeldlab.n5.readdata.EncodedReadData;
+import org.janelia.saalfeldlab.n5.readdata.EncodedReadData.EncodedOutputStream;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 @CompressionType("lz4")
 public class Lz4Compression implements DefaultBlockReader, DefaultBlockWriter, Compression {
@@ -71,5 +74,13 @@ public class Lz4Compression implements DefaultBlockReader, DefaultBlockWriter, C
 			return false;
 		else
 			return blockSize == ((Lz4Compression)other).blockSize;
+	}
+
+	@Override
+	public ReadData encode(final ReadData readData) {
+		return new EncodedReadData(readData, out -> {
+			final LZ4BlockOutputStream deflater = new LZ4BlockOutputStream(out, blockSize);
+			return new EncodedOutputStream(deflater, deflater::finish);
+		});
 	}
 }

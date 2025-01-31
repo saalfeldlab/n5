@@ -29,8 +29,8 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteOrder;
-import org.janelia.saalfeldlab.n5.Splittable.InputStreamReadData;
-import org.janelia.saalfeldlab.n5.Splittable.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.InputStreamReadData;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
  * Default implementation of block reading (N5 format).

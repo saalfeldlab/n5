@@ -28,8 +28,10 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.readdata.EncodedReadData;
+import org.janelia.saalfeldlab.n5.readdata.EncodedReadData.EncodedOutputStream;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 @CompressionType("raw")
 public class RawCompression implements DefaultBlockWriter, Compression {
@@ -55,5 +57,10 @@ public class RawCompression implements DefaultBlockWriter, Compression {
 			return false;
 		else
 			return true;
+	}
+
+	@Override
+	public ReadData encode(final ReadData readData) {
+		return new EncodedReadData(readData, out -> new EncodedOutputStream(out, out::flush));
 	}
 }

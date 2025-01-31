@@ -28,7 +28,6 @@ package org.janelia.saalfeldlab.n5;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
@@ -79,8 +78,9 @@ public interface DefaultBlockWriter {
 
 		dos.flush();
 
-		try (final OutputStream deflater = datasetAttributes.getCompression().encode(out)) {
-			dataBlock.writeData(ByteOrder.BIG_ENDIAN, deflater);
-		}
+		dataBlock.writeData(ByteOrder.BIG_ENDIAN)
+				.encode(datasetAttributes.getCompression())
+				.writeTo(out);
+		out.flush();
 	}
 }
