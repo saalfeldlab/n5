@@ -31,6 +31,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import org.janelia.saalfeldlab.n5.readdata.ByteArraySplittableReadData;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 public class StringDataBlock extends AbstractDataBlock<String[]> {
 
@@ -55,14 +57,6 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
 		serializedData = serialized.array();
 		final String rawChars = new String(serializedData, ENCODING);
 		actualData = rawChars.split(NULLCHAR);
-	}
-
-	@Override
-	public void writeData(final ByteOrder byteOrder, final OutputStream outputStream) throws IOException {
-		if (serializedData == null) {
-			serializedData = serialize(byteOrder).array();
-		}
-		outputStream.write(serializedData);
 	}
 
 	@Override

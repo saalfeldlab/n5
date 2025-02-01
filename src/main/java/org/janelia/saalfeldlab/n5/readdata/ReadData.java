@@ -93,4 +93,9 @@ public interface ReadData {
 	default ReadData encode(BytesCodec codec) throws IOException {
 		return codec.encode(this);
 	}
+
+	// TODO: WIP, exploring API options...
+	default ReadData decode(BytesCodec codec) throws IOException {
+		return codec.decode(this);
+	}
 }
