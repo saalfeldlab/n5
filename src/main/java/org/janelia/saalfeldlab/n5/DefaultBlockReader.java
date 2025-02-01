@@ -79,13 +79,20 @@ public interface DefaultBlockReader {
 			dataBlock = dataType.createDataBlock(null, gridPosition, numElements);
 		}
 
-		try (final InputStream inflater = datasetAttributes.getCompression().decode(in)) {
-			final int numBytes = dataType.isVarLength()
-					? numElements
-					: (numElements * dataType.bytesPerElement());
-			final ReadData data = new InputStreamReadData(inflater, numBytes);
-			dataBlock.readData(ByteOrder.BIG_ENDIAN, data);
-		}
+		final int numBytes = dataType.isVarLength()
+				? numElements
+				: (numElements * dataType.bytesPerElement());
+		ReadData data = new InputStreamReadData(in);
+		data = new InputStreamReadData(data.decode(datasetAttributes.getCompression()).inputStream(), numBytes);
+		dataBlock.readData(ByteOrder.BIG_ENDIAN, data);
+
+//		try (final InputStream inflater = datasetAttributes.getCompression().decode(in)) {
+//			final int numBytes = dataType.isVarLength()
+//					? numElements
+//					: (numElements * dataType.bytesPerElement());
+//			final ReadData data = new InputStreamReadData(inflater, numBytes);
+//			dataBlock.readData(ByteOrder.BIG_ENDIAN, data);
+//		}
 
 		return dataBlock;
 	}
