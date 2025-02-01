@@ -82,17 +82,9 @@ public interface DefaultBlockReader {
 		final int numBytes = dataType.isVarLength()
 				? numElements
 				: (numElements * dataType.bytesPerElement());
-		ReadData data = new InputStreamReadData(in);
-		data = new InputStreamReadData(data.decode(datasetAttributes.getCompression()).inputStream(), numBytes);
+		final ReadData data = new InputStreamReadData(in)
+				.decode(datasetAttributes.getCompression(), numBytes);
 		dataBlock.readData(ByteOrder.BIG_ENDIAN, data);
-
-//		try (final InputStream inflater = datasetAttributes.getCompression().decode(in)) {
-//			final int numBytes = dataType.isVarLength()
-//					? numElements
-//					: (numElements * dataType.bytesPerElement());
-//			final ReadData data = new InputStreamReadData(inflater, numBytes);
-//			dataBlock.readData(ByteOrder.BIG_ENDIAN, data);
-//		}
 
 		return dataBlock;
 	}

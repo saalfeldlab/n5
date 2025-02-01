@@ -96,6 +96,11 @@ public interface ReadData {
 
 	// TODO: WIP, exploring API options...
 	default ReadData decode(BytesCodec codec) throws IOException {
-		return codec.decode(this);
+		return decode(codec, -1);
+	}
+
+	// TODO: WIP, exploring API options...
+	default ReadData decode(BytesCodec codec, int decodedLength) throws IOException {
+		return codec.decode(this, decodedLength);
 	}
 }
