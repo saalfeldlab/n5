@@ -51,7 +51,7 @@ public class RawCompression implements Compression, DeterministicSizeDataCodec {
 	}
 
 	@Override
-	public ReadData decode(final ReadData readData) {
+	public ReadData decode(final ReadData readData, int decodedLength) {
 		return readData;
 	}
 
