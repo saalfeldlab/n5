@@ -30,11 +30,12 @@ public interface BytesCodec {
 	 * TODO javadoc
 	 *
 	 * @param readData
+	 * @param decodedLength -1 if unknown
 	 * @return
+	 * @throws IOException
 	 */
-	// TODO add variant that knows the length of the decoded ReadData
-	default ReadData decode(ReadData readData) throws IOException {
-		return new InputStreamReadData(decode(readData.inputStream()));
+	default ReadData decode(ReadData readData, int decodedLength) throws IOException {
+		return new InputStreamReadData(decode(readData.inputStream()), decodedLength);
 	}
 
 	/**
