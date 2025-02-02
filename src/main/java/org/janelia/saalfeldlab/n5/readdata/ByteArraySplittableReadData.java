@@ -5,17 +5,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
-public class ByteArraySplittableReadData implements SplittableReadData {
+class ByteArraySplittableReadData implements SplittableReadData {
 
 	private final byte[] data;
 	private final int offset;
 	private final int length;
 
-	public ByteArraySplittableReadData(final byte[] data) {
+	ByteArraySplittableReadData(final byte[] data) {
 		this(data, 0, data.length);
 	}
 
-	public ByteArraySplittableReadData(final byte[] data, final int offset, final int length) {
+	ByteArraySplittableReadData(final byte[] data, final int offset, final int length) {
 		this.data = data;
 		this.offset = offset;
 		this.length = length;
