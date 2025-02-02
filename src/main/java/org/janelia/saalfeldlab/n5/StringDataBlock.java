@@ -25,14 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import org.janelia.saalfeldlab.n5.readdata.ByteArraySplittableReadData;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 public class StringDataBlock extends AbstractDataBlock<String[]> {
 

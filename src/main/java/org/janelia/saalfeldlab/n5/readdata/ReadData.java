@@ -3,7 +3,9 @@ package org.janelia.saalfeldlab.n5.readdata;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import org.janelia.saalfeldlab.n5.BytesCodec;
+import org.janelia.saalfeldlab.n5.KeyValueAccess;
 
 public interface ReadData {
 
@@ -95,6 +97,11 @@ public interface ReadData {
 	}
 
 	// TODO: WIP, exploring API options...
+	default ReadData encode(OutputStreamEncoder encoder) {
+		return new EncodedReadData(this, encoder);
+	}
+
+	// TODO: WIP, exploring API options...
 	default ReadData decode(BytesCodec codec) throws IOException {
 		return decode(codec, -1);
 	}
@@ -103,4 +110,36 @@ public interface ReadData {
 	default ReadData decode(BytesCodec codec, int decodedLength) throws IOException {
 		return codec.decode(this, decodedLength);
 	}
+
+
+	// --------------- Factory Methods ------------------
+
+	static ReadData from(final InputStream inputStream, final int length) {
+		return new InputStreamReadData(inputStream, length);
+	}
+
+	static ReadData from(final InputStream inputStream) {
+		return from(inputStream, -1);
+	}
+
+	static ReadData from(final KeyValueAccess keyValueAccess, final String normalPath) {
+		return new KeyValueAccessReadData(keyValueAccess, normalPath);
+	}
+
+	static ReadData from(final byte[] data, final int offset, final int length) {
+		return new ByteArraySplittableReadData(data, offset, length);
+	}
+
+	static ReadData from(final byte[] data) {
+		return from(data, 0, data.length);
+	}
+
+	static ReadData from(final ByteBuffer data) {
+		if (data.hasArray()) {
+			return from(data.array(), 0, data.limit());
+		} else {
+			throw new UnsupportedOperationException("TODO. Direct ByteBuffer not supported yet.");
+		}
+	}
+
 }

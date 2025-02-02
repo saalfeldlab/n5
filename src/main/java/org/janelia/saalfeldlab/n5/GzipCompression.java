@@ -36,8 +36,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipParameters;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
-import org.janelia.saalfeldlab.n5.readdata.EncodedReadData;
-import org.janelia.saalfeldlab.n5.readdata.EncodedReadData.EncodedOutputStream;
+import org.janelia.saalfeldlab.n5.readdata.OutputStreamEncoder.EncodedOutputStream;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 @CompressionType("gzip")
@@ -110,12 +109,12 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	@Override
 	public ReadData encode(final ReadData readData) {
 		if (useZlib) {
-			return new EncodedReadData(readData, out -> {
+			return readData.encode(out -> {
 				final DeflaterOutputStream deflater = new DeflaterOutputStream(out, new Deflater(level));
 				return new EncodedOutputStream(deflater, deflater::finish);
 			});
 		} else {
-			return new EncodedReadData(readData, out -> {
+			return readData.encode(out -> {
 				parameters.setCompressionLevel(level);
 				final GzipCompressorOutputStream deflater = new GzipCompressorOutputStream(out, parameters);
 				return new EncodedOutputStream(deflater, deflater::finish);

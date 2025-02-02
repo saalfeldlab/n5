@@ -3,7 +3,6 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import org.janelia.saalfeldlab.n5.readdata.InputStreamReadData;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 public interface BytesCodec {
@@ -35,7 +34,7 @@ public interface BytesCodec {
 	 * @throws IOException
 	 */
 	default ReadData decode(ReadData readData, int decodedLength) throws IOException {
-		return new InputStreamReadData(decode(readData.inputStream()), decodedLength);
+		return ReadData.from(decode(readData.inputStream()), decodedLength);
 	}
 
 	/**

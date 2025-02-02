@@ -6,12 +6,12 @@ import java.io.InputStream;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
 
-public class KeyValueAccessReadData extends AbstractInputStreamReadData {
+class KeyValueAccessReadData extends AbstractInputStreamReadData {
 
 	private final KeyValueAccess keyValueAccess;
 	private final String normalPath;
 
-	public KeyValueAccessReadData(final KeyValueAccess keyValueAccess, final String normalPath) {
+	KeyValueAccessReadData(final KeyValueAccess keyValueAccess, final String normalPath) {
 		this.keyValueAccess = keyValueAccess;
 		this.normalPath = normalPath;
 	}

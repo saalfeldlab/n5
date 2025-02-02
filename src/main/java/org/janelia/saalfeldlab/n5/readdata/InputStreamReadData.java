@@ -3,18 +3,14 @@ package org.janelia.saalfeldlab.n5.readdata;
 import java.io.InputStream;
 
 // not thread-safe
-public class InputStreamReadData extends AbstractInputStreamReadData {
+class InputStreamReadData extends AbstractInputStreamReadData {
 
 	private final InputStream inputStream;
 	private final int length;
 
-	public InputStreamReadData(final InputStream inputStream, final int length) {
+	InputStreamReadData(final InputStream inputStream, final int length) {
 		this.inputStream = inputStream;
 		this.length = length;
-	}
-
-	public InputStreamReadData(final InputStream inputStream) {
-		this(inputStream, -1);
 	}
 
 	@Override

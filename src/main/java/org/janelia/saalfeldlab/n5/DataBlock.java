@@ -28,7 +28,6 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import org.janelia.saalfeldlab.n5.readdata.ByteArraySplittableReadData;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
@@ -79,7 +78,7 @@ public interface DataBlock<T> {
 	}
 
 	default ReadData writeData(final ByteOrder byteOrder) {
-		return new ByteArraySplittableReadData(serialize(byteOrder).array());
+		return ReadData.from(serialize(byteOrder));
 	}
 
 	/**
