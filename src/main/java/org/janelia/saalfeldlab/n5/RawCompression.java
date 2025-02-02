@@ -25,14 +25,13 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 @CompressionType("raw")
-public class RawCompression implements DefaultBlockWriter, Compression {
+public class RawCompression implements Compression {
 
 	private static final long serialVersionUID = 7526445806847086477L;
 

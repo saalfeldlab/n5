@@ -37,7 +37,7 @@ import org.janelia.saalfeldlab.n5.readdata.OutputStreamEncoder.EncodedOutputStre
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 @CompressionType("lz4")
-public class Lz4Compression implements DefaultBlockReader, DefaultBlockWriter, Compression {
+public class Lz4Compression implements Compression {
 
 	private static final long serialVersionUID = -9071316415067427256L;
 
@@ -55,13 +55,13 @@ public class Lz4Compression implements DefaultBlockReader, DefaultBlockWriter, C
 	}
 
 	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
+	public InputStream getInputStream(final InputStream in) {
 
 		return new LZ4BlockInputStream(in);
 	}
 
 	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
+	public OutputStream getOutputStream(final OutputStream out) {
 
 		return new LZ4BlockOutputStream(out, blockSize);
 	}

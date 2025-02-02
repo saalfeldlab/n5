@@ -40,7 +40,7 @@ import org.janelia.saalfeldlab.n5.readdata.OutputStreamEncoder.EncodedOutputStre
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 @CompressionType("gzip")
-public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
+public class GzipCompression implements Compression {
 
 	private static final long serialVersionUID = 8630847239813334263L;
 
