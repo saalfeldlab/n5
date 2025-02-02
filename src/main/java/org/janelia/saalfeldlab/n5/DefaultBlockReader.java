@@ -29,7 +29,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteOrder;
-import org.janelia.saalfeldlab.n5.readdata.InputStreamReadData;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
@@ -82,7 +81,7 @@ public interface DefaultBlockReader {
 		final int numBytes = dataType.isVarLength()
 				? numElements
 				: (numElements * dataType.bytesPerElement());
-		final ReadData data = new InputStreamReadData(in)
+		final ReadData data = ReadData.from(in)
 				.decode(datasetAttributes.getCompression(), numBytes);
 		dataBlock.readData(ByteOrder.BIG_ENDIAN, data);
 
