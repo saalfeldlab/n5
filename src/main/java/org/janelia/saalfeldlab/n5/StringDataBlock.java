@@ -25,10 +25,11 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.nio.ByteBuffer;
+import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 public class StringDataBlock extends AbstractDataBlock<String[]> {
 
@@ -43,24 +44,28 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
 	}
 
 	@Override
-	public ByteBuffer serialize(final ByteOrder byteOrder) {
-		final String flattenedArray = String.join(NULLCHAR, actualData) + NULLCHAR;
-		return ByteBuffer.wrap(flattenedArray.getBytes(ENCODING));
-	}
-
-	@Override
-	public void deserialize(final ByteBuffer serialized) {
-		serializedData = serialized.array();
+	public void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
+		serializedData = readData.allBytes();
 		final String rawChars = new String(serializedData, ENCODING);
 		actualData = rawChars.split(NULLCHAR);
 	}
 
+	private byte[] serialize() {
+		if (serializedData == null) {
+			final String flattenedArray = String.join(NULLCHAR, actualData) + NULLCHAR;
+			serializedData = flattenedArray.getBytes(ENCODING);
+		}
+		return serializedData;
+	}
+
+	@Override
+	public ReadData writeData(final ByteOrder byteOrder) {
+		return ReadData.from(serialize());
+	}
+
 	@Override
 	public int getNumElements() {
-		if (serializedData == null) {
-			serializedData = serialize(ByteOrder.BIG_ENDIAN).array();
-		}
-		return serializedData.length;
+		return serialize().length;
 	}
 
 	@Override
