@@ -25,11 +25,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -74,37 +69,5 @@ public interface Compression extends BytesCodec, Serializable {
 			return null;
 		else
 			return compressionType.value();
-	}
-
-	// ---------------------------------------------------------------------------------
-	// TODO. clean up interface hierarchy.
-	//       getInputStream and getOutputStream are duplicated here from DefaultBlockReader/Writer
-	//       to allow for default implementation of decode/encode (which are copied from wip/codecsShards).
-	InputStream getInputStream(final InputStream in) throws IOException;
-
-	OutputStream getOutputStream(final OutputStream out) throws IOException;
-
-	/**
-	 * Decode an {@link InputStream}.
-	 *
-	 * @param in
-	 *            input stream
-	 * @return the decoded input stream
-	 */
-	@Override
-	default InputStream decode(final InputStream in) throws IOException {
-		return getInputStream(in);
-	}
-
-	/**
-	 * Encode an {@link OutputStream}.
-	 *
-	 * @param out
-	 *            the output stream
-	 * @return the encoded output stream
-	 */
-	@Override
-	default OutputStream encode(final OutputStream out) throws IOException {
-		return getOutputStream(out);
 	}
 }

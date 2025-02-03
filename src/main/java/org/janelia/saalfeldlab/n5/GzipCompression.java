@@ -27,8 +27,6 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.OutputStream;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
@@ -69,33 +67,6 @@ public class GzipCompression implements Compression {
 	}
 
 	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
-
-		if (useZlib) {
-			return new InflaterInputStream(in);
-		} else {
-			return new GzipCompressorInputStream(in, true);
-		}
-	}
-
-	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
-
-		if (useZlib) {
-			return new DeflaterOutputStream(out, new Deflater(level));
-		} else {
-			parameters.setCompressionLevel(level);
-			return new GzipCompressorOutputStream(out, parameters);
-		}
-	}
-
-	private void readObject(final ObjectInputStream in) throws Exception {
-
-		in.defaultReadObject();
-		ReflectionUtils.setFieldValue(this, "parameters", new GzipParameters());
-	}
-
-	@Override
 	public boolean equals(final Object other) {
 
 		if (other == null || other.getClass() != GzipCompression.class)
@@ -104,6 +75,20 @@ public class GzipCompression implements Compression {
 			final GzipCompression gz = ((GzipCompression)other);
 			return useZlib == gz.useZlib && level == gz.level;
 		}
+	}
+
+	private InputStream decode(final InputStream in) throws IOException {
+		if (useZlib) {
+			return new InflaterInputStream(in);
+		} else {
+			return new GzipCompressorInputStream(in, true);
+		}
+	}
+
+	@Override
+	public ReadData decode(final ReadData readData, final int decodedLength) throws IOException {
+		final InputStream inflater = decode(readData.inputStream());
+		return ReadData.from(inflater, decodedLength);
 	}
 
 	@Override
