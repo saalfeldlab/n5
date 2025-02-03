@@ -147,7 +147,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		else
 			blockOffset = splitableData.getSize();
 
-		final SplitableData blockData = splitableData.split(blockOffset, Long.MAX_VALUE);
+		final SplitableData blockData = splitableData.split(blockOffset, Long.MAX_VALUE - blockOffset); //TODO Caleb: Should ideally remove offset also, but would need it to be absolute
 
 		final long sizeWritten;
 		try (final OutputStream blockOut = blockData.newOutputStream()) {
