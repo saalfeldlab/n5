@@ -77,6 +77,28 @@ public interface ReadData {
 	byte[] allBytes() throws IOException, IllegalStateException;
 
 	/**
+	 * Return the contained data as a {@code ByteBuffer}.
+	 * <p>
+	 * This may use {@link #inputStream()} to read the data.
+	 * Because repeatedly calling {@link #inputStream()} may not work,
+	 * <ol>
+	 * <li>this method may fail with {@code IllegalStateException} if {@code inputStream()} was already called</li>
+	 * <li>subsequent {@code inputStream()} calls may fail with {@code IllegalStateException}</li>
+	 * </ol>
+	 * The byte order of the returned {@code ByteBuffer} is {@code BIG_ENDIAN}.
+	 *
+	 * @return all contained data as a ByteBuffer
+	 *
+	 * @throws IOException
+	 * 		if any I/O error occurs
+	 * @throws IllegalStateException
+	 * 		if {@link #inputStream()} was already called once and cannot be called again.
+	 */
+	default ByteBuffer toByteBuffer() throws IOException, IllegalStateException {
+		return ByteBuffer.wrap(allBytes());
+	}
+
+	/**
 	 * If this {@code ReadData} is a {@code SplittableReadData}, just returns {@code this}.
 	 * <p>
 	 * Otherwise, if the underlying data is an {@code InputStream}, all data is read and
@@ -113,8 +135,6 @@ public interface ReadData {
  	//
 	// ------------- Encoding / Decoding ----------------
 	//
-
-	// TODO: WIP, exploring API options...
 
 	/**
 	 * Returns a new ReadData that uses the given {@code Codec} to encode this

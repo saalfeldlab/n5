@@ -38,16 +38,15 @@ public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 	}
 
 	@Override
+	public void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
+		readData.toByteBuffer().order(byteOrder).asDoubleBuffer().get(data);
+	}
+
+	@Override
 	public ReadData writeData(final ByteOrder byteOrder) {
 		final ByteBuffer serialized = ByteBuffer.allocate(Double.BYTES * data.length);
 		serialized.order(byteOrder).asDoubleBuffer().put(data);
 		return ReadData.from(serialized);
-	}
-
-	@Override
-	public void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
-		final ByteBuffer serialized = ByteBuffer.wrap(readData.allBytes());
-		serialized.order(byteOrder).asDoubleBuffer().get(data);
 	}
 
 	@Override
