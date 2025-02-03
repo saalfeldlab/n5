@@ -68,7 +68,6 @@ public class SplitKeyValueAccessData implements SplitableData {
 	@Override
 	public SplitableData split(@Nonnegative long offset, long size) {
 
-		final long newOffset = this.offset + offset;
-		return new SplitKeyValueAccessData(access, key, newOffset, size - newOffset);
+		return new SplitKeyValueAccessData(access, key, getOffset() + offset, size);
 	}
 }

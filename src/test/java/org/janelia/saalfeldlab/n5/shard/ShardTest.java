@@ -41,9 +41,9 @@ public class ShardTest {
 	public static Collection<Object[]> data() {
 
 		final ArrayList<Object[]> params = new ArrayList<>();
-		//		final IndexLocation[] locs = new IndexLocation[]{IndexLocation.END};
-		//		final ByteOrder[] byteCodecs = {ByteOrder.BIG_ENDIAN};
-		//		final ByteOrder[] indexCodecs = {ByteOrder.BIG_ENDIAN};
+//		final IndexLocation[] locs = new IndexLocation[]{IndexLocation.END};
+//		final ByteOrder[] byteCodecs = {ByteOrder.BIG_ENDIAN};
+//		final ByteOrder[] indexCodecs = {ByteOrder.BIG_ENDIAN};
 		final IndexLocation[] locs = IndexLocation.values();
 		final ByteOrder[] byteCodecs = {ByteOrder.BIG_ENDIAN, ByteOrder.LITTLE_ENDIAN};
 		final ByteOrder[] indexCodecs = {ByteOrder.BIG_ENDIAN, ByteOrder.LITTLE_ENDIAN};
@@ -204,10 +204,10 @@ public class ShardTest {
 	public void writeReadBlockTest() {
 
 		final N5Writer writer = tempN5Factory.createTempN5Writer();
-		//		final N5Writer writer = N5Factory.createWriter("n5:src/test/resources/shardExamples/writeReadBlockTest.n5");
 		final DatasetAttributes datasetAttributes = getTestAttributes();
 
 		final String dataset = "writeReadBlock";
+		writer.remove(dataset);
 		writer.createDataset(dataset, datasetAttributes);
 		writer.deleteBlock(dataset, 0, 0); //TODO Caleb: We are abusing this here. It shouldn't delete the entire shard..
 
