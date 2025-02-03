@@ -26,9 +26,8 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
+import java.io.InputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 
 import net.jpountz.lz4.LZ4BlockInputStream;
@@ -55,24 +54,18 @@ public class Lz4Compression implements Compression {
 	}
 
 	@Override
-	public InputStream getInputStream(final InputStream in) {
-
-		return new LZ4BlockInputStream(in);
-	}
-
-	@Override
-	public OutputStream getOutputStream(final OutputStream out) {
-
-		return new LZ4BlockOutputStream(out, blockSize);
-	}
-
-	@Override
 	public boolean equals(final Object other) {
 
 		if (other == null || other.getClass() != Lz4Compression.class)
 			return false;
 		else
 			return blockSize == ((Lz4Compression)other).blockSize;
+	}
+
+	@Override
+	public ReadData decode(final ReadData readData, final int decodedLength) throws IOException {
+		final InputStream inflater = new LZ4BlockInputStream(readData.inputStream());
+		return ReadData.from(inflater, decodedLength);
 	}
 
 	@Override

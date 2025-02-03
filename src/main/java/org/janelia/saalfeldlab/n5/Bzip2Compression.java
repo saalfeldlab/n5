@@ -27,7 +27,6 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
@@ -53,24 +52,18 @@ public class Bzip2Compression implements DefaultBlockReader, DefaultBlockWriter,
 	}
 
 	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
-
-		return new BZip2CompressorInputStream(in);
-	}
-
-	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
-
-		return new BZip2CompressorOutputStream(out, blockSize);
-	}
-
-	@Override
 	public boolean equals(final Object other) {
 
 		if (other == null || other.getClass() != Bzip2Compression.class)
 			return false;
 		else
 			return blockSize == ((Bzip2Compression)other).blockSize;
+	}
+
+	@Override
+	public ReadData decode(final ReadData readData, final int decodedLength) throws IOException {
+		final InputStream inflater = new BZip2CompressorInputStream(readData.inputStream());
+		return ReadData.from(inflater, decodedLength);
 	}
 
 	@Override

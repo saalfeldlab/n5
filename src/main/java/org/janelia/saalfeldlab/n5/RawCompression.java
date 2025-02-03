@@ -25,8 +25,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
@@ -34,16 +32,6 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 public class RawCompression implements Compression {
 
 	private static final long serialVersionUID = 7526445806847086477L;
-
-	@Override
-	public InputStream getInputStream(final InputStream in) {
-		return in;
-	}
-
-	@Override
-	public OutputStream getOutputStream(final OutputStream out) {
-		return out;
-	}
 
 	@Override
 	public boolean equals(final Object other) {

@@ -27,7 +27,6 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
@@ -53,24 +52,18 @@ public class XzCompression implements Compression {
 	}
 
 	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
-
-		return new XZCompressorInputStream(in);
-	}
-
-	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
-
-		return new XZCompressorOutputStream(out, preset);
-	}
-
-	@Override
 	public boolean equals(final Object other) {
 
 		if (other == null || other.getClass() != XzCompression.class)
 			return false;
 		else
 			return preset == ((XzCompression)other).preset;
+	}
+
+	@Override
+	public ReadData decode(final ReadData readData, final int decodedLength) throws IOException {
+		final InputStream inflater = new XZCompressorInputStream(readData.inputStream());
+		return ReadData.from(inflater, decodedLength);
 	}
 
 	@Override
