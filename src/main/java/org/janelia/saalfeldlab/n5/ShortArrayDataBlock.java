@@ -39,8 +39,7 @@ public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
 
 	@Override
 	public void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
-		final ByteBuffer serialized = ByteBuffer.wrap(readData.allBytes());
-		serialized.order(byteOrder).asShortBuffer().get(data);
+		readData.toByteBuffer().order(byteOrder).asShortBuffer().get(data);
 	}
 
 	@Override

@@ -39,8 +39,7 @@ public class IntArrayDataBlock extends AbstractDataBlock<int[]> {
 
 	@Override
 	public void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
-		final ByteBuffer serialized = ByteBuffer.wrap(readData.allBytes());
-		serialized.order(byteOrder).asIntBuffer().get(data);
+		readData.toByteBuffer().order(byteOrder).asIntBuffer().get(data);
 	}
 
 	@Override
