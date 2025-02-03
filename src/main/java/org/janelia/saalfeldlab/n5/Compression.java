@@ -31,7 +31,6 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
 import org.scijava.annotations.Indexable;
 
 /**
@@ -39,7 +38,7 @@ import org.scijava.annotations.Indexable;
  *
  * @author Stephan Saalfeld
  */
-public interface Compression extends Serializable {
+public interface Compression extends BytesCodec, Serializable {
 
 	/**
 	 * Annotation for runtime discovery of compression schemes.
@@ -49,7 +48,7 @@ public interface Compression extends Serializable {
 	@Inherited
 	@Target(ElementType.TYPE)
 	@Indexable
-	public static @interface CompressionType {
+	@interface CompressionType {
 
 		String value();
 	}
@@ -61,9 +60,9 @@ public interface Compression extends Serializable {
 	@Retention(RetentionPolicy.RUNTIME)
 	@Inherited
 	@Target(ElementType.FIELD)
-	public static @interface CompressionParameter {}
+	@interface CompressionParameter {}
 
-	public default String getType() {
+	default String getType() {
 
 		final CompressionType compressionType = getClass().getAnnotation(CompressionType.class);
 		if (compressionType == null)
@@ -71,8 +70,4 @@ public interface Compression extends Serializable {
 		else
 			return compressionType.value();
 	}
-
-	public BlockReader getReader();
-
-	public BlockWriter getWriter();
 }

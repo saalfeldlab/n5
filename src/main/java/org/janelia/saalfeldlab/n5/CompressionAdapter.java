@@ -79,6 +79,9 @@ public class CompressionAdapter implements JsonDeserializer<Compression>, JsonSe
 			final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 			final Index<CompressionType> annotationIndex = Index.load(CompressionType.class, classLoader);
 			for (final IndexItem<CompressionType> item : annotationIndex) {
+				System.out.println("item.className() = " + item.className());
+			}
+			for (final IndexItem<CompressionType> item : annotationIndex) {
 				Class<? extends Compression> clazz;
 				try {
 					clazz = (Class<? extends Compression>)Class.forName(item.className());

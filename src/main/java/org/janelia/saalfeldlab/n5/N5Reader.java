@@ -32,6 +32,7 @@ import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 import java.net.URI;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
  * A simple structured container for hierarchies of chunked
@@ -322,9 +324,9 @@ public interface N5Reader extends AutoCloseable {
 		if (block == null)
 			return null;
 
-		final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(block.toByteBuffer().array());
-		try (ObjectInputStream in = new ObjectInputStream(byteArrayInputStream)) {
-			return (T)in.readObject();
+		final ReadData serialized = block.writeData(ByteOrder.BIG_ENDIAN);
+		try (ObjectInputStream in = new ObjectInputStream(serialized.inputStream())) {
+			return (T) in.readObject();
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5Exception.N5IOException(e);
 		}

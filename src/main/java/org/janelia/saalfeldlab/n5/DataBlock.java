@@ -25,7 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
  * Interface for data blocks. A data block has data, a position on the block
@@ -40,59 +43,63 @@ public interface DataBlock<T> {
 
 	/**
 	 * Returns the size of this data block.
-	 *
+	 * <p>
 	 * The size of a data block is expected to be smaller than or equal to the
 	 * spacing of the block grid. The dimensionality of size is expected to be
 	 * equal to the dimensionality of the dataset. Consistency is not enforced.
 	 *
 	 * @return size of the data block
 	 */
-	public int[] getSize();
+	int[] getSize();
 
 	/**
 	 * Returns the position of this data block on the block grid.
-	 *
+	 * <p>
 	 * The dimensionality of the grid position is expected to be equal to the
 	 * dimensionality of the dataset. Consistency is not enforced.
 	 *
 	 * @return position on the block grid
 	 */
-	public long[] getGridPosition();
+	long[] getGridPosition();
 
 	/**
 	 * Returns the data object held by this data block.
 	 *
 	 * @return data object
 	 */
-	public T getData();
+	T getData();
 
 	/**
-	 * Creates a {@link ByteBuffer} that contains the data object of this data
-	 * block.
-	 *
-	 * The {@link ByteBuffer} may or may not map directly to the data
-	 * object of this data block. I.e. modifying the {@link ByteBuffer} after
+	 * Read (deserialize) the data object of this data block from a {@link ReadData}.
+	 * <p>
+	 * The {@code ReadData} may or may not map directly to the data
+	 * object of this data block. I.e. modifying the {@code ReadData} after
 	 * calling this method may or may not change the data of this data block.
 	 * modifying the data object of this data block after calling this method
-	 * may or may not change the content of the {@link ByteBuffer}.
+	 * may or may not change the content of the {@code ReadData}.
 	 *
-	 * @return {@link ByteBuffer} containing data
+	 * @param readData
+	 * 		data to deserialize
 	 */
-	public ByteBuffer toByteBuffer();
+	void readData(ReadData readData) throws IOException;
 
 	/**
-	 * Reads the data object of this data block from a {@link ByteBuffer}.
-	 *
-	 * The {@link ByteBuffer} may or may not map directly to the data
-	 * object of this data block. I.e. modifying the {@link ByteBuffer} after
+	 * Creates a {@link ReadData} that contains the serialized data object of
+	 * this data block.
+	 * <p>
+	 * The {@code ReadData} may or may not map directly to the data
+	 * object of this data block. I.e. modifying the {@code ReadData} after
 	 * calling this method may or may not change the data of this data block.
 	 * modifying the data object of this data block after calling this method
-	 * may or may not change the content of the {@link ByteBuffer}.
+	 * may or may not change the content of the {@code ReadData}.
 	 *
-	 * @param buffer
-	 *            the byte buffer
+	 * @param byteOrder
+	 * 		ByteOrder to use for serialization
+	 *
+	 * @return serialized {@code ReadData}
 	 */
-	public void readData(final ByteBuffer buffer);
+	// TODO: rename? "serialize"? "write"?
+	ReadData writeData(ByteOrder byteOrder);
 
 	/**
 	 * Returns the number of elements in this {@link DataBlock}. This number is
@@ -101,7 +108,7 @@ public interface DataBlock<T> {
 	 *
 	 * @return the number of elements
 	 */
-	public int getNumElements();
+	int getNumElements();
 
 	/**
 	 * Returns the number of elements in a box of given size.
@@ -110,7 +117,7 @@ public interface DataBlock<T> {
 	 *            the size
 	 * @return the number of elements
 	 */
-	public static int getNumElements(final int[] size) {
+	static int getNumElements(final int[] size) {
 
 		int n = size[0];
 		for (int i = 1; i < size.length; ++i)

@@ -28,30 +28,16 @@ package org.janelia.saalfeldlab.n5;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
- * Default implementation of {@link BlockReader}.
+ * Default implementation of block reading (N5 format).
  *
  * @author Stephan Saalfeld
  * @author Igor Pisarev
  */
-public interface DefaultBlockReader extends BlockReader {
-
-	public InputStream getInputStream(final InputStream in) throws IOException;
-
-	@Override
-	public default <T, B extends DataBlock<T>> void read(
-			final B dataBlock,
-			final InputStream in) throws IOException {
-
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final InputStream inflater = getInputStream(in)) {
-			final DataInputStream dis = new DataInputStream(inflater);
-			dis.readFully(buffer.array());
-		}
-		dataBlock.readData(buffer);
-	}
+public interface DefaultBlockReader {
 
 	/**
 	 * Reads a {@link DataBlock} from an {@link InputStream}.
@@ -66,11 +52,12 @@ public interface DefaultBlockReader extends BlockReader {
 	 * @throws IOException
 	 *             the exception
 	 */
-	public static DataBlock<?> readBlock(
+	static DataBlock<?> readBlock(
 			final InputStream in,
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition) throws IOException {
 
+		final DataType dataType = datasetAttributes.getDataType();
 		final DataInputStream dis = new DataInputStream(in);
 		final short mode = dis.readShort();
 		final int numElements;
@@ -85,14 +72,19 @@ public interface DefaultBlockReader extends BlockReader {
 			} else {
 				numElements = dis.readInt();
 			}
-			dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
+			dataBlock = dataType.createDataBlock(blockSize, gridPosition, numElements);
 		} else {
 			numElements = dis.readInt();
-			dataBlock = datasetAttributes.getDataType().createDataBlock(null, gridPosition, numElements);
+			dataBlock = dataType.createDataBlock(null, gridPosition, numElements);
 		}
 
-		final BlockReader reader = datasetAttributes.getCompression().getReader();
-		reader.read(dataBlock, in);
+		final int numBytes = dataType.isVarLength()
+				? numElements
+				: (numElements * dataType.bytesPerElement());
+		final ReadData data = ReadData.from(in)
+				.decode(datasetAttributes.getCompression(), numBytes);
+		dataBlock.readData(data);
+
 		return dataBlock;
 	}
 }

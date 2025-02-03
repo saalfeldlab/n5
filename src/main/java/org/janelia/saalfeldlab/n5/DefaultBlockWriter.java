@@ -28,29 +28,15 @@ package org.janelia.saalfeldlab.n5;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 /**
- * Default implementation of {@link BlockWriter}.
+ * Default implementation of block writing (N5 format).
  *
  * @author Stephan Saalfeld
  * @author Igor Pisarev
  */
-public interface DefaultBlockWriter extends BlockWriter {
-
-	public OutputStream getOutputStream(final OutputStream out) throws IOException;
-
-	@Override
-	public default <T> void write(
-			final DataBlock<T> dataBlock,
-			final OutputStream out) throws IOException {
-
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final OutputStream deflater = getOutputStream(out)) {
-			deflater.write(buffer.array());
-			deflater.flush();
-		}
-	}
+public interface DefaultBlockWriter {
 
 	/**
 	 * Writes a {@link DataBlock} into an {@link OutputStream}.
@@ -65,7 +51,7 @@ public interface DefaultBlockWriter extends BlockWriter {
 	 * @throws IOException
 	 *             the exception
 	 */
-	public static <T> void writeBlock(
+	static <T> void writeBlock(
 			final OutputStream out,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
@@ -92,7 +78,9 @@ public interface DefaultBlockWriter extends BlockWriter {
 
 		dos.flush();
 
-		final BlockWriter writer = datasetAttributes.getCompression().getWriter();
-		writer.write(dataBlock, out);
+		dataBlock.writeData(ByteOrder.BIG_ENDIAN)
+				.encode(datasetAttributes.getCompression())
+				.writeTo(out);
+		out.flush();
 	}
 }

@@ -44,85 +44,112 @@ public enum DataType {
 
 	UINT8(
 			"uint8",
+			Byte.BYTES,
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements])),
+					new byte[numElements])
+	),
 	UINT16(
 			"uint16",
+			Short.BYTES,
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new short[numElements])),
+					new short[numElements])
+	),
 	UINT32(
 			"uint32",
+			Integer.BYTES,
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new int[numElements])),
+					new int[numElements])
+	),
 	UINT64(
 			"uint64",
+			Long.BYTES,
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new long[numElements])),
+					new long[numElements])
+	),
 	INT8(
 			"int8",
+			Byte.BYTES,
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements])),
+					new byte[numElements])
+	),
 	INT16(
 			"int16",
+			Short.BYTES,
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new short[numElements])),
+					new short[numElements])
+	),
 	INT32(
 			"int32",
+			Integer.BYTES,
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new int[numElements])),
+					new int[numElements])
+	),
 	INT64(
 			"int64",
+			Long.BYTES,
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new long[numElements])),
+					new long[numElements])
+	),
 	FLOAT32(
 			"float32",
+			Float.BYTES,
 			(blockSize, gridPosition, numElements) -> new FloatArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new float[numElements])),
+					new float[numElements])
+	),
 	FLOAT64(
 			"float64",
+			Double.BYTES,
 			(blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new double[numElements])),
+					new double[numElements])
+	),
 	STRING(
 			"string",
+			-1,
 			(blockSize, gridPosition, numElements) -> new StringDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements])),
+					null)
+	),
 	OBJECT(
 			"object",
+			1,
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements]));
+					new byte[numElements])
+	);
 
 	private final String label;
 
 	private final DataBlockFactory dataBlockFactory;
 
-	DataType(final String label, final DataBlockFactory dataBlockFactory) {
+	private final int bytesPerElement;
+
+	DataType(final String label, final int bytesPerElement, final DataBlockFactory dataBlockFactory) {
 
 		this.label = label;
 		this.dataBlockFactory = dataBlockFactory;
+		this.bytesPerElement = bytesPerElement;
 	}
 
 	@Override
@@ -169,6 +196,19 @@ public enum DataType {
 	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition) {
 
 		return dataBlockFactory.createDataBlock(blockSize, gridPosition, DataBlock.getNumElements(blockSize));
+	}
+
+	/**
+	 * TODO: javadoc
+	 *       explain that STRING and OBJECT are a bit weird ...
+	 *       -1 means varlength
+	 */
+	public int bytesPerElement() {
+		return bytesPerElement;
+	}
+
+	public boolean isVarLength() {
+		return bytesPerElement < 0;
 	}
 
 	private interface DataBlockFactory {

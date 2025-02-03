@@ -25,7 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 
@@ -35,22 +38,18 @@ public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 	}
 
 	@Override
-	public ByteBuffer toByteBuffer() {
-
-		final ByteBuffer buffer = ByteBuffer.allocate(data.length * 8);
-		buffer.asDoubleBuffer().put(data);
-		return buffer;
+	public ReadData writeData(final ByteOrder byteOrder) {
+		final ByteBuffer serialized = ByteBuffer.allocate(Double.BYTES * data.length);
+		serialized.order(byteOrder).asDoubleBuffer().put(data);
+		return ReadData.from(serialized);
 	}
 
-	@Override
-	public void readData(final ByteBuffer buffer) {
-
-		buffer.asDoubleBuffer().get(data);
+	public void readData(final ReadData readData) throws IOException {
+		readData.toByteBuffer().asDoubleBuffer().get(data);
 	}
 
 	@Override
 	public int getNumElements() {
-
 		return data.length;
 	}
 }
