@@ -69,17 +69,41 @@ public interface DataBlock<T> {
 	 */
 	T getData();
 
-	ByteBuffer serialize(ByteOrder byteOrder);
+	/**
+	 * Read (deserialize) the data object of this data block from a {@link ReadData}.
+	 * <p>
+	 * The {@code ReadData} may or may not map directly to the data
+	 * object of this data block. I.e. modifying the {@code ReadData} after
+	 * calling this method may or may not change the data of this data block.
+	 * modifying the data object of this data block after calling this method
+	 * may or may not change the content of the {@code ReadData}.
+	 *
+	 * @param byteOrder
+	 * 		ByteOrder to use for serialization
+	 * @param readData
+	 * 		data to deserialize
+	 */
+	// TODO: include ByteOrder in ReadData
+	// TODO: rename? "readFrom"? "deserializeFrom"?
+	void readData(ByteOrder byteOrder, ReadData readData) throws IOException;
 
-	void deserialize(ByteBuffer serialized);
-
-	default void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
-		deserialize(ByteBuffer.wrap(readData.allBytes()).order(byteOrder));
-	}
-
-	default ReadData writeData(final ByteOrder byteOrder) {
-		return ReadData.from(serialize(byteOrder));
-	}
+	/**
+	 * Creates a {@link ReadData} that contains the serialized data object of
+	 * this data block.
+	 * <p>
+	 * The {@code ReadData} may or may not map directly to the data
+	 * object of this data block. I.e. modifying the {@code ReadData} after
+	 * calling this method may or may not change the data of this data block.
+	 * modifying the data object of this data block after calling this method
+	 * may or may not change the content of the {@code ReadData}.
+	 *
+	 * @param byteOrder
+	 * 		ByteOrder to use for serialization
+	 *
+	 * @return serialized {@code ReadData}
+	 */
+	// TODO: rename? "serialize"? "write"?
+	ReadData writeData(ByteOrder byteOrder);
 
 	/**
 	 * Returns the number of elements in this {@link DataBlock}. This number is
