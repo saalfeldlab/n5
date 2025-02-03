@@ -59,6 +59,12 @@ public abstract class AbstractDataBlock<T> implements DataBlock<T> {
 		return null;
 	}
 
+	public ShardIndex getIndex() {
+
+		// TODO alternatively, return a "trivial" index
+		return null;
+	}
+
 	@Override
 	public int[] getSize() {
 
@@ -83,11 +89,6 @@ public abstract class AbstractDataBlock<T> implements DataBlock<T> {
 			return null;
 		else
 			return this;
-	}
-	
-	public ShardIndex getIndex() {
-
-		return null;
 	}
 
 	@Override
