@@ -22,7 +22,9 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
+import org.janelia.saalfeldlab.n5.SplitableData;
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 public class ShardIndex extends LongArrayDataBlock {
 

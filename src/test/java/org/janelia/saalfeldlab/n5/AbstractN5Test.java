@@ -95,7 +95,6 @@ public abstract class AbstractN5Test {
 
 	public final N5Writer createTempN5Writer() {
 
-//			return N5Factory.createWriter("n5:src/test/resources/test.n5");
 		try {
 			return createTempN5Writer(tempN5Location());
 		} catch (URISyntaxException | IOException e) {

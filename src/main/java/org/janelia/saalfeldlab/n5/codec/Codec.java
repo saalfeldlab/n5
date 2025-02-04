@@ -26,7 +26,7 @@ import java.util.Arrays;
 @NameConfig.Prefix("codec")
 public interface Codec extends Serializable {
 
-	public static OutputStream encode(OutputStream out, Codec.BytesCodec... bytesCodecs) throws IOException {
+	static OutputStream encode(OutputStream out, Codec.BytesCodec... bytesCodecs) throws IOException {
 
 		OutputStream stream = out;
 		for (final BytesCodec codec : bytesCodecs)
@@ -35,7 +35,7 @@ public interface Codec extends Serializable {
 		return stream;
 	}
 
-	public static InputStream decode(InputStream out, Codec.BytesCodec... bytesCodecs) throws IOException {
+	static InputStream decode(InputStream out, Codec.BytesCodec... bytesCodecs) throws IOException {
 
 		InputStream stream = out;
 		for (final BytesCodec codec : bytesCodecs)
@@ -44,7 +44,7 @@ public interface Codec extends Serializable {
 		return stream;
 	}
 
-	public interface BytesCodec extends Codec {
+	interface BytesCodec extends Codec {
 
 		/**
 		 * Decode an {@link InputStream}.
@@ -52,7 +52,7 @@ public interface Codec extends Serializable {
 		 * @param in input stream
 		 * @return the decoded input stream
 		 */
-		public InputStream decode(final InputStream in) throws IOException;
+		InputStream decode(final InputStream in) throws IOException;
 
 		/**
 		 * Encode an {@link OutputStream}.
@@ -60,7 +60,7 @@ public interface Codec extends Serializable {
 		 * @param out the output stream
 		 * @return the encoded output stream
 		 */
-		public OutputStream encode(final OutputStream out) throws IOException;
+		OutputStream encode(final OutputStream out) throws IOException;
 	}
 
 	interface ArrayCodec extends DeterministicSizeCodec {
@@ -81,14 +81,19 @@ public interface Codec extends Serializable {
 		 * @param in input stream
 		 * @return the DataBlock corresponding to the input stream
 		 */
-		public DataBlockInputStream decode(final DatasetAttributes attributes, final long[] gridPosition, final InputStream in) throws IOException;
+		DataBlockInputStream decode(
+				final DatasetAttributes attributes,
+				final long[] gridPosition,
+				final InputStream in) throws IOException;
 
 		/**
 		 * Encode a {@link DataBlock}.
 		 *
 		 * @param datablock the datablock to encode
 		 */
-		public DataBlockOutputStream encode(final DatasetAttributes attributes, final DataBlock<?> datablock,
+		DataBlockOutputStream encode(
+				final DatasetAttributes attributes,
+				final DataBlock<?> datablock,
 				final OutputStream out) throws IOException;
 
 		@Override default long encodedSize(long size) {
@@ -152,12 +157,12 @@ public interface Codec extends Serializable {
 			super(in);
 		}
 
-		public abstract DataBlock<?> allocateDataBlock() throws IOException;
+		public abstract <T> DataBlock<T> allocateDataBlock() throws IOException;
 
 		public abstract DataInput getDataInput(final InputStream inputStream);
 	}
 
-	public abstract class DataBlockOutputStream extends ProxyOutputStream {
+	abstract class DataBlockOutputStream extends ProxyOutputStream {
 
 		protected DataBlockOutputStream(final OutputStream out) {
 
@@ -167,6 +172,6 @@ public interface Codec extends Serializable {
 		public abstract DataOutput getDataOutput(final OutputStream outputStream);
 	}
 
-	public String getType();
+	String getType();
 }
 

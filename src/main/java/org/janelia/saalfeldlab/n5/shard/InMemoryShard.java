@@ -29,7 +29,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	 * Use morton- or c-ording instead of writing blocks out in the order they're added?
 	 * (later)
 	 */
-	public <A extends DatasetAttributes & ShardParameters> InMemoryShard(final A datasetAttributes, final long[] shardPosition) {
+	public InMemoryShard(final DatasetAttributes datasetAttributes, final long[] shardPosition) {
 
 		this(datasetAttributes, shardPosition, null);
 		indexBuilder = new ShardIndexBuilder(this);
@@ -37,7 +37,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		indexBuilder.indexLocation(indexLocation);
 	}
 
-	public <A extends DatasetAttributes & ShardParameters> InMemoryShard(final A datasetAttributes, final long[] gridPosition,
+	public InMemoryShard(final DatasetAttributes datasetAttributes, final long[] gridPosition,
 			ShardIndex index) {
 
 		super(datasetAttributes, gridPosition, index);
@@ -81,21 +81,20 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		return new ArrayList<>(blocks.values());
 	}
 
-	public List<DataBlock<T>> getBlocks(int[] blockIndexes) {
+	public List<DataBlock<T>> getBlocks( int[] blockIndexes ) {
 
 		final ArrayList<DataBlock<T>> out = new ArrayList<>();
 		final int[] blocksPerShard = getDatasetAttributes().getBlocksPerShard();
 
-		long[] position = new long[getSize().length];
-		for (int idx : blockIndexes) {
+		long[] position = new long[ getSize().length ];
+		for( int idx : blockIndexes ) {
 			GridIterator.indexToPosition(idx, blocksPerShard, position);
 			DataBlock<T> blk = getBlock(position);
-			if (blk != null)
+			if( blk != null )
 				out.add(blk);
 		}
 		return out;
 	}
-
 	protected IndexLocation indexLocation() {
 
 		if (index != null)

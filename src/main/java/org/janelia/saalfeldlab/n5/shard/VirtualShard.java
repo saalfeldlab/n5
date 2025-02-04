@@ -36,13 +36,13 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	public DataBlock<T> getBlock(InputStream in, long... blockGridPosition) throws IOException {
 
 		ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
-		final Codec.BytesCodec[] blockCodecs = shardingCodec.getCodecs();
-		final Codec.ArrayCodec blockArrayCodec = shardingCodec.getArrayCodec();
+		final Codec.BytesCodec[] codecs = shardingCodec.getCodecs();
+		final Codec.ArrayCodec arrayCodec = shardingCodec.getArrayCodec();
 
-		final Codec.DataBlockInputStream dataBlockStream = blockArrayCodec.decode(datasetAttributes, blockGridPosition, in);
+		final Codec.DataBlockInputStream dataBlockStream = arrayCodec.decode(datasetAttributes, blockGridPosition, in);
 
 		final DataBlock<T> dataBlock = dataBlockStream.allocateDataBlock();
-		final InputStream stream = Codec.decode(in, blockCodecs);
+		final InputStream stream = Codec.decode(in, codecs);
 		dataBlock.readData(dataBlockStream.getDataInput(stream));
 		stream.close();
 

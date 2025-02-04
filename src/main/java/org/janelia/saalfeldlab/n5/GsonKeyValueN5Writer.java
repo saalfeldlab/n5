@@ -232,8 +232,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			for( final Entry<Position, List<DataBlock<T>>> e : shardBlockMap.entrySet()) {
 
 				final long[] shardPosition = e.getKey().get();
-				final Shard<T> currentShard = readShard(datasetPath, datasetAttributes,
-						shardPosition);
+				final Shard<T> currentShard = readShard(datasetPath, datasetAttributes, shardPosition);
 
 				final InMemoryShard<T> newShard = InMemoryShard.fromShard(currentShard);
 				for( DataBlock<T> blk : e.getValue())
@@ -274,7 +273,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final Shard<T> shard) throws N5Exception {
 
 		final String shardPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), shard.getGridPosition());
-		try (final OutputStream shardOut = new SplitKeyValueAccessData(getKeyValueAccess(), shardPath, 0, Long.MAX_VALUE).newOutputStream()) {
+		final SplitKeyValueAccessData splitData = new SplitKeyValueAccessData(getKeyValueAccess(), shardPath, 0, Long.MAX_VALUE);
+		try (final OutputStream shardOut = splitData.newOutputStream()) {
 			try (final InputStream shardIn = shard.getAsStream()) {
 				while (shardIn.available() > 0) {
 					shardOut.write(shardIn.read());
