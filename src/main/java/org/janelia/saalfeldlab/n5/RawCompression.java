@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @CompressionType("raw")
 public class RawCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
@@ -37,15 +38,28 @@ public class RawCompression implements DefaultBlockReader, DefaultBlockWriter, C
 	private static final long serialVersionUID = 7526445806847086477L;
 
 	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
+	public InputStream decode(final InputStream in) throws IOException {
 
 		return in;
 	}
 
 	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
+	public InputStream getInputStream(final InputStream in) throws IOException {
+
+		return decode(in);
+	}
+
+
+	@Override
+	public OutputStream encode(final OutputStream out) throws IOException {
 
 		return out;
+	}
+
+	@Override
+	public OutputStream getOutputStream(final OutputStream out) throws IOException {
+
+		return encode(out);
 	}
 
 	@Override

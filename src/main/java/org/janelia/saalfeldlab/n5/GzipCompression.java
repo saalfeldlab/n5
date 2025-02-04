@@ -37,16 +37,24 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipParameters;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @CompressionType("gzip")
+@NameConfig.Name("gzip")
 public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
 
 	private static final long serialVersionUID = 8630847239813334263L;
 
 	@CompressionParameter
+	@NameConfig.Parameter
+	//TODO Caleb: How to handle serialization of parameter-less constructor.
+	// For N5 the default is -1.
+	// For zarr the range is 0-9 and is required.
+	// How to map -1 to some default (1?) when serializing to zarr?
 	private final int level;
 
 	@CompressionParameter
+	@NameConfig.Parameter(optional = true)
 	private final boolean useZlib;
 
 	private final transient GzipParameters parameters = new GzipParameters();
@@ -68,7 +76,7 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	}
 
 	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
+	public InputStream decode(InputStream in) throws IOException {
 
 		if (useZlib) {
 			return new InflaterInputStream(in);
@@ -78,7 +86,13 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	}
 
 	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
+	public InputStream getInputStream(final InputStream in) throws IOException {
+
+		return decode(in);
+	}
+
+	@Override
+	public OutputStream encode(OutputStream out) throws IOException {
 
 		if (useZlib) {
 			return new DeflaterOutputStream(out, new Deflater(level));
@@ -86,6 +100,12 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 			parameters.setCompressionLevel(level);
 			return new GzipCompressorOutputStream(out, parameters);
 		}
+	}
+
+	@Override
+	public OutputStream getOutputStream(final OutputStream out) throws IOException {
+
+		return encode(out);
 	}
 
 	@Override
@@ -116,4 +136,5 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 			return useZlib == gz.useZlib && level == gz.level;
 		}
 	}
+
 }

@@ -123,7 +123,11 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 		this.keyValueAccess = keyValueAccess;
 		this.gson = GsonUtils.registerGson(gsonBuilder);
 		this.cacheMeta = cacheMeta;
-		this.cache = newCache();
+
+		if (this.cacheMeta)
+			this.cache = newCache();
+		else
+			this.cache = null;
 
 		try {
 			uri = keyValueAccess.uri(basePath);
@@ -142,6 +146,12 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 		if (checkExists && !exists("/"))
 			throw new N5Exception.N5IOException("No container exists at " + basePath);
+	}
+
+	@Override
+	public String getAttributesKey() {
+
+		return ATTRIBUTES_JSON;
 	}
 
 	@Override

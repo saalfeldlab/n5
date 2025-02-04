@@ -33,8 +33,10 @@ import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
+import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @CompressionType("lz4")
+@NameConfig.Name("lz4")
 public class Lz4Compression implements DefaultBlockReader, DefaultBlockWriter, Compression {
 
 	private static final long serialVersionUID = -9071316415067427256L;
@@ -53,15 +55,27 @@ public class Lz4Compression implements DefaultBlockReader, DefaultBlockWriter, C
 	}
 
 	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
+	public InputStream decode(final InputStream in) throws IOException {
 
 		return new LZ4BlockInputStream(in);
 	}
 
 	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
+	public InputStream getInputStream(final InputStream in) throws IOException {
+
+		return decode(in);
+	}
+
+	@Override
+	public OutputStream encode(final OutputStream out) throws IOException {
 
 		return new LZ4BlockOutputStream(out, blockSize);
+	}
+
+	@Override
+	public OutputStream getOutputStream(final OutputStream out) throws IOException {
+
+		return encode(out);
 	}
 
 	@Override

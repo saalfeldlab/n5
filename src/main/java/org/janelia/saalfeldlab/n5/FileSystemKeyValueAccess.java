@@ -25,6 +25,8 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import org.apache.commons.io.input.BoundedInputStream;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -71,12 +73,34 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		protected final FileChannel channel;
 
+		protected final boolean truncate;
+
+		protected long len;
+
 		protected LockedFileChannel(final String path, final boolean readOnly) throws IOException {
 
-			this(fileSystem.getPath(path), readOnly);
+			this(fileSystem.getPath(path), readOnly, 0, Long.MAX_VALUE);
+		}
+
+		protected LockedFileChannel(final String path, final boolean readOnly, final long startByte, final long size) throws IOException {
+
+			this(fileSystem.getPath(path), readOnly, startByte, size);
 		}
 
 		protected LockedFileChannel(final Path path, final boolean readOnly) throws IOException {
+
+			this(path, readOnly, 0, Long.MAX_VALUE);
+		}
+
+		protected LockedFileChannel(final Path path, final boolean readOnly, final long startByte, final long size)
+				throws IOException {
+
+
+			final long start = startByte < 0 ? 0L : startByte;
+			len = size < 0 ? Long.MAX_VALUE : size;
+
+			//TODO Caleb: How does this handle if manually overwriting the entire file? (e.g. len > file size)
+			truncate = (start == 0 && len == Long.MAX_VALUE);
 
 			final OpenOption[] options;
 			if (readOnly) {
@@ -96,10 +120,13 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 				}
 			}
 
+			if (startByte != 0)
+				channel.position(start);
+
 			for (boolean waiting = true; waiting;) {
 				waiting = false;
 				try {
-					channel.lock(0L, Long.MAX_VALUE, readOnly);
+					channel.lock(start, len, readOnly);
 				} catch (final OverlappingFileLockException e) {
 					waiting = true;
 					try {
@@ -113,6 +140,12 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
+		public long size() throws IOException {
+
+			return channel.size();
+		}
+
+		@Override
 		public Reader newReader() throws IOException {
 
 			return Channels.newReader(channel, StandardCharsets.UTF_8.name());
@@ -121,20 +154,24 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		@Override
 		public Writer newWriter() throws IOException {
 
-			channel.truncate(0);
+			if (truncate)
+				channel.truncate(0);
+
 			return Channels.newWriter(channel, StandardCharsets.UTF_8.name());
 		}
 
 		@Override
 		public InputStream newInputStream() throws IOException {
 
-			return Channels.newInputStream(channel);
+			return BoundedInputStream.builder().setInputStream(Channels.newInputStream(channel)).setMaxCount(len).get();
 		}
 
 		@Override
 		public OutputStream newOutputStream() throws IOException {
 
-			channel.truncate(0);
+			if (truncate)
+				channel.truncate(0);
+
 			return Channels.newOutputStream(channel);
 		}
 
@@ -162,7 +199,18 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		try {
 			return new LockedFileChannel(normalPath, true);
-		} catch (NoSuchFileException e) {
+		} catch (final NoSuchFileException e) {
+			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+		}
+	}
+
+	@Override
+	public LockedFileChannel lockForReading(final String normalPath, final long startByte, final long size)
+			throws IOException {
+
+		try {
+			return new LockedFileChannel(normalPath, true, startByte, size);
+		} catch (final NoSuchFileException e) {
 			throw new N5Exception.N5NoSuchKeyException("No such file", e);
 		}
 	}
@@ -173,11 +221,18 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		return new LockedFileChannel(normalPath, false);
 	}
 
+	@Override
+	public LockedFileChannel lockForWriting(final String normalPath, final long startByte, final long size)
+			throws IOException {
+
+		return new LockedFileChannel(normalPath, false, startByte, size);
+	}
+
 	public LockedFileChannel lockForReading(final Path path) throws IOException {
 
 		try {
 			return new LockedFileChannel(path, true);
-		} catch (NoSuchFileException e) {
+		} catch (final NoSuchFileException e) {
 			throw new N5Exception.N5NoSuchKeyException("No such file", e);
 		}
 	}
@@ -206,6 +261,16 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		final Path path = fileSystem.getPath(normalPath);
 		return Files.exists(path);
+	}
+
+	@Override
+	public long size(final String normalPath) throws IOException {
+
+		try {
+			return Files.size(fileSystem.getPath(normalPath));
+		} catch (NoSuchFileException e) {
+			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+		}
 	}
 
 	@Override

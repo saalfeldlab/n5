@@ -25,10 +25,13 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class IntArrayDataBlock extends AbstractDataBlock<int[]> {
 
+public class IntArrayDataBlock extends AbstractDataBlock<int[]> {
 	public IntArrayDataBlock(final int[] size, final long[] gridPosition, final int[] data) {
 
 		super(size, gridPosition, data);
@@ -46,6 +49,20 @@ public class IntArrayDataBlock extends AbstractDataBlock<int[]> {
 	public void readData(final ByteBuffer buffer) {
 
 		buffer.asIntBuffer().get(data);
+	}
+
+	@Override
+	public void readData(final DataInput input) throws IOException {
+
+		for (int i = 0; i < data.length; i++)
+			data[i] = input.readInt();
+	}
+
+	@Override
+	public void writeData(final DataOutput output) throws IOException {
+
+		for (int i = 0; i < data.length; i++)
+			output.writeInt(data[i]);
 	}
 
 	@Override
