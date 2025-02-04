@@ -11,10 +11,8 @@ import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
 import java.io.ByteArrayInputStream;
@@ -75,7 +73,7 @@ public class ShardIndex extends LongArrayDataBlock {
 
 	public boolean isEmpty() {
 
-		return !IntStream.range(0, getNumBlocks()).anyMatch(i -> exists(i));
+		return !IntStream.range(0, getNumBlocks()).anyMatch(this::exists);
 	}
 
 	public IndexLocation getLocation() {
@@ -146,7 +144,7 @@ public class ShardIndex extends LongArrayDataBlock {
 		try {
 		BoundedInputStream bIs = BoundedInputStream.builder()
 				.setInputStream(is)
-				.setMaxCount(byteBounds.size).get();
+				.setMaxCount(index.numBytes()).get();
 
 			read(bIs, index);
 			return true;
@@ -321,6 +319,5 @@ public class ShardIndex extends LongArrayDataBlock {
 		}
 		return true;
 	}
-
 }
 

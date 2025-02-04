@@ -95,7 +95,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		for( int idx : blockIndexes ) {
 			GridIterator.indexToPosition(idx, blocksPerShard, position);
 			DataBlock<T> blk = getBlock(position);
-			if( blk != null );
+			if( blk != null )
 				out.add(blk);
 		}
 		return out;

@@ -43,10 +43,10 @@ public class ShardPropertiesTests {
 
 		assertArrayEquals(new int[]{4, 4}, shard.getBlockGridSize());
 
-		assertArrayEquals(new long[]{0, 0}, shard.getShard(0, 0));
-		assertArrayEquals(new long[]{1, 1}, shard.getShard(5, 5));
-		assertArrayEquals(new long[]{1, 0}, shard.getShard(5, 0));
-		assertArrayEquals(new long[]{0, 1}, shard.getShard(0, 5));
+		assertArrayEquals(new long[]{0, 0}, shard.getShardPosition(0, 0));
+		assertArrayEquals(new long[]{1, 1}, shard.getShardPosition(5, 5));
+		assertArrayEquals(new long[]{1, 0}, shard.getShardPosition(5, 0));
+		assertArrayEquals(new long[]{0, 1}, shard.getShardPosition(0, 5));
 
 		//		assertNull(shard.getBlockPosition(0, 0));
 		//		assertNull(shard.getBlockPosition(3, 3));

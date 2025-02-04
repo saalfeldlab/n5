@@ -84,7 +84,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	 *
 	 * @return the shard position
 	 */
-	default long[] getShard(long... blockPosition) {
+	default long[] getShardPosition(long... blockPosition) {
 
 		final int[] shardBlockDimensions = getBlockGridSize();
 		final long[] shardGridPosition = new long[shardBlockDimensions.length];
@@ -98,6 +98,8 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	public DataBlock<T> getBlock(long... blockGridPosition);
 
 	public void writeBlock(DataBlock<T> block);
+
+	//TODO Caleb: add writeBlocks that does NOT always expect to overwrite the entire existing Shard
 
 	default Iterator<DataBlock<T>> iterator() {
 
@@ -130,9 +132,9 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		return new GridIterator(GridIterator.int2long(getBlockGridSize()), min);
 	}
 
-	public ShardIndex getIndex();
+	ShardIndex getIndex();
 
-	public static <T,A extends DatasetAttributes & ShardParameters> Shard<T> createEmpty(final A attributes, long... shardPosition) {
+	static <T,A extends DatasetAttributes & ShardParameters> Shard<T> createEmpty(final A attributes, long... shardPosition) {
 
 		final long[] emptyIndex = new long[(int)(2 * attributes.getNumBlocks())];
 		Arrays.fill(emptyIndex, ShardIndex.EMPTY_INDEX_NBYTES);
@@ -140,11 +142,12 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		return new InMemoryShard<T>(attributes, shardPosition, shardIndex);
 	}
 
-	public static class DataBlockIterator<T> implements Iterator<DataBlock<T>> {
+	class DataBlockIterator<T> implements Iterator<DataBlock<T>> {
 
 		private final GridIterator it;
 		private final Shard<T> shard;
 		private final ShardIndex index;
+		// TODO ShardParameters is deprecated?
 		private final ShardParameters attributes;
 		private int blockIndex = 0;
 

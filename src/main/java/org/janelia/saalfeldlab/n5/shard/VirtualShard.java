@@ -136,17 +136,16 @@ public class VirtualShard<T> extends AbstractShard<T> {
 			throw new N5IOException("Attempted to read a block from the wrong shard.");
 
 		final ShardIndex idx = getIndex();
-
-		final long startByte = idx.getOffset(relativePosition);
-
-		if (startByte == ShardIndex.EMPTY_INDEX_NBYTES )
+		if (!idx.exists(relativePosition))
 			return null;
 
-		final long size = idx.getNumBytes(relativePosition);
-		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(path, startByte, size)) {
-			try ( final InputStream channelIn = lockedChannel.newInputStream()) {
+		final long blockOffset = idx.getOffset(relativePosition);
+		final long blockSize = idx.getNumBytes(relativePosition);
+
+		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(path, blockOffset, blockSize)) {
+			try ( final InputStream in = lockedChannel.newInputStream()) {
 				final long[] blockPosInImg = getDatasetAttributes().getBlockPositionFromShardPosition(getGridPosition(), blockGridPosition);
-				return getBlock( channelIn, blockPosInImg );
+				return getBlock( in, blockPosInImg );
 			}
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
@@ -216,7 +215,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	@Override
 	public ShardIndex getIndex() {
 
-			index = createIndex();
+		index = createIndex();
 		ShardIndex.read(keyValueAccess, path, index);
 
 		return index;

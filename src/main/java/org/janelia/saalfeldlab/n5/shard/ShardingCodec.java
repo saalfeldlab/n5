@@ -132,7 +132,7 @@ public class ShardingCodec implements Codec.ArrayCodec {
 		return new VirtualShard<T>(datasetAttributes, shardPosition, kva, keyPath).getBlock(gridPosition);
 	}
 
-	ShardIndex createIndex(final DatasetAttributes attributes) {
+	public ShardIndex createIndex(final DatasetAttributes attributes) {
 		return new ShardIndex(attributes.getBlocksPerShard(), getIndexLocation(), getIndexCodecs());
 	}
 
