@@ -6,11 +6,11 @@ import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
-import org.janelia.saalfeldlab.n5.shard.ShardIndex;
 import org.janelia.saalfeldlab.n5.shard.ShardParameters;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
+@Deprecated
 public class ShardedDatasetAttributes extends DatasetAttributes implements ShardParameters {
 
 	private static final long serialVersionUID = -4559068841006651814L;
@@ -28,7 +28,8 @@ public class ShardedDatasetAttributes extends DatasetAttributes implements Shard
 			final DeterministicSizeCodec[] indexCodecs,
 			final IndexLocation indexLocation
 	) {
-		super(dimensions, blockSize, dataType, null, blocksCodecs);
+		//TODO Caleb: Can we just let the super codecs() return this ShardCodec?
+		super(dimensions, blockSize, dataType, blocksCodecs);
 
 		if (!validateShardBlockSize(shardSize, blockSize)) {
 			throw new N5Exception(String.format("Invalid shard %s / block size %s",
@@ -96,7 +97,6 @@ public class ShardedDatasetAttributes extends DatasetAttributes implements Shard
 		return new Codec[] { shardingCodec };
 	}
 
-	@Override
 	public IndexLocation getIndexLocation() {
 
 		return getShardingCodec().getIndexLocation();

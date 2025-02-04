@@ -4,12 +4,13 @@ import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
-import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
+import org.janelia.saalfeldlab.n5.shard.ShardParameters;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -19,6 +20,9 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
 /**
  * Mandatory dataset attributes:
  *
@@ -26,18 +30,13 @@ import com.google.gson.JsonSerializer;
  * <li>long[] : dimensions</li>
  * <li>int[] : blockSize</li>
  * <li>{@link DataType} : dataType</li>
- * <li>{@link Compression} : compression</li>
- * </ol>
- *
- * Optional dataset attributes:
- * <ol>
- * <li>{@link Codec}[] : codecs</li>
+ * <li>{@link Codec}... : encode/decode routines</li>
  * </ol>
  *
  * @author Stephan Saalfeld
- *
  */
-public class DatasetAttributes implements BlockParameters, Serializable {
+//TODO Caleb: try to delete ShardParameters?
+public class DatasetAttributes implements BlockParameters, ShardParameters, Serializable {
 
 	private static final long serialVersionUID = -4521467080388947553L;
 
@@ -58,60 +57,91 @@ public class DatasetAttributes implements BlockParameters, Serializable {
 	private final long[] dimensions;
 	private final int[] blockSize;
 	private final DataType dataType;
-	private final Compression compression;
 	private final ArrayCodec arrayCodec;
 	private final BytesCodec[] byteCodecs;
+	@Nullable private final int[] shardSize;
 
+	/**
+	 * Constructs a DatasetAttributes instance with specified dimensions, block size, data type,
+	 * and array of codecs.
+	 *
+	 * @param dimensions the dimensions of the dataset
+	 * @param blockSize  the size of the blocks in the dataset
+	 * @param dataType   the data type of the dataset
+	 * @param codecs     the codecs used encode/decode the data
+	 */
 	public DatasetAttributes(
 			final long[] dimensions,
+			@Nullable final int[] shardSize,
 			final int[] blockSize,
 			final DataType dataType,
-			final Compression compression,
-			final Codec[] codecs) {
+			final Codec... codecs) {
 
 		this.dimensions = dimensions;
+		this.shardSize = shardSize;
 		this.blockSize = blockSize;
 		this.dataType = dataType;
-		if (codecs == null && !(compression instanceof RawCompression)) {
+		if (codecs == null || codecs.length == 0) {
 			byteCodecs = new BytesCodec[]{};
 			arrayCodec = new N5BlockCodec();
-		} else if (codecs == null || codecs.length == 0) {
-			byteCodecs = new BytesCodec[]{};
+		} else if (codecs.length == 1 && codecs[0] instanceof Compression) {
+			final BytesCodec compression = (BytesCodec)codecs[0];
+			byteCodecs = compression instanceof RawCompression ? new BytesCodec[]{} : new BytesCodec[]{compression};
 			arrayCodec = new N5BlockCodec();
 		} else {
 			if (!(codecs[0] instanceof ArrayCodec))
-				throw new N5Exception("Expected first element of codecs to be ArrayCodec, but was: " + codecs[0]);
+				throw new N5Exception("Expected first element of codecs to be ArrayCodec, but was: " + codecs[0].getClass());
+
+			if (Arrays.stream(codecs).filter(c -> c instanceof ArrayCodec).count() > 1)
+				throw new N5Exception("Multiple ArrayCodecs found. Only one is allowed.");
 
 			arrayCodec = (ArrayCodec)codecs[0];
-			byteCodecs = new BytesCodec[codecs.length - 1];
-			for (int i = 0; i < byteCodecs.length; i++)
-				byteCodecs[i] = (BytesCodec)codecs[i + 1];
+			byteCodecs = Stream.of(codecs)
+					.skip(1)
+					.filter(c -> !(c instanceof RawCompression))
+					.filter(c -> c instanceof BytesCodec)
+					.toArray(BytesCodec[]::new);
 		}
 
-		//TODO Caleb: Do we want to do this?
-		this.compression = Arrays.stream(byteCodecs)
-				.filter(codec -> codec instanceof Compression)
-				.map(codec -> (Compression)codec)
-				.findFirst()
-				.orElse(compression == null ? new RawCompression() : compression);
 
 	}
 
+	/**
+	 * Constructs a DatasetAttributes instance with specified dimensions, block size, data type,
+	 * and array of codecs.
+	 *
+	 * @param dimensions the dimensions of the dataset
+	 * @param blockSize  the size of the blocks in the dataset
+	 * @param dataType   the data type of the dataset
+	 * @param codecs     the codecs used encode/decode the data
+	 */
 	public DatasetAttributes(
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final Codec[] codecs) {
-		this(dimensions, blockSize, dataType, null, codecs);
+			final Codec... codecs) {
+		this( dimensions, null, blockSize, dataType, codecs );
 	}
 
+	/**
+	 * Deprecated. {@link Compression} are {@link Codec}. Use {@code Code...} constructor instead
+	 * Constructs a DatasetAttributes instance with specified dimensions, block size, data type,
+	 * and compression scheme. This constructor is deprecated and redirects to another constructor
+	 * with codec support.
+	 *
+	 * @param dimensions  the dimensions of the dataset
+	 * @param blockSize   the size of the blocks in the dataset
+	 * @param dataType    the data type of the dataset
+	 * @param compression the compression scheme used for storing the dataset
+	 */
+	@Deprecated
 	public DatasetAttributes(
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
 			final Compression compression) {
 
-		this(dimensions, blockSize, dataType, compression, null);
+		this(dimensions, blockSize, dataType, (Codec)compression);
 	}
 
 	@Override
@@ -127,14 +157,32 @@ public class DatasetAttributes implements BlockParameters, Serializable {
 	}
 
 	@Override
+	@CheckForNull
+	public int[] getShardSize() {
+
+		return shardSize;
+	}
+
+	@Override
 	public int[] getBlockSize() {
 
 		return blockSize;
 	}
 
+	/**
+	 * Deprecated. {@link Compression} is no longer a special case. prefer to reference {@link #getCodecs()}
+	 * Will return {@link RawCompression} if no compression is otherwise provided, for legacy compatibility.
+	 *
+	 * @return compression Codec, if one was present
+	 */
+	@Deprecated
 	public Compression getCompression() {
 
-		return compression;
+		return Arrays.stream(byteCodecs)
+				.filter(it -> it instanceof Compression)
+				.map(it -> (Compression)it)
+				.findFirst()
+				.orElse(new RawCompression());
 	}
 
 	public DataType getDataType() {
@@ -152,62 +200,22 @@ public class DatasetAttributes implements BlockParameters, Serializable {
 		return byteCodecs;
 	}
 
+	/**
+	 * Deprecated in favor of {@link DatasetAttributesAdapter} for serialization
+	 *
+	 * @return serilizable properties of {@link DatasetAttributes}
+	 */
+	@Deprecated
 	public HashMap<String, Object> asMap() {
 
 		final HashMap<String, Object> map = new HashMap<>();
 		map.put(DIMENSIONS_KEY, dimensions);
 		map.put(BLOCK_SIZE_KEY, blockSize);
 		map.put(DATA_TYPE_KEY, dataType);
-		map.put(COMPRESSION_KEY, compression);
-		map.put(CODEC_KEY, concatenateCodecs()); // TODO : consider not adding to map when null
+		map.put(COMPRESSION_KEY, getCompression());
 		return map;
 	}
 
-	static DatasetAttributes from(
-			final long[] dimensions,
-			final DataType dataType,
-			int[] blockSize,
-			Compression compression,
-			final String compressionVersion0Name) {
-
-		return from(dimensions, dataType, blockSize, compression, compressionVersion0Name, null);
-	}
-
-	static DatasetAttributes from(
-			final long[] dimensions,
-			final DataType dataType,
-			int[] blockSize,
-			Compression compression,
-			final String compressionVersion0Name,
-			Codec[] codecs) {
-
-		if (blockSize == null)
-			blockSize = Arrays.stream(dimensions).mapToInt(a -> (int)a).toArray();
-
-		/* version 0 */
-		if (compression == null) {
-			compression = getCompressionVersion0(compressionVersion0Name);
-		}
-
-		return new DatasetAttributes(dimensions, blockSize, dataType, compression, codecs);
-	}
-
-	private static Compression getCompressionVersion0(final String compressionVersion0Name) {
-
-		switch (compressionVersion0Name) {
-		case "raw":
-			return new RawCompression();
-		case "gzip":
-			return new GzipCompression();
-		case "bzip2":
-			return new Bzip2Compression();
-		case "lz4":
-			return new Lz4Compression();
-		case "xz":
-			return new XzCompression();
-		}
-		return null;
-	}
 
 	protected Codec[] concatenateCodecs() {
 
@@ -227,50 +235,57 @@ public class DatasetAttributes implements BlockParameters, Serializable {
 		return adapter;
 	}
 
+	public static class InvalidN5DatasetException extends N5Exception {
+
+		public InvalidN5DatasetException(String dataset, String reason, Throwable cause) {
+
+			this(String.format("Invalid dataset %s: %s", dataset, reason), cause);
+		}
+
+		public InvalidN5DatasetException(String message, Throwable cause) {
+
+			super(message, cause);
+		}
+	}
 	public static class DatasetAttributesAdapter implements JsonSerializer<DatasetAttributes>, JsonDeserializer<DatasetAttributes> {
 
 		@Override public DatasetAttributes deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
 
 			if (json == null || !json.isJsonObject()) return null;
 			final JsonObject obj = json.getAsJsonObject();
-			if (!obj.has(DIMENSIONS_KEY) || !obj.has(BLOCK_SIZE_KEY) || !obj.has(DATA_TYPE_KEY) || !obj.has(COMPRESSION_KEY))
+			final boolean validKeySet = obj.has(DIMENSIONS_KEY)
+					&& obj.has(BLOCK_SIZE_KEY)
+					&& obj.has(DATA_TYPE_KEY)
+					&& (obj.has(CODEC_KEY) || obj.has(COMPRESSION_KEY) || obj.has(compressionTypeKey));
+
+			if (!validKeySet)
 				return null;
 
 			final long[] dimensions = context.deserialize(obj.get(DIMENSIONS_KEY), long[].class);
 			final int[] blockSize = context.deserialize(obj.get(BLOCK_SIZE_KEY), int[].class);
 
 			int[] shardSize = null;
-			if (obj.has(SHARD_SIZE_KEY)) {
+			if (obj.has(SHARD_SIZE_KEY))
 				shardSize = context.deserialize(obj.get(SHARD_SIZE_KEY), int[].class);
-			}
 
 			final DataType dataType = context.deserialize(obj.get(DATA_TYPE_KEY), DataType.class);
 
-			Compression compression = null;
-			if (obj.has(COMPRESSION_KEY)) {
-				compression = CompressionAdapter.getJsonAdapter().deserialize(obj.get(COMPRESSION_KEY), Compression.class, context);
-			} else if (obj.has(compressionTypeKey)) {
-				compression = DatasetAttributes.getCompressionVersion0(obj.get(compressionTypeKey).getAsString());
-			}
-			if (compression == null)
-				return null;
 
 			final Codec[] codecs;
 			if (obj.has(CODEC_KEY)) {
 				codecs = context.deserialize(obj.get(CODEC_KEY), Codec[].class);
-			} else codecs = null;
-
-			if (codecs != null && codecs.length == 1 && codecs[0] instanceof ShardingCodec) {
-				final ShardingCodec shardingCodec = (ShardingCodec)codecs[0];
-				return new ShardedDatasetAttributes(
-						dimensions,
-						shardSize,
-						blockSize,
-						dataType,
-						shardingCodec
-				);
+			} else if (obj.has(COMPRESSION_KEY)) {
+				final Compression compression = CompressionAdapter.getJsonAdapter().deserialize(obj.get(COMPRESSION_KEY), Compression.class, context);
+				final N5BlockCodec n5BlockCodec = dataType == DataType.UINT8 || dataType == DataType.INT8 ? new N5BlockCodec(null) : new N5BlockCodec();
+				codecs = new Codec[]{compression, n5BlockCodec};
+			} else if (obj.has(compressionTypeKey)) {
+				final Compression compression = getCompressionVersion0(obj.get(compressionTypeKey).getAsString());
+				final N5BlockCodec n5BlockCodec = dataType == DataType.UINT8 || dataType == DataType.INT8 ? new N5BlockCodec(null) : new N5BlockCodec();
+				codecs = new Codec[]{compression, n5BlockCodec};
+			} else {
+				return null;
 			}
-			return new DatasetAttributes(dimensions, blockSize, dataType, compression, codecs);
+			return new DatasetAttributes(dimensions, shardSize, blockSize, dataType, codecs);
 		}
 
 		@Override public JsonElement serialize(DatasetAttributes src, Type typeOfSrc, JsonSerializationContext context) {
@@ -279,15 +294,32 @@ public class DatasetAttributes implements BlockParameters, Serializable {
 			obj.add(DIMENSIONS_KEY, context.serialize(src.dimensions));
 			obj.add(BLOCK_SIZE_KEY, context.serialize(src.blockSize));
 
-			if (src instanceof ShardedDatasetAttributes) {
-				obj.add(SHARD_SIZE_KEY, context.serialize(((ShardedDatasetAttributes)src).getShardSize()));
+			//TODO Caleb: Type Hierarchy Adapter for extensions?
+			final int[] shardSize = src.getShardSize();
+			if (shardSize != null) {
+				obj.add(SHARD_SIZE_KEY, context.serialize(shardSize));
 			}
 
 			obj.add(DATA_TYPE_KEY, context.serialize(src.dataType));
-			obj.add(COMPRESSION_KEY, CompressionAdapter.getJsonAdapter().serialize(src.compression, src.compression.getClass(), context));
 			obj.add(CODEC_KEY, context.serialize(src.concatenateCodecs()));
 
 			return obj;
+		}
+		private static Compression getCompressionVersion0(final String compressionVersion0Name) {
+
+			switch (compressionVersion0Name) {
+			case "raw":
+				return new RawCompression();
+			case "gzip":
+				return new GzipCompression();
+			case "bzip2":
+				return new Bzip2Compression();
+			case "lz4":
+				return new Lz4Compression();
+			case "xz":
+				return new XzCompression();
+			}
+			return null;
 		}
 	}
 }

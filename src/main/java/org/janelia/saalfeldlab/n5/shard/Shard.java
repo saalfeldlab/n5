@@ -24,7 +24,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		return getDatasetAttributes().getBlocksPerShard();
 	}
 
-	public <A extends DatasetAttributes & ShardParameters> A getDatasetAttributes();
+	DatasetAttributes getDatasetAttributes();
 
 	/**
 	 * Returns the size of shards in pixel units.

@@ -6,23 +6,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
 
-import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.GzipCompression;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5FSTest;
 import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
-import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
-import org.janelia.saalfeldlab.n5.codec.BytesCodec;
-import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.RawBytes;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class ShardIndexTest {
@@ -40,7 +33,7 @@ public class ShardIndexTest {
 		int[] shardBlockGridSize = new int[]{5,4,3};
 		ShardIndex index = new ShardIndex(
 				shardBlockGridSize,
-				IndexLocation.END, new BytesCodec());
+				IndexLocation.END, new RawBytes());
 
 		GridIterator it = new GridIterator(shardBlockGridSize);
 		int i = 0;
@@ -54,7 +47,7 @@ public class ShardIndexTest {
 		shardBlockGridSize = new int[]{5,4,3,13};
 		index = new ShardIndex(
 				shardBlockGridSize,
-				IndexLocation.END, new BytesCodec());
+				IndexLocation.END, new RawBytes());
 
 		it = new GridIterator(shardBlockGridSize);
 		i = 0;
@@ -74,7 +67,7 @@ public class ShardIndexTest {
 
 		final int[] shardBlockGridSize = new int[] { 6, 5 };
 		final IndexLocation indexLocation = IndexLocation.END;
-		final DeterministicSizeCodec[] indexCodecs = new DeterministicSizeCodec[] { new BytesCodec(),
+		final DeterministicSizeCodec[] indexCodecs = new DeterministicSizeCodec[] { new RawBytes(),
 				new Crc32cChecksumCodec() };
 
 		final String path = Paths.get(Paths.get(writer.getURI()).toAbsolutePath().toString(), "0").toString();
@@ -101,7 +94,7 @@ public class ShardIndexTest {
 		final int[] shardBlockGridSize = new int[] { 6, 5 };
 		final IndexLocation indexLocation = IndexLocation.END;
 		final DeterministicSizeCodec[] indexCodecs = new DeterministicSizeCodec[] { 
-				new BytesCodec(),
+				new RawBytes(),
 				new Crc32cChecksumCodec() };
 		final String path = Paths.get(Paths.get(writer.getURI()).toAbsolutePath().toString(), "indexTest").toString();
 

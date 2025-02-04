@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.TreeMap;
@@ -14,26 +15,23 @@ import java.util.stream.StreamSupport;
 
 import org.janelia.saalfeldlab.n5.BlockParameters;
 import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 import org.janelia.saalfeldlab.n5.util.Position;
 
+import javax.annotation.CheckForNull;
+
+@Deprecated
 public interface ShardParameters extends BlockParameters {
 
-	public ShardingCodec getShardingCodec();
 
 	/**
 	 * The size of the blocks in pixel units.
 	 *
 	 * @return the number of pixels per dimension for this shard.
 	 */
-	public int[] getShardSize();
+	@CheckForNull
+	int[] getShardSize();
 
-	public IndexLocation getIndexLocation();
-
-	default ShardIndex createIndex() {
-		return new ShardIndex(getBlocksPerShard(), getIndexLocation(), getShardingCodec().getIndexCodecs());
-	}
 
 	/**
 	 * Returns the number of blocks per dimension for a shard.
@@ -42,11 +40,13 @@ public interface ShardParameters extends BlockParameters {
 	 */
 	default int[] getBlocksPerShard() {
 
+		final int[] shardSize = getShardSize();
+		Objects.requireNonNull(shardSize, "getShardSize() must not be null");
 		final int nd = getNumDimensions();
 		final int[] blocksPerShard = new int[nd];
 		final int[] blockSize = getBlockSize();
 		for (int i = 0; i < nd; i++)
-			blocksPerShard[i] = getShardSize()[i] / blockSize[i];
+			blocksPerShard[i] = shardSize[i] / blockSize[i];
 
 		return blocksPerShard;
 	}
@@ -57,9 +57,9 @@ public interface ShardParameters extends BlockParameters {
 	 * @return blocks per image
 	 */
 	default long[] blocksPerImage() {
-		return IntStream.range(0, getNumDimensions()).mapToLong(i -> {
-			return (long) Math.ceil(getDimensions()[i] / getBlockSize()[i]);
-		}).toArray();
+		return IntStream.range(0, getNumDimensions())
+				.mapToLong(i -> (long) Math.ceil(getDimensions()[i] / getBlockSize()[i]))
+				.toArray();
 	}
 
 	/**
@@ -68,9 +68,9 @@ public interface ShardParameters extends BlockParameters {
 	 * @return shards per image
 	 */
 	default long[] shardsPerImage() {
-		return IntStream.range(0, getNumDimensions()).mapToLong(i -> {
-			return (long)Math.ceil(getDimensions()[i] / getShardSize()[i]);
-		}).toArray();
+		return IntStream.range(0, getNumDimensions())
+				.mapToLong(i -> (long)Math.ceil(getDimensions()[i] / getShardSize()[i]))
+				.toArray();
 	}
 
 	/**
@@ -141,6 +141,7 @@ public interface ShardParameters extends BlockParameters {
 		// is this useful?
 		final int[] blockSize = getBlockSize();
 		final int[] shardSize = getShardSize();
+		Objects.requireNonNull(shardSize, "getShardSize() must not be null");
 		final long[] blockImagePos = new long[shardSize.length];
 		for (int i = 0; i < shardSize.length; i++) {
 			blockImagePos[i] = (shardPosition[i] * shardSize[i]) + (blockPosition[i] * blockSize[i]);

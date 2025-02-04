@@ -216,7 +216,7 @@ public abstract class AbstractN5Test {
 
 		final DatasetAttributes info;
 		try (N5Writer writer = createTempN5Writer()) {
-			writer.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
+			writer.createDataset(datasetName, dimensions, blockSize, DataType.UINT64);
 
 			assertTrue("Dataset does not exist", writer.exists(datasetName));
 
@@ -264,12 +264,12 @@ public abstract class AbstractN5Test {
 			final long[] longBlock1 = new long[]{1,2,3,4,5,6,7,8};
 			final long[] dimensions1 = new long[]{2,2,2};
 			final int[] blockSize1 = new int[]{2,2,2};
-			n5.createDataset(datasetName, dimensions1, blockSize1, DataType.INT8, new RawCompression(), codecs);
+			n5.createDataset(datasetName, dimensions1, blockSize1, DataType.INT8, codecs);
 			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 			final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize1, new long[]{0, 0, 0}, longBlock1);
 			n5.writeBlock(datasetName, attributes, dataBlock);
 
-			final DatasetAttributes fakeAttributes = new DatasetAttributes(dimensions1, blockSize1, DataType.INT64, new RawCompression(), codecs);
+			final DatasetAttributes fakeAttributes = new DatasetAttributes(dimensions1, blockSize1, DataType.INT64, codecs);
 			final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, fakeAttributes, 0, 0, 0);
 			assertArrayEquals(longBlock1, (long[])loadedDataBlock.getData());
 			assertTrue(n5.remove(datasetName));
@@ -336,7 +336,7 @@ public abstract class AbstractN5Test {
 					DataType.INT32}) {
 
 				try (final N5Writer n5 = createTempN5Writer()) {
-					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
+					n5.createDataset(datasetName, dimensions, blockSize, dataType, (Codec)compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 					final IntArrayDataBlock dataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
@@ -910,7 +910,7 @@ public abstract class AbstractN5Test {
 			for (final String subGroup : subGroupNames)
 				assertTrue("deepList contents", Arrays.asList(n5.deepList("")).contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 
-			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64, new RawCompression());
+			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64);
 			final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, new long[blockNumElements]);
 			n5.createDataset(datasetName, datasetAttributes);
 			n5.writeBlock(datasetName, datasetAttributes, dataBlock);

@@ -25,6 +25,8 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import org.janelia.saalfeldlab.n5.shard.Shard;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -43,9 +45,6 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.janelia.saalfeldlab.n5.shard.Shard;
-import org.janelia.saalfeldlab.n5.shard.ShardParameters;
-
 /**
  * A simple structured container for hierarchies of chunked
  * n-dimensional datasets and attributes.
@@ -55,7 +54,7 @@ import org.janelia.saalfeldlab.n5.shard.ShardParameters;
  */
 public interface N5Reader extends AutoCloseable {
 
-	public static class Version {
+	class Version {
 
 		private final int major;
 		private final int minor;
@@ -192,12 +191,12 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * SemVer version of this N5 spec.
 	 */
-	public static final Version VERSION = new Version(4, 0, 0);
+	Version VERSION = new Version(4, 0, 0);
 
 	/**
 	 * Version attribute key.
 	 */
-	public static final String VERSION_KEY = "n5";
+	String VERSION_KEY = "n5";
 
 	/**
 	 * Get the SemVer version of this container as specified in the 'version'
@@ -223,7 +222,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @return the base path URI
 	 */
 	// TODO: should this throw URISyntaxException or can we assume that this is
-	// never possible if we were able to instantiate this N5Reader?
+	//   never possible if we were able to instantiate this N5Reader?
 	URI getURI();
 
 	/**
@@ -291,7 +290,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws N5Exception
 	 *             the exception
 	 */
-	DataBlock<?> readBlock(
+	<T> DataBlock<T> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception;
@@ -299,14 +298,13 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Reads the {@link Shard} at the corresponding grid position.
 	 *
-	 * @param <A>
-	 * @param datasetPath
-	 * @param datasetAttributes
-	 * @param shardGridPosition
+	 * @param <T> the data access type for the blocks in the shard
+	 * @param datasetPath to read the shard from
+	 * @param datasetAttributes for the shard
+	 * @param shardGridPosition of the shard we are reading
 	 * @return the shard
 	 */
-	public <A extends DatasetAttributes & ShardParameters> Shard<?> readShard(final String datasetPath,
-			final A datasetAttributes, long... shardGridPosition);
+	<T> Shard<T> readShard(final String datasetPath, final DatasetAttributes datasetAttributes, long... shardGridPosition);
 
 	/**
 	 * Reads multiple {@link DataBlock}s.
@@ -324,12 +322,12 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws N5Exception
 	 *             the exception
 	 */
-	default List<DataBlock<?>> readBlocks(
+	default <T> List<DataBlock<T>> readBlocks(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> gridPositions) throws N5Exception {
 
-		final ArrayList<DataBlock<?>> blocks = new ArrayList<>();
+		final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
 		for( final long[] p : gridPositions )
 			blocks.add(readBlock(pathName, datasetAttributes, p));
 

@@ -12,7 +12,7 @@ import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
-import org.janelia.saalfeldlab.n5.codec.BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.RawBytes;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
@@ -33,8 +33,8 @@ public class BlockIterators {
 				new int[] {6, 4},		// shard size
 				new int[] {2, 2},		// block size
 				DataType.UINT8,
-				new Codec[] { new BytesCodec() },
-				new DeterministicSizeCodec[] { new BytesCodec() },
+				new Codec[] { new RawBytes() },
+				new DeterministicSizeCodec[] { new RawBytes() },
 				IndexLocation.END);
 
 		shardPositions(attrs)

@@ -30,15 +30,15 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.janelia.saalfeldlab.n5.shard.Shard;
 import org.janelia.saalfeldlab.n5.shard.ShardParameters;
-import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
-import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
 /**
  * A simple structured container API for hierarchies of chunked
@@ -212,18 +212,6 @@ public interface N5Writer extends N5Reader {
 		setDatasetAttributes(normalPath, datasetAttributes);
 	}
 
-	default void createDataset(
-			final String datasetPath,
-			final long[] dimensions,
-			final int[] shardSize,
-			final int[] blockSize,
-			final DataType dataType,
-			final Compression compression) throws N5Exception {
-
-		final Codec[] codecs = new Codec[]{new ShardingCodec(blockSize, null, null, IndexLocation.END)};
-
-		createDataset(datasetPath, new DatasetAttributes(dimensions, shardSize, dataType, compression, codecs));
-	}
 
 	/**
 	 * Creates a dataset. This does not create any data but the path and
@@ -233,8 +221,7 @@ public interface N5Writer extends N5Reader {
 	 * @param dimensions the dataset dimensions
 	 * @param blockSize the block size
 	 * @param dataType the data type
-	 * @param compression the compression
-	 * @param codecs optional codecs (may be null)
+	 * @param codecs codecs to encode/decode with
 	 * @throws N5Exception the exception
 	 */
 	default void createDataset(
@@ -242,13 +229,15 @@ public interface N5Writer extends N5Reader {
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final Compression compression,
-			final Codec[] codecs) throws N5Exception {
+			final Codec... codecs) throws N5Exception {
 
-		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, compression, codecs));
+		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, codecs));
 	}
 
 	/**
+	 * DEPRECATED. {@link Compression}s are {@link Codec}s.
+	 * Use {@link #createDataset(String, long[], int[], DataType, Codec...)}
+	 * <p> </p>
 	 * Creates a dataset. This does not create any data but the path and
 	 * mandatory attributes only.
 	 *
@@ -259,6 +248,7 @@ public interface N5Writer extends N5Reader {
 	 * @param compression the compression
 	 * @throws N5Exception the exception
 	 */
+	@Deprecated
 	default void createDataset(
 			final String datasetPath,
 			final long[] dimensions,
@@ -266,7 +256,7 @@ public interface N5Writer extends N5Reader {
 			final DataType dataType,
 			final Compression compression) throws N5Exception {
 
-		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, compression, null));
+		createDataset(datasetPath, dimensions, blockSize, dataType, new N5BlockCodec(), compression);
 	}
 
 	/**
