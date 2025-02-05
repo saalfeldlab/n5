@@ -53,6 +53,7 @@ import org.janelia.saalfeldlab.n5.N5Reader.Version;
 import org.janelia.saalfeldlab.n5.codec.AsTypeCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
+import org.janelia.saalfeldlab.n5.universe.N5Factory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -92,7 +93,7 @@ public abstract class AbstractN5Test {
 
 	protected final HashSet<N5Writer> tempWriters = new HashSet<>();
 
-	public final N5Writer createTempN5Writer() {
+	public N5Writer createTempN5Writer() {
 
 		try {
 			return createTempN5Writer(tempN5Location());
