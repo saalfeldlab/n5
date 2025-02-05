@@ -113,14 +113,18 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	@Override
-	default DataBlock<?> readBlock(
+	default <T> DataBlock<T> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
+		final long[] keyPos = datasetAttributes.getArrayCodec().getPositionForBlock(datasetAttributes, gridPosition);
+		final String keyPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), keyPos);
+
+
 		final SplitKeyValueAccessData splitData;
 		try {
-			splitData = new SplitKeyValueAccessData(getKeyValueAccess(), pathName);
+			splitData = new SplitKeyValueAccessData(getKeyValueAccess(), keyPath);
 		} catch (IOException e) {
 			throw new N5IOException(e);
 		}
