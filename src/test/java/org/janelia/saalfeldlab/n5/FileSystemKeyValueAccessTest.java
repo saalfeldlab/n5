@@ -7,9 +7,6 @@ import static org.junit.Assert.assertArrayEquals;
 
 import java.nio.file.FileSystems;
 import java.nio.file.Paths;
-import java.util.Arrays;
-
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 
@@ -47,12 +44,6 @@ public class FileSystemKeyValueAccessTest {
 			{""}
 	};
 
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {}
-
 	@Test
 	public void testComponents() {
 
@@ -61,7 +52,6 @@ public class FileSystemKeyValueAccessTest {
 		for (int i = 0; i < testPaths.length; ++i) {
 
 			final String[] components = access.components(testPaths[i]);
-			System.out.println(String.format("%d: %s -> %s", i, testPaths[i], Arrays.toString(components)));
 
 			assertArrayEquals(testPathComponents[i], components);
 		}

@@ -24,8 +24,10 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-@NameConfig.Name(value = BytesCodec.TYPE)
-public class BytesCodec implements Codec.ArrayCodec {
+import javax.annotation.Nullable;
+
+@NameConfig.Name(value = RawBytes.TYPE)
+public class RawBytes implements Codec.ArrayCodec {
 
 	private static final long serialVersionUID = 3282569607795127005L;
 
@@ -34,16 +36,17 @@ public class BytesCodec implements Codec.ArrayCodec {
 	@NameConfig.Parameter(value = "endian", optional = true)
 	protected final ByteOrder byteOrder;
 
-	public BytesCodec() {
+	public RawBytes() {
 
 		this(ByteOrder.LITTLE_ENDIAN);
 	}
 
-	public BytesCodec(final ByteOrder byteOrder) {
+	public RawBytes(final ByteOrder byteOrder) {
 
 		this.byteOrder = byteOrder;
 	}
 
+	@Nullable
 	public ByteOrder getByteOrder() {
 		return byteOrder;
 	}
@@ -55,15 +58,13 @@ public class BytesCodec implements Codec.ArrayCodec {
 		return new DataBlockInputStream(in) {
 
 			private int[] blockSize = attributes.getBlockSize();
-			private int numElements = Arrays.stream(blockSize).reduce(1, (x, y) -> {
-				return x * y;
-			});
+			private int numElements = Arrays.stream(blockSize).reduce(1, (x, y) -> x * y);
 
 			@Override
-			protected void beforeRead(int n) throws IOException {}
+			protected void beforeRead(int n) {}
 
 			@Override
-			public DataBlock<?> allocateDataBlock() throws IOException {
+			public DataBlock<?> allocateDataBlock() {
 
 				return attributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
 			}
@@ -73,8 +74,8 @@ public class BytesCodec implements Codec.ArrayCodec {
 
 				if (byteOrder.equals(ByteOrder.BIG_ENDIAN))
 					return new DataInputStream(inputStream);
-				else
-					return new LittleEndianDataInputStream(inputStream);
+
+				return new LittleEndianDataInputStream(inputStream);
 			}
 
 		};

@@ -9,6 +9,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.serialization.N5Annotations;
@@ -99,14 +100,43 @@ public class ShardingCodec implements Codec.ArrayCodec {
 		return indexCodecs;
 	}
 
+	@Override public long[] getPositionForBlock(DatasetAttributes datasetAttributes, DataBlock<?> datablock) {
+
+		return Shard.getShardPositionForBlock(
+				datasetAttributes.getShardBlockGridSize(),
+				datablock.getGridPosition());
+	}
+
+	@Override public long[] getPositionForBlock(DatasetAttributes datasetAttributes, final long... blockPosition) {
+
+		return Shard.getShardPositionForBlock(datasetAttributes.getBlocksPerShard(),
+				blockPosition);
+	}
 	@Override public DataBlockInputStream decode(DatasetAttributes attributes, long[] gridPosition, InputStream in) throws IOException {
 
 		return getArrayCodec().decode(attributes, gridPosition, in);
 	}
 
-	@Override public DataBlockOutputStream encode(DatasetAttributes attributes, DataBlock<?> datablock, OutputStream out) throws IOException {
+	@Override public DataBlockOutputStream encode(DatasetAttributes attributes, DataBlock<?> dataBlock, OutputStream out) throws IOException {
 
-		return getArrayCodec().encode(attributes, datablock, out);
+		return getArrayCodec().encode(attributes, dataBlock, out);
+	}
+
+	@Override public <T> void writeBlock(KeyValueAccess kva, String keyPath, DatasetAttributes datasetAttributes, DataBlock<T> dataBlock) {
+
+		final long[] shardPosition = getPositionForBlock(datasetAttributes, dataBlock.getGridPosition());
+		new VirtualShard<T>(datasetAttributes, shardPosition, kva, keyPath).writeBlock(dataBlock);
+	}
+
+	@Override public <T> DataBlock<T> readBlock(final KeyValueAccess kva, final String keyPath, final DatasetAttributes datasetAttributes, final long... gridPosition) {
+
+		final long[] shardPosition = getPositionForBlock(datasetAttributes, gridPosition);
+		return new VirtualShard<T>(datasetAttributes, shardPosition, kva, keyPath).getBlock(gridPosition);
+	}
+
+	public ShardIndex createIndex(final DatasetAttributes attributes) {
+
+		return new ShardIndex(attributes.getBlocksPerShard(), getIndexCodecs());
 	}
 
 	@Override

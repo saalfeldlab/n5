@@ -82,7 +82,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		try {
 			getKeyValueAccess().createDirectories(absoluteGroupPath(normalPath));
 		} catch (final IOException | UncheckedIOException e) {
-			throw new N5Exception.N5IOException("Failed to create group " + path, e);
+			throw new N5IOException("Failed to create group " + path, e);
 		}
 	}
 
@@ -106,7 +106,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(absoluteAttributesPath(normalGroupPath))) {
 			GsonUtils.writeAttributes(lock.newWriter(), attributes, getGson());
 		} catch (final IOException | UncheckedIOException e) {
-			throw new N5Exception.N5IOException("Failed to write attributes into " + normalGroupPath, e);
+			throw new N5IOException("Failed to write attributes into " + normalGroupPath, e);
 		}
 	}
 
@@ -223,26 +223,23 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T>... dataBlocks) throws N5Exception {
 
-		if (datasetAttributes instanceof ShardParameters) {
-
-			final ShardParameters shardAttributes = (ShardParameters)datasetAttributes;
+		if (datasetAttributes.getShardSize() != null) {
 
 			/* Group blocks by shard index */
-			final Map<Position, List<DataBlock<T>>> shardBlockMap = shardAttributes.groupBlocks(
+			final Map<Position, List<DataBlock<T>>> shardBlockMap = datasetAttributes.groupBlocks(
 					Arrays.stream(dataBlocks).collect(Collectors.toList()));
 
 			for( final Entry<Position, List<DataBlock<T>>> e : shardBlockMap.entrySet()) {
 
 				final long[] shardPosition = e.getKey().get();
-				@SuppressWarnings("unchecked")
-				final Shard<T> currentShard = (Shard<T>) readShard(datasetPath, (DatasetAttributes & ShardParameters)shardAttributes,
+				final Shard<T> currentShard = readShard(datasetPath, datasetAttributes,
 						shardPosition);
 
 				final InMemoryShard<T> newShard = InMemoryShard.fromShard(currentShard);
 				for( DataBlock<T> blk : e.getValue())
 					newShard.addBlock(blk);
 
-				writeShard(datasetPath, (DatasetAttributes & ShardParameters)shardAttributes, newShard);
+				writeShard(datasetPath, datasetAttributes, newShard);
 			}
 
 		} else {
@@ -256,38 +253,26 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception {
 
-		/* Delegate to shard for writing block? How to know what type of shard? */
-		if (datasetAttributes instanceof ShardParameters) {
-			ShardParameters shardDatasetAttrs = (ShardParameters)datasetAttributes;
-			final long[] shardPosition = Shard.getShardPositionForBlock(shardDatasetAttrs.getBlocksPerShard(), dataBlock.getGridPosition());
-			final String shardPath = absoluteShardPath(N5URI.normalizeGroupPath(path), shardPosition);
-			final VirtualShard<T> shard = new VirtualShard<>((DatasetAttributes & ShardParameters)shardDatasetAttrs, shardPosition, getKeyValueAccess(), shardPath);
-			shard.writeBlock(dataBlock);
-			return;
-		}
+		final long[] keyPos = datasetAttributes.getArrayCodec().getPositionForBlock(datasetAttributes, dataBlock);
+		final String keyPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), keyPos);
 
-		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), dataBlock.getGridPosition());
-		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(blockPath)) {
-			try (final OutputStream out = lock.newOutputStream()) {
-				DefaultBlockWriter.writeBlock(out, datasetAttributes, dataBlock);
-			}
-		} catch (final IOException | UncheckedIOException e) {
-			throw new N5IOException(
-					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
-					e);
-		}
+		datasetAttributes.getArrayCodec().writeBlock(
+				getKeyValueAccess(),
+				keyPath,
+				datasetAttributes,
+				dataBlock);
 	}
 
 	@Override
-	default <T,A extends DatasetAttributes & ShardParameters> void writeShard(
+	default <T> void writeShard(
 			final String path,
-			final A datasetAttributes,
+			final DatasetAttributes datasetAttributes,
 			final Shard<T> shard) throws N5Exception {
 
 		final String shardPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), shard.getGridPosition());
 		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(shardPath)) {
-			try (final OutputStream out = lock.newOutputStream()) {
-				InMemoryShard.fromShard(shard).write(out);
+			try (final OutputStream shardOut = lock.newOutputStream()) {
+				InMemoryShard.fromShard(shard).write(shardOut);
 			}
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(

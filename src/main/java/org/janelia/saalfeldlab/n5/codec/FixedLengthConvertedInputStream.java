@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 
-/*
+/**
  * An {@link InputStream} that converts between two fixed-length types.
  */
 public class FixedLengthConvertedInputStream extends InputStream {

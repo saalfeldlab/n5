@@ -7,6 +7,7 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -14,13 +15,13 @@ import java.util.stream.IntStream;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.io.input.ProxyInputStream;
 import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.DefaultBlockReader;
-import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 
@@ -29,7 +30,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	final private KeyValueAccess keyValueAccess;
 	final private String path;
 
-	public <A extends DatasetAttributes & ShardParameters> VirtualShard(final A datasetAttributes, long[] gridPosition,
+	public VirtualShard(final DatasetAttributes datasetAttributes, long[] gridPosition,
 			final KeyValueAccess keyValueAccess, final String path) {
 
 		super(datasetAttributes, gridPosition, null);
@@ -37,23 +38,34 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		this.path = path;
 	}
 
-	public <A extends DatasetAttributes & ShardParameters> VirtualShard(final A datasetAttributes, long[] gridPosition) {
+	public VirtualShard(final DatasetAttributes datasetAttributes, long[] gridPosition) {
 
 		this(datasetAttributes, gridPosition, null, null);
 	}
 
 	@SuppressWarnings("unchecked")
-	public DataBlock<T> getBlock(InputStream inputStream, long... blockGridPosition) throws IOException {
+	public DataBlock<T> getBlock(InputStream in, long... blockGridPosition) throws IOException {
 
-		// TODO this method is just a wrapper around readBlock 
-		// is it worth keeping/
-		return (DataBlock<T>) DefaultBlockReader.readBlock(
-				new ProxyInputStream( inputStream ) {
-					@Override
-					public void close( ) {
-						//nop
-					}
-				}, datasetAttributes, blockGridPosition);
+		ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
+		final Codec.BytesCodec[] codecs = shardingCodec.getCodecs();
+		final Codec.ArrayCodec arrayCodec = shardingCodec.getArrayCodec();
+
+		final ProxyInputStream proxyIn = new ProxyInputStream(in) {
+			@Override
+			public void close() {
+				//nop
+			}
+		};
+		final Codec.DataBlockInputStream dataBlockStream = arrayCodec.decode(datasetAttributes, blockGridPosition, proxyIn);
+
+		final InputStream stream = Codec.decode(in, codecs);
+		final DataBlock<T> dataBlock = dataBlockStream.allocateDataBlock();
+		dataBlock.readData(dataBlockStream.getDataInput(stream));
+		stream.close();
+
+		return dataBlock;
+
+
 	}
 
 	@Override
@@ -73,21 +85,19 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		// sort index offsets
 		// and keep track of relevant positions
 		final long[] indexData = index.getData();
-		List<long[]> sortedOffsets = Arrays.stream(blockIndexes).mapToObj(i -> {
-			return new long[] { indexData[i * 2], i };
-		}).filter(x -> {
-			return x[0] != ShardIndex.EMPTY_INDEX_NBYTES;
-		}).collect(Collectors.toList());
-
-		Collections.sort(sortedOffsets, (a, b) -> Long.compare(((long[]) a)[0], ((long[]) b)[0]));
+		List<long[]> sortedOffsets = Arrays.stream(blockIndexes)
+				.mapToObj(i -> new long[]{indexData[i * 2], i})
+				.filter(x -> x[0] != ShardIndex.EMPTY_INDEX_NBYTES)
+				.sorted(Comparator.comparingLong(a -> ((long[])a)[0]))
+				.collect(Collectors.toList());
 
 		final int nd = getDatasetAttributes().getNumDimensions();
 		long[] position = new long[nd];
 
 		final int[] blocksPerShard = getDatasetAttributes().getBlocksPerShard();
-		final long[] blockGridMin = IntStream.range(0, nd).mapToLong(i -> {
-			return blocksPerShard[i] * getGridPosition()[i];
-		}).toArray();
+		final long[] blockGridMin = IntStream.range(0, nd)
+				.mapToLong(i -> blocksPerShard[i] * getGridPosition()[i])
+				.toArray();
 
 		long streamPosition = 0;
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(path)) {
@@ -128,17 +138,16 @@ public class VirtualShard<T> extends AbstractShard<T> {
 			throw new N5IOException("Attempted to read a block from the wrong shard.");
 
 		final ShardIndex idx = getIndex();
-
-		final long startByte = idx.getOffset(relativePosition);
-
-		if (startByte == ShardIndex.EMPTY_INDEX_NBYTES )
+		if (!idx.exists(relativePosition))
 			return null;
 
-		final long size = idx.getNumBytes(relativePosition);
-		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(path, startByte, size)) {
-			try ( final InputStream channelIn = lockedChannel.newInputStream()) {
+		final long blockOffset = idx.getOffset(relativePosition);
+		final long blockSize = idx.getNumBytes(relativePosition);
+
+		try (final LockedChannel lockedChannel = keyValueAccess.lockForReading(path, blockOffset, blockSize)) {
+			try ( final InputStream in = lockedChannel.newInputStream()) {
 				final long[] blockPosInImg = getDatasetAttributes().getBlockPositionFromShardPosition(getGridPosition(), blockGridPosition);
-				return getBlock( channelIn, blockPosInImg );
+				return getBlock( in, blockPosInImg );
 			}
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
@@ -154,7 +163,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 			throw new N5IOException("Attempted to write block in the wrong shard.");
 
 		final ShardIndex index = getIndex();
-		final IndexLocation indexLocation = getDatasetAttributes().getIndexLocation();
+		final IndexLocation indexLocation = ((ShardingCodec)getDatasetAttributes().getArrayCodec()).getIndexLocation();
 		long startByte = 0;
 		try {
 			startByte = keyValueAccess.size(path);
@@ -167,8 +176,8 @@ public class VirtualShard<T> extends AbstractShard<T> {
 
 		try (final LockedChannel lockedChannel = keyValueAccess.lockForWriting(path, startByte, size)) {
 			try ( final OutputStream channelOut = lockedChannel.newOutputStream()) {
-				try (final CountingOutputStream out = new CountingOutputStream(channelOut)) {
-					DefaultBlockWriter.writeBlock(out, datasetAttributes, block);
+				try (final CountingOutputStream out = new CountingOutputStream(channelOut)) {;
+					writeBlock(out, datasetAttributes, block);
 
 					/* Update and write the index to the shard*/
 					index.set(startByte, out.getNumBytes(), relativePosition);
@@ -185,26 +194,32 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		}
 	}
 
+	<T> void writeBlock(
+			final OutputStream out,
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T> dataBlock) throws IOException {
+
+		ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
+		final Codec.BytesCodec[] codecs = shardingCodec.getCodecs();
+		final Codec.ArrayCodec arrayCodec = shardingCodec.getArrayCodec();
+		final Codec.DataBlockOutputStream dataBlockOutput = arrayCodec.encode(datasetAttributes, dataBlock, out);
+		final OutputStream stream = Codec.encode(dataBlockOutput, codecs);
+
+		dataBlock.writeData(dataBlockOutput.getDataOutput(stream));
+		stream.close();
+	}
 	public ShardIndex createIndex() {
 
 		// Empty index of the correct size
-		return getDatasetAttributes().createIndex();
+		return ((ShardingCodec)getDatasetAttributes().getArrayCodec()).createIndex(getDatasetAttributes());
 	}
 
 	@Override
 	public ShardIndex getIndex() {
 
-		try {
-			final ShardIndex readIndex = ShardIndex.read(keyValueAccess, path, 
-					getDatasetAttributes().getIndexLocation(),
-					getDatasetAttributes().createIndex());
-			index = readIndex == null ? createIndex() : readIndex;
-		} catch (final N5Exception.N5NoSuchKeyException e) {
-			index = createIndex();
-		} catch (IOException e) {
-			throw new N5IOException("Failed to read index at " + path, e);
-		}
-
+		index = createIndex();
+		IndexLocation indexLocation = ((ShardingCodec)getDatasetAttributes().getArrayCodec()).getIndexLocation();
+		ShardIndex.read(keyValueAccess, path, indexLocation, index);
 		return index;
 	}
 

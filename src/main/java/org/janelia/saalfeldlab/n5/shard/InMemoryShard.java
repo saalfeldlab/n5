@@ -5,19 +5,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import javax.xml.crypto.Data;
 
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.io.output.ProxyOutputStream;
-import org.checkerframework.checker.units.qual.A;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.DefaultBlockReader;
@@ -40,14 +35,15 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	 * Use morton- or c-ording instead of writing blocks out in the order they're added?
 	 * (later)
 	 */
-	public <A extends DatasetAttributes & ShardParameters> InMemoryShard(final A datasetAttributes, final long[] shardPosition) {
+	public InMemoryShard(final DatasetAttributes datasetAttributes, final long[] shardPosition) {
 
 		this(datasetAttributes, shardPosition, null);
 		indexBuilder = new ShardIndexBuilder(this);
-		indexBuilder.indexLocation(datasetAttributes.getIndexLocation());
+		final IndexLocation indexLocation = ((ShardingCodec)datasetAttributes.getArrayCodec()).getIndexLocation();
+		indexBuilder.indexLocation(indexLocation);
 	}
 
-	public <A extends DatasetAttributes & ShardParameters> InMemoryShard(final A datasetAttributes, final long[] gridPosition,
+	public InMemoryShard(final DatasetAttributes datasetAttributes, final long[] gridPosition,
 			ShardIndex index) {
 
 		super(datasetAttributes, gridPosition, index);
@@ -95,7 +91,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		for( int idx : blockIndexes ) {
 			GridIterator.indexToPosition(idx, blocksPerShard, position);
 			DataBlock<T> blk = getBlock(position);
-			if( blk != null );
+			if( blk != null )
 				out.add(blk);
 		}
 		return out;
@@ -103,7 +99,9 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 
 	protected IndexLocation indexLocation() {
 
-		return ((ShardParameters)datasetAttributes).getIndexLocation();
+		final ShardingCodec shardingCodec = ((ShardingCodec)getDatasetAttributes().getArrayCodec());
+		final IndexLocation location = shardingCodec.getIndexLocation();
+		return location;
 	}
 
 	@Override
@@ -132,8 +130,8 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 			writeShardStart(out, this);
 	}
 
-	public static <T, A extends DatasetAttributes & ShardParameters> InMemoryShard<T> readShard(
-			final KeyValueAccess kva, final String key, final long[] gridPosition, final A attributes)
+	public static <T> InMemoryShard<T> readShard(
+			final KeyValueAccess kva, final String key, final long[] gridPosition, final DatasetAttributes attributes)
 			throws IOException {
 
 		try (final LockedChannel lockedChannel = kva.lockForReading(key)) {
@@ -147,8 +145,8 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	}
 
 	@SuppressWarnings("hiding")
-	public static <T, A extends DatasetAttributes & ShardParameters> InMemoryShard<T> readShard(
-			final InputStream inputStream, final long[] gridPosition, final A attributes) throws IOException {
+	public static <T> InMemoryShard<T> readShard(
+			final InputStream inputStream, final long[] gridPosition, final DatasetAttributes attributes) throws IOException {
 
 		try (ByteArrayOutputStream result = new ByteArrayOutputStream()) {
 			byte[] buffer = new byte[1024];
@@ -159,13 +157,13 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		}
 	}
 
-	public static <T, A extends DatasetAttributes & ShardParameters> InMemoryShard<T> readShard(
+	public static <T> InMemoryShard<T> readShard(
 			final byte[] data,
-			long[] shardPosition, final A attributes) throws IOException {
+			long[] shardPosition, final DatasetAttributes attributes) throws IOException {
 
-		final ShardIndex index = attributes.createIndex();
-
-		final IndexLocation location = attributes.getIndexLocation();
+		final ShardingCodec shardingCodec = ((ShardingCodec)attributes.getArrayCodec());
+		final ShardIndex index = shardingCodec.createIndex(attributes);
+		final IndexLocation location = shardingCodec.getIndexLocation();
 		ShardIndex.read(data, location, index);
 
 		final InMemoryShard<T> shard = new InMemoryShard<T>(attributes, shardPosition, index);
@@ -221,17 +219,17 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		return inMemoryShard;
 	}
 
-	protected static <T, A extends DatasetAttributes & ShardParameters> void writeShardEndStream(
+	protected static <T> void writeShardEndStream(
 			final OutputStream out,
 			InMemoryShard<T> shard ) throws IOException {
 
-
-		A datasetAttributes = (A) shard.getDatasetAttributes();
+		final DatasetAttributes datasetAttributes = shard.getDatasetAttributes();
 		final ShardIndexBuilder indexBuilder = new ShardIndexBuilder(shard);
 		indexBuilder.indexLocation(IndexLocation.END);
-		indexBuilder.setCodecs(datasetAttributes.getShardingCodec().getIndexCodecs());
+		final ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
+		indexBuilder.setCodecs(shardingCodec.getIndexCodecs());
 
-		// Neccesary to stop `close()` when writing blocks from closing out base OutputStream
+		// Necessary to stop `close()` when writing blocks from closing out base OutputStream
 		final ProxyOutputStream nop = new ProxyOutputStream(out) {
 			@Override public void close() {
 				//nop
@@ -252,14 +250,16 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		ShardIndex.write(indexBuilder.build(), out);
 	}
 
-	protected static <T, A extends DatasetAttributes & ShardParameters> void writeShardEnd(
+	protected static <T> void writeShardEnd(
 			final OutputStream out,
 			InMemoryShard<T> shard ) throws IOException {
 
-		final A datasetAttributes = (A) shard.getDatasetAttributes();
+		final DatasetAttributes datasetAttributes = shard.getDatasetAttributes();
+		final ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
+
 		final ShardIndexBuilder indexBuilder = new ShardIndexBuilder(shard);
 		indexBuilder.indexLocation(IndexLocation.END);
-		indexBuilder.setCodecs(datasetAttributes.getShardingCodec().getIndexCodecs());
+		indexBuilder.setCodecs(shardingCodec.getIndexCodecs());
 
 		for (DataBlock<T> block : shard.getBlocks()) {
 			final ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -272,14 +272,16 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		ShardIndex.write(indexBuilder.build(), out);
 	}
 
-	protected static <T, A extends DatasetAttributes & ShardParameters> void writeShardStart(
+	protected static <T> void writeShardStart(
 			final OutputStream out,
 			InMemoryShard<T> shard ) throws IOException {
 
-		final A datasetAttributes = (A)shard.getDatasetAttributes();
+		final DatasetAttributes datasetAttributes = shard.getDatasetAttributes();
+		final ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
+
 		final ShardIndexBuilder indexBuilder = new ShardIndexBuilder(shard);
 		indexBuilder.indexLocation(IndexLocation.START);
-		indexBuilder.setCodecs(datasetAttributes.getShardingCodec().getIndexCodecs());
+		indexBuilder.setCodecs(shardingCodec.getIndexCodecs());
 
 		final List<byte[]> blockData = new ArrayList<>(shard.numBlocks());
 		for (DataBlock<T> block : shard.getBlocks()) {

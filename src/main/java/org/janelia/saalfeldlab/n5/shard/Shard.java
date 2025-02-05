@@ -11,7 +11,20 @@ import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 public interface Shard<T> extends Iterable<DataBlock<T>> {
 
-	public <A extends DatasetAttributes & ShardParameters> A getDatasetAttributes();
+	/**
+	 * Returns the number of blocks this shard contains along all dimensions.
+	 *
+	 * The size of a shard expected to be smaller than or equal to the spacing of the shard grid. The dimensionality of size is expected to be equal to the dimensionality of the
+	 * dataset. Consistency is not enforced.
+	 *
+	 * @return size of the shard in units of blocks
+	 */
+	default int[] getBlockGridSize() {
+
+		return getDatasetAttributes().getBlocksPerShard();
+	}
+
+	DatasetAttributes getDatasetAttributes();
 
 	/**
 	 * Returns the size of this shard in pixels.
@@ -58,8 +71,6 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 		return blocksPerShard;
 	}
-
-	public ShardIndex getIndex();
 
 	/**
 	 * Given an absolute block position, returns that block's position 
@@ -111,7 +122,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	 *
 	 * @return the shard position
 	 */
-	default long[] getShard(long... blockPosition) {
+	default long[] getShardPosition(long... blockPosition) {
 
 		final int[] blocksPerShard = getBlocksPerShard();
 		final long[] shardGridPosition = new long[blocksPerShard.length];
@@ -125,6 +136,8 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	public DataBlock<T> getBlock(long... blockGridPosition);
 
 //	public void writeBlock(DataBlock<T> block);
+
+	//TODO Caleb: add writeBlocks that does NOT always expect to overwrite the entire existing Shard
 
 	default Iterator<DataBlock<T>> iterator() {
 
@@ -166,21 +179,31 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		return new GridIterator(GridIterator.int2long(getBlocksPerShard()), min);
 	}
 
+	ShardIndex getIndex();
+
+	static <T> Shard<T> createEmpty(final DatasetAttributes attributes, long... shardPosition) {
+
+		final long[] emptyIndex = new long[(int)(2 * attributes.getNumBlocks())];
+		Arrays.fill(emptyIndex, ShardIndex.EMPTY_INDEX_NBYTES);
+		final ShardIndex shardIndex = new ShardIndex(attributes.getBlocksPerShard(), emptyIndex);
+		return new InMemoryShard<T>(attributes, shardPosition, shardIndex);
+	}
+
 	/**
 	 * Given a block's position relative to the array, returns the position of the
 	 * shard containing that block relative to the shard grid.
 	 *
-	 * @param blockGridSize     size of the shards block grid
+	 * @param blocksPerShard     size of the shards block grid
 	 * @param blockGridPosition position of a block relative to the array
 	 * @return the position of the containing shard in the shard grid
 	 */
-	public static long[] getShardPositionForBlock(
-			final int[] blockGridSize,
+	static long[] getShardPositionForBlock(
+			final int[] blocksPerShard,
 			final long[] blockGridPosition) {
 
 		final long[] shardGridPosition = new long[blockGridPosition.length];
 		for (int i = 0; i < shardGridPosition.length; i++) {
-			shardGridPosition[i] = (int)Math.floor((double)blockGridPosition[i] / blockGridSize[i]);
+			shardGridPosition[i] = (int)Math.floor((double)blockGridPosition[i] / blocksPerShard[i]);
 		}
 
 		return shardGridPosition;
@@ -191,7 +214,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	 *
 	 * @return the block position
 	 */
-	public static int[] getRelativeBlockPosition(
+	static int[] getRelativeBlockPosition(
 			final int[] blocksPerShard,
 			final long[] shardPosition,
 			final long[] absoluteBlockPosition) {
@@ -207,13 +230,13 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 		return blockShardPos;
 	}
-	
+
 	/**
 	 * Given a block's position relative to a shard, returns its position relative
 	 * to the image.
 	 *
 	 */
-	public static long[] getAbsoluteBlockPosition(
+	static long[] getAbsoluteBlockPosition(
 			final int[] blocksPerShard, final long[] shardPosition, final long[] relativeBlockPosition) {
 
 		// is this useful?
@@ -226,19 +249,12 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		return blockImagePos;
 	}
 
-	public static <T,A extends DatasetAttributes & ShardParameters> Shard<T> createEmpty(final A attributes, long... shardPosition) {
-
-		final long[] emptyIndex = new long[(int)(2 * attributes.getNumBlocks())];
-		Arrays.fill(emptyIndex, ShardIndex.EMPTY_INDEX_NBYTES);
-		final ShardIndex shardIndex = new ShardIndex(attributes.getBlocksPerShard(), emptyIndex);
-		return new InMemoryShard<T>(attributes, shardPosition, shardIndex);
-	}
-
-	public static class DataBlockIterator<T> implements Iterator<DataBlock<T>> {
+	class DataBlockIterator<T> implements Iterator<DataBlock<T>> {
 
 		private final GridIterator it;
 		private final Shard<T> shard;
 		private final ShardIndex index;
+		// TODO ShardParameters is deprecated?
 		private int blockIndex = 0;
 
 		public DataBlockIterator(final Shard<T> shard) {

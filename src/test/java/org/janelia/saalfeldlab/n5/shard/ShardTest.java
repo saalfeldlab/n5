@@ -3,16 +3,16 @@ package org.janelia.saalfeldlab.n5.shard;
 import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.GzipCompression;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5FSTest;
 import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
-import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
+import org.janelia.saalfeldlab.n5.codec.RawBytes;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
@@ -23,16 +23,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.junit.Assert.assertArrayEquals;
-
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+
+import static org.junit.Assert.assertArrayEquals;
 
 @RunWith(Parameterized.class)
 public class ShardTest {
@@ -66,33 +64,39 @@ public class ShardTest {
 
 	@After
 	public void removeTempWriters() {
+
 		tempN5Factory.removeTempWriters();
 	}
 
-	private ShardedDatasetAttributes getTestAttributes(long[] dimensions, int[] shardSize, int[] blockSize) {
-		return new ShardedDatasetAttributes(
+	private DatasetAttributes getTestAttributes(long[] dimensions, int[] shardSize, int[] blockSize) {
+
+		return new DatasetAttributes(
 				dimensions,
 				shardSize,
 				blockSize,
 				DataType.UINT8,
-				new Codec[]{new N5BlockCodec(dataByteOrder), new GzipCompression(4)},
-				new DeterministicSizeCodec[]{new BytesCodec(indexByteOrder), new Crc32cChecksumCodec()},
-				indexLocation
+				new ShardingCodec(
+						blockSize,
+						new Codec[]{new N5BlockCodec(dataByteOrder)}, //, new GzipCompression(4)},
+						new DeterministicSizeCodec[]{new RawBytes(indexByteOrder), new Crc32cChecksumCodec()},
+						indexLocation
+				)
 		);
 	}
 
-	private ShardedDatasetAttributes getTestAttributes() {
-			return getTestAttributes(new long[]{8, 8}, new int[]{4, 4}, new int[]{2, 2});
+	private DatasetAttributes getTestAttributes() {
+
+		return getTestAttributes(new long[]{8, 8}, new int[]{4, 4}, new int[]{2, 2});
 	}
 
 	@Test
 	public void writeReadBlocksTest() {
 
 		final N5Writer writer = tempN5Factory.createTempN5Writer();
-		final ShardedDatasetAttributes datasetAttributes = getTestAttributes(
-				new long[]{24,24},
-				new int[]{8,8},
-				new int[]{2,2}
+		final DatasetAttributes datasetAttributes = getTestAttributes(
+				new long[]{24, 24},
+				new int[]{8, 8},
+				new int[]{2, 2}
 		);
 
 		writer.createDataset("shard", datasetAttributes);
@@ -105,22 +109,21 @@ public class ShardTest {
 			data[i] = (byte)((100) + (10) + i);
 		}
 
-
 		writer.writeBlocks(
 				"shard",
 				datasetAttributes,
 				/* shard (0, 0) */
-				new ByteArrayDataBlock(blockSize, new long[]{0,0}, data),
-				new ByteArrayDataBlock(blockSize, new long[]{0,1}, data),
-				new ByteArrayDataBlock(blockSize, new long[]{1,0}, data),
-				new ByteArrayDataBlock(blockSize, new long[]{1,1}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{0, 1}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{1, 0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{1, 1}, data),
 
 				/* shard (1, 0) */
-				new ByteArrayDataBlock(blockSize, new long[]{4,0}, data),
-				new ByteArrayDataBlock(blockSize, new long[]{5,0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{4, 0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{5, 0}, data),
 
 				/* shard (2, 2) */
-				new ByteArrayDataBlock(blockSize, new long[]{11,11}, data)
+				new ByteArrayDataBlock(blockSize, new long[]{11, 11}, data)
 		);
 
 		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
@@ -135,7 +138,7 @@ public class ShardTest {
 			Assert.assertTrue("Shard at" + Arrays.toString(key) + "Does not exist", kva.exists(shard));
 		}
 
-		final long[][] blockIndices = new long[][]{ {0,0}, {0,1}, {1,0}, {1,1}, {4,0}, {5,0}, {11,11}};
+		final long[][] blockIndices = new long[][]{{0, 0}, {0, 1}, {1, 0}, {1, 1}, {4, 0}, {5, 0}, {11, 11}};
 		for (long[] blockIndex : blockIndices) {
 			final DataBlock<?> block = writer.readBlock("shard", datasetAttributes, blockIndex);
 			Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
@@ -149,15 +152,15 @@ public class ShardTest {
 				"shard",
 				datasetAttributes,
 				/* shard (0, 0) */
-				new ByteArrayDataBlock(blockSize, new long[]{0,0}, data2),
-				new ByteArrayDataBlock(blockSize, new long[]{1,1}, data2),
+				new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data2),
+				new ByteArrayDataBlock(blockSize, new long[]{1, 1}, data2),
 
 				/* shard (0, 1) */
-				new ByteArrayDataBlock(blockSize, new long[]{0,4}, data2),
-				new ByteArrayDataBlock(blockSize, new long[]{0,5}, data2),
+				new ByteArrayDataBlock(blockSize, new long[]{0, 4}, data2),
+				new ByteArrayDataBlock(blockSize, new long[]{0, 5}, data2),
 
 				/* shard (2, 2) */
-				new ByteArrayDataBlock(blockSize, new long[]{10,10}, data2)
+				new ByteArrayDataBlock(blockSize, new long[]{10, 10}, data2)
 		);
 
 		final String[][] keys2 = new String[][]{
@@ -171,13 +174,13 @@ public class ShardTest {
 			Assert.assertTrue("Shard at" + Arrays.toString(key) + "Does not exist", kva.exists(shard));
 		}
 
-		final long[][] oldBlockIndices = new long[][]{{0,1}, {1,0}, {4,0}, {5,0}, {11,11}};
+		final long[][] oldBlockIndices = new long[][]{{0, 1}, {1, 0}, {4, 0}, {5, 0}, {11, 11}};
 		for (long[] blockIndex : oldBlockIndices) {
 			final DataBlock<?> block = writer.readBlock("shard", datasetAttributes, blockIndex);
 			Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
 		}
 
-		final long[][] newBlockIndices = new long[][]{{0,0}, {1,1}, {0,4}, {0,5}, {10,10}};
+		final long[][] newBlockIndices = new long[][]{{0, 0}, {1, 1}, {0, 4}, {0, 5}, {10, 10}};
 		for (long[] blockIndex : newBlockIndices) {
 			final DataBlock<?> block = writer.readBlock("shard", datasetAttributes, blockIndex);
 			Assert.assertArrayEquals("Read from shard doesn't match", data2, (byte[])block.getData());
@@ -188,7 +191,7 @@ public class ShardTest {
 	public void writeReadBlockTest() {
 
 		final N5Writer writer = tempN5Factory.createTempN5Writer();
-		final ShardedDatasetAttributes datasetAttributes = getTestAttributes();
+		final DatasetAttributes datasetAttributes = getTestAttributes();
 
 		writer.createDataset("shard", datasetAttributes);
 		writer.deleteBlock("shard", 0, 0);
@@ -229,15 +232,7 @@ public class ShardTest {
 
 		final N5Writer writer = tempN5Factory.createTempN5Writer();
 
-		final ShardedDatasetAttributes datasetAttributes = new ShardedDatasetAttributes(
-				new long[]{4, 4},
-				new int[]{4, 4},
-				new int[]{2, 2},
-				DataType.UINT8,
-				new Codec[]{new N5BlockCodec(dataByteOrder)},
-				new DeterministicSizeCodec[]{new BytesCodec(indexByteOrder), new Crc32cChecksumCodec()},
-				indexLocation
-		);
+		final DatasetAttributes datasetAttributes = getTestAttributes();
 		writer.createDataset("wholeShard", datasetAttributes);
 		writer.deleteBlock("wholeShard", 0, 0);
 
@@ -277,44 +272,48 @@ public class ShardTest {
 	public void writeReadNestedShards() {
 
 		int[] blockSize = new int[]{4, 4};
-		int N = Arrays.stream(blockSize).reduce(1, (x,y) -> x*y);
+		int N = Arrays.stream(blockSize).reduce(1, (x, y) -> x * y);
 
 		final N5Writer writer = tempN5Factory.createTempN5Writer();
-		final ShardedDatasetAttributes datasetAttributes = getNestedShardCodecsAttributes(blockSize);
+		final DatasetAttributes datasetAttributes = getNestedShardCodecsAttributes(blockSize);
 		writer.createDataset("nestedShards", datasetAttributes);
 
 		final byte[] data = new byte[N];
 		Arrays.fill(data, (byte)4);
 
 		writer.writeBlocks("nestedShards", datasetAttributes,
-				new ByteArrayDataBlock(blockSize, new long[] { 1, 1 }, data),
-				new ByteArrayDataBlock(blockSize, new long[] { 0, 2 }, data),
-				new ByteArrayDataBlock(blockSize, new long[] { 2, 1 }, data));
+				new ByteArrayDataBlock(blockSize, new long[]{1, 1}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{0, 2}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{2, 1}, data));
 
-		assertArrayEquals(data, (byte[]) writer.readBlock("nestedShards", datasetAttributes, 1, 1).getData());
-		assertArrayEquals(data, (byte[]) writer.readBlock("nestedShards", datasetAttributes, 0, 2).getData());
-		assertArrayEquals(data, (byte[]) writer.readBlock("nestedShards", datasetAttributes, 2, 1).getData());
+		assertArrayEquals(data, (byte[])writer.readBlock("nestedShards", datasetAttributes, 1, 1).getData());
+		assertArrayEquals(data, (byte[])writer.readBlock("nestedShards", datasetAttributes, 0, 2).getData());
+		assertArrayEquals(data, (byte[])writer.readBlock("nestedShards", datasetAttributes, 2, 1).getData());
 	}
 
-	private ShardedDatasetAttributes getNestedShardCodecsAttributes(int[] blockSize) {
+	private DatasetAttributes getNestedShardCodecsAttributes(int[] blockSize) {
 
-		final int[] innerShardSize = new int[] { 2 * blockSize[0], 2 * blockSize[1] };
-		final int[] shardSize = new int[] { 4 * blockSize[0], 4 * blockSize[1] };
+		final int[] innerShardSize = new int[]{2 * blockSize[0], 2 * blockSize[1]};
+		final int[] shardSize = new int[]{4 * blockSize[0], 4 * blockSize[1]};
 		final long[] dimensions = GridIterator.int2long(shardSize);
 
 		// TODO: its not even clear how we build this given
-		// this constructor. Is the block size of the sharded dataset attributes
-		// the innermost (block) size or the intermediate shard size?
-		// probably better to forget about this class - only use DatasetAttributes
-		// and detect shading in another way
+		// 	this constructor. Is the block size of the sharded dataset attributes
+		// 	the innermost (block) size or the intermediate shard size?
+		// 	probably better to forget about this class - only use DatasetAttributes
+		// 	and detect shading in another way
 		final ShardingCodec innerShard = new ShardingCodec(innerShardSize,
-				new Codec[] { new BytesCodec() },
-				new DeterministicSizeCodec[] { new BytesCodec(indexByteOrder), new Crc32cChecksumCodec() },
+				new Codec[]{new RawBytes()},
+				new DeterministicSizeCodec[]{new RawBytes(indexByteOrder), new Crc32cChecksumCodec()},
 				IndexLocation.START);
 
-		return new ShardedDatasetAttributes(dimensions, shardSize, blockSize, DataType.UINT8,
-				new Codec[] { innerShard },
-				new DeterministicSizeCodec[] { new BytesCodec(indexByteOrder), new Crc32cChecksumCodec() },
-				IndexLocation.END);
+		return new DatasetAttributes(
+				dimensions, shardSize, blockSize, DataType.UINT8,
+				new ShardingCodec(
+						blockSize,
+						new Codec[]{innerShard},
+						new DeterministicSizeCodec[]{new RawBytes(indexByteOrder), new Crc32cChecksumCodec()},
+						IndexLocation.END)
+				);
 	}
 }

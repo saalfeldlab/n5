@@ -39,6 +39,10 @@ import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.scijava.annotations.Indexable;
 
 /**
+ * Deprecated: {@link Compression}s are no longer a special case.
+ * <br>
+ * Use {@link Codec.BytesCodec} for implementing compressors
+ * <p> </p>
  * Compression scheme interface.
  *
  * @author Stephan Saalfeld
@@ -53,7 +57,7 @@ public interface Compression extends Serializable, Codec.BytesCodec {
 	@Inherited
 	@Target(ElementType.TYPE)
 	@Indexable
-	public static @interface CompressionType {
+	@interface CompressionType {
 
 		String value();
 	}
@@ -65,10 +69,10 @@ public interface Compression extends Serializable, Codec.BytesCodec {
 	@Retention(RetentionPolicy.RUNTIME)
 	@Inherited
 	@Target(ElementType.FIELD)
-	public static @interface CompressionParameter {}
+	@interface CompressionParameter {}
 
 	@Override
-	public default String getType() {
+	default String getType() {
 
 		final CompressionType compressionType = getClass().getAnnotation(CompressionType.class);
 		if (compressionType == null)
@@ -78,9 +82,9 @@ public interface Compression extends Serializable, Codec.BytesCodec {
 	}
 
 
-	public BlockReader getReader();
+	BlockReader getReader();
 
-	public BlockWriter getWriter();
+	BlockWriter getWriter();
 
 	/**
 	 * Decode an {@link InputStream}.
@@ -90,7 +94,7 @@ public interface Compression extends Serializable, Codec.BytesCodec {
 	 * @return the decoded input stream
 	 */
 	@Override
-	public InputStream decode(InputStream in) throws IOException;
+	InputStream decode(InputStream in) throws IOException;
 
 	/**
 	 * Encode an {@link OutputStream}.
@@ -100,6 +104,6 @@ public interface Compression extends Serializable, Codec.BytesCodec {
 	 * @return the encoded output stream
 	 */
 	@Override
-	public OutputStream encode(OutputStream out) throws IOException;
+	OutputStream encode(OutputStream out) throws IOException;
 
 }
