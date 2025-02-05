@@ -93,7 +93,7 @@ public abstract class AbstractN5Test {
 
 	protected final HashSet<N5Writer> tempWriters = new HashSet<>();
 
-	public final N5Writer createTempN5Writer() {
+	public N5Writer createTempN5Writer() {
 
 		try {
 			return createTempN5Writer(tempN5Location());
@@ -142,7 +142,9 @@ public abstract class AbstractN5Test {
 
 	protected N5Writer createN5Writer(final String location) throws IOException, URISyntaxException {
 
-		return createN5Writer(location, new GsonBuilder());
+		final N5Factory factory = new N5Factory();
+		return factory.openWriter(N5Factory.StorageFormat.ZARR, location);
+//		return createN5Writer(location, new GsonBuilder());
 	}
 
 	/* Tests that overide this should enusre that the `N5Writer` created will remove its container on close() */

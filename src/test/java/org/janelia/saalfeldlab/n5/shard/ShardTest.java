@@ -36,7 +36,20 @@ import static org.junit.Assert.assertArrayEquals;
 @RunWith(Parameterized.class)
 public class ShardTest {
 
-	private static final N5FSTest tempN5Factory = new N5FSTest();
+	private static final boolean LOCAL_DEBUG = false;
+
+	private static final N5FSTest tempN5Factory = new N5FSTest() {
+
+		@Override public N5Writer createTempN5Writer() {
+
+			if (LOCAL_DEBUG) {
+				final N5Writer writer = N5Factory.createWriter("src/test/resources/test.n5");
+				writer.remove(""); //Clear old when starting new test
+				return writer;
+			}
+			return super.createTempN5Writer();
+		}
+	};
 
 	@Parameterized.Parameters(name = "IndexLocation({0}), Block ByteOrder({1}), Index ByteOrder({2})")
 	public static Collection<Object[]> data() {
@@ -49,7 +62,8 @@ public class ShardTest {
 				}
 			}
 		}
-		final Object[][] paramArray = new Object[params.size()][];
+		final int numParams = LOCAL_DEBUG ? 1 : params.size();
+		final Object[][] paramArray = new Object[numParams][];
 		Arrays.setAll(paramArray, params::get);
 		return Arrays.asList(paramArray);
 	}
@@ -130,7 +144,6 @@ public class ShardTest {
 		);
 
 		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
-
 
 		final String[][] keys = new String[][]{
 				{dataset, "0", "0"},
@@ -274,8 +287,6 @@ public class ShardTest {
 			Assert.assertArrayEquals("Read prior write from shard no loner matches", otherData, (byte[])otherBlock.getData());
 		}
 	}
-
-
 
 	@Test
 	@Ignore
