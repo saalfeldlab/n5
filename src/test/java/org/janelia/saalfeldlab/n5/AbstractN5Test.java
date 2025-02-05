@@ -142,9 +142,7 @@ public abstract class AbstractN5Test {
 
 	protected N5Writer createN5Writer(final String location) throws IOException, URISyntaxException {
 
-		final N5Factory factory = new N5Factory();
-		return factory.openWriter(N5Factory.StorageFormat.ZARR, location);
-//		return createN5Writer(location, new GsonBuilder());
+		return createN5Writer(location, new GsonBuilder());
 	}
 
 	/* Tests that overide this should enusre that the `N5Writer` created will remove its container on close() */
