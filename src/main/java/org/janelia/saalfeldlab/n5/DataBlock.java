@@ -105,6 +105,17 @@ public interface DataBlock<T> {
 	// TODO: rename? "serialize"? "write"?
 	ReadData writeData(ByteOrder byteOrder);
 
+
+//	DataBlockCodec<T> getDataBlockCodec();
+//
+//	interface DataBlockCodec<T> {
+//
+//		ReadData serialize(DataBlock<T> dataBlock) throws IOException;
+//
+//		void deserialize(ReadData readData, DataBlock<T> dataBlock) throws IOException;
+//	}
+
+
 	/**
 	 * Returns the number of elements in this {@link DataBlock}. This number is
 	 * not necessarily equal {@link #getNumElements(int[])
