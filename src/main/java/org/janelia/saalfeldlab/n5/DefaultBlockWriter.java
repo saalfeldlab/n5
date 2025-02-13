@@ -78,9 +78,9 @@ public interface DefaultBlockWriter {
 
 		dos.flush();
 
-		dataBlock.writeData(ByteOrder.BIG_ENDIAN)
-				.encode(datasetAttributes.getCompression())
-				.writeTo(out);
+		datasetAttributes.getCompression().encode(
+				dataBlock.writeData(ByteOrder.BIG_ENDIAN)
+		).writeTo(out);
 		out.flush();
 	}
 }

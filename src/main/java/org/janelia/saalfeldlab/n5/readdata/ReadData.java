@@ -133,26 +133,8 @@ public interface ReadData {
 		outputStream.write(allBytes());
 	}
 
-	//
- 	//
 	// ------------- Encoding / Decoding ----------------
 	//
-
-	/**
-	 * Returns a new ReadData that uses the given {@code Codec} to encode this
-	 * ReadData.
-	 *
-	 * @param codec
-	 * 		Codec to use for encoding
-	 *
-	 * @return encoded ReadData
-	 *
-	 * @throws IOException
-	 * 		if any I/O error occurs
-	 */
-	default ReadData encode(BytesCodec codec) throws IOException {
-		return codec.encode(this);
-	}
 
 	/**
 	 * Returns a new ReadData that uses the given {@code OutputStreamEncoder} to
@@ -167,29 +149,6 @@ public interface ReadData {
 		return new EncodedReadData(this, encoder);
 	}
 
-	/**
-	 * Returns a new ReadData that uses the given {@code codec} to decode this
-	 * ReadData.
-	 * <p>
-	 * The returned ReadData reports {@link #length()}{@code == decodedLength}.
-	 * Decoding may be lazy or eager, depending on the {@code BytesCodec}.
-	 *
-	 * @param codec
-	 * 		Codec to use for decoding
-	 * @param decodedLength
-	 * 		length of the decoded data (-1 if unknown).
-	 *
-	 * @return decoded ReadData
-	 *
-	 * @throws IOException
-	 * 		if any I/O error occurs
-	 */
-	default ReadData decode(BytesCodec codec, int decodedLength) throws IOException {
-		return codec.decode(this, decodedLength);
-	}
-
-	//
-	//
 	// --------------- Factory Methods ------------------
 	//
 
