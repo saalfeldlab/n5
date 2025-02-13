@@ -1,20 +1,36 @@
 package org.janelia.saalfeldlab.n5.readdata;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Objects;
 
 class EncodedReadData implements ReadData {
 
+	/**
+	 * Like {@code UnaryOperator<OutputStream>}, but {@code apply} throws {@code IOException}.
+	 */
+	@FunctionalInterface
+	public interface OutputStreamOperator {
+
+		OutputStream apply(OutputStream o) throws IOException;
+
+		default OutputStreamOperator andThen(OutputStreamOperator after) {
+			Objects.requireNonNull(after);
+			return o -> after.apply(apply(o));
+		}
+	}
+
+	EncodedReadData(final ReadData data, final OutputStreamOperator encoder) {
+		this.source = data;
+		this.encoder = interceptClose.andThen(encoder)::apply;
+	}
+
 	private final ReadData source;
 
-	private final OutputStreamEncoder encoder;
-
-	EncodedReadData(final ReadData data, final OutputStreamEncoder encoder) {
-		this.source = data;
-		this.encoder = encoder;
-	}
+	private final OutputStreamOperator encoder;
 
 	private ByteArraySplittableReadData bytes;
 
@@ -48,9 +64,21 @@ class EncodedReadData implements ReadData {
 		if (bytes != null) {
 			outputStream.write(bytes.allBytes());
 		} else {
-			final OutputStreamEncoder.EncodedOutputStream deflater = encoder.encode(outputStream);
-			source.writeTo(deflater.outputStream());
-			deflater.finish();
+			try (final OutputStream deflater = encoder.apply(outputStream)) {
+				source.writeTo(deflater);
+			}
 		}
 	}
+
+	/**
+	 * {@code UnaryOperator} that wraps {@code OutputStream} to intercept {@code
+	 * close()} and call {@code flush()} instead
+	 */
+	private static OutputStreamOperator interceptClose = o -> new FilterOutputStream(o) {
+
+		@Override
+		public void close() throws IOException {
+			out.flush();
+		}
+	};
 }
