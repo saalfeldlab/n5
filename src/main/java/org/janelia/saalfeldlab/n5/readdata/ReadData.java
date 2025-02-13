@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.function.UnaryOperator;
 import org.janelia.saalfeldlab.n5.BytesCodec;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
+import org.janelia.saalfeldlab.n5.readdata.EncodedReadData.OutputStreamOperator;
 
 /**
  * An abstraction over {@code byte[]} data.
@@ -161,7 +163,7 @@ public interface ReadData {
 	 *
 	 * @return encoded ReadData
 	 */
-	default ReadData encode(OutputStreamEncoder encoder) {
+	default ReadData encode(OutputStreamOperator encoder) {
 		return new EncodedReadData(this, encoder);
 	}
 
