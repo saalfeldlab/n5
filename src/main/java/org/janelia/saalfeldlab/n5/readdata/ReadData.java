@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.function.UnaryOperator;
-import org.janelia.saalfeldlab.n5.BytesCodec;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.readdata.EncodedReadData.OutputStreamOperator;
 

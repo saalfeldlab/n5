@@ -25,12 +25,14 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.scijava.annotations.Indexable;
 
 /**
@@ -38,7 +40,7 @@ import org.scijava.annotations.Indexable;
  *
  * @author Stephan Saalfeld
  */
-public interface Compression extends BytesCodec, Serializable {
+public interface Compression extends Serializable {
 
 	/**
 	 * Annotation for runtime discovery of compression schemes.
@@ -70,4 +72,43 @@ public interface Compression extends BytesCodec, Serializable {
 		else
 			return compressionType.value();
 	}
+
+	// --------------------------------------------------
+	//
+
+	/**
+	 * Decode the given {@code readData}.
+	 * <p>
+	 * The returned decoded {@code ReadData} reports {@link ReadData#length()
+	 * length()}{@code == decodedLength}. Decoding may be lazy or eager,
+	 * depending on the {@code BytesCodec} implementation.
+	 *
+	 * @param readData
+	 * 		data to decode
+	 * @param decodedLength
+	 * 		length of the decoded data (-1 if unknown)
+	 *
+	 * @return decoded ReadData
+	 *
+	 * @throws IOException
+	 * 		if any I/O error occurs
+	 */
+	ReadData decode(ReadData readData, int decodedLength) throws IOException;
+
+	/**
+	 * Encode the given {@code readData}.
+	 * <p>
+	 * Encoding may be lazy or eager, depending on the {@code BytesCodec}
+	 * implementation.
+	 *
+	 * @param readData
+	 * 		data to encode
+	 *
+	 * @return encoded ReadData
+	 *
+	 * @throws IOException
+	 * 		if any I/O error occurs
+	 */
+	ReadData encode(ReadData readData) throws IOException;
+
 }
