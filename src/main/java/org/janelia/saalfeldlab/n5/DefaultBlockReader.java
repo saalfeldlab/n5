@@ -81,8 +81,8 @@ public interface DefaultBlockReader {
 		final int numBytes = dataType.isVarLength()
 				? numElements
 				: (numElements * dataType.bytesPerElement());
-		final ReadData data = ReadData.from(in)
-				.decode(datasetAttributes.getCompression(), numBytes);
+		final ReadData data = datasetAttributes.getCompression().decode(
+				ReadData.from(in), numBytes);
 		dataBlock.readData(ByteOrder.BIG_ENDIAN, data);
 
 		return dataBlock;
