@@ -5,11 +5,9 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.function.IntFunction;
+import org.janelia.saalfeldlab.n5.codec.DataCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import static org.janelia.saalfeldlab.n5.Codecs.ChunkHeader.MODE_DEFAULT;
@@ -19,203 +17,22 @@ import static org.janelia.saalfeldlab.n5.Codecs.ChunkHeader.MODE_VARLENGTH;
 public class Codecs {
 
 
-
-
-
-
-
-	public static abstract class DataCodec<T> {
-
-		public static final DataCodec<byte[]>   BYTE   = new ByteDataCodec();
-		public static final DataCodec<short[]>  SHORT  = new ShortDataCodec(ByteOrder.BIG_ENDIAN);
-		public static final DataCodec<int[]>    INT    = new IntDataCodec(ByteOrder.BIG_ENDIAN);
-		public static final DataCodec<long[]>   LONG   = new LongDataCodec(ByteOrder.BIG_ENDIAN);
-		public static final DataCodec<float[]>  FLOAT  = new FloatDataCodec(ByteOrder.BIG_ENDIAN);
-		public static final DataCodec<double[]> DOUBLE = new DoubleDataCodec(ByteOrder.BIG_ENDIAN);
-
-		public static final DataCodec<short[]>  SHORT_LITTLE_ENDIAN  = new ShortDataCodec(ByteOrder.LITTLE_ENDIAN);
-		public static final DataCodec<int[]>    INT_LITTLE_ENDIAN    = new IntDataCodec(ByteOrder.LITTLE_ENDIAN);
-		public static final DataCodec<long[]>   LONG_LITTLE_ENDIAN   = new LongDataCodec(ByteOrder.LITTLE_ENDIAN);
-		public static final DataCodec<float[]>  FLOAT_LITTLE_ENDIAN  = new FloatDataCodec(ByteOrder.LITTLE_ENDIAN);
-		public static final DataCodec<double[]> DOUBLE_LITTLE_ENDIAN = new DoubleDataCodec(ByteOrder.LITTLE_ENDIAN);
-
-		public abstract ReadData serialize(T data) throws IOException;
-
-		public abstract void deserialize(ReadData readData, T data) throws IOException;
-
-		public int bytesPerElement() {
-			return bytesPerElement;
-		}
-
-		public T createData(final int numElements) {
-			return dataFactory.apply(numElements);
-		}
-
-		// ---------------- implementations  -----------------
-		//
-
-		private final int bytesPerElement;
-		private final IntFunction<T> dataFactory;
-
-		private DataCodec(int bytesPerElement, IntFunction<T> dataFactory) {
-			this.bytesPerElement = bytesPerElement;
-			this.dataFactory = dataFactory;
-		}
-
-		private static final class ByteDataCodec extends DataCodec<byte[]> {
-
-			private ByteDataCodec() {
-				super(Byte.BYTES, byte[]::new);
-			}
-
-			@Override
-			public ReadData serialize(final byte[] data) {
-				return ReadData.from(data);
-			}
-
-			@Override
-			public void deserialize(final ReadData readData, final byte[] data) throws IOException {
-				new DataInputStream(readData.inputStream()).readFully(data);
-			}
-		}
-
-		private static final class ShortDataCodec extends DataCodec<short[]> {
-
-			private final ByteOrder order;
-
-			ShortDataCodec(ByteOrder order) {
-				super(Short.BYTES, short[]::new);
-				this.order = order;
-			}
-
-			@Override
-			public ReadData serialize(final short[] data) {
-				final ByteBuffer serialized = ByteBuffer.allocate(Short.BYTES * data.length);
-				serialized.order(order).asShortBuffer().put(data);
-				return ReadData.from(serialized);
-			}
-
-			@Override
-			public void deserialize(final ReadData readData, final short[] data) throws IOException {
-				readData.toByteBuffer().order(order).asShortBuffer().get(data);
-			}
-		}
-
-		private static final class IntDataCodec extends DataCodec<int[]> {
-
-			private final ByteOrder order;
-
-			IntDataCodec(ByteOrder order) {
-				super(Integer.BYTES, int[]::new);
-				this.order = order;
-			}
-
-			@Override
-			public ReadData serialize(final int[] data) {
-				final ByteBuffer serialized = ByteBuffer.allocate(Integer.BYTES * data.length);
-				serialized.order(order).asIntBuffer().put(data);
-				return ReadData.from(serialized);
-			}
-
-			@Override
-			public void deserialize(final ReadData readData, final int[] data) throws IOException {
-				readData.toByteBuffer().order(order).asIntBuffer().get(data);
-			}
-		}
-
-		private static final class LongDataCodec extends DataCodec<long[]> {
-
-			private final ByteOrder order;
-
-			LongDataCodec(ByteOrder order) {
-				super(Long.BYTES, long[]::new);
-				this.order = order;
-			}
-
-			@Override
-			public ReadData serialize(final long[] data) {
-				final ByteBuffer serialized = ByteBuffer.allocate(Long.BYTES * data.length);
-				serialized.order(order).asLongBuffer().put(data);
-				return ReadData.from(serialized);
-			}
-
-			@Override
-			public void deserialize(final ReadData readData, final long[] data) throws IOException {
-				readData.toByteBuffer().order(order).asLongBuffer().get(data);
-			}
-		}
-
-		private static final class FloatDataCodec extends DataCodec<float[]> {
-
-			private final ByteOrder order;
-
-			FloatDataCodec(ByteOrder order) {
-				super(Float.BYTES, float[]::new);
-				this.order = order;
-			}
-
-			@Override
-			public ReadData serialize(final float[] data) {
-				final ByteBuffer serialized = ByteBuffer.allocate(Float.BYTES * data.length);
-				serialized.order(order).asFloatBuffer().put(data);
-				return ReadData.from(serialized);
-			}
-
-			@Override
-			public void deserialize(final ReadData readData, final float[] data) throws IOException {
-				readData.toByteBuffer().order(order).asFloatBuffer().get(data);
-			}
-		}
-
-		private static final class DoubleDataCodec extends DataCodec<double[]> {
-
-			private final ByteOrder order;
-
-			DoubleDataCodec(ByteOrder order) {
-				super(Double.BYTES, double[]::new);
-				this.order = order;
-			}
-
-			@Override
-			public ReadData serialize(final double[] data) {
-				final ByteBuffer serialized = ByteBuffer.allocate(Double.BYTES * data.length);
-				serialized.order(order).asDoubleBuffer().put(data);
-				return ReadData.from(serialized);
-			}
-
-			@Override
-			public void deserialize(final ReadData readData, final double[] data) throws IOException {
-				readData.toByteBuffer().order(order).asDoubleBuffer().get(data);
-			}
-		}
-	}
-
-
-
-
-
-
-
-
-
-
-
-
 	public interface DataBlockCodec<T> {
 
 		ReadData encode(DataBlock<T> dataBlock, Compression compression) throws IOException;
 
 		DataBlock<T> decode(ReadData readData, long[] gridPosition, Compression compression) throws IOException;
+
+		DataBlockCodec<byte[]>   BYTE   = new DefaultDataBlockCodec<>(DataCodec.BYTE, ByteArrayDataBlock::new);
+		DataBlockCodec<short[]>  SHORT  = new DefaultDataBlockCodec<>(DataCodec.SHORT, ShortArrayDataBlock::new);
+		DataBlockCodec<int[]>    INT    = new DefaultDataBlockCodec<>(DataCodec.INT, IntArrayDataBlock::new);
+		DataBlockCodec<long[]>   LONG   = new DefaultDataBlockCodec<>(DataCodec.LONG, LongArrayDataBlock::new);
+		DataBlockCodec<float[]>  FLOAT  = new DefaultDataBlockCodec<>(DataCodec.FLOAT, FloatArrayDataBlock::new);
+		DataBlockCodec<double[]> DOUBLE = new DefaultDataBlockCodec<>(DataCodec.DOUBLE, DoubleArrayDataBlock::new);
+		DataBlockCodec<String[]> STRING = new StringDataBlockCodec();
+		DataBlockCodec<byte[]>   OBJECT = new ObjectDataBlockCodec();
 	}
 
-	public static final DataBlockCodec<byte[]>   BYTE   = new DefaultDataBlockCodec<>(DataCodec.BYTE, ByteArrayDataBlock::new);
-	public static final DataBlockCodec<short[]>  SHORT  = new DefaultDataBlockCodec<>(DataCodec.SHORT, ShortArrayDataBlock::new);
-	public static final DataBlockCodec<int[]>    INT    = new DefaultDataBlockCodec<>(DataCodec.INT, IntArrayDataBlock::new);
-	public static final DataBlockCodec<long[]>   LONG   = new DefaultDataBlockCodec<>(DataCodec.LONG, LongArrayDataBlock::new);
-	public static final DataBlockCodec<float[]>  FLOAT  = new DefaultDataBlockCodec<>(DataCodec.FLOAT, FloatArrayDataBlock::new);
-	public static final DataBlockCodec<double[]> DOUBLE = new DefaultDataBlockCodec<>(DataCodec.DOUBLE, DoubleArrayDataBlock::new);
-	public static final DataBlockCodec<String[]> STRING = new StringDataBlockCodec();
-	public static final DataBlockCodec<byte[]>   OBJECT = new ObjectDataBlockCodec();
 
 	/**
 	 * DataBlockCodec for all N5 data types, except STRING and OBJECT
