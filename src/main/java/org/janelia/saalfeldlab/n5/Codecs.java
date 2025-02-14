@@ -7,6 +7,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.function.IntFunction;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
@@ -257,23 +259,35 @@ public class Codecs {
 		}
 	}
 
-	// TODO: String
+	/**
+	 * TODO javadoc
+	 */
 	static class StringDataBlockCodec implements DataBlockCodec<StringDataBlock> {
+
+		private static final Charset ENCODING = StandardCharsets.UTF_8;
+		private static final String NULLCHAR = "\0";
 
 		@Override
 		public ReadData encode(final StringDataBlock dataBlock, final Compression compression) throws IOException {
-
-			// TODO should not use dataBlock.getNumElements() for header, because that will just be the String[] data length in the future
-
-
-			
-
-			return null;
+			return ReadData.from(out -> {
+				final String flattenedArray = String.join(NULLCHAR, dataBlock.getData()) + NULLCHAR;
+				final byte[] serializedData = flattenedArray.getBytes(ENCODING);
+				new ChunkHeader(dataBlock.getSize(), serializedData.length).writeTo(out);
+				compression.encode(ReadData.from(serializedData)).writeTo(out);
+				out.flush();
+			});
 		}
 
 		@Override
 		public StringDataBlock decode(final ReadData readData, final long[] gridPosition, final Compression compression) throws IOException {
-			return null;
+			try(final InputStream in = readData.inputStream()) {
+				final ChunkHeader header = ChunkHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
+				final ReadData decompressed = compression.decode(ReadData.from(in), header.numElements());
+				final byte[] serializedData = decompressed.allBytes();
+				final String rawChars = new String(serializedData, ENCODING);
+				final String[] actualData = rawChars.split(NULLCHAR);
+				return new StringDataBlock(header.blockSize(), gridPosition, actualData);
+			}
 		}
 	}
 
