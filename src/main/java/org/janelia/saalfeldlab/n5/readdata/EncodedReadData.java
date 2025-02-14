@@ -1,11 +1,11 @@
 package org.janelia.saalfeldlab.n5.readdata;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Objects;
+import org.apache.commons.io.output.ProxyOutputStream;
 
 class EncodedReadData implements ReadData {
 
@@ -74,7 +74,7 @@ class EncodedReadData implements ReadData {
 	 * {@code UnaryOperator} that wraps {@code OutputStream} to intercept {@code
 	 * close()} and call {@code flush()} instead
 	 */
-	private static OutputStreamOperator interceptClose = o -> new FilterOutputStream(o) {
+	private static OutputStreamOperator interceptClose = o -> new ProxyOutputStream(o) {
 
 		@Override
 		public void close() throws IOException {
