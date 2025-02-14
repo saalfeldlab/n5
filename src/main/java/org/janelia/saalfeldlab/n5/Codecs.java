@@ -11,6 +11,7 @@ import java.util.function.IntFunction;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import static org.janelia.saalfeldlab.n5.Codecs.ChunkHeader.MODE_DEFAULT;
+import static org.janelia.saalfeldlab.n5.Codecs.ChunkHeader.MODE_OBJECT;
 import static org.janelia.saalfeldlab.n5.Codecs.ChunkHeader.MODE_VARLENGTH;
 
 public class Codecs {
@@ -198,17 +199,20 @@ public class Codecs {
 
 
 
-	interface DataBlockCodec<B> {
+	public interface DataBlockCodec<B> {
 
 		ReadData encode(B dataBlock, Compression compression) throws IOException;
 
 		B decode(ReadData readData, long[] gridPosition, Compression compression) throws IOException;
 	}
 
-	public static final DataBlockCodec<ByteArrayDataBlock> BYTE =
-			new DefaultDataBlockCodec<>(DataCodec.BYTE, ByteArrayDataBlock::new);
-	public static final DataBlockCodec<ByteArrayDataBlock> SHORT =
-			new DefaultDataBlockCodec<>(DataCodec.SHORT, ShortArrayDataBlock::new);
+	public static final DataBlockCodec<ByteArrayDataBlock>   BYTE   = new DefaultDataBlockCodec<>(DataCodec.BYTE, ByteArrayDataBlock::new);
+	public static final DataBlockCodec<ShortArrayDataBlock>  SHORT  = new DefaultDataBlockCodec<>(DataCodec.SHORT, ShortArrayDataBlock::new);
+	public static final DataBlockCodec<IntArrayDataBlock>    INT    = new DefaultDataBlockCodec<>(DataCodec.INT, IntArrayDataBlock::new);
+	public static final DataBlockCodec<LongArrayDataBlock>   LONG   = new DefaultDataBlockCodec<>(DataCodec.LONG, LongArrayDataBlock::new);
+	public static final DataBlockCodec<FloatArrayDataBlock>  FLOAT  = new DefaultDataBlockCodec<>(DataCodec.FLOAT, FloatArrayDataBlock::new);
+	public static final DataBlockCodec<DoubleArrayDataBlock> DOUBLE = new DefaultDataBlockCodec<>(DataCodec.DOUBLE, DoubleArrayDataBlock::new);
+	public static final DataBlockCodec<ByteArrayDataBlock>   OBJECT = new ObjectDataBlockCodec();
 
 	/**
 	 * DataBlockCodec for all N5 data types, except STRING and OBJECT
@@ -253,16 +257,51 @@ public class Codecs {
 		}
 	}
 
+	// TODO: String
+	static class StringDataBlockCodec implements DataBlockCodec<StringDataBlock> {
+
+		@Override
+		public ReadData encode(final StringDataBlock dataBlock, final Compression compression) throws IOException {
+
+			// TODO should not use dataBlock.getNumElements() for header, because that will just be the String[] data length in the future
 
 
+			
 
+			return null;
+		}
 
+		@Override
+		public StringDataBlock decode(final ReadData readData, final long[] gridPosition, final Compression compression) throws IOException {
+			return null;
+		}
+	}
 
+	/**
+	 * TODO javadoc
+	 */
+	static class ObjectDataBlockCodec implements DataBlockCodec<ByteArrayDataBlock> {
 
+		@Override
+		public ReadData encode(final ByteArrayDataBlock dataBlock, final Compression compression) throws IOException {
+			return ReadData.from(out -> {
+				new ChunkHeader(null, dataBlock.getNumElements()).writeTo(out);
+				compression.encode(ReadData.from(dataBlock.getData())).writeTo(out);
+				out.flush();
+			});
+		}
 
-
-
-
+		@Override
+		public ByteArrayDataBlock decode(final ReadData readData, final long[] gridPosition, final Compression compression) throws IOException {
+			try(final InputStream in = readData.inputStream()) {
+				final ChunkHeader header = ChunkHeader.readFrom(in, MODE_OBJECT);
+				final byte[] data = new byte[header.numElements()];
+				final ReadData decompressed = compression.decode(ReadData.from(in), data.length);
+				new DataInputStream(decompressed.inputStream()).readFully(data);
+				return new ByteArrayDataBlock(null, gridPosition, data);
+			}
+		}
+	}
 
 	static class ChunkHeader {
 
@@ -281,7 +320,13 @@ public class Codecs {
 		}
 
 		ChunkHeader(final int[] blockSize, final int numElements) {
-			this.mode = (DataBlock.getNumElements(blockSize) == numElements) ? MODE_DEFAULT : MODE_VARLENGTH;
+			if (blockSize == null) {
+				this.mode = MODE_OBJECT;
+			} else if (DataBlock.getNumElements(blockSize) == numElements) {
+				this.mode = MODE_DEFAULT;
+			} else {
+				this.mode = MODE_VARLENGTH;
+			}
 			this.blockSize = blockSize;
 			this.numElements = numElements;
 		}
