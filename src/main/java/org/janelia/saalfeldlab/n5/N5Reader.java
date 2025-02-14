@@ -42,7 +42,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.janelia.saalfeldlab.n5.DataBlock.DataCodec;
 
 /**
  * A simple structured container for hierarchies of chunked
@@ -319,16 +318,12 @@ public interface N5Reader extends AutoCloseable {
 			final DatasetAttributes attributes,
 			final long... gridPosition) throws N5Exception, ClassNotFoundException {
 
-		final DataBlock<?> block = readBlock(dataset, attributes, gridPosition);
+		final DataBlock<byte[]> block = (DataBlock<byte[]>) readBlock(dataset, attributes, gridPosition);
 		if (block == null)
 			return null;
 
-
-		final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(block.toByteBuffer().array());
+		final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(block.getData());
 		try (ObjectInputStream in = new ObjectInputStream(byteArrayInputStream)) {
-
-//		final DataCodec codec = block.getDataCodec();
-//		try (ObjectInputStream in = new ObjectInputStream(codec.serialize(block).inputStream())) {
 			return (T) in.readObject();
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5Exception.N5IOException(e);

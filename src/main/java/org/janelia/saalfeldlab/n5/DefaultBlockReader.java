@@ -25,10 +25,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import org.janelia.saalfeldlab.n5.DataBlock.DataCodec;
+import org.janelia.saalfeldlab.n5.Codecs.DataBlockCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
@@ -58,34 +57,8 @@ public interface DefaultBlockReader {
 			final long[] gridPosition) throws IOException {
 
 		final DataType dataType = datasetAttributes.getDataType();
-		final DataInputStream dis = new DataInputStream(in);
-		final short mode = dis.readShort();
-		final int numElements;
-		final DataBlock<?> dataBlock;
-		if (mode != 2) {
-			final int nDim = dis.readShort();
-			final int[] blockSize = new int[nDim];
-			for (int d = 0; d < nDim; ++d)
-				blockSize[d] = dis.readInt();
-			if (mode == 0) {
-				numElements = DataBlock.getNumElements(blockSize);
-			} else {
-				numElements = dis.readInt();
-			}
-			dataBlock = dataType.createDataBlock(blockSize, gridPosition, numElements);
-		} else {
-			numElements = dis.readInt();
-			dataBlock = dataType.createDataBlock(null, gridPosition, numElements);
-		}
-
-		final int numBytes = dataType.isVarLength()
-				? numElements
-				: (numElements * dataType.bytesPerElement());
-		final ReadData data = datasetAttributes.getCompression().decode(
-				ReadData.from(in), numBytes);
-		final DataCodec codec = dataBlock.getDataCodec();
-		codec.deserialize(data, dataBlock);
-
-		return dataBlock;
+		final Compression compression = datasetAttributes.getCompression();
+		final DataBlockCodec<?> codec = dataType.defaultCodec();
+		return codec.decode(ReadData.from(in), gridPosition, compression);
 	}
 }

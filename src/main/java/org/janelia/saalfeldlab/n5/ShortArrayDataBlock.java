@@ -25,11 +25,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
-
 public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
 
 	public ShortArrayDataBlock(final int[] size, final long[] gridPosition, final short[] data) {
@@ -38,40 +33,8 @@ public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
 	}
 
 	@Override
-	public void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public ReadData writeData(final ByteOrder byteOrder) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public int getNumElements() {
 
 		return data.length;
-	}
-
-	static class DefaultCodec implements DataCodec<short[]> {
-
-		@Override
-		public ReadData serialize(final DataBlock<short[]> dataBlock) throws IOException {
-			final ByteBuffer serialized = ByteBuffer.allocate(Short.BYTES * dataBlock.getNumElements());
-			serialized.order(ByteOrder.BIG_ENDIAN).asShortBuffer().put(dataBlock.getData());
-			return ReadData.from(serialized);
-		}
-
-		@Override
-		public void deserialize(final ReadData readData, final DataBlock<short[]> dataBlock) throws IOException {
-			readData.toByteBuffer().order(ByteOrder.BIG_ENDIAN).asShortBuffer().get(dataBlock.getData());
-		}
-
-		static DefaultCodec INSTANCE = new DefaultCodec();
-	}
-
-	@Override
-	public DataCodec<short[]> getDataCodec() {
-		return DefaultCodec.INSTANCE;
 	}
 }

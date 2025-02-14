@@ -34,6 +34,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import org.janelia.saalfeldlab.n5.Codecs.DataBlockCodec;
 
 /**
  * Enumerates available data types.
@@ -44,112 +45,101 @@ public enum DataType {
 
 	UINT8(
 			"uint8",
-			Byte.BYTES,
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements])
-	),
+					new byte[numElements]),
+			Codecs.BYTE),
 	UINT16(
 			"uint16",
-			Short.BYTES,
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new short[numElements])
-	),
+					new short[numElements]),
+			Codecs.SHORT),
 	UINT32(
 			"uint32",
-			Integer.BYTES,
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new int[numElements])
-	),
+					new int[numElements]),
+			Codecs.INT),
 	UINT64(
 			"uint64",
-			Long.BYTES,
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new long[numElements])
-	),
+					new long[numElements]),
+			Codecs.LONG),
 	INT8(
 			"int8",
-			Byte.BYTES,
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements])
-	),
+					new byte[numElements]),
+			Codecs.BYTE),
 	INT16(
 			"int16",
-			Short.BYTES,
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new short[numElements])
-	),
+					new short[numElements]),
+			Codecs.SHORT),
 	INT32(
 			"int32",
-			Integer.BYTES,
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new int[numElements])
-	),
+					new int[numElements]),
+			Codecs.INT),
 	INT64(
 			"int64",
-			Long.BYTES,
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new long[numElements])
-	),
+					new long[numElements]),
+			Codecs.LONG),
 	FLOAT32(
 			"float32",
-			Float.BYTES,
 			(blockSize, gridPosition, numElements) -> new FloatArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new float[numElements])
-	),
+					new float[numElements]),
+			Codecs.FLOAT),
 	FLOAT64(
 			"float64",
-			Double.BYTES,
 			(blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new double[numElements])
-	),
+					new double[numElements]),
+			Codecs.DOUBLE),
 	STRING(
 			"string",
-			-1,
 			(blockSize, gridPosition, numElements) -> new StringDataBlock(
 					blockSize,
 					gridPosition,
-					null)
-	),
+					new String[numElements]),
+			Codecs.STRING),
 	OBJECT(
 			"object",
-			1,
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements])
-	);
+					new byte[numElements]),
+			Codecs.OBJECT);
+
 
 	private final String label;
 
 	private final DataBlockFactory dataBlockFactory;
 
-	private final int bytesPerElement;
+	private final DataBlockCodec<?> defaultCodec;
 
-	DataType(final String label, final int bytesPerElement, final DataBlockFactory dataBlockFactory) {
+	DataType(final String label, final DataBlockFactory dataBlockFactory, final DataBlockCodec<?> defaultCodec) {
 
 		this.label = label;
 		this.dataBlockFactory = dataBlockFactory;
-		this.bytesPerElement = bytesPerElement;
+		this.defaultCodec = defaultCodec;
 	}
 
 	@Override
@@ -199,16 +189,14 @@ public enum DataType {
 	}
 
 	/**
-	 * TODO: javadoc
-	 *       explain that STRING and OBJECT are a bit weird ...
-	 *       -1 means varlength
+	 * Get the default {@link DataBlockCodec} for {@link DataBlock DataBlocks}
+	 * of this {@code DataType}. The default codec is used for de/serializing
+	 * blocks to N5 format.
+	 *
+	 * @return the default {@code DataBlockCodec}
 	 */
-	public int bytesPerElement() {
-		return bytesPerElement;
-	}
-
-	public boolean isVarLength() {
-		return bytesPerElement < 0;
+	public <T extends DataBlock<?>> DataBlockCodec<T> defaultCodec() {
+		return (DataBlockCodec<T>) defaultCodec;
 	}
 
 	private interface DataBlockFactory {

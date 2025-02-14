@@ -25,28 +25,11 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
-
 public class LongArrayDataBlock extends AbstractDataBlock<long[]> {
 
 	public LongArrayDataBlock(final int[] size, final long[] gridPosition, final long[] data) {
 
 		super(size, gridPosition, data);
-	}
-
-	@Override
-	public void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
-		readData.toByteBuffer().order(byteOrder).asLongBuffer().get(data);
-	}
-
-	@Override
-	public ReadData writeData(final ByteOrder byteOrder) {
-		final ByteBuffer serialized = ByteBuffer.allocate(Long.BYTES * data.length);
-		serialized.order(byteOrder).asLongBuffer().put(data);
-		return ReadData.from(serialized);
 	}
 
 	@Override

@@ -25,15 +25,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
-
 /**
  * Interface for data blocks. A data block has data, a position on the block
- * grid, a size, and can read itself from and write itself into a
- * {@link ByteBuffer}.
+ * grid, and a size.
  *
  * @param <T> type of the data contained in the DataBlock
  *
@@ -68,54 +62,6 @@ public interface DataBlock<T> {
 	 * @return data object
 	 */
 	T getData();
-
-	/**
-	 * Read (deserialize) the data object of this data block from a {@link ReadData}.
-	 * <p>
-	 * The {@code ReadData} may or may not map directly to the data
-	 * object of this data block. I.e. modifying the {@code ReadData} after
-	 * calling this method may or may not change the data of this data block.
-	 * modifying the data object of this data block after calling this method
-	 * may or may not change the content of the {@code ReadData}.
-	 *
-	 * @param byteOrder
-	 * 		ByteOrder to use for serialization
-	 * @param readData
-	 * 		data to deserialize
-	 */
-	// TODO: include ByteOrder in ReadData
-	// TODO: rename? "readFrom"? "deserializeFrom"?
-	void readData(ByteOrder byteOrder, ReadData readData) throws IOException;
-
-	/**
-	 * Creates a {@link ReadData} that contains the serialized data object of
-	 * this data block.
-	 * <p>
-	 * The {@code ReadData} may or may not map directly to the data
-	 * object of this data block. I.e. modifying the {@code ReadData} after
-	 * calling this method may or may not change the data of this data block.
-	 * modifying the data object of this data block after calling this method
-	 * may or may not change the content of the {@code ReadData}.
-	 *
-	 * @param byteOrder
-	 * 		ByteOrder to use for serialization
-	 *
-	 * @return serialized {@code ReadData}
-	 */
-	// TODO: rename? "serialize"? "write"?
-	ReadData writeData(ByteOrder byteOrder);
-
-	// TODO revise, clean up
-	DataCodec<T> getDataCodec();
-
-	// TODO revise, clean up
-	interface DataCodec<T> {
-
-		ReadData serialize(DataBlock<T> dataBlock) throws IOException;
-
-		void deserialize(ReadData readData, DataBlock<T> dataBlock) throws IOException;
-	}
-
 
 	/**
 	 * Returns the number of elements in this {@link DataBlock}. This number is
