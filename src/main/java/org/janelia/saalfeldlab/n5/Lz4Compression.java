@@ -25,15 +25,11 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.FilterOutputStream;
 import java.io.IOException;
-
 import java.io.InputStream;
-import java.io.OutputStream;
-import org.janelia.saalfeldlab.n5.Compression.CompressionType;
-
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
+import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 @CompressionType("lz4")

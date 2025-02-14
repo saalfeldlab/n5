@@ -1,8 +1,8 @@
 package org.janelia.saalfeldlab.n5.readdata;
 
-import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import org.apache.commons.io.input.ProxyInputStream;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
 
@@ -31,7 +31,7 @@ class KeyValueAccessReadData extends AbstractInputStreamReadData {
 	@Override
 	public InputStream inputStream() throws IOException {
 		final LockedChannel channel = keyValueAccess.lockForReading(normalPath);
-		return new FilterInputStream(channel.newInputStream()) {
+		return new ProxyInputStream(channel.newInputStream()) {
 
 			@Override
 			public void close() throws IOException {
