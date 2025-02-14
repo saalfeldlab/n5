@@ -28,7 +28,7 @@ package org.janelia.saalfeldlab.n5;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteOrder;
+import org.janelia.saalfeldlab.n5.DataBlock.DataCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
@@ -83,7 +83,8 @@ public interface DefaultBlockReader {
 				: (numElements * dataType.bytesPerElement());
 		final ReadData data = datasetAttributes.getCompression().decode(
 				ReadData.from(in), numBytes);
-		dataBlock.readData(ByteOrder.BIG_ENDIAN, data);
+		final DataCodec codec = dataBlock.getDataCodec();
+		codec.deserialize(data, dataBlock);
 
 		return dataBlock;
 	}
