@@ -72,4 +72,32 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
 	public String[] getData() {
 		return actualData;
 	}
+
+
+
+
+
+
+
+	static class DefaultCodec implements DataCodec<String[]> {
+		@Override
+		public ReadData serialize(final DataBlock<String[]> dataBlock) throws IOException {
+			final ByteBuffer serialized = ByteBuffer.allocate(Short.BYTES * dataBlock.getNumElements());
+			serialized.order(ByteOrder.BIG_ENDIAN).asShortBuffer().put(dataBlock.getData());
+			return ReadData.from(serialized);
+		}
+
+		@Override
+		public void deserialize(final ReadData readData, final DataBlock<String[]> dataBlock) throws IOException {
+			readData.toByteBuffer().order(ByteOrder.BIG_ENDIAN).asShortBuffer().get(dataBlock.getData());
+		}
+
+		static DefaultCodec INSTANCE = new DefaultCodec();
+	}
+
+	@Override
+	public DataCodec<String[]> getDataCodec() {
+		return DefaultCodec.INSTANCE;
+	}
+
 }

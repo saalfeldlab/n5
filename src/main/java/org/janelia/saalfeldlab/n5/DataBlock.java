@@ -105,15 +105,16 @@ public interface DataBlock<T> {
 	// TODO: rename? "serialize"? "write"?
 	ReadData writeData(ByteOrder byteOrder);
 
+	// TODO revise, clean up
+	DataCodec<T> getDataCodec();
 
-//	DataBlockCodec<T> getDataBlockCodec();
-//
-//	interface DataBlockCodec<T> {
-//
-//		ReadData serialize(DataBlock<T> dataBlock) throws IOException;
-//
-//		void deserialize(ReadData readData, DataBlock<T> dataBlock) throws IOException;
-//	}
+	// TODO revise, clean up
+	interface DataCodec<T> {
+
+		ReadData serialize(DataBlock<T> dataBlock) throws IOException;
+
+		void deserialize(ReadData readData, DataBlock<T> dataBlock) throws IOException;
+	}
 
 
 	/**

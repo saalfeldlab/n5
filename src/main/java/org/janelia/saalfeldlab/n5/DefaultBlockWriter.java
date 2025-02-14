@@ -28,7 +28,7 @@ package org.janelia.saalfeldlab.n5;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteOrder;
+import org.janelia.saalfeldlab.n5.DataBlock.DataCodec;
 
 /**
  * Default implementation of block writing (N5 format).
@@ -78,8 +78,9 @@ public interface DefaultBlockWriter {
 
 		dos.flush();
 
+		final DataCodec<T> codec = dataBlock.getDataCodec();
 		datasetAttributes.getCompression().encode(
-				dataBlock.writeData(ByteOrder.BIG_ENDIAN)
+				codec.serialize(dataBlock)
 		).writeTo(out);
 		out.flush();
 	}

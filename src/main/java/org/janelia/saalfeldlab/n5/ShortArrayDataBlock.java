@@ -39,19 +39,39 @@ public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
 
 	@Override
 	public void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
-		readData.toByteBuffer().order(byteOrder).asShortBuffer().get(data);
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public ReadData writeData(final ByteOrder byteOrder) {
-		final ByteBuffer serialized = ByteBuffer.allocate(Short.BYTES * data.length);
-		serialized.order(byteOrder).asShortBuffer().put(data);
-		return ReadData.from(serialized);
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public int getNumElements() {
 
 		return data.length;
+	}
+
+	static class DefaultCodec implements DataCodec<short[]> {
+
+		@Override
+		public ReadData serialize(final DataBlock<short[]> dataBlock) throws IOException {
+			final ByteBuffer serialized = ByteBuffer.allocate(Short.BYTES * dataBlock.getNumElements());
+			serialized.order(ByteOrder.BIG_ENDIAN).asShortBuffer().put(dataBlock.getData());
+			return ReadData.from(serialized);
+		}
+
+		@Override
+		public void deserialize(final ReadData readData, final DataBlock<short[]> dataBlock) throws IOException {
+			readData.toByteBuffer().order(ByteOrder.BIG_ENDIAN).asShortBuffer().get(dataBlock.getData());
+		}
+
+		static DefaultCodec INSTANCE = new DefaultCodec();
+	}
+
+	@Override
+	public DataCodec<short[]> getDataCodec() {
+		return DefaultCodec.INSTANCE;
 	}
 }

@@ -39,17 +39,37 @@ public class ByteArrayDataBlock extends AbstractDataBlock<byte[]> {
 
 	@Override
 	public void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
-		new DataInputStream(readData.inputStream()).readFully(data);
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public ReadData writeData(final ByteOrder byteOrder) {
-		return ReadData.from(data);
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public int getNumElements() {
 
 		return data.length;
+	}
+
+	public static class DefaultCodec implements DataCodec<byte[]> {
+
+		@Override
+		public ReadData serialize(final DataBlock<byte[]> dataBlock) throws IOException {
+			return ReadData.from(dataBlock.getData());
+		}
+
+		@Override
+		public void deserialize(final ReadData readData, final DataBlock<byte[]> dataBlock) throws IOException {
+			new DataInputStream(readData.inputStream()).readFully(dataBlock.getData());
+		}
+
+		static DefaultCodec INSTANCE = new DefaultCodec();
+	}
+
+	@Override
+	public DataCodec<byte[]> getDataCodec() {
+		return DefaultCodec.INSTANCE;
 	}
 }

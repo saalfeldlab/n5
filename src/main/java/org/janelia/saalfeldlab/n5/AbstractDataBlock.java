@@ -25,6 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.IOException;
+import java.nio.ByteOrder;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+
 /**
  * Abstract base class for {@link DataBlock} implementations.
  *
@@ -62,5 +66,25 @@ public abstract class AbstractDataBlock<T> implements DataBlock<T> {
 	public T getData() {
 
 		return data;
+	}
+
+	static class DefaultDataBlockCodec<T> implements DataCodec<T> {
+
+		@Override
+		public ReadData serialize(final DataBlock<T> dataBlock) throws IOException {
+			return dataBlock.writeData(ByteOrder.BIG_ENDIAN);
+		}
+
+		@Override
+		public void deserialize(final ReadData readData, final DataBlock<T> dataBlock) throws IOException {
+			dataBlock.readData(ByteOrder.BIG_ENDIAN, readData);
+		}
+	}
+
+	private static DefaultDataBlockCodec defaultCodec = new DefaultDataBlockCodec<>();
+
+	@Override
+	public DataCodec<T> getDataCodec() {
+		return defaultCodec;
 	}
 }
