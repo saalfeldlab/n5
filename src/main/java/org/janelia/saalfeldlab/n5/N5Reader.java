@@ -25,6 +25,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
@@ -322,8 +323,12 @@ public interface N5Reader extends AutoCloseable {
 		if (block == null)
 			return null;
 
-		final DataCodec codec = block.getDataCodec();
-		try (ObjectInputStream in = new ObjectInputStream(codec.serialize(block).inputStream())) {
+
+		final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(block.toByteBuffer().array());
+		try (ObjectInputStream in = new ObjectInputStream(byteArrayInputStream)) {
+
+//		final DataCodec codec = block.getDataCodec();
+//		try (ObjectInputStream in = new ObjectInputStream(codec.serialize(block).inputStream())) {
 			return (T) in.readObject();
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5Exception.N5IOException(e);
