@@ -241,4 +241,13 @@ public interface ReadData {
 			throw new UnsupportedOperationException("TODO. Direct ByteBuffer not supported yet.");
 		}
 	}
+
+	@FunctionalInterface
+	interface OutputStreamWriter {
+		void writeTo(OutputStream outputStream) throws IOException, IllegalStateException;
+	}
+
+	static ReadData from(OutputStreamWriter generator) {
+		return new LazyReadData(generator);
+	}
 }
