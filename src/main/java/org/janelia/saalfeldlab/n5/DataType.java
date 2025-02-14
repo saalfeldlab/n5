@@ -49,84 +49,84 @@ public enum DataType {
 					blockSize,
 					gridPosition,
 					new byte[numElements]),
-			Codecs.BYTE),
+			DataBlockCodec.BYTE),
 	UINT16(
 			"uint16",
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new short[numElements]),
-			Codecs.SHORT),
+			DataBlockCodec.SHORT),
 	UINT32(
 			"uint32",
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new int[numElements]),
-			Codecs.INT),
+			DataBlockCodec.INT),
 	UINT64(
 			"uint64",
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new long[numElements]),
-			Codecs.LONG),
+			DataBlockCodec.LONG),
 	INT8(
 			"int8",
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new byte[numElements]),
-			Codecs.BYTE),
+			DataBlockCodec.BYTE),
 	INT16(
 			"int16",
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new short[numElements]),
-			Codecs.SHORT),
+			DataBlockCodec.SHORT),
 	INT32(
 			"int32",
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new int[numElements]),
-			Codecs.INT),
+			DataBlockCodec.INT),
 	INT64(
 			"int64",
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new long[numElements]),
-			Codecs.LONG),
+			DataBlockCodec.LONG),
 	FLOAT32(
 			"float32",
 			(blockSize, gridPosition, numElements) -> new FloatArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new float[numElements]),
-			Codecs.FLOAT),
+			DataBlockCodec.FLOAT),
 	FLOAT64(
 			"float64",
 			(blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new double[numElements]),
-			Codecs.DOUBLE),
+			DataBlockCodec.DOUBLE),
 	STRING(
 			"string",
 			(blockSize, gridPosition, numElements) -> new StringDataBlock(
 					blockSize,
 					gridPosition,
 					new String[numElements]),
-			Codecs.STRING),
+			DataBlockCodec.STRING),
 	OBJECT(
 			"object",
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new byte[numElements]),
-			Codecs.OBJECT);
+			DataBlockCodec.OBJECT);
 
 
 	private final String label;
