@@ -25,79 +25,16 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-import java.nio.ByteOrder;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
-
 public class StringDataBlock extends AbstractDataBlock<String[]> {
 
-	protected static final Charset ENCODING = StandardCharsets.UTF_8;
-	protected static final String NULLCHAR = "\0";
-	protected byte[] serializedData;
-	protected String[] actualData;
-
 	public StringDataBlock(final int[] size, final long[] gridPosition, final String[] data) {
-		super(size, gridPosition, null);
-		actualData = data;
-	}
 
-	@Override
-	public void readData(final ByteOrder byteOrder, final ReadData readData) throws IOException {
-		serializedData = readData.allBytes();
-		final String rawChars = new String(serializedData, ENCODING);
-		actualData = rawChars.split(NULLCHAR);
-	}
-
-	private byte[] serialize() {
-		if (serializedData == null) {
-			final String flattenedArray = String.join(NULLCHAR, actualData) + NULLCHAR;
-			serializedData = flattenedArray.getBytes(ENCODING);
-		}
-		return serializedData;
-	}
-
-	@Override
-	public ReadData writeData(final ByteOrder byteOrder) {
-		return ReadData.from(serialize());
+		super(size, gridPosition, data);
 	}
 
 	@Override
 	public int getNumElements() {
-		return serialize().length;
+
+		return data.length;
 	}
-
-	@Override
-	public String[] getData() {
-		return actualData;
-	}
-
-
-
-
-
-
-
-	static class DefaultCodec implements DataCodec<String[]> {
-		@Override
-		public ReadData serialize(final DataBlock<String[]> dataBlock) throws IOException {
-			final ByteBuffer serialized = ByteBuffer.allocate(Short.BYTES * dataBlock.getNumElements());
-			serialized.order(ByteOrder.BIG_ENDIAN).asShortBuffer().put(dataBlock.getData());
-			return ReadData.from(serialized);
-		}
-
-		@Override
-		public void deserialize(final ReadData readData, final DataBlock<String[]> dataBlock) throws IOException {
-			readData.toByteBuffer().order(ByteOrder.BIG_ENDIAN).asShortBuffer().get(dataBlock.getData());
-		}
-
-		static DefaultCodec INSTANCE = new DefaultCodec();
-	}
-
-	@Override
-	public DataCodec<String[]> getDataCodec() {
-		return DefaultCodec.INSTANCE;
-	}
-
 }

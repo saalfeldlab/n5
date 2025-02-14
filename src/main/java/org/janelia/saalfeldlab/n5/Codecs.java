@@ -112,7 +112,7 @@ public class Codecs {
 
 			@Override
 			public ReadData serialize(final int[] data) {
-				final ByteBuffer serialized = ByteBuffer.allocate(Short.BYTES * data.length);
+				final ByteBuffer serialized = ByteBuffer.allocate(Integer.BYTES * data.length);
 				serialized.order(order).asIntBuffer().put(data);
 				return ReadData.from(serialized);
 			}
@@ -201,7 +201,7 @@ public class Codecs {
 
 
 
-	public interface DataBlockCodec<B> {
+	public interface DataBlockCodec<B extends DataBlock<?>> {
 
 		ReadData encode(B dataBlock, Compression compression) throws IOException;
 
@@ -214,6 +214,7 @@ public class Codecs {
 	public static final DataBlockCodec<LongArrayDataBlock>   LONG   = new DefaultDataBlockCodec<>(DataCodec.LONG, LongArrayDataBlock::new);
 	public static final DataBlockCodec<FloatArrayDataBlock>  FLOAT  = new DefaultDataBlockCodec<>(DataCodec.FLOAT, FloatArrayDataBlock::new);
 	public static final DataBlockCodec<DoubleArrayDataBlock> DOUBLE = new DefaultDataBlockCodec<>(DataCodec.DOUBLE, DoubleArrayDataBlock::new);
+	public static final DataBlockCodec<StringDataBlock>      STRING = new StringDataBlockCodec();
 	public static final DataBlockCodec<ByteArrayDataBlock>   OBJECT = new ObjectDataBlockCodec();
 
 	/**

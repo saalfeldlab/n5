@@ -25,10 +25,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import org.janelia.saalfeldlab.n5.DataBlock.DataCodec;
+import org.janelia.saalfeldlab.n5.Codecs.DataBlockCodec;
 
 /**
  * Default implementation of block writing (N5 format).
@@ -56,32 +55,10 @@ public interface DefaultBlockWriter {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		final DataOutputStream dos = new DataOutputStream(out);
-
-		final int mode;
-		if (datasetAttributes.getDataType() == DataType.OBJECT || dataBlock.getSize() == null)
-			mode = 2;
-		else if (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize()))
-			mode = 0;
-		else
-			mode = 1;
-		dos.writeShort(mode);
-
-		if (mode != 2) {
-			dos.writeShort(datasetAttributes.getNumDimensions());
-			for (final int size : dataBlock.getSize())
-				dos.writeInt(size);
-		}
-
-		if (mode != 0)
-			dos.writeInt(dataBlock.getNumElements());
-
-		dos.flush();
-
-		final DataCodec<T> codec = dataBlock.getDataCodec();
-		datasetAttributes.getCompression().encode(
-				codec.serialize(dataBlock)
-		).writeTo(out);
+		final DataType dataType = datasetAttributes.getDataType();
+		final Compression compression = datasetAttributes.getCompression();
+		final DataBlockCodec<DataBlock<T>> codec = dataType.defaultCodec();
+		codec.encode(dataBlock, compression).writeTo(out);
 		out.flush();
 	}
 }
