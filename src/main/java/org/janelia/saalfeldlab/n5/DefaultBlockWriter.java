@@ -57,7 +57,7 @@ public interface DefaultBlockWriter {
 
 		final DataType dataType = datasetAttributes.getDataType();
 		final Compression compression = datasetAttributes.getCompression();
-		final DataBlockCodec<DataBlock<T>> codec = dataType.defaultCodec();
+		final DataBlockCodec<T> codec = dataType.defaultCodec();
 		codec.encode(dataBlock, compression).writeTo(out);
 		out.flush();
 	}

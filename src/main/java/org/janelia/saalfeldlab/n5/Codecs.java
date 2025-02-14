@@ -24,7 +24,7 @@ public class Codecs {
 
 
 
-	public static abstract class DataCodec<A> {
+	public static abstract class DataCodec<T> {
 
 		public static final DataCodec<byte[]>   BYTE   = new ByteDataCodec();
 		public static final DataCodec<short[]>  SHORT  = new ShortDataCodec(ByteOrder.BIG_ENDIAN);
@@ -39,15 +39,15 @@ public class Codecs {
 		public static final DataCodec<float[]>  FLOAT_LITTLE_ENDIAN  = new FloatDataCodec(ByteOrder.LITTLE_ENDIAN);
 		public static final DataCodec<double[]> DOUBLE_LITTLE_ENDIAN = new DoubleDataCodec(ByteOrder.LITTLE_ENDIAN);
 
-		public abstract ReadData serialize(A data) throws IOException;
+		public abstract ReadData serialize(T data) throws IOException;
 
-		public abstract void deserialize(ReadData readData, A data) throws IOException;
+		public abstract void deserialize(ReadData readData, T data) throws IOException;
 
 		public int bytesPerElement() {
 			return bytesPerElement;
 		}
 
-		public A createData(final int numElements) {
+		public T createData(final int numElements) {
 			return dataFactory.apply(numElements);
 		}
 
@@ -55,9 +55,9 @@ public class Codecs {
 		//
 
 		private final int bytesPerElement;
-		private final IntFunction<A> dataFactory;
+		private final IntFunction<T> dataFactory;
 
-		private DataCodec(int bytesPerElement, IntFunction<A> dataFactory) {
+		private DataCodec(int bytesPerElement, IntFunction<T> dataFactory) {
 			this.bytesPerElement = bytesPerElement;
 			this.dataFactory = dataFactory;
 		}
@@ -201,45 +201,45 @@ public class Codecs {
 
 
 
-	public interface DataBlockCodec<B extends DataBlock<?>> {
+	public interface DataBlockCodec<T> {
 
-		ReadData encode(B dataBlock, Compression compression) throws IOException;
+		ReadData encode(DataBlock<T> dataBlock, Compression compression) throws IOException;
 
-		B decode(ReadData readData, long[] gridPosition, Compression compression) throws IOException;
+		DataBlock<T> decode(ReadData readData, long[] gridPosition, Compression compression) throws IOException;
 	}
 
-	public static final DataBlockCodec<ByteArrayDataBlock>   BYTE   = new DefaultDataBlockCodec<>(DataCodec.BYTE, ByteArrayDataBlock::new);
-	public static final DataBlockCodec<ShortArrayDataBlock>  SHORT  = new DefaultDataBlockCodec<>(DataCodec.SHORT, ShortArrayDataBlock::new);
-	public static final DataBlockCodec<IntArrayDataBlock>    INT    = new DefaultDataBlockCodec<>(DataCodec.INT, IntArrayDataBlock::new);
-	public static final DataBlockCodec<LongArrayDataBlock>   LONG   = new DefaultDataBlockCodec<>(DataCodec.LONG, LongArrayDataBlock::new);
-	public static final DataBlockCodec<FloatArrayDataBlock>  FLOAT  = new DefaultDataBlockCodec<>(DataCodec.FLOAT, FloatArrayDataBlock::new);
-	public static final DataBlockCodec<DoubleArrayDataBlock> DOUBLE = new DefaultDataBlockCodec<>(DataCodec.DOUBLE, DoubleArrayDataBlock::new);
-	public static final DataBlockCodec<StringDataBlock>      STRING = new StringDataBlockCodec();
-	public static final DataBlockCodec<ByteArrayDataBlock>   OBJECT = new ObjectDataBlockCodec();
+	public static final DataBlockCodec<byte[]>   BYTE   = new DefaultDataBlockCodec<>(DataCodec.BYTE, ByteArrayDataBlock::new);
+	public static final DataBlockCodec<short[]>  SHORT  = new DefaultDataBlockCodec<>(DataCodec.SHORT, ShortArrayDataBlock::new);
+	public static final DataBlockCodec<int[]>    INT    = new DefaultDataBlockCodec<>(DataCodec.INT, IntArrayDataBlock::new);
+	public static final DataBlockCodec<long[]>   LONG   = new DefaultDataBlockCodec<>(DataCodec.LONG, LongArrayDataBlock::new);
+	public static final DataBlockCodec<float[]>  FLOAT  = new DefaultDataBlockCodec<>(DataCodec.FLOAT, FloatArrayDataBlock::new);
+	public static final DataBlockCodec<double[]> DOUBLE = new DefaultDataBlockCodec<>(DataCodec.DOUBLE, DoubleArrayDataBlock::new);
+	public static final DataBlockCodec<String[]> STRING = new StringDataBlockCodec();
+	public static final DataBlockCodec<byte[]>   OBJECT = new ObjectDataBlockCodec();
 
 	/**
 	 * DataBlockCodec for all N5 data types, except STRING and OBJECT
 	 */
-	static class DefaultDataBlockCodec<A, B extends DataBlock<A>> implements DataBlockCodec<B> {
+	static class DefaultDataBlockCodec<T> implements DataBlockCodec<T> {
 
-		interface DataBlockFactory<A, B extends DataBlock<A>> {
+		interface DataBlockFactory<T> {
 
-			B createDataBlock(int[] blockSize, long[] gridPosition, A data);
+			DataBlock<T> createDataBlock(int[] blockSize, long[] gridPosition, T data);
 		}
 
-		private final DataCodec<A> dataCodec;
+		private final DataCodec<T> dataCodec;
 
-		private final DataBlockFactory<A, B> dataBlockFactory;
+		private final DataBlockFactory<T> dataBlockFactory;
 
 		DefaultDataBlockCodec(
-				final DataCodec<A> dataCodec,
-				final DataBlockFactory<A, B> dataBlockFactory) {
+				final DataCodec<T> dataCodec,
+				final DataBlockFactory<T> dataBlockFactory) {
 			this.dataCodec = dataCodec;
 			this.dataBlockFactory = dataBlockFactory;
 		}
 
 		@Override
-		public ReadData encode(final B dataBlock, final Compression compression) throws IOException {
+		public ReadData encode(final DataBlock<T> dataBlock, final Compression compression) throws IOException {
 			return ReadData.from(out -> {
 				new ChunkHeader(dataBlock.getSize(), dataBlock.getNumElements()).writeTo(out);
 				compression.encode(dataCodec.serialize(dataBlock.getData())).writeTo(out);
@@ -248,10 +248,10 @@ public class Codecs {
 		}
 
 		@Override
-		public B decode(final ReadData readData, final long[] gridPosition, final Compression compression) throws IOException {
+		public DataBlock<T> decode(final ReadData readData, final long[] gridPosition, final Compression compression) throws IOException {
 			try(final InputStream in = readData.inputStream()) {
 				final ChunkHeader header = ChunkHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
-				final A data = dataCodec.createData(header.numElements());
+				final T data = dataCodec.createData(header.numElements());
 				final int numBytes = header.numElements() * dataCodec.bytesPerElement();
 				final ReadData decompressed = compression.decode(ReadData.from(in), numBytes);
 				dataCodec.deserialize(decompressed, data);
@@ -263,13 +263,13 @@ public class Codecs {
 	/**
 	 * TODO javadoc
 	 */
-	static class StringDataBlockCodec implements DataBlockCodec<StringDataBlock> {
+	static class StringDataBlockCodec implements DataBlockCodec<String[]> {
 
 		private static final Charset ENCODING = StandardCharsets.UTF_8;
 		private static final String NULLCHAR = "\0";
 
 		@Override
-		public ReadData encode(final StringDataBlock dataBlock, final Compression compression) throws IOException {
+		public ReadData encode(final DataBlock<String[]> dataBlock, final Compression compression) throws IOException {
 			return ReadData.from(out -> {
 				final String flattenedArray = String.join(NULLCHAR, dataBlock.getData()) + NULLCHAR;
 				final byte[] serializedData = flattenedArray.getBytes(ENCODING);
@@ -280,7 +280,7 @@ public class Codecs {
 		}
 
 		@Override
-		public StringDataBlock decode(final ReadData readData, final long[] gridPosition, final Compression compression) throws IOException {
+		public DataBlock<String[]> decode(final ReadData readData, final long[] gridPosition, final Compression compression) throws IOException {
 			try(final InputStream in = readData.inputStream()) {
 				final ChunkHeader header = ChunkHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
 				final ReadData decompressed = compression.decode(ReadData.from(in), header.numElements());
@@ -295,10 +295,10 @@ public class Codecs {
 	/**
 	 * TODO javadoc
 	 */
-	static class ObjectDataBlockCodec implements DataBlockCodec<ByteArrayDataBlock> {
+	static class ObjectDataBlockCodec implements DataBlockCodec<byte[]> {
 
 		@Override
-		public ReadData encode(final ByteArrayDataBlock dataBlock, final Compression compression) throws IOException {
+		public ReadData encode(final DataBlock<byte[]> dataBlock, final Compression compression) throws IOException {
 			return ReadData.from(out -> {
 				new ChunkHeader(null, dataBlock.getNumElements()).writeTo(out);
 				compression.encode(ReadData.from(dataBlock.getData())).writeTo(out);
@@ -307,7 +307,7 @@ public class Codecs {
 		}
 
 		@Override
-		public ByteArrayDataBlock decode(final ReadData readData, final long[] gridPosition, final Compression compression) throws IOException {
+		public DataBlock<byte[]> decode(final ReadData readData, final long[] gridPosition, final Compression compression) throws IOException {
 			try(final InputStream in = readData.inputStream()) {
 				final ChunkHeader header = ChunkHeader.readFrom(in, MODE_OBJECT);
 				final byte[] data = new byte[header.numElements()];
