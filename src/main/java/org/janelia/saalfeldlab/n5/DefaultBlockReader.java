@@ -27,7 +27,7 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.InputStream;
-import org.janelia.saalfeldlab.n5.Codecs.DataBlockCodec;
+import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**

@@ -27,7 +27,7 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import org.janelia.saalfeldlab.n5.Codecs.DataBlockCodec;
+import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
 
 /**
  * Default implementation of block writing (N5 format).
