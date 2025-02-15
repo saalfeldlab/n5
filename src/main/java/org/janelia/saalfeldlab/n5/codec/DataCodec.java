@@ -17,12 +17,12 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  */
 public abstract class DataCodec<T> {
 
-	public static final DataCodec<byte[]>   BYTE   = new ByteDataCodec();
-	public static final DataCodec<short[]>  SHORT  = new ShortDataCodec(ByteOrder.BIG_ENDIAN);
-	public static final DataCodec<int[]>    INT    = new IntDataCodec(ByteOrder.BIG_ENDIAN);
-	public static final DataCodec<long[]>   LONG   = new LongDataCodec(ByteOrder.BIG_ENDIAN);
-	public static final DataCodec<float[]>  FLOAT  = new FloatDataCodec(ByteOrder.BIG_ENDIAN);
-	public static final DataCodec<double[]> DOUBLE = new DoubleDataCodec(ByteOrder.BIG_ENDIAN);
+	public static final DataCodec<byte[]>   BYTE              = new ByteDataCodec();
+	public static final DataCodec<short[]>  SHORT_BIG_ENDIAN  = new ShortDataCodec(ByteOrder.BIG_ENDIAN);
+	public static final DataCodec<int[]>    INT_BIG_ENDIAN    = new IntDataCodec(ByteOrder.BIG_ENDIAN);
+	public static final DataCodec<long[]>   LONG_BIG_ENDIAN   = new LongDataCodec(ByteOrder.BIG_ENDIAN);
+	public static final DataCodec<float[]>  FLOAT_BIG_ENDIAN  = new FloatDataCodec(ByteOrder.BIG_ENDIAN);
+	public static final DataCodec<double[]> DOUBLE_BIG_ENDIAN = new DoubleDataCodec(ByteOrder.BIG_ENDIAN);
 
 	public static final DataCodec<short[]>  SHORT_LITTLE_ENDIAN  = new ShortDataCodec(ByteOrder.LITTLE_ENDIAN);
 	public static final DataCodec<int[]>    INT_LITTLE_ENDIAN    = new IntDataCodec(ByteOrder.LITTLE_ENDIAN);

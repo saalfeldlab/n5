@@ -1,4 +1,4 @@
-package org.janelia.saalfeldlab.n5;
+package org.janelia.saalfeldlab.n5.codec;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -7,32 +7,33 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import org.janelia.saalfeldlab.n5.codec.DataCodec;
+import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
+import org.janelia.saalfeldlab.n5.Compression;
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DoubleArrayDataBlock;
+import org.janelia.saalfeldlab.n5.FloatArrayDataBlock;
+import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
+import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
+import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
+import org.janelia.saalfeldlab.n5.StringDataBlock;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
-import static org.janelia.saalfeldlab.n5.Codecs.ChunkHeader.MODE_DEFAULT;
-import static org.janelia.saalfeldlab.n5.Codecs.ChunkHeader.MODE_OBJECT;
-import static org.janelia.saalfeldlab.n5.Codecs.ChunkHeader.MODE_VARLENGTH;
+import static org.janelia.saalfeldlab.n5.codec.Codecs.ChunkHeader.MODE_DEFAULT;
+import static org.janelia.saalfeldlab.n5.codec.Codecs.ChunkHeader.MODE_OBJECT;
+import static org.janelia.saalfeldlab.n5.codec.Codecs.ChunkHeader.MODE_VARLENGTH;
 
 public class Codecs {
 
+	public static final DataBlockCodec<byte[]>   BYTE   = new DefaultDataBlockCodec<>(DataCodec.BYTE, ByteArrayDataBlock::new);
+	public static final DataBlockCodec<short[]>  SHORT  = new DefaultDataBlockCodec<>(DataCodec.SHORT_BIG_ENDIAN, ShortArrayDataBlock::new);
+	public static final DataBlockCodec<int[]>    INT    = new DefaultDataBlockCodec<>(DataCodec.INT_BIG_ENDIAN, IntArrayDataBlock::new);
+	public static final DataBlockCodec<long[]>   LONG   = new DefaultDataBlockCodec<>(DataCodec.LONG_BIG_ENDIAN, LongArrayDataBlock::new);
+	public static final DataBlockCodec<float[]>  FLOAT  = new DefaultDataBlockCodec<>(DataCodec.FLOAT_BIG_ENDIAN, FloatArrayDataBlock::new);
+	public static final DataBlockCodec<double[]> DOUBLE = new DefaultDataBlockCodec<>(DataCodec.DOUBLE_BIG_ENDIAN, DoubleArrayDataBlock::new);
+	public static final DataBlockCodec<String[]> STRING = new StringDataBlockCodec();
+	public static final DataBlockCodec<byte[]>   OBJECT = new ObjectDataBlockCodec();
 
-	public interface DataBlockCodec<T> {
-
-		ReadData encode(DataBlock<T> dataBlock, Compression compression) throws IOException;
-
-		DataBlock<T> decode(ReadData readData, long[] gridPosition, Compression compression) throws IOException;
-
-		DataBlockCodec<byte[]>   BYTE   = new DefaultDataBlockCodec<>(DataCodec.BYTE, ByteArrayDataBlock::new);
-		DataBlockCodec<short[]>  SHORT  = new DefaultDataBlockCodec<>(DataCodec.SHORT, ShortArrayDataBlock::new);
-		DataBlockCodec<int[]>    INT    = new DefaultDataBlockCodec<>(DataCodec.INT, IntArrayDataBlock::new);
-		DataBlockCodec<long[]>   LONG   = new DefaultDataBlockCodec<>(DataCodec.LONG, LongArrayDataBlock::new);
-		DataBlockCodec<float[]>  FLOAT  = new DefaultDataBlockCodec<>(DataCodec.FLOAT, FloatArrayDataBlock::new);
-		DataBlockCodec<double[]> DOUBLE = new DefaultDataBlockCodec<>(DataCodec.DOUBLE, DoubleArrayDataBlock::new);
-		DataBlockCodec<String[]> STRING = new StringDataBlockCodec();
-		DataBlockCodec<byte[]>   OBJECT = new ObjectDataBlockCodec();
-	}
-
+	private Codecs() {}
 
 	/**
 	 * DataBlockCodec for all N5 data types, except STRING and OBJECT
@@ -78,7 +79,7 @@ public class Codecs {
 	}
 
 	/**
-	 * TODO javadoc
+	 * DataBlockCodec for N5 data type STRING
 	 */
 	static class StringDataBlockCodec implements DataBlockCodec<String[]> {
 
@@ -110,7 +111,7 @@ public class Codecs {
 	}
 
 	/**
-	 * TODO javadoc
+	 * DataBlockCodec for N5 data type OBJECT
 	 */
 	static class ObjectDataBlockCodec implements DataBlockCodec<byte[]> {
 

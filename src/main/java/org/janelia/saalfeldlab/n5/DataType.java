@@ -34,7 +34,8 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import org.janelia.saalfeldlab.n5.Codecs.DataBlockCodec;
+import org.janelia.saalfeldlab.n5.codec.Codecs;
+import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
 
 /**
  * Enumerates available data types.
@@ -49,84 +50,84 @@ public enum DataType {
 					blockSize,
 					gridPosition,
 					new byte[numElements]),
-			DataBlockCodec.BYTE),
+			Codecs.BYTE),
 	UINT16(
 			"uint16",
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new short[numElements]),
-			DataBlockCodec.SHORT),
+			Codecs.SHORT),
 	UINT32(
 			"uint32",
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new int[numElements]),
-			DataBlockCodec.INT),
+			Codecs.INT),
 	UINT64(
 			"uint64",
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new long[numElements]),
-			DataBlockCodec.LONG),
+			Codecs.LONG),
 	INT8(
 			"int8",
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new byte[numElements]),
-			DataBlockCodec.BYTE),
+			Codecs.BYTE),
 	INT16(
 			"int16",
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new short[numElements]),
-			DataBlockCodec.SHORT),
+			Codecs.SHORT),
 	INT32(
 			"int32",
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new int[numElements]),
-			DataBlockCodec.INT),
+			Codecs.INT),
 	INT64(
 			"int64",
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new long[numElements]),
-			DataBlockCodec.LONG),
+			Codecs.LONG),
 	FLOAT32(
 			"float32",
 			(blockSize, gridPosition, numElements) -> new FloatArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new float[numElements]),
-			DataBlockCodec.FLOAT),
+			Codecs.FLOAT),
 	FLOAT64(
 			"float64",
 			(blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new double[numElements]),
-			DataBlockCodec.DOUBLE),
+			Codecs.DOUBLE),
 	STRING(
 			"string",
 			(blockSize, gridPosition, numElements) -> new StringDataBlock(
 					blockSize,
 					gridPosition,
 					new String[numElements]),
-			DataBlockCodec.STRING),
+			Codecs.STRING),
 	OBJECT(
 			"object",
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
 					new byte[numElements]),
-			DataBlockCodec.OBJECT);
+			Codecs.OBJECT);
 
 
 	private final String label;
