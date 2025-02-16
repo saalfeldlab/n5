@@ -19,11 +19,11 @@ import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.StringDataBlock;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
-import static org.janelia.saalfeldlab.n5.codec.Codecs.ChunkHeader.MODE_DEFAULT;
-import static org.janelia.saalfeldlab.n5.codec.Codecs.ChunkHeader.MODE_OBJECT;
-import static org.janelia.saalfeldlab.n5.codec.Codecs.ChunkHeader.MODE_VARLENGTH;
+import static org.janelia.saalfeldlab.n5.codec.N5Codecs.ChunkHeader.MODE_DEFAULT;
+import static org.janelia.saalfeldlab.n5.codec.N5Codecs.ChunkHeader.MODE_OBJECT;
+import static org.janelia.saalfeldlab.n5.codec.N5Codecs.ChunkHeader.MODE_VARLENGTH;
 
-public class Codecs {
+public class N5Codecs {
 
 	public static final DataBlockCodec<byte[]>   BYTE   = new DefaultDataBlockCodec<>(DataCodec.BYTE, ByteArrayDataBlock::new);
 	public static final DataBlockCodec<short[]>  SHORT  = new DefaultDataBlockCodec<>(DataCodec.SHORT_BIG_ENDIAN, ShortArrayDataBlock::new);
@@ -34,7 +34,7 @@ public class Codecs {
 	public static final DataBlockCodec<String[]> STRING = new StringDataBlockCodec();
 	public static final DataBlockCodec<byte[]>   OBJECT = new ObjectDataBlockCodec();
 
-	private Codecs() {}
+	private N5Codecs() {}
 
 	/**
 	 * DataBlockCodec for all N5 data types, except STRING and OBJECT
