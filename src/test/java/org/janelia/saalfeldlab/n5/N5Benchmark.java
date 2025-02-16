@@ -81,10 +81,10 @@ public class N5Benchmark {
 
 	private static final Compression[] compressions = {
 			new RawCompression(),
-			new Bzip2Compression(),
+//			new Bzip2Compression(),
 			new GzipCompression(),
 			new Lz4Compression(),
-			new XzCompression()
+//			new XzCompression()
 	};
 
 
@@ -100,7 +100,7 @@ public class N5Benchmark {
 			throw new IOException("Could not create benchmark directory for HDF5Utils benchmark.");
 
 		data = new short[64 * 64 * 64];
-		final ImagePlus imp = new Opener().openURL("https://imagej.nih.gov/ij/images/t1-head-raw.zip");
+		final ImagePlus imp = new Opener().openURL("https://imagej.net/ij/images/t1-head-raw.zip");
 		final ImagePlusImg<UnsignedShortType, ?> img = (ImagePlusImg<UnsignedShortType, ?>)(Object)ImagePlusImgs.from(imp);
 		final Cursor<UnsignedShortType> cursor = Views.flatIterable(Views.interval(img, new long[]{100, 100, 30}, new long[]{163, 163, 93})).cursor();
 		for (int i = 0; i < data.length; ++i)
@@ -144,7 +144,7 @@ public class N5Benchmark {
 		}
 	}
 
-//	@Test
+	@Test
 	public void benchmarkWritingSpeed() {
 
 		final int nBlocks = 5;
@@ -221,7 +221,7 @@ public class N5Benchmark {
 		}
 	}
 
-	@Test
+//	@Test
 	public void benchmarkParallelWritingSpeed() {
 
 		final int nBlocks = 5;
