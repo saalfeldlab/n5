@@ -195,7 +195,7 @@ public enum DataType {
 	 * blocks to N5 format.
 	 *
 	 * @param <T>
-	 * 		the returned coded is cast to {@code DataBlockCodec<T>} for convenience
+	 * 		the returned codec is cast to {@code DataBlockCodec<T>} for convenience
 	 * 		(that is, the caller doesn't have to do the cast explicitly).
 	 * @return the default {@code DataBlockCodec}
 	 */
