@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
 import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DataBlock.DataBlockFactory;
 import org.janelia.saalfeldlab.n5.DoubleArrayDataBlock;
 import org.janelia.saalfeldlab.n5.FloatArrayDataBlock;
 import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
@@ -39,11 +40,6 @@ public class Codecs {
 	 * DataBlockCodec for all N5 data types, except STRING and OBJECT
 	 */
 	static class DefaultDataBlockCodec<T> implements DataBlockCodec<T> {
-
-		interface DataBlockFactory<T> {
-
-			DataBlock<T> createDataBlock(int[] blockSize, long[] gridPosition, T data);
-		}
 
 		private final DataCodec<T> dataCodec;
 

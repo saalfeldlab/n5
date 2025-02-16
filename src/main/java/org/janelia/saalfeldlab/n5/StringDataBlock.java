@@ -29,12 +29,6 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
 
 	public StringDataBlock(final int[] size, final long[] gridPosition, final String[] data) {
 
-		super(size, gridPosition, data);
-	}
-
-	@Override
-	public int getNumElements() {
-
-		return data.length;
+		super(size, gridPosition, data, a -> a.length);
 	}
 }
