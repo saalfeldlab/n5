@@ -36,6 +36,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.codec.N5Codecs;
 import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
+import org.janelia.saalfeldlab.n5.codec.N5Codecs.DataBlockCodecFactory;
 
 /**
  * Enumerates available data types.
@@ -134,13 +135,13 @@ public enum DataType {
 
 	private final DataBlockFactory dataBlockFactory;
 
-	private final DataBlockCodec<?> defaultCodec;
+	private final DataBlockCodecFactory<?> dataBlockCodecFactory;
 
-	DataType(final String label, final DataBlockFactory dataBlockFactory, final DataBlockCodec<?> defaultCodec) {
+	DataType(final String label, final DataBlockFactory dataBlockFactory, final DataBlockCodecFactory<?> dataBlockCodecFactory) {
 
 		this.label = label;
 		this.dataBlockFactory = dataBlockFactory;
-		this.defaultCodec = defaultCodec;
+		this.dataBlockCodecFactory = dataBlockCodecFactory;
 	}
 
 	@Override
@@ -190,17 +191,16 @@ public enum DataType {
 	}
 
 	/**
-	 * Get the default {@link DataBlockCodec} for {@link DataBlock DataBlocks}
-	 * of this {@code DataType}. The default codec is used for de/serializing
-	 * blocks to N5 format.
+	 * Get the default {@link DataBlockCodec}, with the specified {@code
+	 * compression}, for {@link DataBlock DataBlocks} of this {@code DataType}.
+	 * The default codec is used for de/serializing blocks to N5 format.
 	 *
-	 * @param <T>
-	 * 		the returned codec is cast to {@code DataBlockCodec<T>} for convenience
-	 * 		(that is, the caller doesn't have to do the cast explicitly).
+	 * @param compression
+	 *
 	 * @return the default {@code DataBlockCodec}
 	 */
-	public <T> DataBlockCodec<T> defaultCodec() {
-		return (DataBlockCodec<T>) defaultCodec;
+	public DataBlockCodec<?> createDataBlockCodec(final Compression compression) {
+		return dataBlockCodecFactory.createDataBlockCodec(compression);
 	}
 
 	private interface DataBlockFactory {

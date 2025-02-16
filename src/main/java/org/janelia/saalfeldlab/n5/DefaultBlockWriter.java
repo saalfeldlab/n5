@@ -55,10 +55,8 @@ public interface DefaultBlockWriter {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		final DataType dataType = datasetAttributes.getDataType();
-		final Compression compression = datasetAttributes.getCompression();
-		final DataBlockCodec<T> codec = dataType.defaultCodec();
-		codec.encode(dataBlock, compression).writeTo(out);
+		final DataBlockCodec<T> codec = datasetAttributes.getDataBlockCodec();
+		codec.encode(dataBlock).writeTo(out);
 		out.flush();
 	}
 }

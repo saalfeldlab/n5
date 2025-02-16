@@ -56,9 +56,7 @@ public interface DefaultBlockReader {
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition) throws IOException {
 
-		final DataType dataType = datasetAttributes.getDataType();
-		final Compression compression = datasetAttributes.getCompression();
-		final DataBlockCodec<?> codec = dataType.defaultCodec();
-		return codec.decode(ReadData.from(in), gridPosition, compression);
+		final DataBlockCodec<?> codec = datasetAttributes.getDataBlockCodec();
+		return codec.decode(ReadData.from(in), gridPosition);
 	}
 }
