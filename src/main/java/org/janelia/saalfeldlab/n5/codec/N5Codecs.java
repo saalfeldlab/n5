@@ -25,16 +25,21 @@ import static org.janelia.saalfeldlab.n5.codec.N5Codecs.ChunkHeader.MODE_VARLENG
 
 public class N5Codecs {
 
-	public static final DataBlockCodec<byte[]>   BYTE   = new DefaultDataBlockCodec<>(DataCodec.BYTE, ByteArrayDataBlock::new);
-	public static final DataBlockCodec<short[]>  SHORT  = new DefaultDataBlockCodec<>(DataCodec.SHORT_BIG_ENDIAN, ShortArrayDataBlock::new);
-	public static final DataBlockCodec<int[]>    INT    = new DefaultDataBlockCodec<>(DataCodec.INT_BIG_ENDIAN, IntArrayDataBlock::new);
-	public static final DataBlockCodec<long[]>   LONG   = new DefaultDataBlockCodec<>(DataCodec.LONG_BIG_ENDIAN, LongArrayDataBlock::new);
-	public static final DataBlockCodec<float[]>  FLOAT  = new DefaultDataBlockCodec<>(DataCodec.FLOAT_BIG_ENDIAN, FloatArrayDataBlock::new);
-	public static final DataBlockCodec<double[]> DOUBLE = new DefaultDataBlockCodec<>(DataCodec.DOUBLE_BIG_ENDIAN, DoubleArrayDataBlock::new);
-	public static final DataBlockCodec<String[]> STRING = new StringDataBlockCodec();
-	public static final DataBlockCodec<byte[]>   OBJECT = new ObjectDataBlockCodec();
+	public static final DataBlockCodecFactory<byte[]>   BYTE   = c -> new DefaultDataBlockCodec<>(DataCodec.BYTE, ByteArrayDataBlock::new, c);
+	public static final DataBlockCodecFactory<short[]>  SHORT  = c -> new DefaultDataBlockCodec<>(DataCodec.SHORT_BIG_ENDIAN, ShortArrayDataBlock::new, c);
+	public static final DataBlockCodecFactory<int[]>    INT    = c -> new DefaultDataBlockCodec<>(DataCodec.INT_BIG_ENDIAN, IntArrayDataBlock::new, c);
+	public static final DataBlockCodecFactory<long[]>   LONG   = c -> new DefaultDataBlockCodec<>(DataCodec.LONG_BIG_ENDIAN, LongArrayDataBlock::new, c);
+	public static final DataBlockCodecFactory<float[]>  FLOAT  = c -> new DefaultDataBlockCodec<>(DataCodec.FLOAT_BIG_ENDIAN, FloatArrayDataBlock::new, c);
+	public static final DataBlockCodecFactory<double[]> DOUBLE = c -> new DefaultDataBlockCodec<>(DataCodec.DOUBLE_BIG_ENDIAN, DoubleArrayDataBlock::new, c);
+	public static final DataBlockCodecFactory<String[]> STRING = StringDataBlockCodec::new;
+	public static final DataBlockCodecFactory<byte[]>   OBJECT = ObjectDataBlockCodec::new;
 
 	private N5Codecs() {}
+
+	public interface DataBlockCodecFactory<T> {
+
+		DataBlockCodec<T> createDataBlockCodec(Compression compression);
+	}
 
 	/**
 	 * DataBlockCodec for all N5 data types, except STRING and OBJECT
@@ -45,15 +50,19 @@ public class N5Codecs {
 
 		private final DataBlockFactory<T> dataBlockFactory;
 
+		private final Compression compression;
+
 		DefaultDataBlockCodec(
 				final DataCodec<T> dataCodec,
-				final DataBlockFactory<T> dataBlockFactory) {
+				final DataBlockFactory<T> dataBlockFactory,
+				final Compression compression) {
 			this.dataCodec = dataCodec;
 			this.dataBlockFactory = dataBlockFactory;
+			this.compression = compression;
 		}
 
 		@Override
-		public ReadData encode(final DataBlock<T> dataBlock, final Compression compression) throws IOException {
+		public ReadData encode(final DataBlock<T> dataBlock) throws IOException {
 			return ReadData.from(out -> {
 				new ChunkHeader(dataBlock.getSize(), dataBlock.getNumElements()).writeTo(out);
 				compression.encode(dataCodec.serialize(dataBlock.getData())).writeTo(out);
@@ -62,7 +71,7 @@ public class N5Codecs {
 		}
 
 		@Override
-		public DataBlock<T> decode(final ReadData readData, final long[] gridPosition, final Compression compression) throws IOException {
+		public DataBlock<T> decode(final ReadData readData, final long[] gridPosition) throws IOException {
 			try(final InputStream in = readData.inputStream()) {
 				final ChunkHeader header = ChunkHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
 				final T data = dataCodec.createData(header.numElements());
@@ -82,8 +91,14 @@ public class N5Codecs {
 		private static final Charset ENCODING = StandardCharsets.UTF_8;
 		private static final String NULLCHAR = "\0";
 
+		private final Compression compression;
+
+		StringDataBlockCodec(final Compression compression) {
+			this.compression = compression;
+		}
+
 		@Override
-		public ReadData encode(final DataBlock<String[]> dataBlock, final Compression compression) throws IOException {
+		public ReadData encode(final DataBlock<String[]> dataBlock) throws IOException {
 			return ReadData.from(out -> {
 				final String flattenedArray = String.join(NULLCHAR, dataBlock.getData()) + NULLCHAR;
 				final byte[] serializedData = flattenedArray.getBytes(ENCODING);
@@ -94,7 +109,7 @@ public class N5Codecs {
 		}
 
 		@Override
-		public DataBlock<String[]> decode(final ReadData readData, final long[] gridPosition, final Compression compression) throws IOException {
+		public DataBlock<String[]> decode(final ReadData readData, final long[] gridPosition) throws IOException {
 			try(final InputStream in = readData.inputStream()) {
 				final ChunkHeader header = ChunkHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
 				final ReadData decompressed = compression.decode(ReadData.from(in), header.numElements());
@@ -111,8 +126,14 @@ public class N5Codecs {
 	 */
 	static class ObjectDataBlockCodec implements DataBlockCodec<byte[]> {
 
+		private final Compression compression;
+
+		ObjectDataBlockCodec(final Compression compression) {
+			this.compression = compression;
+		}
+
 		@Override
-		public ReadData encode(final DataBlock<byte[]> dataBlock, final Compression compression) throws IOException {
+		public ReadData encode(final DataBlock<byte[]> dataBlock) throws IOException {
 			return ReadData.from(out -> {
 				new ChunkHeader(null, dataBlock.getNumElements()).writeTo(out);
 				compression.encode(ReadData.from(dataBlock.getData())).writeTo(out);
@@ -121,7 +142,7 @@ public class N5Codecs {
 		}
 
 		@Override
-		public DataBlock<byte[]> decode(final ReadData readData, final long[] gridPosition, final Compression compression) throws IOException {
+		public DataBlock<byte[]> decode(final ReadData readData, final long[] gridPosition) throws IOException {
 			try(final InputStream in = readData.inputStream()) {
 				final ChunkHeader header = ChunkHeader.readFrom(in, MODE_OBJECT);
 				final byte[] data = new byte[header.numElements()];
