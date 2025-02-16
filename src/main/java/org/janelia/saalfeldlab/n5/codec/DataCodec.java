@@ -17,6 +17,21 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  */
 public abstract class DataCodec<T> {
 
+	public abstract ReadData serialize(T data) throws IOException;
+
+	public abstract void deserialize(ReadData readData, T data) throws IOException;
+
+	public int bytesPerElement() {
+		return bytesPerElement;
+	}
+
+	public T createData(final int numElements) {
+		return dataFactory.apply(numElements);
+	}
+
+	// ------------------- instances  --------------------
+	//
+
 	public static final DataCodec<byte[]>   BYTE              = new ByteDataCodec();
 	public static final DataCodec<short[]>  SHORT_BIG_ENDIAN  = new ShortDataCodec(ByteOrder.BIG_ENDIAN);
 	public static final DataCodec<int[]>    INT_BIG_ENDIAN    = new IntDataCodec(ByteOrder.BIG_ENDIAN);
@@ -48,18 +63,6 @@ public abstract class DataCodec<T> {
 
 	public static DataCodec<double[]> DOUBLE(ByteOrder order) {
 		return order == ByteOrder.BIG_ENDIAN ? DOUBLE_BIG_ENDIAN : DOUBLE_LITTLE_ENDIAN;
-	}
-
-	public abstract ReadData serialize(T data) throws IOException;
-
-	public abstract void deserialize(ReadData readData, T data) throws IOException;
-
-	public int bytesPerElement() {
-		return bytesPerElement;
-	}
-
-	public T createData(final int numElements) {
-		return dataFactory.apply(numElements);
 	}
 
 	// ---------------- implementations  -----------------

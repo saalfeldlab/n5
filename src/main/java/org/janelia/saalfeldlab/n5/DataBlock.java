@@ -86,4 +86,15 @@ public interface DataBlock<T> {
 			n *= size[i];
 		return n;
 	}
+
+	/**
+	 * Factory for creating {@code DataBlock<T>}.
+	 *
+	 * @param <T>
+	 * 		type of the data contained in the DataBlock
+	 */
+	interface DataBlockFactory<T> {
+
+		DataBlock<T> createDataBlock(int[] blockSize, long[] gridPosition, T data);
+	}
 }

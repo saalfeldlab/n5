@@ -29,12 +29,6 @@ public class ByteArrayDataBlock extends AbstractDataBlock<byte[]> {
 
 	public ByteArrayDataBlock(final int[] size, final long[] gridPosition, final byte[] data) {
 
-		super(size, gridPosition, data);
-	}
-
-	@Override
-	public int getNumElements() {
-
-		return data.length;
+		super(size, gridPosition, data, a -> a.length);
 	}
 }
