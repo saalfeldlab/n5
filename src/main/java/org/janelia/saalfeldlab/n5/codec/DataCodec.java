@@ -30,6 +30,26 @@ public abstract class DataCodec<T> {
 	public static final DataCodec<float[]>  FLOAT_LITTLE_ENDIAN  = new FloatDataCodec(ByteOrder.LITTLE_ENDIAN);
 	public static final DataCodec<double[]> DOUBLE_LITTLE_ENDIAN = new DoubleDataCodec(ByteOrder.LITTLE_ENDIAN);
 
+	public static DataCodec<short[]> SHORT(ByteOrder order) {
+		return order == ByteOrder.BIG_ENDIAN ? SHORT_BIG_ENDIAN : SHORT_LITTLE_ENDIAN;
+	}
+
+	public static DataCodec<int[]> INT(ByteOrder order) {
+		return order == ByteOrder.BIG_ENDIAN ? INT_BIG_ENDIAN : INT_LITTLE_ENDIAN;
+	}
+
+	public static DataCodec<long[]> LONG(ByteOrder order) {
+		return order == ByteOrder.BIG_ENDIAN ? LONG_BIG_ENDIAN : LONG_LITTLE_ENDIAN;
+	}
+
+	public static DataCodec<float[]> FLOAT(ByteOrder order) {
+		return order == ByteOrder.BIG_ENDIAN ? FLOAT_BIG_ENDIAN : FLOAT_LITTLE_ENDIAN;
+	}
+
+	public static DataCodec<double[]> DOUBLE(ByteOrder order) {
+		return order == ByteOrder.BIG_ENDIAN ? DOUBLE_BIG_ENDIAN : DOUBLE_LITTLE_ENDIAN;
+	}
+
 	public abstract ReadData serialize(T data) throws IOException;
 
 	public abstract void deserialize(ReadData readData, T data) throws IOException;
