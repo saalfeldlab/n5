@@ -105,18 +105,7 @@ public interface ReadData {
 	 * The returned {@code ReadData} has a known {@link #length} and multiple
 	 * {@link #inputStream InputStreams} can be opened on it.
 	 */
-	SplittableReadData materialize() throws IOException;
-
-	/**
-	 * If this {@code ReadData} is a {@code SplittableReadData}, just returns {@code this}.
-	 * <p>
-	 * Otherwise, if the underlying data is an {@code InputStream}, all data is read and
-	 * wrapped as a {@code ByteArraySplittableReadData}.
-	 * <p>
-	 * The returned {@code SplittableReadData} has a known {@link #length}
-	 * and multiple {@link #inputStream}s can be opened on it.
-	 */
-	SplittableReadData splittable() throws IOException;
+	ReadData materialize() throws IOException;
 
 	/**
 	 * Write the contained data into an {@code OutputStream}.
@@ -229,7 +218,7 @@ public interface ReadData {
 	 *
 	 * @return a new ReadData
 	 */
-	static SplittableReadData from(final byte[] data, final int offset, final int length) {
+	static ReadData from(final byte[] data, final int offset, final int length) {
 		return new ByteArraySplittableReadData(data, offset, length);
 	}
 
@@ -241,7 +230,7 @@ public interface ReadData {
 	 *
 	 * @return a new ReadData
 	 */
-	static SplittableReadData from(final byte[] data) {
+	static ReadData from(final byte[] data) {
 		return from(data, 0, data.length);
 	}
 
@@ -253,7 +242,7 @@ public interface ReadData {
 	 *
 	 * @return a new ReadData
 	 */
-	static SplittableReadData from(final ByteBuffer data) {
+	static ReadData from(final ByteBuffer data) {
 		if (data.hasArray()) {
 			return from(data.array(), 0, data.limit());
 		} else {
