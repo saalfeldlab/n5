@@ -5,12 +5,16 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.function.IntFunction;
+import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
- * TODO javadoc
- *  ... writes data contained in a DataBlock to byte[].
- *  ... versions for BIG_ENDIAN and LITTLE_ENDIAN byte order.
+ * De/serialize the {@link DataBlock#getData() data} contained in a {@code
+ * DataBlock<T>} from/to a sequence of bytes.
+ * <p>
+ * Static fields {@code BYTE}, {@code SHORT_BIG_ENDIAN}, {@code
+ * SHORT_LITTLE_ENDIAN}, etc. contain {@code DataCodec}s for all primitive array
+ * types and big-endian / little-endian byte order.
  *
  * @param <T>
  * 		type of the data contained in the DataBlock

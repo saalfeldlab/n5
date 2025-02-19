@@ -46,6 +46,11 @@ class ByteArraySplittableReadData implements SplittableReadData {
 	}
 
 	@Override
+	public SplittableReadData materialize() throws IOException {
+		return this;
+	}
+
+	@Override
 	public SplittableReadData split(final long offset, final long length) throws IOException {
 		if (offset < 0 || offset > this.length || length < 0) {
 			throw new IndexOutOfBoundsException();
