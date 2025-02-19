@@ -4,6 +4,12 @@ import java.io.IOException;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
+/**
+ * De/serialize {@link DataBlock DataBlock<T>} from/to {@link ReadData}.
+ *
+ * @param <T>
+ * 		type of the data contained in the DataBlock
+ */
 public interface DataBlockCodec<T> {
 
 	ReadData encode(DataBlock<T> dataBlock) throws IOException;
