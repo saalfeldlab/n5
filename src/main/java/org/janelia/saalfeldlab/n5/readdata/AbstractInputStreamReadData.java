@@ -10,12 +10,7 @@ abstract class AbstractInputStreamReadData implements ReadData {
 	private ByteArraySplittableReadData bytes;
 
 	@Override
-	public SplittableReadData splittable() throws IOException {
-		return materialize();
-	}
-
-	@Override
-	public SplittableReadData materialize() throws IOException {
+	public ReadData materialize() throws IOException {
 		if (bytes == null) {
 			final byte[] data;
 			final int length = (int) length();

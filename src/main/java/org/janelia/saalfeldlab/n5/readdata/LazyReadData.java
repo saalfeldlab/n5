@@ -34,12 +34,7 @@ class LazyReadData implements ReadData {
 	private ByteArraySplittableReadData bytes;
 
 	@Override
-	public SplittableReadData splittable() throws IOException {
-		return materialize();
-	}
-
-	@Override
-	public SplittableReadData materialize() throws IOException {
+	public ReadData materialize() throws IOException {
 		if (bytes == null) {
 			final ByteArrayOutputStream baos = new ByteArrayOutputStream(8192);
 			writeTo(baos);
