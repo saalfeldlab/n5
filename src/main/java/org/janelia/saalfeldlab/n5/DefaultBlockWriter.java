@@ -57,6 +57,5 @@ public interface DefaultBlockWriter {
 
 		final DataBlockCodec<T> codec = datasetAttributes.getDataBlockCodec();
 		codec.encode(dataBlock).writeTo(out);
-		out.flush();
 	}
 }
