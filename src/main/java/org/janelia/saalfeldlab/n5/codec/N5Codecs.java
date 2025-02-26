@@ -66,7 +66,6 @@ public class N5Codecs {
 			return ReadData.from(out -> {
 				new BlockHeader(dataBlock.getSize(), dataBlock.getNumElements()).writeTo(out);
 				compression.encode(dataCodec.serialize(dataBlock.getData())).writeTo(out);
-				out.flush();
 			});
 		}
 
@@ -104,7 +103,6 @@ public class N5Codecs {
 				final byte[] serializedData = flattenedArray.getBytes(ENCODING);
 				new BlockHeader(dataBlock.getSize(), serializedData.length).writeTo(out);
 				compression.encode(ReadData.from(serializedData)).writeTo(out);
-				out.flush();
 			});
 		}
 
@@ -137,7 +135,6 @@ public class N5Codecs {
 			return ReadData.from(out -> {
 				new BlockHeader(null, dataBlock.getNumElements()).writeTo(out);
 				compression.encode(ReadData.from(dataBlock.getData())).writeTo(out);
-				out.flush();
 			});
 		}
 
