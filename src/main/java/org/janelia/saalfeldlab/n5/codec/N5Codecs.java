@@ -19,9 +19,9 @@ import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.StringDataBlock;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
-import static org.janelia.saalfeldlab.n5.codec.N5Codecs.ChunkHeader.MODE_DEFAULT;
-import static org.janelia.saalfeldlab.n5.codec.N5Codecs.ChunkHeader.MODE_OBJECT;
-import static org.janelia.saalfeldlab.n5.codec.N5Codecs.ChunkHeader.MODE_VARLENGTH;
+import static org.janelia.saalfeldlab.n5.codec.N5Codecs.BlockHeader.MODE_DEFAULT;
+import static org.janelia.saalfeldlab.n5.codec.N5Codecs.BlockHeader.MODE_OBJECT;
+import static org.janelia.saalfeldlab.n5.codec.N5Codecs.BlockHeader.MODE_VARLENGTH;
 
 public class N5Codecs {
 
@@ -64,7 +64,7 @@ public class N5Codecs {
 		@Override
 		public ReadData encode(final DataBlock<T> dataBlock) throws IOException {
 			return ReadData.from(out -> {
-				new ChunkHeader(dataBlock.getSize(), dataBlock.getNumElements()).writeTo(out);
+				new BlockHeader(dataBlock.getSize(), dataBlock.getNumElements()).writeTo(out);
 				compression.encode(dataCodec.serialize(dataBlock.getData())).writeTo(out);
 				out.flush();
 			});
@@ -73,7 +73,7 @@ public class N5Codecs {
 		@Override
 		public DataBlock<T> decode(final ReadData readData, final long[] gridPosition) throws IOException {
 			try(final InputStream in = readData.inputStream()) {
-				final ChunkHeader header = ChunkHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
+				final BlockHeader header = BlockHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
 				final T data = dataCodec.createData(header.numElements());
 				final int numBytes = header.numElements() * dataCodec.bytesPerElement();
 				final ReadData decompressed = compression.decode(ReadData.from(in), numBytes);
@@ -102,7 +102,7 @@ public class N5Codecs {
 			return ReadData.from(out -> {
 				final String flattenedArray = String.join(NULLCHAR, dataBlock.getData()) + NULLCHAR;
 				final byte[] serializedData = flattenedArray.getBytes(ENCODING);
-				new ChunkHeader(dataBlock.getSize(), serializedData.length).writeTo(out);
+				new BlockHeader(dataBlock.getSize(), serializedData.length).writeTo(out);
 				compression.encode(ReadData.from(serializedData)).writeTo(out);
 				out.flush();
 			});
@@ -111,7 +111,7 @@ public class N5Codecs {
 		@Override
 		public DataBlock<String[]> decode(final ReadData readData, final long[] gridPosition) throws IOException {
 			try(final InputStream in = readData.inputStream()) {
-				final ChunkHeader header = ChunkHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
+				final BlockHeader header = BlockHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
 				final ReadData decompressed = compression.decode(ReadData.from(in), header.numElements());
 				final byte[] serializedData = decompressed.allBytes();
 				final String rawChars = new String(serializedData, ENCODING);
@@ -135,7 +135,7 @@ public class N5Codecs {
 		@Override
 		public ReadData encode(final DataBlock<byte[]> dataBlock) throws IOException {
 			return ReadData.from(out -> {
-				new ChunkHeader(null, dataBlock.getNumElements()).writeTo(out);
+				new BlockHeader(null, dataBlock.getNumElements()).writeTo(out);
 				compression.encode(ReadData.from(dataBlock.getData())).writeTo(out);
 				out.flush();
 			});
@@ -144,7 +144,7 @@ public class N5Codecs {
 		@Override
 		public DataBlock<byte[]> decode(final ReadData readData, final long[] gridPosition) throws IOException {
 			try(final InputStream in = readData.inputStream()) {
-				final ChunkHeader header = ChunkHeader.readFrom(in, MODE_OBJECT);
+				final BlockHeader header = BlockHeader.readFrom(in, MODE_OBJECT);
 				final byte[] data = new byte[header.numElements()];
 				final ReadData decompressed = compression.decode(ReadData.from(in), data.length);
 				new DataInputStream(decompressed.inputStream()).readFully(data);
@@ -153,7 +153,7 @@ public class N5Codecs {
 		}
 	}
 
-	static class ChunkHeader {
+	static class BlockHeader {
 
 		public static final short MODE_DEFAULT = 0;
 		public static final short MODE_VARLENGTH = 1;
@@ -163,13 +163,13 @@ public class N5Codecs {
 		private final int[] blockSize;
 		private final int numElements;
 
-		ChunkHeader(final short mode, final int[] blockSize, final int numElements) {
+		BlockHeader(final short mode, final int[] blockSize, final int numElements) {
 			this.mode = mode;
 			this.blockSize = blockSize;
 			this.numElements = numElements;
 		}
 
-		ChunkHeader(final int[] blockSize, final int numElements) {
+		BlockHeader(final int[] blockSize, final int numElements) {
 			if (blockSize == null) {
 				this.mode = MODE_OBJECT;
 			} else if (DataBlock.getNumElements(blockSize) == numElements) {
@@ -227,11 +227,11 @@ public class N5Codecs {
 			dos.flush();
 		}
 
-		static ChunkHeader readFrom(final InputStream in) throws IOException {
+		static BlockHeader readFrom(final InputStream in) throws IOException {
 			return readFrom(in, null);
 		}
 
-		static ChunkHeader readFrom(final InputStream in, short... allowedModes) throws IOException {
+		static BlockHeader readFrom(final InputStream in, short... allowedModes) throws IOException {
 			final DataInputStream dis = new DataInputStream(in);
 			final short mode = dis.readShort();
 			final int[] blockSize;
@@ -262,7 +262,7 @@ public class N5Codecs {
 				throw new IOException("unexpected mode: " + mode);
 			}
 
-			return new ChunkHeader(mode, blockSize, numElements);
+			return new BlockHeader(mode, blockSize, numElements);
 		}
 	}
 }
