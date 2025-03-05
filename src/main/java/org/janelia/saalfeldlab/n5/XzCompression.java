@@ -60,9 +60,9 @@ public class XzCompression implements Compression {
 	}
 
 	@Override
-	public ReadData decode(final ReadData readData, final int decodedLength) throws IOException {
-		final InputStream inflater = new XZCompressorInputStream(readData.inputStream());
-		return ReadData.from(inflater, decodedLength);
+	public ReadData decode(final ReadData readData) throws IOException {
+
+		return ReadData.from(new XZCompressorInputStream(readData.inputStream()));
 	}
 
 	@Override

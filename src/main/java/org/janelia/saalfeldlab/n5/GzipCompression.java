@@ -85,9 +85,9 @@ public class GzipCompression implements Compression {
 	}
 
 	@Override
-	public ReadData decode(final ReadData readData, final int decodedLength) throws IOException {
-		final InputStream inflater = decode(readData.inputStream());
-		return ReadData.from(inflater, decodedLength);
+	public ReadData decode(final ReadData readData) throws IOException {
+
+		return ReadData.from(decode(readData.inputStream()));
 	}
 
 	@Override

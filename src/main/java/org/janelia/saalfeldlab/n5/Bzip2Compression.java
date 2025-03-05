@@ -60,9 +60,9 @@ public class Bzip2Compression implements Compression {
 	}
 
 	@Override
-	public ReadData decode(final ReadData readData, final int decodedLength) throws IOException {
-		final InputStream inflater = new BZip2CompressorInputStream(readData.inputStream());
-		return ReadData.from(inflater, decodedLength);
+	public ReadData decode(final ReadData readData) throws IOException {
+
+		return ReadData.from(new BZip2CompressorInputStream(readData.inputStream()));
 	}
 
 	@Override
