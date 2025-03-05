@@ -4,6 +4,9 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.IntBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.function.IntFunction;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -23,7 +26,7 @@ public abstract class DataCodec<T> {
 
 	public abstract ReadData serialize(T data) throws IOException;
 
-	public abstract void deserialize(ReadData readData, T data) throws IOException;
+	public abstract T deserialize(ReadData readData, int numElements) throws IOException;
 
 	public int bytesPerElement() {
 		return bytesPerElement;
@@ -49,6 +52,8 @@ public abstract class DataCodec<T> {
 	public static final DataCodec<float[]>  FLOAT_LITTLE_ENDIAN  = new FloatDataCodec(ByteOrder.LITTLE_ENDIAN);
 	public static final DataCodec<double[]> DOUBLE_LITTLE_ENDIAN = new DoubleDataCodec(ByteOrder.LITTLE_ENDIAN);
 
+	public static final DataCodec<String[]> STRING = new StringDataCodec();
+	public static final DataCodec<byte[]> OBJECT = new ObjectDataCodec();
 	public static DataCodec<short[]> SHORT(ByteOrder order) {
 		return order == ByteOrder.BIG_ENDIAN ? SHORT_BIG_ENDIAN : SHORT_LITTLE_ENDIAN;
 	}
@@ -92,8 +97,10 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public void deserialize(final ReadData readData, final byte[] data) throws IOException {
+		public byte[] deserialize(final ReadData readData, int numElements) throws IOException {
+			final byte[] data = createData(numElements);
 			new DataInputStream(readData.inputStream()).readFully(data);
+			return data;
 		}
 	}
 
@@ -114,8 +121,11 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public void deserialize(final ReadData readData, final short[] data) throws IOException {
+		public short[] deserialize(final ReadData readData, int numElements) throws IOException {
+
+			final short[] data = createData(numElements);
 			readData.toByteBuffer().order(order).asShortBuffer().get(data);
+			return data;
 		}
 	}
 
@@ -136,8 +146,13 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public void deserialize(final ReadData readData, final int[] data) throws IOException {
-			readData.toByteBuffer().order(order).asIntBuffer().get(data);
+		public int[] deserialize(final ReadData readData, int numElements) throws IOException {
+
+			final int[] data = createData(numElements);
+			final ByteBuffer byteBuffer = readData.toByteBuffer();
+			final IntBuffer intBuffer = byteBuffer.order(order).asIntBuffer();
+			intBuffer.get(data);
+			return data;
 		}
 	}
 
@@ -158,8 +173,10 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public void deserialize(final ReadData readData, final long[] data) throws IOException {
+		public long[] deserialize(final ReadData readData, int numElements) throws IOException {
+			final long[] data = createData(numElements);
 			readData.toByteBuffer().order(order).asLongBuffer().get(data);
+			return data;
 		}
 	}
 
@@ -180,8 +197,10 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public void deserialize(final ReadData readData, final float[] data) throws IOException {
+		public float[] deserialize(final ReadData readData, int numElements) throws IOException {
+			final float[] data = createData(numElements);
 			readData.toByteBuffer().order(order).asFloatBuffer().get(data);
+			return data;
 		}
 	}
 
@@ -202,8 +221,52 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public void deserialize(final ReadData readData, final double[] data) throws IOException {
+		public double[] deserialize(final ReadData readData, int numElements) throws IOException {
+
+			final double[] data = createData(numElements);
 			readData.toByteBuffer().order(order).asDoubleBuffer().get(data);
+			return data;
+		}
+	}
+
+	private static final class StringDataCodec extends DataCodec<String[]> {
+
+		StringDataCodec() {
+			super( -1, String[]::new);
+		}
+
+		private static final Charset ENCODING = StandardCharsets.UTF_8;
+		private static final String NULLCHAR = "\0";
+
+
+		@Override public ReadData serialize(String[] data) {
+			final String flattenedArray = String.join(NULLCHAR, data) + NULLCHAR;
+			return ReadData.from(flattenedArray.getBytes(ENCODING));
+		}
+
+		@Override public String[] deserialize(ReadData readData, int numElements) throws IOException {
+			final byte[] serializedData = readData.allBytes();
+			final String rawChars = new String(serializedData, ENCODING);
+			return rawChars.split(NULLCHAR);
+		}
+	}
+
+	private static final class ObjectDataCodec extends DataCodec<byte[]> {
+
+
+		ObjectDataCodec() {
+			super(-1, byte[]::new);
+		}
+
+		@Override public ReadData serialize(byte[] data) {
+
+			return ReadData.from(data);
+		}
+
+		@Override public byte[] deserialize(ReadData readData, int numElements) throws IOException {
+			final byte[] data = createData(numElements);
+			new DataInputStream(readData.inputStream()).readFully(data);
+			return data;
 		}
 	}
 }

@@ -11,6 +11,7 @@ import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
 import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataBlock.DataBlockFactory;
+import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DoubleArrayDataBlock;
 import org.janelia.saalfeldlab.n5.FloatArrayDataBlock;
 import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
@@ -25,14 +26,14 @@ import static org.janelia.saalfeldlab.n5.codec.N5Codecs.BlockHeader.MODE_VARLENG
 
 public class N5Codecs {
 
-	public static final DataBlockCodecFactory<byte[]>   BYTE   = c -> new DefaultDataBlockCodec<>(DataCodec.BYTE, ByteArrayDataBlock::new, c);
-	public static final DataBlockCodecFactory<short[]>  SHORT  = c -> new DefaultDataBlockCodec<>(DataCodec.SHORT_BIG_ENDIAN, ShortArrayDataBlock::new, c);
-	public static final DataBlockCodecFactory<int[]>    INT    = c -> new DefaultDataBlockCodec<>(DataCodec.INT_BIG_ENDIAN, IntArrayDataBlock::new, c);
-	public static final DataBlockCodecFactory<long[]>   LONG   = c -> new DefaultDataBlockCodec<>(DataCodec.LONG_BIG_ENDIAN, LongArrayDataBlock::new, c);
-	public static final DataBlockCodecFactory<float[]>  FLOAT  = c -> new DefaultDataBlockCodec<>(DataCodec.FLOAT_BIG_ENDIAN, FloatArrayDataBlock::new, c);
-	public static final DataBlockCodecFactory<double[]> DOUBLE = c -> new DefaultDataBlockCodec<>(DataCodec.DOUBLE_BIG_ENDIAN, DoubleArrayDataBlock::new, c);
-	public static final DataBlockCodecFactory<String[]> STRING = StringDataBlockCodec::new;
-	public static final DataBlockCodecFactory<byte[]>   OBJECT = ObjectDataBlockCodec::new;
+	public static final DataBlockCodecFactory<byte[]> BYTE =c -> new DefaultDataBlockCodec<>(DataCodec.BYTE, ByteArrayDataBlock::new, c);
+	public static final DataBlockCodecFactory<short[]> SHORT =c -> new DefaultDataBlockCodec<>(DataCodec.SHORT_BIG_ENDIAN, ShortArrayDataBlock::new, c);
+	public static final DataBlockCodecFactory<int[]> INT =c -> new DefaultDataBlockCodec<>(DataCodec.INT_BIG_ENDIAN, IntArrayDataBlock::new, c);
+	public static final DataBlockCodecFactory<long[]> LONG =c -> new DefaultDataBlockCodec<>(DataCodec.LONG_BIG_ENDIAN, LongArrayDataBlock::new, c);
+	public static final DataBlockCodecFactory<float[]> FLOAT =c -> new DefaultDataBlockCodec<>(DataCodec.FLOAT_BIG_ENDIAN, FloatArrayDataBlock::new, c);
+	public static final DataBlockCodecFactory<double[]> DOUBLE =c -> new DefaultDataBlockCodec<>(DataCodec.DOUBLE_BIG_ENDIAN, DoubleArrayDataBlock::new, c);
+	public static final DataBlockCodecFactory<String[]> STRING =c -> new StringDataBlockCodec(DataCodec.STRING, StringDataBlock::new, c);
+	public static final DataBlockCodecFactory<byte[]> OBJECT =c -> new ObjectDataBlockCodec(DataCodec.OBJECT, ByteArrayDataBlock::new, c);
 
 	private N5Codecs() {}
 
