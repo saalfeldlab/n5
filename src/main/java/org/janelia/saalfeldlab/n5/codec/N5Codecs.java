@@ -5,8 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
+
 import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
 import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DataBlock;
@@ -83,112 +82,146 @@ public class N5Codecs {
 		DataBlockCodec<T> createDataBlockCodec(Compression compression);
 	}
 
-	/**
-	 * DataBlockCodec for all N5 data types, except STRING and OBJECT
-	 */
-	static class DefaultDataBlockCodec<T> implements DataBlockCodec<T> {
+	public abstract static class AbstractDataBlockCodec<T> implements DataBlockCodec<T> {
+
+		private static final int VAR_OBJ_BYTES_PER_ELEMENT = 1;
 
 		private final DataCodec<T> dataCodec;
-
 		private final DataBlockFactory<T> dataBlockFactory;
-
 		private final Compression compression;
 
-		DefaultDataBlockCodec(
+		public AbstractDataBlockCodec(
 				final DataCodec<T> dataCodec,
 				final DataBlockFactory<T> dataBlockFactory,
-				final Compression compression) {
+				final Compression compression
+		) {
 			this.dataCodec = dataCodec;
 			this.dataBlockFactory = dataBlockFactory;
 			this.compression = compression;
 		}
 
-		@Override
-		public ReadData encode(final DataBlock<T> dataBlock) throws IOException {
+		public DataBlockFactory<T> getDataBlockFactory() {
+
+			return dataBlockFactory;
+		}
+
+		public DataCodec<T> getDataCodec() {
+
+			return dataCodec;
+		}
+
+		public Compression getCompression() {
+
+			return compression;
+		}
+
+
+		abstract BlockHeader encodeBlockHeader(final DataBlock<T> dataBlock, ReadData blockData) throws IOException;
+
+		@Override public ReadData encode(DataBlock<T> dataBlock) throws IOException {
 			return ReadData.from(out -> {
-				new BlockHeader(dataBlock.getSize(), dataBlock.getNumElements()).writeTo(out);
-				compression.encode(dataCodec.serialize(dataBlock.getData())).writeTo(out);
+				final ReadData dataReadData = getDataCodec().serialize(dataBlock.getData());
+				final ReadData encodedData = getCompression().encode(dataReadData);
+				final BlockHeader header = encodeBlockHeader(dataBlock, dataReadData);
+
+				header.writeTo(out);
+				encodedData.writeTo(out);
 			});
 		}
+		abstract BlockHeader decodeBlockHeader(final InputStream in) throws IOException;
 
 		@Override
 		public DataBlock<T> decode(final ReadData readData, final long[] gridPosition) throws IOException {
 			try(final InputStream in = readData.inputStream()) {
-				final BlockHeader header = BlockHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
-				final T data = dataCodec.createData(header.numElements());
-				final int numBytes = header.numElements() * dataCodec.bytesPerElement();
-				final ReadData decompressed = compression.decode(ReadData.from(in), numBytes);
-				dataCodec.deserialize(decompressed, data);
-				return dataBlockFactory.createDataBlock(header.blockSize(), gridPosition, data);
+				final BlockHeader header = decodeBlockHeader(in);
+
+				final int bytesPerElement
+						= getDataCodec().bytesPerElement() == -1
+						? VAR_OBJ_BYTES_PER_ELEMENT
+						: getDataCodec().bytesPerElement();
+
+				final int numElements = header.numElements();
+				final ReadData blockData = ReadData.from(in, numElements * bytesPerElement);
+				final ReadData decodeData = getCompression().decode(blockData);
+				final T data = getDataCodec().deserialize(decodeData, numElements);
+				return getDataBlockFactory().createDataBlock(header.blockSize(), gridPosition, data);
 			}
+		}
+	}
+
+	/**
+	 * DataBlockCodec for all N5 data types, except STRING and OBJECT
+	 */
+	static class DefaultDataBlockCodec<T> extends AbstractDataBlockCodec<T> {
+
+		DefaultDataBlockCodec(
+				final DataCodec<T> dataCodec,
+				final DataBlockFactory<T> dataBlockFactory,
+				final Compression compression) {
+
+			super(dataCodec, dataBlockFactory, compression);
+			}
+		@Override
+		protected BlockHeader encodeBlockHeader(final DataBlock<T> dataBlock, ReadData blockData)  {
+
+			return new BlockHeader(dataBlock.getSize(), dataBlock.getNumElements());
+		}
+
+		@Override
+		protected BlockHeader decodeBlockHeader(final InputStream in) throws IOException {
+
+			return BlockHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
 		}
 	}
 
 	/**
 	 * DataBlockCodec for N5 data type STRING
 	 */
-	static class StringDataBlockCodec implements DataBlockCodec<String[]> {
+	static class StringDataBlockCodec extends AbstractDataBlockCodec<String[]> {
 
-		private static final Charset ENCODING = StandardCharsets.UTF_8;
-		private static final String NULLCHAR = "\0";
+		public StringDataBlockCodec(
+				final DataCodec<String[]> dataCodec,
+				final DataBlockFactory<String[]> dataBlockFactory,
+				final Compression compression) {
 
-		private final Compression compression;
-
-		StringDataBlockCodec(final Compression compression) {
-			this.compression = compression;
+			super(dataCodec, dataBlockFactory, compression);
 		}
 
 		@Override
-		public ReadData encode(final DataBlock<String[]> dataBlock) throws IOException {
-			return ReadData.from(out -> {
-				final String flattenedArray = String.join(NULLCHAR, dataBlock.getData()) + NULLCHAR;
-				final byte[] serializedData = flattenedArray.getBytes(ENCODING);
-				new BlockHeader(dataBlock.getSize(), serializedData.length).writeTo(out);
-				compression.encode(ReadData.from(serializedData)).writeTo(out);
-			});
+		protected BlockHeader encodeBlockHeader(final DataBlock<String[]> dataBlock, ReadData blockData) throws IOException {
+
+			return new BlockHeader(dataBlock.getSize(), (int)blockData.length());
 		}
 
 		@Override
-		public DataBlock<String[]> decode(final ReadData readData, final long[] gridPosition) throws IOException {
-			try(final InputStream in = readData.inputStream()) {
-				final BlockHeader header = BlockHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
-				final ReadData decompressed = compression.decode(ReadData.from(in), header.numElements());
-				final byte[] serializedData = decompressed.allBytes();
-				final String rawChars = new String(serializedData, ENCODING);
-				final String[] actualData = rawChars.split(NULLCHAR);
-				return new StringDataBlock(header.blockSize(), gridPosition, actualData);
-			}
+		protected BlockHeader decodeBlockHeader(final InputStream in) throws IOException {
+
+			return BlockHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
 		}
 	}
 
 	/**
 	 * DataBlockCodec for N5 data type OBJECT
 	 */
-	static class ObjectDataBlockCodec implements DataBlockCodec<byte[]> {
+	static class ObjectDataBlockCodec extends AbstractDataBlockCodec<byte[]> {
 
-		private final Compression compression;
+		public ObjectDataBlockCodec(
+				final DataCodec<byte[]> dataCodec,
+				final DataBlockFactory<byte[]> dataBlockFactory,
+				final Compression compression) {
 
-		ObjectDataBlockCodec(final Compression compression) {
-			this.compression = compression;
+			super(dataCodec, dataBlockFactory, compression);
+		}
+
+		@Override protected BlockHeader encodeBlockHeader(DataBlock<byte[]> dataBlock, ReadData blockData) {
+
+			return new BlockHeader(null, dataBlock.getNumElements());
 		}
 
 		@Override
-		public ReadData encode(final DataBlock<byte[]> dataBlock) throws IOException {
-			return ReadData.from(out -> {
-				new BlockHeader(null, dataBlock.getNumElements()).writeTo(out);
-				compression.encode(ReadData.from(dataBlock.getData())).writeTo(out);
-			});
-		}
+		protected BlockHeader decodeBlockHeader(final InputStream in) throws IOException {
 
-		@Override
-		public DataBlock<byte[]> decode(final ReadData readData, final long[] gridPosition) throws IOException {
-			try(final InputStream in = readData.inputStream()) {
-				final BlockHeader header = BlockHeader.readFrom(in, MODE_OBJECT);
-				final byte[] data = new byte[header.numElements()];
-				final ReadData decompressed = compression.decode(ReadData.from(in), data.length);
-				new DataInputStream(decompressed.inputStream()).readFully(data);
-				return new ByteArrayDataBlock(null, gridPosition, data);
-			}
+			return BlockHeader.readFrom(in, MODE_OBJECT);
 		}
 	}
 
@@ -266,9 +299,6 @@ public class N5Codecs {
 			dos.flush();
 		}
 
-		static BlockHeader readFrom(final InputStream in) throws IOException {
-			return readFrom(in, null);
-		}
 
 		static BlockHeader readFrom(final InputStream in, short... allowedModes) throws IOException {
 			final DataInputStream dis = new DataInputStream(in);
@@ -289,16 +319,18 @@ public class N5Codecs {
 				numElements = dis.readInt();
 				break;
 			default:
-				throw new IOException("unexpected mode: " + mode);
+				throw new IOException("Unexpected mode: " + mode);
 			}
 
 			boolean modeIsOk = allowedModes == null || allowedModes.length == 0;
 			for (int i = 0; !modeIsOk && i < allowedModes.length; ++i) {
-				if (mode == allowedModes[i])
+				if (mode == allowedModes[i]) {
 					modeIsOk = true;
+					break;
+				}
 			}
 			if (!modeIsOk) {
-				throw new IOException("unexpected mode: " + mode);
+				throw new IOException("Unexpected mode: " + mode);
 			}
 
 			return new BlockHeader(mode, blockSize, numElements);
