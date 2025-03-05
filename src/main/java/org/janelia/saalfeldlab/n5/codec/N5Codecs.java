@@ -36,6 +36,47 @@ public class N5Codecs {
 
 	private N5Codecs() {}
 
+	public static <T> DataBlockCodec<T> createDataBlockCodec(
+			final DataType dataType,
+			final Compression compression) {
+
+		final DataBlockCodecFactory<?> factory;
+		switch (dataType) {
+		case UINT8:
+		case INT8:
+			factory = N5Codecs.BYTE;
+			break;
+		case UINT16:
+		case INT16:
+			factory = N5Codecs.SHORT;
+			break;
+		case UINT32:
+		case INT32:
+			factory = N5Codecs.INT;
+			break;
+		case UINT64:
+		case INT64:
+			factory = N5Codecs.LONG;
+			break;
+		case FLOAT32:
+			factory = N5Codecs.FLOAT;
+			break;
+		case FLOAT64:
+			factory = N5Codecs.DOUBLE;
+			break;
+		case STRING:
+			factory = N5Codecs.STRING;
+			break;
+		case OBJECT:
+			factory = N5Codecs.OBJECT;
+			break;
+		default:
+			throw new IllegalArgumentException("Unsupported data type: " + dataType);
+		}
+		final DataBlockCodecFactory<T> tFactory = (DataBlockCodecFactory<T>)factory;
+		return tFactory.createDataBlockCodec(compression);
+	}
+
 	public interface DataBlockCodecFactory<T> {
 
 		DataBlockCodec<T> createDataBlockCodec(Compression compression);
