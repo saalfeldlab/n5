@@ -50,6 +50,9 @@ import java.util.function.Predicate;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
+import org.janelia.saalfeldlab.n5.codec.AsTypeCodec;
+import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -89,7 +92,7 @@ public abstract class AbstractN5Test {
 
 	protected final HashSet<N5Writer> tempWriters = new HashSet<>();
 
-	protected final N5Writer createTempN5Writer() {
+	public final N5Writer createTempN5Writer() {
 
 		try {
 			return createTempN5Writer(tempN5Location());
@@ -117,6 +120,7 @@ public abstract class AbstractN5Test {
 
 	@After
 	public void removeTempWriters() {
+
 		synchronized (tempWriters) {
 			for (final N5Writer writer : tempWriters) {
 				try {
@@ -208,11 +212,11 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testCreateDataset()  {
+	public void testCreateDataset() {
 
 		final DatasetAttributes info;
 		try (N5Writer writer = createTempN5Writer()) {
-			writer.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
+			writer.createDataset(datasetName, dimensions, blockSize, DataType.UINT64);
 
 			assertTrue("Dataset does not exist", writer.exists(datasetName));
 
@@ -243,6 +247,33 @@ public abstract class AbstractN5Test {
 
 				}
 			}
+		}
+	}
+
+	@Test
+	public void testWriteReadByteBlockMultipleCodecs() {
+
+		/*TODO: this tests "passes" in the sense that we get the correct output, but it
+		*  maybe is not the behavior we actually want*/
+		try (final N5Writer n5 = createTempN5Writer()) {
+			final Codec[] codecs = {
+					new N5BlockCodec(),
+					new AsTypeCodec(DataType.INT32, DataType.INT8),
+					new AsTypeCodec(DataType.INT64, DataType.INT32),
+			};
+			final long[] longBlock1 = new long[]{1,2,3,4,5,6,7,8};
+			final long[] dimensions1 = new long[]{2,2,2};
+			final int[] blockSize1 = new int[]{2,2,2};
+			n5.createDataset(datasetName, dimensions1, blockSize1, DataType.INT8, codecs);
+			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+			final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize1, new long[]{0, 0, 0}, longBlock1);
+			n5.writeBlock(datasetName, attributes, dataBlock);
+
+			final DatasetAttributes fakeAttributes = new DatasetAttributes(dimensions1, blockSize1, DataType.INT64, codecs);
+			final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, fakeAttributes, 0, 0, 0);
+			assertArrayEquals(longBlock1, (long[])loadedDataBlock.getData());
+			assertTrue(n5.remove(datasetName));
+
 		}
 	}
 
@@ -305,7 +336,7 @@ public abstract class AbstractN5Test {
 					DataType.INT32}) {
 
 				try (final N5Writer n5 = createTempN5Writer()) {
-					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
+					n5.createDataset(datasetName, dimensions, blockSize, dataType, (Codec)compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 					final IntArrayDataBlock dataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
@@ -465,7 +496,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testAttributeParsingPrimitive()  {
+	public void testAttributeParsingPrimitive() {
 
 		try (final N5Writer n5 = createTempN5Writer()) {
 
@@ -541,7 +572,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testAttributes()  {
+	public void testAttributes() {
 
 		try (final N5Writer n5 = createTempN5Writer()) {
 			assertNull(n5.getAttribute(groupName, "test", String.class));
@@ -606,7 +637,6 @@ public abstract class AbstractN5Test {
 			assertEquals(0, n5.listAttributes(groupName).size());
 		}
 	}
-
 
 	@Test
 	public void testNullAttributes() throws URISyntaxException, IOException {
@@ -831,7 +861,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testRemoveGroup()  {
+	public void testRemoveGroup() {
 
 		try (final N5Writer n5 = createTempN5Writer()) {
 			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
@@ -880,7 +910,7 @@ public abstract class AbstractN5Test {
 			for (final String subGroup : subGroupNames)
 				assertTrue("deepList contents", Arrays.asList(n5.deepList("")).contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 
-			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64, new RawCompression());
+			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64);
 			final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, new long[blockNumElements]);
 			n5.createDataset(datasetName, datasetAttributes);
 			n5.writeBlock(datasetName, datasetAttributes, dataBlock);
@@ -982,7 +1012,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testExists()  {
+	public void testExists() {
 
 		final String groupName2 = groupName + "-2";
 		final String datasetName2 = datasetName + "-2";
@@ -1003,7 +1033,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testListAttributes()  {
+	public void testListAttributes() {
 
 		try (N5Writer n5 = createTempN5Writer()) {
 			final String groupName2 = groupName + "-2";
@@ -1106,7 +1136,7 @@ public abstract class AbstractN5Test {
 			writer.setAttribute("/", N5Reader.VERSION_KEY, invalidVersion);
 			assertThrows("Incompatible version throws error", N5Exception.class, () -> {
 				try (final N5Reader ignored = createN5Reader(location)) {
-					 /*Only try with resource to ensure `close()` is called.*/
+					/*Only try with resource to ensure `close()` is called.*/
 				}
 			});
 		} finally {
@@ -1123,7 +1153,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testDelete()  {
+	public void testDelete() {
 
 		try (N5Writer n5 = createTempN5Writer()) {
 			final String datasetName = AbstractN5Test.datasetName + "-test-delete";
@@ -1209,7 +1239,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testAttributePaths()  {
+	public void testAttributePaths() {
 
 		try (final N5Writer writer = createTempN5Writer()) {
 
@@ -1314,7 +1344,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testAttributePathEscaping()  {
+	public void testAttributePathEscaping() {
 
 		final JsonObject emptyObj = new JsonObject();
 
@@ -1401,7 +1431,7 @@ public abstract class AbstractN5Test {
 
 	@Test
 	public void
-	testRootLeaves()  {
+	testRootLeaves() {
 
 		/* Test retrieving non-JsonObject root leaves */
 		try (final N5Writer n5 = createTempN5Writer()) {
