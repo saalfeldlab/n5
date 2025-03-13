@@ -130,8 +130,8 @@ public class GridIterator implements Iterator<long[]> {
 
 	final static public long positionToIndex(final int[] dimensions, final int[] position) {
 		long idx = position[0];
-		int cumulativeSize = 1;
-		for (int i = 0; i < position.length; i++) {
+		int cumulativeSize = dimensions[0];
+		for (int i = 1; i < position.length; i++) {
 			idx += position[i] * cumulativeSize;
 			cumulativeSize *= dimensions[i];
 		}
@@ -140,8 +140,8 @@ public class GridIterator implements Iterator<long[]> {
 
 	final static public long positionToIndex(final int[] dimensions, final long[] position) {
 		long idx = position[0];
-		int cumulativeSize = 1;
-		for (int i = 0; i < position.length; i++) {
+		int cumulativeSize = dimensions[0];
+		for (int i = 1; i < position.length; i++) {
 			idx += position[i] * cumulativeSize;
 			cumulativeSize *= dimensions[i];
 		}
