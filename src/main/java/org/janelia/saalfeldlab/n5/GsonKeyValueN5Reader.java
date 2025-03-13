@@ -25,19 +25,21 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.shard.Shard;
-import org.janelia.saalfeldlab.n5.shard.VirtualShard;
-import org.janelia.saalfeldlab.n5.util.Position;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.ShardParameters;
+import org.janelia.saalfeldlab.n5.shard.VirtualShard;
+import org.janelia.saalfeldlab.n5.util.Position;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
@@ -98,7 +100,16 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			long... shardGridPosition) {
 
 		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(keyPath), shardGridPosition);
-		return new VirtualShard<>(datasetAttributes, shardGridPosition, getKeyValueAccess(), path);
+		final SplitKeyValueAccessData splitableData;
+		try {
+			splitableData = new SplitKeyValueAccessData(getKeyValueAccess(), path);
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
+		return new VirtualShard(
+				datasetAttributes,
+				shardGridPosition,
+				splitableData);
 	}
 
 	@Override
@@ -110,9 +121,15 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final long[] keyPos = datasetAttributes.getArrayCodec().getPositionForBlock(datasetAttributes, gridPosition);
 		final String keyPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), keyPos);
 
+
+		final SplitKeyValueAccessData splitData;
+		try {
+			splitData = new SplitKeyValueAccessData(getKeyValueAccess(), keyPath);
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
 		return datasetAttributes.getArrayCodec().readBlock(
-				getKeyValueAccess(),
-				keyPath,
+				splitData,
 				datasetAttributes,
 				gridPosition
 		);
@@ -126,6 +143,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		// TODO which interface should have this implementation?
 		if (datasetAttributes.getShardSize() != null) {
+
 			/* Group by shard position */
 			final Map<Position, List<long[]>> shardBlockMap = datasetAttributes.groupBlockPositions(blockPositions);
 			final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
@@ -183,9 +201,9 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		for (final long p : gridPosition)
 			components[++i] = Long.toString(p);
 
+
 		return getKeyValueAccess().compose(getURI(), components);
 	}
-
 
 
 	/**
