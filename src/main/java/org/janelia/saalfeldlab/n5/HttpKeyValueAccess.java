@@ -33,6 +33,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -49,8 +51,6 @@ import java.util.stream.Collectors;
  */
 public class HttpKeyValueAccess implements KeyValueAccess {
 
-	private final String baseUri;
-
 	private int readTimeoutMilliseconds;
 	private int connectionTimeoutMilliseconds;
 
@@ -60,9 +60,8 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	 * @throws N5Exception.N5IOException
 	 *             if the access could not be created
 	 */
-	public HttpKeyValueAccess(String baseUri) throws N5Exception.N5IOException {
+	public HttpKeyValueAccess() {
 
-		this.baseUri = baseUri;
 		readTimeoutMilliseconds = 5000;
 		connectionTimeoutMilliseconds = 5000;
 	}
@@ -110,7 +109,13 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		final String[] uriComponents = new String[components.length + 1];
 		System.arraycopy(components, 0, uriComponents, 1, components.length);
 		uriComponents[0] = uri.getPath();
-		return compose(uriComponents);
+		try {
+			return new URI(uri.getScheme(), uri.getAuthority(), 
+					compose(uriComponents),
+					uri.getQuery(), uri.getFragment()).toString();
+		} catch (URISyntaxException e) {
+			throw new N5Exception(e);
+		}
 	}
 
 	@Override
@@ -143,18 +148,15 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	@Override
 	public String normalize(final String path) {
 
-		return N5URI.normalizeGroupPath(path);
-	}
-
-	private String resolve(final String normalPath) {
-
-		return baseUri.replaceAll("\\/+$", "") + "/" + normalPath;
+		// TODO fix
+		return path;
+//		return N5URI.normalizeGroupPath(path);
 	}
 
 	@Override
 	public URI uri(final String normalPath) throws URISyntaxException {
 
-		return new URI(resolve(normalPath));
+		return new URI(normalPath);
 	}
 
 	/**
@@ -176,7 +178,6 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 			final HttpURLConnection connection = (HttpURLConnection)url.openConnection();
 			connection.setReadTimeout(readTimeoutMilliseconds);
 			connection.setConnectTimeout(connectionTimeoutMilliseconds);
-			connection.setRequestProperty(normalPath, normalPath);
 			connection.setRequestMethod("HEAD");
 			final int code = connection.getResponseCode();
 			return (code >= 200 && code < 400); // 2xx (OK) and 3xx (Redirect) are valid responses

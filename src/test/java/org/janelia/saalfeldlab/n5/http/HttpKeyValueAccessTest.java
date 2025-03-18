@@ -22,12 +22,13 @@ public class HttpKeyValueAccessTest {
 	@Test
 	public void testExistsRead() {
 
-		final HttpKeyValueAccess kva = new HttpKeyValueAccess(baseUrl);
-
+		final HttpKeyValueAccess kva = new HttpKeyValueAccess();
 		final String key = "attributes.json";
-		assertTrue( kva.exists(key));
 
-		try ( LockedChannel ch = kva.lockForReading(key)) {
+		final String absolutePath = kva.compose(baseUrl, key);
+		assertTrue(kva.exists(absolutePath));
+
+		try (LockedChannel ch = kva.lockForReading(absolutePath)) {
 
 			final InputStream is = ch.newInputStream();
 
@@ -45,7 +46,7 @@ public class HttpKeyValueAccessTest {
 	@Test
 	public void testUnsupportedOperations() {
 
-		final HttpKeyValueAccess kva = new HttpKeyValueAccess(baseUrl);
+		final HttpKeyValueAccess kva = new HttpKeyValueAccess();
 		assertThrows(N5Exception.class, () -> kva.list(""));
 		assertThrows(N5Exception.class, () -> kva.listDirectories(""));
 		assertThrows(N5Exception.class, () -> kva.delete("foo"));
