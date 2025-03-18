@@ -131,16 +131,19 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			throw new N5Exception(e);
 		}
 
+		boolean versionFound = false;
 		if (checkVersion) {
 			/* Existence checks, if any, go in subclasses */
 			/* Check that version (if there is one) is compatible. */
 			final Version version = getVersion();
+			versionFound = !version.equals(NO_VERSION);
 			if (!VERSION.isCompatible(version))
 				throw new N5Exception.N5IOException(
 					"Incompatible version " + version + " (this is " + VERSION + ").");
 		}
 
-		if (checkExists && !exists("/"))
+		// if a version was found, the container exists - don't need to check again
+		if (checkExists && (!versionFound && !exists("/")))
 			throw new N5Exception.N5IOException("No container exists at " + basePath);
 	}
 
