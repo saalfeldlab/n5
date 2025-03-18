@@ -299,14 +299,6 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public String compose(final URI uri, final String... components) {
-		final String[] uriComps = new String[components.length+1];
-		System.arraycopy(components, 0, uriComps, 1, components.length);
-		uriComps[0] = fileSystem.provider().getPath(uri).toString();
-		return compose(uriComps);
-	}
-
-	@Override
 	public String compose(final String... components) {
 
 		if (components == null || components.length == 0)

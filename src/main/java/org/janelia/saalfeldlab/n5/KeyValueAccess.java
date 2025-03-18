@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 /**
  * Key value read primitives used by {@link N5KeyValueReader}
@@ -48,7 +50,12 @@ public interface KeyValueAccess {
 	 *            the path
 	 * @return the path components
 	 */
-	public String[] components(final String path);
+	public default String[] components(final String path) {
+
+		return Arrays.stream(path.split("/"))
+				.filter(x -> !x.isEmpty())
+				.toArray(String[]::new);
+	}
 
 	/**
 	 * Compose a path from a base uri and subsequent components.
@@ -64,7 +71,16 @@ public interface KeyValueAccess {
 		return compose(uriComponents);
 	}
 
-	public String compose(final String... components);
+	@Deprecated
+	public default String compose(final String... components) {
+
+		return normalize(
+				Arrays.stream(components)
+						.filter(x -> !x.isEmpty())
+						.collect(Collectors.joining("/"))
+		);
+
+	}
 
 	/**
 	 * Get the parent of a path string.
@@ -73,7 +89,13 @@ public interface KeyValueAccess {
 	 *            the path
 	 * @return the parent path or null if the path has no parent
 	 */
-	public String parent(final String path);
+	public default String parent(final String path) {
+
+		final String[] components = components(path);
+		final String[] parentComponents = Arrays.copyOf(components, components.length - 1);
+
+		return compose(parentComponents);
+	}
 
 	/**
 	 * Relativize path relative to base.
@@ -84,7 +106,22 @@ public interface KeyValueAccess {
 	 *            the base path
 	 * @return the result or null if the path has no parent
 	 */
-	public String relativize(final String path, final String base);
+	public default String relativize(final String path, final String base) {
+
+		try {
+			/*
+			 * Must pass absolute path to `uri`. if it already is, this is
+			 * redundant, and has no impact on the result. It's not true that
+			 * the inputs are always referencing absolute paths, but it doesn't
+			 * matter in this case, since we only care about the relative
+			 * portion of `path` to `base`, so the result always ignores the
+			 * absolute prefix anyway.
+			 */
+			return normalize(uri("/" + base).relativize(uri("/" + path)).toString());
+		} catch (final URISyntaxException e) {
+			throw new N5Exception("Cannot relativize path (" + path + ") with base (" + base + ")", e);
+		}
+	}
 
 	/**
 	 * Normalize a path to canonical form. All paths pointing to the same

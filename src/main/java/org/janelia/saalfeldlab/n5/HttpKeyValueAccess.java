@@ -20,6 +20,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.function.TriFunction;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,7 +40,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A read-only, non-listable {@link KeyValueAccess} implementation using Http.
@@ -51,14 +57,15 @@ import java.util.stream.Collectors;
  */
 public class HttpKeyValueAccess implements KeyValueAccess {
 
+	private static final Pattern LIST_DIR_ENTRY = Pattern.compile("href=\"[^\"]+\">(?<entry>[^<]+)/");
+	private static final Pattern LIST_ENTRY = Pattern.compile("href=\"[^\"]+\">(?<entry>[^<]+)");
 	private int readTimeoutMilliseconds;
 	private int connectionTimeoutMilliseconds;
 
 	/**
 	 * Opens an {@link HttpKeyValueAccess}
 	 *
-	 * @throws N5Exception.N5IOException
-	 *             if the access could not be created
+	 * @throws N5Exception.N5IOException if the access could not be created
 	 */
 	public HttpKeyValueAccess() {
 
@@ -76,81 +83,47 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		this.connectionTimeoutMilliseconds = connectionTimeoutMilliseconds;
 	}
 
-	@Override
-	public String[] components(final String path) {
-
-		return Arrays.stream(path.split("/"))
-				.filter(x -> !x.isEmpty())
-				.toArray(String[]::new);
-	}
-
-	@Override
-	public String compose(final String... components) {
-
-		return normalize(
-				Arrays.stream(components)
-						.filter(x -> !x.isEmpty())
-						.collect(Collectors.joining("/")));
-
-	}
-
 	/**
 	 * Compose a path from a base uri and subsequent components.
 	 *
-	 * @param uri
-	 *            the base path uri
-	 * @param components
-	 *            the path components
+	 * @param uri        the base path uri
+	 * @param components the path components
 	 * @return the path
 	 */
 	@Override
 	public String compose(final URI uri, final String... components) {
 
-		final String[] uriComponents = new String[components.length + 1];
-		System.arraycopy(components, 0, uriComponents, 1, components.length);
-		uriComponents[0] = uri.getPath();
 		try {
-			return new URI(uri.getScheme(), uri.getAuthority(), 
-					compose(uriComponents),
-					uri.getQuery(), uri.getFragment()).toString();
-		} catch (URISyntaxException e) {
-			throw new N5Exception(e);
+			return uriResolve(uri, compose(components)).toString();
+		} catch (URISyntaxException x) {
+			throw new IllegalArgumentException(x.getMessage(), x);
 		}
 	}
 
-	@Override
-	public String parent(final String path) {
+	private URI uriResolve(URI uri, String normalPath) throws URISyntaxException {
 
-		final String[] components = components(path);
-		final String[] parentComponents = Arrays.copyOf(components, components.length - 1);
+		if (normalize(normalPath).equals(normalize("/")))
+			return uri;
 
-		return compose(parentComponents);
-	}
+		final Path containerPath = Paths.get(uri.getPath());
+		final Path givenPath = Paths.get(new URI(normalPath).getPath());
 
-	@Override
-	public String relativize(final String path, final String base) {
-
-		try {
-			/*
-			 * Must pass absolute path to `uri`. if it already is, this is
-			 * redundant, and has no impact on the result. It's not true that
-			 * the inputs are always referencing absolute paths, but it doesn't
-			 * matter in this case, since we only care about the relative
-			 * portion of `path` to `base`, so the result always ignores the
-			 * absolute prefix anyway.
-			 */
-			return normalize(uri("/" + base).relativize(uri("/" + path)).toString());
-		} catch (final URISyntaxException e) {
-			throw new N5Exception("Cannot relativize path (" + path + ") with base (" + base + ")", e);
+		final Path resolvedPath = containerPath.resolve(givenPath);
+		final String[] pathParts = new String[resolvedPath.getNameCount() + 1];
+		pathParts[0] = "/";
+		for (int i = 0; i < resolvedPath.getNameCount(); i++) {
+			pathParts[i + 1] = resolvedPath.getName(i).toString();
 		}
+		final String normalResolvedPath = compose(pathParts);
+
+		return new URI(uri.getScheme(), uri.getAuthority(), normalResolvedPath, null, null);
 	}
 
 	@Override
 	public String normalize(final String path) {
 
 		// TODO fix
-		return path;
-//		return N5URI.normalizeGroupPath(path);
+		return N5URI.normalizeGroupPath(path);
 	}
 
 	@Override
@@ -165,27 +138,15 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	 * Removes leading slash from {@code normalPath}, and then checks whether
 	 * either {@code path} or {@code path + "/"} is a key.
 	 *
-	 * @param normalPath
-	 *            is expected to be in normalized form, no further efforts are
-	 *            made to normalize it.
+	 * @param normalPath is expected to be in normalized form, no further efforts are
+	 *                   made to normalize it.
 	 * @return {@code true} if {@code path} exists, {@code false} otherwise
 	 */
 	@Override
 	public boolean exists(final String normalPath) {
 
-		try {
-			final URL url = uri(normalPath).toURL();
-			final HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-			connection.setReadTimeout(readTimeoutMilliseconds);
-			connection.setConnectTimeout(connectionTimeoutMilliseconds);
-			connection.setRequestMethod("HEAD");
-			final int code = connection.getResponseCode();
-			return (code >= 200 && code < 400); // 2xx (OK) and 3xx (Redirect) are valid responses
-		} catch (IOException e) {
-			throw new N5Exception("Connection error" , e);
-		} catch (URISyntaxException e) {
-			throw new N5Exception("Malformed URI" , e);
-		}
+		requireValidHttpResponse(normalPath, "HEAD", "Error checking existence: " + normalPath, true);
+		return true;
 	}
 
 	/**
@@ -194,17 +155,39 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	 * Appends trailing "/" to {@code normalPath} if there is none, removes
 	 * leading "/", and then checks whether resulting {@code path} is a key.
 	 *
-	 * @param normalPath
-	 *            is expected to be in normalized form, no further efforts are
-	 *            made to normalize it.
+	 * @param normalPath is expected to be in normalized form, no further efforts are
+	 *                   made to normalize it.
 	 * @return {@code true} if {@code path} (with trailing "/") exists as a key,
-	 *         {@code false} otherwise
+	 * {@code false} otherwise
 	 */
 	@Override
 	public boolean isDirectory(final String normalPath) {
 
-		// TODO what to do here?
-		return false;
+		try {
+			requireValidHttpResponse(getDirectoryPath(normalPath), "HEAD", (code,  msg,http) -> {
+				final N5Exception cause = validExistsResponse(code, "Error checking directory: " + normalPath, msg, true);
+				if (code >= 300 && code < 400) {
+					final String redirectLocation = http.getHeaderField("Location");
+					if (!(redirectLocation.endsWith("/") || redirectLocation.endsWith("index.html")))
+						return new N5Exception.N5NoSuchKeyException("Found File at " + normalPath + " but was not directory");
+					return null;
+				}
+				return cause;
+			});
+			return true;
+		} catch (N5Exception e) {
+			return false;
+		}
+	}
+
+	private static String getDirectoryPath(String normalPath) {
+
+		final String directoryNormalPath;
+		if (normalPath.endsWith("/"))
+			directoryNormalPath = normalPath;
+		else
+			directoryNormalPath = normalPath + "/";
+		return directoryNormalPath;
 	}
 
 	/**
@@ -213,22 +196,53 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	 * Checks whether {@code normalPath} has no trailing "/", then removes
 	 * leading "/" and checks whether the resulting {@code path} is a key.
 	 *
-	 * @param normalPath
-	 *            is expected to be in normalized form, no further efforts are
-	 *            made to normalize it.
+	 * @param normalPath is expected to be in normalized form, no further efforts are
+	 *                   made to normalize it.
 	 * @return {@code true} if {@code path} exists as a key and has no trailing
-	 *         slash, {@code false} otherwise
+	 * slash, {@code false} otherwise
 	 */
 	@Override
 	public boolean isFile(final String normalPath) {
 
-		return exists(normalPath);
+		/* Files must not end in `/` And Don't accept a redirect to a location ending in `/` */
+		try {
+			requireValidHttpResponse(getFilePath(normalPath), "HEAD", (code, msg, http) -> {
+				final N5Exception cause = validExistsResponse(code, "Error accessing file: " + normalPath, msg, true);
+				if (code >= 300 && code < 400) {
+					final String redirectLocation = http.getHeaderField("Location");
+					if (redirectLocation.endsWith("/") || redirectLocation.endsWith("index.html"))
+						return new N5Exception.N5NoSuchKeyException("Found key at " + normalPath + " but was directory");
+				}
+				return cause;
+			});
+			return true;
+		} catch (N5Exception e) {
+			return false;
+		}
+	}
+
+	private static String getFilePath(String normalPath) {
+
+		final String fileNormalPath = normalPath.replaceAll("/+$", "");
+		return fileNormalPath;
+	}
+
+	private HttpURLConnection httpRequest(String normalPath, String method) throws IOException {
+
+		final URL url = URI.create(normalPath).toURL();
+		final HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+		connection.setReadTimeout(readTimeoutMilliseconds);
+		connection.setConnectTimeout(connectionTimeoutMilliseconds);
+		connection.setRequestMethod(method);
+		return connection;
 	}
 
 	@Override
 	public LockedChannel lockForReading(final String normalPath) throws IOException {
-
+		//TODO Caleb: Maybe check exists lazily when attempting to read
 		try {
+			if (!exists(normalPath))
+				throw new N5Exception.N5NoSuchKeyException("Key does not exist: " + normalPath);
 			return new HttpObjectChannel(uri(normalPath));
 		} catch (URISyntaxException e) {
 			throw new N5Exception("Invalid URI Syntax", e);
@@ -244,13 +258,66 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	@Override
 	public String[] listDirectories(final String normalPath) {
 
-		throw new N5Exception("HttpKeyValueAccess does not support listing");
+		return queryListEntries(normalPath, LIST_DIR_ENTRY, true);
 	}
 
 	@Override
 	public String[] list(final String normalPath) throws IOException {
 
-		throw new N5Exception("HttpKeyValueAccess does not support listing");
+		return queryListEntries(normalPath, LIST_ENTRY, true);
+	}
+
+	private String[] queryListEntries(String normalPath, Pattern listEntry, boolean allowRedirect) {
+
+		final HttpURLConnection http = requireValidHttpResponse(normalPath, "GET", "Error listing directory at " + normalPath, allowRedirect);
+		try {
+			final String listResponse = responseToString(http.getInputStream());
+			final Matcher matcher = listEntry.matcher(listResponse);
+			final List<String> matches = new ArrayList<String>();
+			while (matcher.find()) {
+				matches.add(matcher.group("entry"));
+			}
+			return matches.toArray(new String[0]);
+		} catch (IOException e) {
+			throw new N5Exception.N5IOException("Error listing directory at " + normalPath, e);
+		}
+	}
+
+	private static N5Exception validExistsResponse(int code, String responseMsg, String message, boolean allowRedirect) {
+		if (code >= 200 && code < (allowRedirect ? 400 : 300)) return null;
+
+		final RuntimeException cause = new RuntimeException(message + "( "+ responseMsg + ")(" + code + ")");
+		if (code == 404)
+			return new N5Exception.N5NoSuchKeyException(message, cause);
+
+		return new N5Exception(message, cause);
+	}
+
+	private HttpURLConnection requireValidHttpResponse(String uri, String method, String message, boolean allowRedirect) throws N5Exception {
+		return requireValidHttpResponse(uri, method, (code, msg, http) -> validExistsResponse(code, msg, message, allowRedirect));
+	}
+
+	private HttpURLConnection requireValidHttpResponse(String uri, String method, TriFunction<Integer, String, HttpURLConnection, N5Exception> filterCode) throws N5Exception {
+
+		final int code;
+		final HttpURLConnection http;
+		final String responseMsg;
+		try {
+			http = httpRequest(uri, method);
+			code = http.getResponseCode();
+			responseMsg = http.getResponseMessage();
+		} catch (IOException e) {
+			throw new N5Exception.N5IOException("Could not validate HTTP Response", e);
+		}
+
+		final N5Exception cause = filterCode.apply(code, responseMsg, http);
+		if (cause != null) throw cause;
+		return http;
+	}
+
+	private String responseToString(InputStream inputStream) throws IOException {
+
+		return IOUtils.toString(inputStream, StandardCharsets.UTF_8.name());
 	}
 
 	@Override
@@ -313,5 +380,12 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 				resources.clear();
 			}
 		}
+	}
+
+	public static void main(String[] args) throws IOException {
+
+		final HttpKeyValueAccess kva = new HttpKeyValueAccess();
+		final String[] list = kva.list("http://[::]:8000/");
+		System.out.println(Arrays.toString(list));
 	}
 }
