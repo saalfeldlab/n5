@@ -136,7 +136,6 @@ class HttpReaderFsWriter implements N5Writer {
 	@Override public void close() {
 
 		reader.close();
-		writer.remove();
 		writer.close();
 	}
 
