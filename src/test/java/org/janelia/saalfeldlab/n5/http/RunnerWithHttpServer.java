@@ -16,7 +16,11 @@ import org.junit.runners.model.TestClass;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.ConnectException;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -109,8 +113,8 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 		processBuilder.directory(httpServerDirectory.toFile());
 		processBuilder.redirectErrorStream(true);
 		process = processBuilder.start();
+		waitForHttpReady();
 		/* give the server some time to finish startup */
-		Thread.sleep(250);
 		final Thread clearStdout = new Thread(() -> {
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
 				String line;
@@ -123,6 +127,29 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 		});
 		clearStdout.setDaemon(true);
 		clearStdout.start();
+	}
+
+	private void waitForHttpReady() throws IOException, InterruptedException {
+
+		final Thread waitForConnect = new Thread(() -> {
+			final URLConnection urlConnection;
+			try {
+				urlConnection = httpUri.toURL().openConnection();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			while (true) {
+				try{
+					urlConnection.connect();
+					return;
+				} catch (IOException e) {
+					//ignore
+				}
+			}
+		});
+		waitForConnect.start();
+		waitForConnect.join(10_00);
+		httpUri.toURL().openConnection().connect();
 	}
 
 	@After
