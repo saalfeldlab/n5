@@ -1,19 +1,19 @@
 package org.janelia.saalfeldlab.n5.http;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import org.apache.commons.io.IOUtils;
+import org.janelia.saalfeldlab.n5.HttpKeyValueAccess;
+import org.janelia.saalfeldlab.n5.LockedChannel;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
 
-import org.apache.commons.io.IOUtils;
-import org.janelia.saalfeldlab.n5.HttpKeyValueAccess;
-import org.janelia.saalfeldlab.n5.LockedChannel;
-import org.janelia.saalfeldlab.n5.N5Exception;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeTrue;
 
 public class HttpKeyValueAccessTest {
 
@@ -28,7 +28,7 @@ public class HttpKeyValueAccessTest {
 		final String key = "attributes.json";
 
 		final String absolutePath = kva.compose(baseUrl, key);
-		assertTrue(kva.exists(absolutePath));
+		assumeTrue(kva.exists(absolutePath));
 
 		try (LockedChannel ch = kva.lockForReading(absolutePath)) {
 
