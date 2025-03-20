@@ -1,6 +1,7 @@
 package org.janelia.saalfeldlab.n5.http;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.internal.runners.statements.RunAfters;
 import org.junit.internal.runners.statements.RunBefores;
@@ -35,6 +36,7 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 	public RunnerWithHttpServer(Class<?> klass) throws Exception {
 
 		super(klass);
+		startHttpServer();
 	}
 
 	private static Path createTmpServerDirectory() throws IOException {
@@ -77,10 +79,12 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 						methodBlock(method).evaluate();
 					} catch (Exception e) {
 						if (!process.isAlive()) {
+
 							perTestHttpOut.insert(0, "Last HTTP Server Output.\n");
 							perTestHttpOut.insert(0, "Http Server is not alive.\n");
 							System.err.println(perTestHttpOut);
 						}
+
 						throw e;
 					}
 					perTestHttpOut.setLength(0);
@@ -91,7 +95,6 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 
 	}
 
-	@Before
 	public void startHttpServer() throws IOException {
 
 		httpServerDirectory = createTmpServerDirectory();
