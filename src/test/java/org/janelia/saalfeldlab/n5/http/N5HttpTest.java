@@ -109,7 +109,7 @@ public class N5HttpTest extends AbstractN5Test {
 
 	@Test
 	@Override
-	public void testVersion() throws NumberFormatException, IOException, URISyntaxException {
+	public void testVersion() throws NumberFormatException {
 
 		try (final N5Writer writer = createTempN5Writer()) {
 

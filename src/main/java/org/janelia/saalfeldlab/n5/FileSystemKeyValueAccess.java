@@ -308,6 +308,12 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		return fileSystem.getPath(components[0], Arrays.copyOfRange(components, 1, components.length)).normalize().toString();
 	}
 
+	@Override public String compose(URI uri, String... components) {
+
+		final URI composedUri = URI.create(KeyValueAccess.super.compose(uri, components));
+		return fileSystem.provider().getPath(composedUri).toString();
+	}
+
 	@Override
 	public void createDirectories(final String normalPath) throws IOException {
 

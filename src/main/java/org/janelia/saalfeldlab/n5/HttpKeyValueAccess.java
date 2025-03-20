@@ -86,42 +86,6 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		this.connectionTimeoutMilliseconds = connectionTimeoutMilliseconds;
 	}
 
-	/**
-	 * Compose a path from a base uri and subsequent components.
-	 *
-	 * @param uri        the base path uri
-	 * @param components the path components
-	 * @return the path
-	 */
-	@Override
-	public String compose(final URI uri, final String... components) {
-
-		try {
-			return uriResolve(uri, compose(components)).toString();
-		} catch (URISyntaxException x) {
-			throw new IllegalArgumentException(x.getMessage(), x);
-		}
-	}
-
-	private URI uriResolve(URI uri, String normalPath) throws URISyntaxException {
-
-		if (normalize(normalPath).equals(normalize("/")))
-			return uri;
-
-		final Path containerPath = Paths.get(uri.getPath());
-		final Path givenPath = Paths.get(new URI(normalPath).getPath());
-
-		final Path resolvedPath = containerPath.resolve(givenPath);
-		final String[] pathParts = new String[resolvedPath.getNameCount() + 1];
-		pathParts[0] = "/";
-		for (int i = 0; i < resolvedPath.getNameCount(); i++) {
-			pathParts[i + 1] = resolvedPath.getName(i).toString();
-		}
-		final String normalResolvedPath = compose(pathParts);
-
-		return new URI(uri.getScheme(), uri.getAuthority(), normalResolvedPath, null, null);
-	}
-
 	@Override
 	public String normalize(final String path) {
 

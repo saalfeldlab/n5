@@ -26,6 +26,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.lang.reflect.Type;
+import java.net.URI;
 
 import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
@@ -142,10 +143,11 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	@Override
 	default boolean existsFromContainer(final String normalPathName, final String normalCacheKey) {
 
+		final KeyValueAccess kva = getKeyValueAccess();
 		if (normalCacheKey == null)
-			return getKeyValueAccess().isDirectory(absoluteGroupPath(normalPathName));
+			return kva.isDirectory(kva.compose(getURI(), normalPathName));
 		else
-			return getKeyValueAccess().isFile(getKeyValueAccess().compose(absoluteGroupPath(normalPathName), normalCacheKey));
+			return kva.isFile(kva.compose(getURI(), normalPathName, normalCacheKey));
 	}
 
 	@Override

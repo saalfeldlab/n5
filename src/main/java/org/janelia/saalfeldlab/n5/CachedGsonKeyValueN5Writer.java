@@ -80,6 +80,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		if (cacheMeta()) {
 			// check all nodes that are parents of the added node, if they have
 			// a children set, add the new child to it
+			getKeyValueAccess().parent(normalPath);
 			String[] pathParts = getKeyValueAccess().components(normalPath);
 			String parent = N5URI.normalizeGroupPath("/");
 			if (pathParts.length == 0) {
@@ -152,15 +153,8 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		}
 
 		if (cacheMeta()) {
-			final String[] pathParts = getKeyValueAccess().components(normalPath);
-			final String parent;
-			if (pathParts.length <= 1) {
-				parent = N5URI.normalizeGroupPath("/");
-			} else {
-				final int parentPathLength = pathParts.length - 1;
-				parent = getKeyValueAccess().compose(Arrays.copyOf(pathParts, parentPathLength));
-			}
-			getCache().removeCache(parent, normalPath);
+			final String parentPath = getKeyValueAccess().parent(normalPath);
+			getCache().removeCache(parentPath, normalPath);
 		}
 
 		/* an IOException should have occurred if anything had failed midway */

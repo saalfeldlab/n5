@@ -25,10 +25,13 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import javax.sound.midi.Patch;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -65,10 +68,19 @@ public interface KeyValueAccess {
 	 * @return the path
 	 */
 	public default String compose(final URI uri, final String... components) {
-		final String[] uriComponents = new String[components.length+1];
-		System.arraycopy(components, 0, uriComponents, 1, components.length);
-		uriComponents[0] = uri.getPath();
-		return compose(uriComponents);
+
+		URI composedUri = uri.resolve(uri.getPath() + "/");
+		for (int i = 0; i < components.length; i++) {
+			final String component = components[i];
+			if (component.isEmpty())
+				continue;
+			else if (component.endsWith("/") || i == components.length - 1)
+				composedUri = composedUri.resolve(component);
+			else
+				composedUri = composedUri.resolve(component + "/");
+
+		}
+		return composedUri.toString();
 	}
 
 	@Deprecated
@@ -90,11 +102,8 @@ public interface KeyValueAccess {
 	 * @return the parent path or null if the path has no parent
 	 */
 	public default String parent(final String path) {
-
-		final String[] components = components(path);
-		final String[] parentComponents = Arrays.copyOf(components, components.length - 1);
-
-		return compose(parentComponents);
+		final String removeTrailingSlash = path.replaceAll("/+$", "");
+		return normalize(URI.create(removeTrailingSlash).resolve("").toString());
 	}
 
 	/**
