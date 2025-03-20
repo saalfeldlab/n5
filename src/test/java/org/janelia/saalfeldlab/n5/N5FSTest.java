@@ -62,6 +62,8 @@ public class N5FSTest extends AbstractN5Test {
 
 		try {
 			final File tmpFile = Files.createTempDirectory("n5-test-").toFile();
+			tmpFile.delete();
+			tmpFile.mkdir();
 			tmpFile.deleteOnExit();
 			return tmpFile.getCanonicalPath();
 		} catch (final Exception e) {

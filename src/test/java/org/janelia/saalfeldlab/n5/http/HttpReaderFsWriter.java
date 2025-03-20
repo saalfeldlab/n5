@@ -1,4 +1,12 @@
-package org.janelia.saalfeldlab.n5;
+package org.janelia.saalfeldlab.n5.http;
+
+import org.janelia.saalfeldlab.n5.Compression;
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Reader;
+import org.janelia.saalfeldlab.n5.N5Writer;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
@@ -9,12 +17,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 
-public class SplitN5Writer implements N5Writer {
+class HttpReaderFsWriter implements N5Writer {
 
 	private final N5Writer writer;
 	private final N5Reader reader;
 
-	SplitN5Writer(final N5Writer writer, final N5Reader reader) {
+	HttpReaderFsWriter(final N5Writer writer, final N5Reader reader) {
 
 		this.writer = writer;
 		this.reader = reader;
@@ -128,6 +136,7 @@ public class SplitN5Writer implements N5Writer {
 	@Override public void close() {
 
 		reader.close();
+		writer.remove();
 		writer.close();
 	}
 
