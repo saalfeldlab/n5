@@ -1,7 +1,9 @@
 package org.janelia.saalfeldlab.n5.http;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.internal.runners.statements.RunAfters;
+import org.junit.internal.runners.statements.RunBefores;
 import org.junit.runner.Description;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
@@ -33,7 +35,6 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 	public RunnerWithHttpServer(Class<?> klass) throws Exception {
 
 		super(klass);
-		startHttpServer();
 	}
 
 	private static Path createTmpServerDirectory() throws IOException {
@@ -61,14 +62,20 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 
 	@Override protected void runChild(FrameworkMethod method, RunNotifier notifier) {
 
-		if (!process.isAlive())
+		if (!process.isAlive()) {
+
+			perTestHttpOut.insert(0, "Last HTTP Server Output.\n");
+			perTestHttpOut.insert(0, "Http Server is not alive.\n");
+			System.err.println(perTestHttpOut);
 			return;
+		}
 
 		Description description = describeChild(method);
 		if (isIgnored(method)) {
 			notifier.fireTestIgnored(description);
 		} else {
 			Statement statement = new Statement() {
+
 				@Override
 				public void evaluate() throws Throwable {
 
@@ -76,7 +83,6 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 						methodBlock(method).evaluate();
 					} catch (Exception e) {
 						if (!process.isAlive()) {
-
 							perTestHttpOut.insert(0, "Last HTTP Server Output.\n");
 							perTestHttpOut.insert(0, "Http Server is not alive.\n");
 							System.err.println(perTestHttpOut);
@@ -92,19 +98,22 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 
 	}
 
-	public void startHttpServer() throws IOException {
+	@Before
+	public void startHttpServer() throws Exception {
 
 		httpServerDirectory = createTmpServerDirectory();
 		ProcessBuilder processBuilder = new ProcessBuilder("python", "-m", "http.server");
 		processBuilder.directory(httpServerDirectory.toFile());
 		processBuilder.redirectErrorStream(true);
 		process = processBuilder.start();
-
+		/* give the server some time to finish startup */
+		Thread.sleep(250);
 		final Thread clearStdout = new Thread(() -> {
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
 				String line;
-				while ((line = reader.readLine()) != null)
+				while ((line = reader.readLine()) != null) {
 					perTestHttpOut.append(line).append("\n");
+				}
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -122,6 +131,13 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 		} catch (InterruptedException e) {
 			process.destroyForcibly();
 		}
+	}
+
+	@Override protected Statement withBeforeClasses(Statement statement) {
+
+		final Statement testClassBefore = super.withBeforeClasses(statement);
+		final List<FrameworkMethod> beforeTestClass = new TestClass(RunnerWithHttpServer.class).getAnnotatedMethods(Before.class);
+		return new RunBefores(testClassBefore, beforeTestClass, this);
 	}
 
 	@Override protected Statement withAfterClasses(Statement statement) {
