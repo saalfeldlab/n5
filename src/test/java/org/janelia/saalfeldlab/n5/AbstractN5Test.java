@@ -50,6 +50,7 @@ import java.util.function.Predicate;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
+import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -1177,6 +1178,41 @@ public abstract class AbstractN5Test {
 		for (final TestData<?> test : existingTests) {
 			assertEquals(test.attributeValue, writer.getAttribute(test.groupPath, test.attributePath, test.attributeClass));
 			assertEquals(test.attributeValue, writer.getAttribute(test.groupPath, test.attributePath, TypeToken.get(test.attributeClass).getType()));
+		}
+	}
+
+	@Test
+	public void customObjectTest() {
+
+		final String testGroup = "test";
+		final ArrayList<TestData<?>> existingTests = new ArrayList<>();
+
+		final UrlAttributeTest.TestDoubles doubles1 = new UrlAttributeTest.TestDoubles(
+				"doubles",
+				"doubles1",
+				new double[]{5.7, 4.5, 3.4});
+		final UrlAttributeTest.TestDoubles doubles2 = new UrlAttributeTest.TestDoubles(
+				"doubles",
+				"doubles2",
+				new double[]{5.8, 4.6, 3.5});
+		final UrlAttributeTest.TestDoubles doubles3 = new UrlAttributeTest.TestDoubles(
+				"doubles",
+				"doubles3",
+				new double[]{5.9, 4.7, 3.6});
+		final UrlAttributeTest.TestDoubles doubles4 = new UrlAttributeTest.TestDoubles(
+				"doubles",
+				"doubles4",
+				new double[]{5.10, 4.8, 3.7});
+
+		try (N5Writer n5 = createTempN5Writer()) {
+			n5.createGroup(testGroup);
+			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[1]", doubles1));
+			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[2]", doubles2));
+			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[3]", doubles3));
+			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[4]", doubles4));
+
+			/* Test overwrite custom */
+			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[1]", doubles4));
 		}
 	}
 

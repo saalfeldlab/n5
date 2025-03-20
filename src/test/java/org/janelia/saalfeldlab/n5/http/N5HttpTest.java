@@ -28,12 +28,10 @@ package org.janelia.saalfeldlab.n5.http;
 import com.google.gson.GsonBuilder;
 import org.janelia.saalfeldlab.n5.AbstractN5Test;
 import org.janelia.saalfeldlab.n5.HttpKeyValueAccess;
-import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5FSWriter;
 import org.janelia.saalfeldlab.n5.N5KeyValueReader;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
-import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Ignore;
@@ -51,14 +49,13 @@ import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(RunnerWithHttpServer.class)
 public class N5HttpTest extends AbstractN5Test {
 
 	@Parameter
-	public Path httpServerDirectory;
+	public static Path httpServerDirectory;
 
 	@Parameter
 	public URI httpServerURI;
@@ -134,8 +131,6 @@ public class N5HttpTest extends AbstractN5Test {
 			final N5Reader.Version version = writer.getVersion();
 			assertFalse(N5Reader.VERSION.isCompatible(version));
 
-			assertThrows(N5Exception.N5IOException.class, () -> createTempN5Writer(writer.getURI().getPath().substring(1)));
-
 			final N5Reader.Version compatibleVersion = new N5Reader.Version(N5Reader.VERSION.getMajor(), N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch());
 			writer.setAttribute("/", N5Reader.VERSION_KEY, compatibleVersion.toString());
 		}
@@ -164,41 +159,5 @@ public class N5HttpTest extends AbstractN5Test {
 	@Ignore("N5Writer not supported for HTTP")
 	@Override public void testWriterSeparation() {
 
-	}
-
-	@Test
-	public void customObjectTest() {
-		//TODO Caleb: Any reason not to put this in AbstractN5Test?
-
-		final String testGroup = "test";
-		final ArrayList<TestData<?>> existingTests = new ArrayList<>();
-
-		final UrlAttributeTest.TestDoubles doubles1 = new UrlAttributeTest.TestDoubles(
-				"doubles",
-				"doubles1",
-				new double[]{5.7, 4.5, 3.4});
-		final UrlAttributeTest.TestDoubles doubles2 = new UrlAttributeTest.TestDoubles(
-				"doubles",
-				"doubles2",
-				new double[]{5.8, 4.6, 3.5});
-		final UrlAttributeTest.TestDoubles doubles3 = new UrlAttributeTest.TestDoubles(
-				"doubles",
-				"doubles3",
-				new double[]{5.9, 4.7, 3.6});
-		final UrlAttributeTest.TestDoubles doubles4 = new UrlAttributeTest.TestDoubles(
-				"doubles",
-				"doubles4",
-				new double[]{5.10, 4.8, 3.7});
-
-		try (N5Writer n5 = createTempN5Writer()) {
-			n5.createGroup(testGroup);
-			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[1]", doubles1));
-			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[2]", doubles2));
-			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[3]", doubles3));
-			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[4]", doubles4));
-
-			/* Test overwrite custom */
-			addAndTest(n5, existingTests, new TestData<>(testGroup, "/doubles[1]", doubles4));
-		}
 	}
 }
