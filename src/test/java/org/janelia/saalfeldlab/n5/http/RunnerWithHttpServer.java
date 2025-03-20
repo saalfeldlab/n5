@@ -132,23 +132,17 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 	private void waitForHttpReady() throws IOException, InterruptedException {
 
 		final Thread waitForConnect = new Thread(() -> {
-			final URLConnection urlConnection;
-			try {
-				urlConnection = httpUri.toURL().openConnection();
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
 			while (true) {
-				try{
-					urlConnection.connect();
+				try {
+					httpUri.toURL().openConnection().connect();
 					return;
-				} catch (IOException e) {
+				} catch (Exception e) {
 					//ignore
 				}
 			}
 		});
 		waitForConnect.start();
-		waitForConnect.join(10_00);
+		waitForConnect.join(10_000);
 		httpUri.toURL().openConnection().connect();
 	}
 
