@@ -20,7 +20,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import org.apache.commons.io.IOUtils;
@@ -39,12 +38,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

@@ -142,9 +142,9 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 
 	@Override protected Statement withAfterClasses(Statement statement) {
 
-		final Statement testClassAfter = super.withAfterClasses(statement);
 		final List<FrameworkMethod> afterTestClass = new TestClass(RunnerWithHttpServer.class).getAnnotatedMethods(After.class);
-		return new RunAfters(testClassAfter, afterTestClass, this);
+		final RunAfters runnerAfterClass = new RunAfters(statement, afterTestClass, this);
+		return super.withAfterClasses(runnerAfterClass);
 	}
 
 }

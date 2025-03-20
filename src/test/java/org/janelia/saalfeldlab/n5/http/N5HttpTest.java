@@ -35,6 +35,7 @@ import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized.Parameter;
@@ -54,12 +55,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * Initiates testing of the filesystem-based N5 implementation.
- *
- * @author Stephan Saalfeld
- * @author Igor Pisarev
- */
 @RunWith(RunnerWithHttpServer.class)
 public class N5HttpTest extends AbstractN5Test {
 
@@ -81,11 +76,30 @@ public class N5HttpTest extends AbstractN5Test {
 		}
 	}
 
+	private static final ArrayList<N5Writer> tempClassWriters = new ArrayList<>();
+
+	@Override
 	@After
-	public void tearDown() throws IOException {
-		if (Arrays.asList(httpServerDirectory.toFile().list()).contains("http:"))
-			System.out.println("?");
+	public void removeTempWriters() {
+
+		//For HTTP, don't remove After, remove AfterClass, since we need the server to be shut down first
+		// move the writer to a static list
+		tempClassWriters.addAll(tempWriters);
+		tempWriters.clear();
 	}
+
+	@AfterClass
+	public static void removeClassTempWriters() {
+		for ( final N5Writer writer : tempClassWriters ) {
+			try {
+				writer.close();
+			} catch (final Exception e) {
+				fail("Could not close temp writer: " + e.getMessage());
+			}
+		}
+	}
+
+
 
 	@Override
 	protected N5Writer createN5Writer(
