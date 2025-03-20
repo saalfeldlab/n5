@@ -63,10 +63,7 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 	@Override protected void runChild(FrameworkMethod method, RunNotifier notifier) {
 
 		if (!process.isAlive()) {
-
-			perTestHttpOut.insert(0, "Last HTTP Server Output.\n");
-			perTestHttpOut.insert(0, "Http Server is not alive.\n");
-			System.err.println(perTestHttpOut);
+			logHttpOutput();
 			return;
 		}
 
@@ -82,20 +79,26 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 					try {
 						methodBlock(method).evaluate();
 					} catch (Exception e) {
-						if (!process.isAlive()) {
-							perTestHttpOut.insert(0, "Last HTTP Server Output.\n");
-							perTestHttpOut.insert(0, "Http Server is not alive.\n");
-							System.err.println(perTestHttpOut);
-						}
-
+						if (!process.isAlive())
+							logHttpOutput();
 						throw e;
+					} finally {
+						perTestHttpOut.setLength(0);
 					}
-					perTestHttpOut.setLength(0);
 				}
 			};
 			runLeaf(statement, description, notifier);
 		}
 
+	}
+
+	private void logHttpOutput() {
+
+		if (perTestHttpOut.length() > 0) {
+			perTestHttpOut.insert(0, "Last HTTP Server Output.\n");
+			perTestHttpOut.insert(0, "Http Server is not alive.\n");
+			System.err.println(perTestHttpOut);
+		}
 	}
 
 	@Before
