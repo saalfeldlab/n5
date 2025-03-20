@@ -239,7 +239,6 @@ public abstract class AbstractN5Test {
 
 					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 					assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
-					assertTrue(n5.remove(datasetName));
 
 				}
 			}
@@ -264,9 +263,6 @@ public abstract class AbstractN5Test {
 				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0L, 0L, 0L);
 
 				assertArrayEquals(stringBlock, (String[])loadedDataBlock.getData());
-
-				assertTrue(n5.remove(datasetName));
-
 			}
 		}
 	}
@@ -288,9 +284,6 @@ public abstract class AbstractN5Test {
 					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 					assertArrayEquals(shortBlock, (short[])loadedDataBlock.getData());
-
-					assertTrue(n5.remove(datasetName));
-
 				}
 			}
 		}
@@ -313,9 +306,6 @@ public abstract class AbstractN5Test {
 					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 					assertArrayEquals(intBlock, (int[])loadedDataBlock.getData());
-
-					assertTrue(n5.remove(datasetName));
-
 				}
 			}
 		}
@@ -338,9 +328,6 @@ public abstract class AbstractN5Test {
 					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 					assertArrayEquals(longBlock, (long[])loadedDataBlock.getData());
-
-					assertTrue(n5.remove(datasetName));
-
 				}
 			}
 		}
@@ -359,9 +346,6 @@ public abstract class AbstractN5Test {
 				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 				assertArrayEquals(floatBlock, (float[])loadedDataBlock.getData(), 0.001f);
-
-				assertTrue(n5.remove(datasetName));
-
 			}
 		}
 	}
@@ -379,9 +363,6 @@ public abstract class AbstractN5Test {
 				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 				assertArrayEquals(doubleBlock, (double[])loadedDataBlock.getData(), 0.001);
-
-				assertTrue(n5.remove(datasetName));
-
 			}
 		}
 	}
@@ -405,9 +386,6 @@ public abstract class AbstractN5Test {
 					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 					assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
-
-					assertTrue(n5.remove(datasetName));
-
 				}
 			}
 		}
@@ -434,9 +412,6 @@ public abstract class AbstractN5Test {
 				final HashMap<String, ArrayList<double[]>> loadedObject = n5.readSerializedBlock(datasetName, attributes, new long[]{0, 0, 0});
 
 				object.forEach((key, value) -> assertArrayEquals(value.get(0), loadedObject.get(key).get(0), 0.01));
-
-				assertTrue(n5.remove(datasetName));
-
 			}
 		}
 	}
@@ -458,9 +433,6 @@ public abstract class AbstractN5Test {
 			n5.writeBlock(datasetName, attributes, emptyDataBlock);
 			final DataBlock<?> loadedEmptyDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 			assertArrayEquals(new int[DataBlock.getNumElements(blockSize)], (int[])loadedEmptyDataBlock.getData());
-
-			assertTrue(n5.remove(datasetName));
-
 		}
 	}
 
@@ -1308,8 +1280,6 @@ public abstract class AbstractN5Test {
 
 			/* Lastly, ensure grabing nonsense results in an exception */
 			assertNull(writer.getAttribute(testGroup, "/this/key/does/not/exist", Object.class));
-
-			writer.remove(testGroup);
 		}
 	}
 

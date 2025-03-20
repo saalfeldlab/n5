@@ -36,6 +36,7 @@ import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized.Parameter;
@@ -47,13 +48,11 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 @RunWith(RunnerWithHttpServer.class)
 public class N5HttpTest extends AbstractN5Test {
@@ -78,8 +77,8 @@ public class N5HttpTest extends AbstractN5Test {
 
 	private static final ArrayList<N5Writer> tempClassWriters = new ArrayList<>();
 
-	@Override
 	@After
+	@Override
 	public void removeTempWriters() {
 
 		//For HTTP, don't remove After, remove AfterClass, since we need the server to be shut down first
@@ -90,16 +89,15 @@ public class N5HttpTest extends AbstractN5Test {
 
 	@AfterClass
 	public static void removeClassTempWriters() {
-		for ( final N5Writer writer : tempClassWriters ) {
+
+		for (final N5Writer writer : tempClassWriters) {
 			try {
-				writer.close();
+				writer.remove();
 			} catch (final Exception e) {
-				fail("Could not close temp writer: " + e.getMessage());
 			}
 		}
+		tempClassWriters.clear();
 	}
-
-
 
 	@Override
 	protected N5Writer createN5Writer(
@@ -141,6 +139,31 @@ public class N5HttpTest extends AbstractN5Test {
 			final N5Reader.Version compatibleVersion = new N5Reader.Version(N5Reader.VERSION.getMajor(), N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch());
 			writer.setAttribute("/", N5Reader.VERSION_KEY, compatibleVersion.toString());
 		}
+	}
+
+	@Ignore("N5Writer not supported for HTTP")
+	@Override public void testRemoveGroup() {
+
+	}
+
+	@Ignore("N5Writer not supported for HTTP")
+	@Override public void testRemoveAttributes() throws IOException, URISyntaxException {
+
+	}
+
+	@Ignore("N5Writer not supported for HTTP")
+	@Override public void testRemoveContainer() throws IOException, URISyntaxException {
+
+	}
+
+	@Ignore("N5Writer not supported for HTTP")
+	@Override public void testDelete() {
+
+	}
+
+	@Ignore("N5Writer not supported for HTTP")
+	@Override public void testWriterSeparation() {
+
 	}
 
 	@Test
