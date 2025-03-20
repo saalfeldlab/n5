@@ -1,10 +1,7 @@
 package org.janelia.saalfeldlab.n5.http;
 
 import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
 import org.junit.internal.runners.statements.RunAfters;
-import org.junit.internal.runners.statements.RunBefores;
 import org.junit.runner.Description;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
@@ -125,13 +122,6 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 		} catch (InterruptedException e) {
 			process.destroyForcibly();
 		}
-	}
-
-	@Override protected Statement withBeforeClasses(Statement statement) {
-
-		final Statement testClassBefore = super.withBeforeClasses(statement);
-		final List<FrameworkMethod> beforeTestClass = new TestClass(RunnerWithHttpServer.class).getAnnotatedMethods(Before.class);
-		return new RunBefores(testClassBefore, beforeTestClass, this);
 	}
 
 	@Override protected Statement withAfterClasses(Statement statement) {
