@@ -28,6 +28,7 @@ package org.janelia.saalfeldlab.n5;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import com.google.gson.JsonElement;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 
 import com.google.gson.Gson;
@@ -145,8 +146,14 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 		}
 
 		// if a version was found, the container exists - don't need to check again
-		if (checkExists && (!versionFound && !exists("/")))
+		if (checkExists && (!versionFound && !inferExistence("/")))
 			throw new N5Exception.N5IOException("No container exists at " + basePath);
+	}
+
+	private boolean inferExistence(String path) {
+
+		final JsonElement attributes = getAttributes(path);
+		return attributes != null || exists(path);
 	}
 
 	@Override
