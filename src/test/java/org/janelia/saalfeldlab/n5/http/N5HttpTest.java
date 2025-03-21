@@ -96,14 +96,16 @@ public class N5HttpTest extends AbstractN5Test {
 		tempClassWriters.clear();
 	}
 
+	private static final boolean cacheMeta = true;
+
 	@Override
 	protected N5Writer createN5Writer(
 			final String location,
 			final GsonBuilder gson) throws IOException {
 
 		final String writerFsPath = httpServerDirectory.resolve(location).toFile().getCanonicalPath();
-		final N5FSWriter writer = new N5FSWriter(writerFsPath, gson, false);
-		final N5Reader reader = createN5Reader(location, gson);
+		final N5FSWriter writer = new N5FSWriter(writerFsPath, gson, cacheMeta);
+		final N5KeyValueReader reader = (N5KeyValueReader)createN5Reader(location, gson);
 		return new HttpReaderFsWriter(writer, reader);
 	}
 
@@ -113,7 +115,7 @@ public class N5HttpTest extends AbstractN5Test {
 			final GsonBuilder gson) {
 
 		final String readerHttpPath = httpServerURI.resolve(location).toString();
-		return new N5KeyValueReader(new HttpKeyValueAccess(), readerHttpPath, gson, false);
+		return new N5KeyValueReader(new HttpKeyValueAccess(), readerHttpPath, gson, cacheMeta);
 	}
 
 	@Test

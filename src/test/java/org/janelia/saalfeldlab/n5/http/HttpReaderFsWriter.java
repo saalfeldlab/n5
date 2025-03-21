@@ -1,14 +1,17 @@
 package org.janelia.saalfeldlab.n5.http;
 
+import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Exception;
-import org.janelia.saalfeldlab.n5.N5Reader;
+import org.janelia.saalfeldlab.n5.N5KeyValueReader;
+import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
 import org.janelia.saalfeldlab.n5.N5Writer;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.List;
@@ -19,13 +22,28 @@ import java.util.function.Predicate;
 
 class HttpReaderFsWriter implements N5Writer {
 
-	private final N5Writer writer;
-	private final N5Reader reader;
+	private final N5KeyValueWriter writer;
+	private final N5KeyValueReader reader;
 
-	HttpReaderFsWriter(final N5Writer writer, final N5Reader reader) {
-
+	HttpReaderFsWriter(final N5KeyValueWriter writer, final N5KeyValueReader reader) {
+	
 		this.writer = writer;
 		this.reader = reader;
+
+		if (reader.cacheMeta()) {
+			/* Hack necessary to test HTTP reader caching without creating the data entirely first */
+			try {
+				// Access the private 'cache' field in the reader
+				final Field cacheField = reader.getClass().getDeclaredField("cache");
+				cacheField.setAccessible(true);
+
+				// Set the value of 'cache' to the one from writer.getCache()
+				cacheField.set(reader, writer.getCache());
+			} catch (NoSuchFieldException | IllegalAccessException e) {
+				throw new RuntimeException("Failed to set reader cache reflectively", e);
+			}
+		}
+
 	}
 
 	@Override public Version getVersion() throws N5Exception {
