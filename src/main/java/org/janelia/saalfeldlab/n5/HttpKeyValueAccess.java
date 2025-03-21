@@ -20,8 +20,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.function.TriFunction;
 
@@ -84,7 +82,6 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	@Override
 	public String normalize(final String path) {
 
-		// TODO fix
 		return N5URI.normalizeGroupPath(path);
 	}
 
@@ -344,13 +341,4 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 	}
 
-	public static void main(String[] args) throws IOException {
-
-
-		final HttpKeyValueAccess kva = new HttpKeyValueAccess();
-		final String baseUrl = "https://raw.githubusercontent.com/saalfeldlab/n5/refs/heads/master/src/test/resources/url/urlAttributes.n5";
-		final N5KeyValueReader httpReader = new N5KeyValueReader(kva, baseUrl, new GsonBuilder(), false);
-		final JsonElement attributes = httpReader.getAttributes("/");
-		System.out.println(attributes.toString());
-	}
 }
