@@ -42,14 +42,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A read-only, non-listable {@link KeyValueAccess} implementation using Http.
+ * A read-only {@link KeyValueAccess} implementation using HTTP. As a result, calling <code>lockForWriting</code>, <code>createDirectories</code>, or <code>delete</code> will throw an {@link N5Exception}.
  * <p>
- * Attempting to call lockForWriting, createDirectories, or delete will throw an {@link N5Exception}.
+ * The behavior of <code>list</code>, <code>listDirectories</code>, and <code>isDirectory</code> will depend on the server configuration. See the documentation of those methods for details.
  * <p>
- * Attempting to call list, or listDirectories, will throw an {@link N5Exception}. Calling isDirectory always returns false.
- * <p>
- * This was adapted from
- * <a href="https://github.com/scalableminds/n5-http/blob/6c3de37120d65466720a61e1b05cfa87ee3da7c0/src/main/java/com/scalableminds/n5/http/HttpKeyValueAccess.java">work by Norman Rzepka.</a>
+ * Methods that take a "normalPath" as an argument expect absolute URIs.
  */
 public class HttpKeyValueAccess implements KeyValueAccess {
 
