@@ -69,16 +69,23 @@ public interface KeyValueAccess {
 	 */
 	public default String compose(final URI uri, final String... components) {
 
-		URI composedUri = uri.resolve(uri.getPath() + "/");
-		for (int i = 0; i < components.length; i++) {
-			final String component = components[i];
+		if (components.length == 0)
+			return uri.toString();
+
+		/* add the initial path to the components */
+		final String[] allComponents = new String[components.length + 1];
+		allComponents[0] = uri.getPath();
+		System.arraycopy(components, 0, allComponents, 1, components.length);
+
+		URI composedUri = uri;
+		for (int i = 0; i < allComponents.length; i++) {
+			final String component = allComponents[i];
 			if (component.isEmpty())
 				continue;
-			else if (component.endsWith("/") || i == components.length - 1)
+			else if (component.endsWith("/") || i == allComponents.length - 1)
 				composedUri = composedUri.resolve(component);
 			else
 				composedUri = composedUri.resolve(component + "/");
-
 		}
 		return composedUri.toString();
 	}
