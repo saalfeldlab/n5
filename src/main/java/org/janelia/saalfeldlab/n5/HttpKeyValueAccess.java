@@ -211,12 +211,37 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		throw new N5Exception("HttpKeyValueAccess is read-only");
 	}
 
+	/**
+	 * List all 'directory'-like children of a path.
+	 * <p>
+	 * Will throw an N5IOException both if a connection to the server can not be established, or the server does not allow listing.
+	 *
+	 * @param normalPath
+	 *            is expected to be in normalized form, no further
+	 *            efforts are made to normalize it.
+	 * @return the directories
+	 * @throws IOException
+	 *             if an error occurs during listing
+	 */
 	@Override
 	public String[] listDirectories(final String normalPath) {
 
 		return queryListEntries(normalPath, LIST_DIR_ENTRY, true);
 	}
 
+	/**
+	 * List all children of a path.
+	 * <p>
+	 * Will throw an N5IOException both if a connection to the server can not be
+	 * established, or the server does not allow listing.
+	 *
+	 * @param normalPath
+	 *            is expected to be in normalized form, no further efforts are
+	 *            made to normalize it.
+	 * @return the the child paths
+	 * @throws IOException
+	 *             if an error occurs during listing
+	 */
 	@Override
 	public String[] list(final String normalPath) throws IOException {
 
