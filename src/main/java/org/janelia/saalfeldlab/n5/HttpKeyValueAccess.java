@@ -224,7 +224,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	 *             if an error occurs during listing
 	 */
 	@Override
-	public String[] listDirectories(final String normalPath) {
+	public String[] listDirectories(final String normalPath) throws IOException {
 
 		return queryListEntries(normalPath, LIST_DIR_ENTRY, true);
 	}

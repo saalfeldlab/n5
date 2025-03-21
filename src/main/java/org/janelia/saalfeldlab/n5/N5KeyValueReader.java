@@ -93,19 +93,21 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 * @param checkVersion
 	 *            the version check
 	 * @param keyValueAccess
-	 * 			  the backend KeyValueAccess used
+	 *            the backend KeyValueAccess used
 	 * @param basePath
 	 *            base path
 	 * @param gsonBuilder
-	 * 		      the GsonBuilder
+	 *            the GsonBuilder
 	 * @param cacheMeta
-	 *            cache attributes and meta data
-	 *            Setting this to true avoids frequent reading and parsing of
-	 *            JSON encoded attributes and other meta data that requires
-	 *            accessing the store. This is most interesting for high latency
-	 *            backends. Changes of cached attributes and meta data by an
-	 *            independent writer will not be tracked.
-	 *
+	 *            cache attributes and meta data Setting this to true avoids
+	 *            frequent reading and parsing of JSON encoded attributes and
+	 *            other meta data that requires accessing the store. This is
+	 *            most interesting for high latency backends. Changes of cached
+	 *            attributes and meta data by an independent writer will not be
+	 *            tracked.
+	 * @param checkExists
+	 *            if true, an N5IOException will be thrown if a container does
+	 *            not exist at the specified location
 	 * @throws N5Exception
 	 *             if the base path cannot be read or does not exist, if the N5
 	 *             version of the container is not compatible with this
