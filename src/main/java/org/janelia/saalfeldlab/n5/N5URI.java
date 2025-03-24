@@ -8,6 +8,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -588,6 +589,42 @@ public class N5URI {
 		final String groupPart = group != null ? "?" + group : "";
 		final String attributePart = attribute != null ? "#" + attribute : "";
 		return new N5URI(containerPart + groupPart + attributePart);
+	}
+
+	/**
+	 * Generate an {@link N5URI} from a String.
+	 *
+	 * @param uriOrPath
+	 *            a string representation of a uri or a path string.
+	 * @return the {@link N5URI}
+	 */
+	public static N5URI from(final String uriOrPath) {
+
+		try {
+			return new N5URI(new URI(uriOrPath));
+		} catch (Throwable ignore) {}
+
+		try {
+			final String[] split = uriOrPath.split("\\?");
+			final URI tmp = Paths.get(split[0]).toUri();
+			if (split.length == 1)
+				return new N5URI(tmp);
+			else {
+				StringBuffer buildUri = new StringBuffer();
+				buildUri.append(tmp.toString());
+				buildUri.append("?");
+				for (int i = 1; i < split.length; i++)
+					buildUri.append(split[i]);
+
+				return new N5URI(new URI(buildUri.toString()));
+			}
+		} catch (Throwable ignore) {}
+
+		try {
+			return new N5URI(N5URI.encodeAsUri(uriOrPath));
+		} catch (URISyntaxException e) {
+			throw new N5Exception(e);
+		}
 	}
 
 	/**

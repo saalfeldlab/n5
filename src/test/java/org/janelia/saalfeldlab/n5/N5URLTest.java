@@ -2,7 +2,10 @@ package org.janelia.saalfeldlab.n5;
 
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -113,4 +116,26 @@ public class N5URLTest {
 				"s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5#f/g",
 				new N5URI("s3://janelia-cosem-datasets/jrc_hela-3/jrc_hela-3.n5").resolve("#f/g").toString());
 	}
+
+	@Test
+	public void testContainerPath() throws URISyntaxException, IOException {
+
+		final String home = System.getProperty("user.home");
+//		final String posixPath = "/a/b/c/d?e#f";
+		final String systemPath = home + "?e#f";
+
+//		assertEquals(
+//				"/a/b/c/d",
+//				N5URI.from(posixPath).getContainerPath());
+
+		// normalize with File
+		final N5URI systemUri = N5URI.from(systemPath);
+		System.out.println( Paths.get(home).toFile().getCanonicalPath());
+		System.out.println("system uri path " + systemUri.getURI().getPath());
+		assertEquals(
+				Paths.get(home).toFile().getCanonicalPath(),
+				new File(systemUri.getURI().getPath()).getCanonicalPath());
+
+	}
+
 }
