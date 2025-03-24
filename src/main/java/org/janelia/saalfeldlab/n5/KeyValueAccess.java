@@ -25,10 +25,15 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import javax.sound.midi.Patch;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 /**
  * Key value read primitives used by {@link N5KeyValueReader}
@@ -48,7 +53,12 @@ public interface KeyValueAccess {
 	 *            the path
 	 * @return the path components
 	 */
-	public String[] components(final String path);
+	public default String[] components(final String path) {
+
+		return Arrays.stream(path.split("/"))
+				.filter(x -> !x.isEmpty())
+				.toArray(String[]::new);
+	}
 
 	/**
 	 * Compose a path from a base uri and subsequent components.
@@ -58,13 +68,38 @@ public interface KeyValueAccess {
 	 * @return the path
 	 */
 	public default String compose(final URI uri, final String... components) {
-		final String[] uriComponents = new String[components.length+1];
-		System.arraycopy(components, 0, uriComponents, 1, components.length);
-		uriComponents[0] = uri.getPath();
-		return compose(uriComponents);
+
+		if (components.length == 0)
+			return uri.toString();
+
+		/* add the initial path to the components */
+		final String[] allComponents = new String[components.length + 1];
+		allComponents[0] = uri.getPath();
+		System.arraycopy(components, 0, allComponents, 1, components.length);
+
+		URI composedUri = uri;
+		for (int i = 0; i < allComponents.length; i++) {
+			final String component = allComponents[i];
+			if (component.isEmpty())
+				continue;
+			else if (component.endsWith("/") || i == allComponents.length - 1)
+				composedUri = composedUri.resolve(component);
+			else
+				composedUri = composedUri.resolve(component + "/");
+		}
+		return composedUri.toString();
 	}
 
-	public String compose(final String... components);
+	@Deprecated
+	public default String compose(final String... components) {
+
+		return normalize(
+				Arrays.stream(components)
+						.filter(x -> !x.isEmpty())
+						.collect(Collectors.joining("/"))
+		);
+
+	}
 
 	/**
 	 * Get the parent of a path string.
@@ -73,7 +108,10 @@ public interface KeyValueAccess {
 	 *            the path
 	 * @return the parent path or null if the path has no parent
 	 */
-	public String parent(final String path);
+	public default String parent(final String path) {
+		final String removeTrailingSlash = path.replaceAll("/+$", "");
+		return normalize(URI.create(removeTrailingSlash).resolve("").toString());
+	}
 
 	/**
 	 * Relativize path relative to base.
@@ -84,7 +122,22 @@ public interface KeyValueAccess {
 	 *            the base path
 	 * @return the result or null if the path has no parent
 	 */
-	public String relativize(final String path, final String base);
+	public default String relativize(final String path, final String base) {
+
+		try {
+			/*
+			 * Must pass absolute path to `uri`. if it already is, this is
+			 * redundant, and has no impact on the result. It's not true that
+			 * the inputs are always referencing absolute paths, but it doesn't
+			 * matter in this case, since we only care about the relative
+			 * portion of `path` to `base`, so the result always ignores the
+			 * absolute prefix anyway.
+			 */
+			return normalize(uri("/" + base).relativize(uri("/" + path)).toString());
+		} catch (final URISyntaxException e) {
+			throw new N5Exception("Cannot relativize path (" + path + ") with base (" + base + ")", e);
+		}
+	}
 
 	/**
 	 * Normalize a path to canonical form. All paths pointing to the same
