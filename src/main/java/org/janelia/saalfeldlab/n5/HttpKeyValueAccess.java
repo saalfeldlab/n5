@@ -101,8 +101,12 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	@Override
 	public boolean exists(final String normalPath) {
 
-		requireValidHttpResponse(normalPath, "HEAD", "Error checking existence: " + normalPath, true);
-		return true;
+		try {
+			requireValidHttpResponse(normalPath, "HEAD", "Error checking existence: " + normalPath, true);
+			return true;
+		} catch (N5Exception.N5NoSuchKeyException e) {
+			return false;
+		}
 	}
 
 	/**
