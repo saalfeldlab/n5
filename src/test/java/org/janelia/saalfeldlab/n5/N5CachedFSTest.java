@@ -158,7 +158,7 @@ public class N5CachedFSTest extends N5FSTest {
 		int expectedExistCount = 0;
 		final int expectedGroupCount = 0;
 		final int expectedDatasetCount = 0;
-		final int expectedAttributeCount = 0;
+		int expectedAttributeCount = 0;
 		int expectedListCount = 0;
 		int expectedWriteAttributeCount = 0;
 
@@ -171,7 +171,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(++expectedExistCount, n5.getExistCallCount());
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
+		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		n5.createGroup(groupA);
@@ -188,7 +188,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(++expectedExistCount, n5.getExistCallCount());
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
+		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		exists = n5.exists(groupA);
@@ -210,7 +210,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(++expectedExistCount, n5.getExistCallCount());
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
+		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
 		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
@@ -306,7 +306,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(++expectedExistCount, n5.getExistCallCount());
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
+		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
 		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
@@ -353,7 +353,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(++expectedExistCount, n5.getExistCallCount());
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
+		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
 		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
@@ -407,12 +407,14 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 		n5.createGroup("a/a");
 		assertEquals(++expectedExistCount, n5.getExistCallCount());
+		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 		n5.createGroup("a/b");
 		assertEquals(expectedExistCount, n5.getExistCallCount());
 		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 		n5.createGroup("a/c");
 		assertEquals(++expectedExistCount, n5.getExistCallCount());
+		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		assertArrayEquals(new String[] {"a", "b", "c"}, n5.list("a")); // call list
@@ -431,6 +433,16 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount()); // list NOT incremented
 		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+
+		/*Check exists should only increment exists if attributes do no exist. Create a new writer and inject
+		* a new group with attributes unbeknownst to this writer */
+		try (N5Writer writer = new N5FSWriter(n5.getURI().toString(), false)) {
+			writer.createGroup("sneaky_group");
+			writer.setAttribute("sneaky_group", "sneaky_attribute", "BOO!");
+		}
+		n5.exists("sneaky_group");
+		assertEquals(expectedExistCount, n5.getExistCallCount());
+		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
 
 		// TODO repeat the above exercise when creating dataset
 	}

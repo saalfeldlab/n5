@@ -815,7 +815,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testList() {
+	public void testList() throws IOException, URISyntaxException {
 
 		try (final N5Writer listN5 = createTempN5Writer()) {
 			listN5.createGroup(groupName);
@@ -826,14 +826,21 @@ public abstract class AbstractN5Test {
 			Arrays.sort(groupsList);
 
 			assertArrayEquals(subGroupNames, groupsList);
+			/* test reading a container this reader didn't create. Ensures cache initialization works as expected. */
+			try (final N5Reader listN5_2 = createN5Reader(listN5.getURI().toString())) {
 
+				final String[] groupsList_2 = listN5_2.list(groupName);
+				Arrays.sort(groupsList_2);
+
+				assertArrayEquals(subGroupNames, groupsList_2);
+
+			}
 			// test listing the root group ("" and "/" should give identical results)
 			assertArrayEquals(new String[]{"test"}, listN5.list(""));
 			assertArrayEquals(new String[]{"test"}, listN5.list("/"));
 
 			// calling list on a non-existant group throws an exception
 			assertThrows(N5Exception.class, () -> listN5.list("this-group-does-not-exist"));
-
 		}
 	}
 

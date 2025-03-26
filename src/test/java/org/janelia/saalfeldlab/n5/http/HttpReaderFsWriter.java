@@ -1,14 +1,16 @@
 package org.janelia.saalfeldlab.n5.http;
 
+import com.google.gson.Gson;
+import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Reader;
 import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
+import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
+import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception;
-import org.janelia.saalfeldlab.n5.N5KeyValueReader;
-import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
-import org.janelia.saalfeldlab.n5.N5Writer;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -20,29 +22,34 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 
-class HttpReaderFsWriter implements N5Writer {
+public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
-	private final N5KeyValueWriter writer;
-	private final N5KeyValueReader reader;
+	private final GsonKeyValueN5Writer writer;
+	private final GsonKeyValueN5Reader reader;
 
-	HttpReaderFsWriter(final N5KeyValueWriter writer, final N5KeyValueReader reader) {
+	public <W extends GsonKeyValueN5Writer, R extends GsonKeyValueN5Reader> HttpReaderFsWriter(final W writer, final R reader) {
 	
 		this.writer = writer;
 		this.reader = reader;
 
-		if (reader.cacheMeta()) {
-			/* Hack necessary to test HTTP reader caching without creating the data entirely first */
-			try {
-				// Access the private 'cache' field in the reader
-				final Field cacheField = reader.getClass().getDeclaredField("cache");
-				cacheField.setAccessible(true);
+		if (reader instanceof CachedGsonKeyValueN5Reader && writer instanceof CachedGsonKeyValueN5Writer) {
+			final CachedGsonKeyValueN5Reader cachedReader = (CachedGsonKeyValueN5Reader)reader;
+			final CachedGsonKeyValueN5Writer cachedWriter = (CachedGsonKeyValueN5Writer)writer;
+			if (cachedReader.cacheMeta()) {
+				/* Hack necessary to test HTTP reader caching without creating the data entirely first */
+				try {
+					// Access the private 'cache' field in the reader
+					final Field cacheField = reader.getClass().getDeclaredField("cache");
+					cacheField.setAccessible(true);
 
-				// Set the value of 'cache' to the one from writer.getCache()
-				cacheField.set(reader, writer.getCache());
-			} catch (NoSuchFieldException | IllegalAccessException e) {
-				throw new RuntimeException("Failed to set reader cache reflectively", e);
+					// Set the value of 'cache' to the one from writer.getCache()
+					cacheField.set(reader, cachedWriter.getCache());
+				} catch (NoSuchFieldException | IllegalAccessException e) {
+					throw new RuntimeException("Failed to set reader cache reflectively", e);
+				}
 			}
 		}
+
 
 	}
 
@@ -79,6 +86,11 @@ class HttpReaderFsWriter implements N5Writer {
 	@Override public <T> T readSerializedBlock(String dataset, DatasetAttributes attributes, long... gridPosition) throws N5Exception, ClassNotFoundException {
 
 		return reader.readSerializedBlock(dataset, attributes, gridPosition);
+	}
+
+	@Override public KeyValueAccess getKeyValueAccess() {
+
+		return reader.getKeyValueAccess();
 	}
 
 	@Override public boolean exists(String pathName) {
@@ -134,6 +146,11 @@ class HttpReaderFsWriter implements N5Writer {
 	@Override public String[] deepListDatasets(String pathName, ExecutorService executor) throws N5Exception, InterruptedException, ExecutionException {
 
 		return reader.deepListDatasets(pathName, executor);
+	}
+
+	@Override public Gson getGson() {
+
+		return reader.getGson();
 	}
 
 	@Override public Map<String, Class<?>> listAttributes(String pathName) throws N5Exception {
