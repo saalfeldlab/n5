@@ -42,7 +42,6 @@ import org.junit.runners.Parameterized.Parameter;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -144,12 +143,12 @@ public class N5HttpTest extends AbstractN5Test {
 	}
 
 	@Ignore("N5Writer not supported for HTTP")
-	@Override public void testRemoveAttributes() throws IOException, URISyntaxException {
+	@Override public void testRemoveAttributes() {
 
 	}
 
 	@Ignore("N5Writer not supported for HTTP")
-	@Override public void testRemoveContainer() throws IOException, URISyntaxException {
+	@Override public void testRemoveContainer() {
 
 	}
 
