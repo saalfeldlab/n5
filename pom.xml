@@ -11,7 +11,7 @@
 
 	<groupId>org.janelia.saalfeldlab</groupId>
 	<artifactId>n5</artifactId>
-	<version>3.4.1-SNAPSHOT</version>
+	<version>3.4.1</version>
 
 	<name>N5</name>
 	<description>Not HDF5</description>
@@ -123,7 +123,7 @@
 	<scm>
 		<connection>scm:git:git://github.com/saalfeldlab/n5</connection>
 		<developerConnection>scm:git:git@github.com:saalfeldlab/n5</developerConnection>
-		<tag>HEAD</tag>
+		<tag>n5-3.4.1</tag>
 		<url>https://github.com/saalfeldlab/n5</url>
 	</scm>
 	<issueManagement>
