@@ -25,6 +25,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -93,6 +96,10 @@ public interface DataBlock<T> {
 	 *            the byte buffer
 	 */
 	public void readData(final ByteBuffer buffer);
+
+	public void readData(final DataInput inputStream) throws IOException;
+
+	public void writeData(final DataOutput output) throws IOException;
 
 	/**
 	 * Returns the number of elements in this {@link DataBlock}. This number is

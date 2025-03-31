@@ -11,6 +11,7 @@ import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5KeyValueReader;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -244,5 +245,11 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	@Override public void writeSerializedBlock(Serializable object, String datasetPath, DatasetAttributes datasetAttributes, long... gridPosition) throws N5Exception {
 
 		writer.writeSerializedBlock(object, datasetPath, datasetAttributes, gridPosition);
+	}
+
+	@Override
+	public String getAttributesKey() {
+
+		return N5KeyValueReader.ATTRIBUTES_JSON;
 	}
 }

@@ -30,6 +30,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
+import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.Codec.DataBlockInputStream;
+
 /**
  * Default implementation of {@link BlockReader}.
  *
@@ -45,12 +49,9 @@ public interface DefaultBlockReader extends BlockReader {
 			final B dataBlock,
 			final InputStream in) throws IOException {
 
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final InputStream inflater = getInputStream(in)) {
-			final DataInputStream dis = new DataInputStream(inflater);
-			dis.readFully(buffer.array());
-		}
-		dataBlock.readData(buffer);
+		// do not try with this input stream because subsequent block reads may happen if the stream points to a shard
+		final InputStream inflater = getInputStream(in);
+		readFromStream(dataBlock, inflater);
 	}
 
 	/**
@@ -71,28 +72,28 @@ public interface DefaultBlockReader extends BlockReader {
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition) throws IOException {
 
-		final DataInputStream dis = new DataInputStream(in);
-		final short mode = dis.readShort();
-		final int numElements;
-		final DataBlock<?> dataBlock;
-		if (mode != 2) {
-			final int nDim = dis.readShort();
-			final int[] blockSize = new int[nDim];
-			for (int d = 0; d < nDim; ++d)
-				blockSize[d] = dis.readInt();
-			if (mode == 0) {
-				numElements = DataBlock.getNumElements(blockSize);
-			} else {
-				numElements = dis.readInt();
-			}
-			dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
-		} else {
-			numElements = dis.readInt();
-			dataBlock = datasetAttributes.getDataType().createDataBlock(null, gridPosition, numElements);
+		final BytesCodec[] codecs = datasetAttributes.getCodecs();
+		final ArrayCodec arrayCodec = datasetAttributes.getArrayCodec();
+		final DataBlockInputStream dataBlockStream = arrayCodec.decode(datasetAttributes, gridPosition, in);
+
+		InputStream stream = dataBlockStream;
+		for (final BytesCodec codec : codecs) {
+			stream = codec.decode(stream);
 		}
 
-		final BlockReader reader = datasetAttributes.getCompression().getReader();
-		reader.read(dataBlock, in);
+		final DataBlock<?> dataBlock = dataBlockStream.allocateDataBlock();
+		dataBlock.readData(dataBlockStream.getDataInput(stream));
+		stream.close();
+
 		return dataBlock;
 	}
+
+	public static <T, B extends DataBlock<T>> void readFromStream(final B dataBlock, final InputStream in) throws IOException {
+
+		final ByteBuffer buffer = dataBlock.toByteBuffer();
+		final DataInputStream dis = new DataInputStream(in);
+		dis.readFully(buffer.array());
+		dataBlock.readData(buffer);
+	}
+
 }

@@ -365,6 +365,34 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 				resources.clear();
 			}
 		}
+
+		@Override
+		public long size() throws IOException {
+
+			// TODO
+			return -1;
+		}
+	}
+
+	@Override
+	public long size(String normalPath) throws IOException {
+
+		// TODO Auto-generated method stub
+		return -1;
+	}
+
+	@Override
+	public LockedChannel lockForReading(String normalPath, long startByte, long size) throws IOException {
+
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public LockedChannel lockForWriting(String normalPath, long startByte, long size) throws IOException {
+
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
