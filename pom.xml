@@ -11,7 +11,7 @@
 
 	<groupId>org.janelia.saalfeldlab</groupId>
 	<artifactId>n5</artifactId>
-	<version>3.4.2-SNAPSHOT</version>
+	<version>4.0.0-SNAPSHOT</version>
 
 	<name>N5</name>
 	<description>Not HDF5</description>
