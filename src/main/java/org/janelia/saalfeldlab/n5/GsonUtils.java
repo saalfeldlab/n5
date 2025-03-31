@@ -486,11 +486,11 @@ public interface GsonUtils {
 
 	/**
 	 * Remove and return the attribute at {@code normalizedAttributePath} as a
-	 * {@link JsonElement}.
-	 * Does not attempt to parse the attribute.
-	 * to search for the {@link JsonElement} at location
-	 * {@code normalizedAttributePath}
+	 * {@link JsonElement}. Does not attempt to parse the attribute. to search
+	 * for the {@link JsonElement} at location {@code normalizedAttributePath}
 	 *
+	 * @param root
+	 *            the root JsonElement
 	 * @param normalizedAttributePath
 	 *            to the attribute
 	 * @return the attribute as a {@link JsonElement}.

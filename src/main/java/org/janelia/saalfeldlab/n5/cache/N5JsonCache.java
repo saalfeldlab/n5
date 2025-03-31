@@ -163,17 +163,25 @@ public class N5JsonCache {
 			final String normalCacheKey,
 			final JsonElement uncachedAttributes) {
 
-		final N5CacheInfo cacheInfo;
-		if (container.existsFromContainer(normalPathKey, null)) {
-			cacheInfo = newCacheInfo();
-		} else {
+		N5CacheInfo cacheInfo;
+		JsonElement attrsFromContainer = null;
+		boolean groupExistsFromContainer = false;
+		try {
+			attrsFromContainer = container.getAttributesFromContainer(normalPathKey, normalCacheKey);
+			if (attrsFromContainer == null)
+				groupExistsFromContainer = container.existsFromContainer(normalPathKey, null);
+			if (groupExistsFromContainer || attrsFromContainer != null)
+				cacheInfo = newCacheInfo();
+			else
+				cacheInfo = emptyCacheInfo;
+		} catch (N5Exception.N5NoSuchKeyException e) {
 			cacheInfo = emptyCacheInfo;
 		}
 
 		if (cacheInfo != emptyCacheInfo) {
 			if (normalCacheKey != null) {
 				final JsonElement attributes = (uncachedAttributes == null)
-						? container.getAttributesFromContainer(normalPathKey, normalCacheKey)
+						? attrsFromContainer
 						: uncachedAttributes;
 
 				updateCacheAttributes(cacheInfo, normalCacheKey, attributes);

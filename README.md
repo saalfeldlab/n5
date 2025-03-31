@@ -1,4 +1,5 @@
-# N5 [![Build Status](https://travis-ci.com/saalfeldlab/n5.svg?branch=master)](https://travis-ci.com/saalfeldlab/n5)
+# N5 [![Build Status](https://github.com/saalfeldlab/n5/actions/workflows/build.yml/badge.svg)](https://github.com/saalfeldlab/n5/actions/workflows/build.yml)
+
 
 The N5 API specifies the primitive operations needed to store large chunked n-dimensional tensors, and arbitrary meta-data in a hierarchy of groups similar to HDF5.
 
@@ -26,7 +27,7 @@ N5 group is not a single file but simply a directory on the file system.  Meta-d
 4. A dataset is a group with the mandatory attributes:
    * dimensions (e.g. [100, 200, 300]),
    * blockSize (e.g. [64, 64, 64]),
-   * dataType (one of {uint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, float64})
+   * dataType (one of {uint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, float64, object})
    * compression as a struct with the mandatory attribute type that specifies the compression scheme, currently available are:
      * raw (no parameters),
      * bzip2 with parameters
@@ -44,7 +45,7 @@ N5 group is not a single file but simply a directory on the file system.  Meta-d
 7. Chunks cannot be larger than 2GB (2<sup>31</sup>Bytes).
 8. All chunks of a chunked dataset have the same size except for end-chunks that may be smaller, therefore
 9. Chunks are stored in the following binary format:
-    * mode (uint16 big endian, default = 0x0000, varlength = 0x0001)
+    * mode (uint16 big endian, default = 0x0000, varlength = 0x0001, object = 0x0002)
     * number of dimensions (uint16 big endian)
     * dimension 1[,...,n] (uint32 big endian)
     * [ mode == varlength ? number of elements (uint32 big endian) ]

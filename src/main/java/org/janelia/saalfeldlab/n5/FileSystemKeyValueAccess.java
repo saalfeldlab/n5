@@ -364,14 +364,6 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public String compose(final URI uri, final String... components) {
-		final String[] uriComps = new String[components.length+1];
-		System.arraycopy(components, 0, uriComps, 1, components.length);
-		uriComps[0] = fileSystem.provider().getPath(uri).toString();
-		return compose(uriComps);
-	}
-
-	@Override
 	public String compose(final String... components) {
 
 		if (components == null || components.length == 0)
@@ -379,6 +371,12 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		if (components.length == 1)
 			return fileSystem.getPath(components[0]).toString();
 		return fileSystem.getPath(components[0], Arrays.copyOfRange(components, 1, components.length)).normalize().toString();
+	}
+
+	@Override public String compose(URI uri, String... components) {
+
+		final URI composedUri = URI.create(KeyValueAccess.super.compose(uri, components));
+		return fileSystem.provider().getPath(composedUri).toString();
 	}
 
 	@Override
