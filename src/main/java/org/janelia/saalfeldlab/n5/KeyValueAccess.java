@@ -83,9 +83,9 @@ public interface KeyValueAccess {
 			if (component == null || component.isEmpty())
 				continue;
 			else if (component.endsWith("/") || i == allComponents.length - 1)
-				composedUri = composedUri.resolve(component);
+				composedUri = composedUri.resolve(N5URI.getAsUri(component));
 			else
-				composedUri = composedUri.resolve(component + "/");
+				composedUri = composedUri.resolve(N5URI.encodeAsUri(component + "/"));
 		}
 		return composedUri.toString();
 	}
