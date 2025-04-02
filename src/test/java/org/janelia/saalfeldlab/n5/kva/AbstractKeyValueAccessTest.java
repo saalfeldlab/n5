@@ -33,7 +33,7 @@ public abstract class AbstractKeyValueAccessTest {
 				N5URI.getAsUri("file/"),			 // single path
 				N5URI.getAsUri("/file/"),			 // single path
 				N5URI.getAsUri("path/w i t h/spaces"),
-				N5URI.getAsUri("uri/illegal\tcharacter"),
+				N5URI.getAsUri("uri/illegal%character"),
 				N5URI.getAsUri("/"),
 				N5URI.getAsUri("")
 		};
@@ -91,14 +91,18 @@ public abstract class AbstractKeyValueAccessTest {
 
 		for (int i = 0; i < testPathComponents.length; ++i) {
 			final String[] components = testPathComponents[i];
-			final String pathFromComponents = access.compose(baseUri, components);
+			final String stringUriFromComponents = access.compose(baseUri, components);
 			/* A little iffy. We use the same method to get the expected output. Not Ideal, but
 			* some KVA do some normalization that we can't anticipate here. The justification
 			* for this being acceptable is that we are composing a URI already against a URI,
 			* which should always return the second URI (which is our test input) since
 			* URIs are required to be absolute. This means ideally the only difference should be
 			* whatever normalization occurs. */
-			final String pathFromTestUri = access.compose(baseUri, testUris[i].toString());
+			final String stringUriFromTestUri = access.compose(baseUri, testUris[i].toString());
+			final URI uriFromTestUri = N5URI.getAsUri(stringUriFromTestUri);
+			final String pathFromTestUri = uriFromTestUri.getPath();
+			final URI uriFromComponents = N5URI.getAsUri(stringUriFromComponents);
+			final String pathFromComponents = uriFromComponents.getPath();
 			assertEquals(pathFromTestUri, pathFromComponents);
 		}
 
@@ -106,8 +110,12 @@ public abstract class AbstractKeyValueAccessTest {
 		/* test string-only compose. Deprecated though, so we may remove this */
 		for (int i = 0; i < testPathComponents.length; ++i) {
 			final String[] components = testPathComponents[i];
-			final String pathFromComponents = access.compose(components);
-			String pathFromTestUri = access.compose(baseUri, testUris[i].toString());
+			final String stringUriFromComponents = access.compose(components);
+			final String stringUriFromTestUri = access.compose(baseUri, testUris[i].toString());
+			final URI uriFromTestUri = N5URI.getAsUri(stringUriFromTestUri);
+			String pathFromTestUri = uriFromTestUri.getPath();
+			final URI uriFromComponents = N5URI.getAsUri(stringUriFromComponents);
+			final String pathFromComponents = uriFromComponents.getPath();
 			/* We use the access URI compose method for the expected case, but they differ slightly.
 			* the URI compose always will return an absolute URI string, since it's resolving against a
 			* URI, which is required to be absolute. But for the string compose, we don't required this.
@@ -115,8 +123,6 @@ public abstract class AbstractKeyValueAccessTest {
 			* expected output to compare the actual output against. */
 			if (components.length > 0 && !components[0].equals("/"))
 				pathFromTestUri = pathFromTestUri.replaceAll("^/", "");
-
-
 			assertEquals(pathFromTestUri, pathFromComponents);
 		}
 	}
