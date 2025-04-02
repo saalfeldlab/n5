@@ -25,13 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import javax.sound.midi.Patch;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -83,9 +80,9 @@ public interface KeyValueAccess {
 			if (component == null || component.isEmpty())
 				continue;
 			else if (component.endsWith("/") || i == allComponents.length - 1)
-				composedUri = composedUri.resolve(N5URI.getAsUri(component));
+				composedUri = composedUri.resolve(N5URI.encodeAsUriPath(component));
 			else
-				composedUri = composedUri.resolve(N5URI.encodeAsUri(component + "/"));
+				composedUri = composedUri.resolve(N5URI.encodeAsUriPath(component + "/"));
 		}
 		return composedUri.toString();
 	}

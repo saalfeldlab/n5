@@ -526,8 +526,16 @@ public class N5URI {
 		try {
 			return URI.create(uri);
 		} catch (Exception ignore) {
+			return N5URI.encodeAsUri(uri);
 		}
-		return N5URI.encodeAsUri(uri);
+	}
+
+	public static URI encodeAsUriPath(final String path) {
+		try {
+			return new URI(null, null, path, null);
+		} catch (Exception e) {
+			throw new IllegalArgumentException("Could not encode as URI path component:  " + path, e);
+		}
 	}
 
 	/**
