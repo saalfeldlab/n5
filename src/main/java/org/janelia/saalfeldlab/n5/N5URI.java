@@ -495,17 +495,23 @@ public class N5URI {
 		 * 1.`a///b` -> `a/b` : (?<=/)/+
 		 * 2.`a/./b` -> `a/b` : (?<=(/|^))(\./)+
 		 * 3.`a/b/` -> `a/b` : ((/|(?<=/))\.)$
+		 * The next avoids removing `/` when it is NOT redundant (e.g. only character, or escaped):
+		 * 4. `/` -> `/ , `/a/b/\\/` -> `/a/b/\\/` : (?<!(^|\\))/$
 		 * The last resolves relative paths:
-		 * 4. `a/../b` -> `a/b` :
-		 * (?<!(^|\\))/$|(?<=(/|^))[^/]+(?<!(/|(/|^)\.\.))/\.\./?
+		 * 5. ((?<=^/)|^|(?<=(/|^))[^/]+(?<!(/|(/|^)\.\.))/)\.\./?
+		 * 		- `a/../b` -> `b`
+		 * 		- `/a/../b` -> `/b`
+		 * 		- `../a/../b` -> `b`
+		 * 		- `/../a/../b` -> `/b`
+		 * 		- `/../a/../../b` -> `/b`
 		 *
 		 * This is run iteratively, since earlier removals may cause later
 		 * removals to be valid,
 		 * as well as the need to match once per relative `../` pattern.
 		 */
-		final Pattern relativePathPattern = Pattern
-				.compile(
-						"((?<=/)/+|(?<=(/|^))(\\./)+|((/|(?<=/))\\.)$|(?<!(^|\\\\))/$|(?<=(/|^))[^/]+(?<!(/|(/|^)\\.\\.))/\\.\\./?)");
+		final Pattern relativePathPattern = Pattern.compile(
+						"((?<=/)/+|(?<=(/|^))(\\./)+|((/|(?<=/))\\.)$|(?<!(^|\\\\))/$|((?<=^/)|^|(?<=(/|^))[^/]+(?<!(/|(/|^)\\.\\.))/)\\.\\./?)"
+				);
 		int prevStringLenth = 0;
 		String resolvedAttributePath = attrPathPlusIndexSeparators;
 		while (prevStringLenth != resolvedAttributePath.length()) {
