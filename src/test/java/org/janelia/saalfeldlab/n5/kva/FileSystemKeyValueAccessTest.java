@@ -12,12 +12,9 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
-import org.junit.Test;
-
 
 /**
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
@@ -53,31 +50,5 @@ public class FileSystemKeyValueAccessTest extends AbstractKeyValueAccessTest {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	@Override
-	protected String[] testPaths(final URI root) {
-
-		final Path rootPath = Paths.get(root);
-		final Path[] relativePaths = new Path[]{
-				Paths.get("test", "path", "file"),
-				Paths.get("test", "path", "file", separator),
-				Paths.get("file"),
-				Paths.get("file", separator),
-				Paths.get("")
-		};
-		int i = 0;
-		return new String[]{
-				rootPath.resolve(relativePaths[i]).toString(),
-				relativePaths[i++].toString(),
-				rootPath.resolve(relativePaths[i]).toString(),
-				relativePaths[i++].toString(),
-				rootPath.resolve(relativePaths[i]).toString(),
-				relativePaths[i++].toString(),
-				rootPath.resolve(relativePaths[i]).toString(),
-				relativePaths[i++].toString(),
-				rootPath.resolve(relativePaths[i]).toString(),
-				relativePaths[i++].toString()
-		};
 	}
 }
