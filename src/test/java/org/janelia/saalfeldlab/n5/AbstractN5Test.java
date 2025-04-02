@@ -34,7 +34,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
-import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
+import org.janelia.saalfeldlab.n5.url.UriAttributeTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -1168,11 +1168,15 @@ public abstract class AbstractN5Test {
 		writer.setAttribute(groupPath, first, i);
 		assertEquals(i, writer.getAttribute(groupPath, first, Integer.class).intValue());
 
+
+		writer.getAttribute(groupPath, first, int.class);
+
 		for (i = 1; i < equivalentPaths.length; i++) {
 			final String path = equivalentPaths[i];
+			assertEquals(path + " not equivalent to " + first, i-1, (int)writer.getAttribute(groupPath, path, int.class));
 			writer.setAttribute(groupPath, path, i);
-			assertEquals(path + " set behaved incorrectly", i, writer.getAttribute(groupPath, path, Integer.class).intValue());
-			assertEquals(path + " not equivalent to " + first, i, writer.getAttribute(groupPath, first, Integer.class).intValue());
+			assertEquals(path + " set behaved incorrectly", i, (int)writer.getAttribute(groupPath, path, int.class));
+			assertEquals(path + " not equivalent to " + first, i, (int)writer.getAttribute(groupPath, first, int.class));
 		}
 	}
 
@@ -1211,19 +1215,19 @@ public abstract class AbstractN5Test {
 		final String testGroup = "test";
 		final ArrayList<TestData<?>> existingTests = new ArrayList<>();
 
-		final UrlAttributeTest.TestDoubles doubles1 = new UrlAttributeTest.TestDoubles(
+		final UriAttributeTest.TestDoubles doubles1 = new UriAttributeTest.TestDoubles(
 				"doubles",
 				"doubles1",
 				new double[]{5.7, 4.5, 3.4});
-		final UrlAttributeTest.TestDoubles doubles2 = new UrlAttributeTest.TestDoubles(
+		final UriAttributeTest.TestDoubles doubles2 = new UriAttributeTest.TestDoubles(
 				"doubles",
 				"doubles2",
 				new double[]{5.8, 4.6, 3.5});
-		final UrlAttributeTest.TestDoubles doubles3 = new UrlAttributeTest.TestDoubles(
+		final UriAttributeTest.TestDoubles doubles3 = new UriAttributeTest.TestDoubles(
 				"doubles",
 				"doubles3",
 				new double[]{5.9, 4.7, 3.6});
-		final UrlAttributeTest.TestDoubles doubles4 = new UrlAttributeTest.TestDoubles(
+		final UriAttributeTest.TestDoubles doubles4 = new UriAttributeTest.TestDoubles(
 				"doubles",
 				"doubles4",
 				new double[]{5.10, 4.8, 3.7});
@@ -1318,19 +1322,11 @@ public abstract class AbstractN5Test {
 			/* path is relative to root */
 			testAttributePathEquivalence( writer, testGroup, new String[] {
 					"/keyAtRoot", "keyAtRoot", "./keyAtRoot", "././keyAtRoot",
-					"../keyAtRoot", "/../keyAtRoot", "/../../keyAtRoot"
+					"../keyAtRoot", "/../keyAtRoot", "/../../keyAtRoot", "/../bye/../keyAtRoot"
 			});
 
-			addAndTest(writer, existingTests, new TestData<>(testGroup, "/keyAtRoot", "1"));
-			addAndTest(writer, existingTests, new TestData<>(testGroup, "keyAtRoot", "2"));
-			addAndTest(writer, existingTests, new TestData<>(testGroup, "./keyAtRoot", "3"));
-			addAndTest(writer, existingTests, new TestData<>(testGroup, "././keyAtRoot", "4"));
 
 			/* the parent of the root is the root */
-			addAndTest(writer, existingTests, new TestData<>(testGroup, "../keyAtRoot", "5")); // this line does not test what i want it to
-//			assertEquals("5", writer.getAttribute(testGroup, "keyAtRoot", String.class));
-			addAndTest(writer, existingTests, new TestData<>(testGroup, "/../keyAtRoot", "6"));
-			addAndTest(writer, existingTests, new TestData<>(testGroup, "/.././keyAtRoot", "7"));
 
 			/* We intentionally skipped index 3, but it should have been pre-populated with JsonNull */
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(testGroup, "/filled/string_array[3]", JsonNull.class));
