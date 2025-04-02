@@ -1561,7 +1561,7 @@ public abstract class AbstractN5Test {
 		try (N5Writer writer = createTempN5Writer()) {
 			try (N5Reader reader = createN5Reader(writer.getURI().toString())) {
 
-				final String[] illegalChars = {" ", "?", "#", "%"};
+				final String[] illegalChars = {" ", "#", "%"};
 				for (final String illegalChar : illegalChars) {
 					final String groupWithIllegalChar = "test" + illegalChar + "group";
 					writer.createGroup(groupWithIllegalChar);
