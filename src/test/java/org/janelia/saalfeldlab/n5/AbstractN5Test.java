@@ -1158,6 +1158,24 @@ public abstract class AbstractN5Test {
 		}
 	}
 
+	protected static void testAttributePathEquivalence(final N5Writer writer, final String groupPath, final String[] equivalentPaths ) {
+
+		if( equivalentPaths.length == 0 )
+			return;
+
+		int i = 0;
+		final String first = equivalentPaths[i];
+		writer.setAttribute(groupPath, first, i);
+		assertEquals(i, writer.getAttribute(groupPath, first, Integer.class).intValue());
+
+		for (i = 1; i < equivalentPaths.length; i++) {
+			final String path = equivalentPaths[i];
+			writer.setAttribute(groupPath, path, i);
+			assertEquals(path + " set behaved incorrectly", i, writer.getAttribute(groupPath, path, Integer.class).intValue());
+			assertEquals(path + " not equivalent to " + first, i, writer.getAttribute(groupPath, first, Integer.class).intValue());
+		}
+	}
+
 	protected static void addAndTest(final N5Writer writer, final ArrayList<TestData<?>> existingTests, final TestData<?> testData) {
 		/* test a new value on existing path */
 		writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
@@ -1297,6 +1315,23 @@ public abstract class AbstractN5Test {
 			addAndTest(writer, existingTests, new TestData<>(testGroup, "/filled/string_array[4]", "e"));
 			addAndTest(writer, existingTests, new TestData<>(testGroup, "/filled/string_array[0]", "a"));
 
+			/* path is relative to root */
+			testAttributePathEquivalence( writer, testGroup, new String[] {
+					"/keyAtRoot", "keyAtRoot", "./keyAtRoot", "././keyAtRoot",
+					"../keyAtRoot", "/../keyAtRoot", "/../../keyAtRoot"
+			});
+
+			addAndTest(writer, existingTests, new TestData<>(testGroup, "/keyAtRoot", "1"));
+			addAndTest(writer, existingTests, new TestData<>(testGroup, "keyAtRoot", "2"));
+			addAndTest(writer, existingTests, new TestData<>(testGroup, "./keyAtRoot", "3"));
+			addAndTest(writer, existingTests, new TestData<>(testGroup, "././keyAtRoot", "4"));
+
+			/* the parent of the root is the root */
+			addAndTest(writer, existingTests, new TestData<>(testGroup, "../keyAtRoot", "5")); // this line does not test what i want it to
+//			assertEquals("5", writer.getAttribute(testGroup, "keyAtRoot", String.class));
+			addAndTest(writer, existingTests, new TestData<>(testGroup, "/../keyAtRoot", "6"));
+			addAndTest(writer, existingTests, new TestData<>(testGroup, "/.././keyAtRoot", "7"));
+
 			/* We intentionally skipped index 3, but it should have been pre-populated with JsonNull */
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(testGroup, "/filled/string_array[3]", JsonNull.class));
 
@@ -1320,7 +1355,7 @@ public abstract class AbstractN5Test {
 			 * to try and grab the value as a json structure. I should grab the root, and match the empty string case */
 			assertEquals(writer.getAttribute(testGroup, "", JsonObject.class), writer.getAttribute(testGroup, "/", JsonObject.class));
 
-			/* Lastly, ensure grabing nonsense results in an exception */
+			/* Lastly, ensure grabing nonsense returns null */
 			assertNull(writer.getAttribute(testGroup, "/this/key/does/not/exist", Object.class));
 		}
 	}
