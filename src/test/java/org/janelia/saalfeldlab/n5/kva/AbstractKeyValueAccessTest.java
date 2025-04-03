@@ -95,6 +95,7 @@ public abstract class AbstractKeyValueAccessTest {
 		final String[][] testPathComponents = testPathComponents(uri);
 
 		for (int i = 0; i < testPathComponents.length; ++i) {
+			testPathComponents[i] = testPathComponents[i].clone();
 			final URI baseUri = testUris[i].resolve("/");
 			final String[] components = testPathComponents[i];
 			final String stringUriFromComponents = access.compose(baseUri, components);

@@ -47,8 +47,10 @@ public class FileSystemKeyValueAccessTest extends AbstractKeyValueAccessTest {
 		final URI[] addRelativeUris = new URI[testUris.length * 3];
 		for (int i = 0; i < testUris.length; i++) {
 			addRelativeUris[i * 3] = testUris[i];
-			addRelativeUris[i * 3 + 1] = N5URI.encodeAsUriPath(testUris[i].getPath());
-			addRelativeUris[i * 3 + 2] = N5URI.encodeAsUriPath(addRelativeUris[i * 2 + 1].getPath().substring(1));
+			final URI pathOnly = N5URI.encodeAsUriPath(testUris[i].getPath());
+			addRelativeUris[i * 3 + 1] = pathOnly;
+			final String relativePath = pathOnly.getPath().substring(1);
+			addRelativeUris[i * 3 + 2] = N5URI.encodeAsUriPath(relativePath);
 		}
 		return addRelativeUris;
 	}
@@ -59,21 +61,26 @@ public class FileSystemKeyValueAccessTest extends AbstractKeyValueAccessTest {
 		final String[][] expectedComponents = new String[testPaths.length][];
 		for (int i = 0; i < testPaths.length; ++i) {
 			final URI testUri = testPaths[i];
-			final String uriPath = testUri.getPath();
-			expectedComponents[i] = uriPath.split("/");
-			if (uriPath.startsWith("/")) {
-				//We always expect the first path to be forward slash if it's absolute
-				if (expectedComponents[i].length == 0)
-					expectedComponents[i] = new String[1];
-				expectedComponents[i][0] = "/";
+			final String testPathStr = testUri.getPath();
+			final Path testPath = Paths.get(testPathStr);
+			final int numComponents = (testPath.getRoot() != null ? 1 : 0) + testPath.getNameCount();
+			final String[] components = new String[numComponents];
+			int cIdx = 0;
+			if (testPath.getRoot() != null)
+				components[cIdx++] = testPath.getRoot().toString();
+
+			for (int nameIdx = 0; nameIdx < testPath.getNameCount(); nameIdx++) {
+				components[cIdx++] = testPath.getName(nameIdx).toString();
 			}
-			if (uriPath.endsWith("/")) {
-				final int lastCompIdx = expectedComponents[i].length - 1;
-				final String lastComponent = expectedComponents[i][lastCompIdx];
+
+			if (testPathStr.endsWith("/")) {
+				final int lastCompIdx = components.length - 1;
+				final String lastComponent = components[lastCompIdx];
 				if (!lastComponent.endsWith("/")) {
-					expectedComponents[i][lastCompIdx] = lastComponent + "/";
+					components[lastCompIdx] = lastComponent + "/";
 				}
 			}
+			expectedComponents[i] = components;
 		}
 		return expectedComponents;
 	}
