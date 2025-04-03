@@ -40,6 +40,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -88,6 +89,18 @@ public abstract class AbstractN5Test {
 	static protected double[] doubleBlock;
 
 	protected final HashSet<N5Writer> tempWriters = new HashSet<>();
+
+	protected static Random random = new Random();
+
+	public static URI createTempUri(String prefix, String suffix, URI base) {
+		long rand = random.nextLong();
+		String name = prefix + Long.toUnsignedString(rand) + (suffix == null ? "" : suffix);
+		if (base != null) {
+			String basePath = base.getPath().isEmpty() || base.getPath().endsWith("/") ? base.getPath() : base.getPath() + "/";
+			return base.resolve(basePath + name);
+		}
+		return N5URI.encodeAsUriPath(name);
+	}
 
 	protected final N5Writer createTempN5Writer() {
 
