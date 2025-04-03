@@ -52,9 +52,23 @@ public interface KeyValueAccess {
 	 */
 	public default String[] components(final String path) {
 
-		return Arrays.stream(path.split("/"))
+		String[] components = Arrays.stream(path.split("/"))
 				.filter(x -> !x.isEmpty())
 				.toArray(String[]::new);
+		if (components.length == 0)
+			return path.startsWith("/") ? new String[]{"/"} : new String[]{""};
+
+		if (path.startsWith("/") && !components[0].equals("/")) {
+			final String[] prependRoot = new String[components.length + 1];
+			prependRoot[0] = "/";
+			System.arraycopy(components, 0, prependRoot, 1, components.length);
+			components = prependRoot;
+		}
+
+		if (path.endsWith("/") && !components[components.length - 1].endsWith("/")) {
+			components[components.length - 1] = components[components.length - 1] + "/";
+		}
+		return components;
 	}
 
 	/**
