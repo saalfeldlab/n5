@@ -8,6 +8,7 @@ import org.janelia.saalfeldlab.n5.N5URI;
 import org.junit.Test;
 
 import java.net.URI;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -37,7 +38,7 @@ public abstract class AbstractKeyValueAccessTest {
 				N5URI.getAsUri("/"),
 				N5URI.getAsUri("")
 		};
-		final URI[] testUris = new URI[pathParts.length];
+		final URI[] testUris = new URI[pathParts.length ];
 		for (int i = 0; i < pathParts.length; i ++) {
 			final URI pathPart = pathParts[i];
 			testUris[i] = base.resolve(pathPart);
@@ -79,7 +80,15 @@ public abstract class AbstractKeyValueAccessTest {
 
 		for (int i = 0; i < testPaths.length; ++i) {
 
-			final String[] components = access.components(testPaths[i].getPath());
+			String pathString;
+			if (testPaths[i].isAbsolute())
+				pathString = Paths.get(testPaths[i]).toString();
+			else
+				pathString = Paths.get(testPaths[i].getPath()).toString();
+
+            if (pathString.length() > 1 && testPaths[i].toString().endsWith("/"))
+				pathString += "/";
+            final String[] components = access.components(pathString);
 
 			assertArrayEquals("Failure at Index " + i ,expectedComponents[i], components);
 		}

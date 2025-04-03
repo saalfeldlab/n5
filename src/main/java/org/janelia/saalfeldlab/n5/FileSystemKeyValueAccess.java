@@ -235,6 +235,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	@Override
 	public String[] components(final String path) {
 
+
 		final Path fsPath = fileSystem.getPath(path);
 		final Path root = fsPath.getRoot();
 		final String[] components;
@@ -291,7 +292,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public URI uri(final String normalPath) throws URISyntaxException {
+	public URI uri(final String normalPath) {
 
 		// normalize make absolute the scheme specific part only
 		try {
@@ -316,9 +317,14 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 	@Override public String compose(URI uri, String... components) {
 
-		final URI composedUri = URI.create(KeyValueAccess.super.compose(uri, components));
-		final URI absoluteUri = composedUri.isAbsolute() ? composedUri : fileSystem.getPath(composedUri.getPath()).toUri();
-		return fileSystem.provider().getPath(absoluteUri).toString();
+		if (components.length == 0)
+			return uri.toString();
+		Path composedPath = Paths.get(uri.getPath());
+		for (String component : components) {
+			composedPath = composedPath.resolve(component);
+		}
+
+		return composedPath.toAbsolutePath().toString();
 	}
 
 	@Override

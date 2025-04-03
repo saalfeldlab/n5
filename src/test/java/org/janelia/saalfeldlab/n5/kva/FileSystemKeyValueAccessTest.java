@@ -46,13 +46,30 @@ public class FileSystemKeyValueAccessTest extends AbstractKeyValueAccessTest {
 		final URI[] testUris = super.testURIs(base);
 		final URI[] addRelativeUris = new URI[testUris.length * 3];
 		for (int i = 0; i < testUris.length; i++) {
-			addRelativeUris[i * 3] = testUris[i];
-			final URI pathOnly = N5URI.encodeAsUriPath(testUris[i].getPath());
-			addRelativeUris[i * 3 + 1] = pathOnly;
-			final String relativePath = pathOnly.getPath().substring(1);
-			addRelativeUris[i * 3 + 2] = N5URI.encodeAsUriPath(relativePath);
+			URI testUri = testUris[i];
+			addRelativeUris[i * 3] = testUri;
+			Path asPath = Paths.get(testUri);
+			final URI schemeLess = asPath.toUri();
+			addRelativeUris[i * 3 + 1] = schemeLess;
+			URI relativeUri = N5URI.encodeAsUriPath(testUri.getPath().replaceAll("^"+base.getPath(), ""));
+			addRelativeUris[i * 3 + 2] = relativeUri;
 		}
 		return addRelativeUris;
+	}
+
+	private Path getPathFromFileURI(URI fileUri) {
+
+		try {
+			return new File(fileUri).toPath();
+		} catch (Exception ignore) {
+
+		}
+		try {
+			return new File(fileUri.getPath()).toPath();
+		} catch (Exception ignore) {
+
+		}
+		throw new IllegalArgumentException("Unable to get Path for URI: " + fileUri);
 	}
 
 	@Override protected String[][] testPathComponents(URI base) {
@@ -62,7 +79,7 @@ public class FileSystemKeyValueAccessTest extends AbstractKeyValueAccessTest {
 		for (int i = 0; i < testPaths.length; ++i) {
 			final URI testUri = testPaths[i];
 			final String testPathStr = testUri.getPath();
-			final Path testPath = Paths.get(testPathStr);
+			final Path testPath = getPathFromFileURI(testUri);
 			final int numComponents = (testPath.getRoot() != null ? 1 : 0) + testPath.getNameCount();
 			final String[] components = new String[numComponents];
 			int cIdx = 0;
@@ -73,7 +90,7 @@ public class FileSystemKeyValueAccessTest extends AbstractKeyValueAccessTest {
 				components[cIdx++] = testPath.getName(nameIdx).toString();
 			}
 
-			if (testPathStr.endsWith("/")) {
+			if (components.length > 0 && (testPath.getRoot()==null || !components[components.length - 1].equals(testPath.getRoot().toString())) && testPathStr.endsWith("/")) {
 				final int lastCompIdx = components.length - 1;
 				final String lastComponent = components[lastCompIdx];
 				if (!lastComponent.endsWith("/")) {
@@ -111,12 +128,10 @@ public class FileSystemKeyValueAccessTest extends AbstractKeyValueAccessTest {
 		for (int i = 0; i < testPathComponents.length; ++i) {
 			final URI baseUri = testUris[i].resolve("/");
 			final String[] components = testPathComponents[i];
-			final String stringUriFromComponents = access.compose(baseUri, components);
-			final URI uriFromComponents = N5URI.getAsUri(stringUriFromComponents);
+			final String composedKey = access.compose(baseUri, components);
 			final URI absoluteUri = testUris[i].isAbsolute() ? testUris[i] : uri.resolve("/").resolve(testUris[i]);
-			final String testPath = FileSystems.getDefault().provider().getPath(absoluteUri).toString();
-			final URI testUri = N5URI.getAsUri(testPath);
-			assertEquals("Failure at Index " + i , testUri, uriFromComponents);
+			final String testPath = FileSystems.getDefault().provider().getPath(absoluteUri).toAbsolutePath().toString();
+			assertEquals("Failure at Index " + i , testPath, composedKey);
 		}
 	}
 }

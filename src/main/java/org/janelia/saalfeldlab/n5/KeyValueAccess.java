@@ -94,9 +94,9 @@ public interface KeyValueAccess {
 			if (component == null || component.isEmpty())
 				continue;
 			else if (component.endsWith("/") || i == allComponents.length - 1)
-				composedUri = composedUri.resolve(N5URI.encodeAsUriPath(component));
+				composedUri = composedUri.resolve(uri(component));
 			else
-				composedUri = composedUri.resolve(N5URI.encodeAsUriPath(component + "/"));
+				composedUri = composedUri.resolve(uri(component + "/"));
 		}
 		return composedUri.toString();
 	}
@@ -145,7 +145,7 @@ public interface KeyValueAccess {
 			 * absolute prefix anyway.
 			 */
 			return normalize(uri("/" + base).relativize(uri("/" + path)).toString());
-		} catch (final URISyntaxException e) {
+		} catch (final Exception e) {
 			throw new N5Exception("Cannot relativize path (" + path + ") with base (" + base + ")", e);
 		}
 	}
@@ -168,9 +168,8 @@ public interface KeyValueAccess {
 	 *            is expected to be in normalized form, no further
 	 *            efforts are made to normalize it.
 	 * @return absolute URI
-	 * @throws URISyntaxException if the given path is not a proper URI
 	 */
-	public URI uri(final String uriString) throws URISyntaxException;
+	public URI uri(final String uriString);
 	/**
 	 * Test whether the path exists.
 	 *

@@ -99,7 +99,7 @@ public abstract class AbstractN5Test {
 			String basePath = base.getPath().isEmpty() || base.getPath().endsWith("/") ? base.getPath() : base.getPath() + "/";
 			return base.resolve(basePath + name);
 		}
-		return N5URI.encodeAsUriPath(name);
+		return N5URI.encodeAsUri(name);
 	}
 
 	protected final N5Writer createTempN5Writer() {

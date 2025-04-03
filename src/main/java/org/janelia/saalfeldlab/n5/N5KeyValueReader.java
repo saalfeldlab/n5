@@ -130,7 +130,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 		try {
 			uri = keyValueAccess.uri(basePath);
-		} catch (final URISyntaxException e) {
+		} catch (final Exception e) {
 			throw new N5Exception(e);
 		}
 
