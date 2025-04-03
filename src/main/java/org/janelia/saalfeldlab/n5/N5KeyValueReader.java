@@ -130,7 +130,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 		try {
 			uri = keyValueAccess.uri(basePath);
-		} catch (final Exception e) {
+		} catch (final URISyntaxException e) {
 			throw new N5Exception(e);
 		}
 
@@ -142,7 +142,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			versionFound = !version.equals(NO_VERSION);
 			if (!VERSION.isCompatible(version))
 				throw new N5Exception.N5IOException(
-					"Incompatible version " + version + " (this is " + VERSION + ").");
+						"Incompatible version " + version + " (this is " + VERSION + ").");
 		}
 
 		// if a version was found, the container exists - don't need to check again

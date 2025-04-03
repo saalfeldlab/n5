@@ -80,15 +80,7 @@ public abstract class AbstractKeyValueAccessTest {
 
 		for (int i = 0; i < testPaths.length; ++i) {
 
-			String pathString;
-			if (testPaths[i].isAbsolute())
-				pathString = Paths.get(testPaths[i]).toString();
-			else
-				pathString = Paths.get(testPaths[i].getPath()).toString();
-
-            if (pathString.length() > 1 && testPaths[i].toString().endsWith("/"))
-				pathString += "/";
-            final String[] components = access.components(pathString);
+			final String[] components = access.components(testPaths[i].getPath());
 
 			assertArrayEquals("Failure at Index " + i ,expectedComponents[i], components);
 		}

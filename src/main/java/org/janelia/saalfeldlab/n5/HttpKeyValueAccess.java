@@ -83,9 +83,9 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public URI uri(final String normalPath) {
+	public URI uri(final String normalPath) throws URISyntaxException {
 
-		return URI.create(normalPath);
+		return new URI(normalPath);
 	}
 
 	/**
@@ -204,7 +204,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 			if (!exists(normalPath))
 				throw new N5Exception.N5NoSuchKeyException("Key does not exist: " + normalPath);
 			return new HttpObjectChannel(uri(normalPath));
-		} catch (Exception e) {
+		} catch (URISyntaxException e) {
 			throw new N5Exception("Invalid URI Syntax", e);
 		}
 	}

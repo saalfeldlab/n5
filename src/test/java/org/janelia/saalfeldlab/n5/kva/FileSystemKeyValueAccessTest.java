@@ -57,6 +57,30 @@ public class FileSystemKeyValueAccessTest extends AbstractKeyValueAccessTest {
 		return addRelativeUris;
 	}
 
+	@Override
+	protected void testComponentsAtLocation(URI testRoot) {
+
+		final KeyValueAccess access = newKeyValueAccess();
+
+		final URI[] testPaths = testURIs(testRoot);
+		final String[][] expectedComponents = testPathComponents(testRoot);
+
+		for (int i = 0; i < testPaths.length; ++i) {
+
+			String pathString;
+			if (testPaths[i].isAbsolute())
+				pathString = Paths.get(testPaths[i]).toString();
+			else
+				pathString = Paths.get(testPaths[i].getPath()).toString();
+
+			if (pathString.length() > 1 && testPaths[i].toString().endsWith("/"))
+				pathString += "/";
+			final String[] components = access.components(pathString);
+
+			assertArrayEquals("Failure at Index " + i ,expectedComponents[i], components);
+		}
+	}
+
 	private Path getPathFromFileURI(URI fileUri) {
 
 		try {
