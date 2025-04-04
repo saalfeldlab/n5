@@ -551,8 +551,6 @@ public class N5URI {
 	 * @param uri
 	 *            to encode
 	 * @return the {@link URI} created from encoding the {@link String uri}
-	 * @throws URISyntaxException
-	 *             if {@link String uri} is not valid
 	 */
 	public static URI encodeAsUri(final String uri) {
 
