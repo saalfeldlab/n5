@@ -495,17 +495,23 @@ public class N5URI {
 		 * 1.`a///b` -> `a/b` : (?<=/)/+
 		 * 2.`a/./b` -> `a/b` : (?<=(/|^))(\./)+
 		 * 3.`a/b/` -> `a/b` : ((/|(?<=/))\.)$
+		 * The next avoids removing `/` when it is NOT redundant (e.g. only character, or escaped):
+		 * 4. `/` -> `/ , `/a/b/\\/` -> `/a/b/\\/` : (?<!(^|\\))/$
 		 * The last resolves relative paths:
-		 * 4. `a/../b` -> `a/b` :
-		 * (?<!(^|\\))/$|(?<=(/|^))[^/]+(?<!(/|(/|^)\.\.))/\.\./?
+		 * 5. ((?<=^/)|^|(?<=(/|^))[^/]+(?<!(/|(/|^)\.\.))/)\.\./?
+		 * 		- `a/../b` -> `b`
+		 * 		- `/a/../b` -> `/b`
+		 * 		- `../a/../b` -> `b`
+		 * 		- `/../a/../b` -> `/b`
+		 * 		- `/../a/../../b` -> `/b`
 		 *
 		 * This is run iteratively, since earlier removals may cause later
 		 * removals to be valid,
 		 * as well as the need to match once per relative `../` pattern.
 		 */
-		final Pattern relativePathPattern = Pattern
-				.compile(
-						"((?<=/)/+|(?<=(/|^))(\\./)+|((/|(?<=/))\\.)$|(?<!(^|\\\\))/$|(?<=(/|^))[^/]+(?<!(/|(/|^)\\.\\.))/\\.\\./?)");
+		final Pattern relativePathPattern = Pattern.compile(
+						"((?<=/)/+|(?<=(/|^))(\\./)+|((/|(?<=/))\\.)$|(?<!(^|\\\\))/$|((?<=^/)|^|(?<=(/|^))[^/]+(?<!(/|(/|^)\\.\\.))/)\\.\\./?)"
+				);
 		int prevStringLenth = 0;
 		String resolvedAttributePath = attrPathPlusIndexSeparators;
 		while (prevStringLenth != resolvedAttributePath.length()) {
@@ -513,6 +519,29 @@ public class N5URI {
 			resolvedAttributePath = relativePathPattern.matcher(resolvedAttributePath).replaceAll("");
 		}
 		return resolvedAttributePath;
+	}
+
+	/**
+	 * If uri is a valid URI, just return it as a URI. Else, encode if possible.
+	 *
+	 * @param uri as String to get as URI
+	 * @return URI from input. Encoded if necessary
+	 */
+	public static URI getAsUri(final String uri) {
+
+		try {
+			return URI.create(uri);
+		} catch (Exception ignore) {
+			return N5URI.encodeAsUri(uri);
+		}
+	}
+
+	public static URI encodeAsUriPath(final String path) {
+		try {
+			return new URI(null, null, path, null);
+		} catch (Exception e) {
+			throw new IllegalArgumentException("Could not encode as URI path component:  " + path, e);
+		}
 	}
 
 	/**
@@ -525,45 +554,50 @@ public class N5URI {
 	 * @throws URISyntaxException
 	 *             if {@link String uri} is not valid
 	 */
-	public static URI encodeAsUri(final String uri) throws URISyntaxException {
+	public static URI encodeAsUri(final String uri) {
 
-		if (uri.trim().length() == 0) {
-			return new URI(uri);
-		}
-		/*
-		 * find last # symbol to split fragment on. If we don't remove it first,
-		 * then it will encode it, and not parse it separately
-		 * after we remove the temporary _N5 scheme
-		 */
-		final int fragmentIdx = uri.lastIndexOf('#');
-		final String uriWithoutFragment;
-		final String fragment;
-		if (fragmentIdx >= 0) {
-			uriWithoutFragment = uri.substring(0, fragmentIdx);
-			fragment = uri.substring(fragmentIdx + 1);
-		} else {
-			uriWithoutFragment = uri;
-			fragment = null;
-		}
-		/* Edge case to handle when uriWithoutFragment is empty */
-		final URI _n5Uri;
-		if (uriWithoutFragment.length() == 0 && fragment != null && fragment.length() > 0) {
-			_n5Uri = new URI("N5Internal", "//STAND_IN", fragment);
-		} else {
-			_n5Uri = new URI("N5Internal", uriWithoutFragment, fragment);
-		}
-
-		final URI n5Uri;
-		if (fragment == null) {
-			n5Uri = new URI(_n5Uri.getRawSchemeSpecificPart());
-		} else {
-			if (Objects.equals(_n5Uri.getPath(), "") && Objects.equals(_n5Uri.getAuthority(), "STAND_IN")) {
-				n5Uri = new URI("#" + _n5Uri.getRawFragment());
-			} else {
-				n5Uri = new URI(_n5Uri.getRawSchemeSpecificPart() + "#" + _n5Uri.getRawFragment());
+		try {
+			if (uri.trim().length() == 0) {
+				//TODO Caleb: ???
+				return new URI(uri);
 			}
+			/*
+			 * find last # symbol to split fragment on. If we don't remove it first,
+			 * then it will encode it, and not parse it separately
+			 * after we remove the temporary _N5 scheme
+			 */
+			final int fragmentIdx = uri.lastIndexOf('#');
+			final String uriWithoutFragment;
+			final String fragment;
+			if (fragmentIdx >= 0) {
+				uriWithoutFragment = uri.substring(0, fragmentIdx);
+				fragment = uri.substring(fragmentIdx + 1);
+			} else {
+				uriWithoutFragment = uri;
+				fragment = null;
+			}
+			/* Edge case to handle when uriWithoutFragment is empty */
+			final URI _n5Uri;
+			if (uriWithoutFragment.length() == 0 && fragment != null && fragment.length() > 0) {
+				_n5Uri = new URI("N5Internal", "//STAND_IN", fragment);
+			} else {
+				_n5Uri = new URI("N5Internal", uriWithoutFragment, fragment);
+			}
+
+			final URI n5Uri;
+			if (fragment == null) {
+				n5Uri = new URI(_n5Uri.getRawSchemeSpecificPart());
+			} else {
+				if (Objects.equals(_n5Uri.getPath(), "") && Objects.equals(_n5Uri.getAuthority(), "STAND_IN")) {
+					n5Uri = new URI("#" + _n5Uri.getRawFragment());
+				} else {
+					n5Uri = new URI(_n5Uri.getRawSchemeSpecificPart() + "#" + _n5Uri.getRawFragment());
+				}
+			}
+			return n5Uri;
+		} catch (Exception e) {
+			throw new IllegalArgumentException("Could not encode as URI: " + uri, e);
 		}
-		return n5Uri;
 	}
 
 	/**
