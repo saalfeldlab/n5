@@ -25,13 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import javax.sound.midi.Patch;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -55,9 +52,23 @@ public interface KeyValueAccess {
 	 */
 	public default String[] components(final String path) {
 
-		return Arrays.stream(path.split("/"))
+		String[] components = Arrays.stream(path.split("/"))
 				.filter(x -> !x.isEmpty())
 				.toArray(String[]::new);
+		if (components.length == 0)
+			return path.startsWith("/") ? new String[]{"/"} : new String[]{""};
+
+		if (path.startsWith("/") && !components[0].equals("/")) {
+			final String[] prependRoot = new String[components.length + 1];
+			prependRoot[0] = "/";
+			System.arraycopy(components, 0, prependRoot, 1, components.length);
+			components = prependRoot;
+		}
+
+		if (path.endsWith("/") && !components[components.length - 1].endsWith("/")) {
+			components[components.length - 1] = components[components.length - 1] + "/";
+		}
+		return components;
 	}
 
 	/**
@@ -83,9 +94,9 @@ public interface KeyValueAccess {
 			if (component == null || component.isEmpty())
 				continue;
 			else if (component.endsWith("/") || i == allComponents.length - 1)
-				composedUri = composedUri.resolve(component);
+				composedUri = composedUri.resolve(N5URI.encodeAsUriPath(component));
 			else
-				composedUri = composedUri.resolve(component + "/");
+				composedUri = composedUri.resolve(N5URI.encodeAsUriPath(component + "/"));
 		}
 		return composedUri.toString();
 	}

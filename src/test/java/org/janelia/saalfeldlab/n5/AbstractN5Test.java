@@ -34,6 +34,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -50,7 +51,7 @@ import java.util.function.Predicate;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
-import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
+import org.janelia.saalfeldlab.n5.url.UriAttributeTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -89,6 +90,18 @@ public abstract class AbstractN5Test {
 	static protected double[] doubleBlock;
 
 	protected final HashSet<N5Writer> tempWriters = new HashSet<>();
+
+	protected static Random random = new Random();
+
+	public static URI createTempUri(String prefix, String suffix, URI base) {
+		long rand = random.nextLong();
+		String name = prefix + Long.toUnsignedString(rand) + (suffix == null ? "" : suffix);
+		if (base != null) {
+			String basePath = base.getPath().isEmpty() || base.getPath().endsWith("/") ? base.getPath() : base.getPath() + "/";
+			return base.resolve(basePath + name);
+		}
+		return N5URI.encodeAsUri(name);
+	}
 
 	protected final N5Writer createTempN5Writer() {
 
@@ -1159,6 +1172,28 @@ public abstract class AbstractN5Test {
 		}
 	}
 
+	protected static void testAttributePathEquivalence(final N5Writer writer, final String groupPath, final String[] equivalentPaths ) {
+
+		if( equivalentPaths.length == 0 )
+			return;
+
+		int i = 0;
+		final String first = equivalentPaths[i];
+		writer.setAttribute(groupPath, first, i);
+		assertEquals(i, writer.getAttribute(groupPath, first, Integer.class).intValue());
+
+
+		writer.getAttribute(groupPath, first, int.class);
+
+		for (i = 1; i < equivalentPaths.length; i++) {
+			final String path = equivalentPaths[i];
+			assertEquals(path + " not equivalent to " + first, i-1, (int)writer.getAttribute(groupPath, path, int.class));
+			writer.setAttribute(groupPath, path, i);
+			assertEquals(path + " set behaved incorrectly", i, (int)writer.getAttribute(groupPath, path, int.class));
+			assertEquals(path + " not equivalent to " + first, i, (int)writer.getAttribute(groupPath, first, int.class));
+		}
+	}
+
 	protected static void addAndTest(final N5Writer writer, final ArrayList<TestData<?>> existingTests, final TestData<?> testData) {
 		/* test a new value on existing path */
 		writer.setAttribute(testData.groupPath, testData.attributePath, testData.attributeValue);
@@ -1194,19 +1229,19 @@ public abstract class AbstractN5Test {
 		final String testGroup = "test";
 		final ArrayList<TestData<?>> existingTests = new ArrayList<>();
 
-		final UrlAttributeTest.TestDoubles doubles1 = new UrlAttributeTest.TestDoubles(
+		final UriAttributeTest.TestDoubles doubles1 = new UriAttributeTest.TestDoubles(
 				"doubles",
 				"doubles1",
 				new double[]{5.7, 4.5, 3.4});
-		final UrlAttributeTest.TestDoubles doubles2 = new UrlAttributeTest.TestDoubles(
+		final UriAttributeTest.TestDoubles doubles2 = new UriAttributeTest.TestDoubles(
 				"doubles",
 				"doubles2",
 				new double[]{5.8, 4.6, 3.5});
-		final UrlAttributeTest.TestDoubles doubles3 = new UrlAttributeTest.TestDoubles(
+		final UriAttributeTest.TestDoubles doubles3 = new UriAttributeTest.TestDoubles(
 				"doubles",
 				"doubles3",
 				new double[]{5.9, 4.7, 3.6});
-		final UrlAttributeTest.TestDoubles doubles4 = new UrlAttributeTest.TestDoubles(
+		final UriAttributeTest.TestDoubles doubles4 = new UriAttributeTest.TestDoubles(
 				"doubles",
 				"doubles4",
 				new double[]{5.10, 4.8, 3.7});
@@ -1298,6 +1333,15 @@ public abstract class AbstractN5Test {
 			addAndTest(writer, existingTests, new TestData<>(testGroup, "/filled/string_array[4]", "e"));
 			addAndTest(writer, existingTests, new TestData<>(testGroup, "/filled/string_array[0]", "a"));
 
+			/* path is relative to root */
+			testAttributePathEquivalence( writer, testGroup, new String[] {
+					"/keyAtRoot", "keyAtRoot", "./keyAtRoot", "././keyAtRoot",
+					"../keyAtRoot", "/../keyAtRoot", "/../../keyAtRoot", "/../bye/../keyAtRoot"
+			});
+
+
+			/* the parent of the root is the root */
+
 			/* We intentionally skipped index 3, but it should have been pre-populated with JsonNull */
 			assertEquals(JsonNull.INSTANCE, writer.getAttribute(testGroup, "/filled/string_array[3]", JsonNull.class));
 
@@ -1321,7 +1365,7 @@ public abstract class AbstractN5Test {
 			 * to try and grab the value as a json structure. I should grab the root, and match the empty string case */
 			assertEquals(writer.getAttribute(testGroup, "", JsonObject.class), writer.getAttribute(testGroup, "/", JsonObject.class));
 
-			/* Lastly, ensure grabing nonsense results in an exception */
+			/* Lastly, ensure grabing nonsense returns null */
 			assertNull(writer.getAttribute(testGroup, "/this/key/does/not/exist", Object.class));
 		}
 	}
@@ -1519,5 +1563,41 @@ public abstract class AbstractN5Test {
 				assertFalse(writer2.exists("/"));
 			}
 		}
+	}
+
+	@Test
+	public void testPathsWithIllegalUriCharacters() throws IOException, URISyntaxException {
+
+		try (N5Writer writer = createTempN5Writer()) {
+			try (N5Reader reader = createN5Reader(writer.getURI().toString())) {
+
+				final String[] illegalChars = {" ", "#", "%"};
+				for (final String illegalChar : illegalChars) {
+					final String groupWithIllegalChar = "test" + illegalChar + "group";
+					writer.createGroup(groupWithIllegalChar);
+					writer.setAttribute(groupWithIllegalChar, "/a/b/key1", "value1");
+					final String attrFromWriter = writer.getAttribute(groupWithIllegalChar, "/a/b/key1", String.class);
+					final String attrFromReader = reader.getAttribute(groupWithIllegalChar, "/a/b/key1", String.class);
+					assertEquals("value1", attrFromWriter);
+					assertEquals("value1", attrFromReader);
+
+
+					final String datasetWithIllegalChar = "test" + illegalChar + "dataset";
+					final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64, new RawCompression());
+					writer.createDataset(datasetWithIllegalChar, datasetAttributes);
+					final DatasetAttributes datasetFromWriter = writer.getDatasetAttributes(datasetWithIllegalChar);
+					final DatasetAttributes datasetFromReader = reader.getDatasetAttributes(datasetWithIllegalChar);
+					assertDatasetAttributesEquals(datasetAttributes, datasetFromWriter);
+					assertDatasetAttributesEquals(datasetAttributes, datasetFromReader);
+				}
+			}
+		}
+	}
+
+	protected void assertDatasetAttributesEquals(final DatasetAttributes expected, final DatasetAttributes actual) {
+		assertArrayEquals(expected.getDimensions(), actual.getDimensions());
+		assertArrayEquals(expected.getBlockSize(), actual.getBlockSize());
+		assertEquals(expected.getDataType(), actual.getDataType());
+		assertEquals(expected.getCompression(), actual.getCompression());
 	}
 }

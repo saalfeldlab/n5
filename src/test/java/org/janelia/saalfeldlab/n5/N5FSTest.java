@@ -43,7 +43,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.janelia.saalfeldlab.n5.url.UrlAttributeTest;
 import org.junit.Test;
 
 import com.google.gson.GsonBuilder;

@@ -8,7 +8,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class N5URLTest {
+public class N5URITest {
 	@Test
 	public void testAttributePath() {
 
@@ -49,9 +49,17 @@ public class N5URLTest {
 
 		assertEquals("let's/try/a/real/case/with spaces", N5URI.normalizeAttributePath("let's/try/a/real/case/with spaces/"));
 		assertEquals("let's/try/a/real/case/with spaces", N5URI.normalizeAttributePath("let's/try/a/real/////case////with spaces/"));
-		assertEquals("../first/relative/a/wd/.w/asd", N5URI.normalizeAttributePath("../first/relative/test/../a/b/.././wd///.w/asd"));
-		assertEquals("..", N5URI.normalizeAttributePath("../result/../only/../single/.."));
-		assertEquals("../..", N5URI.normalizeAttributePath("../result/../multiple/../.."));
+		assertEquals("/first/relative/a/wd/.w/asd", N5URI.normalizeAttributePath("/../first/relative/test/../a/b/.././wd///.w/asd"));
+		assertEquals("first/relative/a/wd/.w/asd", N5URI.normalizeAttributePath("../first/relative/test/../a/b/.././wd///.w/asd"));
+		assertEquals("", N5URI.normalizeAttributePath("../result/../only/../single/.."));
+		assertEquals("", N5URI.normalizeAttributePath("../result/../multiple/../.."));
+		assertEquals("/", N5URI.normalizeAttributePath("/../result/../multiple/../.."));
+
+		 assertEquals("b", N5URI.normalizeAttributePath("a/../b"));
+		 assertEquals("/b", N5URI.normalizeAttributePath("/a/../b"));
+		 assertEquals("b", N5URI.normalizeAttributePath("../a/../b"));
+		 assertEquals("/b", N5URI.normalizeAttributePath("/../a/../b"));
+		 assertEquals("/b", N5URI.normalizeAttributePath("/../a/../../b"));
 
 		String normalizedPath = N5URI.normalizeAttributePath("let's/try/a/some/////with/ /	//white spaces/");
 		assertEquals("Normalizing a normal path should be the identity", normalizedPath, N5URI.normalizeAttributePath(normalizedPath));
