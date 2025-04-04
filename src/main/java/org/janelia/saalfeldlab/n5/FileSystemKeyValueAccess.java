@@ -248,8 +248,16 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			o = 1;
 		}
 
-		for (int i = o; i < components.length; ++i)
-			components[i] = fsPath.getName(i - o).toString();
+		for (int i = o; i < components.length; ++i) {
+			String name = fsPath.getName(i - o).toString();
+			/* Preserve trailing slash on final component if present*/
+			if (i == components.length - 1) {
+				final String separator = fileSystem.getSeparator();
+				final String trailingSeparator = path.endsWith(separator) ? separator : path.endsWith("/") ? "/" : "";
+				name += trailingSeparator;
+			}
+			components[i] = name;
+		}
 		return components;
 	}
 
