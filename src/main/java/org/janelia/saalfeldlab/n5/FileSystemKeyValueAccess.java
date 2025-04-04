@@ -319,7 +319,11 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 	@Override public String compose(URI uri, String... components) {
 
-		Path composedPath = Paths.get(uri.getPath());
+		Path composedPath;
+		if (uri.isAbsolute())
+			composedPath = Paths.get(uri);
+		else
+			composedPath = Paths.get(uri.toString());
 		for (String component : components) {
 			composedPath = composedPath.resolve(component);
 		}
