@@ -45,6 +45,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Arrays;
@@ -310,8 +311,12 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 	@Override public String compose(URI uri, String... components) {
 
-		final URI composedUri = URI.create(KeyValueAccess.super.compose(uri, components));
-		return fileSystem.provider().getPath(composedUri).toString();
+		Path composedPath = Paths.get(uri.getPath());
+		for (String component : components) {
+			composedPath = composedPath.resolve(component);
+		}
+
+		return composedPath.toAbsolutePath().toString();
 	}
 
 	@Override
