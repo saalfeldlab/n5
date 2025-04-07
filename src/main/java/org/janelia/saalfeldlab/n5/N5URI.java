@@ -532,7 +532,11 @@ public class N5URI {
 		try {
 			return URI.create(uri);
 		} catch (Exception ignore) {
-			return N5URI.encodeAsUri(uri);
+			try {
+				return N5URI.encodeAsUri(uri);
+			} catch (URISyntaxException e) {
+				throw new IllegalArgumentException("Could not encode as URI: " + uri, e);
+			}
 		}
 	}
 
@@ -552,50 +556,46 @@ public class N5URI {
 	 *            to encode
 	 * @return the {@link URI} created from encoding the {@link String uri}
 	 */
-	public static URI encodeAsUri(final String uri) {
+	public static URI encodeAsUri(final String uri) throws URISyntaxException {
 
-		try {
-			if (uri.trim().length() == 0) {
-				//TODO Caleb: ???
-				return new URI(uri);
-			}
-			/*
-			 * find last # symbol to split fragment on. If we don't remove it first,
-			 * then it will encode it, and not parse it separately
-			 * after we remove the temporary _N5 scheme
-			 */
-			final int fragmentIdx = uri.lastIndexOf('#');
-			final String uriWithoutFragment;
-			final String fragment;
-			if (fragmentIdx >= 0) {
-				uriWithoutFragment = uri.substring(0, fragmentIdx);
-				fragment = uri.substring(fragmentIdx + 1);
-			} else {
-				uriWithoutFragment = uri;
-				fragment = null;
-			}
-			/* Edge case to handle when uriWithoutFragment is empty */
-			final URI _n5Uri;
-			if (uriWithoutFragment.length() == 0 && fragment != null && fragment.length() > 0) {
-				_n5Uri = new URI("N5Internal", "//STAND_IN", fragment);
-			} else {
-				_n5Uri = new URI("N5Internal", uriWithoutFragment, fragment);
-			}
-
-			final URI n5Uri;
-			if (fragment == null) {
-				n5Uri = new URI(_n5Uri.getRawSchemeSpecificPart());
-			} else {
-				if (Objects.equals(_n5Uri.getPath(), "") && Objects.equals(_n5Uri.getAuthority(), "STAND_IN")) {
-					n5Uri = new URI("#" + _n5Uri.getRawFragment());
-				} else {
-					n5Uri = new URI(_n5Uri.getRawSchemeSpecificPart() + "#" + _n5Uri.getRawFragment());
-				}
-			}
-			return n5Uri;
-		} catch (Exception e) {
-			throw new IllegalArgumentException("Could not encode as URI: " + uri, e);
+		if (uri.trim().length() == 0) {
+			//TODO Caleb: ???
+			return new URI(uri);
 		}
+		/*
+		 * find last # symbol to split fragment on. If we don't remove it first,
+		 * then it will encode it, and not parse it separately
+		 * after we remove the temporary _N5 scheme
+		 */
+		final int fragmentIdx = uri.lastIndexOf('#');
+		final String uriWithoutFragment;
+		final String fragment;
+		if (fragmentIdx >= 0) {
+			uriWithoutFragment = uri.substring(0, fragmentIdx);
+			fragment = uri.substring(fragmentIdx + 1);
+		} else {
+			uriWithoutFragment = uri;
+			fragment = null;
+		}
+		/* Edge case to handle when uriWithoutFragment is empty */
+		final URI _n5Uri;
+		if (uriWithoutFragment.length() == 0 && fragment != null && fragment.length() > 0) {
+			_n5Uri = new URI("N5Internal", "//STAND_IN", fragment);
+		} else {
+			_n5Uri = new URI("N5Internal", uriWithoutFragment, fragment);
+		}
+
+		final URI n5Uri;
+		if (fragment == null) {
+			n5Uri = new URI(_n5Uri.getRawSchemeSpecificPart());
+		} else {
+			if (Objects.equals(_n5Uri.getPath(), "") && Objects.equals(_n5Uri.getAuthority(), "STAND_IN")) {
+				n5Uri = new URI("#" + _n5Uri.getRawFragment());
+			} else {
+				n5Uri = new URI(_n5Uri.getRawSchemeSpecificPart() + "#" + _n5Uri.getRawFragment());
+			}
+		}
+		return n5Uri;
 	}
 
 	/**
