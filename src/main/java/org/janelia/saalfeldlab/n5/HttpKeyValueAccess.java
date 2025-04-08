@@ -22,6 +22,7 @@ package org.janelia.saalfeldlab.n5;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.function.TriFunction;
+import org.janelia.saalfeldlab.n5.http.ApacheListResponseParser;
 import org.janelia.saalfeldlab.n5.http.CandidateListResponseParser;
 import org.janelia.saalfeldlab.n5.http.ListResponseParser;
 import org.janelia.saalfeldlab.n5.http.MicrosoftListResponseParser;
@@ -60,12 +61,14 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	private CandidateListResponseParser candidateParsers = new CandidateListResponseParser(
 			new ListResponseParser[] {
 					MicrosoftListResponseParser.parser(),
+					ApacheListResponseParser.parser(),
 					PythonListResponseParser.parser()
 			});
 
 	private CandidateListResponseParser candidateDirectoryParsers = new CandidateListResponseParser(
 			new ListResponseParser[] {
 					MicrosoftListResponseParser.directoryParser(),
+					ApacheListResponseParser.directoryParser(),
 					PythonListResponseParser.directoryParser()
 			});
 
