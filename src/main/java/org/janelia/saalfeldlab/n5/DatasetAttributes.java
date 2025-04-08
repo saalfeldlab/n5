@@ -30,7 +30,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodec.N5BlockCodecFactory;
+import org.janelia.saalfeldlab.n5.codec.N5Codecs;
 
 /**
  * Mandatory dataset attributes:
@@ -69,11 +69,21 @@ public class DatasetAttributes implements Serializable {
 			final DataType dataType,
 			final Compression compression) {
 
+		this(dimensions, blockSize, dataType, compression, N5Codecs.createDataBlockCodec(dataType, compression));
+	}
+
+	protected DatasetAttributes(
+			final long[] dimensions,
+			final int[] blockSize,
+			final DataType dataType,
+			final Compression compression,
+			final DataBlockCodec<?> dataBlockCodec) {
+
 		this.dimensions = dimensions;
 		this.blockSize = blockSize;
 		this.dataType = dataType;
 		this.compression = compression;
-		this.dataBlockCodec = N5BlockCodecFactory.fromDatasetAttributes(this);
+		this.dataBlockCodec = dataBlockCodec;
 	}
 
 	public long[] getDimensions() {
