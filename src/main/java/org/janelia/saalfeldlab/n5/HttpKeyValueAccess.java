@@ -22,6 +22,10 @@ package org.janelia.saalfeldlab.n5;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.function.TriFunction;
+import org.janelia.saalfeldlab.n5.http.CandidateListResponseParser;
+import org.janelia.saalfeldlab.n5.http.ListResponseParser;
+import org.janelia.saalfeldlab.n5.http.MicrosoftListResponseParser;
+import org.janelia.saalfeldlab.n5.http.PythonListResponseParser;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -37,9 +41,6 @@ import java.net.URL;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * A read-only {@link KeyValueAccess} implementation using HTTP. As a result, calling <code>lockForWriting</code>, <code>createDirectories</code>, or <code>delete</code> will throw an {@link N5Exception}.
@@ -50,10 +51,23 @@ import java.util.regex.Pattern;
  */
 public class HttpKeyValueAccess implements KeyValueAccess {
 
-	private static final Pattern LIST_DIR_ENTRY = Pattern.compile("href=\"[^\"]+\">(?<entry>[^<]+)/");
-	private static final Pattern LIST_ENTRY = Pattern.compile("href=\"[^\"]+\">(?<entry>[^<]+)");
 	private int readTimeoutMilliseconds;
 	private int connectionTimeoutMilliseconds;
+
+	private ListResponseParser listResponseParser;
+	private ListResponseParser listDirectoryResponseParser;
+
+	private CandidateListResponseParser candidateParsers = new CandidateListResponseParser(
+			new ListResponseParser[] {
+					MicrosoftListResponseParser.parser(),
+					PythonListResponseParser.parser()
+			});
+
+	private CandidateListResponseParser candidateDirectoryParsers = new CandidateListResponseParser(
+			new ListResponseParser[] {
+					MicrosoftListResponseParser.directoryParser(),
+					PythonListResponseParser.directoryParser()
+			});
 
 	/**
 	 * Opens an {@link HttpKeyValueAccess}
@@ -74,6 +88,16 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	public void setConnectionTimeout(int connectionTimeoutMilliseconds) {
 
 		this.connectionTimeoutMilliseconds = connectionTimeoutMilliseconds;
+	}
+
+	public void setListParser(final ListResponseParser parser) {
+
+		listResponseParser = parser;
+	}
+
+	public void setListDirectoryParser(final ListResponseParser parser) {
+
+		listDirectoryResponseParser = parser;
 	}
 
 	@Override
@@ -230,7 +254,16 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	@Override
 	public String[] listDirectories(final String normalPath) throws IOException {
 
-		return queryListEntries(normalPath, LIST_DIR_ENTRY, true);
+		if (listDirectoryResponseParser != null)
+			return queryListEntries(normalPath, listDirectoryResponseParser, true);
+		else
+		{
+			final String[] result = queryListEntries(normalPath, candidateDirectoryParsers, true);
+			if (candidateDirectoryParsers.successfulParser() != null)
+				listDirectoryResponseParser = candidateDirectoryParsers.successfulParser();
+
+			return result;
+		}
 	}
 
 	/**
@@ -249,20 +282,24 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	@Override
 	public String[] list(final String normalPath) throws IOException {
 
-		return queryListEntries(normalPath, LIST_ENTRY, true);
+		if (listResponseParser != null)
+			return queryListEntries(normalPath, listResponseParser, true);
+		else
+		{
+			final String[] result = queryListEntries(normalPath, candidateParsers, true);
+			if (candidateParsers.successfulParser() != null)
+				listResponseParser = candidateParsers.successfulParser();
+
+			return result;
+		}
 	}
 
-	private String[] queryListEntries(String normalPath, Pattern listEntry, boolean allowRedirect) {
+	private String[] queryListEntries(String normalPath, ListResponseParser parser, boolean allowRedirect) {
 
 		final HttpURLConnection http = requireValidHttpResponse(normalPath, "GET", "Error listing directory at " + normalPath, allowRedirect);
 		try {
 			final String listResponse = responseToString(http.getInputStream());
-			final Matcher matcher = listEntry.matcher(listResponse);
-			final List<String> matches = new ArrayList<>();
-			while (matcher.find()) {
-				matches.add(matcher.group("entry"));
-			}
-			return matches.toArray(new String[0]);
+			return parser.parseListResponse(listResponse);
 		} catch (IOException e) {
 			throw new N5Exception.N5IOException("Error listing directory at " + normalPath, e);
 		}
