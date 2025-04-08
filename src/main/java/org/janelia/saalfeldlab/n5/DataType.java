@@ -41,24 +41,92 @@ import com.google.gson.JsonSerializer;
  */
 public enum DataType {
 
-	UINT8("uint8"),
-	UINT16("uint16"),
-	UINT32("uint32"),
-	UINT64("uint64"),
-	INT8("int8"),
-	INT16("int16"),
-	INT32("int32"),
-	INT64("int64"),
-	FLOAT32("float32"),
-	FLOAT64("float64"),
-	STRING("string"),
-	OBJECT("object");
+	UINT8(
+			"uint8",
+			(blockSize, gridPosition, numElements) -> {
+				ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, gridPosition, new byte[numElements]);
+
+
+				return new ByteArrayDataBlock(
+						blockSize,
+						gridPosition,
+						new byte[numElements]);
+			}),
+	UINT16(
+			"uint16",
+			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
+					blockSize,
+					gridPosition,
+					new short[numElements])),
+	UINT32(
+			"uint32",
+			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
+					blockSize,
+					gridPosition,
+					new int[numElements])),
+	UINT64(
+			"uint64",
+			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
+					blockSize,
+					gridPosition,
+					new long[numElements])),
+	INT8(
+			"int8",
+			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
+					blockSize,
+					gridPosition,
+					new byte[numElements])),
+	INT16(
+			"int16",
+			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
+					blockSize,
+					gridPosition,
+					new short[numElements])),
+	INT32(
+			"int32",
+			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
+					blockSize,
+					gridPosition,
+					new int[numElements])),
+	INT64(
+			"int64",
+			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
+					blockSize,
+					gridPosition,
+					new long[numElements])),
+	FLOAT32(
+			"float32",
+			(blockSize, gridPosition, numElements) -> new FloatArrayDataBlock(
+					blockSize,
+					gridPosition,
+					new float[numElements])),
+	FLOAT64(
+			"float64",
+			(blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(
+					blockSize,
+					gridPosition,
+					new double[numElements])),
+	STRING(
+			"string",
+			(blockSize, gridPosition, numElements) -> new StringDataBlock(
+					blockSize,
+					gridPosition,
+					new String[numElements])),
+	OBJECT(
+			"object",
+			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
+					blockSize,
+					gridPosition,
+					new byte[numElements]));
 
 	private final String label;
 
-	DataType(final String label) {
+	private final DataBlockFactory dataBlockFactory;
+
+	DataType(final String label, final DataBlockFactory dataBlockFactory) {
 
 		this.label = label;
+		this.dataBlockFactory = dataBlockFactory;
 	}
 
 	@Override
@@ -73,6 +141,43 @@ public enum DataType {
 			if (value.toString().equals(string))
 				return value;
 		return null;
+	}
+
+	/**
+	 * Factory for {@link DataBlock DataBlocks}.
+	 *
+	 * @param blockSize
+	 *            the block size
+	 * @param gridPosition
+	 *            the grid position
+	 * @param numElements
+	 *            the number of elements (not necessarily one element per block
+	 *            element)
+	 * @return the data block
+	 */
+	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition, final int numElements) {
+
+		return dataBlockFactory.createDataBlock(blockSize, gridPosition, numElements);
+	}
+
+	/**
+	 * Factory for {@link DataBlock DataBlocks} with one data element for each
+	 * block element (e.g. pixel image).
+	 *
+	 * @param blockSize
+	 *            the block size
+	 * @param gridPosition
+	 *            the grid position
+	 * @return the data block
+	 */
+	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition) {
+
+		return dataBlockFactory.createDataBlock(blockSize, gridPosition, DataBlock.getNumElements(blockSize));
+	}
+
+	private interface DataBlockFactory {
+
+		DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition, final int numElements);
 	}
 
 	static public class JsonAdapter implements JsonDeserializer<DataType>, JsonSerializer<DataType> {
