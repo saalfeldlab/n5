@@ -2,7 +2,7 @@ package org.janelia.saalfeldlab.n5.cache;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 
 import org.janelia.saalfeldlab.n5.N5Exception;
 
@@ -29,7 +29,7 @@ public class N5JsonCache {
 	protected static class N5CacheInfo {
 
 		protected final HashMap<String, JsonElement> attributesCache = new HashMap<>();
-		protected HashSet<String> children = null;
+		protected LinkedHashSet<String> children = null;
 		protected boolean isDataset = false;
 		protected boolean isGroup = false;
 
@@ -204,7 +204,7 @@ public class N5JsonCache {
 	private void addChild(final N5CacheInfo cacheInfo, final String normalPathKey) {
 
 		if (cacheInfo.children == null)
-			cacheInfo.children = new HashSet<>();
+			cacheInfo.children = new LinkedHashSet<>();
 
 		final String[] children = container.listFromContainer(normalPathKey);
 		Collections.addAll(cacheInfo.children, children);
@@ -338,7 +338,7 @@ public class N5JsonCache {
 			return;
 
 		if (cacheInfo.children == null)
-			cacheInfo.children = new HashSet<>();
+			cacheInfo.children = new LinkedHashSet<>();
 
 		cacheInfo.children.add(child);
 	}
