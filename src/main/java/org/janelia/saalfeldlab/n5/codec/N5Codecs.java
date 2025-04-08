@@ -125,13 +125,13 @@ public class N5Codecs {
 		}
 
 
-		abstract BlockHeader encodeBlockHeader(final DataBlock<T> dataBlock, ReadData blockData) throws IOException;
+		abstract BlockHeader createBlockHeader(final DataBlock<T> dataBlock, ReadData blockData) throws IOException;
 
 		@Override public ReadData encode(DataBlock<T> dataBlock) throws IOException {
 			return ReadData.from(out -> {
 				final ReadData dataReadData = getDataCodec().serialize(dataBlock.getData());
 				final ReadData encodedData = getCompression().encode(dataReadData);
-				final BlockHeader header = encodeBlockHeader(dataBlock, dataReadData);
+				final BlockHeader header = createBlockHeader(dataBlock, dataReadData);
 
 				header.writeTo(out);
 				encodedData.writeTo(out);
@@ -171,7 +171,7 @@ public class N5Codecs {
 			super(dataCodec, dataBlockFactory, compression);
 			}
 		@Override
-		protected BlockHeader encodeBlockHeader(final DataBlock<T> dataBlock, ReadData blockData)  {
+		protected BlockHeader createBlockHeader(final DataBlock<T> dataBlock, ReadData blockData)  {
 
 			return new BlockHeader(dataBlock.getSize(), dataBlock.getNumElements());
 		}
@@ -197,7 +197,7 @@ public class N5Codecs {
 		}
 
 		@Override
-		protected BlockHeader encodeBlockHeader(final DataBlock<String[]> dataBlock, ReadData blockData) throws IOException {
+		protected BlockHeader createBlockHeader(final DataBlock<String[]> dataBlock, ReadData blockData) throws IOException {
 
 			return new BlockHeader(dataBlock.getSize(), (int)blockData.length());
 		}
@@ -222,7 +222,7 @@ public class N5Codecs {
 			super(dataCodec, dataBlockFactory, compression);
 		}
 
-		@Override protected BlockHeader encodeBlockHeader(DataBlock<byte[]> dataBlock, ReadData blockData) {
+		@Override protected BlockHeader createBlockHeader(DataBlock<byte[]> dataBlock, ReadData blockData) {
 
 			return new BlockHeader(null, dataBlock.getNumElements());
 		}
