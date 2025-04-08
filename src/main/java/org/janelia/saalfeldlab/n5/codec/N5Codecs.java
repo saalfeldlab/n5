@@ -79,10 +79,19 @@ public class N5Codecs {
 
 	public interface DataBlockCodecFactory<T> {
 
+		/**
+		 * Get the default {@link DataBlockCodec}, with the specified {@code
+		 * compression}, for {@link DataBlock DataBlocks} of this {@code DataType}.
+		 * The default codec is used for de/serializing blocks to N5 format.
+		 *
+		 * @param compression
+		 *
+		 * @return the default {@code DataBlockCodec}
+		 */
 		DataBlockCodec<T> createDataBlockCodec(Compression compression);
 	}
 
-	public abstract static class AbstractDataBlockCodec<T> implements DataBlockCodec<T> {
+	private abstract static class AbstractDataBlockCodec<T> implements DataBlockCodec<T> {
 
 		private static final int VAR_OBJ_BYTES_PER_ELEMENT = 1;
 
@@ -100,17 +109,17 @@ public class N5Codecs {
 			this.compression = compression;
 		}
 
-		public DataBlockFactory<T> getDataBlockFactory() {
+		private DataBlockFactory<T> getDataBlockFactory() {
 
 			return dataBlockFactory;
 		}
 
-		public DataCodec<T> getDataCodec() {
+		private DataCodec<T> getDataCodec() {
 
 			return dataCodec;
 		}
 
-		public Compression getCompression() {
+		private Compression getCompression() {
 
 			return compression;
 		}
