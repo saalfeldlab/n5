@@ -170,7 +170,9 @@ public interface KeyValueAccess {
 	 * @return absolute URI
 	 * @throws URISyntaxException if the given path is not a proper URI
 	 */
-	public URI uri(final String uriString) throws URISyntaxException;
+	default URI uri(final String uriString) throws URISyntaxException {
+		return N5URI.getAsUri(uriString);
+	}
 	/**
 	 * Test whether the path exists.
 	 *
