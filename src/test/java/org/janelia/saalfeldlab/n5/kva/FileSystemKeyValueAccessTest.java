@@ -30,17 +30,20 @@ public class FileSystemKeyValueAccessTest extends AbstractKeyValueAccessTest {
 	private static String separator = FileSystems.getDefault().getSeparator();
 
 	private static final FileSystemKeyValueAccess fileSystemKva = new FileSystemKeyValueAccess(FileSystems.getDefault());
-	@Override KeyValueAccess newKeyValueAccess(URI root) {
+	@Override
+	protected KeyValueAccess newKeyValueAccess(URI root) {
 
 		return fileSystemKva;
 	}
 
-	@Override protected KeyValueAccess newKeyValueAccess() {
+	@Override
+	protected KeyValueAccess newKeyValueAccess() {
 
 		return fileSystemKva;
 	}
 
-	@Override protected URI[] testURIs(URI base) {
+	@Override
+	protected URI[] testURIs(URI base) {
 
 		final URI[] testUris = super.testURIs(base);
 		final URI[] addRelativeUris = new URI[testUris.length * 3];
@@ -95,7 +98,8 @@ public class FileSystemKeyValueAccessTest extends AbstractKeyValueAccessTest {
 		throw new IllegalArgumentException("Unable to get Path for URI: " + fileUri);
 	}
 
-	@Override protected String[][] testPathComponents(URI base) {
+	@Override
+	protected String[][] testPathComponents(URI base) {
 
 		final URI[] testPaths = testURIs(base);
 		final String[][] expectedComponents = new String[testPaths.length][];
@@ -125,7 +129,8 @@ public class FileSystemKeyValueAccessTest extends AbstractKeyValueAccessTest {
 		return expectedComponents;
 	}
 
-	@Override URI tempUri() {
+	@Override
+	protected URI tempUri() {
 
 		try {
 			final Path tempDirectory = Files.createTempDirectory("n5-filesystem-kva-test-");
