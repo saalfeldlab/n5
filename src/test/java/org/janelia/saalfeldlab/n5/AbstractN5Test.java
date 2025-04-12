@@ -1574,7 +1574,10 @@ public abstract class AbstractN5Test {
 				final String[] illegalChars = {" ", "#", "%"};
 				for (final String illegalChar : illegalChars) {
 					final String groupWithIllegalChar = "test" + illegalChar + "group";
+					assertThrows("list over group should throw prior to create", N5Exception.N5IOException.class, () -> writer.list(groupWithIllegalChar));
 					writer.createGroup(groupWithIllegalChar);
+					assertTrue("Newly created group should exist", writer.exists(groupWithIllegalChar));
+					assertArrayEquals("list over empty group should be empty list", new String[0], writer.list(groupWithIllegalChar));
 					writer.setAttribute(groupWithIllegalChar, "/a/b/key1", "value1");
 					final String attrFromWriter = writer.getAttribute(groupWithIllegalChar, "/a/b/key1", String.class);
 					final String attrFromReader = reader.getAttribute(groupWithIllegalChar, "/a/b/key1", String.class);
