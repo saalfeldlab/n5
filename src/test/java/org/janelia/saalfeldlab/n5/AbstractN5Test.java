@@ -201,6 +201,7 @@ public abstract class AbstractN5Test {
 
 		try (N5Writer n5 = createTempN5Writer()) {
 			n5.createGroup(groupName);
+			assertTrue("Group does not exist: " + groupName, n5.exists(groupName));
 			final Path groupPath = Paths.get(groupName);
 			String subGroup = "";
 			for (int i = 0; i < groupPath.getNameCount(); ++i) {
@@ -832,8 +833,12 @@ public abstract class AbstractN5Test {
 
 		try (final N5Writer listN5 = createTempN5Writer()) {
 			listN5.createGroup(groupName);
-			for (final String subGroup : subGroupNames)
-				listN5.createGroup(groupName + "/" + subGroup);
+			assertArrayEquals("New Group should return empty array for list()", new String[0], listN5.list(groupName));
+			for (final String subGroup : subGroupNames) {
+				final String childGroup = groupName + "/" + subGroup;
+				listN5.createGroup(childGroup);
+				assertArrayEquals("New Group should return empty array for list()", new String[0], listN5.list(childGroup));
+			}
 
 			final String[] groupsList = listN5.list(groupName);
 			Arrays.sort(groupsList);
