@@ -25,33 +25,18 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
+import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
- * Default implementation of {@link BlockReader}.
+ * Default implementation of block reading (N5 format).
  *
  * @author Stephan Saalfeld
  * @author Igor Pisarev
  */
-public interface DefaultBlockReader extends BlockReader {
-
-	public InputStream getInputStream(final InputStream in) throws IOException;
-
-	@Override
-	public default <T, B extends DataBlock<T>> void read(
-			final B dataBlock,
-			final InputStream in) throws IOException {
-
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final InputStream inflater = getInputStream(in)) {
-			final DataInputStream dis = new DataInputStream(inflater);
-			dis.readFully(buffer.array());
-		}
-		dataBlock.readData(buffer);
-	}
+public interface DefaultBlockReader {
 
 	/**
 	 * Reads a {@link DataBlock} from an {@link InputStream}.
@@ -66,33 +51,12 @@ public interface DefaultBlockReader extends BlockReader {
 	 * @throws IOException
 	 *             the exception
 	 */
-	public static DataBlock<?> readBlock(
+	static DataBlock<?> readBlock(
 			final InputStream in,
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition) throws IOException {
 
-		final DataInputStream dis = new DataInputStream(in);
-		final short mode = dis.readShort();
-		final int numElements;
-		final DataBlock<?> dataBlock;
-		if (mode != 2) {
-			final int nDim = dis.readShort();
-			final int[] blockSize = new int[nDim];
-			for (int d = 0; d < nDim; ++d)
-				blockSize[d] = dis.readInt();
-			if (mode == 0) {
-				numElements = DataBlock.getNumElements(blockSize);
-			} else {
-				numElements = dis.readInt();
-			}
-			dataBlock = datasetAttributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
-		} else {
-			numElements = dis.readInt();
-			dataBlock = datasetAttributes.getDataType().createDataBlock(null, gridPosition, numElements);
-		}
-
-		final BlockReader reader = datasetAttributes.getCompression().getReader();
-		reader.read(dataBlock, in);
-		return dataBlock;
+		final DataBlockCodec<?> codec = datasetAttributes.getDataBlockCodec();
+		return codec.decode(ReadData.from(in), gridPosition);
 	}
 }

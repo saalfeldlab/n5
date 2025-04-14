@@ -34,6 +34,9 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import org.janelia.saalfeldlab.n5.codec.N5Codecs;
+import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
+import org.janelia.saalfeldlab.n5.codec.N5Codecs.DataBlockCodecFactory;
 
 /**
  * Enumerates available data types.
@@ -47,82 +50,98 @@ public enum DataType {
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements])),
+					new byte[numElements]),
+			N5Codecs.BYTE),
 	UINT16(
 			"uint16",
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new short[numElements])),
+					new short[numElements]),
+			N5Codecs.SHORT),
 	UINT32(
 			"uint32",
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new int[numElements])),
+					new int[numElements]),
+			N5Codecs.INT),
 	UINT64(
 			"uint64",
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new long[numElements])),
+					new long[numElements]),
+			N5Codecs.LONG),
 	INT8(
 			"int8",
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements])),
+					new byte[numElements]),
+			N5Codecs.BYTE),
 	INT16(
 			"int16",
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new short[numElements])),
+					new short[numElements]),
+			N5Codecs.SHORT),
 	INT32(
 			"int32",
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new int[numElements])),
+					new int[numElements]),
+			N5Codecs.INT),
 	INT64(
 			"int64",
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new long[numElements])),
+					new long[numElements]),
+			N5Codecs.LONG),
 	FLOAT32(
 			"float32",
 			(blockSize, gridPosition, numElements) -> new FloatArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new float[numElements])),
+					new float[numElements]),
+			N5Codecs.FLOAT),
 	FLOAT64(
 			"float64",
 			(blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new double[numElements])),
+					new double[numElements]),
+			N5Codecs.DOUBLE),
 	STRING(
 			"string",
 			(blockSize, gridPosition, numElements) -> new StringDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements])),
+					new String[numElements]),
+			N5Codecs.STRING),
 	OBJECT(
 			"object",
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements]));
+					new byte[numElements]),
+			N5Codecs.OBJECT);
+
 
 	private final String label;
 
 	private final DataBlockFactory dataBlockFactory;
 
-	DataType(final String label, final DataBlockFactory dataBlockFactory) {
+	private final DataBlockCodecFactory<?> dataBlockCodecFactory;
+
+	DataType(final String label, final DataBlockFactory dataBlockFactory, final DataBlockCodecFactory<?> dataBlockCodecFactory) {
 
 		this.label = label;
 		this.dataBlockFactory = dataBlockFactory;
+		this.dataBlockCodecFactory = dataBlockCodecFactory;
 	}
 
 	@Override
@@ -169,6 +188,19 @@ public enum DataType {
 	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition) {
 
 		return dataBlockFactory.createDataBlock(blockSize, gridPosition, DataBlock.getNumElements(blockSize));
+	}
+
+	/**
+	 * Get the default {@link DataBlockCodec}, with the specified {@code
+	 * compression}, for {@link DataBlock DataBlocks} of this {@code DataType}.
+	 * The default codec is used for de/serializing blocks to N5 format.
+	 *
+	 * @param compression
+	 *
+	 * @return the default {@code DataBlockCodec}
+	 */
+	public DataBlockCodec<?> createDataBlockCodec(final Compression compression) {
+		return dataBlockCodecFactory.createDataBlockCodec(compression);
 	}
 
 	private interface DataBlockFactory {
