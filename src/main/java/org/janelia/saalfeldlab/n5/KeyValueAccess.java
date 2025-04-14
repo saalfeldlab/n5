@@ -121,7 +121,7 @@ public interface KeyValueAccess {
 	 */
 	public default String parent(final String path) {
 		final String removeTrailingSlash = path.replaceAll("/+$", "");
-		return normalize(URI.create(removeTrailingSlash).resolve("").toString());
+		return normalize(N5URI.getAsUri(removeTrailingSlash).resolve("").toString());
 	}
 
 	/**
@@ -171,7 +171,11 @@ public interface KeyValueAccess {
 	 * @throws URISyntaxException if the given path is not a proper URI
 	 */
 	default URI uri(final String uriString) throws URISyntaxException {
-		return N5URI.getAsUri(uriString);
+		try {
+			return URI.create(uriString);
+		} catch (Exception ignore) {
+			return N5URI.encodeAsUri(uriString);
+		}
 	}
 	/**
 	 * Test whether the path exists.
