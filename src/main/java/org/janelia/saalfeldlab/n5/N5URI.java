@@ -527,7 +527,7 @@ public class N5URI {
 	 * @param uri as String to get as URI
 	 * @return URI from input. Encoded if necessary
 	 */
-	public static URI getAsUri(final String uri) {
+	public static URI getAsUri(final String uri) throws N5Exception {
 
 		try {
 			return URI.create(uri);
@@ -535,7 +535,7 @@ public class N5URI {
 			try {
 				return N5URI.encodeAsUri(uri);
 			} catch (URISyntaxException e) {
-				throw new IllegalArgumentException("Could not encode as URI: " + uri, e);
+				throw new N5Exception("Could not encode as URI: " + uri, e);
 			}
 		}
 	}

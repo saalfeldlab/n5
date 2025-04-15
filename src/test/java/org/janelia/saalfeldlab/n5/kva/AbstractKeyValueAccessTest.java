@@ -17,12 +17,12 @@ import static org.junit.Assert.assertEquals;
  */
 public abstract class AbstractKeyValueAccessTest {
 
-	abstract KeyValueAccess newKeyValueAccess(URI root);
+	protected abstract KeyValueAccess newKeyValueAccess(URI root);
 	protected KeyValueAccess newKeyValueAccess() {
 		return newKeyValueAccess(tempUri());
 	}
 
-	abstract URI tempUri();
+	protected abstract URI tempUri();
 
 	protected URI[] testURIs(final URI base) {
 		final URI[] pathParts = new URI[]{
