@@ -22,11 +22,7 @@ package org.janelia.saalfeldlab.n5;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.function.TriFunction;
-import org.janelia.saalfeldlab.n5.http.ApacheListResponseParser;
-import org.janelia.saalfeldlab.n5.http.CandidateListResponseParser;
 import org.janelia.saalfeldlab.n5.http.ListResponseParser;
-import org.janelia.saalfeldlab.n5.http.MicrosoftListResponseParser;
-import org.janelia.saalfeldlab.n5.http.PythonListResponseParser;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -55,22 +51,8 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	private int readTimeoutMilliseconds;
 	private int connectionTimeoutMilliseconds;
 
-	private ListResponseParser listResponseParser;
-	private ListResponseParser listDirectoryResponseParser;
-
-	private CandidateListResponseParser candidateParsers = new CandidateListResponseParser(
-			new ListResponseParser[] {
-					MicrosoftListResponseParser.parser(),
-					ApacheListResponseParser.parser(),
-					PythonListResponseParser.parser()
-			});
-
-	private CandidateListResponseParser candidateDirectoryParsers = new CandidateListResponseParser(
-			new ListResponseParser[] {
-					MicrosoftListResponseParser.directoryParser(),
-					ApacheListResponseParser.directoryParser(),
-					PythonListResponseParser.directoryParser()
-			});
+	private ListResponseParser listResponseParser = ListResponseParser.defaultListParser();
+	private ListResponseParser listDirectoryResponseParser = ListResponseParser.defaultDirectoryListParser();
 
 	/**
 	 * Opens an {@link HttpKeyValueAccess}
@@ -257,16 +239,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	@Override
 	public String[] listDirectories(final String normalPath) throws IOException {
 
-		if (listDirectoryResponseParser != null)
-			return queryListEntries(normalPath, listDirectoryResponseParser, true);
-		else
-		{
-			final String[] result = queryListEntries(normalPath, candidateDirectoryParsers, true);
-			if (candidateDirectoryParsers.successfulParser() != null)
-				listDirectoryResponseParser = candidateDirectoryParsers.successfulParser();
-
-			return result;
-		}
+		return queryListEntries(normalPath, listDirectoryResponseParser, true);
 	}
 
 	/**
@@ -285,16 +258,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	@Override
 	public String[] list(final String normalPath) throws IOException {
 
-		if (listResponseParser != null)
-			return queryListEntries(normalPath, listResponseParser, true);
-		else
-		{
-			final String[] result = queryListEntries(normalPath, candidateParsers, true);
-			if (candidateParsers.successfulParser() != null)
-				listResponseParser = candidateParsers.successfulParser();
-
-			return result;
-		}
+		return queryListEntries(normalPath, listResponseParser, true);
 	}
 
 	private String[] queryListEntries(String normalPath, ListResponseParser parser, boolean allowRedirect) {

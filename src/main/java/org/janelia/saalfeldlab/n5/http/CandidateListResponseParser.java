@@ -1,18 +1,21 @@
 package org.janelia.saalfeldlab.n5.http;
 
-public class CandidateListResponseParser implements ListResponseParser {
+class CandidateListResponseParser implements ListResponseParser {
 
 	private ListResponseParser[] candidateParsers;
 
 	private ListResponseParser successfulParser;
 
-	public CandidateListResponseParser(ListResponseParser[] candidateParsers) {
+	CandidateListResponseParser(ListResponseParser[] candidateParsers) {
 
 		this.candidateParsers = candidateParsers;
 	}
 
 	@Override
 	public String[] parseListResponse(String response) {
+
+		if (successfulParser != null)
+			return successfulParser.parseListResponse(response);
 
 		String[] result = new String[0];
 		for (ListResponseParser parser : candidateParsers) {

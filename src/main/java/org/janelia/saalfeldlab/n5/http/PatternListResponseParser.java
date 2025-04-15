@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  * This implementation of parseListResponse returns all the groups named "entry"
  * for all matches of the given pattern.
  */
-public class PatternListResponseParser implements ListResponseParser {
+class PatternListResponseParser implements ListResponseParser {
 
 	protected Pattern pattern;
 

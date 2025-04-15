@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 /**
  * {@link ListResponseParser}s for <a href="https://httpd.apache.org/">Apache HTTP Servers</a>.
  */
-public abstract class ApacheListResponseParser extends PatternListResponseParser {
+abstract class ApacheListResponseParser extends PatternListResponseParser {
 
 	private static final Pattern LIST_ENTRY = Pattern.compile("alt=\"\\[(\\s*|DIR)\\]\".*href=[^>]+>(?<entry>[^<]+)");
 

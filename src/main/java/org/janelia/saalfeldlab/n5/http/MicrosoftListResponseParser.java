@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 /**
  * {@link ListResponseParser}s for <a href="https://www.iis.net/">Microsoft-IIS Servers</a>.
  */
-public abstract class MicrosoftListResponseParser extends PatternListResponseParser {
+abstract class MicrosoftListResponseParser extends PatternListResponseParser {
 
 	private static final Pattern LIST_ENTRY = Pattern.compile( "HREF=[^>]+>(?!\\[To Parent Directory])(?<entry>[^<]+)");
 
