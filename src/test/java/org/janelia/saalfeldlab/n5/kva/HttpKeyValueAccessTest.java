@@ -27,7 +27,7 @@ public class HttpKeyValueAccessTest extends AbstractKeyValueAccessTest {
 	public URI httpServerURI;
 
 	private static final HttpKeyValueAccess httpKva = new HttpKeyValueAccess();
-	@Override KeyValueAccess newKeyValueAccess(URI root) {
+	@Override protected KeyValueAccess newKeyValueAccess(URI root) {
 
 		return httpKva;
 	}
@@ -37,7 +37,7 @@ public class HttpKeyValueAccessTest extends AbstractKeyValueAccessTest {
 		return httpKva;
 	}
 
-	@Override URI tempUri() {
+	@Override protected URI tempUri() {
 
 		final URI tmpUri = AbstractN5Test.createTempUri("n5-http-kva-test-", null, httpServerURI);
 		return tmpUri;

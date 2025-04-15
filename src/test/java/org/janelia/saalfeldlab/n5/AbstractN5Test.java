@@ -201,6 +201,7 @@ public abstract class AbstractN5Test {
 
 		try (N5Writer n5 = createTempN5Writer()) {
 			n5.createGroup(groupName);
+			assertTrue("Group does not exist: " + groupName, n5.exists(groupName));
 			final Path groupPath = Paths.get(groupName);
 			String subGroup = "";
 			for (int i = 0; i < groupPath.getNameCount(); ++i) {
@@ -832,8 +833,12 @@ public abstract class AbstractN5Test {
 
 		try (final N5Writer listN5 = createTempN5Writer()) {
 			listN5.createGroup(groupName);
-			for (final String subGroup : subGroupNames)
-				listN5.createGroup(groupName + "/" + subGroup);
+			assertArrayEquals("New Group should return empty array for list()", new String[0], listN5.list(groupName));
+			for (final String subGroup : subGroupNames) {
+				final String childGroup = groupName + "/" + subGroup;
+				listN5.createGroup(childGroup);
+				assertArrayEquals("New Group should return empty array for list()", new String[0], listN5.list(childGroup));
+			}
 
 			final String[] groupsList = listN5.list(groupName);
 			Arrays.sort(groupsList);
@@ -1574,7 +1579,10 @@ public abstract class AbstractN5Test {
 				final String[] illegalChars = {" ", "#", "%"};
 				for (final String illegalChar : illegalChars) {
 					final String groupWithIllegalChar = "test" + illegalChar + "group";
+					assertThrows("list over group should throw prior to create", N5Exception.N5IOException.class, () -> writer.list(groupWithIllegalChar));
 					writer.createGroup(groupWithIllegalChar);
+					assertTrue("Newly created group should exist", writer.exists(groupWithIllegalChar));
+					assertArrayEquals("list over empty group should be empty list", new String[0], writer.list(groupWithIllegalChar));
 					writer.setAttribute(groupWithIllegalChar, "/a/b/key1", "value1");
 					final String attrFromWriter = writer.getAttribute(groupWithIllegalChar, "/a/b/key1", String.class);
 					final String attrFromReader = reader.getAttribute(groupWithIllegalChar, "/a/b/key1", String.class);
