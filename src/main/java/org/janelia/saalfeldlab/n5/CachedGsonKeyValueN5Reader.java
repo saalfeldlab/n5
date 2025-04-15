@@ -26,7 +26,6 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.lang.reflect.Type;
-import java.net.URI;
 
 import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
