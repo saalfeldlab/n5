@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -422,8 +423,8 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
-		final Set<String> listSet = Arrays.stream(n5.list("a")).collect(Collectors.toSet());
-		assertEquals(Stream.of("a", "b", "c").collect(Collectors.toSet()), listSet);
+		final Set<String> abcListSet = Arrays.stream(n5.list("a")).collect(Collectors.toSet());
+		assertEquals(Stream.of("a", "b", "c").collect(Collectors.toSet()), abcListSet);
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
 		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
@@ -432,7 +433,8 @@ public class N5CachedFSTest extends N5FSTest {
 
 		// remove a
 		n5.remove("a/a");
-		assertArrayEquals(new String[] {"b", "c"}, n5.list("a")); // call list
+		final Set<String> bc = Arrays.stream(n5.list("a")).collect(Collectors.toSet());
+		assertEquals(Stream.of("b", "c").collect(Collectors.toSet()), bc);
 		assertEquals(expectedExistCount, n5.getExistCallCount());
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
