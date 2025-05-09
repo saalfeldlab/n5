@@ -45,6 +45,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
@@ -1074,12 +1075,16 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testReaderCreation() throws IOException, URISyntaxException {
 
-		final String location;
-		N5Writer removeMe = null;
-		try (N5Writer writer = createN5Writer()) {
-			removeMe = writer;
-			location = writer.getURI().toString();
+		// non-existent location should fail
+		final String location = tempN5Location() + "-" + UUID.randomUUID();
+		assertThrows("Non-existent location throws error", N5Exception.N5IOException.class,
+				() -> {
+					try (N5Reader test = createN5Reader(location)) {
+						test.list("/");
+					}
+				});
 
+		try (N5Writer writer = createTempN5Writer(location)) {
 			try (N5Reader n5r = createN5Reader(location)) {
 				assertNotNull(n5r);
 			}
@@ -1107,17 +1112,7 @@ public abstract class AbstractN5Test {
 					 /*Only try with resource to ensure `close()` is called.*/
 				}
 			});
-		} finally {
-			removeMe.remove();
 		}
-
-		// non-existent location should fail
-		assertThrows("Non-existent location throws error", N5Exception.N5IOException.class,
-				() -> {
-					try (N5Reader test = createN5Reader(location)) {
-						test.list("/");
-					}
-				});
 	}
 
 	@Test

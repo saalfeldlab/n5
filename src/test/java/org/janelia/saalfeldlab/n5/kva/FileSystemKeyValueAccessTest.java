@@ -9,6 +9,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +18,8 @@ import java.nio.file.Paths;
 import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5URI;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
@@ -161,5 +164,23 @@ public class FileSystemKeyValueAccessTest extends AbstractKeyValueAccessTest {
 			final String testPath = FileSystems.getDefault().provider().getPath(absoluteUri).toAbsolutePath().toString();
 			assertEquals("Failure at Index " + i , testPath, composedKey);
 		}
+	}
+
+	@Override
+	@Test
+	@Ignore("Empty path is invalid for file URIs.")
+	public void testComponentsWithPathEmpty() {
+		/* file URIs are purely paths (optional file: scheme) so empty path resolves to a relative path (not the root of the container).
+		 * Because of that, there is no valid file URI with an empty path (it's just an empty string, which is invalid, or `file://` which is invalid. */
+		super.testComponentsWithPathEmpty();
+	}
+
+	@Override
+	@Test
+	@Ignore("Empty path is invalid for file URIs.")
+	public void testComposeWithPathEmpty() {
+		/* file URIs are purely paths (optional file: scheme) so empty path resolves to a relative path (not the root of the container).
+		 * Because of that, there is no valid file URI with an empty path (it's just an empty string, which is invalid, or `file://` which is invalid. */
+		super.testComposeWithPathEmpty();
 	}
 }
