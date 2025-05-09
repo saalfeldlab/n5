@@ -163,6 +163,12 @@ public abstract class AbstractKeyValueAccessTest {
 
 		final String firstComponentEmptySecondLeadingSlash = URI.create(kva.compose(uriWithPath, "", "/bar", "baz")).getPath();
 		assertEquals("Non-empty Path, first components slash only", "/bar/baz", firstComponentEmptySecondLeadingSlash);
+
+		final String innerNullEmptyComponents = URI.create(kva.compose(uriWithPath, "bar", null, "", "baz")).getPath();
+		assertEquals("Non-empty Path, null and empty inner components", "/foo/bar/baz", innerNullEmptyComponents);
+
+		final String innerNullEmptyComponentsLeadingSlash = URI.create(kva.compose(uriWithPath, "/bar", null, "", "baz")).getPath();
+		assertEquals("Non-empty Path, null and empty inner components", "/bar/baz", innerNullEmptyComponentsLeadingSlash);
 	}
 
 	@Test
@@ -187,6 +193,12 @@ public abstract class AbstractKeyValueAccessTest {
 
 		final String firstComponentEmptySecondLeadingSlash = URI.create(kva.compose(uriWithSlashRoot, "", "/bar", "baz")).getPath();
 		assertEquals("Root (/) Path, first components slash only", "/bar/baz", firstComponentEmptySecondLeadingSlash);
+
+		final String innerNullEmptyComponents = URI.create(kva.compose(uriWithSlashRoot, "bar", null, "", "baz")).getPath();
+		assertEquals("Non-empty Path, null and empty inner components", "/bar/baz", innerNullEmptyComponents);
+
+		final String innerNullEmptyComponentsLeadingSlash = URI.create(kva.compose(uriWithSlashRoot, "/bar", null, "", "baz")).getPath();
+		assertEquals("Non-empty Path, null and empty inner components", "/bar/baz", innerNullEmptyComponentsLeadingSlash);
 	}
 
 	@Test
@@ -211,6 +223,12 @@ public abstract class AbstractKeyValueAccessTest {
 
 		final String firstComponentEmptySecondLeadingSlash = URI.create(kva.compose(uriWithEmptyRoot, "", "/bar", "baz")).getPath();
 		assertEquals("Empty Path, first components slash only", "/bar/baz", firstComponentEmptySecondLeadingSlash);
+
+		final String innerNullEmptyComponents = URI.create(kva.compose(uriWithEmptyRoot, "bar", null, "", "baz")).getPath();
+		assertEquals("Non-empty Path, null and empty inner components", "/bar/baz", innerNullEmptyComponents);
+
+		final String innerNullEmptyComponentsLeadingSlash = URI.create(kva.compose(uriWithEmptyRoot, "/bar", null, "", "baz")).getPath();
+		assertEquals("Non-empty Path, null and empty inner components", "/bar/baz", innerNullEmptyComponentsLeadingSlash);
 	}
 
 	public URI setUriPath(final URI uri, final String path) {

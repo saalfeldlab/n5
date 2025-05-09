@@ -106,7 +106,9 @@ public interface KeyValueAccess {
 		URI composedUri = uri;
 		for (int i = 0; i < allComponents.length; i++) {
 			final String component = allComponents[i];
-			if (component.endsWith("/") || i == allComponents.length - 1)
+			if (component == null || component.isEmpty())
+				continue;
+			else if (component.endsWith("/") || i == allComponents.length - 1)
 				composedUri = composedUri.resolve(N5URI.encodeAsUriPath(component));
 			else
 				composedUri = composedUri.resolve(N5URI.encodeAsUriPath(component + "/"));

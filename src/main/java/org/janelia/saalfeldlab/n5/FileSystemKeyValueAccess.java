@@ -325,6 +325,8 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		else
 			composedPath = Paths.get(uri.toString());
 		for (String component : components) {
+			if (component == null || component.isEmpty())
+				continue;
 			composedPath = composedPath.resolve(component);
 		}
 
