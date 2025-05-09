@@ -143,21 +143,74 @@ public abstract class AbstractKeyValueAccessTest {
 	@Test
 	public void testCompose() {
 
-		testComposeAtLocation(tempUri());
+		final URI uri = tempUri();
+		testComposeAtLocation(uri);
+
+		final KeyValueAccess kva = newKeyValueAccess();
+		final URI uriWithPath = setUriPath(uri, "/foo");
+		assertEquals("Non-empty Path", "/foo", uriWithPath.getPath());
+		final String typicalComponents = URI.create(kva.compose(uriWithPath, "bar", "baz")).getPath();
+		assertEquals("Non-empty Path, no empty or slash in components", "/foo/bar/baz", typicalComponents);
+
+		final String firstComponentLeadingSlash = URI.create(kva.compose(uriWithPath, "/bar", "baz")).getPath();
+		assertEquals("Non-empty Path, first components leading slash", "/bar/baz", firstComponentLeadingSlash);
+
+		final String firstComponentSlashOnly = URI.create(kva.compose(uriWithPath, "/", "bar", "baz")).getPath();
+		assertEquals("Non-empty Path, first components slash only", "/bar/baz", firstComponentSlashOnly);
+
+		final String firstComponentEmpty = URI.create(kva.compose(uriWithPath, "", "bar", "baz")).getPath();
+		assertEquals("Non-empty Path, first components slash only", "/foo/bar/baz", firstComponentEmpty);
+
+		final String firstComponentEmptySecondLeadingSlash = URI.create(kva.compose(uriWithPath, "", "/bar", "baz")).getPath();
+		assertEquals("Non-empty Path, first components slash only", "/bar/baz", firstComponentEmptySecondLeadingSlash);
 	}
 
 	@Test
 	public void testComposeWithPathSlash() {
 
 		final URI uriWithSlashRoot = setUriPath(tempUri(), "/");
+		assertEquals("Root (/) Path", "/", uriWithSlashRoot.getPath());
 		testComposeAtLocation(uriWithSlashRoot);
+
+		final KeyValueAccess kva = newKeyValueAccess();
+		final String typicalComponents = URI.create(kva.compose(uriWithSlashRoot, "bar", "baz")).getPath();
+		assertEquals("Root (/) Path, no empty or slash in components", "/bar/baz", typicalComponents);
+
+		final String firstComponentLeadingSlash = URI.create(kva.compose(uriWithSlashRoot, "/bar", "baz")).getPath();
+		assertEquals("Root (/) Path, first components leading slash", "/bar/baz", firstComponentLeadingSlash);
+
+		final String firstComponentSlashOnly = URI.create(kva.compose(uriWithSlashRoot, "/", "bar", "baz")).getPath();
+		assertEquals("Root (/) Path, first components slash only", "/bar/baz", firstComponentSlashOnly);
+
+		final String firstComponentEmpty = URI.create(kva.compose(uriWithSlashRoot, "", "bar", "baz")).getPath();
+		assertEquals("Root (/) Path, first components slash only", "/bar/baz", firstComponentEmpty);
+
+		final String firstComponentEmptySecondLeadingSlash = URI.create(kva.compose(uriWithSlashRoot, "", "/bar", "baz")).getPath();
+		assertEquals("Root (/) Path, first components slash only", "/bar/baz", firstComponentEmptySecondLeadingSlash);
 	}
 
 	@Test
 	public void testComposeWithPathEmpty() {
 
 		final URI uriWithEmptyRoot = setUriPath(tempUri(), "");
+		assertEquals("Empty Path", "", uriWithEmptyRoot.getPath());
 		testComposeAtLocation(uriWithEmptyRoot);
+
+		final KeyValueAccess kva = newKeyValueAccess();
+		final String typicalComponents = URI.create(kva.compose(uriWithEmptyRoot, "bar", "baz")).getPath();
+		assertEquals("Empty Path, no empty or slash in components", "/bar/baz", typicalComponents);
+
+		final String firstComponentLeadingSlash = URI.create(kva.compose(uriWithEmptyRoot, "/bar", "baz")).getPath();
+		assertEquals("Empty Path, first components leading slash", "/bar/baz", firstComponentLeadingSlash);
+
+		final String firstComponentSlashOnly = URI.create(kva.compose(uriWithEmptyRoot, "/", "bar", "baz")).getPath();
+		assertEquals("Empty Path, first components slash only", "/bar/baz", firstComponentSlashOnly);
+
+		final String firstComponentEmpty = URI.create(kva.compose(uriWithEmptyRoot, "", "bar", "baz")).getPath();
+		assertEquals("Empty Path, first components slash only", "/bar/baz", firstComponentEmpty);
+
+		final String firstComponentEmptySecondLeadingSlash = URI.create(kva.compose(uriWithEmptyRoot, "", "/bar", "baz")).getPath();
+		assertEquals("Empty Path, first components slash only", "/bar/baz", firstComponentEmptySecondLeadingSlash);
 	}
 
 	public URI setUriPath(final URI uri, final String path) {
