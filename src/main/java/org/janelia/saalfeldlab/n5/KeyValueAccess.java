@@ -81,7 +81,7 @@ public interface KeyValueAccess {
 	public default String compose(final URI uri, final String... components) {
 
 		int firstNonEmptyIdx = 0;
-		while (firstNonEmptyIdx < components.length && components[firstNonEmptyIdx].isEmpty()) {
+		while (firstNonEmptyIdx < components.length && (components[firstNonEmptyIdx] == null || components[firstNonEmptyIdx].isEmpty())) {
 			firstNonEmptyIdx++;
 		}
 
@@ -106,9 +106,7 @@ public interface KeyValueAccess {
 		URI composedUri = uri;
 		for (int i = 0; i < allComponents.length; i++) {
 			final String component = allComponents[i];
-			if (component == null || component.isEmpty())
-				continue;
-			else if (component.endsWith("/") || i == allComponents.length - 1)
+			if (component.endsWith("/") || i == allComponents.length - 1)
 				composedUri = composedUri.resolve(N5URI.encodeAsUriPath(component));
 			else
 				composedUri = composedUri.resolve(N5URI.encodeAsUriPath(component + "/"));
