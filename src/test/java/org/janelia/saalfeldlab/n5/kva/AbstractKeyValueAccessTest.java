@@ -8,6 +8,8 @@ import org.janelia.saalfeldlab.n5.N5URI;
 import org.junit.Test;
 
 import java.net.URI;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -18,31 +20,43 @@ import static org.junit.Assert.assertEquals;
 public abstract class AbstractKeyValueAccessTest {
 
 	protected abstract KeyValueAccess newKeyValueAccess(URI root);
+
 	protected KeyValueAccess newKeyValueAccess() {
+
 		return newKeyValueAccess(tempUri());
 	}
 
 	protected abstract URI tempUri();
 
 	protected URI[] testURIs(final URI base) {
+
+		final Set<URI> testUris = new LinkedHashSet<>();
+		/*add the base uri as a test case */
+		testUris.add(base);
+
+		/* NOTE: Java 8 doesn't behave well with URIs with empty path when resolving against a path.
+		*   See KeyValueAccess#compose for more details.
+		* 	In tests with that as a base URI, resolve against `/` first.
+		* 	Should be unnecessary in Java 21*/
+		final URI testUri = base.getPath().isEmpty() ? base.resolve("/") : base;
 		final URI[] pathParts = new URI[]{
-				N5URI.getAsUri("test/path/file"),	 // typical path, with leading and trailing slash
-				N5URI.getAsUri("test/path/file/"),	 // typical path, with leading and trailing slash
-				N5URI.getAsUri("/test/path/file/"),	 // typical path, with leading and trailing slash
-				N5URI.getAsUri("file"),  			 // single path
-				N5URI.getAsUri("file/"),			 // single path
-				N5URI.getAsUri("/file/"),			 // single path
+				N5URI.getAsUri("test/path/file"),     // typical path, with no leading or trailing slashes
+				N5URI.getAsUri("test/path/file/"),     // typical path, with trailing slash
+				N5URI.getAsUri("/test/path/file"),     // typical path, with leading slash
+				N5URI.getAsUri("/test/path/file/"),     // typical path, with leading and trailing slash
+				N5URI.getAsUri("file"),             // single path
+				N5URI.getAsUri("file/"),             // single path
+				N5URI.getAsUri("/file"),             // single path
+				N5URI.getAsUri("/file/"),             // single path
 				N5URI.getAsUri("path/w i t h/spaces"),
 				N5URI.getAsUri("uri/illegal%character"),
-				N5URI.getAsUri("/"),
-				N5URI.getAsUri("")
+				N5URI.getAsUri("/"), 				// root path
+				N5URI.getAsUri("")					// empty path
 		};
-		final URI[] testUris = new URI[pathParts.length ];
-		for (int i = 0; i < pathParts.length; i ++) {
-			final URI pathPart = pathParts[i];
-			testUris[i] = base.resolve(pathPart);
+		for (final URI pathPart : pathParts) {
+			testUris.add(testUri.resolve(pathPart));
 		}
-		return testUris;
+		return testUris.toArray(new URI[0]);
 	}
 
 	protected String[][] testPathComponents(final URI base) {
@@ -81,7 +95,7 @@ public abstract class AbstractKeyValueAccessTest {
 
 			final String[] components = access.components(testPaths[i].getPath());
 
-			assertArrayEquals("Failure at Index " + i ,expectedComponents[i], components);
+			assertArrayEquals("Failure at Index " + i, expectedComponents[i], components);
 		}
 	}
 
@@ -96,11 +110,13 @@ public abstract class AbstractKeyValueAccessTest {
 
 		for (int i = 0; i < testPathComponents.length; ++i) {
 			testPathComponents[i] = testPathComponents[i].clone();
-			final URI baseUri = testUris[i].resolve("/");
+			/* Don't add the "/" if the input uri path is empty. just use it. Otherwise, remove the parts and start with "/" */
+			final URI baseUri = uri.getPath().isEmpty() ? uri : testUris[i].resolve("/");
 			final String[] components = testPathComponents[i];
 			final String stringUriFromComponents = access.compose(baseUri, components);
 			final URI uriFromComponents = N5URI.getAsUri(stringUriFromComponents);
-			assertEquals("Failure at Index " + i , testUris[i], uriFromComponents);
+			assertEquals("Failure at Index " + i, testUris[i], uriFromComponents);
+			System.out.println(uriFromComponents.toString());
 		}
 	}
 
@@ -111,21 +127,45 @@ public abstract class AbstractKeyValueAccessTest {
 	}
 
 	@Test
-	public void testComponentsAtRoot() {
+	public void testComponentsWithPathSlash() {
 
-		URI root = tempUri().resolve("/");
-		testComponentsAtLocation(root);
+		final URI uriWithPathSlash = setUriPath(tempUri(), "/");
+		testComponentsAtLocation(uriWithPathSlash);
+	}
+
+	@Test
+	public void testComponentsWithPathEmpty() {
+
+		final URI uriWithPathEmpty = setUriPath(tempUri(), "");
+		testComponentsAtLocation(uriWithPathEmpty);
 	}
 
 	@Test
 	public void testCompose() {
+
 		testComposeAtLocation(tempUri());
 	}
 
 	@Test
-	public void testComposeAtRoot() {
+	public void testComposeWithPathSlash() {
 
-		final URI root = tempUri().resolve("/");
-		testComposeAtLocation(root);
+		final URI uriWithSlashRoot = setUriPath(tempUri(), "/");
+		testComposeAtLocation(uriWithSlashRoot);
+	}
+
+	@Test
+	public void testComposeWithPathEmpty() {
+
+		final URI uriWithEmptyRoot = setUriPath(tempUri(), "");
+		testComposeAtLocation(uriWithEmptyRoot);
+	}
+
+	public URI setUriPath(final URI uri, final String path) {
+
+		final URI tempUri = uri.resolve("/");
+		final String newUri = tempUri.toString().replaceAll(tempUri.getPath() + "$", path);
+		final URI uriWithNewPath = URI.create(newUri);
+		assertEquals("setUriPath failed", path, uriWithNewPath.getPath());
+		return uriWithNewPath;
 	}
 }
