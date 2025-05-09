@@ -113,9 +113,9 @@ public abstract class AbstractKeyValueAccessTest {
 			/* Don't add the "/" if the input uri path is empty. just use it. Otherwise, remove the parts and start with "/" */
 			final URI baseUri = uri.getPath().isEmpty() ? uri : testUris[i].resolve("/");
 			final String[] components = testPathComponents[i];
-			final String stringUriFromComponents = access.compose(baseUri, components);
-			final URI uriFromComponents = N5URI.getAsUri(stringUriFromComponents);
-			assertEquals("Failure at Index " + i, testUris[i], uriFromComponents);
+			final String actualCompose = access.compose(baseUri, components);
+			final String expectedCompose = access.compose(testUris[i]);
+			assertEquals("Failure at Index " + i, expectedCompose, actualCompose);
 		}
 	}
 
@@ -148,26 +148,13 @@ public abstract class AbstractKeyValueAccessTest {
 		final KeyValueAccess kva = newKeyValueAccess();
 		final URI uriWithPath = setUriPath(uri, "/foo");
 		assertEquals("Non-empty Path", "/foo", uriWithPath.getPath());
-		final String typicalComponents = N5URI.getAsUri(kva.compose(uriWithPath, "bar", "baz")).getPath();
-		assertEquals("Non-empty Path, no empty or slash in components", "/foo/bar/baz", typicalComponents);
-
-		final String firstComponentLeadingSlash = N5URI.getAsUri(kva.compose(uriWithPath, "/bar", "baz")).getPath();
-		assertEquals("Non-empty Path, first components leading slash", "/bar/baz", firstComponentLeadingSlash);
-
-		final String firstComponentSlashOnly = N5URI.getAsUri(kva.compose(uriWithPath, "/", "bar", "baz")).getPath();
-		assertEquals("Non-empty Path, first components slash only", "/bar/baz", firstComponentSlashOnly);
-
-		final String firstComponentEmpty = N5URI.getAsUri(kva.compose(uriWithPath, "", "bar", "baz")).getPath();
-		assertEquals("Non-empty Path, first components slash only", "/foo/bar/baz", firstComponentEmpty);
-
-		final String firstComponentEmptySecondLeadingSlash = N5URI.getAsUri(kva.compose(uriWithPath, "", "/bar", "baz")).getPath();
-		assertEquals("Non-empty Path, first components slash only", "/bar/baz", firstComponentEmptySecondLeadingSlash);
-
-		final String innerNullEmptyComponents = N5URI.getAsUri(kva.compose(uriWithPath, "bar", null, "", "baz")).getPath();
-		assertEquals("Non-empty Path, null and empty inner components", "/foo/bar/baz", innerNullEmptyComponents);
-
-		final String innerNullEmptyComponentsLeadingSlash = N5URI.getAsUri(kva.compose(uriWithPath, "/bar", null, "", "baz")).getPath();
-		assertEquals("Non-empty Path, null and empty inner components", "/bar/baz", innerNullEmptyComponentsLeadingSlash);
+		assertComposeEquals("Non-empty Path, no empty or slash in components", kva, uriWithPath, "/foo/bar/baz", "bar", "baz");
+        assertComposeEquals("Non-empty Path, first components leading slash", kva, uriWithPath, "/bar/baz", "/bar", "baz");
+        assertComposeEquals("Non-empty Path, first components slash only", kva, uriWithPath,"/bar/baz", "/", "bar", "baz");
+        assertComposeEquals("Non-empty Path, first components slash only", kva, uriWithPath,"/foo/bar/baz", "", "bar", "baz");
+        assertComposeEquals("Non-empty Path, first components slash only", kva, uriWithPath,"/bar/baz", "", "/bar", "baz");
+        assertComposeEquals("Non-empty Path, null and empty inner components", kva, uriWithPath,"/foo/bar/baz", "bar", null, "", "baz");
+        assertComposeEquals("Non-empty Path, null and empty inner components", kva, uriWithPath,"/bar/baz", "/bar", null, "", "baz");
 	}
 
 	@Test
@@ -178,26 +165,13 @@ public abstract class AbstractKeyValueAccessTest {
 		testComposeAtLocation(uriWithSlashRoot);
 
 		final KeyValueAccess kva = newKeyValueAccess();
-		final String typicalComponents = N5URI.getAsUri(kva.compose(uriWithSlashRoot, "bar", "baz")).getPath();
-		assertEquals("Root (/) Path, no empty or slash in components", "/bar/baz", typicalComponents);
-
-		final String firstComponentLeadingSlash = N5URI.getAsUri(kva.compose(uriWithSlashRoot, "/bar", "baz")).getPath();
-		assertEquals("Root (/) Path, first components leading slash", "/bar/baz", firstComponentLeadingSlash);
-
-		final String firstComponentSlashOnly = N5URI.getAsUri(kva.compose(uriWithSlashRoot, "/", "bar", "baz")).getPath();
-		assertEquals("Root (/) Path, first components slash only", "/bar/baz", firstComponentSlashOnly);
-
-		final String firstComponentEmpty = N5URI.getAsUri(kva.compose(uriWithSlashRoot, "", "bar", "baz")).getPath();
-		assertEquals("Root (/) Path, first components slash only", "/bar/baz", firstComponentEmpty);
-
-		final String firstComponentEmptySecondLeadingSlash = N5URI.getAsUri(kva.compose(uriWithSlashRoot, "", "/bar", "baz")).getPath();
-		assertEquals("Root (/) Path, first components slash only", "/bar/baz", firstComponentEmptySecondLeadingSlash);
-
-		final String innerNullEmptyComponents = N5URI.getAsUri(kva.compose(uriWithSlashRoot, "bar", null, "", "baz")).getPath();
-		assertEquals("Non-empty Path, null and empty inner components", "/bar/baz", innerNullEmptyComponents);
-
-		final String innerNullEmptyComponentsLeadingSlash = N5URI.getAsUri(kva.compose(uriWithSlashRoot, "/bar", null, "", "baz")).getPath();
-		assertEquals("Non-empty Path, null and empty inner components", "/bar/baz", innerNullEmptyComponentsLeadingSlash);
+		assertComposeEquals("Root (/) Path, no empty or slash in components", kva, uriWithSlashRoot, "/bar/baz", "bar", "baz");
+		assertComposeEquals("Root (/) Path, first components leading slash", kva, uriWithSlashRoot, "/bar/baz", "/bar", "baz");
+		assertComposeEquals("Root (/) Path, first components slash only", kva, uriWithSlashRoot,"/bar/baz", "/", "bar", "baz");
+		assertComposeEquals("Root (/) Path, first components slash only", kva, uriWithSlashRoot,"/bar/baz", "", "bar", "baz");
+		assertComposeEquals("Root (/) Path, first components slash only", kva, uriWithSlashRoot,"/bar/baz", "", "/bar", "baz");
+		assertComposeEquals("Root (/) Path, null and empty inner components", kva, uriWithSlashRoot,"/bar/baz", "bar", null, "", "baz");
+		assertComposeEquals("Root (/) Path, null and empty inner components", kva, uriWithSlashRoot,"/bar/baz", "/bar", null, "", "baz");
 	}
 
 	@Test
@@ -208,26 +182,19 @@ public abstract class AbstractKeyValueAccessTest {
 		testComposeAtLocation(uriWithEmptyRoot);
 
 		final KeyValueAccess kva = newKeyValueAccess();
-		final String typicalComponents = N5URI.getAsUri(kva.compose(uriWithEmptyRoot, "bar", "baz")).getPath();
-		assertEquals("Empty Path, no empty or slash in components", "/bar/baz", typicalComponents);
+		assertComposeEquals("Root (/) Path, no empty or slash in components", kva, uriWithEmptyRoot, "/bar/baz", "bar", "baz");
+		assertComposeEquals("Root (/) Path, first components leading slash", kva, uriWithEmptyRoot, "/bar/baz", "/bar", "baz");
+		assertComposeEquals("Root (/) Path, first components slash only", kva, uriWithEmptyRoot,"/bar/baz", "/", "bar", "baz");
+		assertComposeEquals("Root (/) Path, first components slash only", kva, uriWithEmptyRoot,"/bar/baz", "", "bar", "baz");
+		assertComposeEquals("Root (/) Path, first components slash only", kva, uriWithEmptyRoot,"/bar/baz", "", "/bar", "baz");
+		assertComposeEquals("Root (/) Path, null and empty inner components", kva, uriWithEmptyRoot,"/bar/baz", "bar", null, "", "baz");
+		assertComposeEquals("Root (/) Path, null and empty inner components", kva, uriWithEmptyRoot,"/bar/baz", "/bar", null, "", "baz");
+	}
 
-		final String firstComponentLeadingSlash = N5URI.getAsUri(kva.compose(uriWithEmptyRoot, "/bar", "baz")).getPath();
-		assertEquals("Empty Path, first components leading slash", "/bar/baz", firstComponentLeadingSlash);
-
-		final String firstComponentSlashOnly = N5URI.getAsUri(kva.compose(uriWithEmptyRoot, "/", "bar", "baz")).getPath();
-		assertEquals("Empty Path, first components slash only", "/bar/baz", firstComponentSlashOnly);
-
-		final String firstComponentEmpty = N5URI.getAsUri(kva.compose(uriWithEmptyRoot, "", "bar", "baz")).getPath();
-		assertEquals("Empty Path, first components slash only", "/bar/baz", firstComponentEmpty);
-
-		final String firstComponentEmptySecondLeadingSlash = N5URI.getAsUri(kva.compose(uriWithEmptyRoot, "", "/bar", "baz")).getPath();
-		assertEquals("Empty Path, first components slash only", "/bar/baz", firstComponentEmptySecondLeadingSlash);
-
-		final String innerNullEmptyComponents = N5URI.getAsUri(kva.compose(uriWithEmptyRoot, "bar", null, "", "baz")).getPath();
-		assertEquals("Non-empty Path, null and empty inner components", "/bar/baz", innerNullEmptyComponents);
-
-		final String innerNullEmptyComponentsLeadingSlash = N5URI.getAsUri(kva.compose(uriWithEmptyRoot, "/bar", null, "", "baz")).getPath();
-		assertEquals("Non-empty Path, null and empty inner components", "/bar/baz", innerNullEmptyComponentsLeadingSlash);
+	public void assertComposeEquals(String reason, KeyValueAccess kva, URI uri, String absoluteExpectedPath, String... components) {
+		String actual = kva.compose(uri, components);
+		String expected = kva.compose(uri.resolve(absoluteExpectedPath));
+		assertEquals(reason, expected, actual);
 	}
 
 	public URI setUriPath(final URI uri, final String path) {
