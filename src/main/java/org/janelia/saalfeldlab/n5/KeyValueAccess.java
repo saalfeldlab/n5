@@ -80,13 +80,28 @@ public interface KeyValueAccess {
 	 */
 	public default String compose(final URI uri, final String... components) {
 
-		if (components.length == 0)
+		int firstNonEmptyIdx = 0;
+		while (firstNonEmptyIdx < components.length && components[firstNonEmptyIdx].isEmpty()) {
+			firstNonEmptyIdx++;
+		}
+
+		/*If there are no non-empty components, there is nothing to compose against; return the uri. */
+		if (components.length == firstNonEmptyIdx)
 			return uri.toString();
 
-		/* add the initial path to the components */
-		final String[] allComponents = new String[components.length + 1];
-		allComponents[0] = uri.getPath();
-		System.arraycopy(components, 0, allComponents, 1, components.length);
+		/* allocate space for the initial path and the new components, skipping empty strings  */
+		final int nonEmptysize = components.length - firstNonEmptyIdx;
+		final String[] allComponents = new String[1 + nonEmptysize];
+		if (uri.getPath().isEmpty())
+			//TODO Caleb: This `isEmpty()` check is only necessary for Java 8. In newer versions
+			//	URI resolution is updated so that resolving and empty path with a new path adds
+			//	a leading `/` between the rest of the URI and the path part. In Java 8 it doesn't
+			//  add the `/` so it ends up directly concatenating the path part with URI
+			allComponents[0] = "/";
+		else
+			allComponents[0] = uri.getPath();
+
+		System.arraycopy(components, firstNonEmptyIdx, allComponents, 1, nonEmptysize);
 
 		URI composedUri = uri;
 		for (int i = 0; i < allComponents.length; i++) {
