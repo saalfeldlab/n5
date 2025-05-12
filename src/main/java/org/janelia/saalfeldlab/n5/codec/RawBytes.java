@@ -11,7 +11,9 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 import com.google.common.io.LittleEndianDataInputStream;
@@ -27,7 +29,7 @@ import com.google.gson.JsonSerializer;
 import javax.annotation.Nullable;
 
 @NameConfig.Name(value = RawBytes.TYPE)
-public class RawBytes implements Codec.ArrayCodec {
+public class RawBytes<T> implements Codec.ArrayCodec<T> {
 
 	private static final long serialVersionUID = 3282569607795127005L;
 
@@ -36,9 +38,12 @@ public class RawBytes implements Codec.ArrayCodec {
 	@NameConfig.Parameter(value = "endian", optional = true)
 	protected final ByteOrder byteOrder;
 
+	private DataBlockCodec<T> dataBlockCodec;
+	private DatasetAttributes attributes;
+
 	public RawBytes() {
 
-		this(ByteOrder.LITTLE_ENDIAN);
+		this(ByteOrder.BIG_ENDIAN);
 	}
 
 	public RawBytes(final ByteOrder byteOrder) {
@@ -51,55 +56,21 @@ public class RawBytes implements Codec.ArrayCodec {
 		return byteOrder;
 	}
 
-	@Override
-	public DataBlockInputStream decode(final DatasetAttributes attributes, final long[] gridPosition, InputStream in)
-			throws IOException {
-
-		return new DataBlockInputStream(in) {
-
-			private int[] blockSize = attributes.getBlockSize();
-			private int numElements = Arrays.stream(blockSize).reduce(1, (x, y) -> x * y);
-
-			@Override
-			protected void beforeRead(int n) {}
-
-			@Override
-			public DataBlock<?> allocateDataBlock() {
-
-				return attributes.getDataType().createDataBlock(blockSize, gridPosition, numElements);
-			}
-
-			@Override
-			public DataInput getDataInput(final InputStream inputStream) {
-
-				if (byteOrder.equals(ByteOrder.BIG_ENDIAN))
-					return new DataInputStream(inputStream);
-
-				return new LittleEndianDataInputStream(inputStream);
-			}
-
-		};
+	@Override public void setDatasetAttributes(DatasetAttributes attributes, BytesCodec... codecs) {
+		ensureValidByteOrder(attributes.getDataType(), getByteOrder());
+		this.attributes = attributes;
+		final BytesCodec[] byteCodecs = codecs == null ? attributes.getCodecs() : codecs;
+		this.dataBlockCodec = RawBlockCodecs.createDataBlockCodec(attributes.getDataType(), getByteOrder(), attributes.getBlockSize(), byteCodecs);
 	}
 
-	@Override
-	public DataBlockOutputStream encode(final DatasetAttributes attributes, final DataBlock<?> dataBlock,
-			final OutputStream out)
-			throws IOException {
+	@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
 
-		return new DataBlockOutputStream(out) {
+		return dataBlockCodec.decode(readData, gridPosition);
+	}
 
-			@Override
-			protected void beforeWrite(int n) throws IOException {}
+	@Override public ReadData encode(DataBlock<T> dataBlock) throws IOException {
 
-			@Override
-			public DataOutput getDataOutput(OutputStream outputStream) {
-
-				if (byteOrder.equals(ByteOrder.BIG_ENDIAN))
-					return new DataOutputStream(outputStream);
-				else
-					return new LittleEndianDataOutputStream(outputStream);
-			}
-		};
+		return dataBlockCodec.encode(dataBlock);
 	}
 
 	@Override
@@ -109,6 +80,20 @@ public class RawBytes implements Codec.ArrayCodec {
 	}
 
 	public static final ByteOrderAdapter byteOrderAdapter = new ByteOrderAdapter();
+
+	public static void ensureValidByteOrder(final DataType dataType, @Nullable final ByteOrder byteOrder) {
+
+		switch (dataType) {
+		case INT8:
+		case UINT8:
+		case STRING:
+		case OBJECT:
+			return;
+		}
+
+		if (byteOrder == null)
+			throw new IllegalArgumentException("DataType (" + dataType + ") requires ByteOrder, but was null");
+	}
 
 	public static class ByteOrderAdapter implements JsonDeserializer<ByteOrder>, JsonSerializer<ByteOrder> {
 

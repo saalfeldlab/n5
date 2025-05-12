@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.junit.Test;
 
 public class AsTypeTests {
@@ -55,19 +56,14 @@ public class AsTypeTests {
 
 	public static void testDecoding(final Codec.BytesCodec codec, final byte[] expected, final byte[] input) throws IOException {
 
-		final InputStream result = codec.decode(new ByteArrayInputStream(input));
-		for (int i = 0; i < expected.length; i++)
-			assertEquals(expected[i], (byte)result.read());
+		final ReadData result = codec.decode(ReadData.from(input));
+		assertArrayEquals(expected, result.allBytes());
 	}
 
 	public static void testEncoding(final Codec.BytesCodec codec, final byte[] expected, final byte[] data) throws IOException {
 
-		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream(expected.length);
-		final OutputStream encodedStream = codec.encode(outputStream);
-		encodedStream.write(data);
-		encodedStream.flush();
-		assertArrayEquals(expected, outputStream.toByteArray());
-		encodedStream.close();
+		final byte[] encodedData = codec.encode(ReadData.from(data)).allBytes();
+		assertArrayEquals(expected, encodedData);
 	}
 
 }

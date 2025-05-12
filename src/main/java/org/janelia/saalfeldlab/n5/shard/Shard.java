@@ -158,7 +158,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		final SplitableData splitData = new SplitByteBufferedData();
 
 		ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
-		final Codec.ArrayCodec arrayCodec = shardingCodec.getArrayCodec();
+		final Codec.ArrayCodec<T> arrayCodec = shardingCodec.getArrayCodec();
 		final Codec.BytesCodec[] codecs = shardingCodec.getCodecs();
 
 		final ShardIndex index = ShardIndex.createIndex(datasetAttributes);
@@ -168,10 +168,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		try (final OutputStream blocksOut = blocksSplitData.newOutputStream()) {
 			for (DataBlock<T> block : getBlocks()) {
 				try (final CountingOutputStream blockOut = new CountingOutputStream(blocksOut)) {
-					final Codec.DataBlockOutputStream dataBlockOutput = arrayCodec.encode(datasetAttributes, block, blockOut);
-					try (final OutputStream stream = Codec.encode(dataBlockOutput, codecs)) {
-						block.writeData(dataBlockOutput.getDataOutput(stream));
-					}
+					arrayCodec.encode(block).writeTo(blockOut);
 					index.set(blocksOffset, blockOut.getByteCount(), getBlockPosition(block.getGridPosition()));
 					blocksOffset += blockOut.getByteCount();
 				}

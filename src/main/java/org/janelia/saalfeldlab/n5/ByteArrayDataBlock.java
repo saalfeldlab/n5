@@ -1,16 +1,16 @@
 /**
  * Copyright (c) 2017, Stephan Saalfeld
  * All rights reserved.
- *
+ * <p>
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * <p>
  * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
+ * this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * <p>
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -25,39 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataInput;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
 public class ByteArrayDataBlock extends AbstractDataBlock<byte[]> {
 
 	public ByteArrayDataBlock(final int[] size, final long[] gridPosition, final byte[] data) {
 
-		super(size, gridPosition, data);
-	}
-
-	@Override
-	public ByteBuffer toByteBuffer() {
-
-		return ByteBuffer.wrap(getData());
-	}
-
-	@Override
-	public void readData(final ByteBuffer buffer) {
-
-		if (buffer.array() != getData())
-			buffer.get(getData());
-	}
-
-	@Override
-	public void readData(final DataInput inputStream) throws IOException {
-
-		inputStream.readFully(data);
-	}
-
-	@Override
-	public int getNumElements() {
-
-		return data.length;
+		super(size, gridPosition, data, a -> a.length);
 	}
 }

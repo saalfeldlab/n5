@@ -6,6 +6,7 @@ import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
 import org.janelia.saalfeldlab.n5.SplitKeyValueAccessData;
 import org.janelia.saalfeldlab.n5.SplitableData;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.RawBytes;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
@@ -34,7 +35,7 @@ public class ShardIndexTest {
 		int[] shardBlockGridSize = new int[]{5, 4, 3};
 		ShardIndex index = new ShardIndex(
 				shardBlockGridSize,
-				IndexLocation.END, new RawBytes());
+				IndexLocation.END, new RawBytes<>());
 
 		GridIterator it = new GridIterator(shardBlockGridSize);
 		int i = 0;
@@ -47,7 +48,7 @@ public class ShardIndexTest {
 		shardBlockGridSize = new int[]{5, 4, 3, 13};
 		index = new ShardIndex(
 				shardBlockGridSize,
-				IndexLocation.END, new RawBytes());
+				IndexLocation.END, new RawBytes<>());
 
 		it = new GridIterator(shardBlockGridSize);
 		i = 0;
@@ -67,7 +68,7 @@ public class ShardIndexTest {
 
 		final int[] shardBlockGridSize = new int[]{6, 5};
 		final IndexLocation indexLocation = IndexLocation.END;
-		final DeterministicSizeCodec[] indexCodecs = new DeterministicSizeCodec[] { new RawBytes(),
+		final DeterministicSizeCodec[] indexCodecs = new DeterministicSizeCodec[] { new RawBytes<>(),
 				new Crc32cChecksumCodec()};
 
 		final String path = Paths.get(Paths.get(writer.getURI()).toAbsolutePath().toString(), "0").toString();
@@ -97,7 +98,7 @@ public class ShardIndexTest {
 		final int[] shardBlockGridSize = new int[]{6, 5};
 		final IndexLocation indexLocation = IndexLocation.END;
 		final DeterministicSizeCodec[] indexCodecs = new DeterministicSizeCodec[]{
-				new RawBytes(),
+				new RawBytes<>(),
 				new Crc32cChecksumCodec()};
 		final String path = Paths.get(Paths.get(writer.getURI()).toAbsolutePath().toString(), "indexTest").toString();
 

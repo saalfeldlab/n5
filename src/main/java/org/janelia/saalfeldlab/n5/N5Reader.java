@@ -359,11 +359,11 @@ public interface N5Reader extends AutoCloseable {
 			final DatasetAttributes attributes,
 			final long... gridPosition) throws N5Exception, ClassNotFoundException {
 
-		final DataBlock<?> block = readBlock(dataset, attributes, gridPosition);
+		final DataBlock<byte[]> block = readBlock(dataset, attributes, gridPosition);
 		if (block == null)
 			return null;
 
-		final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(block.toByteBuffer().array());
+		final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(block.getData());
 		try (ObjectInputStream in = new ObjectInputStream(byteArrayInputStream)) {
 			return (T)in.readObject();
 		} catch (final IOException | UncheckedIOException e) {

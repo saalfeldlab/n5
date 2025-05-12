@@ -36,6 +36,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
 import org.janelia.saalfeldlab.n5.shard.Shard;
 import org.janelia.saalfeldlab.n5.shard.ShardParameters;
@@ -254,16 +255,18 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		final long[] keyPos = datasetAttributes.getArrayCodec().getPositionForBlock(datasetAttributes, dataBlock);
 		final String keyPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), keyPos);
-		final SplitKeyValueAccessData splitData;
+		final SplitableData splitData;
 		try {
-			splitData = new SplitKeyValueAccessData(getKeyValueAccess(), keyPath);
+			//TODO Caleb: What behavior do we want when writing a new block at an existing one?
+			//	If the encoded size is smaller, should it truncate the remaining, or ignore it?
+			//	currently we truncate for the default writeBlock method (shards dont' truncate)
+			splitData = new SplitKeyValueAccessData(getKeyValueAccess(), keyPath).split(0, Long.MAX_VALUE);
+			try (final OutputStream out = splitData.newOutputStream()) {
+				datasetAttributes.<T>getArrayCodec().encode(dataBlock).writeTo(out);
+			}
 		} catch (IOException e) {
 			throw new N5IOException(e);
 		}
-		datasetAttributes.getArrayCodec().writeBlock(
-				splitData,
-				datasetAttributes,
-				dataBlock);
 	}
 
 	@Override

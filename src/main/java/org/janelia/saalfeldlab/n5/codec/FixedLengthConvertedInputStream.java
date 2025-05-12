@@ -55,8 +55,15 @@ public class FixedLengthConvertedInputStream extends InputStream {
 			rawBuffer.rewind();
 			decodedBuffer.rewind();
 
-			for (int i = 0; i < numBytes; i++)
-				raw[i] = (byte)src.read();
+			for (int i = 0; i < numBytes; i++) {
+				final int retval = src.read();
+				if (retval == -1 && i == 0)
+					return retval;
+				else if (retval == -1)
+					throw new IOException("Unexpected end of stream");
+
+				raw[i] = (byte)retval;
+			}
 
 			converter.accept(rawBuffer, decodedBuffer);
 		}

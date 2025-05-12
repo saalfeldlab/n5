@@ -12,16 +12,19 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.SplitableData;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.N5Annotations;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Array;
 import java.lang.reflect.Type;
+import java.util.Objects;
 
 @NameConfig.Name(ShardingCodec.TYPE)
-public class ShardingCodec implements Codec.ArrayCodec {
+public class ShardingCodec<T> implements Codec.ArrayCodec<T> {
 
 	private static final long serialVersionUID = -5879797314954717810L;
 
@@ -31,6 +34,7 @@ public class ShardingCodec implements Codec.ArrayCodec {
 	public static final String INDEX_LOCATION_KEY = "index_location";
 	public static final String CODECS_KEY = "codecs";
 	public static final String INDEX_CODECS_KEY = "index_codecs";
+	private DatasetAttributes attributes = null;
 
 	public enum IndexLocation {
 		START, END;
@@ -80,18 +84,21 @@ public class ShardingCodec implements Codec.ArrayCodec {
 		return indexLocation;
 	}
 
-	public ArrayCodec getArrayCodec() {
+	public ArrayCodec<T> getArrayCodec() {
 
-		return (Codec.ArrayCodec)codecs[0];
+		Objects.requireNonNull(codecs);
+		if (codecs.length == 0)
+			throw new IllegalArgumentException("Sharding Codec requires a single ArrayCodec. None found.");
+
+		return (ArrayCodec<T>)codecs[0];
 	}
 
 	public BytesCodec[] getCodecs() {
 
-		if (codecs.length == 1)
-			return new BytesCodec[]{};
-
+		Objects.requireNonNull(codecs);
 		final BytesCodec[] bytesCodecs = new BytesCodec[codecs.length - 1];
-		System.arraycopy(codecs, 1, bytesCodecs, 0, bytesCodecs.length);
+		for (int i = 1; i < codecs.length; i++)
+			bytesCodecs[i] = (BytesCodec)codecs[i];
 		return bytesCodecs;
 	}
 
@@ -111,17 +118,22 @@ public class ShardingCodec implements Codec.ArrayCodec {
 		return attributes.getShardPositionForBlock(blockPosition);
 	}
 
-	@Override public DataBlockInputStream decode(DatasetAttributes attributes, long[] gridPosition, InputStream in) throws IOException {
-
-		return getArrayCodec().decode(attributes, gridPosition, in);
+	@Override public void setDatasetAttributes(DatasetAttributes attributes, final BytesCodec... codecs) {
+		this.attributes = attributes;
+		getArrayCodec().setDatasetAttributes(attributes, getCodecs());
 	}
 
-	@Override public DataBlockOutputStream encode(DatasetAttributes attributes, DataBlock<?> dataBlock, OutputStream out) throws IOException {
+	@Override public ReadData encode(DataBlock<T> dataBlock) throws IOException {
 
-		return getArrayCodec().encode(attributes, dataBlock, out);
+		return getArrayCodec().encode(dataBlock);
 	}
 
-	@Override public <T> void writeBlock(
+	@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
+
+		return getArrayCodec().decode(readData, gridPosition);
+	}
+
+	public <T> void writeBlock(
 			final SplitableData splitData,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) {
@@ -130,7 +142,6 @@ public class ShardingCodec implements Codec.ArrayCodec {
 		new VirtualShard<T>(datasetAttributes, shardPos, splitData).writeBlock(dataBlock);
 	}
 
-	@Override
 	public <T> DataBlock<T> readBlock(
 			final SplitableData splitData,
 			final DatasetAttributes datasetAttributes,

@@ -1,16 +1,16 @@
 /**
  * Copyright (c) 2017, Stephan Saalfeld
  * All rights reserved.
- *
+ * <p>
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * <p>
  * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
+ * this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * <p>
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -25,15 +25,15 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import net.jpountz.lz4.LZ4BlockInputStream;
+import net.jpountz.lz4.LZ4BlockOutputStream;
+import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.serialization.NameConfig;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import org.janelia.saalfeldlab.n5.Compression.CompressionType;
-
-import net.jpountz.lz4.LZ4BlockInputStream;
-import net.jpountz.lz4.LZ4BlockOutputStream;
-import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @CompressionType("lz4")
 @NameConfig.Name("lz4")
@@ -54,40 +54,14 @@ public class Lz4Compression implements DefaultBlockReader, DefaultBlockWriter, C
 		this(1 << 16);
 	}
 
-	@Override
-	public InputStream decode(final InputStream in) throws IOException {
+ 	private InputStream getInputStream(final InputStream in) throws IOException {
 
 		return new LZ4BlockInputStream(in);
 	}
 
-	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
-
-		return decode(in);
-	}
-
-	@Override
-	public OutputStream encode(final OutputStream out) throws IOException {
+	private OutputStream getOutputStream(final OutputStream out) throws IOException {
 
 		return new LZ4BlockOutputStream(out, blockSize);
-	}
-
-	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
-
-		return encode(out);
-	}
-
-	@Override
-	public Lz4Compression getReader() {
-
-		return this;
-	}
-
-	@Override
-	public Lz4Compression getWriter() {
-
-		return this;
 	}
 
 	@Override
@@ -97,5 +71,17 @@ public class Lz4Compression implements DefaultBlockReader, DefaultBlockWriter, C
 			return false;
 		else
 			return blockSize == ((Lz4Compression)other).blockSize;
+	}
+
+	@Override
+	public ReadData decode(final ReadData readData) throws IOException {
+
+		return ReadData.from(getInputStream(readData.inputStream()));
+	}
+
+	@Override
+	public ReadData encode(final ReadData readData) {
+
+		return readData.encode(this::getOutputStream);
 	}
 }

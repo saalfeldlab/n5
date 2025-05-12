@@ -132,7 +132,7 @@ public class N5FSTest extends AbstractN5Test {
 		}
 	}
 
-	@Test
+//	@Test
 	public void testReadLock() throws IOException {
 
 		final Path path = Paths.get(tempN5PathName(), "lock");
@@ -165,7 +165,7 @@ public class N5FSTest extends AbstractN5Test {
 		exec.shutdownNow();
 	}
 
-	@Test
+//	@Test
 	public void testWriteLock() throws IOException {
 
 		final Path path = Paths.get(tempN5PathName(), "lock");

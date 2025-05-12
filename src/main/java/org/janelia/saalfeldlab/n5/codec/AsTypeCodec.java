@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 
 import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @NameConfig.Name(AsTypeCodec.TYPE)
@@ -55,28 +56,36 @@ public class AsTypeCodec implements Codec.BytesCodec {
 		return encodedType;
 	}
 
-	@Override
-	public InputStream decode(InputStream in) throws IOException {
+	@Override public ReadData encode(ReadData readData) throws IOException {
+
 
 		numBytes = bytes(dataType);
 		numEncodedBytes = bytes(encodedType);
 
 		encoder = converter(dataType, encodedType);
 		decoder = converter(encodedType, dataType);
+		return readData.encode(out -> {
+			numBytes = bytes(dataType);
+			numEncodedBytes = bytes(encodedType);
 
-		return new FixedLengthConvertedInputStream(numEncodedBytes, numBytes, decoder, in);
+			encoder = converter(dataType, encodedType);
+			decoder = converter(encodedType, dataType);
+			return new FixedLengthConvertedOutputStream(numBytes, numEncodedBytes, encoder, out);
+		});
 	}
 
-	@Override
-	public OutputStream encode(OutputStream out) throws IOException {
+	@Override public ReadData decode(ReadData readData) throws IOException {
 
-		numBytes = bytes(dataType);
-		numEncodedBytes = bytes(encodedType);
+		return ReadData.from(out -> {
+			numBytes = bytes(dataType);
+			numEncodedBytes = bytes(encodedType);
 
-		encoder = converter(dataType, encodedType);
-		decoder = converter(encodedType, dataType);
+			encoder = converter(dataType, encodedType);
+			decoder = converter(encodedType, dataType);
 
-		return new FixedLengthConvertedOutputStream(numBytes, numEncodedBytes, encoder, out);
+			final FixedLengthConvertedInputStream convertedIn = new FixedLengthConvertedInputStream(numEncodedBytes, numBytes, decoder, readData.inputStream());
+			ReadData.from(convertedIn).writeTo(out);
+		});
 	}
 
 	public static int bytes(DataType type) {

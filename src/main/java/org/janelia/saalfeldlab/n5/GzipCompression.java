@@ -37,6 +37,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipParameters;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @CompressionType("gzip")
@@ -75,8 +76,7 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 		this.useZlib = useZlib;
 	}
 
-	@Override
-	public InputStream decode(InputStream in) throws IOException {
+	private InputStream getInputStream(final InputStream in) throws IOException {
 
 		if (useZlib) {
 			return new InflaterInputStream(in);
@@ -85,14 +85,7 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 		}
 	}
 
-	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
-
-		return decode(in);
-	}
-
-	@Override
-	public OutputStream encode(OutputStream out) throws IOException {
+	private OutputStream getOutputStream(final OutputStream out) throws IOException {
 
 		if (useZlib) {
 			return new DeflaterOutputStream(out, new Deflater(level));
@@ -100,24 +93,6 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 			parameters.setCompressionLevel(level);
 			return new GzipCompressorOutputStream(out, parameters);
 		}
-	}
-
-	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
-
-		return encode(out);
-	}
-
-	@Override
-	public GzipCompression getReader() {
-
-		return this;
-	}
-
-	@Override
-	public GzipCompression getWriter() {
-
-		return this;
 	}
 
 	private void readObject(final ObjectInputStream in) throws Exception {
@@ -135,6 +110,16 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 			final GzipCompression gz = ((GzipCompression)other);
 			return useZlib == gz.useZlib && level == gz.level;
 		}
+	}
+
+	@Override
+	public ReadData decode(final ReadData readData) throws IOException {
+		return ReadData.from(getInputStream(readData.inputStream()));
+	}
+
+	@Override
+	public ReadData encode(final ReadData readData) {
+		return readData.encode(this::getOutputStream);
 	}
 
 }

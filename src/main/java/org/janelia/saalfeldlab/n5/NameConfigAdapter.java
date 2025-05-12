@@ -113,7 +113,9 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 				adapter.parameterNames.put(type, parameterNames);
 			} catch (final ClassNotFoundException | NoSuchMethodException | ClassCastException
 						   | UnsatisfiedLinkError e) {
+
 				System.err.println("T '" + item.className() + "' could not be registered");
+				e.printStackTrace(System.err);
 			}
 		}
 	}
@@ -161,7 +163,7 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 			if (!configuration.isEmpty())
 				json.add("configuration", configuration);
 		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-			e.printStackTrace(System.err);
+			new RuntimeException("Could not serialize " + clazz.getName(), e).printStackTrace(System.err);
 			return null;
 		}
 

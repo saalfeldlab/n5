@@ -57,7 +57,7 @@ public class DatasetAttributes implements BlockParameters, ShardParameters, Seri
 	private final long[] dimensions;
 	private final int[] blockSize;
 	private final DataType dataType;
-	private final ArrayCodec arrayCodec;
+	private final ArrayCodec<?> arrayCodec;
 	private final BytesCodec[] byteCodecs;
 	@Nullable private final int[] shardSize;
 
@@ -81,29 +81,30 @@ public class DatasetAttributes implements BlockParameters, ShardParameters, Seri
 		this.shardSize = shardSize;
 		this.blockSize = blockSize;
 		this.dataType = dataType;
-		if (codecs == null || codecs.length == 0) {
+		final Codec[] filteredCodecs = Arrays.stream(codecs).filter(it -> !(it instanceof RawCompression)).toArray(Codec[]::new);
+		if (filteredCodecs.length == 0) {
 			byteCodecs = new BytesCodec[]{};
 			arrayCodec = new N5BlockCodec();
-		} else if (codecs.length == 1 && codecs[0] instanceof Compression) {
-			final BytesCodec compression = (BytesCodec)codecs[0];
+		} else if (filteredCodecs.length == 1 && filteredCodecs[0] instanceof Compression) {
+			final BytesCodec compression = (BytesCodec)filteredCodecs[0];
 			byteCodecs = compression instanceof RawCompression ? new BytesCodec[]{} : new BytesCodec[]{compression};
 			arrayCodec = new N5BlockCodec();
 		} else {
-			if (!(codecs[0] instanceof ArrayCodec))
-				throw new N5Exception("Expected first element of codecs to be ArrayCodec, but was: " + codecs[0].getClass());
+			if (!(filteredCodecs[0] instanceof ArrayCodec))
+				throw new N5Exception("Expected first element of filteredCodecs to be ArrayCodec, but was: " + filteredCodecs[0].getClass());
 
-			if (Arrays.stream(codecs).filter(c -> c instanceof ArrayCodec).count() > 1)
+			if (Arrays.stream(filteredCodecs).filter(c -> c instanceof ArrayCodec).count() > 1)
 				throw new N5Exception("Multiple ArrayCodecs found. Only one is allowed.");
 
-			arrayCodec = (ArrayCodec)codecs[0];
-			byteCodecs = Stream.of(codecs)
+			arrayCodec = (ArrayCodec<?>)filteredCodecs[0];
+			byteCodecs = Stream.of(filteredCodecs)
 					.skip(1)
-					.filter(c -> !(c instanceof RawCompression))
 					.filter(c -> c instanceof BytesCodec)
 					.toArray(BytesCodec[]::new);
+
 		}
-
-
+		//TODO Caleb: factory style for setDatasetAttributes
+		arrayCodec.setDatasetAttributes(this);
 	}
 
 	/**
@@ -190,9 +191,9 @@ public class DatasetAttributes implements BlockParameters, ShardParameters, Seri
 		return dataType;
 	}
 
-	public ArrayCodec getArrayCodec() {
+	public <T> ArrayCodec<T> getArrayCodec() {
 
-		return arrayCodec;
+		return (ArrayCodec<T>) arrayCodec;
 	}
 
 	public BytesCodec[] getCodecs() {
@@ -276,11 +277,11 @@ public class DatasetAttributes implements BlockParameters, ShardParameters, Seri
 				codecs = context.deserialize(obj.get(CODEC_KEY), Codec[].class);
 			} else if (obj.has(COMPRESSION_KEY)) {
 				final Compression compression = CompressionAdapter.getJsonAdapter().deserialize(obj.get(COMPRESSION_KEY), Compression.class, context);
-				final N5BlockCodec n5BlockCodec = dataType == DataType.UINT8 || dataType == DataType.INT8 ? new N5BlockCodec(null) : new N5BlockCodec();
+				final N5BlockCodec<?> n5BlockCodec = new N5BlockCodec<>();
 				codecs = new Codec[]{compression, n5BlockCodec};
 			} else if (obj.has(compressionTypeKey)) {
 				final Compression compression = getCompressionVersion0(obj.get(compressionTypeKey).getAsString());
-				final N5BlockCodec n5BlockCodec = dataType == DataType.UINT8 || dataType == DataType.INT8 ? new N5BlockCodec(null) : new N5BlockCodec();
+				final N5BlockCodec<?> n5BlockCodec = new N5BlockCodec<>();
 				codecs = new Codec[]{compression, n5BlockCodec};
 			} else {
 				return null;

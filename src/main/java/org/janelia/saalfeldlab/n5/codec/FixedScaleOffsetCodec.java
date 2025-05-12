@@ -1,13 +1,13 @@
 package org.janelia.saalfeldlab.n5.codec;
 
+import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.serialization.NameConfig;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
-
-import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @NameConfig.Name(FixedScaleOffsetCodec.TYPE)
 public class FixedScaleOffsetCodec extends AsTypeCodec {
@@ -95,20 +95,21 @@ public class FixedScaleOffsetCodec extends AsTypeCodec {
 		return TYPE;
 	}
 
-	@Override
-	public InputStream decode(InputStream in) throws IOException {
+	@Override public ReadData decode(ReadData readData) throws IOException {
 
 		numBytes = bytes(dataType);
 		numEncodedBytes = bytes(encodedType);
-		return new FixedLengthConvertedInputStream(numEncodedBytes, numBytes, this.decoder, in);
+		return ReadData.from(new FixedLengthConvertedInputStream(numEncodedBytes, numBytes, this.decoder, readData.inputStream()));
 	}
 
-	@Override
-	public OutputStream encode(OutputStream out) throws IOException {
+	@Override public ReadData encode(ReadData readData) throws IOException {
 
-		numBytes = bytes(dataType);
-		numEncodedBytes = bytes(encodedType);
-		return new FixedLengthConvertedOutputStream(numBytes, numEncodedBytes, this.encoder, out);
+		return readData.encode(out -> {
+
+			numBytes = bytes(dataType);
+			numEncodedBytes = bytes(encodedType);
+			return new FixedLengthConvertedOutputStream(numBytes, numEncodedBytes, this.encoder, out);
+		});
 	}
 
 }

@@ -37,31 +37,13 @@ public class StringDataBlock extends AbstractDataBlock<String[]> {
     protected String[] actualData = null;
 
     public StringDataBlock(final int[] size, final long[] gridPosition, final String[] data) {
-        super(size, gridPosition, new String[0]);
+        super(size, gridPosition, new String[0], a -> a.length);
         actualData = data;
     }
 
     public StringDataBlock(final int[] size, final long[] gridPosition, final byte[] data) {
         super(size, gridPosition, new String[0]);
         serializedData = data;
-    }
-
-    @Override
-    public ByteBuffer toByteBuffer() {
-        if (serializedData == null)
-            serializedData = serialize(actualData);
-        return ByteBuffer.wrap(serializedData);
-    }
-
-    @Override
-    public void readData(final ByteBuffer buffer) {
-
-		if (buffer.hasArray()) {
-			if (buffer.array() != serializedData)
-				buffer.get(serializedData);
-			actualData = deserialize(buffer.array());
-		} else
-			actualData = ENCODING.decode(buffer).toString().split(NULLCHAR);
     }
 
     protected byte[] serialize(String[] strings) {

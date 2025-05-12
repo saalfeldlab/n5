@@ -37,8 +37,8 @@ public class BytesTests {
 				new long[]{8, 8},
 				new int[]{4, 4},
 				DataType.UINT8,
-						new N5BlockCodec(ByteOrder.LITTLE_ENDIAN),
-						new IdentityCodec()
+				new N5BlockCodec<>(),
+				new IdentityCodec()
 		);
 		writer.createGroup("shard"); //Should already exist, but this will ensure.
 		writer.setAttribute("shard", "/", datasetAttributes);
@@ -47,7 +47,5 @@ public class BytesTests {
 		assertEquals("1 codecs", 1, deserialized.getCodecs().length);
 		assertTrue("Identity", deserialized.getCodecs()[0] instanceof IdentityCodec);
 		assertTrue("Bytes", deserialized.getArrayCodec() instanceof N5BlockCodec);
-		assertEquals("LittleEndian", ByteOrder.LITTLE_ENDIAN,
-				((N5BlockCodec)deserialized.getArrayCodec()).byteOrder);
 	}
 }

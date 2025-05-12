@@ -1,16 +1,16 @@
 /**
  * Copyright (c) 2017, Stephan Saalfeld
  * All rights reserved.
- *
+ * <p>
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * <p>
  * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
+ * this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * <p>
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -25,8 +25,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.lang.reflect.Type;
-
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -35,6 +33,10 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
+import javax.annotation.Nullable;
+import java.lang.reflect.Type;
+import java.nio.ByteOrder;
+
 /**
  * Enumerates available data types.
  *
@@ -42,87 +44,24 @@ import com.google.gson.JsonSerializer;
  */
 public enum DataType {
 
-	UINT8(
-			"uint8",
-			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
-					blockSize,
-					gridPosition,
-					new byte[numElements])),
-	UINT16(
-			"uint16",
-			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
-					blockSize,
-					gridPosition,
-					new short[numElements])),
-	UINT32(
-			"uint32",
-			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
-					blockSize,
-					gridPosition,
-					new int[numElements])),
-	UINT64(
-			"uint64",
-			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
-					blockSize,
-					gridPosition,
-					new long[numElements])),
-	INT8(
-			"int8",
-			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
-					blockSize,
-					gridPosition,
-					new byte[numElements])),
-	INT16(
-			"int16",
-			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
-					blockSize,
-					gridPosition,
-					new short[numElements])),
-	INT32(
-			"int32",
-			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
-					blockSize,
-					gridPosition,
-					new int[numElements])),
-	INT64(
-			"int64",
-			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
-					blockSize,
-					gridPosition,
-					new long[numElements])),
-	FLOAT32(
-			"float32",
-			(blockSize, gridPosition, numElements) -> new FloatArrayDataBlock(
-					blockSize,
-					gridPosition,
-					new float[numElements])),
-	FLOAT64(
-			"float64",
-			(blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(
-					blockSize,
-					gridPosition,
-					new double[numElements])),
-	STRING(
-			"string",
-			(blockSize, gridPosition, numElements) -> new StringDataBlock(
-					blockSize,
-					gridPosition,
-					new byte[numElements])),
-	OBJECT(
-			"object",
-			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
-					blockSize,
-					gridPosition,
-					new byte[numElements]));
+	UINT8("uint8"),
+	UINT16("uint16"),
+	UINT32("uint32"),
+	UINT64("uint64"),
+	INT8("int8"),
+	INT16("int16"),
+	INT32("int32"),
+	INT64("int64"),
+	FLOAT32("float32"),
+	FLOAT64("float64"),
+	STRING("string"),
+	OBJECT("object");
 
 	private final String label;
 
-	private final DataBlockFactory dataBlockFactory;
-
-	DataType(final String label, final DataBlockFactory dataBlockFactory) {
+	DataType(final String label) {
 
 		this.label = label;
-		this.dataBlockFactory = dataBlockFactory;
 	}
 
 	@Override
@@ -137,43 +76,6 @@ public enum DataType {
 			if (value.toString().equals(string))
 				return value;
 		return null;
-	}
-
-	/**
-	 * Factory for {@link DataBlock DataBlocks}.
-	 *
-	 * @param blockSize
-	 *            the block size
-	 * @param gridPosition
-	 *            the grid position
-	 * @param numElements
-	 *            the number of elements (not necessarily one element per block
-	 *            element)
-	 * @return the data block
-	 */
-	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition, final int numElements) {
-
-		return dataBlockFactory.createDataBlock(blockSize, gridPosition, numElements);
-	}
-
-	/**
-	 * Factory for {@link DataBlock DataBlocks} with one data element for each
-	 * block element (e.g. pixel image).
-	 *
-	 * @param blockSize
-	 *            the block size
-	 * @param gridPosition
-	 *            the grid position
-	 * @return the data block
-	 */
-	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition) {
-
-		return dataBlockFactory.createDataBlock(blockSize, gridPosition, DataBlock.getNumElements(blockSize));
-	}
-
-	private interface DataBlockFactory {
-
-		DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition, final int numElements);
 	}
 
 	static public class JsonAdapter implements JsonDeserializer<DataType>, JsonSerializer<DataType> {

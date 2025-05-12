@@ -25,21 +25,21 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.VirtualShard;
+import org.janelia.saalfeldlab.n5.util.Position;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.shard.Shard;
-import org.janelia.saalfeldlab.n5.shard.ShardParameters;
-import org.janelia.saalfeldlab.n5.shard.VirtualShard;
-import org.janelia.saalfeldlab.n5.util.Position;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
@@ -125,14 +125,16 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final SplitKeyValueAccessData splitData;
 		try {
 			splitData = new SplitKeyValueAccessData(getKeyValueAccess(), keyPath);
+			try (final InputStream inputStream = splitData.newInputStream()) {
+				final ReadData decodeData = ReadData.from(inputStream);
+				return datasetAttributes.<T>getArrayCodec().decode(decodeData, gridPosition);
+			}
+		} catch (N5Exception.N5NoSuchKeyException e) {
+			return null;
 		} catch (IOException e) {
 			throw new N5IOException(e);
 		}
-		return datasetAttributes.getArrayCodec().readBlock(
-				splitData,
-				datasetAttributes,
-				gridPosition
-		);
+
 	}
 
 	@Override

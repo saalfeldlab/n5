@@ -1,16 +1,16 @@
 /**
  * Copyright (c) 2017, Stephan Saalfeld
  * All rights reserved.
- *
+ * <p>
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * <p>
  * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
+ * this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * <p>
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -25,75 +25,34 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataInputStream;
+import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-
-import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
-import org.janelia.saalfeldlab.n5.codec.Codec.DataBlockInputStream;
 
 /**
- * Default implementation of {@link BlockReader}.
- *
  * @author Stephan Saalfeld
  * @author Igor Pisarev
  */
-public interface DefaultBlockReader extends BlockReader {
-
-	public InputStream getInputStream(final InputStream in) throws IOException;
-
-	@Override
-	public default <T, B extends DataBlock<T>> void read(
-			final B dataBlock,
-			final InputStream in) throws IOException {
-
-		// do not try with this input stream because subsequent block reads may happen if the stream points to a shard
-		final InputStream inflater = getInputStream(in);
-		readFromStream(dataBlock, inflater);
-	}
+public interface DefaultBlockReader {
 
 	/**
 	 * Reads a {@link DataBlock} from an {@link InputStream}.
 	 *
-	 * @param in
-	 *            the input stream
-	 * @param datasetAttributes
-	 *            the dataset attributes
-	 * @param gridPosition
-	 *            the grid position
+	 * @param in                the input stream
+	 * @param datasetAttributes the dataset attributes
+	 * @param gridPosition      the grid position
 	 * @return the block
-	 * @throws IOException
-	 *             the exception
+	 * @throws IOException the exception
 	 */
-	public static DataBlock<?> readBlock(
+	static DataBlock<?> readBlock(
 			final InputStream in,
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition) throws IOException {
 
-		final BytesCodec[] codecs = datasetAttributes.getCodecs();
-		final ArrayCodec arrayCodec = datasetAttributes.getArrayCodec();
-		final DataBlockInputStream dataBlockStream = arrayCodec.decode(datasetAttributes, gridPosition, in);
-
-		InputStream stream = dataBlockStream;
-		for (final BytesCodec codec : codecs) {
-			stream = codec.decode(stream);
-		}
-
-		final DataBlock<?> dataBlock = dataBlockStream.allocateDataBlock();
-		dataBlock.readData(dataBlockStream.getDataInput(stream));
-		stream.close();
-
-		return dataBlock;
-	}
-
-	public static <T, B extends DataBlock<T>> void readFromStream(final B dataBlock, final InputStream in) throws IOException {
-
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		final DataInputStream dis = new DataInputStream(in);
-		dis.readFully(buffer.array());
-		dataBlock.readData(buffer);
+		final ArrayCodec<?> codec = datasetAttributes.getArrayCodec();
+		return codec.decode(ReadData.from(in), gridPosition);
 	}
 
 }

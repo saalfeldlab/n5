@@ -11,6 +11,7 @@ import java.util.zip.Checksum;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
  * A {@link Codec} that appends a checksum to data when encoding and can validate against that checksum when decoding.
@@ -39,11 +40,8 @@ public abstract class ChecksumCodec implements BytesCodec, DeterministicSizeCode
 		return numChecksumBytes;
 	}
 
-	@Override
-	public CheckedOutputStream encode(final OutputStream out) throws IOException {
-
-		// when do we validate?
-		return new CheckedOutputStream(out, getChecksum()) {
+	private CheckedOutputStream createStream(OutputStream out) throws IOException {
+		return  new CheckedOutputStream(out, getChecksum()) {
 
 			private boolean closed = false;
 			@Override public void close() throws IOException {
@@ -57,26 +55,16 @@ public abstract class ChecksumCodec implements BytesCodec, DeterministicSizeCode
 		};
 	}
 
-	@Override
-	public CheckedInputStream decode(final InputStream in) throws IOException {
+	@Override public ReadData encode(ReadData readData) throws IOException {
 
-		// TODO get the correct expected checksum
-		// TODO write a test with nested checksum codecs
+		return readData.encode(this::createStream);
 
-		// has to know the number of it needs to read?
-		return new CheckedInputStream(in, getChecksum());
 	}
 
-	public ByteBuffer decodeAndValidate(final InputStream in, int numBytes) throws IOException, ChecksumException {
+	@Override public ReadData decode(ReadData readData) throws IOException {
 
-		final CheckedInputStream cin = decode(in);
-		final byte[] data = new byte[numBytes];
-		cin.read(data);
 
-		if (!valid(in))
-			throw new ChecksumException("Invalid checksum");
-
-		return ByteBuffer.wrap(data);
+		return ReadData.from(new CheckedInputStream(readData.inputStream(), getChecksum()));
 	}
 
 	@Override

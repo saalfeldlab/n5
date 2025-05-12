@@ -6,6 +6,7 @@ import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.SplitableData;
 import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 import java.io.IOException;
@@ -33,20 +34,10 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public DataBlock<T> getBlock(InputStream in, long... blockGridPosition) throws IOException {
+	public DataBlock<T> getBlock(ReadData blockData, long... blockGridPosition) throws IOException {
 
-		ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
-		final Codec.BytesCodec[] codecs = shardingCodec.getCodecs();
-		final Codec.ArrayCodec arrayCodec = shardingCodec.getArrayCodec();
-
-		final Codec.DataBlockInputStream dataBlockStream = arrayCodec.decode(datasetAttributes, blockGridPosition, in);
-
-		final DataBlock<T> dataBlock = dataBlockStream.allocateDataBlock();
-		final InputStream stream = Codec.decode(in, codecs);
-		dataBlock.readData(dataBlockStream.getDataInput(stream));
-		stream.close();
-
-		return dataBlock;
+		ShardingCodec<T> shardingCodec = (ShardingCodec<T>)datasetAttributes.getArrayCodec();
+		return shardingCodec.getArrayCodec().decode(blockData, blockGridPosition);
 	}
 
 	@Override
@@ -92,7 +83,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 			final long numBytes = index.getNumBytesByBlockIndex((int)idx);
 			//TODO Caleb: Do this with a single access (start at first offset, read through the last)
 			try (final InputStream in = splitableData.split(offset, numBytes).newInputStream()) {
-				final DataBlock<T> block = getBlock(in, position.clone());
+				final DataBlock<T> block = getBlock(ReadData.from(in), position.clone());
 				blocks.add(block);
 			} catch (final N5Exception.N5NoSuchKeyException e) {
 				return blocks;
@@ -119,7 +110,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 
 		final long[] blockPosInImg = getDatasetAttributes().getBlockPositionFromShardPosition(getGridPosition(), blockGridPosition);
 		try (final InputStream in = splitableData.split(blockOffset, blockSize).newInputStream()) {
-			return getBlock(in, blockPosInImg);
+			return getBlock(ReadData.from(in), blockPosInImg);
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
 		} catch (final IOException | UncheckedIOException e) {
@@ -178,14 +169,8 @@ public class VirtualShard<T> extends AbstractShard<T> {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		ShardingCodec shardingCodec = (ShardingCodec)datasetAttributes.getArrayCodec();
-		final Codec.BytesCodec[] codecs = shardingCodec.getCodecs();
-		final Codec.ArrayCodec arrayCodec = shardingCodec.getArrayCodec();
-		final Codec.DataBlockOutputStream dataBlockOutput = arrayCodec.encode(datasetAttributes, dataBlock, out);
-		final OutputStream stream = Codec.encode(dataBlockOutput, codecs);
-
-		dataBlock.writeData(dataBlockOutput.getDataOutput(stream));
-		stream.close();
+		ShardingCodec<T> shardingCodec = (ShardingCodec<T>)datasetAttributes.getArrayCodec();
+		shardingCodec.getArrayCodec().encode(dataBlock);
 	}
 
 	public ShardIndex createIndex() {
