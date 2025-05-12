@@ -1,16 +1,16 @@
 /**
  * Copyright (c) 2017, Stephan Saalfeld
  * All rights reserved.
- *
+ * <p>
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * <p>
  * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
+ * this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * <p>
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -24,6 +24,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 package org.janelia.saalfeldlab.n5;
+
+import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
+import org.janelia.saalfeldlab.n5.shard.Shard;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -135,7 +139,7 @@ public interface N5Writer extends N5Reader {
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes) throws N5Exception {
 
-		setAttributes(datasetPath, datasetAttributes.asMap());
+		setAttribute(datasetPath, "/", datasetAttributes);
 	}
 
 	/**
@@ -208,8 +212,31 @@ public interface N5Writer extends N5Reader {
 
 	/**
 	 * Creates a dataset. This does not create any data but the path and
-	 * mandatory
-	 * attributes only.
+	 * mandatory attributes only.
+	 *
+	 * @param datasetPath dataset path
+	 * @param dimensions the dataset dimensions
+	 * @param blockSize the block size
+	 * @param dataType the data type
+	 * @param codecs codecs to encode/decode with
+	 * @throws N5Exception the exception
+	 */
+	default void createDataset(
+			final String datasetPath,
+			final long[] dimensions,
+			final int[] blockSize,
+			final DataType dataType,
+			final Codec... codecs) throws N5Exception {
+
+		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, codecs));
+	}
+
+	/**
+	 * DEPRECATED. {@link Compression}s are {@link Codec}s.
+	 * Use {@link #createDataset(String, long[], int[], DataType, Codec...)}
+	 * <p> </p>
+	 * Creates a dataset. This does not create any data but the path and
+	 * mandatory attributes only.
 	 *
 	 * @param datasetPath dataset path
 	 * @param dimensions the dataset dimensions
@@ -218,6 +245,7 @@ public interface N5Writer extends N5Reader {
 	 * @param compression the compression
 	 * @throws N5Exception the exception
 	 */
+	@Deprecated
 	default void createDataset(
 			final String datasetPath,
 			final long[] dimensions,
@@ -225,7 +253,7 @@ public interface N5Writer extends N5Reader {
 			final DataType dataType,
 			final Compression compression) throws N5Exception {
 
-		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, compression));
+		createDataset(datasetPath, dimensions, blockSize, dataType, new N5BlockCodec<>(), compression);
 	}
 
 	/**
@@ -241,6 +269,39 @@ public interface N5Writer extends N5Reader {
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception;
+
+	/**
+	 * Write multiple data blocks, useful for request aggregation .
+	 *
+	 * @param datasetPath dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param dataBlocks the data block
+	 * @param <T> the data block data type
+	 * @throws N5Exception the exception
+	 */
+	default <T> void writeBlocks(
+			final String datasetPath,
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T>... dataBlocks) throws N5Exception {
+
+		// default method is naive
+		for (DataBlock<T> block : dataBlocks)
+			writeBlock(datasetPath, datasetAttributes, block);
+	}
+
+	/**
+	 * Writes a {@link Shard}.
+	 *
+	 * @param datasetPath dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param shard the shard
+	 * @param <T> the data block data type
+	 * @throws N5Exception the exception
+	 */
+	<T> void writeShard(
+			final String datasetPath,
+			final DatasetAttributes datasetAttributes,
+			final Shard<T> shard) throws N5Exception;
 
 	/**
 	 * Deletes the block at {@code gridPosition}

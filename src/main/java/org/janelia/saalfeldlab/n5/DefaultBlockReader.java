@@ -1,16 +1,16 @@
 /**
  * Copyright (c) 2017, Stephan Saalfeld
  * All rights reserved.
- *
+ * <p>
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * <p>
  * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
+ * this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * <p>
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -25,10 +25,11 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+
 import java.io.IOException;
 import java.io.InputStream;
-import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
  * Default implementation of block reading (N5 format).
@@ -41,22 +42,19 @@ public interface DefaultBlockReader {
 	/**
 	 * Reads a {@link DataBlock} from an {@link InputStream}.
 	 *
-	 * @param in
-	 *            the input stream
-	 * @param datasetAttributes
-	 *            the dataset attributes
-	 * @param gridPosition
-	 *            the grid position
+	 * @param in                the input stream
+	 * @param datasetAttributes the dataset attributes
+	 * @param gridPosition      the grid position
 	 * @return the block
-	 * @throws IOException
-	 *             the exception
+	 * @throws IOException the exception
 	 */
 	static DataBlock<?> readBlock(
 			final InputStream in,
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition) throws IOException {
 
-		final DataBlockCodec<?> codec = datasetAttributes.getDataBlockCodec();
+		final ArrayCodec<?> codec = datasetAttributes.getArrayCodec();
 		return codec.decode(ReadData.from(in), gridPosition);
 	}
+
 }

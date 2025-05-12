@@ -25,6 +25,8 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import org.janelia.saalfeldlab.n5.shard.Shard;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -220,7 +222,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @return the base path URI
 	 */
 	// TODO: should this throw URISyntaxException or can we assume that this is
-	// never possible if we were able to instantiate this N5Reader?
+	//   never possible if we were able to instantiate this N5Reader?
 	URI getURI();
 
 	/**
@@ -288,10 +290,49 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws N5Exception
 	 *             the exception
 	 */
-	DataBlock<?> readBlock(
+	<T> DataBlock<T> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception;
+
+	/**
+	 * Reads the {@link Shard} at the corresponding grid position.
+	 *
+	 * @param <T> the data access type for the blocks in the shard
+	 * @param datasetPath to read the shard from
+	 * @param datasetAttributes for the shard
+	 * @param shardGridPosition of the shard we are reading
+	 * @return the shard
+	 */
+	<T> Shard<T> readShard(final String datasetPath, final DatasetAttributes datasetAttributes, long... shardGridPosition);
+
+	/**
+	 * Reads multiple {@link DataBlock}s.
+	 * <p>
+	 * Implementations may optimize / batch read operations when possible, e.g.
+	 * in the case that the datasets are sharded.
+	 *
+	 * @param pathName
+	 *            dataset path
+	 * @param datasetAttributes
+	 *            the dataset attributes
+	 * @param gridPositions
+	 *            a list of grid positions
+	 * @return a list of data blocks
+	 * @throws N5Exception
+	 *             the exception
+	 */
+	default <T> List<DataBlock<T>> readBlocks(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final List<long[]> gridPositions) throws N5Exception {
+
+		final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
+		for( final long[] p : gridPositions )
+			blocks.add(readBlock(pathName, datasetAttributes, p));
+
+		return blocks;
+	}
 
 	/**
 	 * Load a {@link DataBlock} as a {@link Serializable}. The offset is given
@@ -318,7 +359,7 @@ public interface N5Reader extends AutoCloseable {
 			final DatasetAttributes attributes,
 			final long... gridPosition) throws N5Exception, ClassNotFoundException {
 
-		final DataBlock<byte[]> block = (DataBlock<byte[]>) readBlock(dataset, attributes, gridPosition);
+		final DataBlock<byte[]> block = readBlock(dataset, attributes, gridPosition);
 		if (block == null)
 			return null;
 

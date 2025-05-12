@@ -38,7 +38,7 @@ public class N5Codecs {
 
 	public static <T> DataBlockCodec<T> createDataBlockCodec(
 			final DataType dataType,
-			final Compression compression) {
+			final Codec.BytesCodec codec) {
 
 		final DataBlockCodecFactory<?> factory;
 		switch (dataType) {
@@ -74,54 +74,54 @@ public class N5Codecs {
 			throw new IllegalArgumentException("Unsupported data type: " + dataType);
 		}
 		final DataBlockCodecFactory<T> tFactory = (DataBlockCodecFactory<T>)factory;
-		return tFactory.createDataBlockCodec(compression);
+		return tFactory.createDataBlockCodec(codec);
 	}
 
 	public interface DataBlockCodecFactory<T> {
 
 		/**
 		 * Get the default {@link DataBlockCodec}, with the specified {@code
-		 * compression}, for {@link DataBlock DataBlocks} of this {@code DataType}.
+		 * codec}, for {@link DataBlock DataBlocks} of this {@code DataType}.
 		 * The default codec is used for de/serializing blocks to N5 format.
 		 *
-		 * @param compression
+		 * @param codec
 		 *
 		 * @return the default {@code DataBlockCodec}
 		 */
-		DataBlockCodec<T> createDataBlockCodec(Compression compression);
+		DataBlockCodec<T> createDataBlockCodec(Codec.BytesCodec codec);
 	}
 
-	private abstract static class AbstractDataBlockCodec<T> implements DataBlockCodec<T> {
+	protected abstract static class AbstractDataBlockCodec<T> implements DataBlockCodec<T> {
 
 		private static final int VAR_OBJ_BYTES_PER_ELEMENT = 1;
 
 		private final DataCodec<T> dataCodec;
 		private final DataBlockFactory<T> dataBlockFactory;
-		private final Compression compression;
+		private final Codec.BytesCodec codec;
 
 		public AbstractDataBlockCodec(
 				final DataCodec<T> dataCodec,
 				final DataBlockFactory<T> dataBlockFactory,
-				final Compression compression
+				final Codec.BytesCodec codec
 		) {
 			this.dataCodec = dataCodec;
 			this.dataBlockFactory = dataBlockFactory;
-			this.compression = compression;
+			this.codec = codec;
 		}
 
-		private DataBlockFactory<T> getDataBlockFactory() {
+		protected DataBlockFactory<T> getDataBlockFactory() {
 
 			return dataBlockFactory;
 		}
 
-		private DataCodec<T> getDataCodec() {
+		protected DataCodec<T> getDataCodec() {
 
 			return dataCodec;
 		}
 
-		private Compression getCompression() {
+		protected Codec.BytesCodec getCodec() {
 
-			return compression;
+			return codec;
 		}
 
 
@@ -130,7 +130,7 @@ public class N5Codecs {
 		@Override public ReadData encode(DataBlock<T> dataBlock) throws IOException {
 			return ReadData.from(out -> {
 				final ReadData dataReadData = getDataCodec().serialize(dataBlock.getData());
-				final ReadData encodedData = getCompression().encode(dataReadData);
+				final ReadData encodedData = getCodec().encode(dataReadData);
 				final BlockHeader header = createBlockHeader(dataBlock, dataReadData);
 
 				header.writeTo(out);
@@ -151,7 +151,7 @@ public class N5Codecs {
 
 				final int numElements = header.numElements();
 				final ReadData blockData = ReadData.from(in, numElements * bytesPerElement);
-				final ReadData decodeData = getCompression().decode(blockData);
+				final ReadData decodeData = getCodec().decode(blockData);
 				final T data = getDataCodec().deserialize(decodeData, numElements);
 				return getDataBlockFactory().createDataBlock(header.blockSize(), gridPosition, data);
 			}
@@ -166,9 +166,9 @@ public class N5Codecs {
 		DefaultDataBlockCodec(
 				final DataCodec<T> dataCodec,
 				final DataBlockFactory<T> dataBlockFactory,
-				final Compression compression) {
+				final Codec.BytesCodec codec) {
 
-			super(dataCodec, dataBlockFactory, compression);
+			super(dataCodec, dataBlockFactory, codec);
 			}
 		@Override
 		protected BlockHeader createBlockHeader(final DataBlock<T> dataBlock, ReadData blockData)  {
@@ -191,9 +191,9 @@ public class N5Codecs {
 		public StringDataBlockCodec(
 				final DataCodec<String[]> dataCodec,
 				final DataBlockFactory<String[]> dataBlockFactory,
-				final Compression compression) {
+				final Codec.BytesCodec codec) {
 
-			super(dataCodec, dataBlockFactory, compression);
+			super(dataCodec, dataBlockFactory, codec);
 		}
 
 		@Override
@@ -217,9 +217,9 @@ public class N5Codecs {
 		public ObjectDataBlockCodec(
 				final DataCodec<byte[]> dataCodec,
 				final DataBlockFactory<byte[]> dataBlockFactory,
-				final Compression compression) {
+				final Codec.BytesCodec codec) {
 
-			super(dataCodec, dataBlockFactory, compression);
+			super(dataCodec, dataBlockFactory, codec);
 		}
 
 		@Override protected BlockHeader createBlockHeader(DataBlock<byte[]> dataBlock, ReadData blockData) {

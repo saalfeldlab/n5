@@ -25,14 +25,21 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Arrays;
-
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.VirtualShard;
+import org.janelia.saalfeldlab.n5.util.Position;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
@@ -86,23 +93,74 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	default <T> Shard<T> readShard(
+			final String keyPath,
+			final DatasetAttributes datasetAttributes,
+			long... shardGridPosition) {
+
+		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(keyPath), shardGridPosition);
+		final SplitKeyValueAccessData splitableData;
+		try {
+			splitableData = new SplitKeyValueAccessData(getKeyValueAccess(), path);
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
+		return new VirtualShard(
+				datasetAttributes,
+				shardGridPosition,
+				splitableData);
+	}
+
 	@Override
-	default DataBlock<?> readBlock(
+	default <T> DataBlock<T> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), gridPosition);
+		final long[] keyPos = datasetAttributes.getArrayCodec().getPositionForBlock(datasetAttributes, gridPosition);
+		final String keyPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), keyPos);
 
-		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(path)) {
-			return DefaultBlockReader.readBlock(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
-		} catch (final N5Exception.N5NoSuchKeyException e) {
+
+		final SplitKeyValueAccessData splitData;
+		try {
+			splitData = new SplitKeyValueAccessData(getKeyValueAccess(), keyPath);
+			try (final InputStream inputStream = splitData.newInputStream()) {
+				final ReadData decodeData = ReadData.from(inputStream);
+				return datasetAttributes.<T>getArrayCodec().decode(decodeData, gridPosition);
+			}
+		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
-		} catch (final IOException | UncheckedIOException e) {
-			throw new N5IOException(
-					"Failed to read block " + Arrays.toString(gridPosition) + " from dataset " + path,
-					e);
+		} catch (IOException e) {
+			throw new N5IOException(e);
 		}
+
+	}
+
+	@Override
+	default <T> List<DataBlock<T>> readBlocks(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final List<long[]> blockPositions) throws N5Exception {
+
+		// TODO which interface should have this implementation?
+		if (datasetAttributes.getShardSize() != null) {
+
+			/* Group by shard position */
+			final Map<Position, List<long[]>> shardBlockMap = datasetAttributes.groupBlockPositions(blockPositions);
+			final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
+			for( Entry<Position, List<long[]>> e : shardBlockMap.entrySet()) {
+
+				final Shard<T> shard = readShard(pathName, datasetAttributes, e.getKey().get());
+
+				for (final long[] blkPosition : e.getValue()) {
+					blocks.add(shard.getBlock(blkPosition));
+				}
+			}
+
+			return blocks;
+		}
+		return GsonN5Reader.super.readBlocks(pathName, datasetAttributes, blockPositions);
 	}
 
 	@Override
@@ -118,6 +176,9 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	/**
 	 * Constructs the path for a data block in a dataset at a given grid
 	 * position.
+	 * <br>
+	 * If the gridPosition passed in refers to shard position
+	 * in a sharded dataset, this will return the path to the shard key
 	 * <p>
 	 * The returned path is
 	 *
@@ -142,8 +203,10 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		for (final long p : gridPosition)
 			components[++i] = Long.toString(p);
 
+
 		return getKeyValueAccess().compose(getURI(), components);
 	}
+
 
 	/**
 	 * Constructs the absolute path (in terms of this store) for the group or
@@ -168,6 +231,6 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 */
 	default String absoluteAttributesPath(final String normalPath) {
 
-		return getKeyValueAccess().compose(getURI(), normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
+		return getKeyValueAccess().compose(getURI(), normalPath, getAttributesKey());
 	}
 }

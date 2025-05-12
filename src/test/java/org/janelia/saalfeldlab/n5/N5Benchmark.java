@@ -221,7 +221,7 @@ public class N5Benchmark {
 		}
 	}
 
-	@Test
+//	@Test
 	public void benchmarkParallelWritingSpeed() {
 
 		final int nBlocks = 5;

@@ -117,6 +117,8 @@ public interface KeyValueAccess {
 	 */
 	public boolean exists(final String normalPath);
 
+	public long size(final String normalPath) throws IOException;
+
 	/**
 	 * Test whether the path is a directory.
 	 *
@@ -155,6 +157,9 @@ public interface KeyValueAccess {
 	 */
 	public LockedChannel lockForReading(final String normalPath) throws IOException;
 
+	public LockedChannel lockForReading(String normalPath, final long startByte, final long size)
+			throws IOException;
+
 	/**
 	 * Create an exclusive lock on a path for writing. If the file doesn't
 	 * exist yet, it will be created, including all directories leading up to
@@ -174,6 +179,9 @@ public interface KeyValueAccess {
 	 *             if a locked channel could not be created
 	 */
 	public LockedChannel lockForWriting(final String normalPath) throws IOException;
+
+	public LockedChannel lockForWriting(String normalPath, final long startByte, final long size)
+			throws IOException;
 
 	/**
 	 * List all 'directory'-like children of a path.
@@ -222,4 +230,5 @@ public interface KeyValueAccess {
 	 *            if an error occurs during deletion
 	 */
 	public void delete(final String normalPath) throws IOException;
+
 }

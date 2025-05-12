@@ -46,14 +46,14 @@ public abstract class DataCodec<T> {
 	public static final DataCodec<long[]>   LONG_BIG_ENDIAN   		= new LongDataCodec(ByteOrder.BIG_ENDIAN);
 	public static final DataCodec<float[]>  FLOAT_BIG_ENDIAN  		= new FloatDataCodec(ByteOrder.BIG_ENDIAN);
 	public static final DataCodec<double[]> DOUBLE_BIG_ENDIAN 		= new DoubleDataCodec(ByteOrder.BIG_ENDIAN);
-	public static final DataCodec<String[]> ZARR_STRING_BIG_STRING	= new ZarrStringDataCodec(ByteOrder.BIG_ENDIAN);
+	public static final DataCodec<String[]> ZARR_STRING_BIG_ENDIAN	= new ZarrStringDataCodec(ByteOrder.BIG_ENDIAN);
 
 	public static final DataCodec<short[]>  SHORT_LITTLE_ENDIAN  		= new ShortDataCodec(ByteOrder.LITTLE_ENDIAN);
 	public static final DataCodec<int[]>    INT_LITTLE_ENDIAN    		= new IntDataCodec(ByteOrder.LITTLE_ENDIAN);
 	public static final DataCodec<long[]>   LONG_LITTLE_ENDIAN   		= new LongDataCodec(ByteOrder.LITTLE_ENDIAN);
 	public static final DataCodec<float[]>  FLOAT_LITTLE_ENDIAN  		= new FloatDataCodec(ByteOrder.LITTLE_ENDIAN);
 	public static final DataCodec<double[]> DOUBLE_LITTLE_ENDIAN		= new DoubleDataCodec(ByteOrder.LITTLE_ENDIAN);
-	public static final DataCodec<String[]> ZARR_STRING_LITTLE_STRING 	= new ZarrStringDataCodec(ByteOrder.LITTLE_ENDIAN);
+	public static final DataCodec<String[]> ZARR_STRING_LITTLE_ENDIAN 	= new ZarrStringDataCodec(ByteOrder.LITTLE_ENDIAN);
 
 	public static final DataCodec<String[]> STRING = new N5StringDataCodec();
 	public static final DataCodec<byte[]> OBJECT = new ObjectDataCodec();
@@ -75,6 +75,10 @@ public abstract class DataCodec<T> {
 
 	public static DataCodec<double[]> DOUBLE(ByteOrder order) {
 		return order == ByteOrder.BIG_ENDIAN ? DOUBLE_BIG_ENDIAN : DOUBLE_LITTLE_ENDIAN;
+	}
+
+	public static DataCodec<String[]> STRING(ByteOrder order) {
+		return order == ByteOrder.BIG_ENDIAN ? ZARR_STRING_BIG_ENDIAN : ZARR_STRING_LITTLE_ENDIAN;
 	}
 
 	// ---------------- implementations  -----------------

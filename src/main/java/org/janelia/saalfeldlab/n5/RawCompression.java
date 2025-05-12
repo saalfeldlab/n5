@@ -25,6 +25,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
@@ -35,9 +36,9 @@ public class RawCompression implements Compression {
 
 	@Override
 	public boolean equals(final Object other) {
+
 		return other != null && other.getClass() == RawCompression.class;
 	}
-
 	@Override
 	public ReadData encode(final ReadData readData) {
 		return readData;

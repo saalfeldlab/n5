@@ -1,16 +1,16 @@
 /**
  * Copyright (c) 2017, Stephan Saalfeld
  * All rights reserved.
- *
+ * <p>
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * <p>
  * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
+ * this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * <p>
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -25,9 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
+
 import java.io.IOException;
 import java.io.OutputStream;
-import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
 
 /**
  * Default implementation of block writing (N5 format).
@@ -40,22 +41,18 @@ public interface DefaultBlockWriter {
 	/**
 	 * Writes a {@link DataBlock} into an {@link OutputStream}.
 	 *
-	 * @param <T> the type of data
-	 * @param out
-	 *            the output stream
-	 * @param datasetAttributes
-	 *            the dataset attributes
-	 * @param dataBlock
-	 *            the data block the block data type
-	 * @throws IOException
-	 *             the exception
+	 * @param <T>               the type of data
+	 * @param out               the output stream
+	 * @param datasetAttributes the dataset attributes
+	 * @param dataBlock         the data block the block data type
+	 * @throws IOException the exception
 	 */
 	static <T> void writeBlock(
 			final OutputStream out,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		final DataBlockCodec<T> codec = datasetAttributes.getDataBlockCodec();
-		codec.encode(dataBlock).writeTo(out);
+		final ArrayCodec<T> arrayCodec = datasetAttributes.getArrayCodec();
+		arrayCodec.encode(dataBlock).writeTo(out);
 	}
 }

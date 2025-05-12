@@ -37,9 +37,9 @@ import java.util.function.ToIntFunction;
  */
 public abstract class AbstractDataBlock<T> implements DataBlock<T> {
 
-	private final int[] size;
-	private final long[] gridPosition;
-	private final T data;
+	protected final int[] size;
+	protected final long[] gridPosition;
+	protected final T data;
 	private final ToIntFunction<T> numElements;
 
 	public AbstractDataBlock(

@@ -35,16 +35,24 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipParameters;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @CompressionType("gzip")
+@NameConfig.Name("gzip")
 public class GzipCompression implements Compression {
 
 	private static final long serialVersionUID = 8630847239813334263L;
 
 	@CompressionParameter
+	@NameConfig.Parameter
+	//TODO Caleb: How to handle serialization of parameter-less constructor.
+	// For N5 the default is -1.
+	// For zarr the range is 0-9 and is required.
+	// How to map -1 to some default (1?) when serializing to zarr?
 	private final int level;
 
 	@CompressionParameter
+	@NameConfig.Parameter(optional = true)
 	private final boolean useZlib;
 
 	private final transient GzipParameters parameters = new GzipParameters();
