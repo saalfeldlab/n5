@@ -80,13 +80,9 @@ public class N5Codecs {
 	public interface DataBlockCodecFactory<T> {
 
 		/**
-		 * Get the default {@link DataBlockCodec}, with the specified {@code
-		 * compression}, for {@link DataBlock DataBlocks} of this {@code DataType}.
-		 * The default codec is used for de/serializing blocks to N5 format.
+		 * Get a {@link DataBlockCodec}, with the specified {@code compression}, for de/serializing DataBlocks to N5 format,
 		 *
-		 * @param compression
-		 *
-		 * @return the default {@code DataBlockCodec}
+		 * @return N5 {@code DataBlockCodec} for the specified {@code compression}
 		 */
 		DataBlockCodec<T> createDataBlockCodec(Compression compression);
 	}

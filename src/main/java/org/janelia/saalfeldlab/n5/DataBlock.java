@@ -95,20 +95,18 @@ public interface DataBlock<T> {
 	 */
 	interface DataBlockFactory<T> {
 
-
 		/**
-		 * Factory for {@link DataBlock DataBlocks}.
+		 * Create a new {@link DataBlock} with the given {@code blockSize}, {@code gridPosition}, and {@code data} content.
 		 *
 		 * @param blockSize
-		 *            the block size
+		 * 		the block size
 		 * @param gridPosition
-		 *            the grid position
+		 * 		the grid position
 		 * @param data
-		 *            the number of elements (not necessarily one element per block
-		 *            element)
-		 * @return the data block
+		 * 		the data object
+		 *
+		 * @return a new DataBlock
 		 */
 		DataBlock<T> createDataBlock(int[] blockSize, long[] gridPosition, T data);
-
 	}
 }
