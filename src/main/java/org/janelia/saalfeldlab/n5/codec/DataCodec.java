@@ -40,23 +40,23 @@ public abstract class DataCodec<T> {
 	// ------------------- instances  --------------------
 	//
 
-	public static final DataCodec<byte[]>   BYTE              		= new ByteDataCodec();
-	public static final DataCodec<short[]>  SHORT_BIG_ENDIAN  		= new ShortDataCodec(ByteOrder.BIG_ENDIAN);
-	public static final DataCodec<int[]>    INT_BIG_ENDIAN    		= new IntDataCodec(ByteOrder.BIG_ENDIAN);
-	public static final DataCodec<long[]>   LONG_BIG_ENDIAN   		= new LongDataCodec(ByteOrder.BIG_ENDIAN);
-	public static final DataCodec<float[]>  FLOAT_BIG_ENDIAN  		= new FloatDataCodec(ByteOrder.BIG_ENDIAN);
-	public static final DataCodec<double[]> DOUBLE_BIG_ENDIAN 		= new DoubleDataCodec(ByteOrder.BIG_ENDIAN);
-	public static final DataCodec<String[]> ZARR_STRING_BIG_STRING	= new ZarrStringDataCodec(ByteOrder.BIG_ENDIAN);
+	public static final DataCodec<byte[]>   BYTE              = new ByteDataCodec();
+	public static final DataCodec<short[]>  SHORT_BIG_ENDIAN  = new ShortDataCodec(ByteOrder.BIG_ENDIAN);
+	public static final DataCodec<int[]>    INT_BIG_ENDIAN    = new IntDataCodec(ByteOrder.BIG_ENDIAN);
+	public static final DataCodec<long[]>   LONG_BIG_ENDIAN   = new LongDataCodec(ByteOrder.BIG_ENDIAN);
+	public static final DataCodec<float[]>  FLOAT_BIG_ENDIAN  = new FloatDataCodec(ByteOrder.BIG_ENDIAN);
+	public static final DataCodec<double[]> DOUBLE_BIG_ENDIAN = new DoubleDataCodec(ByteOrder.BIG_ENDIAN);
 
-	public static final DataCodec<short[]>  SHORT_LITTLE_ENDIAN  		= new ShortDataCodec(ByteOrder.LITTLE_ENDIAN);
-	public static final DataCodec<int[]>    INT_LITTLE_ENDIAN    		= new IntDataCodec(ByteOrder.LITTLE_ENDIAN);
-	public static final DataCodec<long[]>   LONG_LITTLE_ENDIAN   		= new LongDataCodec(ByteOrder.LITTLE_ENDIAN);
-	public static final DataCodec<float[]>  FLOAT_LITTLE_ENDIAN  		= new FloatDataCodec(ByteOrder.LITTLE_ENDIAN);
-	public static final DataCodec<double[]> DOUBLE_LITTLE_ENDIAN		= new DoubleDataCodec(ByteOrder.LITTLE_ENDIAN);
-	public static final DataCodec<String[]> ZARR_STRING_LITTLE_STRING 	= new ZarrStringDataCodec(ByteOrder.LITTLE_ENDIAN);
+	public static final DataCodec<short[]>  SHORT_LITTLE_ENDIAN  = new ShortDataCodec(ByteOrder.LITTLE_ENDIAN);
+	public static final DataCodec<int[]>    INT_LITTLE_ENDIAN    = new IntDataCodec(ByteOrder.LITTLE_ENDIAN);
+	public static final DataCodec<long[]>   LONG_LITTLE_ENDIAN   = new LongDataCodec(ByteOrder.LITTLE_ENDIAN);
+	public static final DataCodec<float[]>  FLOAT_LITTLE_ENDIAN  = new FloatDataCodec(ByteOrder.LITTLE_ENDIAN);
+	public static final DataCodec<double[]> DOUBLE_LITTLE_ENDIAN = new DoubleDataCodec(ByteOrder.LITTLE_ENDIAN);
 
 	public static final DataCodec<String[]> STRING = new N5StringDataCodec();
+	public static final DataCodec<String[]> ZARR_STRING = new ZarrStringDataCodec();
 	public static final DataCodec<byte[]> OBJECT = new ObjectDataCodec();
+
 	public static DataCodec<short[]> SHORT(ByteOrder order) {
 		return order == ByteOrder.BIG_ENDIAN ? SHORT_BIG_ENDIAN : SHORT_LITTLE_ENDIAN;
 	}
@@ -125,7 +125,6 @@ public abstract class DataCodec<T> {
 
 		@Override
 		public short[] deserialize(final ReadData readData, int numElements) throws IOException {
-
 			final short[] data = createData(numElements);
 			readData.toByteBuffer().order(order).asShortBuffer().get(data);
 			return data;
@@ -150,7 +149,6 @@ public abstract class DataCodec<T> {
 
 		@Override
 		public int[] deserialize(final ReadData readData, int numElements) throws IOException {
-
 			final int[] data = createData(numElements);
 			final ByteBuffer byteBuffer = readData.toByteBuffer();
 			final IntBuffer intBuffer = byteBuffer.order(order).asIntBuffer();
@@ -225,7 +223,6 @@ public abstract class DataCodec<T> {
 
 		@Override
 		public double[] deserialize(final ReadData readData, int numElements) throws IOException {
-
 			final double[] data = createData(numElements);
 			readData.toByteBuffer().order(order).asDoubleBuffer().get(data);
 			return data;
@@ -241,12 +238,14 @@ public abstract class DataCodec<T> {
 			super( -1, String[]::new);
 		}
 
-		@Override public ReadData serialize(String[] data) {
+		@Override
+		public ReadData serialize(String[] data) {
 			final String flattenedArray = String.join(NULLCHAR, data) + NULLCHAR;
 			return ReadData.from(flattenedArray.getBytes(ENCODING));
 		}
 
-		@Override public String[] deserialize(ReadData readData, int numElements) throws IOException {
+		@Override
+		public String[] deserialize(ReadData readData, int numElements) throws IOException {
 			final byte[] serializedData = readData.allBytes();
 			final String rawChars = new String(serializedData, ENCODING);
 			return rawChars.split(NULLCHAR);
@@ -255,22 +254,20 @@ public abstract class DataCodec<T> {
 
 	private static final class ZarrStringDataCodec extends DataCodec<String[]> {
 
-		private final ByteOrder order;
 		private static final Charset ENCODING = StandardCharsets.UTF_8;
 
-		ZarrStringDataCodec(ByteOrder order) {
+		ZarrStringDataCodec() {
 			super( -1, String[]::new);
-			this.order = order;
 		}
 
-		@Override public ReadData serialize(String[] data) {
-
+		@Override
+		public ReadData serialize(String[] data) {
 			final int N = data.length;
 			final byte[][] encodedStrings = Arrays.stream(data).map(str -> str.getBytes(ENCODING)).toArray(byte[][]::new);
 			final int[] lengths = Arrays.stream(encodedStrings).mapToInt(a -> a.length).toArray();
 			final int totalLength = Arrays.stream(lengths).sum();
 			final ByteBuffer buf = ByteBuffer.wrap(new byte[totalLength + 4 * N + 4]);
-			buf.order(order);
+			buf.order(ByteOrder.LITTLE_ENDIAN);
 			buf.putInt(N);
 			for (int i = 0; i < N; ++i) {
 				buf.putInt(lengths[i]);
@@ -279,10 +276,10 @@ public abstract class DataCodec<T> {
 			return ReadData.from(buf.array());
 		}
 
-		@Override public String[] deserialize(ReadData readData, int numElements) throws IOException {
-
-			final ByteBuffer serialized =  readData.toByteBuffer();
-			serialized.order(order);
+		@Override
+		public String[] deserialize(ReadData readData, int numElements) throws IOException {
+			final ByteBuffer serialized = readData.toByteBuffer();
+			serialized.order(ByteOrder.LITTLE_ENDIAN);
 
 			// sanity check to avoid out of memory errors
 			if (serialized.limit() < 4)
@@ -305,17 +302,17 @@ public abstract class DataCodec<T> {
 
 	private static final class ObjectDataCodec extends DataCodec<byte[]> {
 
-
 		ObjectDataCodec() {
 			super(-1, byte[]::new);
 		}
 
-		@Override public ReadData serialize(byte[] data) {
-
+		@Override
+		public ReadData serialize(byte[] data) {
 			return ReadData.from(data);
 		}
 
-		@Override public byte[] deserialize(ReadData readData, int numElements) throws IOException {
+		@Override
+		public byte[] deserialize(ReadData readData, int numElements) throws IOException {
 			final byte[] data = createData(numElements);
 			new DataInputStream(readData.inputStream()).readFully(data);
 			return data;
