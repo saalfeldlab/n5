@@ -135,8 +135,7 @@ public class N5Codecs {
 						: dataCodec.bytesPerElement();
 
 				final int numElements = header.numElements();
-				final ReadData blockData = ReadData.from(in, numElements * bytesPerElement);
-				final ReadData decodeData = compression.decode(blockData);
+				final ReadData decodeData = compression.decode(ReadData.from(in));
 				final T data = dataCodec.deserialize(decodeData, numElements);
 				return dataBlockFactory.createDataBlock(header.blockSize(), gridPosition, data);
 			}
