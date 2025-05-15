@@ -119,8 +119,10 @@ public class DatasetAttributes implements Serializable {
 	 * 		(that is, the caller doesn't have to do the cast explicitly).
 	 * @return the {@code DataBlockCodec} for this dataset
 	 */
+	@SuppressWarnings("unchecked")
 	public <T> DataBlockCodec<T> getDataBlockCodec() {
-		return (DataBlockCodec<T>)dataBlockCodec;
+
+		return (DataBlockCodec<T>) dataBlockCodec;
 	}
 
 	public HashMap<String, Object> asMap() {
