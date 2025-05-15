@@ -31,8 +31,8 @@ public class N5Codecs {
 	private static final DataBlockCodecFactory<long[]> LONG = c -> new DefaultDataBlockCodec<>(DataCodec.LONG_BIG_ENDIAN, LongArrayDataBlock::new, c);
 	private static final DataBlockCodecFactory<float[]> FLOAT = c -> new DefaultDataBlockCodec<>(DataCodec.FLOAT_BIG_ENDIAN, FloatArrayDataBlock::new, c);
 	private static final DataBlockCodecFactory<double[]> DOUBLE = c -> new DefaultDataBlockCodec<>(DataCodec.DOUBLE_BIG_ENDIAN, DoubleArrayDataBlock::new, c);
-	private static final DataBlockCodecFactory<String[]> STRING = StringDataBlockCodec::new;
-	private static final DataBlockCodecFactory<byte[]> OBJECT = ObjectDataBlockCodec::new;
+	private static final DataBlockCodecFactory<String[]> STRING = c -> new StringDataBlockCodec(c);
+	private static final DataBlockCodecFactory<byte[]> OBJECT = c -> new ObjectDataBlockCodec(c);
 
 	private N5Codecs() {}
 
