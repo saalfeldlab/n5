@@ -85,15 +85,13 @@ public interface Compression extends Serializable {
 	 *
 	 * @param readData
 	 * 		data to decode
-	 * @param decodedLength
-	 * 		length of the decoded data (-1 if unknown)
 	 *
 	 * @return decoded ReadData
 	 *
 	 * @throws IOException
 	 * 		if any I/O error occurs
 	 */
-	ReadData decode(ReadData readData, int decodedLength) throws IOException;
+	ReadData decode(ReadData readData) throws IOException;
 
 	/**
 	 * Encode the given {@code readData}.

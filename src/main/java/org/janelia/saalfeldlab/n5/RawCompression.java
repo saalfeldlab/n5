@@ -35,10 +35,7 @@ public class RawCompression implements Compression {
 
 	@Override
 	public boolean equals(final Object other) {
-		if (other == null || other.getClass() != RawCompression.class)
-			return false;
-		else
-			return true;
+		return other != null && other.getClass() == RawCompression.class;
 	}
 
 	@Override
@@ -47,7 +44,7 @@ public class RawCompression implements Compression {
 	}
 
 	@Override
-	public ReadData decode(final ReadData readData, int decodedLength) {
+	public ReadData decode(final ReadData readData) {
 		return readData;
 	}
 }

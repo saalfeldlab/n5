@@ -28,7 +28,9 @@ package org.janelia.saalfeldlab.n5;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
+
 import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
+import org.janelia.saalfeldlab.n5.codec.N5Codecs;
 
 /**
  * Mandatory dataset attributes:
@@ -58,8 +60,8 @@ public class DatasetAttributes implements Serializable {
 	private final long[] dimensions;
 	private final int[] blockSize;
 	private final DataType dataType;
-	private final Compression compression;
 	private final DataBlockCodec<?> dataBlockCodec;
+	private final Compression compression;
 
 	public DatasetAttributes(
 			final long[] dimensions,
@@ -67,7 +69,7 @@ public class DatasetAttributes implements Serializable {
 			final DataType dataType,
 			final Compression compression) {
 
-		this(dimensions, blockSize, dataType, compression, dataType.createDataBlockCodec(compression));
+		this(dimensions, blockSize, dataType, compression, N5Codecs.createDataBlockCodec(dataType, compression));
 	}
 
 	protected DatasetAttributes(
@@ -118,7 +120,7 @@ public class DatasetAttributes implements Serializable {
 	 * @return the {@code DataBlockCodec} for this dataset
 	 */
 	public <T> DataBlockCodec<T> getDataBlockCodec() {
-		return (DataBlockCodec<T>) dataBlockCodec;
+		return (DataBlockCodec<T>)dataBlockCodec;
 	}
 
 	public HashMap<String, Object> asMap() {

@@ -6,10 +6,10 @@
  * modification, are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
+ * this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -34,10 +34,6 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import org.janelia.saalfeldlab.n5.codec.N5Codecs;
-import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
-import org.janelia.saalfeldlab.n5.codec.N5Codecs.DataBlockCodecFactory;
-
 /**
  * Enumerates available data types.
  *
@@ -47,101 +43,90 @@ public enum DataType {
 
 	UINT8(
 			"uint8",
-			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
-					blockSize,
-					gridPosition,
-					new byte[numElements]),
-			N5Codecs.BYTE),
+			(blockSize, gridPosition, numElements) -> {
+				ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, gridPosition, new byte[numElements]);
+
+
+				return new ByteArrayDataBlock(
+						blockSize,
+						gridPosition,
+						new byte[numElements]);
+			}),
 	UINT16(
 			"uint16",
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new short[numElements]),
-			N5Codecs.SHORT),
+					new short[numElements])),
 	UINT32(
 			"uint32",
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new int[numElements]),
-			N5Codecs.INT),
+					new int[numElements])),
 	UINT64(
 			"uint64",
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new long[numElements]),
-			N5Codecs.LONG),
+					new long[numElements])),
 	INT8(
 			"int8",
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements]),
-			N5Codecs.BYTE),
+					new byte[numElements])),
 	INT16(
 			"int16",
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new short[numElements]),
-			N5Codecs.SHORT),
+					new short[numElements])),
 	INT32(
 			"int32",
 			(blockSize, gridPosition, numElements) -> new IntArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new int[numElements]),
-			N5Codecs.INT),
+					new int[numElements])),
 	INT64(
 			"int64",
 			(blockSize, gridPosition, numElements) -> new LongArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new long[numElements]),
-			N5Codecs.LONG),
+					new long[numElements])),
 	FLOAT32(
 			"float32",
 			(blockSize, gridPosition, numElements) -> new FloatArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new float[numElements]),
-			N5Codecs.FLOAT),
+					new float[numElements])),
 	FLOAT64(
 			"float64",
 			(blockSize, gridPosition, numElements) -> new DoubleArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new double[numElements]),
-			N5Codecs.DOUBLE),
+					new double[numElements])),
 	STRING(
 			"string",
 			(blockSize, gridPosition, numElements) -> new StringDataBlock(
 					blockSize,
 					gridPosition,
-					new String[numElements]),
-			N5Codecs.STRING),
+					new String[numElements])),
 	OBJECT(
 			"object",
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements]),
-			N5Codecs.OBJECT);
-
+					new byte[numElements]));
 
 	private final String label;
 
 	private final DataBlockFactory dataBlockFactory;
 
-	private final DataBlockCodecFactory<?> dataBlockCodecFactory;
-
-	DataType(final String label, final DataBlockFactory dataBlockFactory, final DataBlockCodecFactory<?> dataBlockCodecFactory) {
+	DataType(final String label, final DataBlockFactory dataBlockFactory) {
 
 		this.label = label;
 		this.dataBlockFactory = dataBlockFactory;
-		this.dataBlockCodecFactory = dataBlockCodecFactory;
 	}
 
 	@Override
@@ -188,19 +173,6 @@ public enum DataType {
 	public DataBlock<?> createDataBlock(final int[] blockSize, final long[] gridPosition) {
 
 		return dataBlockFactory.createDataBlock(blockSize, gridPosition, DataBlock.getNumElements(blockSize));
-	}
-
-	/**
-	 * Get the default {@link DataBlockCodec}, with the specified {@code
-	 * compression}, for {@link DataBlock DataBlocks} of this {@code DataType}.
-	 * The default codec is used for de/serializing blocks to N5 format.
-	 *
-	 * @param compression
-	 *
-	 * @return the default {@code DataBlockCodec}
-	 */
-	public DataBlockCodec<?> createDataBlockCodec(final Compression compression) {
-		return dataBlockCodecFactory.createDataBlockCodec(compression);
 	}
 
 	private interface DataBlockFactory {
