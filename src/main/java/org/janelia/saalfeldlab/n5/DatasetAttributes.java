@@ -29,6 +29,9 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
+import org.janelia.saalfeldlab.n5.codec.N5Codecs;
+
 /**
  * Mandatory dataset attributes:
  *
@@ -57,6 +60,7 @@ public class DatasetAttributes implements Serializable {
 	private final long[] dimensions;
 	private final int[] blockSize;
 	private final DataType dataType;
+	private final DataBlockCodec<?> dataBlockCodec;
 	private final Compression compression;
 
 	public DatasetAttributes(
@@ -65,10 +69,21 @@ public class DatasetAttributes implements Serializable {
 			final DataType dataType,
 			final Compression compression) {
 
+		this(dimensions, blockSize, dataType, compression, N5Codecs.createDataBlockCodec(dataType, compression));
+	}
+
+	protected DatasetAttributes(
+			final long[] dimensions,
+			final int[] blockSize,
+			final DataType dataType,
+			final Compression compression,
+			final DataBlockCodec<?> dataBlockCodec) {
+
 		this.dimensions = dimensions;
 		this.blockSize = blockSize;
 		this.dataType = dataType;
 		this.compression = compression;
+		this.dataBlockCodec = dataBlockCodec;
 	}
 
 	public long[] getDimensions() {
@@ -94,6 +109,20 @@ public class DatasetAttributes implements Serializable {
 	public DataType getDataType() {
 
 		return dataType;
+	}
+
+	/**
+	 * Get the {@link DataBlockCodec} for this dataset.
+	 *
+	 * @param <T>
+	 * 		the returned codec is cast to {@code DataBlockCodec<T>} for convenience
+	 * 		(that is, the caller doesn't have to do the cast explicitly).
+	 * @return the {@code DataBlockCodec} for this dataset
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> DataBlockCodec<T> getDataBlockCodec() {
+
+		return (DataBlockCodec<T>) dataBlockCodec;
 	}
 
 	public HashMap<String, Object> asMap() {

@@ -25,32 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.nio.ByteBuffer;
-
 public class ShortArrayDataBlock extends AbstractDataBlock<short[]> {
 
 	public ShortArrayDataBlock(final int[] size, final long[] gridPosition, final short[] data) {
 
-		super(size, gridPosition, data);
-	}
-
-	@Override
-	public ByteBuffer toByteBuffer() {
-
-		final ByteBuffer buffer = ByteBuffer.allocate(data.length * 2);
-		buffer.asShortBuffer().put(data);
-		return buffer;
-	}
-
-	@Override
-	public void readData(final ByteBuffer buffer) {
-
-		buffer.asShortBuffer().get(data);
-	}
-
-	@Override
-	public int getNumElements() {
-
-		return data.length;
+		super(size, gridPosition, data, a -> a.length);
 	}
 }

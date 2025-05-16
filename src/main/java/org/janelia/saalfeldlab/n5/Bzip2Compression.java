@@ -27,14 +27,13 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 @CompressionType("bzip2")
-public class Bzip2Compression implements DefaultBlockReader, DefaultBlockWriter, Compression {
+public class Bzip2Compression implements Compression {
 
 	private static final long serialVersionUID = -4873117458390529118L;
 
@@ -52,30 +51,6 @@ public class Bzip2Compression implements DefaultBlockReader, DefaultBlockWriter,
 	}
 
 	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
-
-		return new BZip2CompressorInputStream(in);
-	}
-
-	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
-
-		return new BZip2CompressorOutputStream(out, blockSize);
-	}
-
-	@Override
-	public Bzip2Compression getReader() {
-
-		return this;
-	}
-
-	@Override
-	public Bzip2Compression getWriter() {
-
-		return this;
-	}
-
-	@Override
 	public boolean equals(final Object other) {
 
 		if (other == null || other.getClass() != Bzip2Compression.class)
@@ -84,4 +59,14 @@ public class Bzip2Compression implements DefaultBlockReader, DefaultBlockWriter,
 			return blockSize == ((Bzip2Compression)other).blockSize;
 	}
 
+	@Override
+	public ReadData decode(final ReadData readData) throws IOException {
+
+		return ReadData.from(new BZip2CompressorInputStream(readData.inputStream()));
+	}
+
+	@Override
+	public ReadData encode(final ReadData readData) {
+		return readData.encode(out -> new BZip2CompressorOutputStream(out, blockSize));
+	}
 }

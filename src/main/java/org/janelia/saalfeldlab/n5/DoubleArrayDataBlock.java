@@ -25,32 +25,10 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.nio.ByteBuffer;
-
 public class DoubleArrayDataBlock extends AbstractDataBlock<double[]> {
 
 	public DoubleArrayDataBlock(final int[] size, final long[] gridPosition, final double[] data) {
 
-		super(size, gridPosition, data);
-	}
-
-	@Override
-	public ByteBuffer toByteBuffer() {
-
-		final ByteBuffer buffer = ByteBuffer.allocate(data.length * 8);
-		buffer.asDoubleBuffer().put(data);
-		return buffer;
-	}
-
-	@Override
-	public void readData(final ByteBuffer buffer) {
-
-		buffer.asDoubleBuffer().get(data);
-	}
-
-	@Override
-	public int getNumElements() {
-
-		return data.length;
+		super(size, gridPosition, data, a -> a.length);
 	}
 }

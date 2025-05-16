@@ -25,13 +25,14 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.scijava.annotations.Indexable;
 
 /**
@@ -49,7 +50,7 @@ public interface Compression extends Serializable {
 	@Inherited
 	@Target(ElementType.TYPE)
 	@Indexable
-	public static @interface CompressionType {
+	@interface CompressionType {
 
 		String value();
 	}
@@ -61,9 +62,9 @@ public interface Compression extends Serializable {
 	@Retention(RetentionPolicy.RUNTIME)
 	@Inherited
 	@Target(ElementType.FIELD)
-	public static @interface CompressionParameter {}
+	@interface CompressionParameter {}
 
-	public default String getType() {
+	default String getType() {
 
 		final CompressionType compressionType = getClass().getAnnotation(CompressionType.class);
 		if (compressionType == null)
@@ -72,7 +73,40 @@ public interface Compression extends Serializable {
 			return compressionType.value();
 	}
 
-	public BlockReader getReader();
+	// --------------------------------------------------
+	//
 
-	public BlockWriter getWriter();
+	/**
+	 * Decode the given {@code readData}.
+	 * <p>
+	 * The returned decoded {@code ReadData} reports {@link ReadData#length()
+	 * length()}{@code == decodedLength}. Decoding may be lazy or eager,
+	 * depending on the {@code BytesCodec} implementation.
+	 *
+	 * @param readData
+	 * 		data to decode
+	 *
+	 * @return decoded ReadData
+	 *
+	 * @throws IOException
+	 * 		if any I/O error occurs
+	 */
+	ReadData decode(ReadData readData) throws IOException;
+
+	/**
+	 * Encode the given {@code readData}.
+	 * <p>
+	 * Encoding may be lazy or eager, depending on the {@code BytesCodec}
+	 * implementation.
+	 *
+	 * @param readData
+	 * 		data to encode
+	 *
+	 * @return encoded ReadData
+	 *
+	 * @throws IOException
+	 * 		if any I/O error occurs
+	 */
+	ReadData encode(ReadData readData) throws IOException;
+
 }

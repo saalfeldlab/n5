@@ -27,19 +27,17 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.OutputStream;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
-
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipParameters;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 @CompressionType("gzip")
-public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
+public class GzipCompression implements Compression {
 
 	private static final long serialVersionUID = 8630847239813334263L;
 
@@ -68,8 +66,17 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	}
 
 	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
+	public boolean equals(final Object other) {
 
+		if (other == null || other.getClass() != GzipCompression.class)
+			return false;
+		else {
+			final GzipCompression gz = ((GzipCompression)other);
+			return useZlib == gz.useZlib && level == gz.level;
+		}
+	}
+
+	private InputStream decode(final InputStream in) throws IOException {
 		if (useZlib) {
 			return new InflaterInputStream(in);
 		} else {
@@ -78,42 +85,20 @@ public class GzipCompression implements DefaultBlockReader, DefaultBlockWriter, 
 	}
 
 	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
+	public ReadData decode(final ReadData readData) throws IOException {
 
+		return ReadData.from(decode(readData.inputStream()));
+	}
+
+	@Override
+	public ReadData encode(final ReadData readData) {
 		if (useZlib) {
-			return new DeflaterOutputStream(out, new Deflater(level));
+			return readData.encode(out -> new DeflaterOutputStream(out, new Deflater(level)));
 		} else {
-			parameters.setCompressionLevel(level);
-			return new GzipCompressorOutputStream(out, parameters);
-		}
-	}
-
-	@Override
-	public GzipCompression getReader() {
-
-		return this;
-	}
-
-	@Override
-	public GzipCompression getWriter() {
-
-		return this;
-	}
-
-	private void readObject(final ObjectInputStream in) throws Exception {
-
-		in.defaultReadObject();
-		ReflectionUtils.setFieldValue(this, "parameters", new GzipParameters());
-	}
-
-	@Override
-	public boolean equals(final Object other) {
-
-		if (other == null || other.getClass() != GzipCompression.class)
-			return false;
-		else {
-			final GzipCompression gz = ((GzipCompression)other);
-			return useZlib == gz.useZlib && level == gz.level;
+			return readData.encode(out -> {
+				parameters.setCompressionLevel(level);
+				return new GzipCompressorOutputStream(out, parameters);
+			});
 		}
 	}
 }

@@ -27,14 +27,13 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 @CompressionType("xz")
-public class XzCompression implements DefaultBlockReader, DefaultBlockWriter, Compression {
+public class XzCompression implements Compression {
 
 	private static final long serialVersionUID = -7272153943564743774L;
 
@@ -52,30 +51,6 @@ public class XzCompression implements DefaultBlockReader, DefaultBlockWriter, Co
 	}
 
 	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
-
-		return new XZCompressorInputStream(in);
-	}
-
-	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
-
-		return new XZCompressorOutputStream(out, preset);
-	}
-
-	@Override
-	public XzCompression getReader() {
-
-		return this;
-	}
-
-	@Override
-	public XzCompression getWriter() {
-
-		return this;
-	}
-
-	@Override
 	public boolean equals(final Object other) {
 
 		if (other == null || other.getClass() != XzCompression.class)
@@ -84,4 +59,14 @@ public class XzCompression implements DefaultBlockReader, DefaultBlockWriter, Co
 			return preset == ((XzCompression)other).preset;
 	}
 
+	@Override
+	public ReadData decode(final ReadData readData) throws IOException {
+
+		return ReadData.from(new XZCompressorInputStream(readData.inputStream()));
+	}
+
+	@Override
+	public ReadData encode(final ReadData readData) {
+		return readData.encode(out -> new XZCompressorOutputStream(out, preset));
+	}
 }

@@ -26,16 +26,13 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
-import org.janelia.saalfeldlab.n5.Compression.CompressionType;
-
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
+import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 @CompressionType("lz4")
-public class Lz4Compression implements DefaultBlockReader, DefaultBlockWriter, Compression {
+public class Lz4Compression implements Compression {
 
 	private static final long serialVersionUID = -9071316415067427256L;
 
@@ -53,35 +50,22 @@ public class Lz4Compression implements DefaultBlockReader, DefaultBlockWriter, C
 	}
 
 	@Override
-	public InputStream getInputStream(final InputStream in) throws IOException {
-
-		return new LZ4BlockInputStream(in);
-	}
-
-	@Override
-	public OutputStream getOutputStream(final OutputStream out) throws IOException {
-
-		return new LZ4BlockOutputStream(out, blockSize);
-	}
-
-	@Override
-	public Lz4Compression getReader() {
-
-		return this;
-	}
-
-	@Override
-	public Lz4Compression getWriter() {
-
-		return this;
-	}
-
-	@Override
 	public boolean equals(final Object other) {
 
 		if (other == null || other.getClass() != Lz4Compression.class)
 			return false;
 		else
 			return blockSize == ((Lz4Compression)other).blockSize;
+	}
+
+	@Override
+	public ReadData decode(final ReadData readData) throws IOException {
+
+		return ReadData.from(new LZ4BlockInputStream(readData.inputStream()));
+	}
+
+	@Override
+	public ReadData encode(final ReadData readData) {
+		return readData.encode(out -> new LZ4BlockOutputStream(out, blockSize));
 	}
 }

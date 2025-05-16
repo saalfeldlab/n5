@@ -6,10 +6,10 @@
  * modification, are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
+ * this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -34,7 +34,6 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-
 /**
  * Enumerates available data types.
  *
@@ -44,10 +43,15 @@ public enum DataType {
 
 	UINT8(
 			"uint8",
-			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
-					blockSize,
-					gridPosition,
-					new byte[numElements])),
+			(blockSize, gridPosition, numElements) -> {
+				ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, gridPosition, new byte[numElements]);
+
+
+				return new ByteArrayDataBlock(
+						blockSize,
+						gridPosition,
+						new byte[numElements]);
+			}),
 	UINT16(
 			"uint16",
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
@@ -107,7 +111,7 @@ public enum DataType {
 			(blockSize, gridPosition, numElements) -> new StringDataBlock(
 					blockSize,
 					gridPosition,
-					new byte[numElements])),
+					new String[numElements])),
 	OBJECT(
 			"object",
 			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(

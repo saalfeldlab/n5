@@ -25,32 +25,17 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
+import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
 
 /**
- * Default implementation of {@link BlockWriter}.
+ * Default implementation of block writing (N5 format).
  *
  * @author Stephan Saalfeld
  * @author Igor Pisarev
  */
-public interface DefaultBlockWriter extends BlockWriter {
-
-	public OutputStream getOutputStream(final OutputStream out) throws IOException;
-
-	@Override
-	public default <T> void write(
-			final DataBlock<T> dataBlock,
-			final OutputStream out) throws IOException {
-
-		final ByteBuffer buffer = dataBlock.toByteBuffer();
-		try (final OutputStream deflater = getOutputStream(out)) {
-			deflater.write(buffer.array());
-			deflater.flush();
-		}
-	}
+public interface DefaultBlockWriter {
 
 	/**
 	 * Writes a {@link DataBlock} into an {@link OutputStream}.
@@ -65,34 +50,12 @@ public interface DefaultBlockWriter extends BlockWriter {
 	 * @throws IOException
 	 *             the exception
 	 */
-	public static <T> void writeBlock(
+	static <T> void writeBlock(
 			final OutputStream out,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		final DataOutputStream dos = new DataOutputStream(out);
-
-		final int mode;
-		if (datasetAttributes.getDataType() == DataType.OBJECT || dataBlock.getSize() == null)
-			mode = 2;
-		else if (dataBlock.getNumElements() == DataBlock.getNumElements(dataBlock.getSize()))
-			mode = 0;
-		else
-			mode = 1;
-		dos.writeShort(mode);
-
-		if (mode != 2) {
-			dos.writeShort(datasetAttributes.getNumDimensions());
-			for (final int size : dataBlock.getSize())
-				dos.writeInt(size);
-		}
-
-		if (mode != 0)
-			dos.writeInt(dataBlock.getNumElements());
-
-		dos.flush();
-
-		final BlockWriter writer = datasetAttributes.getCompression().getWriter();
-		writer.write(dataBlock, out);
+		final DataBlockCodec<T> codec = datasetAttributes.getDataBlockCodec();
+		codec.encode(dataBlock).writeTo(out);
 	}
 }
