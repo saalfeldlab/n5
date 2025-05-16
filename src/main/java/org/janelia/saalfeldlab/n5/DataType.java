@@ -43,15 +43,10 @@ public enum DataType {
 
 	UINT8(
 			"uint8",
-			(blockSize, gridPosition, numElements) -> {
-				ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, gridPosition, new byte[numElements]);
-
-
-				return new ByteArrayDataBlock(
-						blockSize,
-						gridPosition,
-						new byte[numElements]);
-			}),
+			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
+					blockSize,
+					gridPosition,
+					new byte[numElements])),
 	UINT16(
 			"uint16",
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(
