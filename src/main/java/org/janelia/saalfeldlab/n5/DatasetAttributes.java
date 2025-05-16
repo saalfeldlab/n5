@@ -28,8 +28,8 @@ package org.janelia.saalfeldlab.n5;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
-
 import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
+
 import org.janelia.saalfeldlab.n5.codec.N5Codecs;
 
 /**
@@ -78,6 +78,7 @@ public class DatasetAttributes implements Serializable {
 			final DataType dataType,
 			final Compression compression,
 			final DataBlockCodec<?> dataBlockCodec) {
+
 
 		this.dimensions = dimensions;
 		this.blockSize = blockSize;

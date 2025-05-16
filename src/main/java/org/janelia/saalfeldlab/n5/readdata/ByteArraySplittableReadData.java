@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
-class ByteArraySplittableReadData implements ReadData {
+class ByteArraySplittableReadData implements SplittableReadData {
 
 	private final byte[] data;
 	private final int offset;
@@ -41,7 +41,22 @@ class ByteArraySplittableReadData implements ReadData {
 	}
 
 	@Override
-	public ReadData materialize() throws IOException {
+	public SplittableReadData materialize() throws IOException {
 		return this;
+	}
+
+	@Override
+	public SplittableReadData splittable() throws IOException {
+		return this;
+	}
+
+	@Override
+	public SplittableReadData split(final long offset, final long length) throws IOException {
+		if (offset < 0 || offset >= this.length || length < 0) {
+			throw new IndexOutOfBoundsException();
+		}
+		final int o = this.offset + (int) offset;
+		final int l = Math.min((int) length, this.length - o);
+		return new ByteArraySplittableReadData(data, o, l);
 	}
 }

@@ -34,6 +34,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+
 /**
  * Enumerates available data types.
  *
@@ -43,15 +44,10 @@ public enum DataType {
 
 	UINT8(
 			"uint8",
-			(blockSize, gridPosition, numElements) -> {
-				ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, gridPosition, new byte[numElements]);
-
-
-				return new ByteArrayDataBlock(
-						blockSize,
-						gridPosition,
-						new byte[numElements]);
-			}),
+			(blockSize, gridPosition, numElements) -> new ByteArrayDataBlock(
+					blockSize,
+					gridPosition,
+					new byte[numElements])),
 	UINT16(
 			"uint16",
 			(blockSize, gridPosition, numElements) -> new ShortArrayDataBlock(

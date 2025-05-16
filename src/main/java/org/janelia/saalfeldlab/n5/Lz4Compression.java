@@ -26,9 +26,11 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+
+import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
-import org.janelia.saalfeldlab.n5.Compression.CompressionType;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 @CompressionType("lz4")
@@ -68,4 +70,5 @@ public class Lz4Compression implements Compression {
 	public ReadData encode(final ReadData readData) {
 		return readData.encode(out -> new LZ4BlockOutputStream(out, blockSize));
 	}
+
 }

@@ -26,7 +26,6 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
-import java.io.InputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
@@ -69,4 +68,5 @@ public class XzCompression implements Compression {
 	public ReadData encode(final ReadData readData) {
 		return readData.encode(out -> new XZCompressorOutputStream(out, preset));
 	}
+
 }

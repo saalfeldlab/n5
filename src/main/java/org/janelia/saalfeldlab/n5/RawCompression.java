@@ -46,5 +46,7 @@ public class RawCompression implements Compression {
 	@Override
 	public ReadData decode(final ReadData readData) {
 		return readData;
+
 	}
+
 }

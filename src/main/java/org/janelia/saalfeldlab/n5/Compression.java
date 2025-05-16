@@ -110,3 +110,4 @@ public interface Compression extends Serializable {
 	ReadData encode(ReadData readData) throws IOException;
 
 }
+
