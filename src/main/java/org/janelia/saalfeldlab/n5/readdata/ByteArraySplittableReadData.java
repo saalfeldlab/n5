@@ -26,50 +26,76 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * #L%
  */
-	package org.janelia.saalfeldlab.n5.readdata;
+package org.janelia.saalfeldlab.n5.readdata;
 
-	import java.io.ByteArrayInputStream;
-	import java.io.IOException;
-	import java.io.InputStream;
-	import java.util.Arrays;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
 
-	class ByteArraySplittableReadData implements ReadData {
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
-		private final byte[] data;
-		private final int offset;
-		private final int length;
+class ByteArraySplittableReadData implements SplittableReadData {
 
-		ByteArraySplittableReadData(final byte[] data) {
-			this(data, 0, data.length);
-		}
+	private final byte[] data;
+	private final int offset;
+	private final int length;
 
-		ByteArraySplittableReadData(final byte[] data, final int offset, final int length) {
-			this.data = data;
-			this.offset = offset;
-			this.length = length;
-		}
+	ByteArraySplittableReadData(final byte[] data) {
 
-		@Override
-		public long length() {
-			return length;
-		}
+		this(data, 0, data.length);
+	}
 
-		@Override
-		public InputStream inputStream() throws IOException {
-			return new ByteArrayInputStream(data, offset, length);
-		}
+	ByteArraySplittableReadData(final byte[] data, final int offset, final int length) {
 
-		@Override
-		public byte[] allBytes() {
-			if (offset == 0 && data.length == length) {
-				return data;
-			} else {
-				return Arrays.copyOfRange(data, offset, offset + length);
-			}
-		}
+		this.data = data;
+		this.offset = offset;
+		this.length = length;
+	}
 
-		@Override
-		public ReadData materialize() throws IOException {
-			return this;
+	@Override
+	public long length() {
+
+		return length;
+	}
+
+	@Override
+	public InputStream inputStream() throws IOException {
+
+		return new ByteArrayInputStream(data, offset, length);
+	}
+
+	@Override
+	public byte[] allBytes() {
+
+		if (offset == 0 && data.length == length) {
+			return data;
+		} else {
+			return Arrays.copyOfRange(data, offset, offset + length);
 		}
 	}
+
+	@Override
+	public SplittableReadData materialize() throws IOException {
+
+		return this;
+	}
+
+	@Override
+	public SplittableReadData slice(final long offset, final long length) throws IOException {
+
+		if (offset < 0 || offset >= this.length || length < 0) {
+			throw new IndexOutOfBoundsException();
+		}
+		final int o = this.offset + (int)offset;
+		final int l = Math.min((int)length, this.length - o);
+		return new ByteArraySplittableReadData(data, o, l);
+	}
+
+	@Override
+	public Pair<ReadData, ReadData> split(final long pivot) throws IOException {
+
+		return ImmutablePair.of(slice(0, pivot), slice(offset + pivot, length - pivot));
+	}
+}
