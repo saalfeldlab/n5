@@ -1,4 +1,5 @@
-# N5 [![Build Status](https://travis-ci.com/saalfeldlab/n5.svg?branch=master)](https://travis-ci.com/saalfeldlab/n5)
+# N5 [![Build Status](https://github.com/saalfeldlab/n5/actions/workflows/build.yml/badge.svg)](https://github.com/saalfeldlab/n5/actions/workflows/build.yml)
+
 
 The N5 API specifies the primitive operations needed to store large chunked n-dimensional tensors, and arbitrary meta-data in a hierarchy of groups similar to HDF5.
 
@@ -22,11 +23,11 @@ N5 group is not a single file but simply a directory on the file system.  Meta-d
 
 1. All directories of the file system are N5 groups.
 2. A JSON file `attributes.json` in a directory contains arbitrary attributes.  A group without attributes may not have an `attributes.json` file.
-3. The version of this specification is 1.0.0 and is stored in the "n5" attribute of the root group "/".
+3. The version of this specification is @n5-spec.version@ and is stored in the "n5" attribute of the root group "/".
 4. A dataset is a group with the mandatory attributes:
    * dimensions (e.g. [100, 200, 300]),
    * blockSize (e.g. [64, 64, 64]),
-   * dataType (one of {uint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, float64})
+   * dataType (one of {uint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, float64, object})
    * compression as a struct with the mandatory attribute type that specifies the compression scheme, currently available are:
      * raw (no parameters),
      * bzip2 with parameters
@@ -38,13 +39,13 @@ N5 group is not a single file but simply a directory on the file system.  Meta-d
      * xz with parameters
        * preset (integer, default 6).
        
-   Custom compression schemes with arbitrary parameters can be added using [compression annotations](#extensible-compression-schemes), e.g. [N5 Blosc](https://github.com/saalfeldlab/n5-blosc).
+   Custom compression schemes with arbitrary parameters can be added using [compression annotations](#extensible-compression-schemes), e.g. [N5 Blosc](https://github.com/saalfeldlab/n5-blosc) and [N5 ZStandard](https://github.com/JaneliaSciComp/n5-zstandard/).
 5. Chunks are stored in a directory hierarchy that enumerates their positive integer position in the chunk grid (e.g. `0/4/1/7` for chunk grid position p=(0, 4, 1, 7)).
 6. Datasets are sparse, i.e. there is no guarantee that all chunks of a dataset exist.
 7. Chunks cannot be larger than 2GB (2<sup>31</sup>Bytes).
 8. All chunks of a chunked dataset have the same size except for end-chunks that may be smaller, therefore
 9. Chunks are stored in the following binary format:
-    * mode (uint16 big endian, default = 0x0000, varlength = 0x0001)
+    * mode (uint16 big endian, default = 0x0000, varlength = 0x0001, object = 0x0002)
     * number of dimensions (uint16 big endian)
     * dimension 1[,...,n] (uint32 big endian)
     * [ mode == varlength ? number of elements (uint32 big endian) ]
@@ -134,4 +135,3 @@ Custom compression schemes can be implemented using the annotation discovery mec
 HDF5 is a great format that provides a wealth of conveniences that I do not want to miss.  It's inefficiency for parallel writing, however, limit its applicability for handling of very large n-dimensional data.
 
 N5 uses the native filesystem of the target platform and JSON files to specify basic and custom meta-data as attributes.  It aims at preserving the convenience of HDF5 where possible but doesn't try too hard to be a full replacement.
-Please do not take this project too seriously, we will see where it will get us and report back when more data is available.

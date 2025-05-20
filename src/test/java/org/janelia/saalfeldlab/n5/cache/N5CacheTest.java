@@ -1,3 +1,31 @@
+/*-
+ * #%L
+ * Not HDF5
+ * %%
+ * Copyright (C) 2017 - 2025 Stephan Saalfeld
+ * %%
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * #L%
+ */
 package org.janelia.saalfeldlab.n5.cache;
 
 import static org.junit.Assert.assertEquals;
@@ -17,18 +45,29 @@ public class N5CacheTest {
 
 		final N5JsonCache cache = new N5JsonCache(backingStorage);
 
-		// check existance, ensure backing storage is only called once
+		int expectedAttrCallCount = 0;
+
+		// check existence, ensure backing storage is only called once
+		//	this cache `exists` is overridden to write an attribute
+		//	which means the `exists` call checks attr existence first,
+		//	and since it finds some, it infers the existence without
+		//	an explicit check. Some backends don't support exists
+		//	so this is a way to handle those cases more elegantly
 		assertEquals(0, backingStorage.existsCallCount);
 		cache.exists("a", null);
-		assertEquals(1, backingStorage.existsCallCount);
+		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
+		assertEquals(0, backingStorage.existsCallCount);
 		cache.exists("a", null);
-		assertEquals(1, backingStorage.existsCallCount);
+		assertEquals(0, backingStorage.existsCallCount);
+		assertEquals(expectedAttrCallCount, backingStorage.attrCallCount);
 
-		// check existance of new group, ensure backing storage is only called one more time
+		// check existence of new group, ensure backing storage is only called one more time
 		cache.exists("b", null);
-		assertEquals(2, backingStorage.existsCallCount);
+		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
+		assertEquals(0, backingStorage.existsCallCount);
 		cache.exists("b", null);
-		assertEquals(2, backingStorage.existsCallCount);
+		assertEquals(expectedAttrCallCount, backingStorage.attrCallCount);
+		assertEquals(0, backingStorage.existsCallCount);
 
 		// check isDataset, ensure backing storage is only called when expected
 		// isDataset is called by exists, so should have been called twice here
@@ -62,28 +101,28 @@ public class N5CacheTest {
 
 		// finally check getAttributes
 		// it is not called by exists (since it needs the cache key)
-		assertEquals(0, backingStorage.attrCallCount);
+		assertEquals(expectedAttrCallCount, backingStorage.attrCallCount);
 		cache.getAttributes("a", "foo");
-		assertEquals(1, backingStorage.attrCallCount);
+		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
 		cache.getAttributes("a", "foo");
-		assertEquals(1, backingStorage.attrCallCount);
+		assertEquals(expectedAttrCallCount, backingStorage.attrCallCount);
 		cache.getAttributes("a", "bar");
-		assertEquals(2, backingStorage.attrCallCount);
+		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
 		cache.getAttributes("a", "bar");
-		assertEquals(2, backingStorage.attrCallCount);
+		assertEquals(expectedAttrCallCount, backingStorage.attrCallCount);
 		cache.getAttributes("a", "face");
-		assertEquals(3, backingStorage.attrCallCount);
+		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
 
 		cache.getAttributes("b", "foo");
-		assertEquals(4, backingStorage.attrCallCount);
+		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
 		cache.getAttributes("b", "foo");
-		assertEquals(4, backingStorage.attrCallCount);
+		assertEquals(expectedAttrCallCount, backingStorage.attrCallCount);
 		cache.getAttributes("b", "bar");
-		assertEquals(5, backingStorage.attrCallCount);
+		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
 		cache.getAttributes("b", "bar");
-		assertEquals(5, backingStorage.attrCallCount);
+		assertEquals(expectedAttrCallCount, backingStorage.attrCallCount);
 		cache.getAttributes("b", "face");
-		assertEquals(6, backingStorage.attrCallCount);
+		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
 
 	}
 

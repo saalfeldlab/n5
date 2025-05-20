@@ -1,3 +1,31 @@
+/*-
+ * #%L
+ * Not HDF5
+ * %%
+ * Copyright (C) 2017 - 2025 Stephan Saalfeld
+ * %%
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * #L%
+ */
 /**
  * Copyright (c) 2017--2021, Stephan Saalfeld
  * All rights reserved.
@@ -47,6 +75,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Arrays;
@@ -312,8 +341,16 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			o = 1;
 		}
 
-		for (int i = o; i < components.length; ++i)
-			components[i] = fsPath.getName(i - o).toString();
+		for (int i = o; i < components.length; ++i) {
+			String name = fsPath.getName(i - o).toString();
+			/* Preserve trailing slash on final component if present*/
+			if (i == components.length - 1) {
+				final String separator = fileSystem.getSeparator();
+				final String trailingSeparator = path.endsWith(separator) ? separator : path.endsWith("/") ? "/" : "";
+				name += trailingSeparator;
+			}
+			components[i] = name;
+		}
 		return components;
 	}
 
@@ -364,14 +401,6 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public String compose(final URI uri, final String... components) {
-		final String[] uriComps = new String[components.length+1];
-		System.arraycopy(components, 0, uriComps, 1, components.length);
-		uriComps[0] = fileSystem.provider().getPath(uri).toString();
-		return compose(uriComps);
-	}
-
-	@Override
 	public String compose(final String... components) {
 
 		if (components == null || components.length == 0)
@@ -379,6 +408,22 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		if (components.length == 1)
 			return fileSystem.getPath(components[0]).toString();
 		return fileSystem.getPath(components[0], Arrays.copyOfRange(components, 1, components.length)).normalize().toString();
+	}
+
+	@Override public String compose(URI uri, String... components) {
+
+		Path composedPath;
+		if (uri.isAbsolute())
+			composedPath = Paths.get(uri);
+		else
+			composedPath = Paths.get(uri.toString());
+		for (String component : components) {
+			if (component == null || component.isEmpty())
+				continue;
+			composedPath = composedPath.resolve(component);
+		}
+
+		return composedPath.toAbsolutePath().toString();
 	}
 
 	@Override

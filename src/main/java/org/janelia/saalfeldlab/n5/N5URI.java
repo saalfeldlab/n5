@@ -1,3 +1,31 @@
+/*-
+ * #%L
+ * Not HDF5
+ * %%
+ * Copyright (C) 2017 - 2025 Stephan Saalfeld
+ * %%
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * #L%
+ */
 package org.janelia.saalfeldlab.n5;
 
 import java.net.URI;
@@ -495,17 +523,23 @@ public class N5URI {
 		 * 1.`a///b` -> `a/b` : (?<=/)/+
 		 * 2.`a/./b` -> `a/b` : (?<=(/|^))(\./)+
 		 * 3.`a/b/` -> `a/b` : ((/|(?<=/))\.)$
+		 * The next avoids removing `/` when it is NOT redundant (e.g. only character, or escaped):
+		 * 4. `/` -> `/ , `/a/b/\\/` -> `/a/b/\\/` : (?<!(^|\\))/$
 		 * The last resolves relative paths:
-		 * 4. `a/../b` -> `a/b` :
-		 * (?<!(^|\\))/$|(?<=(/|^))[^/]+(?<!(/|(/|^)\.\.))/\.\./?
+		 * 5. ((?<=^/)|^|(?<=(/|^))[^/]+(?<!(/|(/|^)\.\.))/)\.\./?
+		 * 		- `a/../b` -> `b`
+		 * 		- `/a/../b` -> `/b`
+		 * 		- `../a/../b` -> `b`
+		 * 		- `/../a/../b` -> `/b`
+		 * 		- `/../a/../../b` -> `/b`
 		 *
 		 * This is run iteratively, since earlier removals may cause later
 		 * removals to be valid,
 		 * as well as the need to match once per relative `../` pattern.
 		 */
-		final Pattern relativePathPattern = Pattern
-				.compile(
-						"((?<=/)/+|(?<=(/|^))(\\./)+|((/|(?<=/))\\.)$|(?<!(^|\\\\))/$|(?<=(/|^))[^/]+(?<!(/|(/|^)\\.\\.))/\\.\\./?)");
+		final Pattern relativePathPattern = Pattern.compile(
+						"((?<=/)/+|(?<=(/|^))(\\./)+|((/|(?<=/))\\.)$|(?<!(^|\\\\))/$|((?<=^/)|^|(?<=(/|^))[^/]+(?<!(/|(/|^)\\.\\.))/)\\.\\./?)"
+				);
 		int prevStringLenth = 0;
 		String resolvedAttributePath = attrPathPlusIndexSeparators;
 		while (prevStringLenth != resolvedAttributePath.length()) {
@@ -516,18 +550,44 @@ public class N5URI {
 	}
 
 	/**
+	 * If uri is a valid URI, just return it as a URI. Else, encode if possible.
+	 *
+	 * @param uri as String to get as URI
+	 * @return URI from input. Encoded if necessary
+	 */
+	public static URI getAsUri(final String uri) throws N5Exception {
+
+		try {
+			return URI.create(uri);
+		} catch (Exception ignore) {
+			try {
+				return N5URI.encodeAsUri(uri);
+			} catch (URISyntaxException e) {
+				throw new N5Exception("Could not encode as URI: " + uri, e);
+			}
+		}
+	}
+
+	public static URI encodeAsUriPath(final String path) {
+		try {
+			return new URI(null, null, path, null);
+		} catch (Exception e) {
+			throw new IllegalArgumentException("Could not encode as URI path component:  " + path, e);
+		}
+	}
+
+	/**
 	 * Encode the inpurt {@link String uri} so that illegal characters are
 	 * properly escaped prior to generating the resulting {@link URI}.
 	 *
 	 * @param uri
 	 *            to encode
 	 * @return the {@link URI} created from encoding the {@link String uri}
-	 * @throws URISyntaxException
-	 *             if {@link String uri} is not valid
 	 */
 	public static URI encodeAsUri(final String uri) throws URISyntaxException {
 
 		if (uri.trim().length() == 0) {
+			//TODO Caleb: ???
 			return new URI(uri);
 		}
 		/*

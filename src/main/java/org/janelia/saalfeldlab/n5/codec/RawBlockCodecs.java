@@ -17,14 +17,14 @@ import java.nio.ByteOrder;
 
 public class RawBlockCodecs {
 
-	public static final RawDataBlockCodecFactory<byte[]> BYTE = (byteOrder, blockSize, codecs) -> new RawDataBlockCodec<>(DataCodec.BYTE, ByteArrayDataBlock::new, blockSize, codecs);
-	public static final RawDataBlockCodecFactory<short[]> SHORT = (byteOrder, blockSize, codecs) -> new RawDataBlockCodec<>(DataCodec.SHORT(byteOrder), ShortArrayDataBlock::new, blockSize, codecs);
-	public static final RawDataBlockCodecFactory<int[]> INT = (byteOrder, blockSize, codecs) -> new RawDataBlockCodec<>(DataCodec.INT(byteOrder), IntArrayDataBlock::new, blockSize, codecs);
-	public static final RawDataBlockCodecFactory<long[]> LONG = (byteOrder, blockSize, codecs) -> new RawDataBlockCodec<>(DataCodec.LONG(byteOrder), LongArrayDataBlock::new, blockSize, codecs);
-	public static final RawDataBlockCodecFactory<float[]> FLOAT = (byteOrder, blockSize, codecs) -> new RawDataBlockCodec<>(DataCodec.FLOAT(byteOrder), FloatArrayDataBlock::new, blockSize, codecs);
-	public static final RawDataBlockCodecFactory<double[]> DOUBLE = (byteOrder, blockSize, codecs) -> new RawDataBlockCodec<>(DataCodec.DOUBLE(byteOrder), DoubleArrayDataBlock::new, blockSize, codecs);
-	public static final RawDataBlockCodecFactory<String[]> STRING =(byteOrder, blockSize, codecs) -> new RawDataBlockCodec<>(DataCodec.STRING(byteOrder), StringDataBlock::new,  blockSize, codecs);
-	public static final RawDataBlockCodecFactory<byte[]> OBJECT =(byteOrder, blockSize, codecs) -> new RawDataBlockCodec<>(DataCodec.OBJECT, ByteArrayDataBlock::new, blockSize, codecs);
+	public static final RawDataBlockCodecFactory<byte[]> BYTE = (byteOrder, blockSize, codec) -> new RawDataBlockCodec<>(DataCodec.BYTE, ByteArrayDataBlock::new, blockSize, codec);
+	public static final RawDataBlockCodecFactory<short[]> SHORT = (byteOrder, blockSize, codec) -> new RawDataBlockCodec<>(DataCodec.SHORT(byteOrder), ShortArrayDataBlock::new, blockSize, codec);
+	public static final RawDataBlockCodecFactory<int[]> INT = (byteOrder, blockSize, codec) -> new RawDataBlockCodec<>(DataCodec.INT(byteOrder), IntArrayDataBlock::new, blockSize, codec);
+	public static final RawDataBlockCodecFactory<long[]> LONG = (byteOrder, blockSize, codec) -> new RawDataBlockCodec<>(DataCodec.LONG(byteOrder), LongArrayDataBlock::new, blockSize, codec);
+	public static final RawDataBlockCodecFactory<float[]> FLOAT = (byteOrder, blockSize, codec) -> new RawDataBlockCodec<>(DataCodec.FLOAT(byteOrder), FloatArrayDataBlock::new, blockSize, codec);
+	public static final RawDataBlockCodecFactory<double[]> DOUBLE = (byteOrder, blockSize, codec) -> new RawDataBlockCodec<>(DataCodec.DOUBLE(byteOrder), DoubleArrayDataBlock::new, blockSize, codec);
+	public static final RawDataBlockCodecFactory<String[]> STRING =(byteOrder, blockSize, codec) -> new RawDataBlockCodec<>(DataCodec.ZARR_STRING, StringDataBlock::new,  blockSize, codec);
+	public static final RawDataBlockCodecFactory<byte[]> OBJECT =(byteOrder, blockSize, codec) -> new RawDataBlockCodec<>(DataCodec.OBJECT, ByteArrayDataBlock::new, blockSize, codec);
 
 	private RawBlockCodecs() {}
 
@@ -94,7 +94,7 @@ public class RawBlockCodecs {
 			return elements;
 		}
 
-		@Override N5Codecs.BlockHeader createBlockHeader(DataBlock<T> dataBlock, ReadData blockData) throws IOException {
+		@Override N5Codecs.BlockHeader createBlockHeader(DataBlock<T> dataBlock, ReadData blockData) {
 
 			return null;
 		}
@@ -102,8 +102,8 @@ public class RawBlockCodecs {
 		@Override public ReadData encode(DataBlock<T> dataBlock) {
 
 			return ReadData.from(out -> {
-				final ReadData blockData = getDataCodec().serialize(dataBlock.getData());
-				getCodec().encode(blockData).writeTo(out);
+				final ReadData blockData = dataCodec.serialize(dataBlock.getData());
+				codec.encode(blockData).writeTo(out);
 			});
 		}
 
@@ -115,12 +115,12 @@ public class RawBlockCodecs {
 		@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
 
 			try (final InputStream in = readData.inputStream()) {
-				final int bytesPerElement = getDataCodec().bytesPerElement();
+				final int bytesPerElement = dataCodec.bytesPerElement();
 				final ReadData blockData = ReadData.from(in, numElements() * bytesPerElement);
-				final ReadData decodeData = getCodec().decode(blockData);
+				final ReadData decodeData = codec.decode(blockData);
 
-				final T data = getDataCodec().deserialize(decodeData, numElements());
-				return getDataBlockFactory().createDataBlock(blockSize, gridPosition, data);
+				final T data = dataCodec.deserialize(decodeData, numElements());
+				return dataBlockFactory.createDataBlock(blockSize, gridPosition, data);
 			}
 		}
 	}

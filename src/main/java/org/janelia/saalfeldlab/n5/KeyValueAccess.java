@@ -1,3 +1,31 @@
+/*-
+ * #%L
+ * Not HDF5
+ * %%
+ * Copyright (C) 2017 - 2025 Stephan Saalfeld
+ * %%
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * #L%
+ */
 /**
  * Copyright (c) 2017--2021, Stephan Saalfeld
  * All rights reserved.
@@ -29,6 +57,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 /**
  * Key value read primitives used by {@link N5KeyValueReader}
@@ -48,7 +78,26 @@ public interface KeyValueAccess {
 	 *            the path
 	 * @return the path components
 	 */
-	public String[] components(final String path);
+	public default String[] components(final String path) {
+
+		String[] components = Arrays.stream(path.split("/"))
+				.filter(x -> !x.isEmpty())
+				.toArray(String[]::new);
+		if (components.length == 0)
+			return path.startsWith("/") ? new String[]{"/"} : new String[]{""};
+
+		if (path.startsWith("/") && !components[0].equals("/")) {
+			final String[] prependRoot = new String[components.length + 1];
+			prependRoot[0] = "/";
+			System.arraycopy(components, 0, prependRoot, 1, components.length);
+			components = prependRoot;
+		}
+
+		if (path.endsWith("/") && !components[components.length - 1].endsWith("/")) {
+			components[components.length - 1] = components[components.length - 1] + "/";
+		}
+		return components;
+	}
 
 	/**
 	 * Compose a path from a base uri and subsequent components.
@@ -58,13 +107,53 @@ public interface KeyValueAccess {
 	 * @return the path
 	 */
 	public default String compose(final URI uri, final String... components) {
-		final String[] uriComponents = new String[components.length+1];
-		System.arraycopy(components, 0, uriComponents, 1, components.length);
-		uriComponents[0] = uri.getPath();
-		return compose(uriComponents);
+
+		int firstNonEmptyIdx = 0;
+		while (firstNonEmptyIdx < components.length && (components[firstNonEmptyIdx] == null || components[firstNonEmptyIdx].isEmpty())) {
+			firstNonEmptyIdx++;
+		}
+
+		/*If there are no non-empty components, there is nothing to compose against; return the uri. */
+		if (components.length == firstNonEmptyIdx)
+			return uri.toString();
+
+		/* allocate space for the initial path and the new components, skipping empty strings  */
+		final int nonEmptysize = components.length - firstNonEmptyIdx;
+		final String[] allComponents = new String[1 + nonEmptysize];
+		if (uri.getPath().isEmpty())
+			//TODO Caleb: This `isEmpty()` check is only necessary for Java 8. In newer versions
+			//	URI resolution is updated so that resolving and empty path with a new path adds
+			//	a leading `/` between the rest of the URI and the path part. In Java 8 it doesn't
+			//  add the `/` so it ends up directly concatenating the path part with URI
+			allComponents[0] = "/";
+		else
+			allComponents[0] = uri.getPath();
+
+		System.arraycopy(components, firstNonEmptyIdx, allComponents, 1, nonEmptysize);
+
+		URI composedUri = uri;
+		for (int i = 0; i < allComponents.length; i++) {
+			final String component = allComponents[i];
+			if (component == null || component.isEmpty())
+				continue;
+			else if (component.endsWith("/") || i == allComponents.length - 1)
+				composedUri = composedUri.resolve(N5URI.encodeAsUriPath(component));
+			else
+				composedUri = composedUri.resolve(N5URI.encodeAsUriPath(component + "/"));
+		}
+		return composedUri.toString();
 	}
 
-	public String compose(final String... components);
+	@Deprecated
+	public default String compose(final String... components) {
+
+		return normalize(
+				Arrays.stream(components)
+						.filter(x -> !x.isEmpty())
+						.collect(Collectors.joining("/"))
+		);
+
+	}
 
 	/**
 	 * Get the parent of a path string.
@@ -73,7 +162,10 @@ public interface KeyValueAccess {
 	 *            the path
 	 * @return the parent path or null if the path has no parent
 	 */
-	public String parent(final String path);
+	public default String parent(final String path) {
+		final String removeTrailingSlash = path.replaceAll("/+$", "");
+		return normalize(N5URI.getAsUri(removeTrailingSlash).resolve("").toString());
+	}
 
 	/**
 	 * Relativize path relative to base.
@@ -84,7 +176,22 @@ public interface KeyValueAccess {
 	 *            the base path
 	 * @return the result or null if the path has no parent
 	 */
-	public String relativize(final String path, final String base);
+	public default String relativize(final String path, final String base) {
+
+		try {
+			/*
+			 * Must pass absolute path to `uri`. if it already is, this is
+			 * redundant, and has no impact on the result. It's not true that
+			 * the inputs are always referencing absolute paths, but it doesn't
+			 * matter in this case, since we only care about the relative
+			 * portion of `path` to `base`, so the result always ignores the
+			 * absolute prefix anyway.
+			 */
+			return normalize(uri("/" + base).relativize(uri("/" + path)).toString());
+		} catch (final URISyntaxException e) {
+			throw new N5Exception("Cannot relativize path (" + path + ") with base (" + base + ")", e);
+		}
+	}
 
 	/**
 	 * Normalize a path to canonical form. All paths pointing to the same
@@ -106,7 +213,13 @@ public interface KeyValueAccess {
 	 * @return absolute URI
 	 * @throws URISyntaxException if the given path is not a proper URI
 	 */
-	public URI uri(final String uriString) throws URISyntaxException;
+	default URI uri(final String uriString) throws URISyntaxException {
+		try {
+			return URI.create(uriString);
+		} catch (Exception ignore) {
+			return N5URI.encodeAsUri(uriString);
+		}
+	}
 	/**
 	 * Test whether the path exists.
 	 *

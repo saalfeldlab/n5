@@ -1,3 +1,31 @@
+/*-
+ * #%L
+ * Not HDF5
+ * %%
+ * Copyright (C) 2017 - 2025 Stephan Saalfeld
+ * %%
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ * #L%
+ */
 /**
  * Copyright (c) 2017--2021, Stephan Saalfeld
  * All rights reserved.
@@ -80,6 +108,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		if (cacheMeta()) {
 			// check all nodes that are parents of the added node, if they have
 			// a children set, add the new child to it
+			getKeyValueAccess().parent(normalPath);
 			String[] pathParts = getKeyValueAccess().components(normalPath);
 			String parent = N5URI.normalizeGroupPath("/");
 			if (pathParts.length == 0) {
@@ -152,15 +181,8 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		}
 
 		if (cacheMeta()) {
-			final String[] pathParts = getKeyValueAccess().components(normalPath);
-			final String parent;
-			if (pathParts.length <= 1) {
-				parent = N5URI.normalizeGroupPath("/");
-			} else {
-				final int parentPathLength = pathParts.length - 1;
-				parent = getKeyValueAccess().compose(Arrays.copyOf(pathParts, parentPathLength));
-			}
-			getCache().removeCache(parent, normalPath);
+			final String parentPath = getKeyValueAccess().parent(normalPath);
+			getCache().removeCache(parentPath, normalPath);
 		}
 
 		/* an IOException should have occurred if anything had failed midway */
