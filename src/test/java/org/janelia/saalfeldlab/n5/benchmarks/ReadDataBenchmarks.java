@@ -68,8 +68,12 @@ public class ReadDataBenchmarks {
 
 	public ReadData read() throws IOException {
 
-		final Path path = basePath.resolve("tmp-" + objectSizeBytes);
-		return ReadData.from(kva, path.toString());
+		return ReadData.from(kva, getPath().toString());
+	}
+
+	protected Path getPath() {
+
+		return basePath.resolve("tmp-" + objectSizeBytes);
 	}
 
 	@Setup(Level.Trial)
