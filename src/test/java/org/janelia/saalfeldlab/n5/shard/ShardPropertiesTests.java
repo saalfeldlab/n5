@@ -4,6 +4,7 @@ import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.codec.RawBytes;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.Position;
 import org.junit.Test;
@@ -33,13 +34,13 @@ public class ShardPropertiesTests {
 				DataType.UINT8,
 				new ShardingCodec(
 						blkSize,
-						new Codec[]{},
+						new Codec[]{ new RawBytes() },
 						new DeterministicSizeCodec[]{},
 						IndexLocation.END
 				)
 		);
 
-		@SuppressWarnings({"rawtypes", "unchecked"}) final InMemoryShard shard = new InMemoryShard(dsetAttrs, shardPosition, null);
+		@SuppressWarnings({"rawtypes"}) final InMemoryShard shard = new InMemoryShard(dsetAttrs, shardPosition, null);
 
 		assertArrayEquals(new int[]{4, 4}, shard.getBlockGridSize());
 
@@ -72,7 +73,7 @@ public class ShardPropertiesTests {
 				DataType.UINT8,
 				new ShardingCodec(
 						blkSize,
-						new Codec[]{},
+						new Codec[]{new RawBytes()},
 						new DeterministicSizeCodec[]{},
 						IndexLocation.END
 				)
@@ -109,7 +110,7 @@ public class ShardPropertiesTests {
 				DataType.UINT8,
 				new ShardingCodec(
 						blkSize,
-						new Codec[]{},
+						new Codec[]{new RawBytes()},
 						new DeterministicSizeCodec[]{},
 						IndexLocation.END
 				)
