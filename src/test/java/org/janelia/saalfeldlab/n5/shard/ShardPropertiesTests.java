@@ -40,7 +40,7 @@ public class ShardPropertiesTests {
 				)
 		);
 
-		@SuppressWarnings({"rawtypes", "unchecked"}) final InMemoryShard shard = new InMemoryShard(dsetAttrs, shardPosition, null);
+		@SuppressWarnings({"rawtypes"}) final InMemoryShard shard = new InMemoryShard(dsetAttrs, shardPosition, null);
 
 		assertArrayEquals(new int[]{4, 4}, shard.getBlockGridSize());
 
