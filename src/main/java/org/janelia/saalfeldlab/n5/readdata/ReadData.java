@@ -126,14 +126,14 @@ public interface ReadData {
 	}
 
 	/**
-	 * Read the underlying data into a {@code byte[]} array, and return it as a {@code ReadData}.
+	 * Read the underlying data into a {@code byte[]} array, and return it as a {@code SplittableReadData}.
 	 * (If this {@code ReadData} is already in a {@code byte[]} array or {@code
 	 * ByteBuffer}, just return {@code this}.)
 	 * <p>
 	 * The returned {@code ReadData} has a known {@link #length} and multiple
 	 * {@link #inputStream InputStreams} can be opened on it.
 	 */
-	ReadData materialize() throws IOException;
+	SplittableReadData materialize() throws IOException;
 
 	/**
 	 * Write the contained data into an {@code OutputStream}.

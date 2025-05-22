@@ -373,7 +373,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		private boolean isPartialRead() {
-			return startByte > 0 || (size < 0 && size != Long.MAX_VALUE);
+			return startByte > 0 || (size >= 0 && size != Long.MAX_VALUE);
 		}
 
 		@Override
@@ -381,17 +381,19 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 
 			HttpURLConnection conn = (HttpURLConnection)uri.toURL().openConnection();
 			if (isPartialRead()) {
-
 				conn.setRequestProperty(RANGE, rangeString());
-//				final String acceptRanges = conn.getHeaderField(ACCEPT_RANGE);
-//				if (acceptRanges == null || !acceptRanges.equals(BYTES)) {
-//					return ReadData.from(conn.getInputStream()).materialize().sli
-//				}
+				final String acceptRanges = conn.getHeaderField(ACCEPT_RANGE);
+				if (acceptRanges == null || !acceptRanges.equals(BYTES)) {
+					conn.disconnect();
+					conn = (HttpURLConnection)uri.toURL().openConnection();
+					return ReadData.from(conn.getInputStream()).materialize().slice(startByte, size).inputStream();
+				}
 			}
 			return conn.getInputStream();
 		}
 
 		private String rangeString() {
+
 			final String lastByte = (size > 0) ? Long.toString(startByte + size - 1) : "";
 			return String.format("%s=%d-%s", BYTES, startByte, lastByte);
 		}
