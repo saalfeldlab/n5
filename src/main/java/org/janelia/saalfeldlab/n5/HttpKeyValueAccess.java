@@ -395,13 +395,15 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		@Override
 		public InputStream newInputStream() throws IOException {
 
-			final InputStream inputStream = uri.toURL().openStream();
-			final long skipped = inputStream.skip(startByte);
-			assert(startByte == skipped);
+			HttpURLConnection conn = (HttpURLConnection)uri.toURL().openConnection();
+			conn.setRequestProperty("Range", rangeString());
+			return conn.getInputStream();
+		}
 
-			if (size >= 0)
-				return new BoundedInputStream(inputStream, size);
-			return inputStream;
+		private String rangeString() {
+
+			final String lastByte = (size > 0) ? Long.toString(startByte + size - 1) : "";
+			return String.format("bytes=%d-%s", startByte, lastByte);
 		}
 
 		@Override
