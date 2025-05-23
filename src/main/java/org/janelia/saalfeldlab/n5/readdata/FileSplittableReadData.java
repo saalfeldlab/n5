@@ -4,12 +4,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.janelia.saalfeldlab.n5.N5Exception;
 
 public class FileSplittableReadData implements SplittableReadData {
 
@@ -57,7 +59,12 @@ public class FileSplittableReadData implements SplittableReadData {
 
 	private void read() throws IOException {
 
-		final FileChannel channel = FileChannel.open(path, new OpenOption[]{StandardOpenOption.READ});
+		final FileChannel channel;
+		try {
+			channel = FileChannel.open(path, StandardOpenOption.READ);
+		} catch (final NoSuchFileException e) {
+			throw new N5Exception.N5NoSuchKeyException(e);
+		}
 		channel.position(offset);
 
 		if (length > Integer.MAX_VALUE)

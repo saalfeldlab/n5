@@ -53,6 +53,8 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -251,6 +253,10 @@ public interface KeyValueAccess {
 	 * @return true if the path is a file
 	 */
 	public boolean isFile(String normalPath); // TODO: Looks un-used. Remove?
+
+	default ReadData createReadData(final String normalPath) throws IOException {
+		return ReadData.from(this, normalPath);
+	}
 
 	/**
 	 * Create a lock on a path for reading. This isn't meant to be kept
