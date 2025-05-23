@@ -9,17 +9,14 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.SplitableData;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.SplittableReadData;
 import org.janelia.saalfeldlab.n5.serialization.N5Annotations;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.util.Objects;
 
@@ -130,25 +127,10 @@ public class ShardingCodec<T> implements Codec.ArrayCodec<T> {
 
 	@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
 
-		return getArrayCodec().decode(readData, gridPosition);
-	}
+		final SplittableReadData splitableReadData = readData.materialize();
 
-	public <T> void writeBlock(
-			final SplitableData splitData,
-			final DatasetAttributes datasetAttributes,
-			final DataBlock<T> dataBlock) {
-
-		final long[] shardPos = datasetAttributes.getShardPositionForBlock(dataBlock.getGridPosition());
-		new VirtualShard<T>(datasetAttributes, shardPos, splitData).writeBlock(dataBlock);
-	}
-
-	public <T> DataBlock<T> readBlock(
-			final SplitableData splitData,
-			final DatasetAttributes datasetAttributes,
-			final long... gridPosition) {
-
-		final long[] shardPosition = datasetAttributes.getShardPositionForBlock(gridPosition);
-		return new VirtualShard<T>(datasetAttributes, shardPosition, splitData).getBlock(gridPosition);
+		final VirtualShard<T> shard = new VirtualShard<>(attributes, gridPosition, splitableReadData);
+		return shard.getBlock(gridPosition);
 	}
 
 	public ShardIndex createIndex(final DatasetAttributes attributes) {

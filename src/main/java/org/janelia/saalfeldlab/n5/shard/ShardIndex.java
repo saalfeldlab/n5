@@ -9,9 +9,9 @@ import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.SplitableData;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
 import java.io.ByteArrayInputStream;
@@ -161,11 +161,11 @@ public class ShardIndex extends LongArrayDataBlock {
 	}
 
 	public static boolean read(
-			final SplitableData indexData,
+			final ReadData indexData,
 			final ShardIndex index
 	) {
 
-		try (final InputStream in = indexData.newInputStream()) {
+		try (final InputStream in = indexData.inputStream()) {
 			read(in, index);
 			return true;
 		} catch (final N5Exception.N5NoSuchKeyException e) {
@@ -176,12 +176,12 @@ public class ShardIndex extends LongArrayDataBlock {
 	}
 
 	public static void write(
-			final SplitableData indexData,
+			final OutputStream outputStream,
 			final ShardIndex index
 	) throws IOException {
 
-		try (final OutputStream os = indexData.newOutputStream()) {
-			write(index, os);
+		try {
+			write(index, outputStream);
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException("Failed to write shard index", e);
 		}

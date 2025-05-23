@@ -1,18 +1,11 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.commons.io.output.CountingOutputStream;
-import org.apache.commons.io.output.ProxyOutputStream;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
-import org.janelia.saalfeldlab.n5.SplitByteBufferedData;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 import org.janelia.saalfeldlab.n5.util.Position;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -57,12 +50,6 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	@Override public DataBlock<T> getBlock(long... blockGridPosition) {
 
 		return blocks.get(Position.wrap(blockGridPosition));
-	}
-
-	@Override
-	public void writeBlock(DataBlock<T> block) {
-
-		addBlock(block);
 	}
 
 	public void addBlock(DataBlock<T> block) {
@@ -121,7 +108,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 				shard.getDatasetAttributes(),
 				shard.getGridPosition());
 
-		shard.forEach(blk -> inMemoryShard.addBlock(blk));
+		shard.forEach(inMemoryShard::addBlock);
 		return inMemoryShard;
 	}
 }

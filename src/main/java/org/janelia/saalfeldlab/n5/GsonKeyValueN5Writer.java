@@ -53,6 +53,16 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
+import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.util.Position;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -62,17 +72,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
-import org.janelia.saalfeldlab.n5.shard.Shard;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
-import org.janelia.saalfeldlab.n5.util.Position;
 
 /**
  * Default implementation of {@link N5Writer} with JSON attributes parsed with
@@ -256,13 +255,18 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final Map<Position, List<DataBlock<T>>> shardBlockMap = datasetAttributes.groupBlocks(
 					Arrays.stream(dataBlocks).collect(Collectors.toList()));
 
-			for( final Entry<Position, List<DataBlock<T>>> e : shardBlockMap.entrySet()) {
+			for (final Entry<Position, List<DataBlock<T>>> e : shardBlockMap.entrySet()) {
 
 				final long[] shardPosition = e.getKey().get();
 				final Shard<T> currentShard = readShard(datasetPath, datasetAttributes, shardPosition);
+				final InMemoryShard<T> newShard;
+				if (currentShard != null) {
+					newShard = InMemoryShard.fromShard(currentShard);
+				} else {
+					newShard = new InMemoryShard<>(datasetAttributes, shardPosition);
+				}
 
-				final InMemoryShard<T> newShard = InMemoryShard.fromShard(currentShard);
-				for( DataBlock<T> blk : e.getValue())
+				for (DataBlock<T> blk : e.getValue())
 					newShard.addBlock(blk);
 
 				writeShard(datasetPath, datasetAttributes, newShard);
@@ -279,17 +283,21 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception {
 
+		if (datasetAttributes.getShardSize() != null) {
+			writeBlocks(path, datasetAttributes, dataBlock);
+			return;
+		}
+
 		final long[] keyPos = datasetAttributes.getArrayCodec().getPositionForBlock(datasetAttributes, dataBlock);
 		final String keyPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), keyPos);
-		final SplitableData splitData;
-		try {
+		try (
+				final LockedChannel channel = getKeyValueAccess().lockForWriting(keyPath);
+				final OutputStream outputStream = channel.newOutputStream()
+		) {
 			//TODO Caleb: What behavior do we want when writing a new block at an existing one?
 			//	If the encoded size is smaller, should it truncate the remaining, or ignore it?
 			//	currently we truncate for the default writeBlock method (shards don't truncate)
-			splitData = new SplitKeyValueAccessData(getKeyValueAccess(), keyPath).split(0, Long.MAX_VALUE);
-			try (final OutputStream out = splitData.newOutputStream()) {
-				datasetAttributes.<T>getArrayCodec().encode(dataBlock).writeTo(out);
-			}
+			datasetAttributes.<T>getArrayCodec().encode(dataBlock).writeTo(outputStream);
 		} catch (IOException e) {
 			throw new N5IOException(e);
 		}
@@ -302,13 +310,11 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final Shard<T> shard) throws N5Exception {
 
 		final String shardPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), shard.getGridPosition());
-		final SplitKeyValueAccessData splitData = new SplitKeyValueAccessData(getKeyValueAccess(), shardPath, 0, Long.MAX_VALUE);
-		try (final OutputStream shardOut = splitData.newOutputStream()) {
-			try (final InputStream shardIn = shard.getAsStream()) {
-				while (shardIn.available() > 0) {
-					shardOut.write(shardIn.read());
-				}
-			}
+		try (
+				final LockedChannel channel = getKeyValueAccess().lockForWriting(shardPath);
+				final OutputStream shardOut = channel.newOutputStream()
+		) {
+			shard.createReadData().writeTo(shardOut);
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write shard " + Arrays.toString(shard.getGridPosition()) + " into dataset " + path, e);
