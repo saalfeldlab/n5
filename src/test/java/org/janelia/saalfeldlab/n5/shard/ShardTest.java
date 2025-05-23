@@ -93,7 +93,7 @@ public class ShardTest {
 				new ShardingCodec<>(
 						blockSize,
 						new Codec[]{new N5BlockCodec<>()}, //, new GzipCompression(4)},
-						new DeterministicSizeCodec[]{new N5BlockCodec<>(), new Crc32cChecksumCodec()},
+						new DeterministicSizeCodec[]{new RawBytes<>(), new Crc32cChecksumCodec()},
 						indexLocation
 				)
 		);
