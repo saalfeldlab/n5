@@ -147,7 +147,7 @@ public class ReadDataTests {
 
 		final FileSplittableReadData readData = new FileSystemKeyValueAccess(FileSystems.getDefault())
 				.createReadData(tmpF.getAbsolutePath());
-		assertEquals("file read data length unknown", -1, readData.length());
+		assertEquals("file read data length", 128, readData.length());
 		splittableReadDataTestHelper(readData.materialize(), N, 5);
 	}
 	
