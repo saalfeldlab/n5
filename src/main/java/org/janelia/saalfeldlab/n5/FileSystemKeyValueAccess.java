@@ -249,22 +249,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 	@Override
 	public FileSplittableReadData createReadData(final String normalPath) {
-		return new FileSplittableReadData(Paths.get(normalPath), 0, -1);
-	}
-
-	public ReadData read(final String normalPath, final long startByte, final long length) throws IOException {
-		final FileChannel channel = FileChannel.open(fileSystem.getPath(normalPath), new OpenOption[]{StandardOpenOption.READ});
-		channel.position(startByte);
-
-		final int sz = (int)(length < 0 ? channel.size() : (int)length);
-		final byte[] data = new byte[sz];
-		final ByteBuffer buf = ByteBuffer.wrap(data);
-		channel.read(buf);
-		return ReadData.from(data);
-	}
-
-	public ReadData readFully(final String normalPath) throws IOException {
-		return read(normalPath, 0, -1);
+		return new FileSplittableReadData(this, normalPath, 0, -1);
 	}
 
 	@Override

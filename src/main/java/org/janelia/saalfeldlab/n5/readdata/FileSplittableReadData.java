@@ -5,30 +5,32 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception;
 
 public class FileSplittableReadData implements SplittableReadData {
 
 	private ByteArraySplittableReadData materialized;
 
-	private final Path path;
+	private final KeyValueAccess kva;
+	private final String normalKey;
 	private final long offset;
-	private final long length;
+	private long length;
 
-	public FileSplittableReadData(Path path, long offset, long length) {
-		this.path = path;
+	public FileSplittableReadData(KeyValueAccess kva, String normalKey, long offset, long length) {
+		this.kva = kva;
+		this.normalKey = normalKey;
 		this.offset = offset;
 		this.length = length;
 	}
 
-	public FileSplittableReadData(Path path, long offset) {
-		this(path, offset, -1);
+	public FileSplittableReadData(KeyValueAccess kva, String normalKey, long offset) {
+		this(kva, normalKey, offset, -1);
 	}
 
 	@Override
@@ -36,12 +38,17 @@ public class FileSplittableReadData implements SplittableReadData {
 		if (materialized != null)
 			return materialized.length();
 
+		if (length < 0) {
+			try {
+				length = kva.size(normalKey);
+			} catch (IOException e) {}
+		}
 		return length;
 	}
 
 	@Override
 	public InputStream inputStream() throws IOException, IllegalStateException {
-		return  materialize().inputStream();
+		return materialize().inputStream();
 	}
 
 	@Override
@@ -61,7 +68,7 @@ public class FileSplittableReadData implements SplittableReadData {
 
 		final FileChannel channel;
 		try {
-			channel = FileChannel.open(path, StandardOpenOption.READ);
+			channel = FileChannel.open(Paths.get(normalKey), StandardOpenOption.READ);
 		} catch (final NoSuchFileException e) {
 			throw new N5Exception.N5NoSuchKeyException(e);
 		}
@@ -83,7 +90,7 @@ public class FileSplittableReadData implements SplittableReadData {
 		if (materialized != null)
 			return materialize().slice(offset, length);
 
-		return new FileSplittableReadData(path, this.offset + offset, length);
+		return new FileSplittableReadData(kva, normalKey, this.offset + offset, length);
 	}
 
 	@Override
@@ -99,8 +106,8 @@ public class FileSplittableReadData implements SplittableReadData {
 		final long lenR = this.length - pivot;
 
 		return new ImmutablePair<ReadData, ReadData>(
-				 new FileSplittableReadData(path, offsetL, lenL),
-				 new FileSplittableReadData(path, offsetR, lenR));
+				 new FileSplittableReadData(kva, normalKey, offsetL, lenL),
+				 new FileSplittableReadData(kva, normalKey, offsetR, lenR));
 	}
 
 }
