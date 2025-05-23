@@ -147,6 +147,10 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			}
 		}
 
+		protected FileChannel getFileChannel() {
+			return channel;
+		}
+
 		@Override
 		public long size() throws IOException {
 
@@ -607,25 +611,20 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		@Override
 		void read() throws IOException {
 
-			final FileChannel channel;
-			try {
-				Path path = Paths.get(kva.uri(normalKey));
-				channel = FileChannel.open(path, StandardOpenOption.READ);
+			try (FileChannel channel = kva.lockForReading(normalKey).getFileChannel()) {
+				channel.position(offset);
+				if (length > Integer.MAX_VALUE)
+					throw new IOException("Attempt to materialize too large data");
+
+				final int sz = (int)(length < 0 ? channel.size() : (int)length);
+				final byte[] data = new byte[sz];
+				final ByteBuffer buf = ByteBuffer.wrap(data);
+				channel.read(buf);
+				materialized = (SplittableReadData)ReadData.from(data);
 			} catch (final NoSuchFileException e) {
 				throw new N5Exception.N5NoSuchKeyException(e);
-			} catch (URISyntaxException e) {
-				throw new N5Exception(e);
 			}
-			channel.position(offset);
 
-			if (length > Integer.MAX_VALUE)
-				throw new IOException("Attempt to materialize too large data");
-
-			final int sz = (int)(length < 0 ? channel.size() : (int)length);
-			final byte[] data = new byte[sz];
-			final ByteBuffer buf = ByteBuffer.wrap(data);
-			channel.read(buf);
-			materialized = (SplittableReadData)ReadData.from(data);
 		}
 
 		@Override
