@@ -127,7 +127,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 	}
 
-	@Override public long size(String normalPath) throws IOException {
+	@Override public long size(String normalPath) {
 
 		final HttpURLConnection head = requireValidHttpResponse(normalPath, "HEAD", "Error checking existence: " + normalPath, true);
 		return head.getContentLengthLong();

@@ -2,9 +2,11 @@ package org.janelia.saalfeldlab.n5.readdata;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
@@ -39,9 +41,7 @@ public class FileSplittableReadData implements SplittableReadData {
 			return materialized.length();
 
 		if (length < 0) {
-			try {
-				length = kva.size(normalKey);
-			} catch (IOException e) {}
+			length = kva.size(normalKey);
 		}
 		return length;
 	}
@@ -68,9 +68,12 @@ public class FileSplittableReadData implements SplittableReadData {
 
 		final FileChannel channel;
 		try {
-			channel = FileChannel.open(Paths.get(normalKey), StandardOpenOption.READ);
+			Path path = Paths.get(kva.uri(normalKey));
+			channel = FileChannel.open(path, StandardOpenOption.READ);
 		} catch (final NoSuchFileException e) {
 			throw new N5Exception.N5NoSuchKeyException(e);
+		} catch (URISyntaxException e) {
+			throw new N5Exception(e);
 		}
 		channel.position(offset);
 

@@ -62,6 +62,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -301,12 +302,14 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public long size(final String normalPath) throws IOException {
+	public long size(final String normalPath) {
 
 		try {
 			return Files.size(fileSystem.getPath(normalPath));
 		} catch (NoSuchFileException e) {
 			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5Exception.N5IOException(e);
 		}
 	}
 

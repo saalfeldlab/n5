@@ -234,7 +234,7 @@ public interface KeyValueAccess {
 	 */
 	public boolean exists(final String normalPath);
 
-	public long size(final String normalPath) throws IOException;
+	public long size(final String normalPath);
 
 	/**
 	 * Test whether the path is a directory.
