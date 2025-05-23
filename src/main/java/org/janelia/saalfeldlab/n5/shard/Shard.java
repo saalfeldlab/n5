@@ -168,9 +168,9 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 							index.set(blockOffset.getAndAdd(blockWrittenSize), blockWrittenSize, blockPosition);
 						}
 					}
-				}
-				synchronized (index) {
-					ShardIndex.write(out, index);
+					synchronized (index) {
+						ShardIndex.write(out, index);
+					}
 				}
 			});
 		} else {

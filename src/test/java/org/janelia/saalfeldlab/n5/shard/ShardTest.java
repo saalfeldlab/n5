@@ -221,29 +221,29 @@ public class ShardTest {
 
 		final HashMap<long[], byte[]> writtenBlocks = new HashMap<>();
 
-//		for (int idx1 = 1; idx1 >= 0; idx1--) {
-//			for (int idx2 = 1; idx2 >= 0; idx2--) {
-//				final long[] gridPosition = {idx1, idx2};
-//				final DataBlock<?> dataBlock = dataType.createDataBlock(blockSize, gridPosition, numElements);
-//				byte[] data = (byte[])dataBlock.getData();
-//				for (int i = 0; i < data.length; i++) {
-//					data[i] = (byte)((idx1 * 100) + (idx2 * 10) + i);
-//				}
-//				writer.writeBlock(dataset, datasetAttributes, dataBlock);
-//
-//				final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, dataBlock.getGridPosition().clone());
-//				Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
-//
-//				for (Map.Entry<long[], byte[]> entry : writtenBlocks.entrySet()) {
-//					final long[] otherGridPosition = entry.getKey();
-//					final byte[] otherData = entry.getValue();
-//					final DataBlock<?> otherBlock = writer.readBlock(dataset, datasetAttributes, otherGridPosition);
-//					Assert.assertArrayEquals("Read prior write from shard no loner matches", otherData, (byte[])otherBlock.getData());
-//				}
-//
-//				writtenBlocks.put(gridPosition, data);
-//			}
-//		}
+		for (int idx1 = 1; idx1 >= 0; idx1--) {
+			for (int idx2 = 1; idx2 >= 0; idx2--) {
+				final long[] gridPosition = {idx1, idx2};
+				final DataBlock<?> dataBlock = dataType.createDataBlock(blockSize, gridPosition, numElements);
+				byte[] data = (byte[])dataBlock.getData();
+				for (int i = 0; i < data.length; i++) {
+					data[i] = (byte)((idx1 * 100) + (idx2 * 10) + i);
+				}
+				writer.writeBlock(dataset, datasetAttributes, dataBlock);
+
+				final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, dataBlock.getGridPosition().clone());
+				Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
+
+				for (Map.Entry<long[], byte[]> entry : writtenBlocks.entrySet()) {
+					final long[] otherGridPosition = entry.getKey();
+					final byte[] otherData = entry.getValue();
+					final DataBlock<?> otherBlock = writer.readBlock(dataset, datasetAttributes, otherGridPosition);
+					Assert.assertArrayEquals("Read prior write from shard no loner matches", otherData, (byte[])otherBlock.getData());
+				}
+
+				writtenBlocks.put(gridPosition, data);
+			}
+		}
 	}
 
 	@Test
@@ -265,18 +265,18 @@ public class ShardTest {
 
 		final InMemoryShard<byte[]> shard = new InMemoryShard<>(datasetAttributes, new long[]{0, 0});
 
-//		for (int idx1 = 1; idx1 >= 0; idx1--) {
-//			for (int idx2 = 1; idx2 >= 0; idx2--) {
-//				final long[] gridPosition = {idx1, idx2};
-//				final DataBlock<?> dataBlock = dataType.createDataBlock(blockSize, gridPosition, numElements);
-//				byte[] data = (byte[])dataBlock.getData();
-//				for (int i = 0; i < data.length; i++) {
-//					data[i] = (byte)((idx1 * 100) + (idx2 * 10) + i);
-//				}
-//				shard.addBlock((DataBlock<byte[]>)dataBlock);
-//				writtenBlocks.put(gridPosition, data);
-//			}
-//		}
+		for (int idx1 = 1; idx1 >= 0; idx1--) {
+			for (int idx2 = 1; idx2 >= 0; idx2--) {
+				final long[] gridPosition = {idx1, idx2};
+				final DataBlock<?> dataBlock = dataType.createDataBlock(blockSize, gridPosition, numElements);
+				byte[] data = (byte[])dataBlock.getData();
+				for (int i = 0; i < data.length; i++) {
+					data[i] = (byte)((idx1 * 100) + (idx2 * 10) + i);
+				}
+				shard.addBlock((DataBlock<byte[]>)dataBlock);
+				writtenBlocks.put(gridPosition, data);
+			}
+		}
 
 		writer.writeShard(dataset, datasetAttributes, shard);
 
