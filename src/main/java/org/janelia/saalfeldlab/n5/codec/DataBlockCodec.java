@@ -38,6 +38,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  * @param <T>
  * 		type of the data contained in the DataBlock
  */
+//TODO Caleb: replace with ArrayCodec? Or use for Factory naming?
 public interface DataBlockCodec<T> {
 
 	ReadData encode(DataBlock<T> dataBlock) throws IOException;

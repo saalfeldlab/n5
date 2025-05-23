@@ -62,6 +62,7 @@ public interface ReadData {
 	 * @throws IOException
 	 * 		if an I/O error occurs while trying to get the length
 	 */
+	//TODO N5IOException
 	default long length() throws IOException {
 		return -1;
 	}
