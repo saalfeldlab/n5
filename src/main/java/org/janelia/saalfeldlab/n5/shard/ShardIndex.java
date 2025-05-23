@@ -35,12 +35,14 @@ public class ShardIndex extends LongArrayDataBlock {
 	private final IndexLocation location;
 
 	private final DeterministicSizeCodec[] codecs;
+	private final DatasetAttributes indexAttributes;
 
 	public ShardIndex(int[] shardBlockGridSize, long[] data, IndexLocation location, final DeterministicSizeCodec... codecs) {
 
 		super(prepend(LONGS_PER_BLOCK, shardBlockGridSize), DUMMY_GRID_POSITION, data);
 		this.codecs = codecs;
 		this.location = location;
+		this.indexAttributes = createIndexAttributes();
 	}
 
 	public ShardIndex(int[] shardBlockGridSize, IndexLocation location, DeterministicSizeCodec... codecs) {
@@ -67,7 +69,9 @@ public class ShardIndex extends LongArrayDataBlock {
 
 	public int getNumBlocks() {
 
-		return Arrays.stream(getSize()).reduce(1, (x, y) -> x * y);
+		/* getSize() is the number of data entries; each block takes 2 entries (offset and length)
+		* so the product of the dimension sizes, divided by 2, is the number of blocks. */
+		return Arrays.stream(getSize()).reduce(1, (x, y) -> x * y) / 2;
 	}
 
 	public boolean isEmpty() {
@@ -155,7 +159,7 @@ public class ShardIndex extends LongArrayDataBlock {
 
 	public static void read(InputStream in, final ShardIndex index) throws IOException {
 
-		@SuppressWarnings("unchecked") final DataBlock<long[]> indexBlock = (DataBlock<long[]>)DefaultBlockReader.readBlock(in, index.getIndexAttributes(), index.gridPosition);
+		@SuppressWarnings("unchecked") final DataBlock<long[]> indexBlock = (DataBlock<long[]>)DefaultBlockReader.readBlock(in, index.createIndexAttributes(), index.gridPosition);
 		final long[] indexData = indexBlock.getData();
 		System.arraycopy(indexData, 0, index.data, 0, index.data.length);
 	}
@@ -189,10 +193,15 @@ public class ShardIndex extends LongArrayDataBlock {
 
 	public static void write(final ShardIndex index, OutputStream out) throws IOException {
 
-		DefaultBlockWriter.writeBlock(out, index.getIndexAttributes(), index);
+		DefaultBlockWriter.writeBlock(out, index.createIndexAttributes(), index);
 	}
 
-	private DatasetAttributes getIndexAttributes() {
+	public Codec.ArrayCodec<?> getArrayCodec() {
+		return indexAttributes.getArrayCodec();
+	}
+
+	// TODO: Caleb static?
+	private DatasetAttributes createIndexAttributes() {
 
 		final DatasetAttributes indexAttributes =
 				new DatasetAttributes(

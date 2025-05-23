@@ -6,6 +6,7 @@ import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5FSTest;
 import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.RawBytes;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
@@ -70,7 +71,7 @@ public class ShardIndexTest {
 		final int[] shardBlockGridSize = new int[]{6, 5};
 		final IndexLocation indexLocation = IndexLocation.END;
 		final DeterministicSizeCodec[] indexCodecs = new DeterministicSizeCodec[]{
-				new RawBytes<>(),
+				new N5BlockCodec<>(),
 				new Crc32cChecksumCodec()};
 		final String path = Paths.get(Paths.get(writer.getURI()).toAbsolutePath().toString(), "indexTest").toString();
 
@@ -80,6 +81,8 @@ public class ShardIndexTest {
 		index.set(93, 111, new int[]{3, 0});
 		index.set(143, 1, new int[]{1, 2});
 
+		final long indexSize = index.getArrayCodec().encodedSize(index.numBytes());
+
 		long currentSize;
 		try {
 			currentSize = kva.size(path);
@@ -88,7 +91,7 @@ public class ShardIndexTest {
 		}
 		final ShardIndex.IndexByteBounds bounds = ShardIndex.byteBounds(index, currentSize);
 		try (
-				final LockedChannel channel = kva.lockForWriting(path, bounds.start, index.numBytes());
+				final LockedChannel channel = kva.lockForWriting(path, bounds.start, indexSize);
 				final OutputStream out = channel.newOutputStream()
 		) {
 			ShardIndex.write(index, out);
@@ -96,7 +99,7 @@ public class ShardIndexTest {
 
 		final ShardIndex indexRead = new ShardIndex(shardBlockGridSize, indexLocation, indexCodecs);
 		try (
-				final LockedChannel channel = kva.lockForReading(path, bounds.start, index.numBytes());
+				final LockedChannel channel = kva.lockForReading(path, bounds.start, indexSize);
 				final InputStream in = channel.newInputStream()
 		) {
 			ShardIndex.read(in, indexRead);

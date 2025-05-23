@@ -273,6 +273,20 @@ public class N5Codecs {
 			this.numElements = numElements;
 		}
 
+		public int getSize() {
+
+			switch (mode) {
+				case MODE_DEFAULT:
+					return 2 + 4 * blockSize.length;
+				case MODE_VARLENGTH:
+					return 2 + 4 * blockSize.length + 4;
+				case MODE_OBJECT:
+					return 2 + 4;
+				default:
+					throw new IllegalArgumentException("Unexpected mode: " + mode);
+			}
+		}
+
 		public int[] blockSize() {
 
 			return blockSize;

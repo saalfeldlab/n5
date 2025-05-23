@@ -16,12 +16,15 @@ public class N5BlockCodec<T> implements Codec.ArrayCodec<T> {
 
 	private DataBlockCodec<T> dataBlockCodec;
 
+	private DatasetAttributes attributes;
+
 
 	//TODO Caleb: Extract to factory that returns N5BlockCodec wrapper for datablockCodec
 	@Override public void initialize(final DatasetAttributes attributes, final Codec.BytesCodec[] byteCodecs) {
 		/*TODO: Consider an attributes.createDataBlockCodec() without parameters? */
 		final ConcatenatedBytesCodec concatenatedBytesCodec = new ConcatenatedBytesCodec(byteCodecs);
 		this.dataBlockCodec = N5Codecs.createDataBlockCodec(attributes.getDataType(), concatenatedBytesCodec);
+		this.attributes = attributes;
 	}
 
 	@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
@@ -32,6 +35,13 @@ public class N5BlockCodec<T> implements Codec.ArrayCodec<T> {
 	@Override public ReadData encode(DataBlock<T> dataBlock) throws IOException {
 
 		return dataBlockCodec.encode(dataBlock);
+	}
+
+	@Override public long encodedSize(long size) {
+
+		final int[] blockSize = attributes.getBlockSize();
+		int headerSize = new N5Codecs.BlockHeader(blockSize, DataBlock.getNumElements(blockSize)).getSize();
+		return headerSize + size;
 	}
 
 	@Override

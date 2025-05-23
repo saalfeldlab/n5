@@ -36,7 +36,7 @@ import static org.junit.Assert.assertArrayEquals;
 @RunWith(Parameterized.class)
 public class ShardTest {
 
-	private static final boolean LOCAL_DEBUG = true;
+	private static final boolean LOCAL_DEBUG = false;
 
 	private static final N5FSTest tempN5Factory = new N5FSTest() {
 
@@ -56,10 +56,8 @@ public class ShardTest {
 
 		final ArrayList<Object[]> params = new ArrayList<>();
 		for (IndexLocation indexLoc : IndexLocation.values()) {
-			for (ByteOrder blockByteOrder : new ByteOrder[]{ByteOrder.BIG_ENDIAN}) {
-				for (ByteOrder indexByteOrder : new ByteOrder[]{ByteOrder.BIG_ENDIAN}) {
-					params.add(new Object[]{indexLoc, blockByteOrder, indexByteOrder});
-				}
+			for (ByteOrder indexByteOrder : new ByteOrder[]{ByteOrder.BIG_ENDIAN,  ByteOrder.LITTLE_ENDIAN}) {
+				params.add(new Object[]{indexLoc, indexByteOrder});
 			}
 		}
 		final int numParams = params.size();
@@ -72,9 +70,6 @@ public class ShardTest {
 	public IndexLocation indexLocation;
 
 	@Parameterized.Parameter(1)
-	public ByteOrder dataByteOrder;
-
-	@Parameterized.Parameter(2)
 	public ByteOrder indexByteOrder;
 
 	@After
@@ -289,7 +284,7 @@ public class ShardTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Not currently supported ")
 	public void writeReadNestedShards() {
 
 		int[] blockSize = new int[]{4, 4};
@@ -305,7 +300,8 @@ public class ShardTest {
 		writer.writeBlocks("nestedShards", datasetAttributes,
 				new ByteArrayDataBlock(blockSize, new long[]{1, 1}, data),
 				new ByteArrayDataBlock(blockSize, new long[]{0, 2}, data),
-				new ByteArrayDataBlock(blockSize, new long[]{2, 1}, data));
+				new ByteArrayDataBlock(blockSize, new long[]{2, 1}, data)
+		);
 
 		assertArrayEquals(data, (byte[])writer.readBlock("nestedShards", datasetAttributes, 1, 1).getData());
 		assertArrayEquals(data, (byte[])writer.readBlock("nestedShards", datasetAttributes, 0, 2).getData());
@@ -338,41 +334,26 @@ public class ShardTest {
 		);
 	}
 
-	public static void main(String[] args) {
-
-		final long[] imageSize = new long[]{32, 27};
-		final int[] shardSize = new int[]{16, 9};
-		final int[] blockSize = new int[]{4, 3};
-		final int numBlockElements = Arrays.stream(blockSize).reduce(1, (x, y) -> x * y);
-
-		try (final N5Writer n5 = new N5Factory().openWriter("n5:/tmp/tests/codeReview/sharded.n5")) {
-
-			final DatasetAttributes attributes = getDatasetAttributes(imageSize, shardSize, blockSize);
-		}
-
-	}
-
 	private static DatasetAttributes getDatasetAttributes(long[] imageSize, int[] shardSize, int[] blockSize) {
 
-		final DatasetAttributes attributes = new DatasetAttributes(
+		return new DatasetAttributes(
 				imageSize,
 				shardSize,
 				blockSize,
 				DataType.INT32,
-				new ShardingCodec(
+				new ShardingCodec<>(
 						blockSize,
 						new Codec[]{
 								// codecs applied to image data
-								new RawBytes(ByteOrder.BIG_ENDIAN),
+								new RawBytes<>(ByteOrder.BIG_ENDIAN),
 						},
 						new DeterministicSizeCodec[]{
 								// codecs applied to the shard index, must not be compressors
-								new RawBytes(ByteOrder.LITTLE_ENDIAN),
+								new RawBytes<>(ByteOrder.LITTLE_ENDIAN),
 								new Crc32cChecksumCodec()
 						},
 						IndexLocation.START
 				)
 		);
-		return attributes;
 	}
 }
