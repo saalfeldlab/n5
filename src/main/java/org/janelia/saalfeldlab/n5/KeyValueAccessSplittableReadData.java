@@ -17,7 +17,7 @@ abstract class KeyValueAccessSplittableReadData<K extends KeyValueAccess> implem
 	protected final long offset;
 	protected long length;
 
-	public KeyValueAccessSplittableReadData(K kva, String normalKey, long offset, long length) {
+	KeyValueAccessSplittableReadData(K kva, String normalKey, long offset, long length) {
 
 		this.kva = kva;
 		this.normalKey = normalKey;
@@ -25,7 +25,7 @@ abstract class KeyValueAccessSplittableReadData<K extends KeyValueAccess> implem
 		this.length = length;
 	}
 
-	public KeyValueAccessSplittableReadData(K kva, String normalKey, long offset) {
+	KeyValueAccessSplittableReadData(K kva, String normalKey, long offset) {
 
 		this(kva, normalKey, offset, -1);
 	}
