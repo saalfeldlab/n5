@@ -61,6 +61,7 @@ import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
 import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 import org.janelia.saalfeldlab.n5.util.Position;
 
 import java.io.IOException;
@@ -249,7 +250,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T>... dataBlocks) throws N5Exception {
 
-		if (datasetAttributes.getShardSize() != null) {
+		if (datasetAttributes.getArrayCodec() instanceof ShardingCodec<?>) {
 
 			/* Group blocks by shard index */
 			final Map<Position, List<DataBlock<T>>> shardBlockMap = datasetAttributes.groupBlocks(
