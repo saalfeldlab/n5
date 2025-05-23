@@ -26,36 +26,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * #L%
  */
-/**
- * Copyright (c) 2017--2021, Stephan Saalfeld
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
 package org.janelia.saalfeldlab.n5;
 
 import org.apache.commons.io.input.BoundedInputStream;
-import org.janelia.saalfeldlab.n5.readdata.FileSplittableReadData;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.SplittableReadData;
 
 import java.io.File;
 import java.io.IOException;
@@ -249,7 +224,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public FileSplittableReadData createReadData(final String normalPath) {
+	public SplittableReadData createReadData(final String normalPath) {
 		return new FileSplittableReadData(this, normalPath, 0, -1);
 	}
 
@@ -622,4 +597,41 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 				throw x;
 		}
 	}
+
+	private class FileSplittableReadData extends KeyValueAccessSplittableReadData<FileSystemKeyValueAccess> {
+
+		public FileSplittableReadData(FileSystemKeyValueAccess kva, String normalKey, long offset, long length) {
+			super(kva, normalKey, offset, length);
+		}
+
+		@Override
+		void read() throws IOException {
+
+			final FileChannel channel;
+			try {
+				Path path = Paths.get(kva.uri(normalKey));
+				channel = FileChannel.open(path, StandardOpenOption.READ);
+			} catch (final NoSuchFileException e) {
+				throw new N5Exception.N5NoSuchKeyException(e);
+			} catch (URISyntaxException e) {
+				throw new N5Exception(e);
+			}
+			channel.position(offset);
+
+			if (length > Integer.MAX_VALUE)
+				throw new IOException("Attempt to materialize too large data");
+
+			final int sz = (int)(length < 0 ? channel.size() : (int)length);
+			final byte[] data = new byte[sz];
+			final ByteBuffer buf = ByteBuffer.wrap(data);
+			channel.read(buf);
+			materialized = (SplittableReadData)ReadData.from(data);
+		}
+
+		@Override
+		KeyValueAccessSplittableReadData<FileSystemKeyValueAccess> readOperationSlice(long offset, long length) throws IOException {
+			return new FileSplittableReadData(kva, normalKey, offset, length);
+		}
+	}
+	
 }

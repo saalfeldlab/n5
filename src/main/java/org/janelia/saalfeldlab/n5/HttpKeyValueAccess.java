@@ -222,6 +222,11 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
+	public HttpSplittableReadData createReadData(final String normalPath) {
+		return new HttpSplittableReadData(this, normalPath, 0, -1);
+	}
+
+	@Override
 	public LockedChannel lockForReading(final String normalPath) throws IOException {
 		return lockForReading(normalPath, 0, -1);
 	}
@@ -352,14 +357,6 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		private final long size;
 		private final ArrayList<Closeable> resources = new ArrayList<>();
 
-		protected HttpObjectChannel(final URI uri) {
-			this(uri, 0, -1);
-		}
-
-		protected HttpObjectChannel(final URI uri, int size) {
-			this(uri, 0, size);
-		}
-
 		protected HttpObjectChannel(final URI uri, long startByte, long size) {
 
 			this.uri = uri;
@@ -429,6 +426,25 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 				}
 				resources.clear();
 			}
+		}
+	}
+
+	private class HttpSplittableReadData extends KeyValueAccessSplittableReadData<HttpKeyValueAccess> {
+
+		public HttpSplittableReadData(HttpKeyValueAccess kva, String normalKey, long offset, long length) {
+			super(kva, normalKey, offset, length);
+		}
+
+		@Override
+		void read() throws IOException {
+			try( final HttpObjectChannel ch = new HttpObjectChannel(kva.uri(normalKey), offset, length) ) {
+				materialized = ReadData.from(ch.newInputStream()).materialize();
+			} catch (URISyntaxException e) {}
+		}
+
+		@Override
+		KeyValueAccessSplittableReadData<HttpKeyValueAccess> readOperationSlice(long offset, long length) throws IOException {
+			return new HttpSplittableReadData(kva, normalKey, offset, length);
 		}
 	}
 

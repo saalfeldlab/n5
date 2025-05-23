@@ -131,7 +131,7 @@ public class ReadDataTests {
 	}
 
 	@Test
-	public void testFileSplittableReadData() throws IOException {
+	public void testFileKvaReadData() throws IOException {
 
 		int N = 128;
 		byte[] data = new byte[N];
@@ -142,15 +142,14 @@ public class ReadDataTests {
 		tmpF.deleteOnExit();
 		try (FileOutputStream os = new FileOutputStream(tmpF)) {
 			os.write(data);
-			os.close();
 		}
 
-		final FileSplittableReadData readData = new FileSystemKeyValueAccess(FileSystems.getDefault())
+		final SplittableReadData readData = new FileSystemKeyValueAccess(FileSystems.getDefault())
 				.createReadData(tmpF.getAbsolutePath());
 		assertEquals("file read data length", 128, readData.length());
 		splittableReadDataTestHelper(readData.materialize(), N, 5);
 	}
-	
+
 	private class ByteFun implements OutputStreamOperator {
 
 		IntUnaryOperator fun;

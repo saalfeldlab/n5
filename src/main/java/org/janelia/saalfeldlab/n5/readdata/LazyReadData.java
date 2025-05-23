@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import org.apache.commons.io.output.ProxyOutputStream;
+import org.janelia.saalfeldlab.n5.N5Exception;
 
 class LazyReadData implements ReadData {
 
@@ -72,8 +73,13 @@ class LazyReadData implements ReadData {
 	}
 
 	@Override
-	public long length() throws IOException {
-		return materialize().length();
+	public long length() {
+
+		try {
+			return materialize().length();
+		} catch (IOException e) {
+			throw new N5Exception.N5IOException(e);
+		}
 	}
 
 	@Override
