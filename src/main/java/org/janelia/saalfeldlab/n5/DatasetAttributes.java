@@ -153,8 +153,8 @@ public class DatasetAttributes implements BlockParameters, ShardParameters, Seri
 					.toArray(BytesCodec[]::new);
 
 		}
-		//TODO Caleb: factory style for setDatasetAttributes
-		arrayCodec.setDatasetAttributes(this);
+		//TODO Caleb: factory style for initialize
+		arrayCodec.initialize(this, byteCodecs);
 	}
 
 	/**

@@ -18,9 +18,8 @@ public class N5BlockCodec<T> implements Codec.ArrayCodec<T> {
 
 
 	//TODO Caleb: Extract to factory that returns N5BlockCodec wrapper for datablockCodec
-	@Override public void setDatasetAttributes(final DatasetAttributes attributes, final Codec.BytesCodec... codecs) {
+	@Override public void initialize(final DatasetAttributes attributes, final Codec.BytesCodec[] byteCodecs) {
 		/*TODO: Consider an attributes.createDataBlockCodec() without parameters? */
-		final BytesCodec[] byteCodecs = codecs == null ? attributes.getCodecs() : codecs;
 		final ConcatenatedBytesCodec concatenatedBytesCodec = new ConcatenatedBytesCodec(byteCodecs);
 		this.dataBlockCodec = N5Codecs.createDataBlockCodec(attributes.getDataType(), concatenatedBytesCodec);
 	}

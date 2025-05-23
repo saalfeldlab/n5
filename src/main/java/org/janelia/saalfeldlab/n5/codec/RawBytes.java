@@ -43,9 +43,8 @@ public class RawBytes<T> implements Codec.ArrayCodec<T> {
 		return byteOrder;
 	}
 
-	@Override public void setDatasetAttributes(DatasetAttributes attributes, BytesCodec... codecs) {
+	@Override public void initialize(DatasetAttributes attributes, BytesCodec[] byteCodecs) {
 		ensureValidByteOrder(attributes.getDataType(), getByteOrder());
-		final BytesCodec[] byteCodecs = codecs == null ? attributes.getCodecs() : codecs;
 		final ConcatenatedBytesCodec concatenatedBytesCodec = new ConcatenatedBytesCodec(byteCodecs);
 		this.dataBlockCodec = RawBlockCodecs.createDataBlockCodec(attributes.getDataType(), getByteOrder(), attributes.getBlockSize(), concatenatedBytesCodec);
 	}

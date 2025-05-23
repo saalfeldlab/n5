@@ -64,7 +64,7 @@ public interface Codec extends Serializable {
 			return blockPosition;
 		}
 
-		void setDatasetAttributes(final DatasetAttributes attributes, final BytesCodec... codecs);
+		void initialize(final DatasetAttributes attributes, final BytesCodec... codecs);
 
 		@Override default long encodedSize(long size) {
 

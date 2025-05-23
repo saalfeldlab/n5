@@ -118,9 +118,9 @@ public class ShardingCodec<T> implements Codec.ArrayCodec<T> {
 		return attributes.getShardPositionForBlock(blockPosition);
 	}
 
-	@Override public void setDatasetAttributes(DatasetAttributes attributes, final BytesCodec... codecs) {
+	@Override public void initialize(DatasetAttributes attributes, final BytesCodec[] codecs) {
 		this.attributes = attributes;
-		getArrayCodec().setDatasetAttributes(attributes, getCodecs());
+		getArrayCodec().initialize(attributes, getCodecs());
 	}
 
 	@Override public ReadData encode(DataBlock<T> dataBlock) throws IOException {
