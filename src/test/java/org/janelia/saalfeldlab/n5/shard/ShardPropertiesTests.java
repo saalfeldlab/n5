@@ -5,6 +5,7 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
+import org.janelia.saalfeldlab.n5.codec.RawBytes;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.Position;
 import org.junit.Test;
@@ -35,7 +36,7 @@ public class ShardPropertiesTests {
 				new ShardingCodec(
 						blkSize,
 						new Codec[]{new N5BlockCodec()},
-						new DeterministicSizeCodec[]{},
+						new DeterministicSizeCodec[]{new RawBytes()},
 						IndexLocation.END
 				)
 		);
@@ -74,7 +75,7 @@ public class ShardPropertiesTests {
 				new ShardingCodec(
 						blkSize,
 						new Codec[]{ new N5BlockCodec() },
-						new DeterministicSizeCodec[]{},
+						new DeterministicSizeCodec[]{new RawBytes()},
 						IndexLocation.END
 				)
 		);
@@ -111,7 +112,7 @@ public class ShardPropertiesTests {
 				new ShardingCodec(
 						blkSize,
 						new Codec[]{ new N5BlockCodec() },
-						new DeterministicSizeCodec[]{},
+						new DeterministicSizeCodec[]{new RawBytes<>()},
 						IndexLocation.END
 				)
 		);

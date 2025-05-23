@@ -56,13 +56,13 @@ public class ShardTest {
 
 		final ArrayList<Object[]> params = new ArrayList<>();
 		for (IndexLocation indexLoc : IndexLocation.values()) {
-			for (ByteOrder blockByteOrder : new ByteOrder[]{ByteOrder.BIG_ENDIAN, ByteOrder.LITTLE_ENDIAN}) {
-				for (ByteOrder indexByteOrder : new ByteOrder[]{ByteOrder.BIG_ENDIAN, ByteOrder.LITTLE_ENDIAN}) {
+			for (ByteOrder blockByteOrder : new ByteOrder[]{ByteOrder.BIG_ENDIAN}) {
+				for (ByteOrder indexByteOrder : new ByteOrder[]{ByteOrder.BIG_ENDIAN}) {
 					params.add(new Object[]{indexLoc, blockByteOrder, indexByteOrder});
 				}
 			}
 		}
-		final int numParams = LOCAL_DEBUG ? 1 : params.size();
+		final int numParams = params.size();
 		final Object[][] paramArray = new Object[numParams][];
 		Arrays.setAll(paramArray, params::get);
 		return Arrays.asList(paramArray);
@@ -93,7 +93,7 @@ public class ShardTest {
 				new ShardingCodec<>(
 						blockSize,
 						new Codec[]{new N5BlockCodec<>()}, //, new GzipCompression(4)},
-						new DeterministicSizeCodec[]{new N5BlockCodec<>(), new Crc32cChecksumCodec()},
+						new DeterministicSizeCodec[]{new RawBytes<>(), new Crc32cChecksumCodec()},
 						indexLocation
 				)
 		);

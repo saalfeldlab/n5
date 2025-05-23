@@ -35,7 +35,7 @@ public class BlockIterators {
 				new int[] {2, 2},		// block size
 				DataType.UINT8,
 				new Codec[] { new N5BlockCodec<>() },
-				new DeterministicSizeCodec[] { new N5BlockCodec<>() },
+				new DeterministicSizeCodec[] { new RawBytes<>() },
 				IndexLocation.END);
 
 		shardPositions(attrs)

@@ -1,12 +1,10 @@
 package org.janelia.saalfeldlab.n5.shard;
 
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
+import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5FSTest;
 import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
-import org.janelia.saalfeldlab.n5.SplitKeyValueAccessData;
-import org.janelia.saalfeldlab.n5.SplitableData;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.RawBytes;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
@@ -15,6 +13,8 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
@@ -78,15 +78,23 @@ public class ShardIndexTest {
 		index.set(19, 32, new int[]{1, 0});
 		index.set(93, 111, new int[]{3, 0});
 		index.set(143, 1, new int[]{1, 2});
-		final SplitKeyValueAccessData splitableData = new SplitKeyValueAccessData(kva, path);
-		final ShardIndex.IndexByteBounds bounds = ShardIndex.byteBounds(index, splitableData.getSize());
-		final SplitableData indexData = splitableData.split(bounds.start, index.numBytes());
-		ShardIndex.write(indexData, index);
 
-		final ShardIndex other = new ShardIndex(shardBlockGridSize, indexLocation, indexCodecs);
-		ShardIndex.read(indexData, other);
+		final ShardIndex.IndexByteBounds bounds = ShardIndex.byteBounds(index, kva.size(path));
+		try (
+				final LockedChannel channel = kva.lockForWriting(path, bounds.start, index.numBytes());
+				final OutputStream out = channel.newOutputStream()
+		) {
+			ShardIndex.write(index, out);
+		}
 
-		assertEquals(index, other);
+		final ShardIndex indexRead = new ShardIndex(shardBlockGridSize, indexLocation, indexCodecs);
+		try (
+				final LockedChannel channel = kva.lockForReading(path, bounds.start, index.numBytes());
+				final InputStream in = channel.newInputStream()
+		) {
+			ShardIndex.read(in, indexRead);
+		}
+		assertEquals(index, indexRead);
 	}
 
 	@Test
@@ -107,14 +115,22 @@ public class ShardIndexTest {
 		index.set(19, 32, new int[]{1, 0});
 		index.set(93, 111, new int[]{3, 0});
 		index.set(143, 1, new int[]{1, 2});
-		SplitKeyValueAccessData splitableData = new SplitKeyValueAccessData(kva, path);
-		final ShardIndex.IndexByteBounds bounds = ShardIndex.byteBounds(index, splitableData.getSize());
-		final SplitableData indexData = splitableData.split(bounds.start, index.numBytes());
-		ShardIndex.write(indexData, index);
+
+		final ShardIndex.IndexByteBounds bounds = ShardIndex.byteBounds(index, kva.size(path));
+		try (
+				final LockedChannel channel = kva.lockForWriting(path, bounds.start, index.numBytes());
+				final OutputStream out = channel.newOutputStream()
+		) {
+			ShardIndex.write(index, out);
+		}
 
 		final ShardIndex indexRead = new ShardIndex(shardBlockGridSize, indexLocation, indexCodecs);
-		ShardIndex.read(indexData, indexRead);
-
+		try (
+				final LockedChannel channel = kva.lockForReading(path, bounds.start, index.numBytes());
+				final InputStream in = channel.newInputStream()
+		) {
+			ShardIndex.read(in, indexRead);
+		}
 		assertEquals(index, indexRead);
 	}
 }
