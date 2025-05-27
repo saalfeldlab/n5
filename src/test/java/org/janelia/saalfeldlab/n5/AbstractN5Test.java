@@ -468,6 +468,57 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
+	public void testWriteInvalidBlock() {
+
+		final Compression compression = getCompressions()[0];
+		final DataType dataType = DataType.UINT8;
+
+		final int[] biggerBlockSize = Arrays.stream(blockSize).map(x -> x + 2).toArray();
+		int nBigger = Arrays.stream(biggerBlockSize).reduce(1, (x, y) -> x * y);
+
+		final int[] smallerBlockSize = Arrays.stream(blockSize).map(x -> x - 2).toArray();
+		int nSmaller = Arrays.stream(smallerBlockSize).reduce(1, (x, y) -> x * y);
+
+		int N = Arrays.stream(blockSize).reduce(1, (x, y) -> x * y);
+
+		final Random rnd = new Random(7560);
+		final byte[] biggerData = new byte[nBigger];
+		rnd.nextBytes(biggerData);
+
+		final byte[] smallerData = new byte[nSmaller];
+		rnd.nextBytes(smallerData);
+
+		final float[] floatData = new float[N];
+
+		try (final N5Writer n5 = createTempN5Writer()) {
+
+			n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
+			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+
+			// write a block that is too large
+			final ByteArrayDataBlock bigDataBlock = new ByteArrayDataBlock(biggerBlockSize, new long[]{0, 0, 0}, biggerData);
+			n5.writeBlock(datasetName, attributes, bigDataBlock);
+
+			final DataBlock<?> loadedBigDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
+			assertArrayEquals(biggerData, (byte[])loadedBigDataBlock.getData());
+
+			// write a block that is too small
+			final ByteArrayDataBlock smallDataBlock = new ByteArrayDataBlock(smallerBlockSize, new long[]{0, 0, 0}, smallerData);
+			n5.writeBlock(datasetName, attributes, smallDataBlock);
+
+			final DataBlock<?> loadedSmallDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
+			System.out.println(((byte[])loadedSmallDataBlock.getData()).length);
+			assertArrayEquals(smallerData, (byte[])loadedSmallDataBlock.getData());
+
+			// write a block of the wrong type
+			final FloatArrayDataBlock floatDataBlock = new FloatArrayDataBlock(blockSize, new long[]{0, 0, 0}, floatData);
+			assertThrows(ClassCastException.class, () -> {
+				n5.writeBlock(datasetName, attributes, floatDataBlock);
+			});
+		}
+	}
+
+	@Test
 	public void testOverwriteBlock() {
 
 		try (final N5Writer n5 = createTempN5Writer("test.n5")) {
