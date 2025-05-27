@@ -289,7 +289,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			return;
 		}
 
-		final long[] keyPos = datasetAttributes.getShardingCodec().getPositionForBlock(datasetAttributes, dataBlock);
+		final long[] keyPos = datasetAttributes.getArrayCodec().getPositionForBlock(datasetAttributes, dataBlock);
 		final String keyPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), keyPos);
 		try (
 				final LockedChannel channel = getKeyValueAccess().lockForWriting(keyPath);
