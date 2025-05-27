@@ -250,7 +250,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T>... dataBlocks) throws N5Exception {
 
-		if (datasetAttributes.getArrayCodec() instanceof ShardingCodec<?>) {
+		if (datasetAttributes.isSharded()) {
 
 			/* Group blocks by shard index */
 			final Map<Position, List<DataBlock<T>>> shardBlockMap = datasetAttributes.groupBlocks(
@@ -284,12 +284,12 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception {
 
-		if (datasetAttributes.getShardSize() != null) {
+		if (datasetAttributes.isSharded()) {
 			writeBlocks(path, datasetAttributes, dataBlock);
 			return;
 		}
 
-		final long[] keyPos = datasetAttributes.getArrayCodec().getPositionForBlock(datasetAttributes, dataBlock);
+		final long[] keyPos = datasetAttributes.getShardingCodec().getPositionForBlock(datasetAttributes, dataBlock);
 		final String keyPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), keyPos);
 		try (
 				final LockedChannel channel = getKeyValueAccess().lockForWriting(keyPath);

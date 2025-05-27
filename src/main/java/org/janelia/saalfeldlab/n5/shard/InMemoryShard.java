@@ -3,7 +3,6 @@ package org.janelia.saalfeldlab.n5.shard;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
-import org.janelia.saalfeldlab.n5.util.GridIterator;
 import org.janelia.saalfeldlab.n5.util.Position;
 
 import java.util.ArrayList;
@@ -13,8 +12,9 @@ import java.util.TreeMap;
 
 public class InMemoryShard<T> extends AbstractShard<T> {
 
-	/* Map of a hash of the DataBlocks `gridPosition` to the block */
+	/** Map {@link DataBlock#getGridPosition} as hashable {@link Position} to the block */
 	private final Map<Position, DataBlock<T>> blocks;
+
 	private ShardIndexBuilder indexBuilder;
 
 	//TODO delegated shard constructor? Or new class?
@@ -23,7 +23,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 
 		this(datasetAttributes, shardPosition, null);
 		indexBuilder = new ShardIndexBuilder(this);
-		final IndexLocation indexLocation = ((ShardingCodec)datasetAttributes.getArrayCodec()).getIndexLocation();
+		final IndexLocation indexLocation = datasetAttributes.getShardingCodec().getIndexLocation();
 		indexBuilder.indexLocation(indexLocation);
 	}
 

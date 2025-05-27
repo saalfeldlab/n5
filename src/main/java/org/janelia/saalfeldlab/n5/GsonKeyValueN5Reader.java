@@ -142,7 +142,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final List<long[]> blockPositions) throws N5Exception {
 
 		// TODO which interface should have this implementation?
-		if (datasetAttributes.getArrayCodec() instanceof ShardingCodec<?>) {
+		if (datasetAttributes.isSharded()) {
 
 			/* Group by shard position */
 			final Map<Position, List<long[]>> shardBlockMap = datasetAttributes.groupBlockPositions(blockPositions);

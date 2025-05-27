@@ -284,7 +284,7 @@ public class ShardTest {
 	}
 
 	@Test
-	@Ignore("Not currently supported ")
+	@Ignore("Nested sharding not supported ")
 	public void writeReadNestedShards() {
 
 		int[] blockSize = new int[]{4, 4};

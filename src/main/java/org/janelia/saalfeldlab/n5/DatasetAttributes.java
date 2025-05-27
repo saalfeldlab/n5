@@ -59,6 +59,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.stream.Stream;
 
+import org.janelia.saalfeldlab.n5.N5Exception.N5ShardException;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
@@ -72,6 +73,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 
 /**
  * Mandatory dataset attributes:
@@ -134,11 +136,11 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 		final Codec[] filteredCodecs = Arrays.stream(codecs).filter(it -> !(it instanceof RawCompression)).toArray(Codec[]::new);
 		if (filteredCodecs.length == 0) {
 			byteCodecs = new BytesCodec[]{};
-			arrayCodec = new N5BlockCodec();
+			arrayCodec = new N5BlockCodec<>();
 		} else if (filteredCodecs.length == 1 && filteredCodecs[0] instanceof Compression) {
 			final BytesCodec compression = (BytesCodec)filteredCodecs[0];
 			byteCodecs = compression instanceof RawCompression ? new BytesCodec[]{} : new BytesCodec[]{compression};
-			arrayCodec = new N5BlockCodec();
+			arrayCodec = new N5BlockCodec<>();
 		} else {
 			if (!(filteredCodecs[0] instanceof ArrayCodec))
 				throw new N5Exception("Expected first element of filteredCodecs to be ArrayCodec, but was: " + filteredCodecs[0].getClass());
@@ -171,7 +173,7 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 			final int[] blockSize,
 			final DataType dataType,
 			final Codec... codecs) {
-		this( dimensions, null, blockSize, dataType, codecs );
+		this( dimensions, blockSize, blockSize, dataType, codecs );
 	}
 
 	@Override
@@ -198,6 +200,23 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 		return blockSize;
 	}
 
+	public boolean isSharded() {
+		return getArrayCodec() instanceof ShardingCodec<?>;
+	}
+
+	/**
+	 * If this dataset is sharded, return the ArrayCodec as a ShardingCodec
+	 * @return the ShardingCodec
+	 *
+	 * @throws N5ShardException if the dataset is not sharded
+	 */
+	public <T> ShardingCodec<T> getShardingCodec() throws N5ShardException {
+		if (getArrayCodec() instanceof ShardingCodec<?>)
+			return (ShardingCodec<T>)getArrayCodec();
+		else
+			throw new N5ShardException("Dataset is not Sharded");
+	}
+
 	/**
 	 * Only used for deserialization for N5 backwards compatibility.
 	 * {@link Compression} is no longer a special case. Prefer to reference {@link #getCodecs()}
@@ -205,8 +224,7 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 	 *
 	 * @return compression Codec, if one was present, or else RawCompression
 	 */
-	@Deprecated
-	public Compression getCompression() {
+	private Compression getCompression() {
 
 		return Arrays.stream(byteCodecs)
 				.filter(it -> it instanceof Compression)
@@ -230,8 +248,10 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 	 */
 	public <T> ArrayCodec<T> getArrayCodec() {
 
+		//noinspection unchecked
 		return (ArrayCodec<T>) arrayCodec;
 	}
+
 
 	public BytesCodec[] getCodecs() {
 

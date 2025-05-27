@@ -140,8 +140,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		final DatasetAttributes datasetAttributes = getDatasetAttributes();
 		final ShardIndex index = ShardIndex.createIndex(datasetAttributes);
 
-		@SuppressWarnings("unchecked")
-		ShardingCodec<T> shardingCodec = (ShardingCodec<T>)datasetAttributes.getArrayCodec();
+		ShardingCodec<T> shardingCodec = datasetAttributes.getShardingCodec();
 		final Codec.ArrayCodec<T> arrayCodec = shardingCodec.getArrayCodec();
 		long blocksStartBytes = index.getLocation() == ShardingCodec.IndexLocation.START ? index.numBytes() : 0;
 		final AtomicLong blockOffset = new AtomicLong(blocksStartBytes);
@@ -205,7 +204,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		@Override
 		public boolean hasNext() {
 
-			for (int i = blockIndex; i < attributes.getNumBlocks(); i++) {
+			for (int i = blockIndex; i < attributes.getNumBlocksPerShard(); i++) {
 				if (index.exists(i))
 					return true;
 			}
