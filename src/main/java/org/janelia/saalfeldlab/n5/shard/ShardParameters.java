@@ -13,13 +13,18 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.janelia.saalfeldlab.n5.BlockParameters;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 import org.janelia.saalfeldlab.n5.util.Position;
 
 @Deprecated
-public interface ShardParameters extends BlockParameters {
+public interface ShardParameters {
+
+	public long[] getDimensions();
+
+	public int getNumDimensions();
+
+	public int[] getBlockSize();
 
 
 	/**
@@ -55,7 +60,7 @@ public interface ShardParameters extends BlockParameters {
 	 */
 	default long[] blocksPerImage() {
 		return IntStream.range(0, getNumDimensions())
-				.mapToLong(i -> (long) Math.ceil(getDimensions()[i] / getBlockSize()[i]))
+				.mapToLong(i -> (long) Math.ceil((double)getDimensions()[i] / getBlockSize()[i]))
 				.toArray();
 	}
 
@@ -66,7 +71,7 @@ public interface ShardParameters extends BlockParameters {
 	 */
 	default long[] shardsPerImage() {
 		return IntStream.range(0, getNumDimensions())
-				.mapToLong(i -> (long)Math.ceil(getDimensions()[i] / getShardSize()[i]))
+				.mapToLong(i -> (long)Math.ceil((double)getDimensions()[i] / getShardSize()[i]))
 				.toArray();
 	}
 
@@ -199,7 +204,7 @@ public interface ShardParameters extends BlockParameters {
 	/**
 	 * @return the number of blocks per shard
 	 */
-	default long getNumBlocks() {
+	default long getNumBlocksPerShard() {
 
 		return Arrays.stream(getBlocksPerShard()).reduce(1, (x, y) -> x * y);
 	}
@@ -220,5 +225,4 @@ public interface ShardParameters extends BlockParameters {
 				  it, Spliterator.ORDERED),
 		          false);
 	}
-
 }

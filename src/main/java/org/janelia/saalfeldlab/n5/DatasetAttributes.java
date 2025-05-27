@@ -85,8 +85,8 @@ import com.google.gson.JsonSerializer;
  *
  * @author Stephan Saalfeld
  */
-//TODO Caleb: try to delete ShardParameters?
-public class DatasetAttributes implements BlockParameters, ShardParameters, Serializable {
+//TODO : inline ShardParameters and delete interface
+public class DatasetAttributes implements ShardParameters, Serializable {
 
 	private static final long serialVersionUID = -4521467080388947553L;
 
@@ -174,27 +174,6 @@ public class DatasetAttributes implements BlockParameters, ShardParameters, Seri
 		this( dimensions, null, blockSize, dataType, codecs );
 	}
 
-	/**
-	 * Deprecated. {@link Compression} are {@link Codec}. Use {@code Code...} constructor instead
-	 * Constructs a DatasetAttributes instance with specified dimensions, block size, data type,
-	 * and compression scheme. This constructor is deprecated and redirects to another constructor
-	 * with codec support.
-	 *
-	 * @param dimensions  the dimensions of the dataset
-	 * @param blockSize   the size of the blocks in the dataset
-	 * @param dataType    the data type of the dataset
-	 * @param compression the compression scheme used for storing the dataset
-	 */
-	@Deprecated
-	public DatasetAttributes(
-			final long[] dimensions,
-			final int[] blockSize,
-			final DataType dataType,
-			final Compression compression) {
-
-		this(dimensions, blockSize, dataType, (Codec)compression);
-	}
-
 	@Override
 	public long[] getDimensions() {
 
@@ -220,10 +199,11 @@ public class DatasetAttributes implements BlockParameters, ShardParameters, Seri
 	}
 
 	/**
-	 * Deprecated. {@link Compression} is no longer a special case. prefer to reference {@link #getCodecs()}
+	 * Only used for deserialization for N5 backwards compatibility.
+	 * {@link Compression} is no longer a special case. Prefer to reference {@link #getCodecs()}
 	 * Will return {@link RawCompression} if no compression is otherwise provided, for legacy compatibility.
 	 *
-	 * @return compression Codec, if one was present
+	 * @return compression Codec, if one was present, or else RawCompression
 	 */
 	@Deprecated
 	public Compression getCompression() {

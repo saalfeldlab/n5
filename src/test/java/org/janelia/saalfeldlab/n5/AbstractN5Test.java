@@ -269,7 +269,7 @@ public abstract class AbstractN5Test {
 		assertArrayEquals(dimensions, info.getDimensions());
 		assertArrayEquals(blockSize, info.getBlockSize());
 		assertEquals(DataType.UINT64, info.getDataType());
-		assertTrue(info.getCompression() instanceof RawCompression);
+		assertEquals(0, info.getCodecs().length);
 	}
 
 	@Test
@@ -1661,6 +1661,6 @@ public abstract class AbstractN5Test {
 		assertArrayEquals(expected.getDimensions(), actual.getDimensions());
 		assertArrayEquals(expected.getBlockSize(), actual.getBlockSize());
 		assertEquals(expected.getDataType(), actual.getDataType());
-		assertEquals(expected.getCompression(), actual.getCompression());
+		assertArrayEquals(expected.getCodecs(), actual.getCodecs());
 	}
 }

@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+//TODO : consider different names? LazyShard? ShardView? PartialReadShard?
 public class VirtualShard<T> extends AbstractShard<T> {
 
 	private final SplittableReadData shardData;

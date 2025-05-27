@@ -17,11 +17,8 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	private final Map<Position, DataBlock<T>> blocks;
 	private ShardIndexBuilder indexBuilder;
 
-	/*
-	 * TODO:
-	 * Use morton- or c-ording instead of writing blocks out in the order they're added?
-	 * (later)
-	 */
+	//TODO delegated shard constructor? Or new class?
+
 	public InMemoryShard(final DatasetAttributes datasetAttributes, final long[] shardPosition) {
 
 		this(datasetAttributes, shardPosition, null);
@@ -57,37 +54,10 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		storeBlock(block);
 	}
 
-	public int numBlocks() {
-
-		return blocks.size();
-	}
-
 	@Override
 	public List<DataBlock<T>> getBlocks() {
 
 		return new ArrayList<>(blocks.values());
-	}
-
-	public List<DataBlock<T>> getBlocks( int[] blockIndexes ) {
-
-		final ArrayList<DataBlock<T>> out = new ArrayList<>();
-		final int[] blocksPerShard = getDatasetAttributes().getBlocksPerShard();
-
-		long[] position = new long[ getSize().length ];
-		for( int idx : blockIndexes ) {
-			GridIterator.indexToPosition(idx, blocksPerShard, position);
-			DataBlock<T> blk = getBlock(position);
-			if( blk != null )
-				out.add(blk);
-		}
-		return out;
-	}
-	protected IndexLocation indexLocation() {
-
-		if (index != null)
-			return index.getLocation();
-		else
-			return indexBuilder.getLocation();
 	}
 
 	@Override

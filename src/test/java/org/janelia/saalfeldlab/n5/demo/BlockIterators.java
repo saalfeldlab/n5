@@ -11,11 +11,11 @@ import java.util.stream.StreamSupport;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.RawCompression;
-import org.janelia.saalfeldlab.n5.ShardedDatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.RawBytes;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 
@@ -29,14 +29,17 @@ public class BlockIterators {
 
 	public static void shardBlockIterator() {
 
-		final ShardedDatasetAttributes attrs = new ShardedDatasetAttributes(
+		final DatasetAttributes attrs = new DatasetAttributes(
 				new long[] {12, 8},	// image size
 				new int[] {6, 4},		// shard size
 				new int[] {2, 2},		// block size
 				DataType.UINT8,
-				new Codec[] { new N5BlockCodec<>() },
-				new DeterministicSizeCodec[] { new RawBytes<>() },
-				IndexLocation.END);
+				new ShardingCodec<>(
+						new int[] {2, 2},
+						new Codec[] { new N5BlockCodec<>() },
+						new DeterministicSizeCodec[] { new RawBytes<>() },
+						IndexLocation.END
+				));
 
 		shardPositions(attrs)
 			.forEach(x -> System.out.println(Arrays.toString(x)));
@@ -56,18 +59,14 @@ public class BlockIterators {
 	public static long[] blockGridSize(final DatasetAttributes attrs ) {
 		// this could be a nice method for DatasetAttributes
 
-		return IntStream.range(0, attrs.getNumDimensions()).mapToLong(i -> {
-			return (long)Math.ceil(attrs.getDimensions()[i] / attrs.getBlockSize()[i]);
-		}).toArray();
+		return IntStream.range(0, attrs.getNumDimensions()).mapToLong(i -> (long)Math.ceil((double)attrs.getDimensions()[i] / attrs.getBlockSize()[i])).toArray();
 
 	}
 	
-	public static long[] shardGridSize(final ShardedDatasetAttributes attrs ) {
+	public static long[] shardGridSize(final DatasetAttributes attrs ) {
 		// this could be a nice method for DatasetAttributes
 
-		return IntStream.range(0, attrs.getNumDimensions()).mapToLong(i -> {
-			return (long)Math.ceil(attrs.getDimensions()[i] / attrs.getShardSize()[i]);
-		}).toArray();
+		return IntStream.range(0, attrs.getNumDimensions()).mapToLong(i -> (long)Math.ceil((double)attrs.getDimensions()[i] / attrs.getShardSize()[i])).toArray();
 
 	}
 
@@ -75,7 +74,7 @@ public class BlockIterators {
 		return toStream(new GridIterator(blockGridSize(attrs)));
 	}
 
-	public static Stream<long[]> shardPositions( ShardedDatasetAttributes attrs ) {
+	public static Stream<long[]> shardPositions( DatasetAttributes attrs ) {
 
 		final int[] blocksPerShard = attrs.getBlocksPerShard();
 		return toStream( new GridIterator(shardGridSize(attrs)))

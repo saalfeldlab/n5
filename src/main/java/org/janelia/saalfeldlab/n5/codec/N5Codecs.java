@@ -35,7 +35,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
-import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataBlock.DataBlockFactory;
 import org.janelia.saalfeldlab.n5.DataType;
