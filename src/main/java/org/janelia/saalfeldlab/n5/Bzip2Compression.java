@@ -68,6 +68,7 @@ public class Bzip2Compression implements Compression {
 	private static final long serialVersionUID = -4873117458390529118L;
 
 	@CompressionParameter
+	@NameConfig.Parameter
 	private final int blockSize;
 
 	public Bzip2Compression(final int blockSize) {
