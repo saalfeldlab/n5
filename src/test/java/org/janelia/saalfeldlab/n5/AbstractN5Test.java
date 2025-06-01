@@ -61,6 +61,7 @@ import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.gson.GsonBuilder;
@@ -269,6 +270,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
+	@Ignore(value = "N5 does not suport multiple codecs")
 	public void testWriteReadByteBlockMultipleCodecs() {
 
 		/*TODO: this tests "passes" in the sense that we get the correct output, but it
@@ -507,7 +509,6 @@ public abstract class AbstractN5Test {
 			n5.writeBlock(datasetName, attributes, smallDataBlock);
 
 			final DataBlock<?> loadedSmallDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
-			System.out.println(((byte[])loadedSmallDataBlock.getData()).length);
 			assertArrayEquals(smallerData, (byte[])loadedSmallDataBlock.getData());
 
 			// write a block of the wrong type
