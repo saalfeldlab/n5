@@ -157,14 +157,10 @@ public class N5Codecs {
 			try(final InputStream in = readData.inputStream()) {
 				final BlockHeader header = decodeBlockHeader(in);
 
-				final int bytesPerElement
-						= dataCodec.bytesPerElement() == -1
-						? VAR_OBJ_BYTES_PER_ELEMENT
-						: dataCodec.bytesPerElement();
-
 				final int numElements = header.numElements();
-				final ReadData blockData = ReadData.from(in, numElements * bytesPerElement);
-				final ReadData decodeData = codec.decode(blockData);
+				final ReadData decodeData = codec.decode(ReadData.from(in));
+
+				// the dataCodec knows the number of bytes per element
 				final T data = dataCodec.deserialize(decodeData, numElements);
 				return dataBlockFactory.createDataBlock(header.blockSize(), gridPosition, data);
 			}
