@@ -357,7 +357,18 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 			}
 
 			obj.add(DATA_TYPE_KEY, context.serialize(src.dataType));
-			obj.add(CODEC_KEY, context.serialize(src.concatenateCodecs()));
+
+			Compression c;
+			if (src.byteCodecs.length == 0)
+				c = new RawCompression();
+			else if (src.byteCodecs.length == 1)
+				c = (Compression)src.byteCodecs[0];
+			else
+				throw new N5Exception("N5 supports only single compressors, but " + src.byteCodecs.length + 
+						"codecs are present.");
+
+			final JsonElement res = CompressionAdapter.getJsonAdapter().serialize(c, typeOfSrc, context);
+			obj.add(COMPRESSION_KEY, res);
 
 			return obj;
 		}
