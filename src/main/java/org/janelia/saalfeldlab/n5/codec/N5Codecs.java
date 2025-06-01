@@ -242,7 +242,7 @@ public class N5Codecs {
 		}
 	}
 
-	static class BlockHeader {
+	public static class BlockHeader {
 
 		public static final short MODE_DEFAULT = 0;
 		public static final short MODE_VARLENGTH = 1;
