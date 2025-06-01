@@ -33,7 +33,7 @@ public class BytesTests {
 
 		final N5Writer writer = factory.openWriter("n5:src/test/resources/shardExamples/test.n5");
 
-		final DatasetAttributes datasetAttributes = new DatasetAttributes(
+		final DatasetAttributes datasetAttributes = DatasetAttributes.build(
 				new long[]{8, 8},
 				new int[]{4, 4},
 				DataType.UINT8,

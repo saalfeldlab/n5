@@ -28,7 +28,7 @@ public class ShardPropertiesTests {
 		final long[] shardPosition = new long[]{1, 1};
 		final int[] blkSize = new int[]{4, 4};
 
-		final DatasetAttributes dsetAttrs = new DatasetAttributes(
+		final DatasetAttributes dsetAttrs = DatasetAttributes.build(
 				arraySize,
 				shardSize,
 				blkSize,
@@ -67,7 +67,7 @@ public class ShardPropertiesTests {
 		final long[] shardPosition = new long[]{1, 1};
 		final int[] blkSize = new int[]{4, 4};
 
-		final DatasetAttributes dsetAttrs = new DatasetAttributes(
+		final DatasetAttributes dsetAttrs = DatasetAttributes.build(
 				arraySize,
 				shardSize,
 				blkSize,
@@ -104,7 +104,7 @@ public class ShardPropertiesTests {
 		final int[] shardSize = new int[]{4, 6};
 		final int[] blkSize = new int[]{2, 3};
 
-		final DatasetAttributes attrs = new DatasetAttributes(
+		final DatasetAttributes attrs = DatasetAttributes.build(
 				arraySize,
 				shardSize,
 				blkSize,

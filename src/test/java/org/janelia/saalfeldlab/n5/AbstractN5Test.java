@@ -285,7 +285,7 @@ public abstract class AbstractN5Test {
 			final byte[] byteBlock1 = new byte[]{1,2,3,4,5,6,7,8};
 			final long[] dimensions1 = new long[]{2,2,2};
 			final int[] blockSize1 = new int[]{2,2,2};
-			final DatasetAttributes attrs = new DatasetAttributes(dimensions1, blockSize1, DataType.INT8, codecs);
+			final DatasetAttributes attrs = DatasetAttributes.build(dimensions1, blockSize1, DataType.INT8, codecs);
 			n5.createDataset(dataset, attrs);
 			final DatasetAttributes attributes = n5.getDatasetAttributes(dataset);
 			final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize1, new long[]{0, 0, 0}, byteBlock1);
@@ -965,7 +965,7 @@ public abstract class AbstractN5Test {
 			for (final String subGroup : subGroupNames)
 				assertTrue("deepList contents", Arrays.asList(n5.deepList("")).contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 
-			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64);
+			final DatasetAttributes datasetAttributes = DatasetAttributes.build(dimensions, blockSize, DataType.UINT64);
 			final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, new long[blockNumElements]);
 			n5.createDataset(datasetName, datasetAttributes);
 			n5.writeBlock(datasetName, datasetAttributes, dataBlock);
@@ -1672,7 +1672,7 @@ public abstract class AbstractN5Test {
 
 
 					final String datasetWithIllegalChar = "test" + illegalChar + "dataset";
-					final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64, new RawCompression());
+					final DatasetAttributes datasetAttributes = DatasetAttributes.build(dimensions, blockSize, DataType.UINT64, new RawCompression());
 					writer.createDataset(datasetWithIllegalChar, datasetAttributes);
 					final DatasetAttributes datasetFromWriter = writer.getDatasetAttributes(datasetWithIllegalChar);
 					final DatasetAttributes datasetFromReader = reader.getDatasetAttributes(datasetWithIllegalChar);

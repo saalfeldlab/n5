@@ -84,20 +84,11 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 	private final long[] dimensions;
 	private final int[] blockSize;
 	private final DataType dataType;
-	private final ArrayCodec<?> arrayCodec;
-	private final BytesCodec[] byteCodecs;
+	protected final ArrayCodec<?> arrayCodec;
+	protected final BytesCodec[] byteCodecs;
 	private final int[] shardSize;
 
-	/**
-	 * Constructs a DatasetAttributes instance with specified dimensions, block size, data type,
-	 * and array of codecs.
-	 *
-	 * @param dimensions the dimensions of the dataset
-	 * @param blockSize  the size of the blocks in the dataset
-	 * @param dataType   the data type of the dataset
-	 * @param codecs     the codecs used encode/decode the data
-	 */
-	public DatasetAttributes(
+	protected DatasetAttributes(
 			final long[] dimensions,
 			final int[] shardSize,
 			final int[] blockSize,
@@ -111,11 +102,11 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 		final Codec[] filteredCodecs = Arrays.stream(codecs).filter(it -> !(it instanceof RawCompression)).toArray(Codec[]::new);
 		if (filteredCodecs.length == 0) {
 			byteCodecs = new BytesCodec[]{};
-			arrayCodec = new N5BlockCodec<>();
+			arrayCodec = defaultArrayCodec();
 		} else if (filteredCodecs.length == 1 && filteredCodecs[0] instanceof Compression) {
 			final BytesCodec compression = (BytesCodec)filteredCodecs[0];
 			byteCodecs = compression instanceof RawCompression ? new BytesCodec[]{} : new BytesCodec[]{compression};
-			arrayCodec = new N5BlockCodec<>();
+			arrayCodec = defaultArrayCodec();
 		} else {
 			if (!(filteredCodecs[0] instanceof ArrayCodec))
 				throw new N5Exception("Expected first element of filteredCodecs to be ArrayCodec, but was: " + filteredCodecs[0].getClass());
@@ -128,10 +119,7 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 					.skip(1)
 					.filter(c -> c instanceof BytesCodec)
 					.toArray(BytesCodec[]::new);
-
 		}
-		//TODO Caleb: factory style for initialize
-		arrayCodec.initialize(this, byteCodecs);
 	}
 
 	/**
@@ -143,7 +131,42 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 	 * @param dataType   the data type of the dataset
 	 * @param codecs     the codecs used encode/decode the data
 	 */
-	public DatasetAttributes(
+	public static DatasetAttributes build(
+			final long[] dimensions,
+			final int[] blockSize,
+			final DataType dataType,
+			final Codec... codecs) {
+
+		return DatasetAttributes.build( dimensions, blockSize, blockSize, dataType, codecs);
+	}
+
+	public static DatasetAttributes build(
+			final long[] dimensions,
+			final int[] shardSize,
+			final int[] blockSize,
+			final DataType dataType,
+			final Codec... codecs) {
+
+		final DatasetAttributes attributes = new DatasetAttributes( dimensions, shardSize, blockSize, dataType, codecs);
+		// TODO Caleb: factory style for initialize
+		attributes.arrayCodec.initialize(attributes, attributes.byteCodecs);
+		return attributes;
+	}
+
+	protected Codec.ArrayCodec<?> defaultArrayCodec() {
+		return new N5BlockCodec<>();
+	}
+
+	/**
+	 * Constructs a DatasetAttributes instance with specified dimensions, block size, data type,
+	 * and array of codecs.
+	 *
+	 * @param dimensions the dimensions of the dataset
+	 * @param blockSize  the size of the blocks in the dataset
+	 * @param dataType   the data type of the dataset
+	 * @param codecs     the codecs used encode/decode the data
+	 */
+	protected DatasetAttributes(
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
@@ -193,13 +216,13 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 	}
 
 	/**
-	 * Only used for deserialization for N5 backwards compatibility.
+	 * Only used for deserialization for N5 and Zarr v2 backwards compatibility.
 	 * {@link Compression} is no longer a special case. Prefer to reference {@link #getCodecs()}
 	 * Will return {@link RawCompression} if no compression is otherwise provided, for legacy compatibility.
 	 *
 	 * @return compression Codec, if one was present, or else RawCompression
 	 */
-	private Compression getCompression() {
+	public Compression getCompression() {
 
 		return Arrays.stream(byteCodecs)
 				.filter(it -> it instanceof Compression)
@@ -253,9 +276,10 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 	protected Codec[] concatenateCodecs() {
 
 		final Codec[] allCodecs = new Codec[byteCodecs.length + 1];
-		allCodecs[0] = arrayCodec;
-		for (int i = 0; i < byteCodecs.length; i++)
-			allCodecs[i + 1] = byteCodecs[i];
+		allCodecs[0] = getArrayCodec();
+		Codec[] codecs = getCodecs();
+		for (int i = 0; i < codecs.length; i++)
+			allCodecs[i + 1] = codecs[i];
 
 		return allCodecs;
 	}
@@ -309,8 +333,7 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 				codecs = context.deserialize(obj.get(CODEC_KEY), Codec[].class);
 			} else if (obj.has(COMPRESSION_KEY)) {
 				final Compression compression = CompressionAdapter.getJsonAdapter().deserialize(obj.get(COMPRESSION_KEY), Compression.class, context);
-				final N5BlockCodec<?> n5BlockCodec = new N5BlockCodec<>();
-				codecs = new Codec[]{compression, n5BlockCodec};
+				codecs = new Codec[]{compression};
 			} else if (obj.has(compressionTypeKey)) {
 				final Compression compression = getCompressionVersion0(obj.get(compressionTypeKey).getAsString());
 				final N5BlockCodec<?> n5BlockCodec = new N5BlockCodec<>();
@@ -318,7 +341,7 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 			} else {
 				return null;
 			}
-			return new DatasetAttributes(dimensions, shardSize, blockSize, dataType, codecs);
+			return DatasetAttributes.build(dimensions, shardSize, blockSize, dataType, codecs);
 		}
 
 		@Override public JsonElement serialize(DatasetAttributes src, Type typeOfSrc, JsonSerializationContext context) {
