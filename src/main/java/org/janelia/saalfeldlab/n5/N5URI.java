@@ -454,6 +454,82 @@ public class N5URI {
 		return normalizePath(path.startsWith("/") || path.startsWith("\\") ? path.substring(1) : path);
 	}
 
+	private enum N5UriPattern {
+
+		/**
+		 * matches any `/` or `[N]` where `N` is non-negative
+		 */
+		MULTI_PART_ATTRIBUTE(Pattern.compile(".*((?<!\\\\)(/|\\[[0-9]+])).*")),
+		/**
+		 * matches `[N]` where `[` is the first character
+		 */
+		ATTRIBUTE_ARRAY_AT_START(Pattern.compile("^(?<array>\\[[0-9]+])")),
+		/**
+		 * matches `A[N]` where A is some non-empty preceding path
+		 */
+		ATTRIBUTE_ARRAY_EXCEPT_START(Pattern.compile("((?<!(^|\\\\))(?<array>\\[[0-9]+]))")),
+		/**
+		 * The following Pattern has 4 possible matches.
+		 * It is intended to be used to remove matching portions iteratively until no further matches are found:
+		 * <p>
+		 * The first 3 matches can remove redundant separators of the form:
+		 * <ul>
+		 * <li>(?<=/)/+ : `a///b` -> `a/b`</li>
+		 * <li>(?<=(/|^))(\./)+ : `a/./b` -> `a/b`</li>
+		 * <li>((/|(?<=/))\.)$ : `a/b/` -> `a/b`</li>
+		 * </ul>
+		 * The next match avoids removing `/` when it is NOT redundant (e.g. only character, or escaped):
+		 * <ul>
+		 *     <li>(?<!(^|\\))/$: `/` -> `/ , `/a/b/\\/` -> `/a/b/\\/`</li>
+		 * </ul>
+		 * The last match resolves relative paths:
+		 * <ul>
+		 *     <li>5. ((?<=^/)|^|(?<=(/|^))[^/]+(?<!(/|(/|^)\.\.))/)\.\./?</li>
+		 *     <ul>
+		 *			<li>`a/../b` -> `b`</li>
+		 *			<li>`/a/../b` -> `/b`</li>
+		 *			<li>`../a/../b` -> `b`</li>
+		 *			<li>`/../a/../b` -> `/b`</li>
+		 *			<li>`/../a/../../b` -> `/b`</li>
+		 *     </ul>
+		 * </ul>
+		 *<p>
+		 */
+		RELATIVE_ATTRIBUTE_PARTS(Pattern.compile( "((?<=/)/+|(?<=(/|^))(\\./)+|((/|(?<=/))\\.)$|(?<!(^|\\\\))/$|((?<=^/)|^|(?<=(/|^))[^/]+(?<!(/|(/|^)\\.\\.))/)\\.\\./?)" ));
+
+		private final Pattern pattern;
+
+		N5UriPattern(Pattern pattern) {
+			this.pattern = pattern;
+		}
+
+		boolean matches(final String input) {
+			return pattern.matcher(input).matches();
+		}
+
+		String replaceAll(final String input, final String replacement) {
+			return pattern.matcher(input).replaceAll(replacement);
+		}
+
+		static String appendSlashAfterArrayStart(final String input) {
+			return ATTRIBUTE_ARRAY_AT_START.replaceAll(input, "${array}/");
+		}
+
+		static String addSlashAroundArrayExceptStart(final String input) {
+			return ATTRIBUTE_ARRAY_EXCEPT_START.replaceAll(input, "/${array}/");
+		}
+
+		static String removeRelativePathParts(final String path) {
+			int prevStringLenth = 0;
+			String resolvedAttributePath = path;
+			while (prevStringLenth != resolvedAttributePath.length()) {
+				prevStringLenth = resolvedAttributePath.length();
+				resolvedAttributePath = RELATIVE_ATTRIBUTE_PARTS.replaceAll(resolvedAttributePath, "");
+			}
+			return resolvedAttributePath;
+		}
+	}
+
 	/**
 	 * Normalize the {@link String attributePath}.
 	 * <p>
@@ -503,50 +579,20 @@ public class N5URI {
 		 * Short circuit if there are no non-escaped `/` or array indices (e.g.
 		 * [N] where N is a non-negative integer)
 		 */
-		if (!attributePath.matches(".*((?<!\\\\)(/|\\[[0-9]+])).*")) {
+		if (!N5UriPattern.MULTI_PART_ATTRIBUTE.matches(attributePath))
 			return attributePath;
-		}
 
 		/* Add separator after arrays at the beginning `[10]b` -> `[10]/b` */
-		final String attrPathPlusFirstIndexSeparator = attributePath.replaceAll("^(?<array>\\[[0-9]+])", "${array}/");
+		final String attrPathPlusFirstIndexSeparator = N5UriPattern.appendSlashAfterArrayStart(attributePath);
+
 		/*
 		 * Add separator before and after arrays not at the beginning `a[10]b`
 		 * -> `a/[10]/b`
 		 */
-		final String attrPathPlusIndexSeparators = attrPathPlusFirstIndexSeparator
-				.replaceAll("((?<!(^|\\\\))(?<array>\\[[0-9]+]))", "/${array}/");
+		final String attrPathPlusIndexSeparators = N5UriPattern.addSlashAroundArrayExceptStart(attrPathPlusFirstIndexSeparator);
 
-		/*
-		 * The following has 4 possible matches, in each case it removes the
-		 * match:
-		 * The first 3 remove redundant separators of the form:
-		 * 1.`a///b` -> `a/b` : (?<=/)/+
-		 * 2.`a/./b` -> `a/b` : (?<=(/|^))(\./)+
-		 * 3.`a/b/` -> `a/b` : ((/|(?<=/))\.)$
-		 * The next avoids removing `/` when it is NOT redundant (e.g. only character, or escaped):
-		 * 4. `/` -> `/ , `/a/b/\\/` -> `/a/b/\\/` : (?<!(^|\\))/$
-		 * The last resolves relative paths:
-		 * 5. ((?<=^/)|^|(?<=(/|^))[^/]+(?<!(/|(/|^)\.\.))/)\.\./?
-		 * 		- `a/../b` -> `b`
-		 * 		- `/a/../b` -> `/b`
-		 * 		- `../a/../b` -> `b`
-		 * 		- `/../a/../b` -> `/b`
-		 * 		- `/../a/../../b` -> `/b`
-		 *
-		 * This is run iteratively, since earlier removals may cause later
-		 * removals to be valid,
-		 * as well as the need to match once per relative `../` pattern.
-		 */
-		final Pattern relativePathPattern = Pattern.compile(
-						"((?<=/)/+|(?<=(/|^))(\\./)+|((/|(?<=/))\\.)$|(?<!(^|\\\\))/$|((?<=^/)|^|(?<=(/|^))[^/]+(?<!(/|(/|^)\\.\\.))/)\\.\\./?)"
-				);
-		int prevStringLenth = 0;
-		String resolvedAttributePath = attrPathPlusIndexSeparators;
-		while (prevStringLenth != resolvedAttributePath.length()) {
-			prevStringLenth = resolvedAttributePath.length();
-			resolvedAttributePath = relativePathPattern.matcher(resolvedAttributePath).replaceAll("");
-		}
-		return resolvedAttributePath;
+		/* remove relative path parts like `./`, `../`, `a//b, `a/b/` */
+		return N5UriPattern.removeRelativePathParts(attrPathPlusIndexSeparators);
 	}
 
 	/**
