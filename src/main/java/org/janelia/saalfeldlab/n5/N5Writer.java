@@ -231,7 +231,7 @@ public interface N5Writer extends N5Reader {
 			final DataType dataType,
 			final Codec... codecs) throws N5Exception {
 
-		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, codecs));
+		createDataset(datasetPath, DatasetAttributes.build(dimensions, blockSize, dataType, codecs));
 	}
 
 	/**

@@ -4,11 +4,11 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import java.io.IOException;
 
-class ConcatenatedBytesCodec implements Codec.BytesCodec {
+public class ConcatenatedBytesCodec implements Codec.BytesCodec {
 
 	private final BytesCodec[] codecs;
 
-	ConcatenatedBytesCodec(final BytesCodec... codecs) {
+	public ConcatenatedBytesCodec(final BytesCodec... codecs) {
 		this.codecs = codecs;
 	}
 

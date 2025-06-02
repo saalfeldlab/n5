@@ -57,6 +57,9 @@ public class RawBlockCodecs {
 		case FLOAT64:
 			factory = RawBlockCodecs.DOUBLE;
 			break;
+		case STRING:
+			factory = RawBlockCodecs.STRING;
+			break;
 		default:
 			throw new IllegalArgumentException("Unsupported data type: " + dataType);
 		}
@@ -113,15 +116,9 @@ public class RawBlockCodecs {
 		}
 
 		@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
-
-			try (final InputStream in = readData.inputStream()) {
-				final int bytesPerElement = dataCodec.bytesPerElement();
-				final ReadData blockData = ReadData.from(in, numElements() * bytesPerElement);
-				final ReadData decodeData = codec.decode(blockData);
-
-				final T data = dataCodec.deserialize(decodeData, numElements());
-				return dataBlockFactory.createDataBlock(blockSize, gridPosition, data);
-			}
+			final ReadData decodeData = codec.decode(readData);
+			final T data = dataCodec.deserialize(decodeData, numElements());
+			return dataBlockFactory.createDataBlock(blockSize, gridPosition, data);
 		}
 	}
 }

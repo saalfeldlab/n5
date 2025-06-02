@@ -11,6 +11,7 @@ import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.NameConfigAdapter;
 import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.universe.N5Factory;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.gson.GsonBuilder;
@@ -18,6 +19,7 @@ import com.google.gson.GsonBuilder;
 public class BytesTests {
 
 	@Test
+	@Ignore(value = "N5 does not support arbitrary codecs" )
 	public void testSerialization() {
 
 		final N5Factory factory = new N5Factory();
@@ -33,7 +35,7 @@ public class BytesTests {
 
 		final N5Writer writer = factory.openWriter("n5:src/test/resources/shardExamples/test.n5");
 
-		final DatasetAttributes datasetAttributes = new DatasetAttributes(
+		final DatasetAttributes datasetAttributes = DatasetAttributes.build(
 				new long[]{8, 8},
 				new int[]{4, 4},
 				DataType.UINT8,

@@ -29,7 +29,7 @@ public class BlockIterators {
 
 	public static void shardBlockIterator() {
 
-		final DatasetAttributes attrs = new DatasetAttributes(
+		final DatasetAttributes attrs = DatasetAttributes.build(
 				new long[] {12, 8},	// image size
 				new int[] {6, 4},		// shard size
 				new int[] {2, 2},		// block size
@@ -47,7 +47,7 @@ public class BlockIterators {
 
 	public static void blockIterator() {
 
-		final DatasetAttributes attrs = new DatasetAttributes(
+		final DatasetAttributes attrs = DatasetAttributes.build(
 				new long[] {12, 8},
 				new int[] {2, 2},
 				DataType.UINT8,

@@ -204,7 +204,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	private DatasetAttributes createIndexAttributes() {
 
 		final DatasetAttributes indexAttributes =
-				new DatasetAttributes(
+				DatasetAttributes.build(
 						Arrays.stream(getSize()).mapToLong(it -> it).toArray(),
 						getSize(),
 						DataType.UINT64,

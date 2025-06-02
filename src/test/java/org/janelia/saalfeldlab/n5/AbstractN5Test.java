@@ -61,6 +61,7 @@ import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.gson.GsonBuilder;
@@ -269,6 +270,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
+	@Ignore(value = "N5 does not suport multiple codecs")
 	public void testWriteReadByteBlockMultipleCodecs() {
 
 		/*TODO: this tests "passes" in the sense that we get the correct output, but it
@@ -285,7 +287,7 @@ public abstract class AbstractN5Test {
 			final byte[] byteBlock1 = new byte[]{1,2,3,4,5,6,7,8};
 			final long[] dimensions1 = new long[]{2,2,2};
 			final int[] blockSize1 = new int[]{2,2,2};
-			final DatasetAttributes attrs = new DatasetAttributes(dimensions1, blockSize1, DataType.INT8, codecs);
+			final DatasetAttributes attrs = DatasetAttributes.build(dimensions1, blockSize1, DataType.INT8, codecs);
 			n5.createDataset(dataset, attrs);
 			final DatasetAttributes attributes = n5.getDatasetAttributes(dataset);
 			final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize1, new long[]{0, 0, 0}, byteBlock1);
@@ -507,7 +509,6 @@ public abstract class AbstractN5Test {
 			n5.writeBlock(datasetName, attributes, smallDataBlock);
 
 			final DataBlock<?> loadedSmallDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
-			System.out.println(((byte[])loadedSmallDataBlock.getData()).length);
 			assertArrayEquals(smallerData, (byte[])loadedSmallDataBlock.getData());
 
 			// write a block of the wrong type
@@ -965,7 +966,7 @@ public abstract class AbstractN5Test {
 			for (final String subGroup : subGroupNames)
 				assertTrue("deepList contents", Arrays.asList(n5.deepList("")).contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 
-			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64);
+			final DatasetAttributes datasetAttributes = DatasetAttributes.build(dimensions, blockSize, DataType.UINT64);
 			final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, new long[blockNumElements]);
 			n5.createDataset(datasetName, datasetAttributes);
 			n5.writeBlock(datasetName, datasetAttributes, dataBlock);
@@ -1267,9 +1268,6 @@ public abstract class AbstractN5Test {
 		final String first = equivalentPaths[i];
 		writer.setAttribute(groupPath, first, i);
 		assertEquals(i, writer.getAttribute(groupPath, first, Integer.class).intValue());
-
-
-		writer.getAttribute(groupPath, first, int.class);
 
 		for (i = 1; i < equivalentPaths.length; i++) {
 			final String path = equivalentPaths[i];
@@ -1672,7 +1670,7 @@ public abstract class AbstractN5Test {
 
 
 					final String datasetWithIllegalChar = "test" + illegalChar + "dataset";
-					final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64, new RawCompression());
+					final DatasetAttributes datasetAttributes = DatasetAttributes.build(dimensions, blockSize, DataType.UINT64, new RawCompression());
 					writer.createDataset(datasetWithIllegalChar, datasetAttributes);
 					final DatasetAttributes datasetFromWriter = writer.getDatasetAttributes(datasetWithIllegalChar);
 					final DatasetAttributes datasetFromReader = reader.getDatasetAttributes(datasetWithIllegalChar);

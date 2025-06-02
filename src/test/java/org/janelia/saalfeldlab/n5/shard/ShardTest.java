@@ -80,7 +80,7 @@ public class ShardTest {
 
 	private DatasetAttributes getTestAttributes(long[] dimensions, int[] shardSize, int[] blockSize) {
 
-		return new DatasetAttributes(
+		return DatasetAttributes.build(
 				dimensions,
 				shardSize,
 				blockSize,
@@ -324,7 +324,7 @@ public class ShardTest {
 				new DeterministicSizeCodec[]{new RawBytes(indexByteOrder), new Crc32cChecksumCodec()},
 				IndexLocation.START);
 
-		return new DatasetAttributes(
+		return DatasetAttributes.build(
 				dimensions, shardSize, blockSize, DataType.UINT8,
 				new ShardingCodec(
 						blockSize,
@@ -336,7 +336,7 @@ public class ShardTest {
 
 	private static DatasetAttributes getDatasetAttributes(long[] imageSize, int[] shardSize, int[] blockSize) {
 
-		return new DatasetAttributes(
+		return DatasetAttributes.build(
 				imageSize,
 				shardSize,
 				blockSize,
