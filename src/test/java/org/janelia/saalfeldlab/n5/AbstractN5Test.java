@@ -1269,9 +1269,6 @@ public abstract class AbstractN5Test {
 		writer.setAttribute(groupPath, first, i);
 		assertEquals(i, writer.getAttribute(groupPath, first, Integer.class).intValue());
 
-
-		writer.getAttribute(groupPath, first, int.class);
-
 		for (i = 1; i < equivalentPaths.length; i++) {
 			final String path = equivalentPaths[i];
 			assertEquals(path + " not equivalent to " + first, i-1, (int)writer.getAttribute(groupPath, path, int.class));
