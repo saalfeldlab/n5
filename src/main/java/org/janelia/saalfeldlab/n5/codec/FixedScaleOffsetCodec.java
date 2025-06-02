@@ -1,11 +1,11 @@
 package org.janelia.saalfeldlab.n5.codec;
 
 import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 
@@ -95,14 +95,14 @@ public class FixedScaleOffsetCodec extends AsTypeCodec {
 		return TYPE;
 	}
 
-	@Override public ReadData decode(ReadData readData) throws IOException {
+	@Override public ReadData decode(ReadData readData) throws N5IOException {
 
 		numBytes = bytes(dataType);
 		numEncodedBytes = bytes(encodedType);
 		return ReadData.from(new FixedLengthConvertedInputStream(numEncodedBytes, numBytes, this.decoder, readData.inputStream()));
 	}
 
-	@Override public ReadData encode(ReadData readData) throws IOException {
+	@Override public ReadData encode(ReadData readData) {
 
 		return readData.encode(out -> {
 

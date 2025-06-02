@@ -28,13 +28,14 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
+
+import java.io.IOException;
 
 @CompressionType("bzip2")
 @NameConfig.Name("bzip2")
@@ -66,9 +67,12 @@ public class Bzip2Compression implements Compression {
 	}
 
 	@Override
-	public ReadData decode(final ReadData readData) throws IOException {
-
-		return ReadData.from(new BZip2CompressorInputStream(readData.inputStream()));
+	public ReadData decode(final ReadData readData) throws N5IOException {
+		try {
+			return ReadData.from(new BZip2CompressorInputStream(readData.inputStream()));
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
 	}
 
 	@Override

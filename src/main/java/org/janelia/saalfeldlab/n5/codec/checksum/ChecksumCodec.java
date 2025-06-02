@@ -8,6 +8,8 @@ import java.util.zip.CheckedInputStream;
 import java.util.zip.CheckedOutputStream;
 import java.util.zip.Checksum;
 
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
@@ -40,8 +42,8 @@ public abstract class ChecksumCodec implements BytesCodec, DeterministicSizeCode
 		return numChecksumBytes;
 	}
 
-	private CheckedOutputStream createStream(OutputStream out) throws IOException {
-		return  new CheckedOutputStream(out, getChecksum()) {
+	private CheckedOutputStream createStream(OutputStream out) {
+		return new CheckedOutputStream(out, getChecksum()) {
 
 			private boolean closed = false;
 			@Override public void close() throws IOException {
@@ -55,13 +57,13 @@ public abstract class ChecksumCodec implements BytesCodec, DeterministicSizeCode
 		};
 	}
 
-	@Override public ReadData encode(ReadData readData) throws IOException {
+	@Override public ReadData encode(ReadData readData) {
 
 		return readData.encode(this::createStream);
 
 	}
 
-	@Override public ReadData decode(ReadData readData) throws IOException {
+	@Override public ReadData decode(ReadData readData) throws N5IOException {
 
 
 		return ReadData.from(new CheckedInputStream(readData.inputStream(), getChecksum()));

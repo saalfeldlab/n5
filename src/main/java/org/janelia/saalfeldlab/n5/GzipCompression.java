@@ -37,6 +37,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipParameters;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
@@ -96,13 +97,17 @@ public class GzipCompression implements Compression {
 	}
 
 	@Override
-	public ReadData decode(final ReadData readData) throws IOException {
+	public ReadData decode(final ReadData readData) throws N5IOException {
 
-		return ReadData.from(decode(readData.inputStream()));
+		try {
+			return ReadData.from(decode(readData.inputStream()));
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
 	}
 
 	@Override
-	public ReadData encode(final ReadData readData) {
+	public ReadData encode(final ReadData readData)  {
 		if (useZlib) {
 			return readData.encode(out -> new DeflaterOutputStream(out, new Deflater(level)));
 		} else {

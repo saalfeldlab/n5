@@ -10,10 +10,11 @@ import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
-import java.io.IOException;
 import java.nio.ByteOrder;
 
 
@@ -49,12 +50,12 @@ public class RawBytes<T> implements Codec.ArrayCodec<T> {
 		this.dataBlockCodec = RawBlockCodecs.createDataBlockCodec(attributes.getDataType(), getByteOrder(), attributes.getBlockSize(), concatenatedBytesCodec);
 	}
 
-	@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
+	@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5IOException {
 
 		return dataBlockCodec.decode(readData, gridPosition);
 	}
 
-	@Override public ReadData encode(DataBlock<T> dataBlock) throws IOException {
+	@Override public ReadData encode(DataBlock<T> dataBlock) throws N5IOException {
 
 		return dataBlockCodec.encode(dataBlock);
 	}

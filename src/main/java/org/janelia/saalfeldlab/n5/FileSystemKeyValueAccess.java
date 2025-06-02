@@ -29,6 +29,8 @@
 package org.janelia.saalfeldlab.n5;
 
 import org.apache.commons.io.input.BoundedInputStream;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.SplittableReadData;
 
@@ -212,7 +214,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		try {
 			return new LockedFileChannel(normalPath, true);
 		} catch (final NoSuchFileException e) {
-			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+			throw new N5NoSuchKeyException("No such file", e);
 		}
 	}
 
@@ -223,7 +225,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		try {
 			return new LockedFileChannel(normalPath, true, startByte, size);
 		} catch (final NoSuchFileException e) {
-			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+			throw new N5NoSuchKeyException("No such file", e);
 		}
 	}
 
@@ -250,7 +252,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		try {
 			return new LockedFileChannel(path, true);
 		} catch (final NoSuchFileException e) {
-			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+			throw new N5NoSuchKeyException("No such file", e);
 		}
 	}
 
@@ -286,9 +288,9 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		try {
 			return Files.size(fileSystem.getPath(normalPath));
 		} catch (NoSuchFileException e) {
-			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+			throw new N5NoSuchKeyException("No such file", e);
 		} catch (IOException | UncheckedIOException e) {
-			throw new N5Exception.N5IOException(e);
+			throw new N5IOException(e);
 		}
 	}
 
@@ -609,9 +611,12 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		void read() throws IOException {
+		void read() throws N5IOException {
 
-			try (FileChannel channel = kva.lockForReading(normalKey).getFileChannel()) {
+			try (
+					final LockedFileChannel lockedFileChannel = kva.lockForReading(normalKey);
+					final FileChannel channel = lockedFileChannel.getFileChannel()
+			) {
 				channel.position(offset);
 				if (length > Integer.MAX_VALUE)
 					throw new IOException("Attempt to materialize too large data");
@@ -622,7 +627,9 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 				channel.read(buf);
 				materialized = (SplittableReadData)ReadData.from(data);
 			} catch (final NoSuchFileException e) {
-				throw new N5Exception.N5NoSuchKeyException(e);
+				throw new N5NoSuchKeyException(e);
+			} catch (final IOException e) {
+				throw new N5IOException(e);
 			}
 
 		}

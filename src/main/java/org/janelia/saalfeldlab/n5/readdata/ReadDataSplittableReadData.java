@@ -32,6 +32,7 @@ import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.io.input.ProxyInputStream;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,7 +58,7 @@ class ReadDataSplittableReadData implements SplittableReadData {
 	}
 
 	@Override
-	public InputStream inputStream() throws IOException {
+	public InputStream inputStream() throws N5IOException {
 
 		final InputStream offsetInputStream = new ProxyInputStream(readData.inputStream()) {
 
@@ -75,14 +76,18 @@ class ReadDataSplittableReadData implements SplittableReadData {
 			}
 		};
 
-		return BoundedInputStream.builder()
-				.setInputStream(offsetInputStream)
-				.setBufferSize((int)length)
-				.get();
+		try {
+			return BoundedInputStream.builder()
+					.setInputStream(offsetInputStream)
+					.setBufferSize((int)length)
+					.get();
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
 	}
 
 	@Override
-	public byte[] allBytes() throws IOException, IllegalStateException {
+	public byte[] allBytes() throws N5IOException, IllegalStateException {
 
 		final byte[] bytes = readData.allBytes();
 		if (offset == 0 && bytes.length == length) {
@@ -93,7 +98,7 @@ class ReadDataSplittableReadData implements SplittableReadData {
 	}
 
 	@Override
-	public SplittableReadData materialize() throws IOException {
+	public SplittableReadData materialize() {
 
 		return this;
 	}

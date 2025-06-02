@@ -5,6 +5,7 @@ import java.io.InputStream;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.SplittableReadData;
 
@@ -43,19 +44,19 @@ abstract class KeyValueAccessSplittableReadData<K extends KeyValueAccess> implem
 	}
 
 	@Override
-	public InputStream inputStream() throws IOException, IllegalStateException {
+	public InputStream inputStream() throws N5IOException, IllegalStateException {
 
 		return materialize().inputStream();
 	}
 
 	@Override
-	public byte[] allBytes() throws IOException, IllegalStateException {
+	public byte[] allBytes() throws N5IOException, IllegalStateException {
 
 		return materialize().allBytes();
 	}
 
 	@Override
-	public SplittableReadData materialize() throws IOException {
+	public SplittableReadData materialize() throws N5IOException {
 
 		if (materialized == null)
 			read();
@@ -63,7 +64,7 @@ abstract class KeyValueAccessSplittableReadData<K extends KeyValueAccess> implem
 		return (SplittableReadData)materialized;
 	}
 
-	abstract void read() throws IOException;
+	abstract void read() throws N5IOException;
 
 	abstract KeyValueAccessSplittableReadData<K> readOperationSlice(long offset, long length) throws IOException;
 

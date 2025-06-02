@@ -182,7 +182,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	public static void write(
 			final OutputStream outputStream,
 			final ShardIndex index
-	) throws IOException {
+	) throws N5IOException {
 
 		try {
 			write(index, outputStream);

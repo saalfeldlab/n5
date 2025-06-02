@@ -9,6 +9,8 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -16,7 +18,6 @@ import org.janelia.saalfeldlab.n5.readdata.SplittableReadData;
 import org.janelia.saalfeldlab.n5.serialization.N5Annotations;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
-import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Objects;
 
@@ -120,12 +121,12 @@ public class ShardingCodec<T> implements Codec.ArrayCodec<T> {
 		getArrayCodec().initialize(attributes, getCodecs());
 	}
 
-	@Override public ReadData encode(DataBlock<T> dataBlock) throws IOException {
+	@Override public ReadData encode(DataBlock<T> dataBlock) throws N5IOException {
 
 		return getArrayCodec().encode(dataBlock);
 	}
 
-	@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
+	@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5IOException {
 
 		final SplittableReadData splitableReadData = readData.materialize();
 

@@ -1,12 +1,11 @@
 package org.janelia.saalfeldlab.n5.codec;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 
 import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
@@ -56,7 +55,7 @@ public class AsTypeCodec implements Codec.BytesCodec {
 		return encodedType;
 	}
 
-	@Override public ReadData encode(ReadData readData) throws IOException {
+	@Override public ReadData encode(ReadData readData) {
 
 
 		numBytes = bytes(dataType);
@@ -74,7 +73,7 @@ public class AsTypeCodec implements Codec.BytesCodec {
 		});
 	}
 
-	@Override public ReadData decode(ReadData readData) throws IOException {
+	@Override public ReadData decode(ReadData readData) throws N5IOException {
 
 		return ReadData.from(out -> {
 			numBytes = bytes(dataType);

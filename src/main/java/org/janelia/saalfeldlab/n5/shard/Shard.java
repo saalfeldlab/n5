@@ -14,6 +14,8 @@ import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 
+import static org.janelia.saalfeldlab.n5.N5Exception.*;
+
 public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 	/**
@@ -135,7 +137,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 	ShardIndex getIndex();
 
-	default ReadData createReadData() throws IOException {
+	default ReadData createReadData() throws N5IOException {
 
 		final DatasetAttributes datasetAttributes = getDatasetAttributes();
 		final ShardIndex index = ShardIndex.createIndex(datasetAttributes);
@@ -189,7 +191,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		private final Shard<T> shard;
 		private final ShardIndex index;
 		// TODO ShardParameters is deprecated?
-		private final ShardParameters attributes;
+		private final DatasetAttributes attributes;
 		private int blockIndex = 0;
 
 		public DataBlockIterator(final Shard<T> shard) {

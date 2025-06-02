@@ -33,6 +33,8 @@ import java.io.InputStream;
 import org.apache.commons.io.input.ProxyInputStream;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 class KeyValueAccessReadData extends AbstractInputStreamReadData {
 
@@ -53,19 +55,24 @@ class KeyValueAccessReadData extends AbstractInputStreamReadData {
 	 *
 	 * @return an InputStream on this data
 	 *
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if any I/O error occurs
 	 */
 	@Override
-	public InputStream inputStream() throws IOException {
-		final LockedChannel channel = keyValueAccess.lockForReading(normalPath);
-		return new ProxyInputStream(channel.newInputStream()) {
+	public InputStream inputStream() throws N5IOException {
+		try {
+			@SuppressWarnings("resource")
+			final LockedChannel channel = keyValueAccess.lockForReading(normalPath);
+			return new ProxyInputStream(channel.newInputStream()) {
 
-			@Override
-			public void close() throws IOException {
-				in.close();
-				channel.close();
-			}
-		};
+				@Override
+				public void close() throws IOException {
+					in.close();
+					channel.close();
+				}
+			};
+		} catch (final IOException e) {
+			throw new N5IOException(e);
+		}
 	}
 }

@@ -36,6 +36,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.scijava.annotations.Indexable;
@@ -101,7 +102,7 @@ public interface Compression extends Serializable, Codec.BytesCodec {
 	 * @throws IOException
 	 * 		if any I/O error occurs
 	 */
-	ReadData decode(ReadData readData) throws IOException;
+	ReadData decode(ReadData readData) throws N5IOException;
 
 	/**
 	 * Encode the given {@code readData}.
@@ -117,6 +118,6 @@ public interface Compression extends Serializable, Codec.BytesCodec {
 	 * @throws IOException
 	 * 		if any I/O error occurs
 	 */
-	ReadData encode(ReadData readData) throws IOException;
+	ReadData encode(ReadData readData) throws N5IOException;
 
 }

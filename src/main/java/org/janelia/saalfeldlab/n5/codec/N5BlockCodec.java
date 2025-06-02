@@ -2,10 +2,10 @@ package org.janelia.saalfeldlab.n5.codec;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
-
-import java.io.IOException;
 
 @NameConfig.Name(value = N5BlockCodec.TYPE)
 public class N5BlockCodec<T> implements Codec.ArrayCodec<T> {
@@ -27,12 +27,12 @@ public class N5BlockCodec<T> implements Codec.ArrayCodec<T> {
 		this.attributes = attributes;
 	}
 
-	@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
+	@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5IOException {
 
 		return dataBlockCodec.decode(readData, gridPosition);
 	}
 
-	@Override public ReadData encode(DataBlock<T> dataBlock) throws IOException {
+	@Override public ReadData encode(DataBlock<T> dataBlock) throws N5IOException {
 
 		return dataBlockCodec.encode(dataBlock);
 	}

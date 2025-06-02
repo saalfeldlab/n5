@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 /**
  * An abstraction over {@code byte[]} data.
@@ -59,11 +60,10 @@ public interface ReadData {
 	 *
 	 * @return number of bytes, if known, or -1
 	 *
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if an I/O error occurs while trying to get the length
 	 */
-	//TODO N5IOException
-	default long length() {
+	default long length() throws N5IOException {
 		return -1;
 	}
 
@@ -78,12 +78,12 @@ public interface ReadData {
 	 *
 	 * @return an InputStream on this data
 	 *
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if any I/O error occurs
 	 * @throws IllegalStateException
 	 * 		if this method was already called once and cannot be called again.
 	 */
-	InputStream inputStream() throws IOException, IllegalStateException;
+	InputStream inputStream() throws N5IOException, IllegalStateException;
 
 	/**
 	 * Return the contained data as a {@code byte[]} array.
@@ -97,12 +97,12 @@ public interface ReadData {
 	 *
 	 * @return all contained data as a byte[] array
 	 *
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if any I/O error occurs
 	 * @throws IllegalStateException
 	 * 		if {@link #inputStream()} was already called once and cannot be called again.
 	 */
-	byte[] allBytes() throws IOException, IllegalStateException;
+	byte[] allBytes() throws N5IOException, IllegalStateException;
 
 	/**
 	 * Return the contained data as a {@code ByteBuffer}.
@@ -117,12 +117,12 @@ public interface ReadData {
 	 *
 	 * @return all contained data as a ByteBuffer
 	 *
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if any I/O error occurs
 	 * @throws IllegalStateException
 	 * 		if {@link #inputStream()} was already called once and cannot be called again.
 	 */
-	default ByteBuffer toByteBuffer() throws IOException, IllegalStateException {
+	default ByteBuffer toByteBuffer() throws N5IOException, IllegalStateException {
 		return ByteBuffer.wrap(allBytes());
 	}
 
@@ -134,7 +134,7 @@ public interface ReadData {
 	 * The returned {@code ReadData} has a known {@link #length} and multiple
 	 * {@link #inputStream InputStreams} can be opened on it.
 	 */
-	SplittableReadData materialize() throws IOException;
+	SplittableReadData materialize() throws N5IOException;
 
 	/**
 	 * Write the contained data into an {@code OutputStream}.
@@ -149,13 +149,17 @@ public interface ReadData {
 	 * @param outputStream
 	 * 		destination to write to
 	 *
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if any I/O error occurs
 	 * @throws IllegalStateException
 	 * 		if {@link #inputStream()} was already called once and cannot be called again.
 	 */
-	default void writeTo(OutputStream outputStream) throws IOException, IllegalStateException {
-		outputStream.write(allBytes());
+	default void writeTo(OutputStream outputStream) throws N5IOException, IllegalStateException {
+		try {
+			outputStream.write(allBytes());
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
 	}
 
 	// ------------- Encoding / Decoding ----------------

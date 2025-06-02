@@ -2,6 +2,7 @@ package org.janelia.saalfeldlab.n5.codec;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
@@ -36,7 +37,7 @@ public interface Codec extends Serializable {
 		 * @return decoded ReadData
 		 * @throws IOException if any I/O error occurs
 		 */
-		ReadData decode(ReadData readData) throws IOException;
+		ReadData decode(ReadData readData) throws N5IOException;
 
 		/**
 		 * Encode the given {@code readData}.
@@ -48,7 +49,7 @@ public interface Codec extends Serializable {
 		 * @return encoded ReadData
 		 * @throws IOException if any I/O error occurs
 		 */
-		ReadData encode(ReadData readData) throws IOException;
+		ReadData encode(ReadData readData) throws N5IOException;
 
 	}
 

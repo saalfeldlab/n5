@@ -5,10 +5,10 @@ import static org.junit.Assert.assertArrayEquals;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.Random;
 import java.util.function.IntUnaryOperator;
 
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.ReadData.OutputStreamOperator;
@@ -68,11 +68,11 @@ public class CodecTests {
 			return "byteFunction";
 		}
 
-		public ReadData decode(ReadData data) throws IOException {
+		public ReadData decode(ReadData data) {
 			return data.encode(new ByteFun(decoder));
 		}
 
-		public ReadData encode(ReadData data) throws IOException {
+		public ReadData encode(ReadData data) {
 			return data.encode(new ByteFun(encoder));
 		}
 	}
@@ -85,7 +85,7 @@ public class CodecTests {
 		}
 
 		@Override
-		public OutputStream apply(OutputStream o) throws IOException {
+		public OutputStream apply(OutputStream o) {
 			return new OutputStream() {
 				@Override
 				public void write(int b) throws IOException {

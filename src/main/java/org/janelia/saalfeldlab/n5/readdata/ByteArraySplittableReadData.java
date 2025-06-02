@@ -35,6 +35,8 @@ import java.util.Arrays;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 class ByteArraySplittableReadData implements SplittableReadData {
 
@@ -61,7 +63,7 @@ class ByteArraySplittableReadData implements SplittableReadData {
 	}
 
 	@Override
-	public InputStream inputStream() throws IOException {
+	public InputStream inputStream() {
 
 		return new ByteArrayInputStream(data, offset, length);
 	}
@@ -77,7 +79,7 @@ class ByteArraySplittableReadData implements SplittableReadData {
 	}
 
 	@Override
-	public SplittableReadData materialize() throws IOException {
+	public SplittableReadData materialize() {
 
 		return this;
 	}

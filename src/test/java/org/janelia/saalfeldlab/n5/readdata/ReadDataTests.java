@@ -17,6 +17,8 @@ import java.util.function.IntUnaryOperator;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData.OutputStreamOperator;
 import org.junit.Test;
 
@@ -158,7 +160,7 @@ public class ReadDataTests {
 		}
 
 		@Override
-		public OutputStream apply(OutputStream o) throws IOException {
+		public OutputStream apply(OutputStream o) {
 			return new OutputStream() {
 				@Override
 				public void write(int b) throws IOException {

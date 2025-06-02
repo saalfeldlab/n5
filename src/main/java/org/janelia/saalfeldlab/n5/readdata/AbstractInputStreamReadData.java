@@ -33,6 +33,8 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 // not thread-safe
 abstract class AbstractInputStreamReadData implements ReadData {
@@ -40,7 +42,7 @@ abstract class AbstractInputStreamReadData implements ReadData {
 	private ByteArraySplittableReadData bytes;
 
 	@Override
-	public SplittableReadData materialize() throws IOException {
+	public SplittableReadData materialize() throws N5IOException {
 		if (bytes == null) {
 			final byte[] data;
 			final int length = (int) length();
@@ -48,10 +50,14 @@ abstract class AbstractInputStreamReadData implements ReadData {
 				data = new byte[length];
 				try( InputStream is = inputStream())  {
 					new DataInputStream(is).readFully(data);
+				} catch (IOException e) {
+					throw new N5IOException(e);
 				}
 			} else {
 				try( InputStream is = inputStream())  {
 					data = IOUtils.toByteArray(is);
+				} catch (IOException e) {
+					throw new N5IOException(e);
 				}
 			}
 			bytes = new ByteArraySplittableReadData(data);
@@ -60,7 +66,7 @@ abstract class AbstractInputStreamReadData implements ReadData {
 	}
 
 	@Override
-	public byte[] allBytes() throws IOException, IllegalStateException {
+	public byte[] allBytes() throws N5IOException, IllegalStateException {
 		return materialize().allBytes();
 	}
 }

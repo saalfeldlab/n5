@@ -34,6 +34,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import org.apache.commons.io.output.ProxyOutputStream;
 import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 class LazyReadData implements ReadData {
 
@@ -63,7 +64,7 @@ class LazyReadData implements ReadData {
 	private ByteArraySplittableReadData bytes;
 
 	@Override
-	public SplittableReadData materialize() throws IOException {
+	public SplittableReadData materialize() throws N5IOException {
 		if (bytes == null) {
 			final ByteArrayOutputStream baos = new ByteArrayOutputStream(8192);
 			writeTo(baos);
@@ -73,31 +74,31 @@ class LazyReadData implements ReadData {
 	}
 
 	@Override
-	public long length() {
+	public long length() throws N5IOException {
 
-		try {
-			return materialize().length();
-		} catch (IOException e) {
-			throw new N5Exception.N5IOException(e);
-		}
+		return materialize().length();
 	}
 
 	@Override
-	public InputStream inputStream() throws IOException, IllegalStateException {
+	public InputStream inputStream() throws N5IOException, IllegalStateException {
 		return materialize().inputStream();
 	}
 
 	@Override
-	public byte[] allBytes() throws IOException, IllegalStateException {
+	public byte[] allBytes() throws N5IOException, IllegalStateException {
 		return materialize().allBytes();
 	}
 
 	@Override
-	public void writeTo(final OutputStream outputStream) throws IOException, IllegalStateException {
-		if (bytes != null) {
-			outputStream.write(bytes.allBytes());
-		} else {
-			writer.writeTo(outputStream);
+	public void writeTo(final OutputStream outputStream) throws N5IOException, IllegalStateException {
+		try {
+			if (bytes != null) {
+				outputStream.write(bytes.allBytes());
+			} else {
+				writer.writeTo(outputStream);
+			}
+		} catch (IOException e) {
+			throw new N5IOException(e);
 		}
 	}
 

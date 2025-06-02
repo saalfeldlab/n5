@@ -31,6 +31,7 @@ package org.janelia.saalfeldlab.n5;
 import org.apache.commons.io.IOUtils;
 
 import org.apache.commons.lang3.function.TriFunction;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.http.ListResponseParser;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
@@ -74,7 +75,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	/**
 	 * Opens an {@link HttpKeyValueAccess}
 	 *
-	 * @throws N5Exception.N5IOException if the access could not be created
+	 * @throws N5IOException if the access could not be created
 	 */
 	public HttpKeyValueAccess() {
 
@@ -305,7 +306,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 			final String listResponse = responseToString(http.getInputStream());
 			return parser.parseListResponse(listResponse);
 		} catch (IOException e) {
-			throw new N5Exception.N5IOException("Error listing directory at " + normalPath, e);
+			throw new N5IOException("Error listing directory at " + normalPath, e);
 		}
 	}
 
@@ -333,7 +334,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 			code = http.getResponseCode();
 			responseMsg = http.getResponseMessage();
 		} catch (IOException e) {
-			throw new N5Exception.N5IOException("Could not validate HTTP Response", e);
+			throw new N5IOException("Could not validate HTTP Response", e);
 		}
 
 		final N5Exception cause = filterCode.apply(code, responseMsg, http);
@@ -444,10 +445,14 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		void read() throws IOException {
+		void read() throws N5IOException {
 			try( final HttpObjectChannel ch = new HttpObjectChannel(kva.uri(normalKey), offset, length) ) {
 				materialized = ReadData.from(ch.newInputStream()).materialize();
-			} catch (URISyntaxException e) {}
+			} catch (URISyntaxException e) {
+				throw new N5Exception(e);
+			} catch (IOException e) {
+				throw new N5IOException(e);
+			}
 		}
 
 		@Override
