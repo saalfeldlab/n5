@@ -57,6 +57,9 @@ public class RawBlockCodecs {
 		case FLOAT64:
 			factory = RawBlockCodecs.DOUBLE;
 			break;
+		case STRING:
+			factory = RawBlockCodecs.STRING;
+			break;
 		default:
 			throw new IllegalArgumentException("Unsupported data type: " + dataType);
 		}
