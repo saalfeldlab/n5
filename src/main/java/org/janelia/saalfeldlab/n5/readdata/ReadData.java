@@ -32,6 +32,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+
+import org.apache.commons.lang3.tuple.Pair;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 
 /**
@@ -64,6 +66,42 @@ public interface ReadData {
 	 */
 	default long length() throws IOException {
 		return -1;
+	}
+
+	/**
+	 * Returns a {@link ReadData} whose length is limited to the given value.
+	 * 
+	 * @param length
+	 * @return a length-limited ReadData
+	 * @throws IOException
+	 * 		if an I/O error occurs while trying to get the length
+	 */
+	default ReadData limit(final long length) throws IOException {
+		return slice(0, length);
+	}
+
+	/**
+	 * Returns a new {@link ReadData} representing a slice, or subset
+	 * of this ReadData.
+	 *
+	 * @param offset the offset relative to this
+	 * @param length of the returned ReadData
+	 * @return a slice
+	 * @throws IOException an exception
+	 */
+	default ReadData slice(final long offset, final long length) throws IOException {
+		return materialize().slice(offset, length);
+	}
+
+	default Pair<ReadData,ReadData> split(final long pivot) throws IOException { 
+		/*
+		 * TODO do we want this? how should it work?
+		 * I suppose this could be useful for infinite data, or data of unknown length, 
+ 	     * So far, no uses of it though.
+		 *
+		 * tail below would be equivalent to slice(pivot, -1)
+		 */
+		return materialize().split(pivot);
 	}
 
 	/**
