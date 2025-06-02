@@ -29,7 +29,6 @@
 package org.janelia.saalfeldlab.n5.readdata;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
@@ -55,7 +54,7 @@ class ByteArraySplittableReadData implements ReadData {
 	}
 
 	@Override
-	public InputStream inputStream() throws IOException {
+	public InputStream inputStream() {
 		return new ByteArrayInputStream(data, offset, length);
 	}
 
@@ -69,7 +68,7 @@ class ByteArraySplittableReadData implements ReadData {
 	}
 
 	@Override
-	public ReadData materialize() throws IOException {
+	public ReadData materialize() {
 		return this;
 	}
 }

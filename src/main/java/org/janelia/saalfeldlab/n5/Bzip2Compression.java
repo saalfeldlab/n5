@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -58,6 +58,7 @@ import java.io.InputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 @CompressionType("bzip2")
@@ -88,9 +89,12 @@ public class Bzip2Compression implements Compression {
 	}
 
 	@Override
-	public ReadData decode(final ReadData readData) throws IOException {
-
-		return ReadData.from(new BZip2CompressorInputStream(readData.inputStream()));
+	public ReadData decode(final ReadData readData) throws N5IOException {
+		try {
+			return ReadData.from(new BZip2CompressorInputStream(readData.inputStream()));
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
 	}
 
 	@Override
