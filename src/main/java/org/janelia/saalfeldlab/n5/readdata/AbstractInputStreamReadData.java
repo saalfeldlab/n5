@@ -30,12 +30,14 @@ package org.janelia.saalfeldlab.n5.readdata;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+
 import org.apache.commons.io.IOUtils;
 
 // not thread-safe
 abstract class AbstractInputStreamReadData implements ReadData {
 
-	private ByteArraySplittableReadData bytes;
+	private ByteArrayReadData bytes;
 
 	@Override
 	public ReadData materialize() throws IOException {
@@ -44,11 +46,15 @@ abstract class AbstractInputStreamReadData implements ReadData {
 			final int length = (int) length();
 			if (length >= 0) {
 				data = new byte[length];
-				new DataInputStream(inputStream()).readFully(data);
+				try( InputStream is = inputStream())  {
+					new DataInputStream(is).readFully(data);
+				}
 			} else {
-				data = IOUtils.toByteArray(inputStream());
+				try( InputStream is = inputStream())  {
+					data = IOUtils.toByteArray(is);
+				}
 			}
-			bytes = new ByteArraySplittableReadData(data);
+			bytes = new ByteArrayReadData(data);
 		}
 		return bytes;
 	}
