@@ -38,6 +38,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.function.IntFunction;
 import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
@@ -53,9 +55,9 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  */
 public abstract class DataCodec<T> {
 
-	public abstract ReadData serialize(T data) throws IOException;
+	public abstract ReadData serialize(T data) throws N5IOException;
 
-	public abstract T deserialize(ReadData readData, int numElements) throws IOException;
+	public abstract T deserialize(ReadData readData, int numElements) throws N5IOException;
 
 	public int bytesPerElement() {
 		return bytesPerElement;
@@ -128,9 +130,13 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public byte[] deserialize(final ReadData readData, int numElements) throws IOException {
+		public byte[] deserialize(final ReadData readData, int numElements) throws N5IOException {
 			final byte[] data = createData(numElements);
-			new DataInputStream(readData.inputStream()).readFully(data);
+			try {
+				new DataInputStream(readData.inputStream()).readFully(data);
+			} catch (IOException e) {
+				throw new N5IOException(e);
+			}
 			return data;
 		}
 	}
@@ -145,14 +151,14 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public ReadData serialize(final short[] data) {
+		public ReadData serialize(final short[] data) throws N5IOException {
 			final ByteBuffer serialized = ByteBuffer.allocate(Short.BYTES * data.length);
 			serialized.order(order).asShortBuffer().put(data);
 			return ReadData.from(serialized);
 		}
 
 		@Override
-		public short[] deserialize(final ReadData readData, int numElements) throws IOException {
+		public short[] deserialize(final ReadData readData, int numElements) throws N5IOException {
 			final short[] data = createData(numElements);
 			readData.toByteBuffer().order(order).asShortBuffer().get(data);
 			return data;
@@ -169,14 +175,14 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public ReadData serialize(final int[] data) {
+		public ReadData serialize(final int[] data) throws N5IOException {
 			final ByteBuffer serialized = ByteBuffer.allocate(Integer.BYTES * data.length);
 			serialized.order(order).asIntBuffer().put(data);
 			return ReadData.from(serialized);
 		}
 
 		@Override
-		public int[] deserialize(final ReadData readData, int numElements) throws IOException {
+		public int[] deserialize(final ReadData readData, int numElements) throws N5IOException {
 			final int[] data = createData(numElements);
 			final ByteBuffer byteBuffer = readData.toByteBuffer();
 			final IntBuffer intBuffer = byteBuffer.order(order).asIntBuffer();
@@ -195,14 +201,14 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public ReadData serialize(final long[] data) {
+		public ReadData serialize(final long[] data) throws N5IOException {
 			final ByteBuffer serialized = ByteBuffer.allocate(Long.BYTES * data.length);
 			serialized.order(order).asLongBuffer().put(data);
 			return ReadData.from(serialized);
 		}
 
 		@Override
-		public long[] deserialize(final ReadData readData, int numElements) throws IOException {
+		public long[] deserialize(final ReadData readData, int numElements) throws N5IOException {
 			final long[] data = createData(numElements);
 			readData.toByteBuffer().order(order).asLongBuffer().get(data);
 			return data;
@@ -219,14 +225,14 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public ReadData serialize(final float[] data) {
+		public ReadData serialize(final float[] data) throws N5IOException {
 			final ByteBuffer serialized = ByteBuffer.allocate(Float.BYTES * data.length);
 			serialized.order(order).asFloatBuffer().put(data);
 			return ReadData.from(serialized);
 		}
 
 		@Override
-		public float[] deserialize(final ReadData readData, int numElements) throws IOException {
+		public float[] deserialize(final ReadData readData, int numElements) throws N5IOException {
 			final float[] data = createData(numElements);
 			readData.toByteBuffer().order(order).asFloatBuffer().get(data);
 			return data;
@@ -243,14 +249,14 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public ReadData serialize(final double[] data) {
+		public ReadData serialize(final double[] data) throws N5IOException {
 			final ByteBuffer serialized = ByteBuffer.allocate(Double.BYTES * data.length);
 			serialized.order(order).asDoubleBuffer().put(data);
 			return ReadData.from(serialized);
 		}
 
 		@Override
-		public double[] deserialize(final ReadData readData, int numElements) throws IOException {
+		public double[] deserialize(final ReadData readData, int numElements) throws N5IOException {
 			final double[] data = createData(numElements);
 			readData.toByteBuffer().order(order).asDoubleBuffer().get(data);
 			return data;
@@ -267,13 +273,13 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public ReadData serialize(String[] data) {
+		public ReadData serialize(String[] data) throws N5IOException {
 			final String flattenedArray = String.join(NULLCHAR, data) + NULLCHAR;
 			return ReadData.from(flattenedArray.getBytes(ENCODING));
 		}
 
 		@Override
-		public String[] deserialize(ReadData readData, int numElements) throws IOException {
+		public String[] deserialize(ReadData readData, int numElements) throws N5IOException {
 			final byte[] serializedData = readData.allBytes();
 			final String rawChars = new String(serializedData, ENCODING);
 			return rawChars.split(NULLCHAR);
@@ -289,7 +295,7 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public ReadData serialize(String[] data) {
+		public ReadData serialize(String[] data) throws N5IOException {
 			final int N = data.length;
 			final byte[][] encodedStrings = Arrays.stream(data).map(str -> str.getBytes(ENCODING)).toArray(byte[][]::new);
 			final int[] lengths = Arrays.stream(encodedStrings).mapToInt(a -> a.length).toArray();
@@ -305,7 +311,7 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public String[] deserialize(ReadData readData, int numElements) throws IOException {
+		public String[] deserialize(ReadData readData, int numElements) throws N5IOException {
 			final ByteBuffer serialized = readData.toByteBuffer();
 			serialized.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -335,14 +341,18 @@ public abstract class DataCodec<T> {
 		}
 
 		@Override
-		public ReadData serialize(byte[] data) {
+		public ReadData serialize(byte[] data) throws N5IOException {
 			return ReadData.from(data);
 		}
 
 		@Override
-		public byte[] deserialize(ReadData readData, int numElements) throws IOException {
+		public byte[] deserialize(ReadData readData, int numElements) throws N5IOException {
 			final byte[] data = createData(numElements);
-			new DataInputStream(readData.inputStream()).readFully(data);
+			try {
+				new DataInputStream(readData.inputStream()).readFully(data);
+			} catch (IOException e) {
+				throw new N5IOException(e);
+			}
 			return data;
 		}
 	}

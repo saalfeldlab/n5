@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -60,6 +60,8 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.scijava.annotations.Indexable;
 
@@ -116,10 +118,10 @@ public interface Compression extends Serializable {
 	 *
 	 * @return decoded ReadData
 	 *
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if any I/O error occurs
 	 */
-	ReadData decode(ReadData readData) throws IOException;
+	ReadData decode(ReadData readData) throws N5IOException;
 
 	/**
 	 * Encode the given {@code readData}.
@@ -132,9 +134,9 @@ public interface Compression extends Serializable {
 	 *
 	 * @return encoded ReadData
 	 *
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if any I/O error occurs
 	 */
-	ReadData encode(ReadData readData) throws IOException;
+	ReadData encode(ReadData readData) throws N5IOException;
 
 }

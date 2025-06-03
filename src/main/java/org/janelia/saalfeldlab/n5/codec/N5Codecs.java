@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -43,10 +43,12 @@ import org.janelia.saalfeldlab.n5.DoubleArrayDataBlock;
 import org.janelia.saalfeldlab.n5.FloatArrayDataBlock;
 import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
+import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.StringDataBlock;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
+import static org.janelia.saalfeldlab.n5.N5Exception.*;
 import static org.janelia.saalfeldlab.n5.codec.N5Codecs.BlockHeader.MODE_DEFAULT;
 import static org.janelia.saalfeldlab.n5.codec.N5Codecs.BlockHeader.MODE_OBJECT;
 import static org.janelia.saalfeldlab.n5.codec.N5Codecs.BlockHeader.MODE_VARLENGTH;
@@ -134,11 +136,10 @@ public class N5Codecs {
 			this.compression = compression;
 		}
 
-		abstract BlockHeader createBlockHeader(final DataBlock<T> dataBlock, ReadData blockData) throws IOException;
+		abstract BlockHeader createBlockHeader(final DataBlock<T> dataBlock, ReadData blockData) throws N5IOException;
 
 		@Override
-		public ReadData encode(DataBlock<T> dataBlock) throws IOException {
-
+		public ReadData encode(DataBlock<T> dataBlock) throws N5IOException {
 			return ReadData.from(out -> {
 				final ReadData dataReadData = dataCodec.serialize(dataBlock.getData());
 				final ReadData encodedData = compression.encode(dataReadData);
@@ -149,10 +150,10 @@ public class N5Codecs {
 			});
 		}
 
-		abstract BlockHeader decodeBlockHeader(final InputStream in) throws IOException;
+		abstract BlockHeader decodeBlockHeader(final InputStream in) throws N5IOException;
 
 		@Override
-		public DataBlock<T> decode(final ReadData readData, final long[] gridPosition) throws IOException {
+		public DataBlock<T> decode(final ReadData readData, final long[] gridPosition) throws N5IOException {
 
 			try(final InputStream in = readData.inputStream()) {
 				final BlockHeader header = decodeBlockHeader(in);
@@ -166,6 +167,8 @@ public class N5Codecs {
 				final ReadData decodeData = compression.decode(ReadData.from(in));
 				final T data = dataCodec.deserialize(decodeData, numElements);
 				return dataBlockFactory.createDataBlock(header.blockSize(), gridPosition, data);
+			} catch (IOException e) {
+				throw new N5IOException(e);
 			}
 		}
 	}
@@ -190,7 +193,7 @@ public class N5Codecs {
 		}
 
 		@Override
-		protected BlockHeader decodeBlockHeader(final InputStream in) throws IOException {
+		protected BlockHeader decodeBlockHeader(final InputStream in) throws N5IOException {
 
 			return BlockHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
 		}
@@ -207,13 +210,13 @@ public class N5Codecs {
 		}
 
 		@Override
-		protected BlockHeader createBlockHeader(final DataBlock<String[]> dataBlock, ReadData blockData) throws IOException {
+		protected BlockHeader createBlockHeader(final DataBlock<String[]> dataBlock, ReadData blockData) throws N5IOException {
 
 			return new BlockHeader(dataBlock.getSize(), (int)blockData.length());
 		}
 
 		@Override
-		protected BlockHeader decodeBlockHeader(final InputStream in) throws IOException {
+		protected BlockHeader decodeBlockHeader(final InputStream in) throws N5IOException {
 
 			return BlockHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
 		}
@@ -236,7 +239,7 @@ public class N5Codecs {
 		}
 
 		@Override
-		protected BlockHeader decodeBlockHeader(final InputStream in) throws IOException {
+		protected BlockHeader decodeBlockHeader(final InputStream in) throws N5IOException {
 
 			return BlockHeader.readFrom(in, MODE_OBJECT);
 		}
@@ -282,78 +285,95 @@ public class N5Codecs {
 			return numElements;
 		}
 
-		private static int[] readBlockSize(final DataInputStream dis) throws IOException {
+		private static int[] readBlockSize(final DataInputStream dis) throws N5IOException {
 
-			final int nDim = dis.readShort();
-			final int[] blockSize = new int[nDim];
-			for (int d = 0; d < nDim; ++d)
-				blockSize[d] = dis.readInt();
-			return blockSize;
-		}
-
-		private static void writeBlockSize(final int[] blockSize, final DataOutputStream dos) throws IOException {
-
-			dos.writeShort(blockSize.length);
-			for (final int size : blockSize)
-				dos.writeInt(size);
-		}
-
-		void writeTo(final OutputStream out) throws IOException {
-
-			final DataOutputStream dos = new DataOutputStream(out);
-			dos.writeShort(mode);
-			switch (mode) {
-			case MODE_DEFAULT:// default
-				writeBlockSize(blockSize, dos);
-				break;
-			case MODE_VARLENGTH:// varlength
-				writeBlockSize(blockSize, dos);
-				dos.writeInt(numElements);
-				break;
-			case MODE_OBJECT: // object
-				dos.writeInt(numElements);
-				break;
-			default:
-				throw new IOException("unexpected mode: " + mode);
+			try {
+				final int nDim = dis.readShort();
+				final int[] blockSize = new int[nDim];
+				for (int d = 0; d < nDim; ++d)
+					blockSize[d] = dis.readInt();
+				return blockSize;
+			} catch (IOException e) {
+				throw new N5IOException(e);
 			}
-			dos.flush();
 		}
 
-		static BlockHeader readFrom(final InputStream in, short... allowedModes) throws IOException {
+		private static void writeBlockSize(final int[] blockSize, final DataOutputStream dos) throws N5IOException {
 
-			final DataInputStream dis = new DataInputStream(in);
-			final short mode = dis.readShort();
-			final int[] blockSize;
-			final int numElements;
-			switch (mode) {
-			case MODE_DEFAULT:// default
-				blockSize = readBlockSize(dis);
-				numElements = DataBlock.getNumElements(blockSize);
-				break;
-			case MODE_VARLENGTH:// varlength
-				blockSize = readBlockSize(dis);
-				numElements = dis.readInt();
-				break;
-			case MODE_OBJECT: // object
-				blockSize = null;
-				numElements = dis.readInt();
-				break;
-			default:
-				throw new IOException("Unexpected mode: " + mode);
+			try {
+				dos.writeShort(blockSize.length);
+				for (final int size : blockSize)
+					dos.writeInt(size);
+			} catch (IOException e) {
+				throw new N5IOException(e);
 			}
+		}
 
-			boolean modeIsOk = allowedModes == null || allowedModes.length == 0;
-			for (int i = 0; !modeIsOk && i < allowedModes.length; ++i) {
-				if (mode == allowedModes[i]) {
-					modeIsOk = true;
+		void writeTo(final OutputStream out) throws N5IOException {
+
+			try {
+				final DataOutputStream dos = new DataOutputStream(out);
+				dos.writeShort(mode);
+				switch (mode) {
+				case MODE_DEFAULT:// default
+					writeBlockSize(blockSize, dos);
 					break;
+				case MODE_VARLENGTH:// varlength
+					writeBlockSize(blockSize, dos);
+					dos.writeInt(numElements);
+					break;
+				case MODE_OBJECT: // object
+					dos.writeInt(numElements);
+					break;
+				default:
+					throw new N5Exception("unexpected mode: " + mode);
 				}
-			}
-			if (!modeIsOk) {
-				throw new IOException("Unexpected mode: " + mode);
+				dos.flush();
+			} catch (IOException e) {
+				throw new N5IOException(e);
 			}
 
-			return new BlockHeader(mode, blockSize, numElements);
+		}
+
+		static BlockHeader readFrom(final InputStream in, short... allowedModes) throws N5IOException, N5Exception {
+
+			try {
+				final DataInputStream dis = new DataInputStream(in);
+				final short mode = dis.readShort();
+				final int[] blockSize;
+				final int numElements;
+				switch (mode) {
+				case MODE_DEFAULT:// default
+					blockSize = readBlockSize(dis);
+					numElements = DataBlock.getNumElements(blockSize);
+					break;
+				case MODE_VARLENGTH:// varlength
+					blockSize = readBlockSize(dis);
+					numElements = dis.readInt();
+					break;
+				case MODE_OBJECT: // object
+					blockSize = null;
+					numElements = dis.readInt();
+					break;
+				default:
+					throw new N5Exception("Unexpected mode: " + mode);
+				}
+
+				boolean modeIsOk = allowedModes == null || allowedModes.length == 0;
+				for (int i = 0; !modeIsOk && i < allowedModes.length; ++i) {
+					if (mode == allowedModes[i]) {
+						modeIsOk = true;
+						break;
+					}
+				}
+				if (!modeIsOk) {
+					throw new N5Exception("Unexpected mode: " + mode);
+				}
+
+				return new BlockHeader(mode, blockSize, numElements);
+			} catch (IOException e) {
+				throw new N5IOException(e);
+			}
 		}
 	}
 }

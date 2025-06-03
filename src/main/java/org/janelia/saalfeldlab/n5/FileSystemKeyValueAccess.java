@@ -53,6 +53,8 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -191,8 +193,8 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		try {
 			return new LockedFileChannel(normalPath, true);
-		} catch (NoSuchFileException e) {
-			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+		} catch (final NoSuchFileException e) {
+			throw new N5NoSuchKeyException("No such file", e);
 		}
 	}
 
@@ -206,8 +208,8 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		try {
 			return new LockedFileChannel(path, true);
-		} catch (NoSuchFileException e) {
-			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+		} catch (final NoSuchFileException e) {
+			throw new N5NoSuchKeyException("No such file", e);
 		}
 	}
 
