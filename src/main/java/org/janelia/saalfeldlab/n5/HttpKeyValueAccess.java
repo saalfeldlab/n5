@@ -457,7 +457,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		KeyValueAccessLazyReadData<HttpKeyValueAccess> readOperationSlice(long offset, long length) throws IOException {
+		KeyValueAccessLazyReadData<HttpKeyValueAccess> lazySlice(long offset, long length) {
 			return new HttpLazyReadData(kva, normalKey, offset, length);
 		}
 	}

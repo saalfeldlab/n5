@@ -8,9 +8,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
- * This abstract class
+ * This abstract class represents a lazy read operation, and implements the
+ * shared logic for lazily reading from a {@link KeyValueAccess}.
  * 
- * @param <K> the type of {@link KeyValueAccess}.
+ * @param <K>
+ *            the type of {@link KeyValueAccess}.
  */
 abstract class KeyValueAccessLazyReadData<K extends KeyValueAccess> implements ReadData {
 
@@ -30,15 +32,6 @@ abstract class KeyValueAccessLazyReadData<K extends KeyValueAccess> implements R
 		this.normalKey = normalKey;
 		this.offset = offset;
 		this.length = length;
-
-		// when created with a specified length,
-		// need to make sure it is consistent with the actual length
-//		final long objLength = kva.size(normalKey);
-//		if (length > 0 && offset + length - 1 > objLength)
-//			throw new IndexOutOfBoundsException("Object at key: " + normalKey + " has size " + objLength + 
-//					". Is too small for  requested offset (" + 
-//					offset +") and length (" + length + "). ");
-
 	}
 
 	KeyValueAccessLazyReadData(K kva, String normalKey, long offset) {
@@ -79,9 +72,26 @@ abstract class KeyValueAccessLazyReadData<K extends KeyValueAccess> implements R
 		return materialized;
 	}
 
+	/**
+	 * Read from the backed {@link KeyValueAccess} and set the materialized {@link ReadData} field.
+	 *
+	 * @throws IOException
+	 * 		if an I/O error occurs
+	 */
 	abstract void read() throws IOException;
 
-	abstract KeyValueAccessLazyReadData<K> readOperationSlice(long offset, long length) throws IOException;
+	/**
+	 * Return a new instance of a KeyValueAccessLazyReadData for this {@KeyValueAceess} and key,
+	 * but that represents a read operation that slices this instance with the given arguments.
+	 * <p>
+	 * This method should not perform any reads or calls to the backing KeyValueAccess.
+	 *
+	 * @param offset the offset relative to this
+	 * @param length of the returned ReadData
+	 * @return 
+	 * 		a new KeyValueAccessLazyReadData
+	 */
+	abstract KeyValueAccessLazyReadData<K> lazySlice(long offset, long length);
 
 	@Override
 	public ReadData slice(final long offset, final long length) throws IOException {
@@ -97,7 +107,7 @@ abstract class KeyValueAccessLazyReadData<K extends KeyValueAccess> implements R
 		else
 			lengthArg = (int)length;
 
-		return readOperationSlice(this.offset + offset, lengthArg);
+		return lazySlice(this.offset + offset, lengthArg);
 	}
 
 	@Override
@@ -113,7 +123,7 @@ abstract class KeyValueAccessLazyReadData<K extends KeyValueAccess> implements R
 		final long lenR = this.length - pivot;
 
 		return new ImmutablePair<ReadData, ReadData>(
-				readOperationSlice(offsetL, lenL),
-				readOperationSlice(offsetR, lenR));
+				lazySlice(offsetL, lenL),
+				lazySlice(offsetR, lenR));
 	}
 }

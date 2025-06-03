@@ -602,7 +602,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		KeyValueAccessLazyReadData<FileSystemKeyValueAccess> readOperationSlice(long offset, long length) throws IOException {
+		KeyValueAccessLazyReadData<FileSystemKeyValueAccess> lazySlice(long offset, long length) {
 			return new FileLazyReadData(kva, normalKey, offset, length);
 		}
 	}
