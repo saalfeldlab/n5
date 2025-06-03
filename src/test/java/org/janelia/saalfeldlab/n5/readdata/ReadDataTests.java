@@ -48,7 +48,7 @@ public class ReadDataTests {
 			data[i] = (byte)i;
 
 		ReadData readData = ReadData.from(data).materialize();
-		assertTrue(readData instanceof ByteArraySplittableReadData);
+		assertTrue(readData instanceof ByteArrayReadData);
 
 		readDataTestHelper(readData, N);
 		readDataTestEncodeHelper(readData, N);

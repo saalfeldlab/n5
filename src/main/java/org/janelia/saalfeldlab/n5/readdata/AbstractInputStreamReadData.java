@@ -37,7 +37,7 @@ import org.apache.commons.io.IOUtils;
 // not thread-safe
 abstract class AbstractInputStreamReadData implements ReadData {
 
-	private ByteArraySplittableReadData bytes;
+	private ByteArrayReadData bytes;
 
 	@Override
 	public ReadData materialize() throws IOException {
@@ -54,7 +54,7 @@ abstract class AbstractInputStreamReadData implements ReadData {
 					data = IOUtils.toByteArray(is);
 				}
 			}
-			bytes = new ByteArraySplittableReadData(data);
+			bytes = new ByteArrayReadData(data);
 		}
 		return bytes;
 	}

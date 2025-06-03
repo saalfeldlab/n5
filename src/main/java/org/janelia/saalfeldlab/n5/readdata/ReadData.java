@@ -285,7 +285,7 @@ public interface ReadData {
 	 * @return a new ReadData
 	 */
 	static ReadData from(final byte[] data, final int offset, final int length) {
-		return new ByteArraySplittableReadData(data, offset, length);
+		return new ByteArrayReadData(data, offset, length);
 	}
 
 	/**

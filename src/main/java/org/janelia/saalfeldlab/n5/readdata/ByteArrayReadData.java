@@ -36,18 +36,18 @@ import java.util.Arrays;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
-class ByteArraySplittableReadData implements ReadData {
+class ByteArrayReadData implements ReadData {
 
 	private final byte[] data;
 	private final int offset;
 	private final int length;
 
-	ByteArraySplittableReadData(final byte[] data) {
+	ByteArrayReadData(final byte[] data) {
 
 		this(data, 0, data.length);
 	}
 
-	ByteArraySplittableReadData(final byte[] data, final int offset, final int length) {
+	ByteArrayReadData(final byte[] data, final int offset, final int length) {
 
 		this.data = data;
 		this.offset = offset;
@@ -95,7 +95,7 @@ class ByteArraySplittableReadData implements ReadData {
 			throw new IndexOutOfBoundsException();
 
 		final int o = this.offset + (int)offset;
-		return new ByteArraySplittableReadData(data, o, (int)length);
+		return new ByteArrayReadData(data, o, (int)length);
 	}
 
 	@Override
