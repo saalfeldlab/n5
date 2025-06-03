@@ -170,6 +170,11 @@ public interface ReadData {
 	 * <p>
 	 * The returned {@code ReadData} has a known {@link #length} and multiple
 	 * {@link #inputStream InputStreams} can be opened on it.
+	 * 
+	 * @return
+	 * 		a materialized ReadData.
+	 * @throws IOException
+	 * 		if any I/O error occurs
 	 */
 	ReadData materialize() throws IOException;
 

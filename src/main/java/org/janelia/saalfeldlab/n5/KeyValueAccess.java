@@ -239,7 +239,7 @@ public interface KeyValueAccess {
 	 *            is expected to be in normalized form, no further
 	 *            efforts are made to normalize it.
 	 * @return the size of the object in bytes.
-	 * @throws N5NoSuchKeyException if the given key does not exist
+	 * @throws N5Exception.N5NoSuchKeyException if the given key does not exist
 	 */
 	public long size(final String normalPath) throws N5Exception.N5NoSuchKeyException;
 
@@ -269,12 +269,9 @@ public interface KeyValueAccess {
 	 * Implementations should read lazily if possible. Consumers may call {@link ReadData#materialize()} to force
 	 * a read operation if needed.
 	 * <p>
-	 * Partial reads are possible using {@link ReadData#slice()} on the output if supported by this KeyValueAccess
-	 * implementation.
+	 * If supported by this KeyValueAccess implementation, partial reads are possible by calling slice on the output {@link ReadData}.
 	 *
-	 * @param normalKey is expected to be in normalized form, no further efforts are made to normalize it
-	 * @param startByte the starting byte
-	 * @param length the number of bytes to read
+	 * @param normalPath is expected to be in normalized form, no further efforts are made to normalize it
 	 * @return a materialized Read data
 	 * @throws IOException if an error occurs
 	 */
