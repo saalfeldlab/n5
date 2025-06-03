@@ -5,14 +5,18 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.FileSystems;
 import java.util.Arrays;
 import java.util.function.IntUnaryOperator;
 
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
 import org.janelia.saalfeldlab.n5.readdata.ReadData.OutputStreamOperator;
 import org.junit.Test;
 
@@ -51,6 +55,48 @@ public class ReadDataTests {
 		splittableReadDataTestHelper(readData, N, 5);
 	}
 
+	@Test
+	public void testInputStreamReadData() throws IOException {
+
+		final int N = 128;
+		byte[] data = new byte[N];
+		for( int i = 0; i < N; i++ )
+			data[i] = (byte)i;
+
+		final InputStream is = new InputStream() {
+			int val = 0;
+			@Override
+			public int read() throws IOException {
+				return val++;
+			}
+		};
+
+		final ReadData readData = ReadData.from(is, N);
+		readDataTestHelper(readData, N);
+		splittableReadDataTestHelper(readData.materialize(), N, 5);
+	}
+
+	@Test
+	public void testFileKvaReadData() throws IOException {
+
+		int N = 128;
+		byte[] data = new byte[N];
+		for( int i = 0; i < N; i++ )
+			data[i] = (byte)i;
+
+		final File tmpF = File.createTempFile("test-file-splittable-data", ".bin");
+		tmpF.deleteOnExit();
+		try (FileOutputStream os = new FileOutputStream(tmpF)) {
+			os.write(data);
+		}
+
+		final ReadData readData = new FileSystemKeyValueAccess(FileSystems.getDefault())
+				.createReadData(tmpF.getAbsolutePath());
+
+		assertEquals("file read data length", 128, readData.length());
+		splittableReadDataTestHelper(readData, N, 5);
+	}
+
 	private void readDataTestHelper( ReadData readData, int N ) throws IOException {
 
 		assertEquals("full length", N, readData.length());
@@ -82,17 +128,16 @@ public class ReadDataTests {
 		ReadData limited = readData.limit(2);
 		assertEquals(2, limited.length());
 
-		ReadData splitOutOfRange = readData.slice(N-1, 3);
-		assertEquals("Out-of-range split truncates", 1, splitOutOfRange.length());
-		assertEquals("Out-of-range split truncates allBytes", 1, splitOutOfRange.allBytes().length);
-		
-		ReadData unboundedLength = readData.slice(1, Integer.MAX_VALUE);
-		assertEquals("unbounded length", N - 1, unboundedLength.length());
+		ReadData unboundedLength = readData.slice(1, -1);
 		assertEquals("unbounded length allBytes", N - 1, unboundedLength.allBytes().length);
-		
+
+		ReadData outOfRangeSlice = readData.slice(N-1, 3); // never throws
+		assertThrows("Out-of-range slice read", IndexOutOfBoundsException.class, () -> outOfRangeSlice.allBytes());
+
+		ReadData tooLargeSlice = readData.slice(N-1, 3); // never throws
+		assertThrows("too large offset slice read", IndexOutOfBoundsException.class, () -> tooLargeSlice.allBytes());
+
 		assertThrows("negative offset", IndexOutOfBoundsException.class, () -> readData.slice(-1, 1));
-		assertThrows("negative length", IndexOutOfBoundsException.class, () -> readData.slice(0, -1));
-		assertThrows("too large offset", IndexOutOfBoundsException.class, () -> readData.slice(N, 1));
 
 		final Pair<ReadData, ReadData> split = readData.split(pivot);
 		final ReadData first = split.getLeft();
@@ -104,51 +149,6 @@ public class ReadDataTests {
 		assertEquals(N-pivot, last.length());
 		assertEquals(pivot, last.allBytes()[0]);
 	}
-
-	@Test
-	public void testInputStreamReadData() throws IOException {
-
-		final int N = 128;
-		byte[] data = new byte[N];
-		for( int i = 0; i < N; i++ )
-			data[i] = (byte)i;
-
-		final InputStream is = new InputStream() {
-			int val = 0;
-			@Override
-			public int read() throws IOException {
-				return val++;
-			}
-		};
-
-		final ReadData readData = ReadData.from(is, N);
-		readDataTestHelper(readData, N);
-		splittableReadDataTestHelper(readData.materialize(), N, 5);
-	}
-
-	/**
-	 * Coming soon
-	 */
-//	@Test
-//	public void testFileKvaReadData() throws IOException {
-//
-//		int N = 128;
-//		byte[] data = new byte[N];
-//		for( int i = 0; i < N; i++ )
-//			data[i] = (byte)i;
-//
-//		final File tmpF = File.createTempFile("test-file-splittable-data", ".bin");
-//		tmpF.deleteOnExit();
-//		try (FileOutputStream os = new FileOutputStream(tmpF)) {
-//			os.write(data);
-//		}
-//
-//		final ReadData readData = new FileSystemKeyValueAccess(FileSystems.getDefault())
-//				.createReadData(tmpF.getAbsolutePath());
-//
-//		assertEquals("file read data length", 128, readData.length());
-//		splittableReadDataTestHelper(readData.materialize(), N, 5);
-//	}
 
 	private class ByteFun implements OutputStreamOperator {
 

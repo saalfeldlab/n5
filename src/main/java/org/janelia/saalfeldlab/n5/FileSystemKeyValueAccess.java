@@ -58,9 +58,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
@@ -80,6 +82,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.stream.Stream;
+
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
  * Filesystem {@link KeyValueAccess}.
@@ -141,6 +145,10 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			}
 		}
 
+		protected FileChannel getFileChannel() {
+			return channel;
+		}
+
 		@Override
 		public Reader newReader() throws IOException {
 
@@ -184,6 +192,11 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public FileSystemKeyValueAccess(final FileSystem fileSystem) {
 
 		this.fileSystem = fileSystem;
+	}
+
+	@Override
+	public ReadData createReadData(final String normalPath) {
+		return new FileLazyReadData(this, normalPath, 0, -1);
 	}
 
 	@Override
@@ -235,6 +248,18 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		final Path path = fileSystem.getPath(normalPath);
 		return Files.exists(path);
+	}
+
+	@Override
+	public long size(final String normalPath) {
+
+		try {
+			return Files.size(fileSystem.getPath(normalPath));
+		} catch (NoSuchFileException e) {
+			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5Exception.N5IOException(e);
+		}
 	}
 
 	@Override
@@ -546,4 +571,40 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 				throw x;
 		}
 	}
+
+	private class FileLazyReadData extends KeyValueAccessLazyReadData<FileSystemKeyValueAccess> {
+
+		public FileLazyReadData(FileSystemKeyValueAccess kva, String normalKey, long offset, long length) {
+			super(kva, normalKey, offset, length);
+		}
+
+		@Override
+		void read() throws IOException {
+
+			try (FileChannel channel = kva.lockForReading(normalKey).getFileChannel()) {
+				channel.position(offset);
+				if (length > Integer.MAX_VALUE)
+					throw new IOException("Attempt to materialize too large data");
+
+				final long channelSize = channel.size();
+				if( length > 0 && offset + length > channelSize )
+					throw new IndexOutOfBoundsException();
+
+				final int sz = (int)(length < 0 ? channelSize : length);
+				final byte[] data = new byte[sz];
+				final ByteBuffer buf = ByteBuffer.wrap(data);
+				channel.read(buf);
+				materialized = ReadData.from(data);
+
+			} catch (final NoSuchFileException e) {
+				throw new N5Exception.N5NoSuchKeyException(e);
+			}
+		}
+
+		@Override
+		KeyValueAccessLazyReadData<FileSystemKeyValueAccess> readOperationSlice(long offset, long length) throws IOException {
+			return new FileLazyReadData(kva, normalKey, offset, length);
+		}
+	}
+
 }

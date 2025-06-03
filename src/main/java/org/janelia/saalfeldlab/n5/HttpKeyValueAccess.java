@@ -49,8 +49,10 @@
 package org.janelia.saalfeldlab.n5;
 
 import org.apache.commons.io.IOUtils;
+
 import org.apache.commons.lang3.function.TriFunction;
 import org.janelia.saalfeldlab.n5.http.ListResponseParser;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -75,6 +77,13 @@ import java.util.ArrayList;
  * Methods that take a "normalPath" as an argument expect absolute URIs.
  */
 public class HttpKeyValueAccess implements KeyValueAccess {
+
+	public static final String HEAD = "HEAD";
+	public static final String GET = "GET";
+
+	public static final String RANGE = "Range";
+	public static final String ACCEPT_RANGE = "Accept-Range";
+	public static final String BYTES = "bytes";
 
 	private int readTimeoutMilliseconds;
 	private int connectionTimeoutMilliseconds;
@@ -146,6 +155,12 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 	}
 
+	@Override public long size(String normalPath) {
+
+		final HttpURLConnection head = requireValidHttpResponse(normalPath, "HEAD", "Error checking existence: " + normalPath, true);
+		return head.getContentLengthLong();
+	}
+
 	/**
 	 * Test whether the path is a directory.
 	 * <p>
@@ -161,7 +176,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	public boolean isDirectory(final String normalPath) {
 
 		try {
-			requireValidHttpResponse(getDirectoryPath(normalPath), "HEAD", (code,  msg,http) -> {
+			requireValidHttpResponse(getDirectoryPath(normalPath), HEAD, (code,  msg,http) -> {
 				final N5Exception cause = validExistsResponse(code, "Error checking directory: " + normalPath, msg, true);
 				if (code >= 300 && code < 400) {
 					final String redirectLocation = http.getHeaderField("Location");
@@ -203,7 +218,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 
 		/* Files must not end in `/` And Don't accept a redirect to a location ending in `/` */
 		try {
-			requireValidHttpResponse(getFilePath(normalPath), "HEAD", (code, msg, http) -> {
+			requireValidHttpResponse(getFilePath(normalPath), HEAD, (code, msg, http) -> {
 				final N5Exception cause = validExistsResponse(code, "Error accessing file: " + normalPath, msg, true);
 				if (code >= 300 && code < 400) {
 					final String redirectLocation = http.getHeaderField("Location");
@@ -235,12 +250,17 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
+	public HttpLazyReadData createReadData(final String normalPath) {
+		return new HttpLazyReadData(this, normalPath, 0, -1);
+	}
+
+	@Override
 	public LockedChannel lockForReading(final String normalPath) throws IOException {
-		//TODO Caleb: Maybe check exists lazily when attempting to read
+
 		try {
 			if (!exists(normalPath))
 				throw new N5Exception.N5NoSuchKeyException("Key does not exist: " + normalPath);
-			return new HttpObjectChannel(uri(normalPath));
+			return new HttpObjectChannel(uri(normalPath), 0, -1);
 		} catch (URISyntaxException e) {
 			throw new N5Exception("Invalid URI Syntax", e);
 		}
@@ -291,7 +311,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 
 	private String[] queryListEntries(String normalPath, ListResponseParser parser, boolean allowRedirect) {
 
-		final HttpURLConnection http = requireValidHttpResponse(normalPath, "GET", "Error listing directory at " + normalPath, allowRedirect);
+		final HttpURLConnection http = requireValidHttpResponse(normalPath, GET, "Error listing directory at " + normalPath, allowRedirect);
 		try {
 			final String listResponse = responseToString(http.getInputStream());
 			return parser.parseListResponse(listResponse);
@@ -352,17 +372,41 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	private class HttpObjectChannel implements LockedChannel {
 
 		protected final URI uri;
+		private final long startByte;
+		private final long size;
 		private final ArrayList<Closeable> resources = new ArrayList<>();
 
-		protected HttpObjectChannel(final URI uri) {
+		protected HttpObjectChannel(final URI uri, long startByte, long size) {
 
 			this.uri = uri;
+			this.startByte = startByte;
+			this.size = size;
+		}
+
+		private boolean isPartialRead() {
+			return startByte > 0 || (size >= 0 && size != Long.MAX_VALUE);
 		}
 
 		@Override
 		public InputStream newInputStream() throws IOException {
 
-			return uri.toURL().openStream();
+			HttpURLConnection conn = (HttpURLConnection)uri.toURL().openConnection();
+			if (isPartialRead()) {
+				conn.setRequestProperty(RANGE, rangeString());
+				final String acceptRanges = conn.getHeaderField(ACCEPT_RANGE);
+				if (acceptRanges == null || !acceptRanges.equals(BYTES)) {
+					conn.disconnect();
+					conn = (HttpURLConnection)uri.toURL().openConnection();
+					return ReadData.from(conn.getInputStream()).materialize().slice(startByte, size).inputStream();
+				}
+			}
+			return conn.getInputStream();
+		}
+
+		private String rangeString() {
+
+			final String lastByte = (size > 0) ? Long.toString(startByte + size - 1) : "";
+			return String.format("%s=%d-%s", BYTES, startByte, lastByte);
 		}
 
 		@Override
@@ -396,6 +440,25 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 				}
 				resources.clear();
 			}
+		}
+	}
+
+	private class HttpLazyReadData extends KeyValueAccessLazyReadData<HttpKeyValueAccess> {
+
+		public HttpLazyReadData(HttpKeyValueAccess kva, String normalKey, long offset, long length) {
+			super(kva, normalKey, offset, length);
+		}
+
+		@Override
+		void read() throws IOException {
+			try( final HttpObjectChannel ch = new HttpObjectChannel(kva.uri(normalKey), offset, length) ) {
+				materialized = ReadData.from(ch.newInputStream()).materialize();
+			} catch (URISyntaxException e) {}
+		}
+
+		@Override
+		KeyValueAccessLazyReadData<HttpKeyValueAccess> readOperationSlice(long offset, long length) throws IOException {
+			return new HttpLazyReadData(kva, normalKey, offset, length);
 		}
 	}
 
