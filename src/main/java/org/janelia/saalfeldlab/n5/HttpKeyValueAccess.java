@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -26,29 +26,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * #L%
  */
-/**
- * Copyright (c) 2017, Stephan Saalfeld All rights reserved.
- * <p>
- * Redistribution and use in source and binary forms, with or without modification, are permitted
- * provided that the following conditions are met:
- * <p>
- * 1. Redistributions of source code must retain the above copyright notice, this list of conditions
- * and the following disclaimer. 2. Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- * <p>
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
- * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
 package org.janelia.saalfeldlab.n5;
 
 import org.apache.commons.io.IOUtils;
+
 import org.apache.commons.lang3.function.TriFunction;
 import org.janelia.saalfeldlab.n5.http.ListResponseParser;
 
@@ -75,6 +56,13 @@ import java.util.ArrayList;
  * Methods that take a "normalPath" as an argument expect absolute URIs.
  */
 public class HttpKeyValueAccess implements KeyValueAccess {
+
+	public static final String HEAD = "HEAD";
+	public static final String GET = "GET";
+
+	public static final String RANGE = "Range";
+	public static final String ACCEPT_RANGE = "Accept-Range";
+	public static final String BYTES = "bytes";
 
 	private int readTimeoutMilliseconds;
 	private int connectionTimeoutMilliseconds;
@@ -161,7 +149,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	public boolean isDirectory(final String normalPath) {
 
 		try {
-			requireValidHttpResponse(getDirectoryPath(normalPath), "HEAD", (code,  msg,http) -> {
+			requireValidHttpResponse(getDirectoryPath(normalPath), HEAD, (code,  msg,http) -> {
 				final N5Exception cause = validExistsResponse(code, "Error checking directory: " + normalPath, msg, true);
 				if (code >= 300 && code < 400) {
 					final String redirectLocation = http.getHeaderField("Location");
@@ -203,7 +191,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 
 		/* Files must not end in `/` And Don't accept a redirect to a location ending in `/` */
 		try {
-			requireValidHttpResponse(getFilePath(normalPath), "HEAD", (code, msg, http) -> {
+			requireValidHttpResponse(getFilePath(normalPath), HEAD, (code, msg, http) -> {
 				final N5Exception cause = validExistsResponse(code, "Error accessing file: " + normalPath, msg, true);
 				if (code >= 300 && code < 400) {
 					final String redirectLocation = http.getHeaderField("Location");
@@ -236,7 +224,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 
 	@Override
 	public LockedChannel lockForReading(final String normalPath) throws IOException {
-		//TODO Caleb: Maybe check exists lazily when attempting to read
+
 		try {
 			if (!exists(normalPath))
 				throw new N5Exception.N5NoSuchKeyException("Key does not exist: " + normalPath);
@@ -291,7 +279,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 
 	private String[] queryListEntries(String normalPath, ListResponseParser parser, boolean allowRedirect) {
 
-		final HttpURLConnection http = requireValidHttpResponse(normalPath, "GET", "Error listing directory at " + normalPath, allowRedirect);
+		final HttpURLConnection http = requireValidHttpResponse(normalPath, GET, "Error listing directory at " + normalPath, allowRedirect);
 		try {
 			final String listResponse = responseToString(http.getInputStream());
 			return parser.parseListResponse(listResponse);
@@ -362,7 +350,8 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		@Override
 		public InputStream newInputStream() throws IOException {
 
-			return uri.toURL().openStream();
+			HttpURLConnection conn = (HttpURLConnection)uri.toURL().openConnection();
+			return conn.getInputStream();
 		}
 
 		@Override
