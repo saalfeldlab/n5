@@ -11,22 +11,24 @@ import java.io.OutputStream;
 import java.io.Serializable;
 
 /**
- * Interface representing a filter can encode a {@link OutputStream}s when writing data, and decode
- * the {@link InputStream}s when reading data.
+ * {@code Codec}s can encode and decode {@link ReadData} objects.
  * <p>
- * Modeled after <a href="https://zarr.readthedocs.io/en/v2.0.1/api/codecs.html">Filters</a> in
+ * Modeled after <a href="https://zarr-specs.readthedocs.io/en/latest/v3/codecs/index.html">Codecs</a> in
  * Zarr.
  */
 @NameConfig.Prefix("codec")
 public interface Codec extends Serializable {
 
+	String getType();
+
+	/**
+	 * {@code BytesCodec}s transform one {@link ReadData} into another,
+	 * for example, compressing it.
+	 */
 	interface BytesCodec extends Codec {
 
-		// --------------------------------------------------
-		//
-
 		/**
-		 * Decode the given {@code readData}.
+		 * Decode the given {@link ReadData}.
 		 * <p>
 		 * The returned decoded {@code ReadData} reports {@link ReadData#length()
 		 * length()}{@code == decodedLength}. Decoding may be lazy or eager,
@@ -39,7 +41,7 @@ public interface Codec extends Serializable {
 		ReadData decode(ReadData readData) throws IOException;
 
 		/**
-		 * Encode the given {@code readData}.
+		 * Encode the given {@link ReadData}.
 		 * <p>
 		 * Encoding may be lazy or eager, depending on the {@code BytesCodec}
 		 * implementation.
@@ -52,11 +54,11 @@ public interface Codec extends Serializable {
 
 	}
 
-	// decide what to do with this	
-	// consider removing <T>
+	/**
+	 * {@code ArrayCodec}s encode {@link DataBlock}s into {@link ReadData} and
+	 * decode {@link ReadData} into {@link DataBlock}s.
+	 */
 	interface ArrayCodec extends DeterministicSizeCodec {
-		
-		// this could have-a DatablockCodec, and not be-one
 
 		<T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException;
 
@@ -84,7 +86,5 @@ public interface Codec extends Serializable {
 			return size;
 		}
 	}
-
-	String getType();
 }
 
