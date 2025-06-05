@@ -60,15 +60,21 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.scijava.annotations.Indexable;
 
 /**
+ * Deprecated: {@link Compression}s are no longer a special case.
+ * <br>
+ * Use {@link Codec.BytesCodec} for implementing compressors
+ * <p> </p>
  * Compression scheme interface.
  *
  * @author Stephan Saalfeld
  */
-public interface Compression extends Serializable {
+public interface Compression extends Serializable, Codec.BytesCodec {
 
 	/**
 	 * Annotation for runtime discovery of compression schemes.
@@ -92,6 +98,7 @@ public interface Compression extends Serializable {
 	@Target(ElementType.FIELD)
 	@interface CompressionParameter {}
 
+	@Override
 	default String getType() {
 
 		final CompressionType compressionType = getClass().getAnnotation(CompressionType.class);

@@ -55,7 +55,8 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
+
+import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
 
 /**
  * Default implementation of block writing (N5 format).
@@ -83,7 +84,7 @@ public interface DefaultBlockWriter {
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws IOException {
 
-		final DataBlockCodec<T> codec = datasetAttributes.getDataBlockCodec();
+		final ArrayCodec codec = datasetAttributes.getArrayCodec();
 		codec.encode(dataBlock).writeTo(out);
 	}
 }

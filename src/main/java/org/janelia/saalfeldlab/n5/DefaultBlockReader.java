@@ -55,7 +55,8 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.InputStream;
-import org.janelia.saalfeldlab.n5.codec.DataBlockCodec;
+
+import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
@@ -84,7 +85,7 @@ public interface DefaultBlockReader {
 			final DatasetAttributes datasetAttributes,
 			final long[] gridPosition) throws IOException {
 
-		final DataBlockCodec<?> codec = datasetAttributes.getDataBlockCodec();
+		final ArrayCodec codec = datasetAttributes.getArrayCodec();
 		return codec.decode(ReadData.from(in), gridPosition);
 	}
 }
