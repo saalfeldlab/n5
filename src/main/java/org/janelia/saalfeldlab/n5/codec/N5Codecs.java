@@ -44,6 +44,7 @@ import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
 import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.StringDataBlock;
+import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import static org.janelia.saalfeldlab.n5.codec.N5Codecs.BlockHeader.MODE_DEFAULT;
@@ -135,16 +136,28 @@ public class N5Codecs {
 			this.codec = codec;
 		}
 
+		@Override
+		public abstract ReadData encode(DataBlock<T> dataBlock) throws IOException;
+
+		@Override
+		public abstract DataBlock<T> decode(final ReadData readData, final long[] gridPosition) throws IOException;
+	}
+
+	abstract static class N5AbstractDataBlockCodec<T> extends AbstractDataBlockCodec<T> {
+
+		N5AbstractDataBlockCodec(DataCodec<T> dataCodec, DataBlockFactory<T> dataBlockFactory, BytesCodec codec) {
+			super(dataCodec, dataBlockFactory, codec);
+		}
 
 		abstract BlockHeader createBlockHeader(final DataBlock<T> dataBlock, ReadData blockData) throws IOException;
 
 		@Override public ReadData encode(DataBlock<T> dataBlock) throws IOException {
 			return ReadData.from(out -> {
 				final ReadData dataReadData = dataCodec.serialize(dataBlock.getData());
-				final ReadData encodedData = codec.encode(dataReadData);
 				final BlockHeader header = createBlockHeader(dataBlock, dataReadData);
 
 				header.writeTo(out);
+				final ReadData encodedData = codec.encode(dataReadData);
 				encodedData.writeTo(out);
 			});
 		}
@@ -167,10 +180,11 @@ public class N5Codecs {
 		}
 	}
 
+
 	/**
 	 * DataBlockCodec for all N5 data types, except STRING and OBJECT
 	 */
-	private static class DefaultDataBlockCodec<T> extends AbstractDataBlockCodec<T> {
+	private static class DefaultDataBlockCodec<T> extends N5AbstractDataBlockCodec<T> {
 
 		DefaultDataBlockCodec(
 				final DataCodec<T> dataCodec,
@@ -179,8 +193,9 @@ public class N5Codecs {
 
 			super(dataCodec, dataBlockFactory, codec);
 		}
+
 		@Override
-		protected BlockHeader createBlockHeader(final DataBlock<T> dataBlock, ReadData blockData)  {
+		protected BlockHeader createBlockHeader(final DataBlock<T> dataBlock, ReadData blockData) throws IOException {
 
 			return new BlockHeader(dataBlock.getSize(), dataBlock.getNumElements());
 		}
@@ -195,7 +210,7 @@ public class N5Codecs {
 	/**
 	 * DataBlockCodec for N5 data type STRING
 	 */
-	private static class StringDataBlockCodec extends AbstractDataBlockCodec<String[]> {
+	private static class StringDataBlockCodec extends N5AbstractDataBlockCodec<String[]> {
 
 		StringDataBlockCodec(final Codec.BytesCodec codec) {
 
@@ -218,7 +233,7 @@ public class N5Codecs {
 	/**
 	 * DataBlockCodec for N5 data type OBJECT
 	 */
-	private static class ObjectDataBlockCodec extends AbstractDataBlockCodec<byte[]> {
+	private static class ObjectDataBlockCodec extends N5AbstractDataBlockCodec<byte[]> {
 
 		ObjectDataBlockCodec(final Codec.BytesCodec codec) {
 

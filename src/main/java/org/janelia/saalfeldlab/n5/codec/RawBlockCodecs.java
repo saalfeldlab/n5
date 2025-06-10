@@ -97,22 +97,12 @@ public class RawBlockCodecs {
 			return elements;
 		}
 
-		@Override N5Codecs.BlockHeader createBlockHeader(DataBlock<T> dataBlock, ReadData blockData) {
-
-			return null;
-		}
-
 		@Override public ReadData encode(DataBlock<T> dataBlock) {
 
 			return ReadData.from(out -> {
 				final ReadData blockData = dataCodec.serialize(dataBlock.getData());
 				codec.encode(blockData).writeTo(out);
 			});
-		}
-
-		@Override N5Codecs.BlockHeader decodeBlockHeader(InputStream in) throws IOException {
-
-			return null;
 		}
 
 		@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
