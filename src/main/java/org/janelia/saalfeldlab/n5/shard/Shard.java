@@ -135,7 +135,19 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		return new GridIterator(GridIterator.int2long(getBlockGridSize()), min);
 	}
 
+	/**
+	 * @return the ShardIndex for this shard, or a new ShardIndex if the Shard is non-existent
+	 */
 	ShardIndex getIndex();
+
+	/**
+	 * @return and empty index of the correct size for the dataset
+	 */
+	default ShardIndex createIndex() {
+
+		final DatasetAttributes datasetAttributes = getDatasetAttributes();
+		return datasetAttributes.getShardingCodec().createIndex(datasetAttributes);
+	}
 
 	default ReadData createReadData() throws N5IOException {
 

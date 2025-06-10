@@ -28,7 +28,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;

@@ -51,7 +51,7 @@ public class ShardTest {
 		}
 	};
 
-	@Parameterized.Parameters(name = "IndexLocation({0}), Block ByteOrder({1}), Index ByteOrder({2})")
+	@Parameterized.Parameters(name = "IndexLocation({0}), Index ByteOrder({1})")
 	public static Collection<Object[]> data() {
 
 		final ArrayList<Object[]> params = new ArrayList<>();

@@ -55,11 +55,15 @@ import java.util.function.Predicate;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
+import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
+import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.VirtualShard;
 import org.janelia.saalfeldlab.n5.url.UriAttributeTest;
 import org.janelia.saalfeldlab.n5.codec.AsTypeCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -1681,6 +1685,46 @@ public abstract class AbstractN5Test {
 				}
 			}
 		}
+	}
+
+	@Test
+	public <T> void testWriteReadShardOnUnshardedDataset() throws Exception {
+		try (N5Writer writer = createTempN5Writer()) {
+			final String datasetName = "testWriteShardOnUnshardedDataset";
+			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64, new RawCompression());
+			writer.createDataset(datasetName, datasetAttributes);
+
+
+			final DataBlock<T> block0 = (DataBlock<T>) DataType.UINT64.createDataBlock(blockSize, new long[]{0,0,0});
+			final DataBlock<T> block1 = (DataBlock<T>) DataType.UINT64.createDataBlock(blockSize, new long[]{1,0,0});
+
+			final InMemoryShard<T> writeShard = new InMemoryShard<>(datasetAttributes, new long[]{0, 0, 0});
+			writeShard.addBlock(block0);
+
+			writeShard.addBlock(block1);
+
+			final List<DataBlock<T>> writeBlocks = writeShard.getBlocks();
+			assertEquals("block as shard should not have the second block which is outside this shard",1, writeBlocks.size());
+			assertEquals(block1, writeBlocks.get(0));
+
+			writer.writeShard(datasetName, datasetAttributes, writeShard);
+			final Shard<T> readShard = writer.readShard(datasetName, datasetAttributes, writeShard.getGridPosition());
+
+			Assert.assertArrayEquals("shard read position should be same as write position", writeShard.getGridPosition(), readShard.getGridPosition());
+			Assert.assertArrayEquals("shard position should be the same as block position when unsharded", block0.getGridPosition(), readShard.getGridPosition());
+			Assert.assertArrayEquals("shard size should equal block size when unsharded", readShard.getBlockSize(), readShard.getSize());
+
+
+			final List<? extends DataBlock<T>> readBlocks = readShard.getBlocks();
+			assertEquals("read shard should contain one block", 1, readBlocks.size());
+			final DataBlock<T> readBlock = readBlocks.get(0);
+			Assert.assertArrayEquals("read block position should be same as block position when unsharded", block0.getGridPosition(), readBlock.getGridPosition());
+			Assert.assertArrayEquals("read block size should equal block size when unsharded", readBlock.getSize(), readBlock.getSize());
+
+			assertArrayEquals("block written through shard should be identical", (long[])readBlock.getData(), (long[])block0.getData());
+
+		}
+
 	}
 
 	protected void assertDatasetAttributesEquals(final DatasetAttributes expected, final DatasetAttributes actual) {

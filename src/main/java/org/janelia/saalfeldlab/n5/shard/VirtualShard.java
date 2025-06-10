@@ -35,8 +35,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	@SuppressWarnings("unchecked")
 	public DataBlock<T> getBlock(ReadData blockData, long... blockGridPosition) throws IOException {
 
-		ShardingCodec<T> shardingCodec = (ShardingCodec<T>)datasetAttributes.getArrayCodec();
-		return shardingCodec.getArrayCodec().decode(blockData, blockGridPosition);
+		return datasetAttributes.<T>getShardingCodec().getArrayCodec().decode(blockData, blockGridPosition);
 	}
 
 	@Override
@@ -119,35 +118,16 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		}
 	}
 
-	public ShardIndex createIndex() {
-
-		// Empty index of the correct size
-		return ((ShardingCodec<?>)getDatasetAttributes().getArrayCodec()).createIndex(getDatasetAttributes());
-	}
-
 	@Override
 	public ShardIndex getIndex() {
 
 		//TODO Caleb: How to handle when this shard doesn't exist (splitableData.getSize() <= 0)
 		index = createIndex();
-		final ReadData indexData;
 		try {
-			/* we require a length, so materialize if we don't have one. */
-			if (shardData.length() == -1) {
-				shardData.materialize();
-			}
-			final long length = shardData.length();
-			if (length == -1)
-				throw new N5IOException("ReadData for shard index must have a valid length, but was " + length);
-
-			final ShardIndex.IndexByteBounds bounds = ShardIndex.byteBounds(index, length);
-			indexData = shardData.slice(bounds.start, index.numBytes());
+			index.readFrom(shardData);
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
-		} catch (IOException | UncheckedIOException e) {
-			throw new N5IOException(e);
 		}
-		ShardIndex.read(indexData, index);
 		return index;
 	}
 }

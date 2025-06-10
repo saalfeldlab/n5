@@ -38,6 +38,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.serialization.N5Annotations;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
+import org.janelia.saalfeldlab.n5.shard.BlockAsShardCodec;
 import org.scijava.annotations.Index;
 import org.scijava.annotations.IndexItem;
 
@@ -87,6 +88,12 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 			Class<T> clazz;
 			try {
 				clazz = (Class<T>)Class.forName(item.className());
+
+				/* BlockAsShardCodec is not serializable; it is an internal memory-only
+				* interpretation codec for interacting with un-sharded datasets as sharded datasets. */
+				if (clazz == BlockAsShardCodec.class)
+					continue;
+
 				final String name = clazz.getAnnotation(NameConfig.Name.class).value();
 				final String type = prefix + "." + name;
 

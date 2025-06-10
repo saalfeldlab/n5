@@ -43,7 +43,6 @@ public interface ShardParameters {
 	default int[] getBlocksPerShard() {
 
 		final int[] shardSize = getShardSize();
-		Objects.requireNonNull(shardSize, "getShardSize() must not be null");
 		final int nd = getNumDimensions();
 		final int[] blocksPerShard = new int[nd];
 		final int[] blockSize = getBlockSize();

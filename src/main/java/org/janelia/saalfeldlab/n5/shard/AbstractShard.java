@@ -11,7 +11,9 @@ public abstract class AbstractShard<T> implements Shard<T> {
 
 	private final long[] gridPosition;
 
-	public AbstractShard(final DatasetAttributes datasetAttributes, final long[] gridPosition,
+	public AbstractShard(
+			final DatasetAttributes datasetAttributes,
+			final long[] gridPosition,
 			final ShardIndex index) {
 
 		this.datasetAttributes = datasetAttributes;
@@ -42,11 +44,4 @@ public abstract class AbstractShard<T> implements Shard<T> {
 
 		return gridPosition;
 	}
-
-	@Override
-	public ShardIndex getIndex() {
-
-		return index;
-	}
-
 }

@@ -1,0 +1,112 @@
+package org.janelia.saalfeldlab.n5.shard;
+
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.codec.RawBytes;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+
+public class BlockAsShardCodec<T> extends ShardingCodec<T> {
+
+	private static final RawBytes NO_OP_ARRAY_CODEC = new RawBytes() {
+
+		@Override public ReadData encode(DataBlock dataBlock) throws N5Exception.N5IOException {
+
+			return ReadData.from(new byte[0]);
+		}
+
+		@Override public DataBlock decode(ReadData readData, long[] gridPosition) throws N5Exception.N5IOException {
+
+			throw new UnsupportedOperationException(" NO_OP_ARRAY_CODEC is used for `encode` only. ");
+		}
+	};
+
+	private static final BytesCodec[] EMPTY_SHARD_CODECS = new BytesCodec[0];
+	private static final DeterministicSizeCodec[] NO_OP_INDEX_CODECS = new DeterministicSizeCodec[]{NO_OP_ARRAY_CODEC};
+
+	final ArrayCodec<T> datasetArrayCodec;
+	private DatasetAttributes datasetAttributes;
+
+	public BlockAsShardCodec(ArrayCodec<T> datasetArrayCodec) {
+
+		super(null, EMPTY_SHARD_CODECS, NO_OP_INDEX_CODECS, IndexLocation.END);
+		this.datasetArrayCodec = datasetArrayCodec;
+	}
+
+	@Override public ShardIndex createIndex(DatasetAttributes attributes) {
+
+		return new ShardIndex(attributes.getBlocksPerShard(), getIndexLocation(), NO_OP_INDEX_CODECS) {
+
+			@Override public void readFrom(ReadData shardData) throws N5Exception.N5IOException {
+
+				if (shardData.length() == -1)
+					shardData.materialize();
+
+				final long length = shardData.length();
+				if (length == -1)
+					throw new N5Exception.N5IOException("ReadData for shard index must have a valid length, but was " + length);
+
+				data[0] = 0;
+				data[1] = length;
+			}
+
+			@Override public long numBytes() {
+
+				return 0;
+			}
+		};
+	}
+
+	@Override public int[] getBlockSize() {
+
+		return datasetAttributes.getBlockSize();
+	}
+
+	@Override public ArrayCodec<T> getArrayCodec() {
+
+		return datasetArrayCodec;
+	}
+
+	@Override public long[] getPositionForBlock(DatasetAttributes attributes, DataBlock<?> datablock) {
+
+		return datasetArrayCodec.getPositionForBlock(attributes, datablock);
+	}
+
+	@Override public long[] getPositionForBlock(DatasetAttributes attributes, long... blockPosition) {
+
+		return datasetArrayCodec.getPositionForBlock(attributes, blockPosition);
+	}
+
+	@Override public void initialize(DatasetAttributes attributes, BytesCodec... codecs) {
+
+		this.datasetAttributes = attributes;
+		datasetArrayCodec.initialize(attributes, codecs);
+	}
+
+	@Override public long encodedSize(long size) {
+
+		return datasetArrayCodec.encodedSize(size);
+	}
+
+	@Override public long decodedSize(long size) {
+
+		return datasetArrayCodec.decodedSize(size);
+	}
+
+	@Override public String getType() {
+
+		//TODO Caleb: can we ensure this is never called?
+		return datasetArrayCodec.getType();
+	}
+
+	@Override public ReadData encode(DataBlock<T> dataBlock) throws N5Exception.N5IOException {
+
+		return datasetArrayCodec.encode(dataBlock);
+	}
+
+	@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5Exception.N5IOException {
+
+		return datasetArrayCodec.decode(readData, gridPosition);
+	}
+}

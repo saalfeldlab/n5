@@ -39,6 +39,7 @@ import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
+import org.janelia.saalfeldlab.n5.shard.BlockAsShardCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardParameters;
 
 import com.google.gson.JsonDeserializationContext;
@@ -188,8 +189,9 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 	public <T> ShardingCodec<T> getShardingCodec() throws N5ShardException {
 		if (getArrayCodec() instanceof ShardingCodec<?>)
 			return (ShardingCodec<T>)getArrayCodec();
-		else
-			throw new N5ShardException("Dataset is not Sharded");
+		else {
+			return new BlockAsShardCodec<>(getArrayCodec());
+		}
 	}
 
 	/**

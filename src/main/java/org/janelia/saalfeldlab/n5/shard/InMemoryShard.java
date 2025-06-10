@@ -6,6 +6,7 @@ import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.Position;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -15,19 +16,14 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	/** Map {@link DataBlock#getGridPosition} as hashable {@link Position} to the block */
 	private final Map<Position, DataBlock<T>> blocks;
 
-	private ShardIndexBuilder indexBuilder;
-
-	//TODO delegated shard constructor? Or new class?
-
 	public InMemoryShard(final DatasetAttributes datasetAttributes, final long[] shardPosition) {
 
 		this(datasetAttributes, shardPosition, null);
-		indexBuilder = new ShardIndexBuilder(this);
-		final IndexLocation indexLocation = datasetAttributes.getShardingCodec().getIndexLocation();
-		indexBuilder.indexLocation(indexLocation);
 	}
 
-	public InMemoryShard(final DatasetAttributes datasetAttributes, final long[] gridPosition,
+	public InMemoryShard(
+			final DatasetAttributes datasetAttributes,
+			final long[] gridPosition,
 			ShardIndex index) {
 
 		super(datasetAttributes, gridPosition, index);
@@ -49,9 +45,20 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		return blocks.get(Position.wrap(blockGridPosition));
 	}
 
-	public void addBlock(DataBlock<T> block) {
+	/**
+	 * Add the {@code block} to this shard. If the block is not contained in this shard, do not add it.
+	 *
+	 * @param block to add the shard
+	 * @return whether the block was added
+	 */
+	public boolean addBlock(DataBlock<T> block) {
+
+		final long[] shardPositionForBlock = datasetAttributes.getShardPositionForBlock(block.getGridPosition());
+		if (!Arrays.equals(shardPositionForBlock, getGridPosition()))
+			return false;
 
 		storeBlock(block);
+		return true;
 	}
 
 	@Override
@@ -63,10 +70,8 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	@Override
 	public ShardIndex getIndex() {
 
-		if (index != null)
-			return index;
-		else
-			return indexBuilder.build();
+		index = index != null ? index : createIndex();
+		return index;
 	}
 
 	public static <T> InMemoryShard<T> fromShard(Shard<T> shard) {
