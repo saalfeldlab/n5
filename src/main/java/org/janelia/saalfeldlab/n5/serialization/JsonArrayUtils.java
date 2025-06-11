@@ -5,6 +5,12 @@ import com.google.gson.JsonElement;
 
 public class JsonArrayUtils {
 
+	/**
+	 * Reverses the order of elements in a JSON array in-place.
+	 *
+	 * @param array the JSON array to reverse; must not be null
+	 * @see N5Annotations.ReverseArray
+	 */
 	public static void reverse(final JsonArray array) {
 
 		JsonElement a;
