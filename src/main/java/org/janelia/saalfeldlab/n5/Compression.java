@@ -68,8 +68,8 @@ import org.scijava.annotations.Indexable;
 /**
  * Deprecated: {@link Compression}s are no longer a special case.
  * <br>
- * Use {@link Codec.BytesCodec} for implementing compressors
- * <p> </p>
+ * Use {@link Codec.BytesCodec} for implementing compressors.
+ * <p>
  * Compression scheme interface.
  *
  * @author Stephan Saalfeld

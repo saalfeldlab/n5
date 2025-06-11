@@ -27,8 +27,8 @@ public interface N5Annotations extends Serializable {
 	 * <p>
 	 * Example usage:
 	 * <pre>{@code
-	 * &#64;ReverseArray
-	 * &#64;Parameter("chunk_shape")
+	 * @N5Annotations.ReverseArray
+	 * @NameConfig.Parameter("chunk_shape")
 	 * private final int[] shape;  // Will be reversed when serializing
 	 * }</pre>
 	 * <p>

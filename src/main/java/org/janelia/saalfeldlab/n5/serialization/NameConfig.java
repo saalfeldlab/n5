@@ -39,7 +39,7 @@ public interface NameConfig extends Serializable {
 	 * <p>
 	 * Example usage:
 	 * <pre>{@code
-	 * @Prefix("codec")
+	 * @NameConfig.Prefix("codec")
 	 * public interface Codec extends NameConfig {
 	 *     // ...
 	 * }
@@ -63,7 +63,7 @@ public interface NameConfig extends Serializable {
 	 * <p>
 	 * Example usage:
 	 * <pre>{@code
-	 * @Name("gzip")
+	 * @NameConfig.Name("gzip")
 	 * public class GzipCompression implements Compression {
 	 *     // ...
 	 * }
@@ -91,10 +91,10 @@ public interface NameConfig extends Serializable {
 	 * Example usage:
 	 * <pre>{@code
 	 * public class GzipCompression implements Compression {
-	 *     @Parameter
+	 *     @NameConfig.Parameter
 	 *     private final int level;
 	 *     
-	 *     @Parameter(optional = true)
+	 *     @NameConfig.Parameter(optional = true)
 	 *     private final boolean useZlib;
 	 * }
 	 * }</pre>
