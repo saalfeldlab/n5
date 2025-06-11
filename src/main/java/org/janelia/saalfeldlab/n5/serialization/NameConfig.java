@@ -36,14 +36,6 @@ public interface NameConfig extends Serializable {
 	 * type name, creating a namespaced identifier. This is useful for organizing
 	 * related components into logical groups, usually all the components implementing
 	 * a particular interface.
-	 * <p>
-	 * Example usage:
-	 * <pre>{@code
-	 * @NameConfig.Prefix("codec")
-	 * public interface Codec extends NameConfig {
-	 *     // ...
-	 * }
-	 * }</pre>
 	 * 
 	 * @see Name
 	 */
@@ -60,14 +52,6 @@ public interface NameConfig extends Serializable {
 	 * This annotation defines the string identifier used during serialization and
 	 * deserialization to identify the type. The name should be unique within its
 	 * namespace and is typically a short, descriptive identifier.
-	 * <p>
-	 * Example usage:
-	 * <pre>{@code
-	 * @NameConfig.Name("gzip")
-	 * public class GzipCompression implements Compression {
-	 *     // ...
-	 * }
-	 * }</pre>
 	 * 
 	 * @see Prefix
 	 */
@@ -87,17 +71,6 @@ public interface NameConfig extends Serializable {
 	 * <p>
 	 * The {@code value} attribute can be used to specify an alternative name for
 	 * the parameter during serialization. If not specified, the field name is used.
-	 * <p>
-	 * Example usage:
-	 * <pre>{@code
-	 * public class GzipCompression implements Compression {
-	 *     @NameConfig.Parameter
-	 *     private final int level;
-	 *     
-	 *     @NameConfig.Parameter(optional = true)
-	 *     private final boolean useZlib;
-	 * }
-	 * }</pre>
 	 * 
 	 * @see Name
 	 */

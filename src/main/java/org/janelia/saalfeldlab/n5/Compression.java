@@ -62,13 +62,14 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.scijava.annotations.Indexable;
 
 /**
  * Deprecated: {@link Compression}s are no longer a special case.
  * <br>
- * Use {@link Codec.BytesCodec} for implementing compressors.
+ * Use the {@link BytesCodec} interface for implementing compressors.
  * <p>
  * Compression scheme interface.
  *

@@ -25,13 +25,6 @@ public interface N5Annotations extends Serializable {
 	 * For example, Zarr uses C-order (row-major) dimension ordering [Z, Y, X], while N5 uses
 	 * F-order (column-major) dimension ordering [X, Y, Z].
 	 * <p>
-	 * Example usage:
-	 * <pre>{@code
-	 * @N5Annotations.ReverseArray
-	 * @NameConfig.Parameter("chunk_shape")
-	 * private final int[] shape;  // Will be reversed when serializing
-	 * }</pre>
-	 * <p>
 	 * This ensures that dimension-related arrays maintain the correct semantic meaning
 	 * across different storage format conventions.
 	 */
