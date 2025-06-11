@@ -27,10 +27,10 @@ public interface N5Annotations extends Serializable {
 	 * <p>
 	 * Example usage:
 	 * <pre>{@code
-	 * @ReverseArray
-	 * @Parameter("chunk_shape")
+	 * &#64;ReverseArray
+	 * &#64;Parameter("chunk_shape")
 	 * private final int[] shape;  // Will be reversed when serializing
-	 * </pre>
+	 * }</pre>
 	 * <p>
 	 * This ensures that dimension-related arrays maintain the correct semantic meaning
 	 * across different storage format conventions.
