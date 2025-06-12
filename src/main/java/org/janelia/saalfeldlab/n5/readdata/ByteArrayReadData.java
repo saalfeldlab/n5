@@ -97,12 +97,6 @@ class ByteArrayReadData implements ReadData {
 		return new ByteArrayReadData(data, o, (int)length);
 	}
 
-	@Override
-	public Pair<ReadData, ReadData> split(final long pivot) throws IOException {
-
-		return ImmutablePair.of(slice(0, pivot), slice(offset + pivot, length - pivot));
-	}
-
 	private static boolean validBounds(int arrayLength, int offset, int length) {
 
 		if (offset < 0)

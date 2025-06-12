@@ -110,20 +110,4 @@ abstract class KeyValueAccessLazyReadData<K extends KeyValueAccess> implements R
 		return lazySlice(this.offset + offset, lengthArg);
 	}
 
-	@Override
-	public Pair<ReadData, ReadData> split(final long pivot) throws IOException {
-
-		if (materialized != null)
-			return materialize().split(pivot);
-
-		final long offsetL = 0;
-		final long lenL = pivot;
-
-		final long offsetR = offset + pivot;
-		final long lenR = this.length - pivot;
-
-		return new ImmutablePair<ReadData, ReadData>(
-				lazySlice(offsetL, lenL),
-				lazySlice(offsetR, lenR));
-	}
 }

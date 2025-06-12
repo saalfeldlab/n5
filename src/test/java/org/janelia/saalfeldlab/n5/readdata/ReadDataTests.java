@@ -15,7 +15,6 @@ import java.util.Arrays;
 import java.util.function.IntUnaryOperator;
 
 import org.apache.commons.compress.utils.IOUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
 import org.janelia.saalfeldlab.n5.readdata.ReadData.OutputStreamOperator;
 import org.junit.Test;
@@ -138,16 +137,6 @@ public class ReadDataTests {
 		assertThrows("too large offset slice read", IndexOutOfBoundsException.class, () -> readData.slice(N-1, 3).allBytes());
 
 		assertThrows("negative offset", IndexOutOfBoundsException.class, () -> readData.slice(-1, 1));
-
-		final Pair<ReadData, ReadData> split = readData.split(pivot);
-		final ReadData first = split.getLeft();
-		final ReadData last = split.getRight();
-
-		assertEquals(pivot, first.length());
-		assertEquals(0, first.allBytes()[0]);
-
-		assertEquals(N-pivot, last.length());
-		assertEquals(pivot, last.allBytes()[0]);
 	}
 
 	private class ByteFun implements OutputStreamOperator {

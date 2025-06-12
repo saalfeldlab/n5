@@ -93,17 +93,6 @@ public interface ReadData {
 		return materialize().slice(offset, length);
 	}
 
-	default Pair<ReadData,ReadData> split(final long pivot) throws IOException { 
-		/*
-		 * TODO do we want this? how should it work?
-		 * I suppose this could be useful for infinite data, or data of unknown length, 
- 	     * So far, no uses of it though.
-		 *
-		 * tail below would be equivalent to slice(pivot, -1)
-		 */
-		return materialize().split(pivot);
-	}
-
 	/**
 	 * Open a {@code InputStream} on this data.
 	 * <p>
