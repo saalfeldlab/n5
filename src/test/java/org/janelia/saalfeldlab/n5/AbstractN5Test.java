@@ -89,8 +89,8 @@ public abstract class AbstractN5Test {
 	static protected final String groupName = "/test/group";
 	static protected final String[] subGroupNames = new String[]{"a", "b", "c"};
 	static protected final String datasetName = "/test/group/dataset";
-	static protected final long[] dimensions = new long[]{100, 200, 300};
-	static protected final int[] blockSize = new int[]{44, 33, 22};
+	static protected final long[] dimensions = new long[]{10, 20, 30};
+	static protected final int[] blockSize = new int[]{33, 22, 11};
 	static protected final int blockNumElements = blockSize[0] * blockSize[1] * blockSize[2];
 
 	static protected byte[] byteBlock;
