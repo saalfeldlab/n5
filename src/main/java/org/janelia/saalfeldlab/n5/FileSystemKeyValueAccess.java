@@ -572,7 +572,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		}
 	}
 
-	private class FileLazyReadData extends KeyValueAccessLazyReadData<FileSystemKeyValueAccess> {
+	private static class FileLazyReadData extends KeyValueAccessLazyReadData<FileSystemKeyValueAccess> {
 
 		public FileLazyReadData(FileSystemKeyValueAccess kva, String normalKey, long offset, long length) {
 			super(kva, normalKey, offset, length);
@@ -587,7 +587,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 					throw new IOException("Attempt to materialize too large data");
 
 				final long channelSize = channel.size();
-				if( length > 0 && offset + length > channelSize )
+				if( !validBounds(channelSize, offset, length))
 					throw new IndexOutOfBoundsException();
 
 				final int sz = (int)(length < 0 ? channelSize : length);
@@ -605,6 +605,18 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		KeyValueAccessLazyReadData<FileSystemKeyValueAccess> lazySlice(long offset, long length) {
 			return new FileLazyReadData(kva, normalKey, offset, length);
 		}
+	}
+
+	private static boolean validBounds(long channelSize, long offset, long length) {
+
+		if (offset < 0)
+			return false;
+		else if (channelSize > 0 && offset >= channelSize) // offset == 0 and arrayLength == 0 is okay
+			return false;
+		else if (length >= 0 && offset + length > channelSize)
+			return false;
+
+		return true;
 	}
 
 }

@@ -451,6 +451,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 
 		@Override
 		void read() throws IOException {
+			// TODO does this throw out-of-bounds when it should
 			try( final HttpObjectChannel ch = new HttpObjectChannel(kva.uri(normalKey), offset, length) ) {
 				materialized = ReadData.from(ch.newInputStream()).materialize();
 			} catch (URISyntaxException e) {}

@@ -131,11 +131,11 @@ public class ReadDataTests {
 		ReadData unboundedLength = readData.slice(1, -1);
 		assertEquals("unbounded length allBytes", N - 1, unboundedLength.allBytes().length);
 
-		ReadData outOfRangeSlice = readData.slice(N-1, 3); // never throws
-		assertThrows("Out-of-range slice read", IndexOutOfBoundsException.class, () -> outOfRangeSlice.allBytes());
-
-		ReadData tooLargeSlice = readData.slice(N-1, 3); // never throws
-		assertThrows("too large offset slice read", IndexOutOfBoundsException.class, () -> tooLargeSlice.allBytes());
+		// slice may throw an exception if it knows its length and can detect out-of-bounds
+		// otherwise the exception may be thrown on a read operation (e.g. allBytes)
+		assertThrows("Out-of-range slice read", IndexOutOfBoundsException.class, () -> readData.slice(N-1, 3).allBytes());
+		assertThrows("slice throws if offset too large", IndexOutOfBoundsException.class, () -> readData.slice(N, 0).allBytes());
+		assertThrows("too large offset slice read", IndexOutOfBoundsException.class, () -> readData.slice(N-1, 3).allBytes());
 
 		assertThrows("negative offset", IndexOutOfBoundsException.class, () -> readData.slice(-1, 1));
 

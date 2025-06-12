@@ -49,6 +49,9 @@ class ByteArrayReadData implements ReadData {
 
 	ByteArrayReadData(final byte[] data, final int offset, final int length) {
 
+		if (!validBounds(data.length, offset, length))
+			throw new IndexOutOfBoundsException();
+
 		this.data = data;
 		this.offset = offset;
 
@@ -56,6 +59,7 @@ class ByteArrayReadData implements ReadData {
 			this.length = data.length - offset;
 		else
 			this.length = length;
+
 	}
 
 	@Override
@@ -71,11 +75,7 @@ class ByteArrayReadData implements ReadData {
 	@Override
 	public byte[] allBytes() {
 
-		// Arrays.copyOfRange pads with zeros, so explicitly check for out-of-bounds
-		// allow offset = 0 and length = 0 to return empty array
-		if ( (offset > 0 && offset >= data.length) || offset + length > data.length)
-			throw new IndexOutOfBoundsException();
-
+		// alternatively, we could always return the requested length
 		if (offset == 0 && data.length == length) {
 			return data;
 		} else {
@@ -91,9 +91,6 @@ class ByteArrayReadData implements ReadData {
 	@Override
 	public ReadData slice(final long offset, final long length) throws IOException {
 
-		if (offset < 0 || offset >= this.length )
-			throw new IndexOutOfBoundsException();
-
 		final int o = this.offset + (int)offset;
 		return new ByteArrayReadData(data, o, (int)length);
 	}
@@ -102,5 +99,17 @@ class ByteArrayReadData implements ReadData {
 	public Pair<ReadData, ReadData> split(final long pivot) throws IOException {
 
 		return ImmutablePair.of(slice(0, pivot), slice(offset + pivot, length - pivot));
+	}
+
+	private static boolean validBounds(int arrayLength, int offset, int length) {
+
+		if (offset < 0)
+			return false;
+		else if (arrayLength > 0 && offset >= arrayLength) // offset == 0 and arrayLength == 0 is okay
+			return false;
+		else if (length >= 0 && offset + length > arrayLength)
+			return false;
+
+		return true;
 	}
 }
