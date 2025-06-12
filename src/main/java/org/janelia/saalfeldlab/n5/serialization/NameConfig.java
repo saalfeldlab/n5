@@ -28,6 +28,14 @@ public interface NameConfig extends Serializable {
 
 	@Retention(RetentionPolicy.RUNTIME)
 	@Inherited
+	@Target(ElementType.TYPE)
+	@Indexable
+	@interface Serialize {
+		boolean value() default true;
+	}
+
+	@Retention(RetentionPolicy.RUNTIME)
+	@Inherited
 	@Target(ElementType.FIELD)
 	@interface Parameter {
 		String value() default "";

@@ -7,7 +7,9 @@ import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.codec.RawBytes;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
+@NameConfig.Serialize(false)
 public class BlockAsShardCodec<T> extends ShardingCodec<T> {
 
 	private static final RawBytes VIRTUAL_SHARD_INDEX_CODEC = new RawBytes() {

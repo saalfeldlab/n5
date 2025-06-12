@@ -89,9 +89,8 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 			try {
 				clazz = (Class<T>)Class.forName(item.className());
 
-				/* BlockAsShardCodec is not serializable; it is an internal memory-only
-				* interpretation codec for interacting with un-sharded datasets as sharded datasets. */
-				if (clazz == BlockAsShardCodec.class)
+				final NameConfig.Serialize serialize = clazz.getAnnotation(NameConfig.Serialize.class);
+				if (serialize != null && !serialize.value())
 					continue;
 
 				final String name = clazz.getAnnotation(NameConfig.Name.class).value();
