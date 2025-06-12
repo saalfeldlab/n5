@@ -50,11 +50,6 @@ public class BlockAsShardCodec<T> extends ShardingCodec<T> {
 				data[0] = 0;
 				data[1] = length;
 			}
-
-			@Override public long numBytes() {
-
-				return 0;
-			}
 		};
 	}
 
@@ -95,7 +90,6 @@ public class BlockAsShardCodec<T> extends ShardingCodec<T> {
 	}
 
 	@Override public String getType() {
-
 		//TODO Caleb: can we ensure this is never called?
 		return datasetArrayCodec.getType();
 	}

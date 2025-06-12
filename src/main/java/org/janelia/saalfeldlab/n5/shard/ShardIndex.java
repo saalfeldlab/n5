@@ -36,14 +36,14 @@ public class ShardIndex extends LongArrayDataBlock {
 	private final IndexLocation location;
 
 	private final DeterministicSizeCodec[] codecs;
-	private final DatasetAttributes indexAttributes;
+	private final ShardIndexAttributes indexAttributes;
 
 	public ShardIndex(int[] shardBlockGridSize, long[] data, IndexLocation location, final DeterministicSizeCodec... codecs) {
 
 		super(prepend(LONGS_PER_BLOCK, shardBlockGridSize), DUMMY_GRID_POSITION, data);
 		this.codecs = codecs;
 		this.location = location;
-		this.indexAttributes = createIndexAttributes();
+		this.indexAttributes = new ShardIndexAttributes(this);
 	}
 
 	public ShardIndex(int[] shardBlockGridSize, IndexLocation location, DeterministicSizeCodec... codecs) {
@@ -164,9 +164,10 @@ public class ShardIndex extends LongArrayDataBlock {
 
 	public static void read(InputStream in, final ShardIndex index) throws IOException {
 
-		@SuppressWarnings("unchecked") final DataBlock<long[]> indexBlock = (DataBlock<long[]>)DefaultBlockReader.readBlock(in, index.createIndexAttributes(), index.gridPosition);
-		final long[] indexData = indexBlock.getData();
-		System.arraycopy(indexData, 0, index.data, 0, index.data.length);
+		final ReadData dataIn = ReadData.from(in);
+		final Codec.ArrayCodec<long[]> shardIndexCodec = index.indexAttributes.getArrayCodec();
+		final DataBlock<long[]> indexBlock = shardIndexCodec.decode(dataIn, index.gridPosition);
+		System.arraycopy(indexBlock.getData(), 0, index.data, 0, index.data.length);
 	}
 
 	public static boolean read(
@@ -198,24 +199,24 @@ public class ShardIndex extends LongArrayDataBlock {
 
 	public static void write(final ShardIndex index, OutputStream out) throws IOException {
 
-		DefaultBlockWriter.writeBlock(out, index.createIndexAttributes(), index);
+		final Codec.ArrayCodec<long[]> indexCodec = index.indexAttributes.<long[]>getArrayCodec();
+		indexCodec.encode(index).writeTo(out);
 	}
 
 	public Codec.ArrayCodec<?> getArrayCodec() {
 		return indexAttributes.getArrayCodec();
 	}
 
-	// TODO: Caleb static?
-	private DatasetAttributes createIndexAttributes() {
+	private static class ShardIndexAttributes extends DatasetAttributes {
 
-		final DatasetAttributes indexAttributes =
-				new DatasetAttributes(
-						Arrays.stream(getSize()).mapToLong(it -> it).toArray(),
-						getSize(),
-						DataType.UINT64,
-						codecs
-				);
-		return indexAttributes;
+		public ShardIndexAttributes(ShardIndex index) {
+			super(
+					Arrays.stream(index.getSize()).mapToLong(it -> it).toArray(),
+					index.getSize(),
+					DataType.UINT64,
+					index.codecs
+					);
+		}
 	}
 
 	public static IndexByteBounds byteBounds(DatasetAttributes datasetAttributes, final long objectSize) {

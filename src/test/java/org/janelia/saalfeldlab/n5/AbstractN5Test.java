@@ -1699,13 +1699,15 @@ public abstract class AbstractN5Test {
 			final DataBlock<T> block1 = (DataBlock<T>) DataType.UINT64.createDataBlock(blockSize, new long[]{1,0,0});
 
 			final InMemoryShard<T> writeShard = new InMemoryShard<>(datasetAttributes, new long[]{0, 0, 0});
-			writeShard.addBlock(block0);
+			boolean added0 = writeShard.addBlock(block0);
+			boolean added1 = writeShard.addBlock(block1);
 
-			writeShard.addBlock(block1);
+			assertTrue("Block 0 should be added to shard", added0);
+			assertFalse("Block 1 should not be added to shard because it's in a different shard position", added1);
 
 			final List<DataBlock<T>> writeBlocks = writeShard.getBlocks();
-			assertEquals("block as shard should not have the second block which is outside this shard",1, writeBlocks.size());
-			assertEquals(block1, writeBlocks.get(0));
+			assertEquals("block as shard should not have the second block which is outside this shard", 1, writeBlocks.size());
+			assertEquals(block0, writeBlocks.get(0));
 
 			writer.writeShard(datasetName, datasetAttributes, writeShard);
 			final Shard<T> readShard = writer.readShard(datasetName, datasetAttributes, writeShard.getGridPosition());
