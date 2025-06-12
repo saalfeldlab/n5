@@ -337,4 +337,14 @@ public interface ReadData {
 	static ReadData from(OutputStreamWriter generator) {
 		return new LazyReadData(generator);
 	}
+
+	/**
+	 * Returns an empty {@code ReadData}.
+	 *
+	 * @return an empty ReadData
+	 */
+	public static ReadData empty() {
+		return ByteArrayReadData.EMPTY;
+	}
+
 }

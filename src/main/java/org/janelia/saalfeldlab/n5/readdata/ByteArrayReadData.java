@@ -38,6 +38,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 class ByteArrayReadData implements ReadData {
 
+	static final ReadData EMPTY = new ByteArrayReadData(new byte[0]);
+
 	private final byte[] data;
 	private final int offset;
 	private final int length;
@@ -112,4 +114,5 @@ class ByteArrayReadData implements ReadData {
 
 		return true;
 	}
+
 }
