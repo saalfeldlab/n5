@@ -102,7 +102,14 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		return shardGridPosition;
 	}
 
-	public DataBlock<T> getBlock(long... blockGridPosition);
+	/**
+	 * Retrieve the DataBlock at {@code blockGridPosition} if it exists and is
+	 * a member of this Shard.
+	 *
+	 * @param blockGridPosition position of the desired block in the block grid
+	 * @return the block if it exists and is part of this shard, otherwise null
+	 */
+	DataBlock<T> getBlock(long... blockGridPosition);
 
 	default Iterator<DataBlock<T>> iterator() {
 

@@ -35,11 +35,6 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		blocks.put(Position.wrap(block.getGridPosition()), block);
 	}
 
-	/*
-	 * Returns the {@link DataBlock} given a block grid position.
-	 * <p>
-	 * The block grid position is relative to the image, not relative to this shard.
-	 */
 	@Override public DataBlock<T> getBlock(long... blockGridPosition) {
 
 		return blocks.get(Position.wrap(blockGridPosition));

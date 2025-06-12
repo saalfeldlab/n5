@@ -82,7 +82,7 @@ public class N5FSTest extends AbstractN5Test {
 
 	@Override protected N5Writer createN5Writer() throws IOException, URISyntaxException {
 
-		return new N5FSWriter(tempN5Location(), new GsonBuilder());
+		return createN5Writer(tempN5Location(), new GsonBuilder());
 	}
 
 	@Override
