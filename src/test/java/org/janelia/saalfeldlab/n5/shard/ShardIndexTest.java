@@ -94,7 +94,7 @@ public class ShardIndexTest {
 				final LockedChannel channel = kva.lockForWriting(path, bounds.start, indexSize);
 				final OutputStream out = channel.newOutputStream()
 		) {
-			ShardIndex.write(index, out);
+			ShardIndex.write(out, index);
 		}
 
 		final ShardIndex indexRead = new ShardIndex(shardBlockGridSize, indexLocation, indexCodecs);

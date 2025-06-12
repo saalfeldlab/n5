@@ -9,7 +9,6 @@ import org.janelia.saalfeldlab.n5.readdata.SplittableReadData;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -124,7 +123,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		//TODO Caleb: How to handle when this shard doesn't exist (splitableData.getSize() <= 0)
 		index = createIndex();
 		try {
-			index.readFrom(shardData);
+			ShardIndex.readFromShard(shardData, index);
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
 		}

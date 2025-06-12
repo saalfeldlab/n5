@@ -53,7 +53,11 @@ class ByteArraySplittableReadData implements SplittableReadData {
 
 		this.data = data;
 		this.offset = offset;
-		this.length = length;
+
+		if( length < 0 )
+			this.length = data.length - offset;
+		else
+			this.length = length;
 	}
 
 	@Override
@@ -87,12 +91,11 @@ class ByteArraySplittableReadData implements SplittableReadData {
 	@Override
 	public SplittableReadData slice(final long offset, final long length) throws IOException {
 
-		if (offset < 0 || offset >= this.length || length < 0) {
+		if (offset < 0 || offset >= this.length )
 			throw new IndexOutOfBoundsException();
-		}
+
 		final int o = this.offset + (int)offset;
-		final int l = Math.min((int)length, this.length - o);
-		return new ByteArraySplittableReadData(data, o, l);
+		return new ByteArraySplittableReadData(data, o, (int)length);
 	}
 
 	@Override

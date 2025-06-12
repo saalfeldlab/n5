@@ -2,6 +2,7 @@ package org.janelia.saalfeldlab.n5.shard;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.codec.RawBytes;
@@ -9,7 +10,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 public class BlockAsShardCodec<T> extends ShardingCodec<T> {
 
-	private static final RawBytes NO_OP_ARRAY_CODEC = new RawBytes() {
+	private static final RawBytes VIRTUAL_SHARD_INDEX_CODEC = new RawBytes() {
 
 		@Override public ReadData encode(DataBlock dataBlock) throws N5Exception.N5IOException {
 
@@ -18,19 +19,20 @@ public class BlockAsShardCodec<T> extends ShardingCodec<T> {
 
 		@Override public DataBlock decode(ReadData readData, long[] gridPosition) throws N5Exception.N5IOException {
 
-			throw new UnsupportedOperationException(" NO_OP_ARRAY_CODEC is used for `encode` only. ");
+			final long[] data = new long[]{ 0, -1};
+			return new LongArrayDataBlock(new int[0], new long[0], data);
 		}
 	};
 
 	private static final BytesCodec[] EMPTY_SHARD_CODECS = new BytesCodec[0];
-	private static final DeterministicSizeCodec[] NO_OP_INDEX_CODECS = new DeterministicSizeCodec[]{NO_OP_ARRAY_CODEC};
+	private static final DeterministicSizeCodec[] NO_OP_INDEX_CODECS = new DeterministicSizeCodec[]{VIRTUAL_SHARD_INDEX_CODEC};
 
 	final ArrayCodec<T> datasetArrayCodec;
 	private DatasetAttributes datasetAttributes;
 
 	public BlockAsShardCodec(ArrayCodec<T> datasetArrayCodec) {
 
-		super(null, EMPTY_SHARD_CODECS, NO_OP_INDEX_CODECS, IndexLocation.END);
+		super(null, EMPTY_SHARD_CODECS, NO_OP_INDEX_CODECS, IndexLocation.START);
 		this.datasetArrayCodec = datasetArrayCodec;
 	}
 
@@ -38,17 +40,9 @@ public class BlockAsShardCodec<T> extends ShardingCodec<T> {
 
 		return new ShardIndex(attributes.getBlocksPerShard(), getIndexLocation(), NO_OP_INDEX_CODECS) {
 
-			@Override public void readFrom(ReadData shardData) throws N5Exception.N5IOException {
+			@Override public long numBytes() {
 
-				if (shardData.length() == -1)
-					shardData.materialize();
-
-				final long length = shardData.length();
-				if (length == -1)
-					throw new N5Exception.N5IOException("ReadData for shard index must have a valid length, but was " + length);
-
-				data[0] = 0;
-				data[1] = length;
+				return 0;
 			}
 		};
 	}

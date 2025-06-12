@@ -1,11 +1,8 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import org.apache.commons.io.input.BoundedInputStream;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.DefaultBlockReader;
-import org.janelia.saalfeldlab.n5.DefaultBlockWriter;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
@@ -15,14 +12,10 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.SplittableReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
@@ -141,7 +134,7 @@ public class ShardIndex extends LongArrayDataBlock {
 		return totalNumBytes;
 	}
 
-	public void readFrom(ReadData shardData) throws N5IOException {
+	public static void readFromShard(ReadData shardData, ShardIndex index) throws N5IOException {
 
 		/* we require a length, so materialize if we don't have one. */
 		if (shardData.length() == -1)
@@ -151,29 +144,17 @@ public class ShardIndex extends LongArrayDataBlock {
 		if (length == -1)
 			throw new N5IOException("ReadData for shard index must have a valid length, but was " + length);
 
-		final ShardIndex.IndexByteBounds bounds = ShardIndex.byteBounds(this, length);
+		final ShardIndex.IndexByteBounds bounds = ShardIndex.byteBounds(index, length);
 		final ReadData indexData;
 		try {
-			indexData = ((SplittableReadData)shardData).slice(bounds.start, this.numBytes());
+			indexData = ((SplittableReadData)shardData).slice(bounds.start, index.numBytes());
 		} catch (IOException e) {
 			throw new N5IOException("Failed to read shard index", e);
 		}
-		ShardIndex.read(indexData, this);
-
+		ShardIndex.read(indexData, index);
 	}
 
-	public static void read(InputStream in, final ShardIndex index) throws IOException {
-
-		final ReadData dataIn = ReadData.from(in);
-		final Codec.ArrayCodec<long[]> shardIndexCodec = index.indexAttributes.getArrayCodec();
-		final DataBlock<long[]> indexBlock = shardIndexCodec.decode(dataIn, index.gridPosition);
-		System.arraycopy(indexBlock.getData(), 0, index.data, 0, index.data.length);
-	}
-
-	public static boolean read(
-			final ReadData indexData,
-			final ShardIndex index
-	) {
+	public static boolean read( final ReadData indexData, final ShardIndex index ) {
 
 		try (final InputStream in = indexData.inputStream()) {
 			read(in, index);
@@ -185,23 +166,20 @@ public class ShardIndex extends LongArrayDataBlock {
 		}
 	}
 
-	public static void write(
-			final OutputStream outputStream,
-			final ShardIndex index
-	) throws N5IOException {
+	public static void read(InputStream indexIn, final ShardIndex index) throws N5IOException {
 
-		try {
-			write(index, outputStream);
-		} catch (final IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to write shard index", e);
-		}
+		final ReadData dataIn = ReadData.from(indexIn);
+		final Codec.ArrayCodec<long[]> shardIndexCodec = index.indexAttributes.getArrayCodec();
+		final DataBlock<long[]> indexBlock = shardIndexCodec.decode(dataIn, index.gridPosition);
+		System.arraycopy(indexBlock.getData(), 0, index.data, 0, index.data.length);
 	}
 
-	public static void write(final ShardIndex index, OutputStream out) throws IOException {
+	public static void write( final OutputStream outputStream, final ShardIndex index ) throws N5IOException {
 
-		final Codec.ArrayCodec<long[]> indexCodec = index.indexAttributes.<long[]>getArrayCodec();
-		indexCodec.encode(index).writeTo(out);
+		final Codec.ArrayCodec<long[]> indexCodec = index.indexAttributes.getArrayCodec();
+		indexCodec.encode(index).writeTo(outputStream);
 	}
+
 
 	public Codec.ArrayCodec<?> getArrayCodec() {
 		return indexAttributes.getArrayCodec();
@@ -217,14 +195,6 @@ public class ShardIndex extends LongArrayDataBlock {
 					index.codecs
 					);
 		}
-	}
-
-	public static IndexByteBounds byteBounds(DatasetAttributes datasetAttributes, final long objectSize) {
-
-		final ShardIndex index = datasetAttributes.getShardingCodec().createIndex(datasetAttributes);
-
-		final long indexSize = index.numBytes();
-		return byteBounds(indexSize, index.location, objectSize);
 	}
 
 	public static IndexByteBounds byteBounds(final ShardIndex index, long objectSize) {
