@@ -29,6 +29,7 @@
 package org.janelia.saalfeldlab.n5.http;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Reader;
 import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.Compression;
@@ -39,6 +40,8 @@ import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.shard.Shard;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -279,5 +282,40 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	@Override public void writeSerializedBlock(Serializable object, String datasetPath, DatasetAttributes datasetAttributes, long... gridPosition) throws N5Exception {
 
 		writer.writeSerializedBlock(object, datasetPath, datasetAttributes, gridPosition);
+	}
+
+	@Override public void setVersion(String path) {
+
+		writer.setVersion(path);
+	}
+
+	@Override public void writeAttributes(String normalGroupPath, JsonElement attributes) throws N5Exception {
+
+		writer.writeAttributes(normalGroupPath, attributes);
+	}
+
+	@Override public void setAttributes(String path, JsonElement attributes) throws N5Exception {
+
+		writer.setAttributes(path, attributes);
+	}
+
+	@Override public void writeAttributes(String normalGroupPath, Map<String, ?> attributes) throws N5Exception {
+
+		writer.writeAttributes(normalGroupPath, attributes);
+	}
+
+	@Override public <T> void writeBlocks(String datasetPath, DatasetAttributes datasetAttributes, DataBlock<T>... dataBlocks) throws N5Exception {
+
+		writer.writeBlocks(datasetPath, datasetAttributes, dataBlocks);
+	}
+
+	@Override public <T> void writeShard(String path, DatasetAttributes datasetAttributes, Shard<T> shard) throws N5Exception {
+
+		writer.writeShard(path, datasetAttributes, shard);
+	}
+
+	@Override public void createDataset(String datasetPath, long[] dimensions, int[] blockSize, DataType dataType, Codec... codecs) throws N5Exception {
+
+		writer.createDataset(datasetPath, dimensions, blockSize, dataType, codecs);
 	}
 }
