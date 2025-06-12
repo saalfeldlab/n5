@@ -70,8 +70,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	@Override
 	public ShardIndex getIndex() {
 
-		index = index != null ? index : createIndex();
-		return index;
+		return index = index != null ? index : createIndex();
 	}
 
 	public static <T> InMemoryShard<T> fromShard(Shard<T> shard) {

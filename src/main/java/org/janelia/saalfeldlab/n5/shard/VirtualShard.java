@@ -120,7 +120,6 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	@Override
 	public ShardIndex getIndex() {
 
-		//TODO Caleb: How to handle when this shard doesn't exist (splitableData.getSize() <= 0)
 		index = createIndex();
 		try {
 			ShardIndex.readFromShard(shardData, index);

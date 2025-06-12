@@ -151,11 +151,13 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 	default ReadData createReadData() throws N5IOException {
 
-		final DatasetAttributes datasetAttributes = getDatasetAttributes();
-		final ShardIndex index = ShardIndex.createIndex(datasetAttributes);
 
+
+		final DatasetAttributes datasetAttributes = getDatasetAttributes();
 		ShardingCodec<T> shardingCodec = datasetAttributes.getShardingCodec();
 		final Codec.ArrayCodec<T> arrayCodec = shardingCodec.getArrayCodec();
+
+		final ShardIndex index = createIndex();
 		long blocksStartBytes = index.getLocation() == ShardingCodec.IndexLocation.START ? index.numBytes() : 0;
 		final AtomicLong blockOffset = new AtomicLong(blocksStartBytes);
 

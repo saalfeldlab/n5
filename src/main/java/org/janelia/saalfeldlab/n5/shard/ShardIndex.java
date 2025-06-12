@@ -259,12 +259,5 @@ public class ShardIndex extends LongArrayDataBlock {
 		}
 		return true;
 	}
-
-	public static ShardIndex createIndex(final DatasetAttributes attributes) {
-
-		return attributes.getShardingCodec().createIndex(attributes);
-	}
-
-
 }
 
