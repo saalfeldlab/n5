@@ -33,6 +33,8 @@ import java.io.UncheckedIOException;
 import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -98,7 +100,8 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), gridPosition);
 
 		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(path)) {
-			return DefaultBlockReader.readBlock(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
+			final ArrayCodec codec = datasetAttributes.getArrayCodec();
+			return codec.decode(ReadData.from(lockedChannel.newInputStream()), gridPosition);
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
 		} catch (final IOException | UncheckedIOException | N5IOException e) {
