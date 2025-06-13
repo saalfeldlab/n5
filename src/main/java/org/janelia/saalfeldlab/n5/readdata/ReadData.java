@@ -73,9 +73,10 @@ public interface ReadData {
 	 * Returns a {@link ReadData} whose length is limited to the given value.
 	 * 
 	 * @param length
+	 *            the length of the resulting ReadData
 	 * @return a length-limited ReadData
 	 * @throws N5IOException
-	 * 		if an I/O error occurs while trying to get the length
+	 *             if an I/O error occurs while trying to get the length
 	 */
 	default ReadData limit(final long length) throws N5IOException {
 		return slice(0, length);
@@ -163,7 +164,7 @@ public interface ReadData {
 	 * 
 	 * @return
 	 * 		a materialized ReadData.
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if any I/O error occurs
 	 */
 	ReadData materialize() throws N5IOException;
