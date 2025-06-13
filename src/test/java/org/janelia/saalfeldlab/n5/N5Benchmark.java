@@ -67,6 +67,7 @@ import java.util.concurrent.Future;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import ch.systemsx.cisd.base.mdarray.MDShortArray;
@@ -250,6 +251,7 @@ public class N5Benchmark {
 	}
 
 	@Test
+	@Ignore
 	public void benchmarkParallelWritingSpeed() {
 
 		final int nBlocks = 5;

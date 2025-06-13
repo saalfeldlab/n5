@@ -83,7 +83,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			return GsonUtils.readAttributes(lockedChannel.newReader(), getGson());
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
-		} catch (final IOException | UncheckedIOException e) {
+		} catch (final IOException | UncheckedIOException | N5IOException e) {
 			throw new N5IOException("Failed to read attributes from dataset " + pathName, e);
 		}
 
@@ -101,7 +101,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			return DefaultBlockReader.readBlock(lockedChannel.newInputStream(), datasetAttributes, gridPosition);
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
-		} catch (final IOException | UncheckedIOException e) {
+		} catch (final IOException | UncheckedIOException | N5IOException e) {
 			throw new N5IOException(
 					"Failed to read block " + Arrays.toString(gridPosition) + " from dataset " + path,
 					e);
@@ -111,11 +111,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	@Override
 	default String[] list(final String pathName) throws N5Exception {
 
-		try {
-			return getKeyValueAccess().listDirectories(absoluteGroupPath(pathName));
-		} catch (final IOException | UncheckedIOException e) {
-			throw new N5IOException("Cannot list directories for group " + pathName, e);
-		}
+		return getKeyValueAccess().listDirectories(absoluteGroupPath(pathName));
 	}
 
 	/**
