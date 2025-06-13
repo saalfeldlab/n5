@@ -33,9 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-
 class ByteArrayReadData implements ReadData {
 
 	static final ReadData EMPTY = new ByteArrayReadData(new byte[0]);
