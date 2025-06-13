@@ -35,8 +35,6 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
-import java.io.IOException;
-
 @CompressionType("lz4")
 @NameConfig.Name("lz4")
 public class Lz4Compression implements Compression {

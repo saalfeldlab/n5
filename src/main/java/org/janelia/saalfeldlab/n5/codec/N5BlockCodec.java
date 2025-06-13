@@ -18,27 +18,24 @@ public class N5BlockCodec implements Codec.ArrayCodec {
 
 	private transient DatasetAttributes attributes;
 
-	//TODO Caleb: Extract to factory that returns N5BlockCodec wrapper for datablockCodec
 	@Override public void initialize(final DatasetAttributes attributes, final Codec.BytesCodec[] byteCodecs) {
 		this.attributes = attributes;
 		this.bytesCodec = new ConcatenatedBytesCodec(byteCodecs);
 	}
 
-	private  DataBlockCodec< ? > getDataBlockCodec() {
+	private <T> DataBlockCodec<T> getDataBlockCodec() {
 		/*TODO: Consider an attributes.createDataBlockCodec() without parameters? */
 		return N5Codecs.createDataBlockCodec(attributes.getDataType(), bytesCodec);
 	}
 
-	@SuppressWarnings("unchecked")
-	public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
+	@Override public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
 
-		return (DataBlock<T>)getDataBlockCodec().decode(readData, gridPosition);
+		return this.<T>getDataBlockCodec().decode(readData, gridPosition);
 	}
 
-	@SuppressWarnings( "unchecked" )
-	public <T> ReadData encode(DataBlock<T> dataBlock) throws IOException {
+	@Override public <T> ReadData encode(DataBlock<T> dataBlock) throws IOException {
 
-		return ((DataBlockCodec<T>)getDataBlockCodec()).encode(dataBlock);
+		return this.<T>getDataBlockCodec().encode(dataBlock);
 	}
 
 	@Override public long encodedSize(long size) {

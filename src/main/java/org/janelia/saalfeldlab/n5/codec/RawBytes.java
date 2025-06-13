@@ -51,21 +51,23 @@ public class RawBytes implements Codec.ArrayCodec {
 		this.bytesCodec = new ConcatenatedBytesCodec(byteCodecs);
 	}
 	
-	private DataBlockCodec< ? > getDataBlockCodec() {
+	private <T> DataBlockCodec< T > getDataBlockCodec() {
 
 		return RawBlockCodecs.createDataBlockCodec( attributes.getDataType(), getByteOrder(), attributes.getBlockSize(), bytesCodec );
 	}
 
 	@SuppressWarnings("unchecked")
+	@Override
 	public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
 
-		return (DataBlock<T>)getDataBlockCodec().decode(readData, gridPosition);
+		return this.<T>getDataBlockCodec().decode(readData, gridPosition);
 	}
 
 	@SuppressWarnings( "unchecked" )
+	@Override
 	public <T> ReadData encode(DataBlock<T> dataBlock) throws IOException {
 
-		return ((DataBlockCodec<T>)getDataBlockCodec()).encode(dataBlock);
+		return this.<T>getDataBlockCodec().encode(dataBlock);
 	}
 
 	@Override

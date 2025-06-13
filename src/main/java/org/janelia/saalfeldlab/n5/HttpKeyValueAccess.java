@@ -231,6 +231,11 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
+	public HttpSplittableReadData createReadData(final String normalPath) {
+		return new HttpSplittableReadData(this, normalPath, 0, -1);
+	}
+
+	@Override
 	public HttpLazyReadData createReadData(final String normalPath) {
 		return new HttpLazyReadData(this, normalPath, 0, -1);
 	}
@@ -248,6 +253,11 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 
 	@Override
 	public LockedChannel lockForWriting(final String normalPath) throws N5IOException {
+
+		throw new N5Exception("HttpKeyValueAccess is read-only");
+	}
+
+	@Override public LockedChannel lockForWriting(String normalPath, long startByte, long size) throws IOException {
 
 		throw new N5Exception("HttpKeyValueAccess is read-only");
 	}

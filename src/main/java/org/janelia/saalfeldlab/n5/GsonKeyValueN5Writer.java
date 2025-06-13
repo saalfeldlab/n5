@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -26,48 +26,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * #L%
  */
-/**
- * Copyright (c) 2017--2021, Stephan Saalfeld
- * All rights reserved.
- * <p>
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * <p>
- * 1. Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- * <p>
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
 package org.janelia.saalfeldlab.n5;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
-import com.google.gson.JsonSyntaxException;
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
+import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
+import org.janelia.saalfeldlab.n5.util.Position;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 /**
  * Default implementation of {@link N5Writer} with JSON attributes parsed with
@@ -236,23 +217,78 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		return removed;
 	}
 
+	@Override default <T> void writeBlocks(
+			final String datasetPath,
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T>... dataBlocks) throws N5Exception {
+
+		if (datasetAttributes.isSharded()) {
+
+			/* Group blocks by shard index */
+			final Map<Position, List<DataBlock<T>>> shardBlockMap = datasetAttributes.groupBlocks(
+					Arrays.stream(dataBlocks).collect(Collectors.toList()));
+
+			for (final Entry<Position, List<DataBlock<T>>> e : shardBlockMap.entrySet()) {
+
+				final long[] shardPosition = e.getKey().get();
+				final Shard<T> currentShard = readShard(datasetPath, datasetAttributes, shardPosition);
+				final InMemoryShard<T> newShard;
+				if (currentShard != null) {
+					newShard = InMemoryShard.fromShard(currentShard);
+				} else {
+					newShard = new InMemoryShard<>(datasetAttributes, shardPosition);
+				}
+
+				for (DataBlock<T> blk : e.getValue())
+					newShard.addBlock(blk);
+
+				writeShard(datasetPath, datasetAttributes, newShard);
+			}
+
+		} else {
+			GsonN5Writer.super.writeBlocks(datasetPath, datasetAttributes, dataBlocks);
+		}
+	}
+
 	@Override
 	default <T> void writeBlock(
 			final String path,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception {
 
-		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), dataBlock.getGridPosition());
+		if (datasetAttributes.isSharded()) {
+			writeBlocks(path, datasetAttributes, dataBlock);
+			return;
+		}
+
+		final long[] keyPos = datasetAttributes.getArrayCodec().getPositionForBlock(datasetAttributes, dataBlock);
+		final String keyPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), keyPos);
 		try (
-				final LockedChannel lock = getKeyValueAccess().lockForWriting(blockPath);
-				final OutputStream out = lock.newOutputStream()
+				final LockedChannel channel = getKeyValueAccess().lockForWriting(keyPath);
+				final OutputStream out = channel.newOutputStream()
 		) {
-			final ArrayCodec codec = datasetAttributes.getArrayCodec();
+			final Codec.ArrayCodec codec = datasetAttributes.getArrayCodec();
 			codec.encode(dataBlock).writeTo(out);
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
+	}
+
+	@Override
+	default <T> void writeShard(
+			final String path,
+			final DatasetAttributes datasetAttributes,
+			final Shard<T> shard) throws N5Exception {
+
+		final String shardPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), shard.getGridPosition());
+		try (
+				final LockedChannel channel = getKeyValueAccess().lockForWriting(shardPath);
+				final OutputStream shardOut = channel.newOutputStream()
+		) {
+			shard.createReadData().writeTo(shardOut);
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(
-					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
-					e);
+					"Failed to write shard " + Arrays.toString(shard.getGridPosition()) + " into dataset " + path, e);
 		}
 	}
 
@@ -268,12 +304,17 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		return true;
 	}
 
+	//TODO: Add deleteShard?
+
 	@Override
 	default boolean deleteBlock(
 			final String path,
 			final long... gridPosition) throws N5Exception {
 
 		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), gridPosition);
+		//TODO: how do we want to handle sharded datasets?
+		// - Delete block from shard?
+		// - Delete entire shard for block
 		if (getKeyValueAccess().isFile(blockPath))
 			getKeyValueAccess().delete(blockPath);
 

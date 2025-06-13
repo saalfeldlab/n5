@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -25,31 +25,6 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  * #L%
- */
-/**
- * Copyright (c) 2017--2021, Stephan Saalfeld
- * All rights reserved.
- * <p>
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * <p>
- * 1. Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- * <p>
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
  */
 package org.janelia.saalfeldlab.n5;
 
@@ -80,8 +55,15 @@ import java.util.function.Predicate;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
+import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
+import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.VirtualShard;
 import org.janelia.saalfeldlab.n5.url.UriAttributeTest;
+import org.janelia.saalfeldlab.n5.codec.AsTypeCodec;
+import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -107,8 +89,8 @@ public abstract class AbstractN5Test {
 	static protected final String groupName = "/test/group";
 	static protected final String[] subGroupNames = new String[]{"a", "b", "c"};
 	static protected final String datasetName = "/test/group/dataset";
-	static protected final long[] dimensions = new long[]{100, 200, 300};
-	static protected final int[] blockSize = new int[]{44, 33, 22};
+	static protected final long[] dimensions = new long[]{10, 20, 30};
+	static protected final int[] blockSize = new int[]{33, 22, 11};
 	static protected final int blockNumElements = blockSize[0] * blockSize[1] * blockSize[2];
 
 	static protected byte[] byteBlock;
@@ -132,7 +114,7 @@ public abstract class AbstractN5Test {
 		return N5URI.getAsUri(name);
 	}
 
-	protected final N5Writer createTempN5Writer() {
+	public N5Writer createTempN5Writer() {
 
 		try {
 			return createTempN5Writer(tempN5Location());
@@ -141,7 +123,7 @@ public abstract class AbstractN5Test {
 		}
 	}
 
-	protected final N5Writer createTempN5Writer(String location) {
+	public final N5Writer createTempN5Writer(String location) {
 
 		return createTempN5Writer(location, new GsonBuilder());
 	}
@@ -160,6 +142,7 @@ public abstract class AbstractN5Test {
 
 	@After
 	public void removeTempWriters() {
+
 		synchronized (tempWriters) {
 			for (final N5Writer writer : tempWriters) {
 				try {
@@ -252,11 +235,11 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testCreateDataset()  {
+	public void testCreateDataset() {
 
 		final DatasetAttributes info;
 		try (N5Writer writer = createTempN5Writer()) {
-			writer.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
+			writer.createDataset(datasetName, dimensions, blockSize, DataType.UINT64);
 
 			assertTrue("Dataset does not exist", writer.exists(datasetName));
 
@@ -265,7 +248,7 @@ public abstract class AbstractN5Test {
 		assertArrayEquals(dimensions, info.getDimensions());
 		assertArrayEquals(blockSize, info.getBlockSize());
 		assertEquals(DataType.UINT64, info.getDataType());
-		assertTrue(info.getCompression() instanceof RawCompression);
+		assertEquals(0, info.getCodecs().length);
 	}
 
 	@Test
@@ -290,7 +273,35 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testWriteReadStringBlock() {
+	public void testWriteReadByteBlockMultipleCodecs() {
+
+		/*TODO: this tests "passes" in the sense that we get the correct output, but it
+		*  maybe is not the behavior we actually want*/
+
+		try (final N5Writer n5 = createTempN5Writer()) {
+			final String dataset = "8_64_32";
+			n5.remove(dataset);
+			final Codec[] codecs = {
+					new N5BlockCodec<>(),
+					new AsTypeCodec(DataType.INT8, DataType.INT32),
+					new AsTypeCodec(DataType.INT32, DataType.INT64)
+			};
+			final byte[] byteBlock1 = new byte[]{1,2,3,4,5,6,7,8};
+			final long[] dimensions1 = new long[]{2,2,2};
+			final int[] blockSize1 = new int[]{2,2,2};
+			final DatasetAttributes attrs = new DatasetAttributes(dimensions1, blockSize1, DataType.INT8, codecs);
+			n5.createDataset(dataset, attrs);
+			final DatasetAttributes attributes = n5.getDatasetAttributes(dataset);
+			final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize1, new long[]{0, 0, 0}, byteBlock1);
+			n5.writeBlock(dataset, attributes, dataBlock);
+
+			final DataBlock<?> loadedDataBlock = n5.readBlock(dataset, attrs, 0, 0, 0);
+			assertArrayEquals(byteBlock1, (byte[])loadedDataBlock.getData());
+		}
+	}
+
+	@Test
+	public void testWriteReadStringBlock() throws IOException, URISyntaxException {
 
 		// test dataset; all characters are valid UTF8 but may have different numbers of bytes!
 		final DataType dataType = DataType.STRING;
@@ -298,7 +309,7 @@ public abstract class AbstractN5Test {
 		final String[] stringBlock = new String[]{"", "a", "bc", "de", "fgh", ":-þ"};
 
 		for (final Compression compression : getCompressions()) {
-			try (final N5Writer n5 = createTempN5Writer()) {
+			try (final N5Writer n5 = createTempN5Writer("test.n5")) {
 				n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 				final StringDataBlock dataBlock = new StringDataBlock(blockSize, new long[]{0L, 0L, 0L}, stringBlock);
@@ -342,7 +353,7 @@ public abstract class AbstractN5Test {
 					DataType.INT32}) {
 
 				try (final N5Writer n5 = createTempN5Writer()) {
-					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
+					n5.createDataset(datasetName, dimensions, blockSize, dataType, (Codec)compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 					final IntArrayDataBlock dataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
@@ -461,9 +472,60 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testOverwriteBlock() {
+	public void testWriteInvalidBlock() {
+
+		final Compression compression = getCompressions()[0];
+		final DataType dataType = DataType.UINT8;
+
+		final int[] biggerBlockSize = Arrays.stream(blockSize).map(x -> x + 2).toArray();
+		int nBigger = Arrays.stream(biggerBlockSize).reduce(1, (x, y) -> x * y);
+
+		final int[] smallerBlockSize = Arrays.stream(blockSize).map(x -> x - 2).toArray();
+		int nSmaller = Arrays.stream(smallerBlockSize).reduce(1, (x, y) -> x * y);
+
+		int N = Arrays.stream(blockSize).reduce(1, (x, y) -> x * y);
+
+		final Random rnd = new Random(7560);
+		final byte[] biggerData = new byte[nBigger];
+		rnd.nextBytes(biggerData);
+
+		final byte[] smallerData = new byte[nSmaller];
+		rnd.nextBytes(smallerData);
+
+		final float[] floatData = new float[N];
 
 		try (final N5Writer n5 = createTempN5Writer()) {
+
+			n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
+			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+
+			// write a block that is too large
+			final ByteArrayDataBlock bigDataBlock = new ByteArrayDataBlock(biggerBlockSize, new long[]{0, 0, 0}, biggerData);
+			n5.writeBlock(datasetName, attributes, bigDataBlock);
+
+			final DataBlock<?> loadedBigDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
+			assertArrayEquals(biggerData, (byte[])loadedBigDataBlock.getData());
+
+			// write a block that is too small
+			final ByteArrayDataBlock smallDataBlock = new ByteArrayDataBlock(smallerBlockSize, new long[]{0, 0, 0}, smallerData);
+			n5.writeBlock(datasetName, attributes, smallDataBlock);
+
+			final DataBlock<?> loadedSmallDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
+			System.out.println(((byte[])loadedSmallDataBlock.getData()).length);
+			assertArrayEquals(smallerData, (byte[])loadedSmallDataBlock.getData());
+
+			// write a block of the wrong type
+			final FloatArrayDataBlock floatDataBlock = new FloatArrayDataBlock(blockSize, new long[]{0, 0, 0}, floatData);
+			assertThrows(ClassCastException.class, () -> {
+				n5.writeBlock(datasetName, attributes, floatDataBlock);
+			});
+		}
+	}
+
+	@Test
+	public void testOverwriteBlock() {
+
+		try (final N5Writer n5 = createTempN5Writer("test.n5")) {
 			n5.createDataset(datasetName, dimensions, blockSize, DataType.INT32, new GzipCompression());
 			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 
@@ -472,16 +534,17 @@ public abstract class AbstractN5Test {
 			final DataBlock<?> loadedRandomDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 			assertArrayEquals(intBlock, (int[])loadedRandomDataBlock.getData());
 
-			// test the case where the resulting file becomes shorter
-			final IntArrayDataBlock emptyDataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, new int[DataBlock.getNumElements(blockSize)]);
+			// test the case where the resulting file becomes shorter (because the data compresses better)
+			final int[] emptyBlock = new int[DataBlock.getNumElements(blockSize)];
+			final IntArrayDataBlock emptyDataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, emptyBlock);
 			n5.writeBlock(datasetName, attributes, emptyDataBlock);
 			final DataBlock<?> loadedEmptyDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
-			assertArrayEquals(new int[DataBlock.getNumElements(blockSize)], (int[])loadedEmptyDataBlock.getData());
+			assertArrayEquals(emptyBlock, (int[])loadedEmptyDataBlock.getData());
 		}
 	}
 
 	@Test
-	public void testAttributeParsingPrimitive()  {
+	public void testAttributeParsingPrimitive() {
 
 		try (final N5Writer n5 = createTempN5Writer()) {
 
@@ -557,7 +620,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testAttributes()  {
+	public void testAttributes() {
 
 		try (final N5Writer n5 = createTempN5Writer()) {
 			assertNull(n5.getAttribute(groupName, "test", String.class));
@@ -622,7 +685,6 @@ public abstract class AbstractN5Test {
 			assertEquals(0, n5.listAttributes(groupName).size());
 		}
 	}
-
 
 	@Test
 	public void testNullAttributes() throws URISyntaxException, IOException {
@@ -847,7 +909,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testRemoveGroup()  {
+	public void testRemoveGroup() {
 
 		try (final N5Writer n5 = createTempN5Writer()) {
 			n5.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
@@ -907,7 +969,7 @@ public abstract class AbstractN5Test {
 			for (final String subGroup : subGroupNames)
 				assertTrue("deepList contents", Arrays.asList(n5.deepList("")).contains(groupName.replaceFirst("/", "") + "/" + subGroup));
 
-			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64, new RawCompression());
+			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64);
 			final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, new long[blockNumElements]);
 			n5.createDataset(datasetName, datasetAttributes);
 			n5.writeBlock(datasetName, datasetAttributes, dataBlock);
@@ -1009,7 +1071,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testExists()  {
+	public void testExists() {
 
 		final String groupName2 = groupName + "-2";
 		final String datasetName2 = datasetName + "-2";
@@ -1030,7 +1092,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testListAttributes()  {
+	public void testListAttributes() {
 
 		try (N5Writer n5 = createTempN5Writer()) {
 			final String groupName2 = groupName + "-2";
@@ -1137,14 +1199,14 @@ public abstract class AbstractN5Test {
 			writer.setAttribute("/", N5Reader.VERSION_KEY, invalidVersion);
 			assertThrows("Incompatible version throws error", N5Exception.class, () -> {
 				try (final N5Reader ignored = createN5Reader(location)) {
-					 /*Only try with resource to ensure `close()` is called.*/
+					/*Only try with resource to ensure `close()` is called.*/
 				}
 			});
 		}
 	}
 
 	@Test
-	public void testDelete()  {
+	public void testDelete() {
 
 		try (N5Writer n5 = createTempN5Writer()) {
 			final String datasetName = AbstractN5Test.datasetName + "-test-delete";
@@ -1287,7 +1349,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testAttributePaths()  {
+	public void testAttributePaths() {
 
 		try (final N5Writer writer = createTempN5Writer()) {
 
@@ -1393,13 +1455,13 @@ public abstract class AbstractN5Test {
 			 * to try and grab the value as a json structure. I should grab the root, and match the empty string case */
 			assertEquals(writer.getAttribute(testGroup, "", JsonObject.class), writer.getAttribute(testGroup, "/", JsonObject.class));
 
-			/* Lastly, ensure grabing nonsense returns null */
+			/* Lastly, ensure grabbing nonsense returns null */
 			assertNull(writer.getAttribute(testGroup, "/this/key/does/not/exist", Object.class));
 		}
 	}
 
 	@Test
-	public void testAttributePathEscaping()  {
+	public void testAttributePathEscaping() {
 
 		final JsonObject emptyObj = new JsonObject();
 
@@ -1486,7 +1548,7 @@ public abstract class AbstractN5Test {
 
 	@Test
 	public void
-	testRootLeaves()  {
+	testRootLeaves() {
 
 		/* Test retrieving non-JsonObject root leaves */
 		try (final N5Writer n5 = createTempN5Writer()) {
@@ -1625,10 +1687,52 @@ public abstract class AbstractN5Test {
 		}
 	}
 
+	@Test
+	public <T> void testWriteReadShardOnUnshardedDataset() throws Exception {
+		try (N5Writer writer = createTempN5Writer()) {
+			final String datasetName = "testWriteShardOnUnshardedDataset";
+			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64, new RawCompression());
+			writer.createDataset(datasetName, datasetAttributes);
+
+
+			final DataBlock<T> block0 = (DataBlock<T>) DataType.UINT64.createDataBlock(blockSize, new long[]{0,0,0});
+			final DataBlock<T> block1 = (DataBlock<T>) DataType.UINT64.createDataBlock(blockSize, new long[]{1,0,0});
+
+			final InMemoryShard<T> writeShard = new InMemoryShard<>(datasetAttributes, new long[]{0, 0, 0});
+			boolean added0 = writeShard.addBlock(block0);
+			boolean added1 = writeShard.addBlock(block1);
+
+			assertTrue("Block 0 should be added to shard", added0);
+			assertFalse("Block 1 should not be added to shard because it's in a different shard position", added1);
+
+			final List<DataBlock<T>> writeBlocks = writeShard.getBlocks();
+			assertEquals("block as shard should not have the second block which is outside this shard", 1, writeBlocks.size());
+			assertEquals(block0, writeBlocks.get(0));
+
+			writer.writeShard(datasetName, datasetAttributes, writeShard);
+			final Shard<T> readShard = writer.readShard(datasetName, datasetAttributes, writeShard.getGridPosition());
+
+			Assert.assertArrayEquals("shard read position should be same as write position", writeShard.getGridPosition(), readShard.getGridPosition());
+			Assert.assertArrayEquals("shard position should be the same as block position when unsharded", block0.getGridPosition(), readShard.getGridPosition());
+			Assert.assertArrayEquals("shard size should equal block size when unsharded", readShard.getBlockSize(), readShard.getSize());
+
+
+			final List<? extends DataBlock<T>> readBlocks = readShard.getBlocks();
+			assertEquals("read shard should contain one block", 1, readBlocks.size());
+			final DataBlock<T> readBlock = readBlocks.get(0);
+			Assert.assertArrayEquals("read block position should be same as block position when unsharded", block0.getGridPosition(), readBlock.getGridPosition());
+			Assert.assertArrayEquals("read block size should equal block size when unsharded", readBlock.getSize(), readBlock.getSize());
+
+			assertArrayEquals("block written through shard should be identical", (long[])readBlock.getData(), (long[])block0.getData());
+
+		}
+
+	}
+
 	protected void assertDatasetAttributesEquals(final DatasetAttributes expected, final DatasetAttributes actual) {
 		assertArrayEquals(expected.getDimensions(), actual.getDimensions());
 		assertArrayEquals(expected.getBlockSize(), actual.getBlockSize());
 		assertEquals(expected.getDataType(), actual.getDataType());
-		assertEquals(expected.getCompression(), actual.getCompression());
+		assertArrayEquals(expected.getCodecs(), actual.getCodecs());
 	}
 }

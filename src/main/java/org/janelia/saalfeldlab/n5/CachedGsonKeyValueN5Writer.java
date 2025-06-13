@@ -62,9 +62,9 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		// else if exists is true (then a dataset is present) so throw an exception to avoid
 		// overwriting / invalidating existing data
 		if (cacheMeta()) {
-			if (getCache().isGroup(normalPath, N5KeyValueReader.ATTRIBUTES_JSON))
+			if (getCache().isGroup(normalPath, getAttributesKey()))
 				return;
-			else if (getCache().exists(normalPath, N5KeyValueReader.ATTRIBUTES_JSON)) {
+			else if (getCache().exists(normalPath, getAttributesKey())) {
 				throw new N5Exception("Can't make a group on existing path.");
 			}
 		}
@@ -88,8 +88,8 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 			for (final String child : pathParts) {
 
 				final String childPath = parent.isEmpty() ? child : parent + "/" + child;
-				getCache().initializeNonemptyCache(childPath, N5KeyValueReader.ATTRIBUTES_JSON);
-				getCache().updateCacheInfo(childPath, N5KeyValueReader.ATTRIBUTES_JSON);
+				getCache().initializeNonemptyCache(childPath, getAttributesKey());
+				getCache().updateCacheInfo(childPath, getAttributesKey());
 
 				// only add if the parent exists and has children cached already
 				if (parent != null && !child.isEmpty())
@@ -130,7 +130,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 				nullRespectingAttributes = getGson().toJsonTree(attributes);
 			}
 			/* Update the cache, and write to the writer */
-			getCache().updateCacheInfo(normalGroupPath, N5KeyValueReader.ATTRIBUTES_JSON, nullRespectingAttributes);
+			getCache().updateCacheInfo(normalGroupPath, getAttributesKey(), nullRespectingAttributes);
 		}
 	}
 
