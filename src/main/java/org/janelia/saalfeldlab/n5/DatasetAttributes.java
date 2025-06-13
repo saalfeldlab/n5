@@ -180,7 +180,7 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 	}
 
 	public boolean isSharded() {
-		return getArrayCodec() instanceof ShardingCodec<?>;
+		return getArrayCodec() instanceof ShardingCodec;
 	}
 
 	/**
@@ -189,11 +189,11 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 	 *
 	 * @throws N5ShardException if the dataset is not sharded
 	 */
-	public <T> ShardingCodec<T> getShardingCodec() throws N5ShardException {
-		if (getArrayCodec() instanceof ShardingCodec<?>)
-			return (ShardingCodec<T>)getArrayCodec();
+	public ShardingCodec getShardingCodec() throws N5ShardException {
+		if (getArrayCodec() instanceof ShardingCodec)
+			return (ShardingCodec)getArrayCodec();
 		else {
-			return new BlockAsShardCodec<>(getArrayCodec());
+			return new BlockAsShardCodec(getArrayCodec());
 		}
 	}
 

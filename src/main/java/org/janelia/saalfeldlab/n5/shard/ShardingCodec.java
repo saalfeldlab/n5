@@ -9,11 +9,9 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.N5Annotations;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
@@ -22,7 +20,7 @@ import java.lang.reflect.Type;
 import java.util.Objects;
 
 @NameConfig.Name(ShardingCodec.TYPE)
-public class ShardingCodec<T> implements Codec.ArrayCodec<T> {
+public class ShardingCodec implements Codec.ArrayCodec {
 
 	private static final long serialVersionUID = -5879797314954717810L;
 
@@ -82,13 +80,13 @@ public class ShardingCodec<T> implements Codec.ArrayCodec<T> {
 		return indexLocation;
 	}
 
-	public ArrayCodec<T> getArrayCodec() {
+	public ArrayCodec getArrayCodec() {
 
 		Objects.requireNonNull(codecs);
 		if (codecs.length == 0)
 			throw new IllegalArgumentException("Sharding Codec requires a single ArrayCodec. None found.");
 
-		return (ArrayCodec<T>)codecs[0];
+		return (ArrayCodec)codecs[0];
 	}
 
 	public BytesCodec[] getCodecs() {
@@ -121,12 +119,12 @@ public class ShardingCodec<T> implements Codec.ArrayCodec<T> {
 		getArrayCodec().initialize(attributes, getCodecs());
 	}
 
-	@Override public ReadData encode(DataBlock<T> dataBlock) throws N5IOException {
+	@Override public <T> ReadData encode(DataBlock<T> dataBlock) {
 
 		return getArrayCodec().encode(dataBlock);
 	}
 
-	@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5IOException {
+	@Override public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5IOException {
 
 		final ReadData splitableReadData = readData.materialize();
 

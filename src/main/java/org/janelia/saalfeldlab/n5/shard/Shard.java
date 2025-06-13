@@ -161,8 +161,8 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 
 		final DatasetAttributes datasetAttributes = getDatasetAttributes();
-		ShardingCodec<T> shardingCodec = datasetAttributes.getShardingCodec();
-		final Codec.ArrayCodec<T> arrayCodec = shardingCodec.getArrayCodec();
+		ShardingCodec shardingCodec = datasetAttributes.getShardingCodec();
+		final Codec.ArrayCodec arrayCodec = shardingCodec.getArrayCodec();
 
 		final ShardIndex index = createIndex();
 		long blocksStartBytes = index.getLocation() == ShardingCodec.IndexLocation.START ? index.numBytes() : 0;

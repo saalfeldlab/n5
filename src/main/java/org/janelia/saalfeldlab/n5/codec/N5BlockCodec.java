@@ -28,12 +28,12 @@ public class N5BlockCodec implements Codec.ArrayCodec {
 		return N5Codecs.createDataBlockCodec(attributes.getDataType(), bytesCodec);
 	}
 
-	@Override public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
+	@Override public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) {
 
 		return this.<T>getDataBlockCodec().decode(readData, gridPosition);
 	}
 
-	@Override public <T> ReadData encode(DataBlock<T> dataBlock) throws IOException {
+	@Override public <T> ReadData encode(DataBlock<T> dataBlock) {
 
 		return this.<T>getDataBlockCodec().encode(dataBlock);
 	}

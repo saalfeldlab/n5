@@ -58,14 +58,14 @@ public class RawBytes implements Codec.ArrayCodec {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
+	public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) {
 
 		return this.<T>getDataBlockCodec().decode(readData, gridPosition);
 	}
 
 	@SuppressWarnings( "unchecked" )
 	@Override
-	public <T> ReadData encode(DataBlock<T> dataBlock) throws IOException {
+	public <T> ReadData encode(DataBlock<T> dataBlock) {
 
 		return this.<T>getDataBlockCodec().encode(dataBlock);
 	}

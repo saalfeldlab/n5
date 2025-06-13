@@ -36,8 +36,8 @@ public class BlockIterators {
 				DataType.UINT8,
 				new ShardingCodec<>(
 						new int[] {2, 2},
-						new Codec[] { new N5BlockCodec<>() },
-						new DeterministicSizeCodec[] { new RawBytes<>() },
+						new Codec[] { new N5BlockCodec() },
+						new DeterministicSizeCodec[] { new RawBytes() },
 						IndexLocation.END
 				));
 

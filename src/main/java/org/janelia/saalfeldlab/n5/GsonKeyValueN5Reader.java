@@ -134,10 +134,6 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			return datasetAttributes.getArrayCodec().decode(decodeData, gridPosition);
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
-		} catch (IOException | UncheckedIOException | N5IOException e) {
-			throw new N5IOException(
-					"Failed to read block " + Arrays.toString(gridPosition) + " from dataset " + path,
-					e);
 		}
 	}
 

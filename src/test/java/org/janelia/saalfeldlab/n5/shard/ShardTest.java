@@ -85,10 +85,10 @@ public class ShardTest {
 				shardSize,
 				blockSize,
 				DataType.UINT8,
-				new ShardingCodec<>(
+				new ShardingCodec(
 						blockSize,
-						new Codec[]{new N5BlockCodec<>()}, //, new GzipCompression(4)},
-						new DeterministicSizeCodec[]{new RawBytes<>(), new Crc32cChecksumCodec()},
+						new Codec[]{new N5BlockCodec()}, //, new GzipCompression(4)},
+						new DeterministicSizeCodec[]{new RawBytes(), new Crc32cChecksumCodec()},
 						indexLocation
 				)
 		);
@@ -100,7 +100,7 @@ public class ShardTest {
 	}
 
 	@Test
-	public void writeReadBlocksTest() throws IOException {
+	public void writeReadBlocksTest() {
 
 		final N5Writer writer = tempN5Factory.createTempN5Writer();
 		final DatasetAttributes datasetAttributes = getTestAttributes(
@@ -320,7 +320,7 @@ public class ShardTest {
 		// 	probably better to forget about this class - only use DatasetAttributes
 		// 	and detect shading in another way
 		final ShardingCodec innerShard = new ShardingCodec(innerShardSize,
-				new Codec[]{new N5BlockCodec<>()},
+				new Codec[]{new N5BlockCodec()},
 				new DeterministicSizeCodec[]{new RawBytes(indexByteOrder), new Crc32cChecksumCodec()},
 				IndexLocation.START);
 
@@ -345,11 +345,11 @@ public class ShardTest {
 						blockSize,
 						new Codec[]{
 								// codecs applied to image data
-								new RawBytes<>(ByteOrder.BIG_ENDIAN),
+								new RawBytes(ByteOrder.BIG_ENDIAN),
 						},
 						new DeterministicSizeCodec[]{
 								// codecs applied to the shard index, must not be compressors
-								new RawBytes<>(ByteOrder.LITTLE_ENDIAN),
+								new RawBytes(ByteOrder.LITTLE_ENDIAN),
 								new Crc32cChecksumCodec()
 						},
 						IndexLocation.START

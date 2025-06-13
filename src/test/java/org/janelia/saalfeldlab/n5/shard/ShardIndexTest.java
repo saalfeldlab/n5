@@ -71,7 +71,7 @@ public class ShardIndexTest {
 		final int[] shardBlockGridSize = new int[]{6, 5};
 		final IndexLocation indexLocation = IndexLocation.END;
 		final DeterministicSizeCodec[] indexCodecs = new DeterministicSizeCodec[]{
-				new N5BlockCodec<>(),
+				new N5BlockCodec(),
 				new Crc32cChecksumCodec()};
 		final String path = Paths.get(Paths.get(writer.getURI()).toAbsolutePath().toString(), "indexTest").toString();
 

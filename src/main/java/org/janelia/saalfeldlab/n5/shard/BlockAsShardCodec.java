@@ -10,7 +10,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @NameConfig.Serialize(false)
-public class BlockAsShardCodec<T> extends ShardingCodec<T> {
+public class BlockAsShardCodec extends ShardingCodec {
 
 	private static final RawBytes VIRTUAL_SHARD_INDEX_CODEC = new RawBytes() {
 
@@ -29,10 +29,10 @@ public class BlockAsShardCodec<T> extends ShardingCodec<T> {
 	private static final BytesCodec[] EMPTY_SHARD_CODECS = new BytesCodec[0];
 	private static final DeterministicSizeCodec[] NO_OP_INDEX_CODECS = new DeterministicSizeCodec[]{VIRTUAL_SHARD_INDEX_CODEC};
 
-	final ArrayCodec<T> datasetArrayCodec;
+	final ArrayCodec datasetArrayCodec;
 	private DatasetAttributes datasetAttributes;
 
-	public BlockAsShardCodec(ArrayCodec<T> datasetArrayCodec) {
+	public BlockAsShardCodec(ArrayCodec datasetArrayCodec) {
 
 		super(null, EMPTY_SHARD_CODECS, NO_OP_INDEX_CODECS, IndexLocation.START);
 		this.datasetArrayCodec = datasetArrayCodec;
@@ -54,7 +54,7 @@ public class BlockAsShardCodec<T> extends ShardingCodec<T> {
 		return datasetAttributes.getBlockSize();
 	}
 
-	@Override public ArrayCodec<T> getArrayCodec() {
+	@Override public ArrayCodec getArrayCodec() {
 
 		return datasetArrayCodec;
 	}
@@ -90,12 +90,12 @@ public class BlockAsShardCodec<T> extends ShardingCodec<T> {
 		return datasetArrayCodec.getType();
 	}
 
-	@Override public ReadData encode(DataBlock<T> dataBlock) throws N5Exception.N5IOException {
+	@Override public <T> ReadData encode(DataBlock<T> dataBlock) throws N5Exception.N5IOException {
 
 		return datasetArrayCodec.encode(dataBlock);
 	}
 
-	@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5Exception.N5IOException {
+	@Override public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5Exception.N5IOException {
 
 		return datasetArrayCodec.decode(readData, gridPosition);
 	}

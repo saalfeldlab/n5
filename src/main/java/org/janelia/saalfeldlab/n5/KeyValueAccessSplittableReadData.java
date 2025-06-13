@@ -66,31 +66,14 @@ abstract class KeyValueAccessReadData<K extends KeyValueAccess> implements ReadD
 
 	abstract void read() throws N5IOException;
 
-	abstract KeyValueAccessReadData<K> readOperationSlice(long offset, long length) throws IOException;
+	abstract KeyValueAccessReadData<K> readOperationSlice(long offset, long length) throws N5IOException;
 
 	@Override
-	public ReadData slice(long offset, long length) throws IOException {
+	public ReadData slice(long offset, long length) throws N5IOException {
 
 		if (materialized != null)
 			return materialize().slice(offset, length);
 
 		return readOperationSlice(this.offset + offset, length);
-	}
-
-	@Override
-	public Pair<ReadData, ReadData> split(long pivot) throws IOException {
-
-		if (materialized != null)
-			return materialize().split(pivot);
-
-		final long offsetL = 0;
-		final long lenL = pivot;
-
-		final long offsetR = offset + pivot;
-		final long lenR = this.length - pivot;
-
-		return new ImmutablePair<ReadData, ReadData>(
-				readOperationSlice(offsetL, lenL),
-				readOperationSlice(offsetR, lenR));
 	}
 }

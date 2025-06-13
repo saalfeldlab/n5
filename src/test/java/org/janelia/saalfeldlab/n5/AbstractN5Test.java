@@ -282,7 +282,7 @@ public abstract class AbstractN5Test {
 			final String dataset = "8_64_32";
 			n5.remove(dataset);
 			final Codec[] codecs = {
-					new N5BlockCodec<>(),
+					new N5BlockCodec(),
 					new AsTypeCodec(DataType.INT8, DataType.INT32),
 					new AsTypeCodec(DataType.INT32, DataType.INT64)
 			};

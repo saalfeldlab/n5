@@ -256,7 +256,7 @@ public interface N5Writer extends N5Reader {
 			final DataType dataType,
 			final Compression compression) throws N5Exception {
 
-		createDataset(datasetPath, dimensions, blockSize, dataType, new N5BlockCodec<>(), compression);
+		createDataset(datasetPath, dimensions, blockSize, dataType, new N5BlockCodec(), compression);
 	}
 
 	/**

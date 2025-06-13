@@ -145,12 +145,7 @@ public class ShardIndex extends LongArrayDataBlock {
 			throw new N5IOException("ReadData for shard index must have a valid length, but was " + length);
 
 		final ShardIndex.IndexByteBounds bounds = ShardIndex.byteBounds(index, length);
-		final ReadData indexData;
-		try {
-			indexData = ((ReadData)shardData).slice(bounds.start, index.numBytes());
-		} catch (IOException e) {
-			throw new N5IOException("Failed to read shard index", e);
-		}
+		final ReadData indexData = shardData.slice(bounds.start, index.numBytes());
 		ShardIndex.read(indexData, index);
 	}
 
@@ -169,19 +164,19 @@ public class ShardIndex extends LongArrayDataBlock {
 	public static void read(InputStream indexIn, final ShardIndex index) throws N5IOException {
 
 		final ReadData dataIn = ReadData.from(indexIn);
-		final Codec.ArrayCodec<long[]> shardIndexCodec = index.indexAttributes.getArrayCodec();
+		final Codec.ArrayCodec shardIndexCodec = index.indexAttributes.getArrayCodec();
 		final DataBlock<long[]> indexBlock = shardIndexCodec.decode(dataIn, index.gridPosition);
 		System.arraycopy(indexBlock.getData(), 0, index.data, 0, index.data.length);
 	}
 
 	public static void write( final OutputStream outputStream, final ShardIndex index ) throws N5IOException {
 
-		final Codec.ArrayCodec<long[]> indexCodec = index.indexAttributes.getArrayCodec();
-		indexCodec.encode(index).writeTo(outputStream);
+		final Codec.ArrayCodec indexCodec = index.indexAttributes.getArrayCodec();
+		indexCodec.<long[]>encode(index).writeTo(outputStream);
 	}
 
 
-	public Codec.ArrayCodec<?> getArrayCodec() {
+	public Codec.ArrayCodec getArrayCodec() {
 		return indexAttributes.getArrayCodec();
 	}
 

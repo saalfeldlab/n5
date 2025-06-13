@@ -37,7 +37,7 @@ public class BytesTests {
 				new long[]{8, 8},
 				new int[]{4, 4},
 				DataType.UINT8,
-				new N5BlockCodec<>(),
+				new N5BlockCodec(),
 				new IdentityCodec()
 		);
 		writer.createGroup("shard"); //Should already exist, but this will ensure.

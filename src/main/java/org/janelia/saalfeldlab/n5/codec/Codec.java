@@ -2,6 +2,7 @@ package org.janelia.saalfeldlab.n5.codec;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
@@ -38,7 +39,7 @@ public interface Codec extends Serializable {
 		 * @return decoded ReadData
 		 * @throws IOException if any I/O error occurs
 		 */
-		ReadData decode(ReadData readData) throws IOException;
+		ReadData decode(ReadData readData) throws N5Exception.N5IOException;
 
 		/**
 		 * Encode the given {@link ReadData}.
@@ -50,7 +51,7 @@ public interface Codec extends Serializable {
 		 * @return encoded ReadData
 		 * @throws IOException if any I/O error occurs
 		 */
-		ReadData encode(ReadData readData) throws IOException;
+		ReadData encode(ReadData readData) throws N5Exception.N5IOException;
 
 	}
 
@@ -60,9 +61,9 @@ public interface Codec extends Serializable {
 	 */
 	interface ArrayCodec extends DeterministicSizeCodec {
 
-		<T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException;
+		<T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5Exception.N5IOException;
 
-		<T> ReadData encode(DataBlock<T> dataBlock) throws IOException;
+		<T> ReadData encode(DataBlock<T> dataBlock) throws N5Exception.N5IOException;
 
 		default long[] getPositionForBlock(final DatasetAttributes attributes, final DataBlock<?> datablock) {
 

@@ -231,11 +231,6 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public HttpSplittableReadData createReadData(final String normalPath) {
-		return new HttpSplittableReadData(this, normalPath, 0, -1);
-	}
-
-	@Override
 	public HttpLazyReadData createReadData(final String normalPath) {
 		return new HttpLazyReadData(this, normalPath, 0, -1);
 	}
@@ -253,11 +248,6 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 
 	@Override
 	public LockedChannel lockForWriting(final String normalPath) throws N5IOException {
-
-		throw new N5Exception("HttpKeyValueAccess is read-only");
-	}
-
-	@Override public LockedChannel lockForWriting(String normalPath, long startByte, long size) throws IOException {
 
 		throw new N5Exception("HttpKeyValueAccess is read-only");
 	}
@@ -373,6 +363,11 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 			this.size = size;
 		}
 
+		@Override public long size() {
+
+			return size;
+		}
+
 		private boolean isPartialRead() {
 			return startByte > 0 || (size >= 0 && size != Long.MAX_VALUE);
 		}
@@ -393,8 +388,9 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 				}
 				return conn.getInputStream();
 			} catch (IOException e) {
-				throw new N5IOException("Could not open stream for " + uri, e);
+				throw new N5Exception.N5IOException(e);
 			}
+
 		}
 
 		private String rangeString() {
@@ -404,7 +400,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		public Reader newReader() throws N5IOException {
+		public Reader newReader()  {
 
 			final InputStreamReader reader = new InputStreamReader(newInputStream(), StandardCharsets.UTF_8);
 			synchronized (resources) {
@@ -414,13 +410,13 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		public OutputStream newOutputStream() throws N5IOException {
+		public OutputStream newOutputStream() {
 
 			throw new NonWritableChannelException();
 		}
 
 		@Override
-		public Writer newWriter() throws N5IOException {
+		public Writer newWriter() {
 
 			throw new NonWritableChannelException();
 		}
