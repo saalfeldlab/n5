@@ -29,6 +29,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import org.apache.commons.io.IOUtils;
+
 import org.apache.commons.lang3.function.TriFunction;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.http.ListResponseParser;
@@ -56,6 +57,13 @@ import java.util.ArrayList;
  * Methods that take a "normalPath" as an argument expect absolute URIs.
  */
 public class HttpKeyValueAccess implements KeyValueAccess {
+
+	public static final String HEAD = "HEAD";
+	public static final String GET = "GET";
+
+	public static final String RANGE = "Range";
+	public static final String ACCEPT_RANGE = "Accept-Range";
+	public static final String BYTES = "bytes";
 
 	private int readTimeoutMilliseconds;
 	private int connectionTimeoutMilliseconds;
@@ -142,7 +150,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	public boolean isDirectory(final String normalPath) {
 
 		try {
-			requireValidHttpResponse(getDirectoryPath(normalPath), "HEAD", (code,  msg,http) -> {
+			requireValidHttpResponse(getDirectoryPath(normalPath), HEAD, (code,  msg,http) -> {
 				final N5Exception cause = validExistsResponse(code, "Error checking directory: " + normalPath, msg, true);
 				if (code >= 300 && code < 400) {
 					final String redirectLocation = http.getHeaderField("Location");
@@ -184,7 +192,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 
 		/* Files must not end in `/` And Don't accept a redirect to a location ending in `/` */
 		try {
-			requireValidHttpResponse(getFilePath(normalPath), "HEAD", (code, msg, http) -> {
+			requireValidHttpResponse(getFilePath(normalPath), HEAD, (code, msg, http) -> {
 				final N5Exception cause = validExistsResponse(code, "Error accessing file: " + normalPath, msg, true);
 				if (code >= 300 && code < 400) {
 					final String redirectLocation = http.getHeaderField("Location");
@@ -272,7 +280,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 
 	private String[] queryListEntries(String normalPath, ListResponseParser parser, boolean allowRedirect) throws N5IOException{
 
-		final HttpURLConnection http = requireValidHttpResponse(normalPath, "GET", "Error listing directory at " + normalPath, allowRedirect);
+		final HttpURLConnection http = requireValidHttpResponse(normalPath, GET, "Error listing directory at " + normalPath, allowRedirect);
 		try {
 			final String listResponse = responseToString(http.getInputStream());
 			return parser.parseListResponse(listResponse);

@@ -127,12 +127,17 @@ public interface ReadData {
 	}
 
 	/**
-	 * Read the underlying data into a {@code byte[]} array, and return it as a {@code ReadData}.
-	 * (If this {@code ReadData} is already in a {@code byte[]} array or {@code
+	 * Read the underlying data into a {@code byte[]} array, and return it as a
+	 * {@code ReadData}. (If this {@code ReadData} is already in a
+	 * {@code byte[]} array or {@code
 	 * ByteBuffer}, just return {@code this}.)
 	 * <p>
 	 * The returned {@code ReadData} has a known {@link #length} and multiple
 	 * {@link #inputStream InputStreams} can be opened on it.
+	 * 
+	 * @return a materialized ReadData
+	 * @throws N5IOException
+	 *             if any I/O error occurs
 	 */
 	ReadData materialize() throws N5IOException;
 
