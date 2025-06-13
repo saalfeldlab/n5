@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -35,6 +35,7 @@ import java.nio.ByteBuffer;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 /**
  * An abstraction over {@code byte[]} data.
@@ -61,10 +62,10 @@ public interface ReadData {
 	 *
 	 * @return number of bytes, if known, or -1
 	 *
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if an I/O error occurs while trying to get the length
 	 */
-	default long length() throws IOException {
+	default long length() throws N5IOException {
 		return -1;
 	}
 
@@ -73,10 +74,10 @@ public interface ReadData {
 	 * 
 	 * @param length
 	 * @return a length-limited ReadData
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if an I/O error occurs while trying to get the length
 	 */
-	default ReadData limit(final long length) throws IOException {
+	default ReadData limit(final long length) throws N5IOException {
 		return slice(0, length);
 	}
 
@@ -87,9 +88,9 @@ public interface ReadData {
 	 * @param offset the offset relative to this
 	 * @param length of the returned ReadData
 	 * @return a slice
-	 * @throws IOException an exception
+	 * @throws N5IOException an exception
 	 */
-	default ReadData slice(final long offset, final long length) throws IOException {
+	default ReadData slice(final long offset, final long length) throws N5IOException {
 		return materialize().slice(offset, length);
 	}
 
@@ -104,12 +105,12 @@ public interface ReadData {
 	 *
 	 * @return an InputStream on this data
 	 *
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if any I/O error occurs
 	 * @throws IllegalStateException
 	 * 		if this method was already called once and cannot be called again.
 	 */
-	InputStream inputStream() throws IOException, IllegalStateException;
+	InputStream inputStream() throws N5IOException, IllegalStateException;
 
 	/**
 	 * Return the contained data as a {@code byte[]} array.
@@ -123,12 +124,12 @@ public interface ReadData {
 	 *
 	 * @return all contained data as a byte[] array
 	 *
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if any I/O error occurs
 	 * @throws IllegalStateException
 	 * 		if {@link #inputStream()} was already called once and cannot be called again.
 	 */
-	byte[] allBytes() throws IOException, IllegalStateException;
+	byte[] allBytes() throws N5IOException, IllegalStateException;
 
 	/**
 	 * Return the contained data as a {@code ByteBuffer}.
@@ -143,12 +144,12 @@ public interface ReadData {
 	 *
 	 * @return all contained data as a ByteBuffer
 	 *
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if any I/O error occurs
 	 * @throws IllegalStateException
 	 * 		if {@link #inputStream()} was already called once and cannot be called again.
 	 */
-	default ByteBuffer toByteBuffer() throws IOException, IllegalStateException {
+	default ByteBuffer toByteBuffer() throws N5IOException, IllegalStateException {
 		return ByteBuffer.wrap(allBytes());
 	}
 
@@ -165,7 +166,7 @@ public interface ReadData {
 	 * @throws IOException
 	 * 		if any I/O error occurs
 	 */
-	ReadData materialize() throws IOException;
+	ReadData materialize() throws N5IOException;
 
 	/**
 	 * Write the contained data into an {@code OutputStream}.
@@ -180,13 +181,17 @@ public interface ReadData {
 	 * @param outputStream
 	 * 		destination to write to
 	 *
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if any I/O error occurs
 	 * @throws IllegalStateException
 	 * 		if {@link #inputStream()} was already called once and cannot be called again.
 	 */
-	default void writeTo(OutputStream outputStream) throws IOException, IllegalStateException {
-		outputStream.write(allBytes());
+	default void writeTo(OutputStream outputStream) throws N5IOException, IllegalStateException {
+		try {
+			outputStream.write(allBytes());
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
 	}
 
 	// ------------- Encoding / Decoding ----------------

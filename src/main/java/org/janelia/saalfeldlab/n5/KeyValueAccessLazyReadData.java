@@ -3,6 +3,7 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
@@ -38,7 +39,7 @@ abstract class KeyValueAccessLazyReadData<K extends KeyValueAccess> implements R
 	}
 
 	@Override
-	public long length() throws IOException {
+	public long length() throws N5IOException {
 
 		if (materialized != null)
 			return materialized.length();
@@ -50,19 +51,19 @@ abstract class KeyValueAccessLazyReadData<K extends KeyValueAccess> implements R
 	}
 
 	@Override
-	public InputStream inputStream() throws IOException, IllegalStateException {
+	public InputStream inputStream() throws N5IOException, IllegalStateException {
 
 		return materialize().inputStream();
 	}
 
 	@Override
-	public byte[] allBytes() throws IOException, IllegalStateException {
+	public byte[] allBytes() throws N5IOException, IllegalStateException {
 
 		return materialize().allBytes();
 	}
 
 	@Override
-	public ReadData materialize() throws IOException {
+	public ReadData materialize() throws N5IOException {
 
 		if (materialized == null)
 			read();
@@ -73,10 +74,10 @@ abstract class KeyValueAccessLazyReadData<K extends KeyValueAccess> implements R
 	/**
 	 * Read from the backed {@link KeyValueAccess} and set the materialized {@link ReadData} field.
 	 *
-	 * @throws IOException
+	 * @throws N5IOException
 	 * 		if an I/O error occurs
 	 */
-	abstract void read() throws IOException;
+	abstract void read() throws N5IOException;
 
 	/**
 	 * Return a new instance of a KeyValueAccessLazyReadData for this {@KeyValueAceess} and key,
@@ -92,7 +93,7 @@ abstract class KeyValueAccessLazyReadData<K extends KeyValueAccess> implements R
 	abstract KeyValueAccessLazyReadData<K> lazySlice(long offset, long length);
 
 	@Override
-	public ReadData slice(final long offset, final long length) throws IOException {
+	public ReadData slice(final long offset, final long length) throws N5IOException {
 
 		if (materialized != null)
 			return materialize().slice(offset, length);

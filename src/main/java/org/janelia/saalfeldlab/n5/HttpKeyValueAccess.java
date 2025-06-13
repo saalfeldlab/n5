@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -26,31 +26,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * #L%
  */
-/**
- * Copyright (c) 2017, Stephan Saalfeld All rights reserved.
- * <p>
- * Redistribution and use in source and binary forms, with or without modification, are permitted
- * provided that the following conditions are met:
- * <p>
- * 1. Redistributions of source code must retain the above copyright notice, this list of conditions
- * and the following disclaimer. 2. Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- * <p>
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
- * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
 package org.janelia.saalfeldlab.n5;
 
 import org.apache.commons.io.IOUtils;
 
 import org.apache.commons.lang3.function.TriFunction;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.http.ListResponseParser;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
@@ -94,7 +75,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	/**
 	 * Opens an {@link HttpKeyValueAccess}
 	 *
-	 * @throws N5Exception.N5IOException if the access could not be created
+	 * @throws N5IOException if the access could not be created
 	 */
 	public HttpKeyValueAccess() {
 
@@ -254,9 +235,8 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		return new HttpLazyReadData(this, normalPath, 0, -1);
 	}
 
-	@Override
-	public LockedChannel lockForReading(final String normalPath) throws IOException {
-
+	public LockedChannel lockForReading(final String normalPath) throws N5IOException {
+		//TODO Caleb: Maybe check exists lazily when attempting to read
 		try {
 			if (!exists(normalPath))
 				throw new N5Exception.N5NoSuchKeyException("Key does not exist: " + normalPath);
@@ -267,7 +247,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public LockedChannel lockForWriting(final String normalPath) throws IOException {
+	public LockedChannel lockForWriting(final String normalPath) throws N5IOException {
 
 		throw new N5Exception("HttpKeyValueAccess is read-only");
 	}
@@ -281,11 +261,11 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	 *            is expected to be in normalized form, no further
 	 *            efforts are made to normalize it.
 	 * @return the directories
-	 * @throws IOException
+	 * @throws N5IOException
 	 *             if an error occurs during listing
 	 */
 	@Override
-	public String[] listDirectories(final String normalPath) throws IOException {
+	public String[] listDirectories(final String normalPath) throws N5IOException {
 
 		return queryListEntries(normalPath, listDirectoryResponseParser, true);
 	}
@@ -300,23 +280,23 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	 *            is expected to be in normalized form, no further efforts are
 	 *            made to normalize it.
 	 * @return the the child paths
-	 * @throws IOException
+	 * @throws N5IOException
 	 *             if an error occurs during listing
 	 */
 	@Override
-	public String[] list(final String normalPath) throws IOException {
+	public String[] list(final String normalPath) throws N5IOException {
 
 		return queryListEntries(normalPath, listResponseParser, true);
 	}
 
-	private String[] queryListEntries(String normalPath, ListResponseParser parser, boolean allowRedirect) {
+	private String[] queryListEntries(String normalPath, ListResponseParser parser, boolean allowRedirect) throws N5IOException{
 
 		final HttpURLConnection http = requireValidHttpResponse(normalPath, GET, "Error listing directory at " + normalPath, allowRedirect);
 		try {
 			final String listResponse = responseToString(http.getInputStream());
 			return parser.parseListResponse(listResponse);
 		} catch (IOException e) {
-			throw new N5Exception.N5IOException("Error listing directory at " + normalPath, e);
+			throw new N5IOException("Error listing directory at " + normalPath, e);
 		}
 	}
 
@@ -344,7 +324,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 			code = http.getResponseCode();
 			responseMsg = http.getResponseMessage();
 		} catch (IOException e) {
-			throw new N5Exception.N5IOException("Could not validate HTTP Response", e);
+			throw new N5IOException("Could not validate HTTP Response", e);
 		}
 
 		final N5Exception cause = filterCode.apply(code, responseMsg, http);
@@ -388,19 +368,23 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		public InputStream newInputStream() throws IOException {
+		public InputStream newInputStream() throws N5IOException {
 
-			HttpURLConnection conn = (HttpURLConnection)uri.toURL().openConnection();
-			if (isPartialRead()) {
-				conn.setRequestProperty(RANGE, rangeString());
-				final String acceptRanges = conn.getHeaderField(ACCEPT_RANGE);
-				if (acceptRanges == null || !acceptRanges.equals(BYTES)) {
-					conn.disconnect();
-					conn = (HttpURLConnection)uri.toURL().openConnection();
-					return ReadData.from(conn.getInputStream()).materialize().slice(startByte, size).inputStream();
+			try {
+				HttpURLConnection conn = (HttpURLConnection)uri.toURL().openConnection();
+				if (isPartialRead()) {
+					conn.setRequestProperty(RANGE, rangeString());
+					final String acceptRanges = conn.getHeaderField(ACCEPT_RANGE);
+					if (acceptRanges == null || !acceptRanges.equals(BYTES)) {
+						conn.disconnect();
+						conn = (HttpURLConnection)uri.toURL().openConnection();
+						return ReadData.from(conn.getInputStream()).materialize().slice(startByte, size).inputStream();
+					}
 				}
+				return conn.getInputStream();
+			} catch (IOException e) {
+				throw new N5IOException("Could not open stream for " + uri, e);
 			}
-			return conn.getInputStream();
 		}
 
 		private String rangeString() {
@@ -410,7 +394,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		public Reader newReader() throws IOException {
+		public Reader newReader() throws N5IOException {
 
 			final InputStreamReader reader = new InputStreamReader(newInputStream(), StandardCharsets.UTF_8);
 			synchronized (resources) {
@@ -420,13 +404,13 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		public OutputStream newOutputStream() {
+		public OutputStream newOutputStream() throws N5IOException {
 
 			throw new NonWritableChannelException();
 		}
 
 		@Override
-		public Writer newWriter() {
+		public Writer newWriter() throws N5IOException {
 
 			throw new NonWritableChannelException();
 		}
@@ -450,11 +434,15 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		void read() throws IOException {
+		void read() throws N5IOException {
 			// TODO does this throw out-of-bounds when it should
 			try( final HttpObjectChannel ch = new HttpObjectChannel(kva.uri(normalKey), offset, length) ) {
 				materialized = ReadData.from(ch.newInputStream()).materialize();
-			} catch (URISyntaxException e) {}
+			} catch (IOException e) {
+				throw new N5Exception.N5IOException(e);
+			} catch (URISyntaxException e) {
+				throw new N5Exception(e);
+			}
 		}
 
 		@Override

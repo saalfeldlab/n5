@@ -74,11 +74,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		 * the lines below duplicate the single line above but would have to call
 		 * normalizeGroupPath again the below duplicates code, but avoids extra work
 		 */
-		try {
-			getKeyValueAccess().createDirectories(absoluteGroupPath(normalPath));
-		} catch (final IOException | UncheckedIOException e) {
-			throw new N5Exception.N5IOException("Failed to create group " + path, e);
-		}
+		getKeyValueAccess().createDirectories(absoluteGroupPath(normalPath));
 
 		if (cacheMeta()) {
 			// check all nodes that are parents of the added node, if they have
@@ -148,12 +144,9 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		 */
 		final String normalPath = N5URI.normalizeGroupPath(path);
 		final String groupPath = absoluteGroupPath(normalPath);
-		try {
-			if (getKeyValueAccess().isDirectory(groupPath))
-				getKeyValueAccess().delete(groupPath);
-		} catch (final IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to remove " + path, e);
-		}
+
+		if (getKeyValueAccess().isDirectory(groupPath))
+			getKeyValueAccess().delete(groupPath);
 
 		if (cacheMeta()) {
 			final String parentPath = getKeyValueAccess().parent(normalPath);

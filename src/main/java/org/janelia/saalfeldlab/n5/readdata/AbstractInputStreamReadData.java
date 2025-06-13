@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 // not thread-safe
 abstract class AbstractInputStreamReadData implements ReadData {
@@ -40,7 +41,7 @@ abstract class AbstractInputStreamReadData implements ReadData {
 	private ByteArrayReadData bytes;
 
 	@Override
-	public ReadData materialize() throws IOException {
+	public ReadData materialize() throws N5IOException {
 		if (bytes == null) {
 			final byte[] data;
 			final int length = (int) length();
@@ -48,10 +49,14 @@ abstract class AbstractInputStreamReadData implements ReadData {
 				data = new byte[length];
 				try( InputStream is = inputStream())  {
 					new DataInputStream(is).readFully(data);
+				} catch (IOException e) {
+					throw new N5IOException(e);
 				}
 			} else {
 				try( InputStream is = inputStream())  {
 					data = IOUtils.toByteArray(is);
+				} catch (IOException e) {
+					throw new N5IOException(e);
 				}
 			}
 			bytes = new ByteArrayReadData(data);
@@ -60,7 +65,7 @@ abstract class AbstractInputStreamReadData implements ReadData {
 	}
 
 	@Override
-	public byte[] allBytes() throws IOException, IllegalStateException {
+	public byte[] allBytes() throws N5IOException, IllegalStateException {
 		return materialize().allBytes();
 	}
 }

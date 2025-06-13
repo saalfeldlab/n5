@@ -70,6 +70,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
+import org.janelia.saalfeldlab.n5.N5Exception.N5JsonParseException;
 
 /**
  * Utility class for working with  JSON.
@@ -94,13 +95,10 @@ public interface GsonUtils {
 	 * @param gson
 	 * 			  to parse Json from the {@code reader}
 	 * @return the root {@link JsonObject} of the attributes
-	 * @throws IOException
-	 *             if an error occurs reading json from the {@code reader}
 	 */
-	static JsonElement readAttributes(final Reader reader, final Gson gson) throws IOException {
+	static JsonElement readAttributes(final Reader reader, final Gson gson) {
 
-		final JsonElement json = gson.fromJson(reader, JsonElement.class);
-		return json;
+		return gson.fromJson(reader, JsonElement.class);
 	}
 
 	static <T> T readAttribute(
@@ -237,13 +235,13 @@ public interface GsonUtils {
 	 *            the json element
 	 * @return the attribute map
 	 */
-	static Map<String, Class<?>> listAttributes(final JsonElement root) throws N5Exception.N5IOException {
+	static Map<String, Class<?>> listAttributes(final JsonElement root) throws N5JsonParseException {
 
 		if (root == null) {
 			return new HashMap<>();
 		}
 		if (!root.isJsonObject()) {
-			throw new N5Exception("JsonElement found, but was not JsonObject");
+			throw new N5JsonParseException("JsonElement found, but was not JsonObject");
 		}
 
 		final HashMap<String, Class<?>> attributes = new HashMap<>();
