@@ -53,7 +53,8 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
@@ -263,10 +264,10 @@ public interface KeyValueAccess {
 	 *            is expected to be in normalized form, no further
 	 *            efforts are made to normalize it.
 	 * @return the locked channel
-	 * @throws IOException
+	 * @throws N5IOException
 	 *             if a locked channel could not be created
 	 */
-	public LockedChannel lockForReading(final String normalPath) throws IOException;
+	public LockedChannel lockForReading(final String normalPath) throws N5IOException;
 
 	/**
 	 * Create an exclusive lock on a path for writing. If the file doesn't
@@ -283,10 +284,10 @@ public interface KeyValueAccess {
 	 *            is expected to be in normalized form, no further
 	 *            efforts are made to normalize it.
 	 * @return the locked channel
-	 * @throws IOException
+	 * @throws N5IOException
 	 *             if a locked channel could not be created
 	 */
-	public LockedChannel lockForWriting(final String normalPath) throws IOException;
+	public LockedChannel lockForWriting(final String normalPath) throws N5IOException;
 
 	/**
 	 * List all 'directory'-like children of a path.
@@ -295,10 +296,10 @@ public interface KeyValueAccess {
 	 *            is expected to be in normalized form, no further
 	 *            efforts are made to normalize it.
 	 * @return the directories
-	 * @throws IOException
+	 * @throws N5IOException
 	 *             if an error occurs during listing
 	 */
-	public String[] listDirectories(final String normalPath) throws IOException;
+	public String[] listDirectories(final String normalPath) throws N5IOException;
 
 	/**
 	 * List all children of a path.
@@ -307,9 +308,9 @@ public interface KeyValueAccess {
 	 *            is expected to be in normalized form, no further
 	 *            efforts are made to normalize it.
 	 * @return the the child paths
-	 * @throws IOException if an error occurs during listing
+	 * @throws N5IOException if an error occurs during listing
 	 */
-	public String[] list(final String normalPath) throws IOException;
+	public String[] list(final String normalPath) throws N5IOException;
 
 	/**
 	 * Create a directory and all parent paths along the way. The directory
@@ -320,10 +321,10 @@ public interface KeyValueAccess {
 	 * @param normalPath
 	 *            is expected to be in normalized form, no further
 	 *            efforts are made to normalize it.
-	 * @throws IOException
+	 * @throws N5IOException
 	 *             if an error occurs during creation
 	 */
-	public void createDirectories(final String normalPath) throws IOException;
+	public void createDirectories(final String normalPath) throws N5IOException;
 
 	/**
 	 * Delete a path. If the path is a directory, delete it recursively.
@@ -331,8 +332,8 @@ public interface KeyValueAccess {
 	 * @param normalPath
 	 *            is expected to be in normalized form, no further
 	 *            efforts are made to normalize it.
-	 * @throws IOException
+	 * @throws N5IOException
 	 *            if an error occurs during deletion
 	 */
-	public void delete(final String normalPath) throws IOException;
+	public void delete(final String normalPath) throws N5IOException;
 }

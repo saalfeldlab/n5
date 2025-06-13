@@ -90,7 +90,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 	static String initializeContainer(
 			final KeyValueAccess keyValueAccess,
-			final String basePath) throws IOException {
+			final String basePath) throws N5IOException {
 
 		final String normBasePath = keyValueAccess.normalize(basePath);
 		keyValueAccess.createDirectories(normBasePath);
@@ -101,11 +101,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	default void createGroup(final String path) throws N5Exception {
 
 		final String normalPath = N5URI.normalizeGroupPath(path);
-		try {
-			getKeyValueAccess().createDirectories(absoluteGroupPath(normalPath));
-		} catch (final IOException | UncheckedIOException e) {
-			throw new N5Exception.N5IOException("Failed to create group " + path, e);
-		}
+		getKeyValueAccess().createDirectories(absoluteGroupPath(normalPath));
 	}
 
 	/**
@@ -127,7 +123,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(absoluteAttributesPath(normalGroupPath))) {
 			GsonUtils.writeAttributes(lock.newWriter(), attributes, getGson());
-		} catch (final IOException | UncheckedIOException e) {
+		} catch (final IOException | UncheckedIOException | N5IOException e) {
 			throw new N5Exception.N5IOException("Failed to write attributes into " + normalGroupPath, e);
 		}
 	}
@@ -265,12 +261,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		final String normalPath = N5URI.normalizeGroupPath(path);
 		final String groupPath = absoluteGroupPath(normalPath);
-		try {
-			if (getKeyValueAccess().isDirectory(groupPath))
-				getKeyValueAccess().delete(groupPath);
-		} catch (final IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to remove " + path, e);
-		}
+		if (getKeyValueAccess().isDirectory(groupPath))
+			getKeyValueAccess().delete(groupPath);
 
 		/* an IOException should have occurred if anything had failed midway */
 		return true;
@@ -282,14 +274,9 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final long... gridPosition) throws N5Exception {
 
 		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), gridPosition);
-		try {
-			if (getKeyValueAccess().isFile(blockPath))
-				getKeyValueAccess().delete(blockPath);
-		} catch (final IOException | UncheckedIOException e) {
-			throw new N5IOException(
-					"Failed to delete block " + Arrays.toString(gridPosition) + " from dataset " + path,
-					e);
-		}
+		if (getKeyValueAccess().isFile(blockPath))
+			getKeyValueAccess().delete(blockPath);
+
 
 		/* an IOException should have occurred if anything had failed midway */
 		return true;

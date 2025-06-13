@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -33,6 +33,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import org.apache.commons.io.output.ProxyOutputStream;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 class LazyReadData implements ReadData {
 
@@ -62,7 +64,7 @@ class LazyReadData implements ReadData {
 	private ByteArraySplittableReadData bytes;
 
 	@Override
-	public ReadData materialize() throws IOException {
+	public ReadData materialize() throws N5IOException {
 		if (bytes == null) {
 			final ByteArrayOutputStream baos = new ByteArrayOutputStream(8192);
 			writeTo(baos);
@@ -72,26 +74,31 @@ class LazyReadData implements ReadData {
 	}
 
 	@Override
-	public long length() throws IOException {
+	public long length() throws N5IOException {
+
 		return materialize().length();
 	}
 
 	@Override
-	public InputStream inputStream() throws IOException, IllegalStateException {
+	public InputStream inputStream() throws N5IOException, IllegalStateException {
 		return materialize().inputStream();
 	}
 
 	@Override
-	public byte[] allBytes() throws IOException, IllegalStateException {
+	public byte[] allBytes() throws N5IOException, IllegalStateException {
 		return materialize().allBytes();
 	}
 
 	@Override
-	public void writeTo(final OutputStream outputStream) throws IOException, IllegalStateException {
-		if (bytes != null) {
-			outputStream.write(bytes.allBytes());
-		} else {
-			writer.writeTo(outputStream);
+	public void writeTo(final OutputStream outputStream) throws N5IOException, IllegalStateException {
+		try {
+			if (bytes != null) {
+				outputStream.write(bytes.allBytes());
+			} else {
+				writer.writeTo(outputStream);
+			}
+		} catch (IOException e) {
+			throw new N5IOException(e);
 		}
 	}
 

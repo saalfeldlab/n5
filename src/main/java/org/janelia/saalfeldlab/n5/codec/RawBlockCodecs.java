@@ -7,12 +7,12 @@ import org.janelia.saalfeldlab.n5.DoubleArrayDataBlock;
 import org.janelia.saalfeldlab.n5.FloatArrayDataBlock;
 import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
+import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.StringDataBlock;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteOrder;
 
 public class RawBlockCodecs {
@@ -105,10 +105,15 @@ public class RawBlockCodecs {
 			});
 		}
 
-		@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) throws IOException {
-			final ReadData decodeData = codec.decode(readData);
-			final T data = dataCodec.deserialize(decodeData, numElements());
-			return dataBlockFactory.createDataBlock(blockSize, gridPosition, data);
+		@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) {
+			ReadData decodeData;
+			try {
+				decodeData = codec.decode(readData);
+				final T data = dataCodec.deserialize(decodeData, numElements());
+				return dataBlockFactory.createDataBlock(blockSize, gridPosition, data);
+			} catch (IOException e) {
+				throw new N5Exception.N5IOException(e);
+			}
 		}
 	}
 }
