@@ -33,6 +33,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.function.TriFunction;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.http.ListResponseParser;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -135,6 +136,12 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 	}
 
+	@Override public long size(String normalPath) {
+
+		final HttpURLConnection head = requireValidHttpResponse(normalPath, "HEAD", "Error checking existence: " + normalPath, true);
+		return head.getContentLengthLong();
+	}
+
 	/**
 	 * Test whether the path is a directory.
 	 * <p>
@@ -224,12 +231,16 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
+	public HttpLazyReadData createReadData(final String normalPath) {
+		return new HttpLazyReadData(this, normalPath, 0, -1);
+	}
+
 	public LockedChannel lockForReading(final String normalPath) throws N5IOException {
 		//TODO Caleb: Maybe check exists lazily when attempting to read
 		try {
 			if (!exists(normalPath))
 				throw new N5Exception.N5NoSuchKeyException("Key does not exist: " + normalPath);
-			return new HttpObjectChannel(uri(normalPath));
+			return new HttpObjectChannel(uri(normalPath), 0, -1);
 		} catch (URISyntaxException e) {
 			throw new N5Exception("Invalid URI Syntax", e);
 		}
@@ -341,21 +352,45 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	private class HttpObjectChannel implements LockedChannel {
 
 		protected final URI uri;
+		private final long startByte;
+		private final long size;
 		private final ArrayList<Closeable> resources = new ArrayList<>();
 
-		protected HttpObjectChannel(final URI uri) {
+		protected HttpObjectChannel(final URI uri, long startByte, long size) {
 
 			this.uri = uri;
+			this.startByte = startByte;
+			this.size = size;
+		}
+
+		private boolean isPartialRead() {
+			return startByte > 0 || (size >= 0 && size != Long.MAX_VALUE);
 		}
 
 		@Override
 		public InputStream newInputStream() throws N5IOException {
 
 			try {
-				return uri.toURL().openStream();
+				HttpURLConnection conn = (HttpURLConnection)uri.toURL().openConnection();
+				if (isPartialRead()) {
+					conn.setRequestProperty(RANGE, rangeString());
+					final String acceptRanges = conn.getHeaderField(ACCEPT_RANGE);
+					if (acceptRanges == null || !acceptRanges.equals(BYTES)) {
+						conn.disconnect();
+						conn = (HttpURLConnection)uri.toURL().openConnection();
+						return ReadData.from(conn.getInputStream()).materialize().slice(startByte, size).inputStream();
+					}
+				}
+				return conn.getInputStream();
 			} catch (IOException e) {
 				throw new N5IOException("Could not open stream for " + uri, e);
 			}
+		}
+
+		private String rangeString() {
+
+			final String lastByte = (size > 0) ? Long.toString(startByte + size - 1) : "";
+			return String.format("%s=%d-%s", BYTES, startByte, lastByte);
 		}
 
 		@Override
@@ -389,6 +424,30 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 				}
 				resources.clear();
 			}
+		}
+	}
+
+	private class HttpLazyReadData extends KeyValueAccessLazyReadData<HttpKeyValueAccess> {
+
+		public HttpLazyReadData(HttpKeyValueAccess kva, String normalKey, long offset, long length) {
+			super(kva, normalKey, offset, length);
+		}
+
+		@Override
+		void read() throws N5IOException {
+			// TODO does this throw out-of-bounds when it should
+			try( final HttpObjectChannel ch = new HttpObjectChannel(kva.uri(normalKey), offset, length) ) {
+				materialized = ReadData.from(ch.newInputStream()).materialize();
+			} catch (IOException e) {
+				throw new N5Exception.N5IOException(e);
+			} catch (URISyntaxException e) {
+				throw new N5Exception(e);
+			}
+		}
+
+		@Override
+		KeyValueAccessLazyReadData<HttpKeyValueAccess> lazySlice(long offset, long length) {
+			return new HttpLazyReadData(kva, normalKey, offset, length);
 		}
 	}
 
