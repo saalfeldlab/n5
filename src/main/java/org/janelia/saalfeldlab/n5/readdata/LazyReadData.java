@@ -61,14 +61,14 @@ class LazyReadData implements ReadData {
 
 	private final OutputStreamWriter writer;
 
-	private ByteArraySplittableReadData bytes;
+	private ByteArrayReadData bytes;
 
 	@Override
 	public ReadData materialize() throws N5IOException {
 		if (bytes == null) {
 			final ByteArrayOutputStream baos = new ByteArrayOutputStream(8192);
 			writeTo(baos);
-			bytes = new ByteArraySplittableReadData(baos.toByteArray());
+			bytes = new ByteArrayReadData(baos.toByteArray());
 		}
 		return bytes;
 	}

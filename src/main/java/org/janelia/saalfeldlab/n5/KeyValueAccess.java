@@ -61,6 +61,8 @@ import java.nio.file.FileSystem;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+
 /**
  * Key value read primitives used by {@link N5KeyValueReader}
  * implementations. This interface implements a subset of access primitives
@@ -232,6 +234,17 @@ public interface KeyValueAccess {
 	public boolean exists(final String normalPath);
 
 	/**
+	 * Returns the size in bytes of the object at the given normalPath if it exists.
+	 *
+	 * @param normalPath
+	 *            is expected to be in normalized form, no further
+	 *            efforts are made to normalize it.
+	 * @return the size of the object in bytes.
+	 * @throws N5Exception.N5NoSuchKeyException if the given key does not exist
+	 */
+	public long size(final String normalPath) throws N5Exception.N5NoSuchKeyException;
+
+	/**
 	 * Test whether the path is a directory.
 	 *
 	 * @param normalPath
@@ -250,6 +263,22 @@ public interface KeyValueAccess {
 	 * @return true if the path is a file
 	 */
 	public boolean isFile(String normalPath); // TODO: Looks un-used. Remove?
+
+	/**
+	 * Create a {@link ReadData} through which data at the normal key can be read.
+	 * <p>
+	 * Implementations should read lazily if possible. Consumers may call {@link ReadData#materialize()} to force
+	 * a read operation if needed.
+	 * <p>
+	 * If supported by this KeyValueAccess implementation, partial reads are possible by calling slice on the output {@link ReadData}.
+	 *
+	 * @param normalPath is expected to be in normalized form, no further efforts are made to normalize it
+	 * @return a materialized Read data
+	 * @throws N5IOException if an error occurs
+	 */
+	default ReadData createReadData(final String normalPath) throws N5IOException {
+		return ReadData.from(this, normalPath);
+	}
 
 	/**
 	 * Create a lock on a path for reading. This isn't meant to be kept
