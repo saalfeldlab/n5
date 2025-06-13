@@ -136,7 +136,7 @@ public interface ReadData {
 	 * {@link #inputStream InputStreams} can be opened on it.
 	 * 
 	 * @return a materialized ReadData
-	 * @throws IOException
+	 * @throws N5IOException
 	 *             if any I/O error occurs
 	 */
 	ReadData materialize() throws N5IOException;
