@@ -216,7 +216,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public LockedChannel lockForReading(final String normalPath) throws IOException {
+	public LockedChannel lockForReading(final String normalPath) throws N5IOException {
 		//TODO Caleb: Maybe check exists lazily when attempting to read
 		try {
 			if (!exists(normalPath))
@@ -228,7 +228,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public LockedChannel lockForWriting(final String normalPath) throws IOException {
+	public LockedChannel lockForWriting(final String normalPath) throws N5IOException {
 
 		throw new N5Exception("HttpKeyValueAccess is read-only");
 	}
@@ -242,11 +242,11 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	 *            is expected to be in normalized form, no further
 	 *            efforts are made to normalize it.
 	 * @return the directories
-	 * @throws IOException
+	 * @throws N5IOException
 	 *             if an error occurs during listing
 	 */
 	@Override
-	public String[] listDirectories(final String normalPath) throws IOException {
+	public String[] listDirectories(final String normalPath) throws N5IOException {
 
 		return queryListEntries(normalPath, listDirectoryResponseParser, true);
 	}
@@ -261,16 +261,16 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	 *            is expected to be in normalized form, no further efforts are
 	 *            made to normalize it.
 	 * @return the the child paths
-	 * @throws IOException
+	 * @throws N5IOException
 	 *             if an error occurs during listing
 	 */
 	@Override
-	public String[] list(final String normalPath) throws IOException {
+	public String[] list(final String normalPath) throws N5IOException {
 
 		return queryListEntries(normalPath, listResponseParser, true);
 	}
 
-	private String[] queryListEntries(String normalPath, ListResponseParser parser, boolean allowRedirect) {
+	private String[] queryListEntries(String normalPath, ListResponseParser parser, boolean allowRedirect) throws N5IOException{
 
 		final HttpURLConnection http = requireValidHttpResponse(normalPath, "GET", "Error listing directory at " + normalPath, allowRedirect);
 		try {
@@ -341,13 +341,17 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		public InputStream newInputStream() throws IOException {
+		public InputStream newInputStream() throws N5IOException {
 
-			return uri.toURL().openStream();
+			try {
+				return uri.toURL().openStream();
+			} catch (IOException e) {
+				throw new N5IOException("Could not open stream for " + uri, e);
+			}
 		}
 
 		@Override
-		public Reader newReader() throws IOException {
+		public Reader newReader() throws N5IOException {
 
 			final InputStreamReader reader = new InputStreamReader(newInputStream(), StandardCharsets.UTF_8);
 			synchronized (resources) {
@@ -357,13 +361,13 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		public OutputStream newOutputStream() {
+		public OutputStream newOutputStream() throws N5IOException {
 
 			throw new NonWritableChannelException();
 		}
 
 		@Override
-		public Writer newWriter() {
+		public Writer newWriter() throws N5IOException {
 
 			throw new NonWritableChannelException();
 		}
