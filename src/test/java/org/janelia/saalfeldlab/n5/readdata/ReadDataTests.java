@@ -35,7 +35,7 @@ public class ReadDataTests {
 		assertTrue(readData instanceof LazyReadData);
 
 		readDataTestHelper(readData, N);
-		splittableReadDataTestHelper(readData.materialize(), N, 5);
+		splittableReadDataTestHelper(readData.materialize(), N);
 	}
 
 	@Test
@@ -51,7 +51,7 @@ public class ReadDataTests {
 
 		readDataTestHelper(readData, N);
 		readDataTestEncodeHelper(readData, N);
-		splittableReadDataTestHelper(readData, N, 5);
+		splittableReadDataTestHelper(readData, N);
 	}
 
 	@Test
@@ -72,7 +72,7 @@ public class ReadDataTests {
 
 		final ReadData readData = ReadData.from(is, N);
 		readDataTestHelper(readData, N);
-		splittableReadDataTestHelper(readData.materialize(), N, 5);
+		splittableReadDataTestHelper(readData.materialize(), N);
 	}
 
 	@Test
@@ -93,7 +93,7 @@ public class ReadDataTests {
 				.createReadData(tmpF.getAbsolutePath());
 
 		assertEquals("file read data length", 128, readData.length());
-		splittableReadDataTestHelper(readData, N, 5);
+		splittableReadDataTestHelper(readData, N);
 	}
 
 	private void readDataTestHelper( ReadData readData, int N ) throws IOException {
@@ -117,7 +117,7 @@ public class ReadDataTests {
 		assertArrayEquals(origCopy, encodedTwice.allBytes());
 	}
 
-	private void splittableReadDataTestHelper( ReadData readData, int N, int pivot ) throws IOException {
+	private void splittableReadDataTestHelper( ReadData readData, int N ) throws IOException {
 
 		assertEquals("length one", 1, readData.slice(9, 1).length());
 
