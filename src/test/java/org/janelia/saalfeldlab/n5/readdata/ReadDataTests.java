@@ -139,7 +139,7 @@ public class ReadDataTests {
 		assertThrows("negative offset", IndexOutOfBoundsException.class, () -> readData.slice(-1, 1));
 	}
 
-	private class ByteFun implements OutputStreamOperator {
+	private static class ByteFun implements OutputStreamOperator {
 
 		IntUnaryOperator fun;
 		public ByteFun(IntUnaryOperator fun) {
