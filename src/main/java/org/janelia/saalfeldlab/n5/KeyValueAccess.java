@@ -276,9 +276,7 @@ public interface KeyValueAccess {
 	 * @return a materialized Read data
 	 * @throws N5IOException if an error occurs
 	 */
-	default ReadData createReadData(final String normalPath) throws N5IOException {
-		return ReadData.from(this, normalPath);
-	}
+	abstract ReadData createReadData(final String normalPath) throws N5IOException;
 
 	/**
 	 * Create a lock on a path for reading. This isn't meant to be kept
