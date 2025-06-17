@@ -33,6 +33,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.function.TriFunction;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.http.ListResponseParser;
+import org.janelia.saalfeldlab.n5.readdata.KeyValueAccessReadData;
+import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import java.io.Closeable;
@@ -231,8 +233,8 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public HttpLazyReadData createReadData(final String normalPath) {
-		return new HttpLazyReadData(this, normalPath, 0, -1);
+	public ReadData createReadData(final String normalPath) {
+		return new KeyValueAccessReadData(new HttpLazyRead(normalPath));
 	}
 
 	public LockedChannel lockForReading(final String normalPath) throws N5IOException {
@@ -427,27 +429,28 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 	}
 
-	private class HttpLazyReadData extends KeyValueAccessLazyReadData<HttpKeyValueAccess> {
+	private class HttpLazyRead implements LazyRead {
 
-		public HttpLazyReadData(HttpKeyValueAccess kva, String normalKey, long offset, long length) {
-			super(kva, normalKey, offset, length);
+		private final String normalKey;
+
+		HttpLazyRead(String normalKey) {
+			this.normalKey = normalKey;
 		}
 
 		@Override
-		void read() throws N5IOException {
-			// TODO does this throw out-of-bounds when it should
-			try( final HttpObjectChannel ch = new HttpObjectChannel(kva.uri(normalKey), offset, length) ) {
-				materialized = ReadData.from(ch.newInputStream()).materialize();
+		public long size() {
+			return HttpKeyValueAccess.this.size(normalKey);
+		}
+
+		@Override
+		public ReadData materialize(long offset, long length) {
+			try (final HttpObjectChannel ch = new HttpObjectChannel(uri(normalKey), offset, length)) {
+				return ReadData.from(ch.newInputStream()).materialize();
 			} catch (IOException e) {
-				throw new N5Exception.N5IOException(e);
+				throw new N5IOException(e);
 			} catch (URISyntaxException e) {
 				throw new N5Exception(e);
 			}
-		}
-
-		@Override
-		KeyValueAccessLazyReadData<HttpKeyValueAccess> lazySlice(long offset, long length) {
-			return new HttpLazyReadData(kva, normalKey, offset, length);
 		}
 	}
 

@@ -86,6 +86,8 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
+import org.janelia.saalfeldlab.n5.readdata.KeyValueAccessReadData;
+import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
@@ -210,7 +212,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 	@Override
 	public ReadData createReadData(final String normalPath) {
-		return new FileLazyReadData(this, normalPath, 0, -1);
+		return new KeyValueAccessReadData(new FileLazyRead(normalPath));
 	}
 
 	@Override
@@ -620,39 +622,45 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		}
 	}
 
-	private static class FileLazyReadData extends KeyValueAccessLazyReadData<FileSystemKeyValueAccess> {
+	private class FileLazyRead implements LazyRead {
 
-		public FileLazyReadData(FileSystemKeyValueAccess kva, String normalKey, long offset, long length) {
-			super(kva, normalKey, offset, length);
-		}
+		private final String normalKey;
 
-		@Override
-		void read() throws N5IOException {
+	    FileLazyRead(String normalKey) {
+	        this.normalKey = normalKey;
+	    }
 
-			try (FileChannel channel = kva.lockForReading(normalKey).getFileChannel()) {
-				channel.position(offset);
-				if (length > Integer.MAX_VALUE)
-					throw new IOException("Attempt to materialize too large data");
+	    @Override
+	    public long size() {
+	        return FileSystemKeyValueAccess.this.size(normalKey);
+	    }
 
-				final long channelSize = channel.size();
-				if( !validBounds(channelSize, offset, length))
-					throw new IndexOutOfBoundsException();
+	    @Override
+	    public ReadData materialize(final long offset, final long length) {
 
-				final int sz = (int)(length < 0 ? channelSize : length);
-				final byte[] data = new byte[sz];
-				final ByteBuffer buf = ByteBuffer.wrap(data);
-				channel.read(buf);
-				materialized = ReadData.from(data);
+	        try (final LockedFileChannel lfs = new LockedFileChannel(normalKey, true)) {
+	            final FileChannel channel = lfs.getFileChannel();
+	            channel.position(offset);
+	            if (length > Integer.MAX_VALUE)
+	                throw new IOException("Attempt to materialize too large data");
 
-			} catch (final IOException e) {
-				throw new N5Exception.N5IOException(e);
-			}
-		}
+	            final long channelSize = channel.size();
+	            if (!validBounds(channelSize, offset, length))
+	                throw new IndexOutOfBoundsException();
 
-		@Override
-		KeyValueAccessLazyReadData<FileSystemKeyValueAccess> lazySlice(long offset, long length) {
-			return new FileLazyReadData(kva, normalKey, offset, length);
-		}
+	            final int sz = (int) (length < 0 ? channelSize : length);
+	            final byte[] data = new byte[sz];
+	            final ByteBuffer buf = ByteBuffer.wrap(data);
+	            channel.read(buf);
+	            return ReadData.from(data);
+
+	        } catch (final NoSuchFileException e) {
+	            throw new N5NoSuchKeyException("No such file", e);
+	        } catch (IOException | UncheckedIOException e) {
+	            throw new N5Exception.N5IOException(e);
+	        }
+	    }
+
 	}
 
 	private static boolean validBounds(long channelSize, long offset, long length) {
