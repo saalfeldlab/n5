@@ -86,8 +86,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
-import org.janelia.saalfeldlab.n5.readdata.KeyValueAccessReadData;
-import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**

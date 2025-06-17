@@ -1,9 +1,15 @@
-package org.janelia.saalfeldlab.n5.readdata;
+package org.janelia.saalfeldlab.n5;
 
 import java.io.InputStream;
 
+import org.janelia.saalfeldlab.n5.KeyValueAccess.LazyRead;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
+/**
+ * A {@link ReadData} implementation that reads from a {@link KeyValueAccess}
+ * backend through a {@link LazyRead} object.
+ */
 public class KeyValueAccessReadData implements ReadData {
 
     private final LazyRead lazyRead;
@@ -11,11 +17,11 @@ public class KeyValueAccessReadData implements ReadData {
     private final long offset;
     private long length;
 
-    public KeyValueAccessReadData(LazyRead lazyRead) {
+    KeyValueAccessReadData(LazyRead lazyRead) {
         this(lazyRead, 0, -1);
     }
 
-    public KeyValueAccessReadData(final LazyRead lazyRead, final long offset, final long length) {
+    KeyValueAccessReadData(final LazyRead lazyRead, final long offset, final long length) {
         this.lazyRead = lazyRead;
         this.offset = offset;
         this.length = length;
@@ -28,6 +34,18 @@ public class KeyValueAccessReadData implements ReadData {
         return materialized;
     }
 
+	/**
+	 * Returns a {@link ReadData} whose length is limited to the given value.
+	 * <p>
+	 * This implementation defers a material read operation if allowed
+	 * by the {@link LazyRead}.
+	 *
+	 * @param length
+	 *            the length of the resulting ReadData
+	 * @return a length-limited ReadData
+	 * @throws N5IOException
+	 *             if an I/O error occurs while trying to get the length
+	 */
     @Override
     public ReadData slice(final long offset, final long length) throws N5IOException {
         if (offset < 0)

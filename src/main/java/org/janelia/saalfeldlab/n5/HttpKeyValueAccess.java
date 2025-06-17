@@ -33,8 +33,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.function.TriFunction;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.http.ListResponseParser;
-import org.janelia.saalfeldlab.n5.readdata.KeyValueAccessReadData;
-import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import java.io.Closeable;
