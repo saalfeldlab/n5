@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -32,20 +32,32 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Arrays;
 
-class ByteArraySplittableReadData implements ReadData {
+class ByteArrayReadData implements ReadData {
+
+	static final ReadData EMPTY = new ByteArrayReadData(new byte[0]);
 
 	private final byte[] data;
 	private final int offset;
 	private final int length;
 
-	ByteArraySplittableReadData(final byte[] data) {
+	ByteArrayReadData(final byte[] data) {
+
 		this(data, 0, data.length);
 	}
 
-	ByteArraySplittableReadData(final byte[] data, final int offset, final int length) {
+	ByteArrayReadData(final byte[] data, final int offset, final int length) {
+
+		if (!validBounds(data.length, offset, length))
+			throw new IndexOutOfBoundsException();
+
 		this.data = data;
 		this.offset = offset;
-		this.length = length;
+
+		if( length < 0 )
+			this.length = data.length - offset;
+		else
+			this.length = length;
+
 	}
 
 	@Override
@@ -60,6 +72,8 @@ class ByteArraySplittableReadData implements ReadData {
 
 	@Override
 	public byte[] allBytes() {
+
+		// alternatively, we could always return the requested length
 		if (offset == 0 && data.length == length) {
 			return data;
 		} else {
@@ -71,4 +85,24 @@ class ByteArraySplittableReadData implements ReadData {
 	public ReadData materialize() {
 		return this;
 	}
+
+	@Override
+	public ReadData slice(final long offset, final long length) {
+
+		final int o = this.offset + (int)offset;
+		return new ByteArrayReadData(data, o, (int)length);
+	}
+
+	private static boolean validBounds(int arrayLength, int offset, int length) {
+
+		if (offset < 0)
+			return false;
+		else if (arrayLength > 0 && offset >= arrayLength) // offset == 0 and arrayLength == 0 is okay
+			return false;
+		else if (length >= 0 && offset + length > arrayLength)
+			return false;
+
+		return true;
+	}
+
 }

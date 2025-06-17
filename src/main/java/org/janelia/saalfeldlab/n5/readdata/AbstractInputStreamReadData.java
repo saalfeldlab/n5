@@ -38,7 +38,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 // not thread-safe
 abstract class AbstractInputStreamReadData implements ReadData {
 
-	private ByteArraySplittableReadData bytes;
+	private ByteArrayReadData bytes;
 
 	@Override
 	public ReadData materialize() throws N5IOException {
@@ -59,7 +59,7 @@ abstract class AbstractInputStreamReadData implements ReadData {
 					throw new N5IOException(e);
 				}
 			}
-			bytes = new ByteArraySplittableReadData(data);
+			bytes = new ByteArrayReadData(data);
 		}
 		return bytes;
 	}
