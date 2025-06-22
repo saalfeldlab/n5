@@ -81,7 +81,7 @@ public interface KeyValueAccess {
 	 *            the path
 	 * @return the path components
 	 */
-	public default String[] components(final String path) {
+	default String[] components( final String path ) {
 
 		String[] components = Arrays.stream(path.split("/"))
 				.filter(x -> !x.isEmpty())
@@ -109,7 +109,7 @@ public interface KeyValueAccess {
 	 * @param components the path components
 	 * @return the path
 	 */
-	public default String compose(final URI uri, final String... components) {
+	default String compose( final URI uri, final String... components ) {
 
 		int firstNonEmptyIdx = 0;
 		while (firstNonEmptyIdx < components.length && (components[firstNonEmptyIdx] == null || components[firstNonEmptyIdx].isEmpty())) {
@@ -148,7 +148,7 @@ public interface KeyValueAccess {
 	}
 
 	@Deprecated
-	public default String compose(final String... components) {
+	default String compose( final String... components ) {
 
 		return normalize(
 				Arrays.stream(components)
@@ -165,7 +165,7 @@ public interface KeyValueAccess {
 	 *            the path
 	 * @return the parent path or null if the path has no parent
 	 */
-	public default String parent(final String path) {
+	default String parent( final String path ) {
 		final String removeTrailingSlash = path.replaceAll("/+$", "");
 		return normalize(N5URI.getAsUri(removeTrailingSlash).resolve("").toString());
 	}
@@ -179,7 +179,7 @@ public interface KeyValueAccess {
 	 *            the base path
 	 * @return the result or null if the path has no parent
 	 */
-	public default String relativize(final String path, final String base) {
+	default String relativize( final String path, final String base ) {
 
 		try {
 			/*
@@ -205,7 +205,7 @@ public interface KeyValueAccess {
 	 *            the path
 	 * @return the normalized path
 	 */
-	public String normalize(final String path);
+	String normalize( final String path );
 
 	/**
 	 * Get the absolute (including scheme) {@link URI} of the given path
@@ -231,7 +231,7 @@ public interface KeyValueAccess {
 	 *            efforts are made to normalize it.
 	 * @return true if the path exists
 	 */
-	public boolean exists(final String normalPath);
+	boolean exists( final String normalPath );
 
 	/**
 	 * Returns the size in bytes of the object at the given normalPath if it exists.
@@ -242,7 +242,7 @@ public interface KeyValueAccess {
 	 * @return the size of the object in bytes.
 	 * @throws N5Exception.N5NoSuchKeyException if the given key does not exist
 	 */
-	public long size(final String normalPath) throws N5Exception.N5NoSuchKeyException;
+	long size( final String normalPath ) throws N5Exception.N5NoSuchKeyException;
 
 	/**
 	 * Test whether the path is a directory.
@@ -252,7 +252,7 @@ public interface KeyValueAccess {
 	 *            efforts are made to normalize it.
 	 * @return true if the path is a directory
 	 */
-	public boolean isDirectory(String normalPath);
+	boolean isDirectory( String normalPath );
 
 	/**
 	 * Test whether the path is a file.
@@ -262,7 +262,7 @@ public interface KeyValueAccess {
 	 *            efforts are made to normalize it.
 	 * @return true if the path is a file
 	 */
-	public boolean isFile(String normalPath); // TODO: Looks un-used. Remove?
+	boolean isFile( String normalPath ); // TODO: Looks un-used. Remove?
 
 	/**
 	 * Create a {@link ReadData} through which data at the normal key can be read.
@@ -276,7 +276,7 @@ public interface KeyValueAccess {
 	 * @return a materialized Read data
 	 * @throws N5IOException if an error occurs
 	 */
-	abstract ReadData createReadData(final String normalPath) throws N5IOException;
+	ReadData createReadData( final String normalPath ) throws N5IOException;
 
 	/**
 	 * Create a lock on a path for reading. This isn't meant to be kept
@@ -294,7 +294,7 @@ public interface KeyValueAccess {
 	 * @throws N5IOException
 	 *             if a locked channel could not be created
 	 */
-	public LockedChannel lockForReading(final String normalPath) throws N5IOException;
+	LockedChannel lockForReading( final String normalPath ) throws N5IOException;
 
 	/**
 	 * Create an exclusive lock on a path for writing. If the file doesn't
@@ -314,7 +314,7 @@ public interface KeyValueAccess {
 	 * @throws N5IOException
 	 *             if a locked channel could not be created
 	 */
-	public LockedChannel lockForWriting(final String normalPath) throws N5IOException;
+	LockedChannel lockForWriting( final String normalPath ) throws N5IOException;
 
 	/**
 	 * List all 'directory'-like children of a path.
@@ -326,7 +326,7 @@ public interface KeyValueAccess {
 	 * @throws N5IOException
 	 *             if an error occurs during listing
 	 */
-	public String[] listDirectories(final String normalPath) throws N5IOException;
+	String[] listDirectories( final String normalPath ) throws N5IOException;
 
 	/**
 	 * List all children of a path.
@@ -337,7 +337,7 @@ public interface KeyValueAccess {
 	 * @return the the child paths
 	 * @throws N5IOException if an error occurs during listing
 	 */
-	public String[] list(final String normalPath) throws N5IOException;
+	String[] list( final String normalPath ) throws N5IOException;
 
 	/**
 	 * Create a directory and all parent paths along the way. The directory
@@ -351,7 +351,7 @@ public interface KeyValueAccess {
 	 * @throws N5IOException
 	 *             if an error occurs during creation
 	 */
-	public void createDirectories(final String normalPath) throws N5IOException;
+	void createDirectories( final String normalPath ) throws N5IOException;
 
 	/**
 	 * Delete a path. If the path is a directory, delete it recursively.
@@ -362,7 +362,7 @@ public interface KeyValueAccess {
 	 * @throws N5IOException
 	 *            if an error occurs during deletion
 	 */
-	public void delete(final String normalPath) throws N5IOException;
+	void delete( final String normalPath ) throws N5IOException;
 
 	/**
 	 * A lazy reading strategy for lazy, partial reading of data from some source.
