@@ -30,8 +30,8 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
-import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
@@ -83,21 +83,12 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final String attributesPath = absoluteAttributesPath(groupPath);
 
 		try ( final InputStream in = getKeyValueAccess().createReadData(attributesPath).inputStream() ) {
-			GsonUtils.readAttributes()
+			return GsonUtils.readAttributes(new InputStreamReader(in), getGson());
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
 		} catch (final IOException | UncheckedIOException | N5IOException e) {
 			throw new N5IOException("Failed to read attributes from dataset " + pathName, e);
 		}
-
-		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(attributesPath)) {
-			return GsonUtils.readAttributes(lockedChannel.newReader(), getGson());
-		} catch (final N5Exception.N5NoSuchKeyException e) {
-			return null;
-		} catch (final IOException | UncheckedIOException | N5IOException e) {
-			throw new N5IOException("Failed to read attributes from dataset " + pathName, e);
-		}
-
 	}
 
 	@Override
