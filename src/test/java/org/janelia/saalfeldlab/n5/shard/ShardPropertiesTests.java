@@ -112,7 +112,7 @@ public class ShardPropertiesTests {
 				new ShardingCodec(
 						blkSize,
 						new Codec[]{ new N5BlockCodec() },
-						new DeterministicSizeCodec[]{new RawBytes<>()},
+						new DeterministicSizeCodec[]{new RawBytes()},
 						IndexLocation.END
 				)
 		);
@@ -121,10 +121,10 @@ public class ShardPropertiesTests {
 		final Map<Position, List<long[]>> result = attrs.groupBlockPositions(blockPositions);
 
 		// there are four shards in this image
-		assertEquals(4, result.keySet().size());
+		assertEquals(4, result.size());
 
 		// there are four blocks per shard in this image
-		result.values().stream().forEach(x -> assertEquals(4, x.size()));
+		result.values().forEach(x -> assertEquals(4, x.size()));
 	}
 
 }

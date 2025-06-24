@@ -35,7 +35,7 @@ public class ReadDataTests {
 		assertTrue(readData instanceof LazyReadData);
 
 		readDataTestHelper(readData, N);
-		splittableReadDataTestHelper(readData.materialize(), N, 5);
+		sliceTestHelper(readData, N);
 	}
 
 	@Test
@@ -51,17 +51,13 @@ public class ReadDataTests {
 
 		readDataTestHelper(readData, N);
 		readDataTestEncodeHelper(readData, N);
-		splittableReadDataTestHelper(readData, N, 5);
+		sliceTestHelper(readData, N);
 	}
 
 	@Test
 	public void testInputStreamReadData() throws IOException {
 
 		final int N = 128;
-		byte[] data = new byte[N];
-		for( int i = 0; i < N; i++ )
-			data[i] = (byte)i;
-
 		final InputStream is = new InputStream() {
 			int val = 0;
 			@Override
@@ -72,7 +68,7 @@ public class ReadDataTests {
 
 		final ReadData readData = ReadData.from(is, N);
 		readDataTestHelper(readData, N);
-		splittableReadDataTestHelper(readData.materialize(), N, 5);
+		sliceTestHelper(readData, N);
 	}
 
 	@Test
@@ -93,7 +89,7 @@ public class ReadDataTests {
 				.createReadData(tmpF.getAbsolutePath());
 
 		assertEquals("file read data length", 128, readData.length());
-		splittableReadDataTestHelper(readData, N, 5);
+		sliceTestHelper(readData, N);
 	}
 
 	private void readDataTestHelper( ReadData readData, int N ) throws IOException {
@@ -117,7 +113,7 @@ public class ReadDataTests {
 		assertArrayEquals(origCopy, encodedTwice.allBytes());
 	}
 
-	private void splittableReadDataTestHelper( ReadData readData, int N, int pivot ) throws IOException {
+	private void sliceTestHelper( ReadData readData, int N ) throws IOException {
 
 		assertEquals("length one", 1, readData.slice(9, 1).length());
 
@@ -139,7 +135,7 @@ public class ReadDataTests {
 		assertThrows("negative offset", IndexOutOfBoundsException.class, () -> readData.slice(-1, 1));
 	}
 
-	private class ByteFun implements OutputStreamOperator {
+	private static class ByteFun implements OutputStreamOperator {
 
 		IntUnaryOperator fun;
 		public ByteFun(IntUnaryOperator fun) {

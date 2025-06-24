@@ -341,7 +341,7 @@ public class ShardTest {
 				shardSize,
 				blockSize,
 				DataType.INT32,
-				new ShardingCodec<>(
+				new ShardingCodec(
 						blockSize,
 						new Codec[]{
 								// codecs applied to image data

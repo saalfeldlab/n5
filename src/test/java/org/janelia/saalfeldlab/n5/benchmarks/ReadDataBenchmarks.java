@@ -68,7 +68,7 @@ public class ReadDataBenchmarks {
 
 	public ReadData read() throws IOException {
 
-		return ReadData.from(kva, getPath().toString());
+		return kva.createReadData(getPath().toString());
 	}
 
 	protected Path getPath() {
@@ -103,17 +103,6 @@ public class ReadDataBenchmarks {
 			os.write(data);
 			os.flush();
 			os.close();
-		} catch (final IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	private void read(String path, int startByte, int numBytes) {
-
-		try ( 	final LockedChannel ch = kva.lockForReading(path, startByte, numBytes);
-				final InputStream is = ch.newInputStream(); ) {
-			final byte[] data = new byte[numBytes];
-			is.read(data);
 		} catch (final IOException e) {
 			e.printStackTrace();
 		}

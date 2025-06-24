@@ -254,22 +254,6 @@ public interface ReadData {
 	}
 
 	/**
-	 * Create a new {@code ReadData} that loads lazily from {@code normalPath}
-	 * in {@code keyValueAccess}. The returned ReadData reports {@link #length()
-	 * length() == -1} (i.e., unknown length).
-	 *
-	 * @param keyValueAccess
-	 * 		KeyValueAccess to read from
-	 * @param normalPath
-	 * 		path in the {@code keyValueAccess} to read from
-	 *
-	 * @return a new ReadData
-	 */
-	static ReadData from(final KeyValueAccess keyValueAccess, final String normalPath) {
-		return new KeyValueAccessReadData(keyValueAccess, normalPath);
-	}
-
-	/**
 	 * Create a new {@code ReadData} that wraps the specified portion of a
 	 * {@code byte[]} array.
 	 *

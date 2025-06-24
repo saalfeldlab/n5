@@ -37,7 +37,7 @@ public class ShardIndexTest {
 		int[] shardBlockGridSize = new int[]{5, 4, 3};
 		ShardIndex index = new ShardIndex(
 				shardBlockGridSize,
-				IndexLocation.END, new RawBytes<>());
+				IndexLocation.END, new RawBytes());
 
 		GridIterator it = new GridIterator(shardBlockGridSize);
 		int i = 0;
@@ -50,7 +50,7 @@ public class ShardIndexTest {
 		shardBlockGridSize = new int[]{5, 4, 3, 13};
 		index = new ShardIndex(
 				shardBlockGridSize,
-				IndexLocation.END, new RawBytes<>());
+				IndexLocation.END, new RawBytes());
 
 		it = new GridIterator(shardBlockGridSize);
 		i = 0;
@@ -91,7 +91,7 @@ public class ShardIndexTest {
 		}
 		final ShardIndex.IndexByteBounds bounds = ShardIndex.byteBounds(index, currentSize);
 		try (
-				final LockedChannel channel = kva.lockForWriting(path, bounds.start, indexSize);
+				final LockedChannel channel = kva.lockForWriting(path);
 				final OutputStream out = channel.newOutputStream()
 		) {
 			ShardIndex.write(out, index);
@@ -99,7 +99,7 @@ public class ShardIndexTest {
 
 		final ShardIndex indexRead = new ShardIndex(shardBlockGridSize, indexLocation, indexCodecs);
 		try (
-				final LockedChannel channel = kva.lockForReading(path, bounds.start, indexSize);
+				final LockedChannel channel = kva.lockForReading(path);
 				final InputStream in = channel.newInputStream()
 		) {
 			ShardIndex.read(in, indexRead);
