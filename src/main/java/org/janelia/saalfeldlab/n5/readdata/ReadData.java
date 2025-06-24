@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 /**
@@ -65,6 +64,32 @@ public interface ReadData {
 	 */
 	default long length() throws N5IOException {
 		return -1;
+	}
+
+	/**
+	 * Returns a {@link ReadData} whose length is limited to the given value.
+	 *
+	 * @param length
+	 *            the length of the resulting ReadData
+	 * @return a length-limited ReadData
+	 * @throws N5IOException
+	 *             if an I/O error occurs while trying to get the length
+	 */
+	default ReadData limit(final long length) throws N5IOException {
+		return slice(0, length);
+	}
+
+	/**
+	 * Returns a new {@link ReadData} representing a slice, or subset
+	 * of this ReadData.
+	 *
+	 * @param offset the offset relative to this
+	 * @param length of the returned ReadData
+	 * @return a slice
+	 * @throws N5IOException an exception
+	 */
+	default ReadData slice(final long offset, final long length) throws N5IOException {
+		return materialize().slice(offset, length);
 	}
 
 	/**
@@ -127,17 +152,17 @@ public interface ReadData {
 	}
 
 	/**
-	 * Read the underlying data into a {@code byte[]} array, and return it as a
-	 * {@code ReadData}. (If this {@code ReadData} is already in a
-	 * {@code byte[]} array or {@code
+	 * Read the underlying data into a {@code byte[]} array, and return it as a {@code ReadData}.
+	 * (If this {@code ReadData} is already in a {@code byte[]} array or {@code
 	 * ByteBuffer}, just return {@code this}.)
 	 * <p>
 	 * The returned {@code ReadData} has a known {@link #length} and multiple
 	 * {@link #inputStream InputStreams} can be opened on it.
-	 * 
-	 * @return a materialized ReadData
+	 *
+	 * @return
+	 * 		a materialized ReadData.
 	 * @throws N5IOException
-	 *             if any I/O error occurs
+	 * 		if any I/O error occurs
 	 */
 	ReadData materialize() throws N5IOException;
 
@@ -228,22 +253,6 @@ public interface ReadData {
 	}
 
 	/**
-	 * Create a new {@code ReadData} that loads lazily from {@code normalPath}
-	 * in {@code keyValueAccess}. The returned ReadData reports {@link #length()
-	 * length() == -1} (i.e., unknown length).
-	 *
-	 * @param keyValueAccess
-	 * 		KeyValueAccess to read from
-	 * @param normalPath
-	 * 		path in the {@code keyValueAccess} to read from
-	 *
-	 * @return a new ReadData
-	 */
-	static ReadData from(final KeyValueAccess keyValueAccess, final String normalPath) {
-		return new KeyValueAccessReadData(keyValueAccess, normalPath);
-	}
-
-	/**
 	 * Create a new {@code ReadData} that wraps the specified portion of a
 	 * {@code byte[]} array.
 	 *
@@ -257,7 +266,7 @@ public interface ReadData {
 	 * @return a new ReadData
 	 */
 	static ReadData from(final byte[] data, final int offset, final int length) {
-		return new ByteArraySplittableReadData(data, offset, length);
+		return new ByteArrayReadData(data, offset, length);
 	}
 
 	/**
@@ -304,4 +313,14 @@ public interface ReadData {
 	static ReadData from(OutputStreamWriter generator) {
 		return new LazyReadData(generator);
 	}
+
+	/**
+	 * Returns an empty {@code ReadData}.
+	 *
+	 * @return an empty ReadData
+	 */
+	public static ReadData empty() {
+		return ByteArrayReadData.EMPTY;
+	}
+
 }

@@ -132,6 +132,6 @@ Custom compression schemes can be implemented using the annotation discovery mec
 
 ## Disclaimer
 
-HDF5 is a great format that provides a wealth of conveniences that I do not want to miss.  It's inefficiency for parallel writing, however, limit its applicability for handling of very large n-dimensional data.
+HDF5 is a great format that provides a wealth of conveniences that I do not want to miss.  Its inefficiency for parallel writing, however, limits its applicability for handling of very large n-dimensional data.
 
 N5 uses the native filesystem of the target platform and JSON files to specify basic and custom meta-data as attributes.  It aims at preserving the convenience of HDF5 where possible but doesn't try too hard to be a full replacement.
