@@ -99,9 +99,13 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), gridPosition);
 
-		final ReadData blockData = getKeyValueAccess().createReadData(path);
-		final ArrayCodec arrayCodec = datasetAttributes.getArrayCodec();
-		return arrayCodec.decode(blockData, gridPosition);
+		try {
+			final ReadData blockData = getKeyValueAccess().createReadData(path);
+			final ArrayCodec arrayCodec = datasetAttributes.getArrayCodec();
+			return arrayCodec.decode(blockData, gridPosition);
+		} catch (N5Exception.N5NoSuchKeyException e) {
+			return null;
+		}
 	}
 
 	@Override

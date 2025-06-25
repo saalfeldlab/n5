@@ -36,6 +36,7 @@ import org.janelia.saalfeldlab.n5.http.ListResponseParser;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import java.io.Closeable;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -382,6 +383,8 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 					}
 				}
 				return conn.getInputStream();
+			} catch (FileNotFoundException e) {
+				throw new N5Exception.N5NoSuchKeyException("Could not open stream for " + uri, e);
 			} catch (IOException e) {
 				throw new N5IOException("Could not open stream for " + uri, e);
 			}
