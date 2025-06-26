@@ -53,15 +53,11 @@ public class LazyInputStream extends InputStream {
         this.readData = readData;
     }
 
-    private synchronized void setDelegate(InputStream delegate) {
-        this.delegateStream = delegate;
-    }
-    
-    private InputStream getDelegate() throws IOException {
+    private synchronized InputStream getDelegate() throws IOException {
         if (delegateStream == null) {
             try {
                 ReadData materialized = readData.materialize();
-                setDelegate(materialized.inputStream());
+                this.delegateStream = materialized.inputStream();
             } catch (N5IOException e) {
                 throw new IOException("Failed to materialize ReadData", e);
             }
@@ -102,9 +98,9 @@ public class LazyInputStream extends InputStream {
     }
     
     @Override
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
         if (delegateStream == null) {
-            setDelegate(ClosedInputStream.INSTANCE);
+            this.delegateStream = ClosedInputStream.INSTANCE;
         }
         delegateStream.close();
     }

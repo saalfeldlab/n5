@@ -68,12 +68,10 @@ public class KeyValueAccessReadData implements ReadData {
 
     @Override
     public InputStream inputStream() throws N5IOException, IllegalStateException {
-        // If already materialized, use its inputStream
         if (materialized != null) {
             return materialized.inputStream();
         }
         
-        // Return a lazy InputStream that materializes data on first read
         return new LazyInputStream(this);
     }
 
