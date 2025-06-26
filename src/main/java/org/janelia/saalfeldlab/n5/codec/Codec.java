@@ -36,7 +36,7 @@ public interface Codec extends Serializable {
 		 *
 		 * @param readData data to decode
 		 * @return decoded ReadData
-		 * @throws IOException if any I/O error occurs
+		 * @throws N5IOException if any I/O error occurs
 		 */
 		ReadData decode(ReadData readData) throws N5IOException;
 
@@ -48,7 +48,7 @@ public interface Codec extends Serializable {
 		 *
 		 * @param readData data to encode
 		 * @return encoded ReadData
-		 * @throws IOException if any I/O error occurs
+		 * @throws N5IOException if any I/O error occurs
 		 */
 		ReadData encode(ReadData readData) throws N5IOException;
 
