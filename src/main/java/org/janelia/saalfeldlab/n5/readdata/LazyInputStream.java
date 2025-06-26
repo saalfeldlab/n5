@@ -30,6 +30,8 @@ package org.janelia.saalfeldlab.n5.readdata;
 
 import java.io.IOException;
 import java.io.InputStream;
+
+import org.apache.commons.io.input.ClosedInputStream;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 /**
@@ -50,13 +52,16 @@ public class LazyInputStream extends InputStream {
     public LazyInputStream(final ReadData readData) {
         this.readData = readData;
     }
+
+    private synchronized void setDelegate(InputStream delegate) {
+        this.delegateStream = delegate;
+    }
     
     private InputStream getDelegate() throws IOException {
         if (delegateStream == null) {
             try {
                 ReadData materialized = readData.materialize();
-                // materialize() contract guarantees byte-array-backed reusable ReadData
-                delegateStream = materialized.inputStream();
+                setDelegate(materialized.inputStream());
             } catch (N5IOException e) {
                 throw new IOException("Failed to materialize ReadData", e);
             }
@@ -87,9 +92,9 @@ public class LazyInputStream extends InputStream {
     @Override
     public int available() throws IOException {
         if (delegateStream == null) {
-            // could be readData.length(), but that doesn't really fit the contract. It could report the length of the data
+            // could be readData.length(), but that doesn't really fit the contract. It could report the length of the data,
             //  but it may require blocking to read, which is not what the intent of available is.
-            //  0 is also a bit confusing though, since it typically indicates end-of-stream (in this case it's
+            //  0 is also a bit confusing, though, since it typically indicates end-of-stream (in this case it's
             //  0 at the start of the stream)
             return 0;
         }
@@ -98,9 +103,10 @@ public class LazyInputStream extends InputStream {
     
     @Override
     public void close() throws IOException {
-        if (delegateStream != null) {
-            delegateStream.close();
+        if (delegateStream == null) {
+            setDelegate(ClosedInputStream.INSTANCE);
         }
+        delegateStream.close();
     }
     
     @Override
