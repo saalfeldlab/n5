@@ -86,8 +86,6 @@ public interface GsonUtils {
 
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
 		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
-		gsonBuilder.registerTypeHierarchyAdapter(Codec.class, NameConfigAdapter.getJsonAdapter(Codec.class));
-		gsonBuilder.registerTypeHierarchyAdapter(ByteOrder.class, RawBytes.byteOrderAdapter);
 		gsonBuilder.disableHtmlEscaping();
 		return gsonBuilder.create();
 	}
