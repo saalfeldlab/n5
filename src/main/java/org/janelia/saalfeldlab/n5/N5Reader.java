@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -229,8 +229,6 @@ public interface N5Reader extends AutoCloseable {
 	 *
 	 * @return the base path URI
 	 */
-	// TODO: should this throw URISyntaxException or can we assume that this is
-	//   never possible if we were able to instantiate this N5Reader?
 	URI getURI();
 
 	/**
@@ -361,7 +359,6 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws ClassNotFoundException
 	 *             the class not found exception
 	 */
-	@SuppressWarnings("unchecked")
 	default <T> T readSerializedBlock(
 			final String dataset,
 			final DatasetAttributes attributes,

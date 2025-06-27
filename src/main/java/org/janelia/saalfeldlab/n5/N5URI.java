@@ -533,7 +533,7 @@ public class N5URI {
 	/**
 	 * Normalize the {@link String attributePath}.
 	 * <p>
-	 * Attribute paths have a few of special characters:
+	 * Attribute paths have a few special characters:
 	 * <ul>
 	 * <li>"." which represents the current element</li>
 	 * <li>".." which represent the previous elemnt</li>

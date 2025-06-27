@@ -127,12 +127,6 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			return channel;
 		}
 
-		@Override
-		public long size() throws IOException {
-
-			return channel.size();
-		}
-
 		private void truncateChannel(int size) {
 
 			try {

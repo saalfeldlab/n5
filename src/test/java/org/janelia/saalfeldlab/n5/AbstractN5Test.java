@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -59,7 +59,6 @@ import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
 import org.janelia.saalfeldlab.n5.shard.Shard;
 import org.janelia.saalfeldlab.n5.url.UriAttributeTest;
 import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -323,7 +322,7 @@ public abstract class AbstractN5Test {
 					DataType.INT32}) {
 
 				try (final N5Writer n5 = createTempN5Writer()) {
-					n5.createDataset(datasetName, dimensions, blockSize, dataType, (Codec)compression);
+					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 					final IntArrayDataBlock dataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
 					n5.writeBlock(datasetName, attributes, dataBlock);
@@ -481,7 +480,6 @@ public abstract class AbstractN5Test {
 			n5.writeBlock(datasetName, attributes, smallDataBlock);
 
 			final DataBlock<?> loadedSmallDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
-			System.out.println(((byte[])loadedSmallDataBlock.getData()).length);
 			assertArrayEquals(smallerData, (byte[])loadedSmallDataBlock.getData());
 
 			// write a block of the wrong type
@@ -1517,8 +1515,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void
-	testRootLeaves() {
+	public void testRootLeaves() {
 
 		/* Test retrieving non-JsonObject root leaves */
 		try (final N5Writer n5 = createTempN5Writer()) {
@@ -1658,7 +1655,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public <T> void testWriteReadShardOnUnshardedDataset() throws Exception {
+	public <T> void testWriteReadShardOnUnshardedDataset() {
 		try (N5Writer writer = createTempN5Writer()) {
 			final String datasetName = "testWriteShardOnUnshardedDataset";
 			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64, new RawCompression());

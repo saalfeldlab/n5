@@ -38,7 +38,6 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.serialization.N5Annotations;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
-import org.janelia.saalfeldlab.n5.shard.BlockAsShardCodec;
 import org.scijava.annotations.Index;
 import org.scijava.annotations.IndexItem;
 

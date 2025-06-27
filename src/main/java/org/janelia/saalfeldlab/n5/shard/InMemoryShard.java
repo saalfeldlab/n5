@@ -2,7 +2,6 @@ package org.janelia.saalfeldlab.n5.shard;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.Position;
 
 import java.util.ArrayList;
@@ -35,7 +34,8 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		blocks.put(Position.wrap(block.getGridPosition()), block);
 	}
 
-	@Override public DataBlock<T> getBlock(long... blockGridPosition) {
+	@Override
+	public DataBlock<T> getBlock(long... blockGridPosition) {
 
 		return blocks.get(Position.wrap(blockGridPosition));
 	}

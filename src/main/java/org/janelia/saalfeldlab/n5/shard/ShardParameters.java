@@ -20,11 +20,11 @@ import org.janelia.saalfeldlab.n5.util.Position;
 @Deprecated
 public interface ShardParameters {
 
-	public long[] getDimensions();
+	long[] getDimensions();
 
-	public int getNumDimensions();
+	int getNumDimensions();
 
-	public int[] getBlockSize();
+	int[] getBlockSize();
 
 
 	/**

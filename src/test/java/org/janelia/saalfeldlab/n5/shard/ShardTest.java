@@ -23,7 +23,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -208,7 +207,7 @@ public class ShardTest {
 		final String dataset = "writeReadBlock";
 		writer.remove(dataset);
 		writer.createDataset(dataset, datasetAttributes);
-		writer.deleteBlock(dataset, 0, 0); //TODO Caleb: We are abusing this here. It shouldn't delete the entire shard..
+		writer.deleteBlock(dataset, 0, 0); //FIXME Caleb: We are abusing this here. It shouldn't delete the entire shard..
 
 		final int[] blockSize = datasetAttributes.getBlockSize();
 		final DataType dataType = datasetAttributes.getDataType();
@@ -334,26 +333,4 @@ public class ShardTest {
 		);
 	}
 
-	private static DatasetAttributes getDatasetAttributes(long[] imageSize, int[] shardSize, int[] blockSize) {
-
-		return new DatasetAttributes(
-				imageSize,
-				shardSize,
-				blockSize,
-				DataType.INT32,
-				new ShardingCodec(
-						blockSize,
-						new Codec[]{
-								// codecs applied to image data
-								new RawBytes(ByteOrder.BIG_ENDIAN),
-						},
-						new DeterministicSizeCodec[]{
-								// codecs applied to the shard index, must not be compressors
-								new RawBytes(ByteOrder.LITTLE_ENDIAN),
-								new Crc32cChecksumCodec()
-						},
-						IndexLocation.START
-				)
-		);
-	}
 }

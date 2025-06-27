@@ -30,6 +30,7 @@ package org.janelia.saalfeldlab.n5;
 
 import java.lang.reflect.Type;
 
+import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCacheableContainer;
@@ -37,7 +38,6 @@ import org.janelia.saalfeldlab.n5.cache.N5JsonCacheableContainer;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON

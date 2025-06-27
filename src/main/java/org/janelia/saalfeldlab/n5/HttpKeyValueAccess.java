@@ -36,6 +36,7 @@ import org.janelia.saalfeldlab.n5.http.ListResponseParser;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import java.io.Closeable;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -304,7 +305,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		if (code >= 200 && code < (allowRedirect ? 400 : 300)) return null;
 
 		final RuntimeException cause = new RuntimeException(message + "( "+ responseMsg + ")(" + code + ")");
-		if (code == 404)
+		if (code == 404 | code == 410)
 			return new N5Exception.N5NoSuchKeyException(message, cause);
 
 		return new N5Exception(message, cause);
@@ -363,11 +364,6 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 			this.size = size;
 		}
 
-		@Override public long size() {
-
-			return size;
-		}
-
 		private boolean isPartialRead() {
 			return startByte > 0 || (size >= 0 && size != Long.MAX_VALUE);
 		}
@@ -387,10 +383,12 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 					}
 				}
 				return conn.getInputStream();
+			} catch (FileNotFoundException e) {
+				/*default HttpURLConnection throws FileNotFoundException on 404 or 410 */
+				throw new N5Exception.N5NoSuchKeyException("Could not open stream for " + uri, e);
 			} catch (IOException e) {
-				throw new N5Exception.N5IOException(e);
+				throw new N5IOException("Could not open stream for " + uri, e);
 			}
-
 		}
 
 		private String rangeString() {
@@ -400,7 +398,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		public Reader newReader()  {
+		public Reader newReader() {
 
 			final InputStreamReader reader = new InputStreamReader(newInputStream(), StandardCharsets.UTF_8);
 			synchronized (resources) {

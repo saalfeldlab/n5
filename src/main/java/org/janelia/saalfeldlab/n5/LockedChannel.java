@@ -31,7 +31,6 @@ package org.janelia.saalfeldlab.n5;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
@@ -45,8 +44,6 @@ import java.io.Writer;
  */
 public interface LockedChannel extends Closeable {
 
-	public long size() throws IOException;
-
 	/**
 	 * Create a UTF-8 {@link Reader}.
 	 *
@@ -54,7 +51,7 @@ public interface LockedChannel extends Closeable {
 	 * @throws N5IOException
 	 *             if the reader could not be created
 	 */
-	public Reader newReader() throws N5IOException;
+	Reader newReader() throws N5IOException;
 
 	/**
 	 * Create a new {@link InputStream}.
@@ -63,7 +60,7 @@ public interface LockedChannel extends Closeable {
 	 * @throws N5IOException
 	 *             if an input stream could not be created
 	 */
-	public InputStream newInputStream() throws N5IOException;
+	InputStream newInputStream() throws N5IOException;
 
 	/**
 	 * Create a new UTF-8 {@link Writer}.
@@ -72,7 +69,7 @@ public interface LockedChannel extends Closeable {
 	 * @throws N5IOException
 	 *             if a writer could not be created
 	 */
-	public Writer newWriter() throws N5IOException;
+	Writer newWriter() throws N5IOException;
 
 	/**
 	 * Create a new {@link OutputStream}.
@@ -81,5 +78,5 @@ public interface LockedChannel extends Closeable {
 	 * @throws N5IOException
 	 *             if an output stream could not be created
 	 */
-	public OutputStream newOutputStream() throws N5IOException;
+	OutputStream newOutputStream() throws N5IOException;
 }

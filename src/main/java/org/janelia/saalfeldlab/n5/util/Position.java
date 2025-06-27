@@ -8,9 +8,9 @@ import java.util.Arrays;
  */
 public interface Position extends Comparable<Position> {
 
-	public long[] get();
+	long[] get();
 
-	public long get(int i);
+	long get(int i);
 
 	default int numDimensions() {
 		return get().length;
@@ -29,7 +29,7 @@ public interface Position extends Comparable<Position> {
 		return 0;
 	}
 
-	public static boolean equals(final Position a, final Object b) {
+	static boolean equals(final Position a, final Object b) {
 
 		if (a == null && b == null)
 			return true;
@@ -51,11 +51,11 @@ public interface Position extends Comparable<Position> {
 		return true;
 	}
 
-	public static String toString(Position p) {
+	static String toString(Position p) {
 		return "Position: " + Arrays.toString(p.get());
 	}
 
-	public static Position wrap(final long[] p) {
+	static Position wrap(final long[] p) {
 		return new FinalPosition(p);
 	}
 

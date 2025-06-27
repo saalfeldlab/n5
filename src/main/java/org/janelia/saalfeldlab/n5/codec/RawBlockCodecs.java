@@ -97,7 +97,8 @@ public class RawBlockCodecs {
 			return elements;
 		}
 
-		@Override public ReadData encode(DataBlock<T> dataBlock) {
+		@Override
+		public ReadData encode(DataBlock<T> dataBlock) {
 
 			return ReadData.from(out -> {
 				final ReadData blockData = dataCodec.serialize(dataBlock.getData());
@@ -105,7 +106,8 @@ public class RawBlockCodecs {
 			});
 		}
 
-		@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) {
+		@Override
+		public DataBlock<T> decode(ReadData readData, long[] gridPosition) {
 			ReadData decodeData = codec.decode(readData);
 			final T data = dataCodec.deserialize(decodeData, numElements());
 			return dataBlockFactory.createDataBlock(blockSize, gridPosition, data);

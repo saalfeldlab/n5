@@ -33,7 +33,6 @@ import java.util.Map;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonParseException;
-import org.janelia.saalfeldlab.n5.codec.Codec;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -47,7 +46,7 @@ public interface GsonN5Reader extends N5Reader {
 
 	Gson getGson();
 
-	public String getAttributesKey();
+	String getAttributesKey();
 
 	@Override
 	default Map<String, Class<?>> listAttributes(final String pathName) throws N5Exception {

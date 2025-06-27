@@ -5,7 +5,6 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 import java.io.IOException;
@@ -17,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-//TODO : consider different names? LazyShard? ShardView? PartialReadShard?
+//TODO : consider different names? LazyShard? ShardView? PartialReadShard? OnDemand?
 public class VirtualShard<T> extends AbstractShard<T> {
 
 	private final ReadData shardData;

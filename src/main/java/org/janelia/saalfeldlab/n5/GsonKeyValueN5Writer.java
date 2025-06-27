@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -28,20 +28,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
-import org.janelia.saalfeldlab.n5.shard.Shard;
-import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
-import org.janelia.saalfeldlab.n5.util.Position;
-
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
@@ -49,6 +36,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+
+import com.google.gson.JsonSyntaxException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
+import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.util.Position;
 
 /**
  * Default implementation of {@link N5Writer} with JSON attributes parsed with
@@ -217,17 +216,18 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		return removed;
 	}
 
-	@Override default <T> void writeBlocks(
+	@Override
+	default <T> void writeBlocks(
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T>... dataBlocks) throws N5Exception {
 
 		if (datasetAttributes.isSharded()) {
-
 			/* Group blocks by shard index */
 			final Map<Position, List<DataBlock<T>>> shardBlockMap = datasetAttributes.groupBlocks(
 					Arrays.stream(dataBlocks).collect(Collectors.toList()));
 
+			//TODO: extract static method?
 			for (final Entry<Position, List<DataBlock<T>>> e : shardBlockMap.entrySet()) {
 
 				final long[] shardPosition = e.getKey().get();
@@ -250,6 +250,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		}
 	}
 
+
+
 	@Override
 	default <T> void writeBlock(
 			final String path,
@@ -267,10 +269,12 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 				final LockedChannel channel = getKeyValueAccess().lockForWriting(keyPath);
 				final OutputStream out = channel.newOutputStream()
 		) {
-			final Codec.ArrayCodec codec = datasetAttributes.getArrayCodec();
+			final ArrayCodec codec = datasetAttributes.getArrayCodec();
 			codec.encode(dataBlock).writeTo(out);
-		} catch (IOException e) {
-			throw new N5IOException(e);
+		} catch (final IOException | UncheckedIOException e) {
+			throw new N5IOException(
+					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
+					e);
 		}
 	}
 
@@ -318,6 +322,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		if (getKeyValueAccess().isFile(blockPath))
 			getKeyValueAccess().delete(blockPath);
 
+
+		//TODO: should we try/catch and return false if exceptions are thrown?
 
 		/* an IOException should have occurred if anything had failed midway */
 		return true;

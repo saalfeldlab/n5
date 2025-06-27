@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -34,7 +34,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.stream.Stream;
 
-import org.janelia.saalfeldlab.n5.N5Exception.N5ShardException;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
@@ -110,6 +109,7 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 		this.blockSize = blockSize;
 		this.dataType = dataType;
 
+		//TODO: refactor?
 		final Codec[] filteredCodecs = Arrays.stream(codecs).filter(it -> !(it instanceof RawCompression)).toArray(Codec[]::new);
 		if (filteredCodecs.length == 0) {
 			byteCodecs = new BytesCodec[]{};
@@ -131,6 +131,7 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 					.filter(c -> c instanceof BytesCodec)
 					.toArray(BytesCodec[]::new);
 		}
+
 		arrayCodec.initialize(this, byteCodecs);
 	}
 
@@ -184,12 +185,14 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 	}
 
 	/**
-	 * If this dataset is sharded, return the ArrayCodec as a ShardingCodec
+	 * If this dataset is sharded, return the ArrayCodec as a ShardingCodec.
+	 * If the dataset is NOT sharded, the returned ShardingCodec will allow you
+	 * to read and write blocks as if they were shards.
+	 *
 	 * @return the ShardingCodec
 	 *
-	 * @throws N5ShardException if the dataset is not sharded
 	 */
-	public ShardingCodec getShardingCodec() throws N5ShardException {
+	public ShardingCodec getShardingCodec() {
 		if (getArrayCodec() instanceof ShardingCodec)
 			return (ShardingCodec)getArrayCodec();
 		else {
@@ -237,7 +240,7 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 	/**
 	 * TODO do we keep this? Deprecated in favor of {@link DatasetAttributesAdapter} for serialization
 	 *
-	 * @return serilizable properties of {@link DatasetAttributes}
+	 * @return serializable properties of {@link DatasetAttributes}
 	 */
 	@Deprecated
 	public HashMap<String, Object> asMap() {
@@ -250,15 +253,6 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 		return map;
 	}
 
-	protected Codec[] concatenateCodecs() {
-
-		final Codec[] allCodecs = new Codec[byteCodecs.length + 1];
-		allCodecs[0] = arrayCodec;
-		for (int i = 0; i < byteCodecs.length; i++)
-			allCodecs[i + 1] = byteCodecs[i];
-
-		return allCodecs;
-	}
 
 	private static DatasetAttributesAdapter adapter = null;
 	public static DatasetAttributesAdapter getJsonAdapter() {
@@ -267,20 +261,6 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 		}
 		return adapter;
 	}
-
-	public static class InvalidN5DatasetException extends N5Exception {
-
-		public InvalidN5DatasetException(String dataset, String reason, Throwable cause) {
-
-			this(String.format("Invalid dataset %s: %s", dataset, reason), cause);
-		}
-
-		public InvalidN5DatasetException(String message, Throwable cause) {
-
-			super(message, cause);
-		}
-	}
-
 
 	public static class DatasetAttributesAdapter implements JsonSerializer<DatasetAttributes>, JsonDeserializer<DatasetAttributes> {
 
@@ -338,10 +318,22 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 			}
 
 			obj.add(DATA_TYPE_KEY, context.serialize(src.dataType));
-			obj.add(CODEC_KEY, context.serialize(src.concatenateCodecs()));
+			obj.add(CODEC_KEY, context.serialize(concatenateCodecs(src)));
 
 			return obj;
 		}
+
+		private static Codec[] concatenateCodecs(final DatasetAttributes attributes) {
+
+			final BytesCodec[] byteCodecs = attributes.byteCodecs;
+			final ArrayCodec arrayCodec = attributes.arrayCodec;
+			final Codec[] allCodecs = new Codec[byteCodecs.length + 1];
+			allCodecs[0] = arrayCodec;
+			System.arraycopy(byteCodecs, 0, allCodecs, 1, byteCodecs.length);
+
+			return allCodecs;
+		}
+
 		private static Compression getCompressionVersion0(final String compressionVersion0Name) {
 
 			switch (compressionVersion0Name) {

@@ -21,7 +21,7 @@ import static org.junit.Assert.assertEquals;
 public class ShardPropertiesTests {
 
 	@Test
-	public void testShardProperties() throws Exception {
+	public void testShardProperties() {
 
 		final long[] arraySize = new long[]{16, 16};
 		final int[] shardSize = new int[]{16, 16};
@@ -41,7 +41,7 @@ public class ShardPropertiesTests {
 				)
 		);
 
-		@SuppressWarnings({"rawtypes"}) final InMemoryShard shard = new InMemoryShard(dsetAttrs, shardPosition, null);
+		final InMemoryShard shard = new InMemoryShard(dsetAttrs, shardPosition, null);
 
 		assertArrayEquals(new int[]{4, 4}, shard.getBlockGridSize());
 
@@ -60,7 +60,7 @@ public class ShardPropertiesTests {
 	}
 
 	@Test
-	public void testShardBlockPositionIterator() throws Exception {
+	public void testShardBlockPositionIterator() {
 
 		final long[] arraySize = new long[]{16, 16};
 		final int[] shardSize = new int[]{16, 16};
@@ -80,7 +80,7 @@ public class ShardPropertiesTests {
 				)
 		);
 
-		@SuppressWarnings({"rawtypes", "unchecked"}) final InMemoryShard shard = new InMemoryShard(dsetAttrs, shardPosition, null);
+		final InMemoryShard shard = new InMemoryShard(dsetAttrs, shardPosition, null);
 
 		int i = 0;
 		Iterator<long[]> it = shard.blockPositionIterator();

@@ -344,7 +344,7 @@ public interface KeyValueAccess {
 	 * <p>
 	 * Implementations of this interface handle the specifics of accessing data from
 	 * their respective sources.
-	 *
+	 * 
 	 * @see ReadData
 	 * @see KeyValueAccessReadData
 	 */
@@ -372,7 +372,7 @@ public interface KeyValueAccess {
 
 		/**
 		 * Returns the total size of the data source in bytes.
-		 *
+		 * 
 		 * @return the size of the data source in bytes
 		 * @throws N5IOException
 		 * 		if an I/O error occurs while trying to get the length

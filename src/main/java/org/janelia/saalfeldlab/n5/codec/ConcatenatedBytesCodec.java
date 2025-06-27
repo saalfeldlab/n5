@@ -1,6 +1,5 @@
 package org.janelia.saalfeldlab.n5.codec;
 
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 public class ConcatenatedBytesCodec implements Codec.BytesCodec {
@@ -11,7 +10,8 @@ public class ConcatenatedBytesCodec implements Codec.BytesCodec {
 		this.codecs = codecs;
 	}
 
-	@Override public ReadData encode(ReadData readData) throws N5IOException {
+	@Override
+	public ReadData encode(ReadData readData) {
 
 		ReadData encodeData = readData;
 		if (codecs != null) {
@@ -22,7 +22,8 @@ public class ConcatenatedBytesCodec implements Codec.BytesCodec {
 		return encodeData;
 	}
 
-	@Override public ReadData decode(ReadData readData) throws N5IOException {
+	@Override
+	public ReadData decode(ReadData readData) {
 		ReadData decodeData = readData;
 		if (codecs != null) {
 			for (int i = codecs.length - 1; i >= 0; i--) {
@@ -33,7 +34,8 @@ public class ConcatenatedBytesCodec implements Codec.BytesCodec {
 		return decodeData;
 	}
 
-	@Override public String getType() {
+	@Override
+	public String getType() {
 
 		return "internal-concatenated-codecs";
 	}

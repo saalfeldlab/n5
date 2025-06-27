@@ -1,6 +1,5 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -58,7 +57,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	 *
 	 * @return position on the shard grid
 	 */
-	public long[] getGridPosition();
+	long[] getGridPosition();
 
 	/**
 	 * Returns of the block at the given position relative to this shard, or null if this shard does not contain the given block.
@@ -158,8 +157,6 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 	default ReadData createReadData() throws N5IOException {
 
-
-
 		final DatasetAttributes datasetAttributes = getDatasetAttributes();
 		ShardingCodec shardingCodec = datasetAttributes.getShardingCodec();
 		final Codec.ArrayCodec arrayCodec = shardingCodec.getArrayCodec();
@@ -211,7 +208,6 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		private final GridIterator it;
 		private final Shard<T> shard;
 		private final ShardIndex index;
-		// TODO ShardParameters is deprecated?
 		private final DatasetAttributes attributes;
 		private int blockIndex = 0;
 

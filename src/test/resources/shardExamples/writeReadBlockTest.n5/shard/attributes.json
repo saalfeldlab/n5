@@ -1,1 +1,0 @@
-{"dimensions":[8,8],"blockSize":[2,2],"shardSize":[4,4],"dataType":"uint8","codecs":[{"name":"sharding_indexed","configuration":{"index_codecs":[{"name":"bytes","configuration":{"endian":"big"}},{"name":"crc32c"}],"codecs":[{"name":"n5bytes","configuration":{"endian":"big"}}],"index_location":"end","chunk_shape":[2,2]}}]}

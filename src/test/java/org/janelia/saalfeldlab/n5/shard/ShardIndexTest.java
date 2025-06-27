@@ -81,8 +81,6 @@ public class ShardIndexTest {
 		index.set(93, 111, new int[]{3, 0});
 		index.set(143, 1, new int[]{1, 2});
 
-		final long indexSize = index.getArrayCodec().encodedSize(index.numBytes());
-
 		long currentSize;
 		try {
 			currentSize = kva.size(path);

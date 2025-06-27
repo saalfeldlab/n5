@@ -1,6 +1,5 @@
 package org.janelia.saalfeldlab.n5.codec;
 
-import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
@@ -17,12 +16,14 @@ public class IdentityCodec implements Codec.BytesCodec {
 		return TYPE;
 	}
 
-	@Override public ReadData decode(ReadData readData) {
+	@Override
+	public ReadData decode(ReadData readData) {
 
 		return readData;
 	}
 
-	@Override public ReadData encode(ReadData readData) {
+	@Override
+	public ReadData encode(ReadData readData) {
 
 		return readData;
 	}

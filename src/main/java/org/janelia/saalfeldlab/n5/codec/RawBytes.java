@@ -13,7 +13,6 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
-import java.io.IOException;
 import java.nio.ByteOrder;
 
 
@@ -51,19 +50,18 @@ public class RawBytes implements Codec.ArrayCodec {
 		this.bytesCodec = new ConcatenatedBytesCodec(byteCodecs);
 	}
 	
-	private <T> DataBlockCodec< T > getDataBlockCodec() {
+	private <T> DataBlockCodec<T> getDataBlockCodec() {
 
 		return RawBlockCodecs.createDataBlockCodec( attributes.getDataType(), getByteOrder(), attributes.getBlockSize(), bytesCodec );
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) {
 
 		return this.<T>getDataBlockCodec().decode(readData, gridPosition);
 	}
 
-	@SuppressWarnings( "unchecked" )
+
 	@Override
 	public <T> ReadData encode(DataBlock<T> dataBlock) {
 

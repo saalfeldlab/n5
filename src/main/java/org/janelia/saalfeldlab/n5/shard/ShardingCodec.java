@@ -33,7 +33,7 @@ public class ShardingCodec implements Codec.ArrayCodec {
 	private DatasetAttributes attributes = null;
 
 	public enum IndexLocation {
-		START, END;
+		START, END
 	}
 
 	@N5Annotations.ReverseArray // TODO need to reverse for zarr, not for n5
@@ -49,6 +49,9 @@ public class ShardingCodec implements Codec.ArrayCodec {
 	@NameConfig.Parameter(value = INDEX_LOCATION_KEY, optional = true)
 	private final IndexLocation indexLocation;
 
+	/**
+	 * Used via reflections by the NameConfig serializer.
+	 */
 	@SuppressWarnings("unused")
 	private ShardingCodec() {
 
@@ -103,31 +106,36 @@ public class ShardingCodec implements Codec.ArrayCodec {
 		return indexCodecs;
 	}
 
-	@Override public long[] getPositionForBlock(DatasetAttributes attributes, DataBlock<?> datablock) {
+	@Override
+	public long[] getPositionForBlock(DatasetAttributes attributes, DataBlock<?> datablock) {
 
 		final long[] blockPosition = datablock.getGridPosition();
 		return attributes.getShardPositionForBlock(blockPosition);
 	}
 
-	@Override public long[] getPositionForBlock(DatasetAttributes attributes, final long... blockPosition) {
+	@Override
+	public long[] getPositionForBlock(DatasetAttributes attributes, final long... blockPosition) {
 
 		return attributes.getShardPositionForBlock(blockPosition);
 	}
 
-	@Override public void initialize(DatasetAttributes attributes, final BytesCodec[] codecs) {
+	@Override
+	public void initialize(DatasetAttributes attributes, final BytesCodec[] codecs) {
+
 		this.attributes = attributes;
 		getArrayCodec().initialize(attributes, getCodecs());
 	}
 
-	@Override public <T> ReadData encode(DataBlock<T> dataBlock) {
+	@Override
+	public <T> ReadData encode(DataBlock<T> dataBlock) {
 
 		return getArrayCodec().encode(dataBlock);
 	}
 
-	@Override public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5IOException {
+	@Override
+	public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5IOException {
 
 		final ReadData splitableReadData = readData.materialize();
-
 		final VirtualShard<T> shard = new VirtualShard<>(attributes, gridPosition, splitableReadData);
 		return shard.getBlock(gridPosition);
 	}
@@ -147,7 +155,8 @@ public class ShardingCodec implements Codec.ArrayCodec {
 
 	public static class IndexLocationAdapter implements JsonSerializer<IndexLocation>, JsonDeserializer<IndexLocation> {
 
-		@Override public IndexLocation deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+		@Override
+		public IndexLocation deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
 
 			if (!json.isJsonPrimitive())
 				return null;
@@ -155,7 +164,8 @@ public class ShardingCodec implements Codec.ArrayCodec {
 			return IndexLocation.valueOf(json.getAsString().toUpperCase());
 		}
 
-		@Override public JsonElement serialize(IndexLocation src, Type typeOfSrc, JsonSerializationContext context) {
+		@Override
+		public JsonElement serialize(IndexLocation src, Type typeOfSrc, JsonSerializationContext context) {
 
 			return new JsonPrimitive(src.name().toLowerCase());
 		}

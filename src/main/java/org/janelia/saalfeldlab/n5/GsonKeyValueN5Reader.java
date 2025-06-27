@@ -28,30 +28,24 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
-import org.janelia.saalfeldlab.n5.shard.Shard;
-import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
-import org.janelia.saalfeldlab.n5.shard.VirtualShard;
-import org.janelia.saalfeldlab.n5.util.Position;
-
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.VirtualShard;
+import org.janelia.saalfeldlab.n5.util.Position;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
@@ -95,17 +89,15 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final String groupPath = N5URI.normalizeGroupPath(pathName);
 		final String attributesPath = absoluteAttributesPath(groupPath);
 
-		try (final LockedChannel lockedChannel = getKeyValueAccess().lockForReading(attributesPath)) {
-			return GsonUtils.readAttributes(lockedChannel.newReader(), getGson());
+		try ( final InputStream in = getKeyValueAccess().createReadData(attributesPath).inputStream() ) {
+			return GsonUtils.readAttributes(new InputStreamReader(in), getGson());
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
 		} catch (final IOException | UncheckedIOException | N5IOException e) {
 			throw new N5IOException("Failed to read attributes from dataset " + pathName, e);
 		}
-
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	default <T> Shard<T> readShard(
 			final String keyPath,
 			final DatasetAttributes datasetAttributes,
@@ -114,7 +106,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(keyPath), shardGridPosition);
 		try {
 			final ReadData readData  = getKeyValueAccess().createReadData(path).materialize();
-			return new VirtualShard( datasetAttributes, shardGridPosition, readData);
+			return new VirtualShard<>( datasetAttributes, shardGridPosition, readData);
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
 		}
@@ -130,8 +122,9 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), keyPos);
 
 		try {
-			final ReadData decodeData = getKeyValueAccess().createReadData(path);
-			return datasetAttributes.getArrayCodec().decode(decodeData, gridPosition);
+			final ReadData readData = getKeyValueAccess().createReadData(path);
+			final ArrayCodec arrayCodec = datasetAttributes.getArrayCodec();
+			return arrayCodec.decode(readData, gridPosition);
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
 		}
@@ -144,10 +137,9 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> blockPositions) throws N5Exception {
 
-		// TODO which interface should have this implementation?
 		if (datasetAttributes.isSharded()) {
-
 			/* Group by shard position */
+			//TODO: make static?
 			final Map<Position, List<long[]>> shardBlockMap = datasetAttributes.groupBlockPositions(blockPositions);
 			final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
 			for( Map.Entry<Position, List<long[]>> e : shardBlockMap.entrySet()) {

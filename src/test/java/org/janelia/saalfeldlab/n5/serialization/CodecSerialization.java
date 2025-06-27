@@ -3,7 +3,6 @@ package org.janelia.saalfeldlab.n5.serialization;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.GsonUtils;
 import org.janelia.saalfeldlab.n5.GzipCompression;
 import org.janelia.saalfeldlab.n5.codec.Codec;

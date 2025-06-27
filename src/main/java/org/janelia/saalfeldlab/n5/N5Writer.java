@@ -29,7 +29,6 @@
 package org.janelia.saalfeldlab.n5;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.janelia.saalfeldlab.n5.shard.Shard;
 
 import java.io.ByteArrayOutputStream;
@@ -235,31 +234,6 @@ public interface N5Writer extends N5Reader {
 	}
 
 	/**
-	 * DEPRECATED. {@link Compression}s are {@link Codec}s.
-	 * Use {@link #createDataset(String, long[], int[], DataType, Codec...)}
-	 * <p> </p>
-	 * Creates a dataset. This does not create any data but the path and
-	 * mandatory attributes only.
-	 *
-	 * @param datasetPath dataset path
-	 * @param dimensions the dataset dimensions
-	 * @param blockSize the block size
-	 * @param dataType the data type
-	 * @param compression the compression
-	 * @throws N5Exception the exception
-	 */
-	@Deprecated
-	default void createDataset(
-			final String datasetPath,
-			final long[] dimensions,
-			final int[] blockSize,
-			final DataType dataType,
-			final Compression compression) throws N5Exception {
-
-		createDataset(datasetPath, dimensions, blockSize, dataType, new N5BlockCodec(), compression);
-	}
-
-	/**
 	 * Writes a {@link DataBlock}.
 	 *
 	 * @param datasetPath dataset path
@@ -274,7 +248,7 @@ public interface N5Writer extends N5Reader {
 			final DataBlock<T> dataBlock) throws N5Exception;
 
 	/**
-	 * Write multiple data blocks, useful for request aggregation .
+	 * Write multiple data blocks, useful for request aggregation.
 	 *
 	 * @param datasetPath dataset path
 	 * @param datasetAttributes the dataset attributes
@@ -307,18 +281,13 @@ public interface N5Writer extends N5Reader {
 			final Shard<T> shard) throws N5Exception;
 
 	/**
-	 * Deletes the block at {@code gridPosition}
+	 * Deletes the block at {@code gridPosition}.
 	 *
 	 * @param datasetPath dataset path
 	 * @param gridPosition position of block to be deleted
 	 * @throws N5Exception the exception
 	 *
-	 * @return {@code true} if the block at {@code gridPosition} is "empty"
-	 *         after
-	 *         deletion. The meaning of "empty" is implementation dependent. For
-	 *         example "empty" means that no file exists on the file system for
-	 *         the
-	 *         deleted block in case of the file system implementation.
+	 * @return {@code true} if the block at {@code gridPosition} was deleted.
 	 *
 	 */
 	boolean deleteBlock(

@@ -14,12 +14,14 @@ public class BlockAsShardCodec extends ShardingCodec {
 
 	private static final RawBytes VIRTUAL_SHARD_INDEX_CODEC = new RawBytes() {
 
-		@Override public ReadData encode(DataBlock dataBlock) throws N5Exception.N5IOException {
+		@Override
+		public ReadData encode(DataBlock dataBlock) throws N5Exception.N5IOException {
 
 			return ReadData.from(new byte[0]);
 		}
 
-		@Override public DataBlock decode(ReadData readData, long[] gridPosition) throws N5Exception.N5IOException {
+		@Override
+		public DataBlock decode(ReadData readData, long[] gridPosition) throws N5Exception.N5IOException {
 
 			final long[] data = new long[]{ 0, -1};
 			return new LongArrayDataBlock(new int[0], new long[0], data);
@@ -38,7 +40,8 @@ public class BlockAsShardCodec extends ShardingCodec {
 		this.datasetArrayCodec = datasetArrayCodec;
 	}
 
-	@Override public ShardIndex createIndex(DatasetAttributes attributes) {
+	@Override
+	public ShardIndex createIndex(DatasetAttributes attributes) {
 
 		return new ShardIndex(attributes.getBlocksPerShard(), getIndexLocation(), NO_OP_INDEX_CODECS) {
 
@@ -49,53 +52,63 @@ public class BlockAsShardCodec extends ShardingCodec {
 		};
 	}
 
-	@Override public int[] getBlockSize() {
+	@Override
+	public int[] getBlockSize() {
 
 		return datasetAttributes.getBlockSize();
 	}
 
-	@Override public ArrayCodec getArrayCodec() {
+	@Override
+	public ArrayCodec getArrayCodec() {
 
 		return datasetArrayCodec;
 	}
 
-	@Override public long[] getPositionForBlock(DatasetAttributes attributes, DataBlock<?> datablock) {
+	@Override
+	public long[] getPositionForBlock(DatasetAttributes attributes, DataBlock<?> datablock) {
 
 		return datasetArrayCodec.getPositionForBlock(attributes, datablock);
 	}
 
-	@Override public long[] getPositionForBlock(DatasetAttributes attributes, long... blockPosition) {
+	@Override
+	public long[] getPositionForBlock(DatasetAttributes attributes, long... blockPosition) {
 
 		return datasetArrayCodec.getPositionForBlock(attributes, blockPosition);
 	}
 
-	@Override public void initialize(DatasetAttributes attributes, BytesCodec... codecs) {
+	@Override
+	public void initialize(DatasetAttributes attributes, BytesCodec... codecs) {
 
 		this.datasetAttributes = attributes;
 		datasetArrayCodec.initialize(attributes, codecs);
 	}
 
-	@Override public long encodedSize(long size) {
+	@Override
+	public long encodedSize(long size) {
 
 		return datasetArrayCodec.encodedSize(size);
 	}
 
-	@Override public long decodedSize(long size) {
+	@Override
+	public long decodedSize(long size) {
 
 		return datasetArrayCodec.decodedSize(size);
 	}
 
-	@Override public String getType() {
+	@Override
+	public String getType() {
 		//TODO Caleb: can we ensure this is never called?
 		return datasetArrayCodec.getType();
 	}
 
-	@Override public <T> ReadData encode(DataBlock<T> dataBlock) throws N5Exception.N5IOException {
+	@Override
+	public <T> ReadData encode(DataBlock<T> dataBlock) throws N5Exception.N5IOException {
 
 		return datasetArrayCodec.encode(dataBlock);
 	}
 
-	@Override public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5Exception.N5IOException {
+	@Override
+	public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5Exception.N5IOException {
 
 		return datasetArrayCodec.decode(readData, gridPosition);
 	}

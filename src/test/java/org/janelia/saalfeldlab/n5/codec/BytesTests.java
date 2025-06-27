@@ -1,7 +1,9 @@
 package org.janelia.saalfeldlab.n5.codec;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.nio.ByteOrder;
 
@@ -19,6 +21,10 @@ public class BytesTests {
 
 	@Test
 	public void testSerialization() {
+
+		//TODO: we don't intend to support codec serialization for N5.
+		//	Rewrite this to directly test NameConfigAdapter bit Gson
+		fail("Rewrite this to directly test NameConfigAdapter with Gson");
 
 		final N5Factory factory = new N5Factory();
 		factory.cacheAttributes(false);
