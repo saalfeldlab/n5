@@ -4,6 +4,7 @@ import java.io.InputStream;
 
 import org.janelia.saalfeldlab.n5.KeyValueAccess.LazyRead;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.LazyInputStream;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
@@ -67,7 +68,11 @@ public class KeyValueAccessReadData implements ReadData {
 
     @Override
     public InputStream inputStream() throws N5IOException, IllegalStateException {
-        return materialize().inputStream();
+        if (materialized != null) {
+            return materialized.inputStream();
+        }
+        
+        return new LazyInputStream(this);
     }
 
     @Override
