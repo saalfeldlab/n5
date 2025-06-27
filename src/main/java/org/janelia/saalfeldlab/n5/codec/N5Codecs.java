@@ -35,7 +35,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
-import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataBlock.DataBlockFactory;
 import org.janelia.saalfeldlab.n5.DataType;
@@ -46,6 +45,7 @@ import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.StringDataBlock;
+import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import static org.janelia.saalfeldlab.n5.N5Exception.*;
@@ -68,7 +68,7 @@ public class N5Codecs {
 
 	public static <T> DataBlockCodec<T> createDataBlockCodec(
 			final DataType dataType,
-			final Compression compression) {
+			final Codec.BytesCodec codec) {
 
 		final DataBlockCodecFactory<?> factory;
 		switch (dataType) {
@@ -104,36 +104,51 @@ public class N5Codecs {
 			throw new IllegalArgumentException("Unsupported data type: " + dataType);
 		}
 		@SuppressWarnings("unchecked")
-		final DataBlockCodecFactory<T> tFactory = (DataBlockCodecFactory<T>) factory;
-		return tFactory.createDataBlockCodec(compression);
+		final DataBlockCodecFactory<T> tFactory = (DataBlockCodecFactory<T>)factory;
+		return tFactory.createDataBlockCodec(codec);
 	}
 
 	private interface DataBlockCodecFactory<T> {
 
 		/**
-		 * Get a {@link DataBlockCodec}, with the specified {@code compression}, for de/serializing DataBlocks to N5 format,
+		 * Get the default {@link DataBlockCodec}, with the specified {@code
+		 * codec}, for {@link DataBlock DataBlocks} of this {@code DataType}.
+		 * The default codec is used for de/serializing blocks to N5 format.
 		 *
-		 * @return N5 {@code DataBlockCodec} for the specified {@code compression}
+		 * @return N5 {@code DataBlockCodec} for the specified {@code codec}
 		 */
-		DataBlockCodec<T> createDataBlockCodec(Compression compression);
+		DataBlockCodec<T> createDataBlockCodec(Codec.BytesCodec codec);
 	}
 
-	private abstract static class AbstractDataBlockCodec<T> implements DataBlockCodec<T> {
+	abstract static class AbstractDataBlockCodec<T> implements DataBlockCodec<T> {
 
 		private static final int VAR_OBJ_BYTES_PER_ELEMENT = 1;
 
-		private final DataCodec<T> dataCodec;
-		private final DataBlockFactory<T> dataBlockFactory;
-		private final Compression compression;
+		protected final DataCodec<T> dataCodec;
+		protected final DataBlockFactory<T> dataBlockFactory;
+		protected final Codec.BytesCodec codec;
 
 		AbstractDataBlockCodec(
 				final DataCodec<T> dataCodec,
 				final DataBlockFactory<T> dataBlockFactory,
-				final Compression compression
+				final Codec.BytesCodec codec
 		) {
 			this.dataCodec = dataCodec;
 			this.dataBlockFactory = dataBlockFactory;
-			this.compression = compression;
+			this.codec = codec;
+		}
+
+		@Override
+		public abstract ReadData encode(DataBlock<T> dataBlock) throws N5IOException;
+
+		@Override
+		public abstract DataBlock<T> decode(final ReadData readData, final long[] gridPosition) throws N5IOException;
+	}
+
+	abstract static class N5AbstractDataBlockCodec<T> extends AbstractDataBlockCodec<T> {
+
+		N5AbstractDataBlockCodec(DataCodec<T> dataCodec, DataBlockFactory<T> dataBlockFactory, BytesCodec codec) {
+			super(dataCodec, dataBlockFactory, codec);
 		}
 
 		abstract BlockHeader createBlockHeader(final DataBlock<T> dataBlock, ReadData blockData) throws N5IOException;
@@ -142,10 +157,10 @@ public class N5Codecs {
 		public ReadData encode(DataBlock<T> dataBlock) throws N5IOException {
 			return ReadData.from(out -> {
 				final ReadData dataReadData = dataCodec.serialize(dataBlock.getData());
-				final ReadData encodedData = compression.encode(dataReadData);
 				final BlockHeader header = createBlockHeader(dataBlock, dataReadData);
 
 				header.writeTo(out);
+				final ReadData encodedData = codec.encode(dataReadData);
 				encodedData.writeTo(out);
 			});
 		}
@@ -158,13 +173,10 @@ public class N5Codecs {
 			try(final InputStream in = readData.inputStream()) {
 				final BlockHeader header = decodeBlockHeader(in);
 
-				final int bytesPerElement
-						= dataCodec.bytesPerElement() == -1
-						? VAR_OBJ_BYTES_PER_ELEMENT
-						: dataCodec.bytesPerElement();
-
 				final int numElements = header.numElements();
-				final ReadData decodeData = compression.decode(ReadData.from(in));
+				final ReadData decodeData = codec.decode(ReadData.from(in));
+
+				// the dataCodec knows the number of bytes per element
 				final T data = dataCodec.deserialize(decodeData, numElements);
 				return dataBlockFactory.createDataBlock(header.blockSize(), gridPosition, data);
 			} catch (IOException e) {
@@ -173,21 +185,22 @@ public class N5Codecs {
 		}
 	}
 
+
 	/**
 	 * DataBlockCodec for all N5 data types, except STRING and OBJECT
 	 */
-	private static class DefaultDataBlockCodec<T> extends AbstractDataBlockCodec<T> {
+	private static class DefaultDataBlockCodec<T> extends N5AbstractDataBlockCodec<T> {
 
 		DefaultDataBlockCodec(
 				final DataCodec<T> dataCodec,
 				final DataBlockFactory<T> dataBlockFactory,
-				final Compression compression) {
+				final Codec.BytesCodec codec) {
 
-			super(dataCodec, dataBlockFactory, compression);
+			super(dataCodec, dataBlockFactory, codec);
 		}
 
 		@Override
-		protected BlockHeader createBlockHeader(final DataBlock<T> dataBlock, ReadData blockData)  {
+		protected BlockHeader createBlockHeader(final DataBlock<T> dataBlock, ReadData blockData) throws N5IOException {
 
 			return new BlockHeader(dataBlock.getSize(), dataBlock.getNumElements());
 		}
@@ -202,11 +215,11 @@ public class N5Codecs {
 	/**
 	 * DataBlockCodec for N5 data type STRING
 	 */
-	private static class StringDataBlockCodec extends AbstractDataBlockCodec<String[]> {
+	private static class StringDataBlockCodec extends N5AbstractDataBlockCodec<String[]> {
 
-		StringDataBlockCodec(final Compression compression) {
+		StringDataBlockCodec(final Codec.BytesCodec codec) {
 
-			super(DataCodec.STRING, StringDataBlock::new, compression);
+			super(DataCodec.STRING, StringDataBlock::new, codec);
 		}
 
 		@Override
@@ -225,11 +238,11 @@ public class N5Codecs {
 	/**
 	 * DataBlockCodec for N5 data type OBJECT
 	 */
-	private static class ObjectDataBlockCodec extends AbstractDataBlockCodec<byte[]> {
+	private static class ObjectDataBlockCodec extends N5AbstractDataBlockCodec<byte[]> {
 
-		ObjectDataBlockCodec(final Compression compression) {
+		ObjectDataBlockCodec(final Codec.BytesCodec codec) {
 
-			super(DataCodec.OBJECT, ByteArrayDataBlock::new, compression);
+			super(DataCodec.OBJECT, ByteArrayDataBlock::new, codec);
 		}
 
 		@Override
@@ -273,6 +286,20 @@ public class N5Codecs {
 			}
 			this.blockSize = blockSize;
 			this.numElements = numElements;
+		}
+
+		public int getSize() {
+
+			switch (mode) {
+				case MODE_DEFAULT:
+					return 2 + 4 * blockSize.length;
+				case MODE_VARLENGTH:
+					return 2 + 4 * blockSize.length + 4;
+				case MODE_OBJECT:
+					return 2 + 4;
+				default:
+					throw new IllegalArgumentException("Unexpected mode: " + mode);
+			}
 		}
 
 		public int[] blockSize() {

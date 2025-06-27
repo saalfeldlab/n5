@@ -29,7 +29,16 @@
 package org.janelia.saalfeldlab.n5.cache;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
+import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.janelia.saalfeldlab.n5.N5Exception;
 import org.junit.Test;
 
 import com.google.gson.JsonElement;
@@ -126,6 +135,165 @@ public class N5CacheTest {
 
 	}
 
+	@Test
+	public void testCopyOnReadPreventsExternalModification() {
+
+		final DummyBackingStorage backingStorage = new DummyBackingStorage();
+		final N5JsonCache cache = new N5JsonCache(backingStorage);
+		
+		// Get attributes and modify the returned object
+		JsonElement attrs1 = cache.getAttributes("path", "key");
+		attrs1.getAsJsonObject().addProperty("modified", "value");
+		
+		// Get attributes again - should not contain the modification
+		JsonElement attrs2 = cache.getAttributes("path", "key");
+		assertFalse(attrs2.getAsJsonObject().has("modified"));
+		
+		// Verify both calls return different instances
+		assertNotSame(attrs1, attrs2);
+	}
+
+	@Test
+	public void testCacheManipulationMethods() {
+
+		final DummyBackingStorage backingStorage = new DummyBackingStorage();
+		final N5JsonCache cache = new N5JsonCache(backingStorage);
+
+		// First, ensure the path exists in cache
+		assertTrue(cache.exists("path", null));
+
+		// Test setAttributes
+		JsonObject newAttrs = new JsonObject();
+		newAttrs.addProperty("custom", "value");
+		cache.setAttributes("path", "key", newAttrs);
+		JsonElement retrievedAttrs = cache.getAttributes("path", "key");
+		assertTrue(retrievedAttrs.getAsJsonObject().has("custom"));
+		assertEquals("value", retrievedAttrs.getAsJsonObject().get("custom").getAsString());
+
+		// Test updateCacheInfo
+		JsonObject updatedAttrs = new JsonObject();
+		updatedAttrs.addProperty("updated", "updated-value");
+		cache.updateCacheInfo("path", "key2", updatedAttrs);
+		JsonElement retrievedUpdated = cache.getAttributes("path", "key2");
+		assertTrue(retrievedUpdated.getAsJsonObject().has("updated"));
+		assertEquals("updated-value", retrievedUpdated.getAsJsonObject().get("updated").getAsString());
+		
+		// Test initializeNonemptyCache
+		cache.initializeNonemptyCache("newPath", "newKey");
+		assertTrue(cache.exists("newPath", null));
+	}
+
+	@Test
+	public void testChildManagement() {
+
+		final DummyBackingStorage backingStorage = new DummyBackingStorage();
+		final N5JsonCache cache = new N5JsonCache( backingStorage );
+
+		// Initialize parent and children
+		cache.exists("parent", null);
+		cache.list("parent");
+
+		// Test addChild
+		cache.addChild( "parent", "child1" );
+		String[] children = cache.list( "parent" );
+		assertTrue( Arrays.asList( children ).contains( "child1" ) );
+
+		// Note: addChildIfPresent doesn't check or create the parent,
+		// it only adds to existing cache entries
+
+		// Test addChildIfPresent on non-cached parent
+		// This should not throw and should not create the parent
+		cache.addChildIfPresent("nonexistent", "child");
+		children = cache.list("nonexistent");
+		assertFalse(Arrays.asList(children).contains("child"));
+
+		// Test addChildIfPresent on cached parent without children list
+		cache.exists("parent2", null);
+		children = cache.list("parent2"); // initialize children array
+		cache.addChildIfPresent("parent2", "child");
+		children = cache.list("parent2");
+		assertTrue(Arrays.asList(children).contains("child"));
+	}
+
+	@Test
+	public void testRemoveCacheHierarchy() {
+		final DummyBackingStorage backingStorage = new DummyBackingStorage();
+		final N5JsonCache cache = new N5JsonCache(backingStorage);
+		
+		// Setup hierarchy
+		cache.exists("root", null);
+		cache.exists("root/child1", null);
+		cache.exists("root/child1/grandchild", null);
+		cache.exists("root/child2", null);
+		
+		// Add children relationships
+		cache.list("root");
+		cache.addChild("root", "child1");
+		cache.addChild("root", "child2");
+		
+		// Remove child1 and its descendants
+		cache.removeCache("root", "root/child1");
+		
+		// Verify removal - paths should not exist anymore
+		assertFalse(cache.exists("root/child1", null));
+		assertFalse(cache.exists("root/child1/grandchild", null));
+		
+		// Verify parent's children list updated
+		String[] remaining = cache.list("root");
+		assertFalse(Arrays.asList(remaining).contains("child1"));
+		assertTrue(Arrays.asList(remaining).contains("child2"));
+		
+		// Verify child2 unaffected
+		assertTrue(cache.exists("root/child2", null));
+	}
+
+	@Test(expected = N5Exception.N5IOException.class)
+	public void testListNonExistentGroupThrows() {
+
+		final DummyNonExistentBackingStorage backingStorage = new DummyNonExistentBackingStorage();
+		final N5JsonCache cache = new N5JsonCache(backingStorage);
+		cache.list("nonexistent");
+	}
+
+	@Test
+	public void testEmptyCacheInfoBehavior() {
+		final DummyNonExistentBackingStorage backingStorage = new DummyNonExistentBackingStorage();
+		final N5JsonCache cache = new N5JsonCache(backingStorage);
+		
+		// Non-existent path should return emptyCacheInfo
+		assertFalse(cache.exists("nonexistent", null));
+		assertFalse(cache.isGroup("nonexistent", null));
+		assertFalse(cache.isDataset("nonexistent", null));
+		assertNull(cache.getAttributes("nonexistent", "key"));
+	}
+
+	@Test(expected = N5Exception.class)
+	public void testEmptyJsonDeepCopyThrows() {
+		N5JsonCache.emptyJson.deepCopy();
+	}
+
+	@Test
+	public void testCacheStateTransitions() {
+		final DummyBackingStorage backingStorage = new DummyBackingStorage();
+		final N5JsonCache cache = new N5JsonCache(backingStorage);
+		
+		// Start with emptyCacheInfo
+		cache.addNewCacheInfo("path", null, null);
+		
+		// Transition to a nonempty cache
+		cache.initializeNonemptyCache("path", "key");
+		assertTrue(cache.exists("path", null));
+		
+		// Update existing cache
+		JsonObject attrs = new JsonObject();
+		attrs.addProperty("version", "1");
+		cache.setAttributes("path", "key", attrs);
+		
+		attrs.addProperty("version", "2");
+		cache.updateCacheInfo("path", "key", attrs);
+		assertEquals("2", cache.getAttributes("path", "key").getAsJsonObject().get("version").getAsString());
+	}
+
 	protected static class DummyBackingStorage implements N5JsonCacheableContainer {
 
 		int attrCallCount = 0;
@@ -139,7 +307,7 @@ public class N5CacheTest {
 		public DummyBackingStorage() {
 		}
 
-		public JsonElement getAttributesFromContainer(final String key, final String cacheKey) {
+		public JsonElement getAttributesFromContainer(final String path, final String cacheKey) {
 			attrCallCount++;
 			final JsonObject obj = new JsonObject();
 			obj.addProperty("key", "value");
@@ -151,17 +319,17 @@ public class N5CacheTest {
 			return true;
 		}
 
-		public boolean isGroupFromContainer(final String key) {
+		public boolean isGroupFromContainer(final String path) {
 			isGroupCallCount++;
 			return true;
 		}
 
-		public boolean isDatasetFromContainer(final String key) {
+		public boolean isDatasetFromContainer(final String path) {
 			isDatasetCallCount++;
 			return true;
 		}
 
-		public String[] listFromContainer(final String key) {
+		public String[] listFromContainer(final String path) {
 			listCallCount++;
 			return new String[] { "list" };
 		}
@@ -176,6 +344,22 @@ public class N5CacheTest {
 		public boolean isDatasetFromAttributes(final String cacheKey, final JsonElement attributes) {
 			isDatasetFromAttrsCallCount++;
 			return true;
+		}
+	}
+
+	// Helper class for non-existent paths
+	protected static class DummyNonExistentBackingStorage extends DummyBackingStorage {
+
+		@Override
+		public JsonElement getAttributesFromContainer(String key, String cacheKey) {
+			attrCallCount++;
+			return null;
+		}
+
+		@Override
+		public boolean existsFromContainer(String path, String cacheKey) {
+			existsCallCount++;
+			return false;
 		}
 	}
 
