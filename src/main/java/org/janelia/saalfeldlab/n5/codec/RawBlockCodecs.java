@@ -97,7 +97,8 @@ public class RawBlockCodecs {
 			return elements;
 		}
 
-		@Override public ReadData encode(DataBlock<T> dataBlock) {
+		@Override
+		public ReadData encode(DataBlock<T> dataBlock) {
 
 			return ReadData.from(out -> {
 				final ReadData blockData = dataCodec.serialize(dataBlock.getData());
@@ -105,15 +106,11 @@ public class RawBlockCodecs {
 			});
 		}
 
-		@Override public DataBlock<T> decode(ReadData readData, long[] gridPosition) {
-			ReadData decodeData;
-			try {
-				decodeData = codec.decode(readData);
-				final T data = dataCodec.deserialize(decodeData, numElements());
-				return dataBlockFactory.createDataBlock(blockSize, gridPosition, data);
-			} catch (IOException e) {
-				throw new N5Exception.N5IOException(e);
-			}
+		@Override
+		public DataBlock<T> decode(ReadData readData, long[] gridPosition) {
+			ReadData decodeData = codec.decode(readData);
+			final T data = dataCodec.deserialize(decodeData, numElements());
+			return dataBlockFactory.createDataBlock(blockSize, gridPosition, data);
 		}
 	}
 }
