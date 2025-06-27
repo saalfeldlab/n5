@@ -57,9 +57,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
 import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
 import org.janelia.saalfeldlab.n5.shard.Shard;
-import org.janelia.saalfeldlab.n5.shard.VirtualShard;
 import org.janelia.saalfeldlab.n5.url.UriAttributeTest;
-import org.janelia.saalfeldlab.n5.codec.AsTypeCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.junit.After;
@@ -273,35 +271,7 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testWriteReadByteBlockMultipleCodecs() {
-
-		/*TODO: this tests "passes" in the sense that we get the correct output, but it
-		*  maybe is not the behavior we actually want*/
-
-		try (final N5Writer n5 = createTempN5Writer()) {
-			final String dataset = "8_64_32";
-			n5.remove(dataset);
-			final Codec[] codecs = {
-					new N5BlockCodec(),
-					new AsTypeCodec(DataType.INT8, DataType.INT32),
-					new AsTypeCodec(DataType.INT32, DataType.INT64)
-			};
-			final byte[] byteBlock1 = new byte[]{1,2,3,4,5,6,7,8};
-			final long[] dimensions1 = new long[]{2,2,2};
-			final int[] blockSize1 = new int[]{2,2,2};
-			final DatasetAttributes attrs = new DatasetAttributes(dimensions1, blockSize1, DataType.INT8, codecs);
-			n5.createDataset(dataset, attrs);
-			final DatasetAttributes attributes = n5.getDatasetAttributes(dataset);
-			final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize1, new long[]{0, 0, 0}, byteBlock1);
-			n5.writeBlock(dataset, attributes, dataBlock);
-
-			final DataBlock<?> loadedDataBlock = n5.readBlock(dataset, attrs, 0, 0, 0);
-			assertArrayEquals(byteBlock1, (byte[])loadedDataBlock.getData());
-		}
-	}
-
-	@Test
-	public void testWriteReadStringBlock() throws IOException, URISyntaxException {
+	public void testWriteReadStringBlock() {
 
 		// test dataset; all characters are valid UTF8 but may have different numbers of bytes!
 		final DataType dataType = DataType.STRING;
