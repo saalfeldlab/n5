@@ -102,6 +102,19 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	}
 
 	/**
+	 * Tests whether the block at the {@code blockGridPosition} exists.
+	 * <p>
+	 * Avoids reading the block data, if possible.
+	 *
+	 * @return true of the block exists
+	 */
+	default boolean blockExists(long... blockGridPosition) {
+
+		final int[] relativePosition = getBlockPosition(blockGridPosition);
+		return getIndex().exists(relativePosition);
+	}
+
+	/**
 	 * Retrieve the DataBlock at {@code blockGridPosition} if it exists and is
 	 * a member of this Shard.
 	 *
