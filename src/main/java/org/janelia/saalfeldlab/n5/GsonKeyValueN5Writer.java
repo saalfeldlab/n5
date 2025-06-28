@@ -31,6 +31,7 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,7 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
 import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.ShardIndex;
 import org.janelia.saalfeldlab.n5.util.Position;
 
 /**
@@ -308,24 +310,94 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		return true;
 	}
 
-	//TODO: Add deleteShard?
+	/**
+	 * Delete a shard at the specified position.
+	 *
+	 * @param path
+	 *            the dataset path
+	 * @param shardPosition
+	 *            the position of the shard to delete
+	 * @return true if the shard existed was successfully deleted. 
+	 * @throws N5Exception
+	 *             if an error occurs during deletion
+	 */
+	default boolean deleteShard(
+			final String path,
+			final long... shardPosition) throws N5Exception {
+
+		final String shardPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), shardPosition);
+		if (getKeyValueAccess().isFile(shardPath)) {
+			try {
+				getKeyValueAccess().delete(shardPath);
+				return true;
+			} catch (final Exception e) {
+				throw new N5Exception("The shard at " + 
+						Arrays.toString(shardPosition) + 
+						" could not be deleted.", e);
+			}
+		}
+		return false;
+	}
 
 	@Override
 	default boolean deleteBlock(
 			final String path,
 			final long... gridPosition) throws N5Exception {
 
-		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), gridPosition);
-		//TODO: how do we want to handle sharded datasets?
-		// - Delete block from shard?
-		// - Delete entire shard for block
-		if (getKeyValueAccess().isFile(blockPath))
-			getKeyValueAccess().delete(blockPath);
+		final String normalPath = N5URI.normalizeGroupPath(path);
+		final DatasetAttributes datasetAttributes = getDatasetAttributes(normalPath);
 
+		if (datasetAttributes == null) {
+			return false; // Dataset doesn't exist - return true for consistency
+		}
 
-		//TODO: should we try/catch and return false if exceptions are thrown?
+		if (datasetAttributes.isSharded()) {
+			// For sharded datasets, we need to:
+			// 1. Find which shard contains this block
+			// 2. Read the shard
+			// 3. Remove the block from the shard
+			// 4. Write the shard back (or delete if empty)
 
-		/* an IOException should have occurred if anything had failed midway */
-		return true;
+			final long[] shardPosition = datasetAttributes.getShardPositionForBlock(gridPosition);
+			final Shard<Object> shard = readShard(normalPath, datasetAttributes, shardPosition);
+
+			if (shard == null)
+				return false; // Shard doesn't exist, so block doesn't exist -
+								// return false for consistency
+
+			if (!shard.blockExists(gridPosition))
+				return false;
+
+			// Convert to InMemoryShard to manipulate blocks
+			final InMemoryShard<Object> inMemoryShard = InMemoryShard.fromShard(shard);
+
+			// Get all blocks except the one to remove
+			final List<DataBlock<Object>> remainingBlocks = new ArrayList<>();
+			for (DataBlock<Object> block : inMemoryShard.getBlocks()) {
+				if (!Arrays.equals(block.getGridPosition(), gridPosition)) {
+					remainingBlocks.add(block);
+				}
+			}
+
+			if (remainingBlocks.isEmpty()) {
+				// If no blocks remain, delete the entire shard
+				return deleteShard(normalPath, shardPosition);
+			} else {
+				// Create new shard with remaining blocks
+				final InMemoryShard<Object> newShard = new InMemoryShard<>(datasetAttributes, shardPosition);
+				for (DataBlock<Object> block : remainingBlocks) {
+					newShard.addBlock(block);
+				}
+
+				// Write the updated shard
+				writeShard(normalPath, datasetAttributes, newShard);
+				return true;
+			}
+
+		} else {
+			// For non-sharded datasets, deleting the key deletes the block
+			// and deleteShard deletes the key for gridPosition
+			return deleteShard(path, gridPosition);
+		}
 	}
 }

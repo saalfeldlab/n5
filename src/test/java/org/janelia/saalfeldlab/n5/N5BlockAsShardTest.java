@@ -4,6 +4,7 @@ import com.google.gson.GsonBuilder;
 import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
 import org.janelia.saalfeldlab.n5.shard.Shard;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex;
+import org.junit.Ignore;
 
 
 public class N5BlockAsShardTest extends N5FSTest {
@@ -50,4 +51,12 @@ public class N5BlockAsShardTest extends N5FSTest {
 			}
 		};
 	}
+
+	@Override
+	@Ignore("irrelevant when creating a sharded dataset")
+	public void testShardDelete() { }
+
+	@Override
+	@Ignore("irrelevant when creating a sharded dataset")
+	public void testShardedBlockDelete() { }
 }

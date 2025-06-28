@@ -285,12 +285,24 @@ public interface N5Writer extends N5Reader {
 	 *
 	 * @param datasetPath dataset path
 	 * @param gridPosition position of block to be deleted
-	 * @throws N5Exception the exception
+	 * @throws N5Exception if the block exists but could not be deleted
 	 *
-	 * @return {@code true} if the block at {@code gridPosition} was deleted.
-	 *
+	 * @return {@code true} if the block at {@code gridPosition} existed and was deleted.
 	 */
 	boolean deleteBlock(
+			final String datasetPath,
+			final long... gridPosition) throws N5Exception;
+
+	/**
+	 * Deletes the shard at {@code gridPosition}.
+	 *
+	 * @param datasetPath dataset path
+	 * @param gridPosition position of shard to be deleted
+	 * @throws N5Exception if the block exists but could not be deleted
+	 *
+	 * @return {@code true} if the shard at {@code gridPosition} existed and was deleted.
+	 */
+	boolean deleteShard(
 			final String datasetPath,
 			final long... gridPosition) throws N5Exception;
 

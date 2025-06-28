@@ -164,11 +164,11 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	/**
-	 * Constructs the path for a data block in a dataset at a given grid
-	 * position.
+	 * Constructs the path for a shard or data block in a dataset at a given
+	 * grid position. 
 	 * <br>
-	 * If the gridPosition passed in refers to shard position
-	 * in a sharded dataset, this will return the path to the shard key
+	 * If the gridPosition passed in refers to shard position in a sharded
+	 * dataset, this will return the path to the shard key.
 	 * <p>
 	 * The returned path is
 	 *
@@ -180,7 +180,8 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 *
 	 * @param normalPath
 	 *            normalized dataset path
-	 * @param gridPosition to the target data block
+	 * @param gridPosition
+	 *            to the target data block
 	 * @return the absolute path to the data block ad gridPosition
 	 */
 	default String absoluteDataBlockPath(
