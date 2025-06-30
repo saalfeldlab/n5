@@ -290,13 +290,16 @@ public class N5Codecs {
 
 		public int getSize() {
 
+			// two bytes for mode, two bytes for num dimensions
+			// four bytes per dimension.
+			// four more bytes for varlength
 			switch (mode) {
 				case MODE_DEFAULT:
-					return 2 + 4 * blockSize.length;
+					return 4 + 4 * blockSize.length;
 				case MODE_VARLENGTH:
-					return 2 + 4 * blockSize.length + 4;
+					return 4 + 4 * blockSize.length + 4;
 				case MODE_OBJECT:
-					return 2 + 4;
+					return 4 + 4;
 				default:
 					throw new IllegalArgumentException("Unexpected mode: " + mode);
 			}

@@ -5,6 +5,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.janelia.saalfeldlab.n5.GsonUtils;
 import org.janelia.saalfeldlab.n5.GzipCompression;
+import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.BytesCodecTests.BitShiftBytesCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.IdentityCodec;
 import org.junit.Before;
@@ -23,19 +25,29 @@ public class CodecSerialization {
 	@Before
 	public void before() {
 
-
 		final GsonBuilder gsonBuilder = new GsonBuilder();
 		GsonUtils.registerGson(gsonBuilder);
 		gson = gsonBuilder.create();
 	}
 
 	@Test
-	public void testSerializeIdentity() {
+	public void testCodecSerialization() {
 
 		final IdentityCodec id = new IdentityCodec();
 		final JsonObject jsonId = gson.toJsonTree(id).getAsJsonObject();
 		final JsonElement expected = gson.fromJson("{\"name\":\"id\"}", JsonElement.class);
-		assertEquals("identity", expected, jsonId.getAsJsonObject());
+		assertEquals("identity json", expected, jsonId.getAsJsonObject());
+
+		final BitShiftBytesCodec codec = new BitShiftBytesCodec(3);
+		final JsonObject bitShiftJson = gson.toJsonTree(codec).getAsJsonObject();
+		final JsonElement expectedBitShift = gson.fromJson(
+				"{\"name\":\"bitshift\",\"configuration\":{\"shift\":3}}",
+				JsonElement.class);
+		assertEquals("bitshift json", expectedBitShift, bitShiftJson);
+
+		final BytesCodec deserializedCodec = gson.fromJson(bitShiftJson, Codec.BytesCodec.class);
+		// Verify deserialized codec
+		assertEquals("Deserialized codec should equal original", codec, deserializedCodec);
 	}
 
 	@Test
