@@ -142,17 +142,6 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		return blocks;
 	}
 
-	/**
-	 * Returns an {@link Iterator} over block positions contained in this shard.
-	 * 
-	 * @return
-	 */
-	default Iterator<long[]> blockPositionIterator() {
-
-		final int nd = getSize().length;
-		long[] min = getDatasetAttributes().getBlockPositionFromShardPosition( getGridPosition(), new long[nd]);
-		return new GridIterator(GridIterator.int2long(getBlockGridSize()), min);
-	}
 
 	/**
 	 * @return the ShardIndex for this shard, or a new ShardIndex if the Shard is non-existent

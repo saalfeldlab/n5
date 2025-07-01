@@ -30,8 +30,13 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
@@ -39,7 +44,6 @@ import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
 import org.janelia.saalfeldlab.n5.shard.BlockAsShardCodec;
-import org.janelia.saalfeldlab.n5.shard.ShardParameters;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -49,6 +53,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
+import org.janelia.saalfeldlab.n5.util.Position;
 
 /**
  * Mandatory dataset attributes:
@@ -62,8 +67,7 @@ import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
  *
  * @author Stephan Saalfeld
  */
-//TODO : inline ShardParameters and delete interface
-public class DatasetAttributes implements ShardParameters, Serializable {
+public class DatasetAttributes implements Serializable {
 
 	private static final long serialVersionUID = -4521467080388947553L;
 
@@ -82,11 +86,16 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 	protected static final String compressionTypeKey = "compressionType";
 
 	private final long[] dimensions;
+
+	// number of samples per block per dimension
 	private final int[] blockSize;
+
+	// number of samples per shard per dimension
+	private final int[] shardSize;
+
 	private final DataType dataType;
 	private final ArrayCodec arrayCodec;
 	private final BytesCodec[] byteCodecs;
-	private final int[] shardSize;
 
 	/**
 	 * Constructs a DatasetAttributes instance with specified dimensions, block size, data type,
@@ -103,6 +112,8 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 			final int[] blockSize,
 			final DataType dataType,
 			final Codec... codecs) {
+
+		validateBlockShardSizes(dimensions, shardSize, blockSize);
 
 		this.dimensions = dimensions;
 		this.shardSize = shardSize;
@@ -135,6 +146,33 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 		arrayCodec.initialize(this, byteCodecs);
 	}
 
+	private void validateBlockShardSizes(long[] dimensions, int[] shardSize, int[] blockSize) {
+
+		final int nd = dimensions.length;
+
+		if (blockSize.length != nd)
+			throw new IllegalArgumentException(String.format("Number of block dimensions (%d) must equal number of dimensions (%d).",
+					blockSize.length, nd));
+
+		if (shardSize.length != nd)
+			throw new IllegalArgumentException(String.format("Number of shard dimensions (%d) must equal number of dimensions (%d).",
+					shardSize.length, nd));
+
+		for (int i = 0; i < blockSize.length; i++) {
+
+			if (blockSize[i] <= 0)
+				throw new IllegalArgumentException(String.format("Block size in dimension %d (%d) is <= 0",
+						i, blockSize[i]));
+
+			if (shardSize[i] < blockSize[i])
+				throw new IllegalArgumentException(String.format("Shard size in dimension %d (%d) is larger than the block size (%d)",
+						i, shardSize[i], blockSize[i]));
+			else if (shardSize[i] % blockSize[i] != 0)
+				throw new IllegalArgumentException(String.format("Shard size in dimension %d (%d) not a multiple of the block size (%d)",
+						i, shardSize[i], blockSize[i]));
+		}
+	}
+
 	protected Codec.ArrayCodec defaultArrayCodec() {
 		return new N5BlockCodec();
 	}
@@ -156,28 +194,172 @@ public class DatasetAttributes implements ShardParameters, Serializable {
 		this( dimensions, blockSize, blockSize, dataType, codecs );
 	}
 
-	@Override
 	public long[] getDimensions() {
 
 		return dimensions;
 	}
 
-	@Override
 	public int getNumDimensions() {
 
 		return dimensions.length;
 	}
 
-	@Override
 	public int[] getShardSize() {
 
 		return shardSize;
 	}
 
-	@Override
 	public int[] getBlockSize() {
 
 		return blockSize;
+	}
+
+	/**
+	 * Returns the number of blocks per dimension for a shard.
+	 *
+	 * @return the size of the block grid of a shard
+	 */
+	public int[] getBlocksPerShard() {
+
+		final int[] shardSize = getShardSize();
+		final int nd = getNumDimensions();
+		final int[] blocksPerShard = new int[nd];
+		final int[] blockSize = getBlockSize();
+		for (int i = 0; i < nd; i++)
+			blocksPerShard[i] = shardSize[i] / blockSize[i];
+
+		return blocksPerShard;
+	}
+
+	/**
+	 * Returns the number of blocks per dimension that tile the image.
+	 *
+	 * @return blocks per image
+	 */
+	public long[] blocksPerImage() {
+		return IntStream.range(0, getNumDimensions())
+				.mapToLong(i -> (long) Math.ceil((double)getDimensions()[i] / getBlockSize()[i]))
+				.toArray();
+	}
+
+	/**
+	 * Returns the number of shards per dimension that tile the image.
+	 *
+	 * @return shards per image
+	 */
+	public long[] shardsPerImage() {
+		return IntStream.range(0, getNumDimensions())
+				.mapToLong(i -> (long)Math.ceil((double)getDimensions()[i] / getShardSize()[i]))
+				.toArray();
+	}
+
+	/**
+	 * @return the number of blocks per shard
+	 */
+	public long getNumBlocksPerShard() {
+
+		return Arrays.stream(getBlocksPerShard()).reduce(1, (x, y) -> x * y);
+	}
+
+	/**
+	 * Given a block's position relative to the array, returns the position of the shard containing that block relative to the shard grid.
+	 *
+	 * @param blockGridPosition
+	 *            position of a block relative to the array
+	 * @return the position of the containing shard in the shard grid
+	 */
+	public long[] getShardPositionForBlock(final long... blockGridPosition) {
+
+		final int[] blocksPerShard = getBlocksPerShard();
+		final long[] shardGridPosition = new long[blockGridPosition.length];
+		for (int i = 0; i < shardGridPosition.length; i++) {
+			shardGridPosition[i] = (int)Math.floor((double)blockGridPosition[i] / blocksPerShard[i]);
+		}
+
+		return shardGridPosition;
+	}
+
+	/**
+	 * Returns the block at the given position relative to this shard, or null if this shard does not contain the given block.
+	 *
+	 * @return the block position
+	 */
+	public int[] getBlockPositionInShard(final long[] shardPosition, final long[] blockPosition) {
+
+		final long[] shardPos = getShardPositionForBlock(blockPosition);
+		if (!Arrays.equals(shardPosition, shardPos))
+			return null;
+
+		final int[] shardSize = getBlocksPerShard();
+		final int[] blockShardPos = new int[shardSize.length];
+		for (int i = 0; i < shardSize.length; i++) {
+			blockShardPos[i] = (int)(blockPosition[i] % shardSize[i]);
+		}
+		return blockShardPos;
+	}
+
+	/**
+	 * Given a block's position relative to a shard, returns its position relative
+	 * to the image.
+	 *
+	 * @param shardPosition shard position in the shard grid
+	 * @param blockPosition block position relative to the shard 
+	 * @return the block position in the block grid
+	 */
+	public long[] getBlockPositionFromShardPosition(final long[] shardPosition, final long[] blockPosition) {
+
+		final int[] shardBlockSize = getBlocksPerShard();
+		final long[] blockImagePos = new long[getNumDimensions()];
+		for (int i = 0; i < getNumDimensions(); i++) {
+			blockImagePos[i] = (shardPosition[i] * shardBlockSize[i]) + (blockPosition[i]);
+		}
+
+		return blockImagePos;
+	}
+
+	/**
+	 * Returns the number of shards per dimension for the dataset.
+	 *
+	 * @return the size of the shard grid of a dataset
+	 */
+	public int[] getShardBlockGridSize() {
+
+		final int nd = getNumDimensions();
+		final int[] shardBlockGridSize = new int[nd];
+		final int[] blockSize = getBlockSize();
+		for (int i = 0; i < nd; i++)
+			shardBlockGridSize[i] = (int)(Math.ceil((double)getDimensions()[i] / blockSize[i]));
+
+		return shardBlockGridSize;
+	}
+
+	public Map<Position, List<long[]>> groupBlockPositions(final List<long[]> blockPositions) {
+
+		final TreeMap<Position, List<long[]>> map = new TreeMap<>();
+		for( final long[] blockPos : blockPositions ) {
+			Position shardPos = Position.wrap(getShardPositionForBlock(blockPos));
+			if( !map.containsKey(shardPos)) {
+				map.put(shardPos, new ArrayList<>());
+			}
+			map.get(shardPos).add(blockPos);
+		}
+
+		return map;
+	}
+
+	public <T> Map<Position, List<DataBlock<T>>> groupBlocks(final List<DataBlock<T>> blocks) {
+
+		// figure out how to re-use groupBlockPositions here?
+		final TreeMap<Position, List<DataBlock<T>>> map = new TreeMap<>();
+		for (final DataBlock<T> block : blocks) {
+			Position shardPos = Position.wrap(getShardPositionForBlock(block.getGridPosition()));
+			if (!map.containsKey(shardPos)) {
+				map.put(shardPos, new ArrayList<>());
+			}
+			map.get(shardPos).add(block);
+		}
+
+		return map;
 	}
 
 	public boolean isSharded() {
