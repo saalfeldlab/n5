@@ -13,6 +13,8 @@ public class GridIterator implements Iterator<long[]> {
 
 	final protected long[] position;
 
+	final protected int[] intPosition;
+
 	final protected long[] min;
 
 	final protected int lastIndex;
@@ -24,6 +26,7 @@ public class GridIterator implements Iterator<long[]> {
 		final int n = dimensions.length;
 		this.dimensions = new long[n];
 		this.position = new long[n];
+		this.intPosition = new int[n];
 		this.min = min;
 		steps = new long[n];
 
@@ -74,6 +77,13 @@ public class GridIterator implements Iterator<long[]> {
 		return position;
 	}
 
+	public int[] nextInt() {
+
+		next();
+		long2int(position, intPosition);
+		return intPosition;
+	}
+
 	public int getIndex() {
 
 		return index;
@@ -95,6 +105,14 @@ public class GridIterator implements Iterator<long[]> {
 			position[dim] = (index % dimensions[dim]) + offset[dim];
 			index /= dimensions[dim];
 		}
+	}
+
+	public static int[] long2int(final long[] src, final int[] tgt) {
+
+		for (int d = 0; d < tgt.length; ++d)
+			tgt[d] = (int)src[d];
+
+		return tgt;
 	}
 
 	public static int[] long2int(final long[] a) {

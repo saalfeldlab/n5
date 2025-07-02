@@ -214,7 +214,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 			while (!index.exists(blockIndex++))
 				it.fwd();
 
-			return shard.getBlock(GridIterator.long2int(it.next()));
+			return shard.getBlock(it.nextInt());
 		}
 	}
 
