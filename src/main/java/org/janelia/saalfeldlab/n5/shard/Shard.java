@@ -60,68 +60,45 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	long[] getGridPosition();
 
 	/**
-	 * Returns of the block at the given position relative to this shard, or null if this shard does not contain the given block.
+	 * Given a {@code blockPosition} relative to the dataset, return its position relative to this 
+	 * shard.
 	 *
-	 * @return the shard position
+	 * @param blockPositionInDataset dataset-relative block position
+	 * @return the shard-relative block positiorelativeBlockPositionn
+	 * @see {@link DatasetAttributes#getBlockPositionInShard(long[], long[])}
+	 * @see {@link #getBlockPositionFromShardPosition(long[], long[])}
 	 */
-	default int[] getBlockPosition(long... blockPosition) {
+	default int[] getRelativeBlockPosition(long... datasetBlockPosition) {
 
-		final long[] shardPos = getDatasetAttributes().getShardPositionForBlock(blockPosition);
-		return getDatasetAttributes().getBlockPositionInShard(shardPos, blockPosition);
-	}
-	
-	/**
-	 * Returns the position in pixels of the 
-	 * 
-	 * @return the min 
-	 */
-	default long[] getShardMinPosition(long... shardPosition) {
-
-		final int[] shardSize = getSize();
-		final long[] shardMin = new long[shardSize.length];
-		for (int i = 0; i < shardSize.length; i++) {
-			shardMin[i] = shardPosition[i] * shardSize[i];
-		}
-		return shardMin;
+		return getDatasetAttributes().getShardRelativeBlockPosition(
+				getGridPosition(),
+				datasetBlockPosition);
 	}
 
 	/**
-	 * Returns the position of the shard containing the block with the given block position.
-	 *
-	 * @return the shard position
-	 */
-	default long[] getShardPosition(long... blockPosition) {
-
-		final int[] shardBlockDimensions = getBlockGridSize();
-		final long[] shardGridPosition = new long[shardBlockDimensions.length];
-		for (int i = 0; i < shardGridPosition.length; i++) {
-			shardGridPosition[i] = (long)Math.floor((double)(blockPosition[i]) / shardBlockDimensions[i]);
-		}
-
-		return shardGridPosition;
-	}
-
-	/**
-	 * Tests whether the block at the {@code blockGridPosition} exists.
+	 * Tests whether the block at the {@code relativeBlockPosition} (relative to
+	 * this shard) exists.
 	 * <p>
 	 * Avoids reading the block data, if possible.
 	 *
-	 * @return true of the block exists
+	 * @return true of the block exists in this shard
 	 */
-	default boolean blockExists(long... blockGridPosition) {
+	default boolean blockExists(int... relativeBlockPosition) {
 
-		final int[] relativePosition = getBlockPosition(blockGridPosition);
-		return getIndex().exists(relativePosition);
+		return getIndex().exists(relativeBlockPosition);
 	}
 
 	/**
-	 * Retrieve the DataBlock at {@code blockGridPosition} if it exists and is
-	 * a member of this Shard.
+	 * Retrieve the DataBlock at {@code blockGridPosition} relative to this shard if it exists and is
+	 * a member of this shard.
+	 * <p>
+	 * If needed, use {@code getRelativeBlockPosition} to convert block positions relative to the dataset into
+	 * positions relative to this shard.
 	 *
-	 * @param blockGridPosition position of the desired block in the block grid
+	 * @param blockGridPosition position of the desired block relative to this shard
 	 * @return the block if it exists and is part of this shard, otherwise null
 	 */
-	DataBlock<T> getBlock(long... blockGridPosition);
+	DataBlock<T> getBlock(int... blockGridPosition);
 
 	default Iterator<DataBlock<T>> iterator() {
 
@@ -173,7 +150,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 					long prevCount = 0;
 					for (DataBlock<T> block : getBlocks()) {
 						arrayCodec.encode(block).writeTo(countOut);
-						final int[] blockPosition = getBlockPosition(block.getGridPosition());
+						final int[] blockPosition = getRelativeBlockPosition(block.getGridPosition());
 						final long curCount = countOut.getByteCount();
 						final long blockWrittenSize = curCount - prevCount;
 						prevCount = curCount;
@@ -193,7 +170,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 				blocksData.add(readDataBlock);
 				final long length = readDataBlock.length();
 				synchronized (index) {
-					index.set(blockOffset.getAndAdd(length), length, getBlockPosition(dataBlock.getGridPosition()));
+					index.set(blockOffset.getAndAdd(length), length, getRelativeBlockPosition(dataBlock.getGridPosition()));
 				}
 			}
 			return ReadData.from(out -> {
@@ -237,7 +214,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 			while (!index.exists(blockIndex++))
 				it.fwd();
 
-			return shard.getBlock(it.next());
+			return shard.getBlock(GridIterator.long2int(it.next()));
 		}
 	}
 

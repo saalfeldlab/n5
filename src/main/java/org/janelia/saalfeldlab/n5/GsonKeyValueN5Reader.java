@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
@@ -149,7 +148,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 					continue;
 
 				for (final long[] blkPosition : e.getValue()) {
-					blocks.add(currentShard.getBlock(blkPosition));
+					blocks.add(currentShard.getBlock(currentShard.getRelativeBlockPosition(blkPosition)));
 				}
 			}
 			return blocks;

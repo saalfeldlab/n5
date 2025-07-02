@@ -171,15 +171,15 @@ public class DatasetAttributesTest {
 
 		assertArrayEquals(new int[]{4, 4}, shard.getBlockGridSize());
 
-		assertArrayEquals(new long[]{0, 0}, shard.getShardPosition(0, 0));
-		assertArrayEquals(new long[]{1, 1}, shard.getShardPosition(5, 5));
-		assertArrayEquals(new long[]{1, 0}, shard.getShardPosition(5, 0));
-		assertArrayEquals(new long[]{0, 1}, shard.getShardPosition(0, 5));
+		assertArrayEquals(new long[]{0, 0}, dsetAttrs.getShardPositionForBlock(0, 0));
+		assertArrayEquals(new long[]{1, 1}, dsetAttrs.getShardPositionForBlock(5, 5));
+		assertArrayEquals(new long[]{1, 0}, dsetAttrs.getShardPositionForBlock(5, 0));
+		assertArrayEquals(new long[]{0, 1}, dsetAttrs.getShardPositionForBlock(0, 5));
 
-		assertArrayEquals(new int[]{0, 0}, shard.getBlockPosition(4, 4));
-		assertArrayEquals(new int[]{1, 1}, shard.getBlockPosition(5, 5));
-		assertArrayEquals(new int[]{2, 2}, shard.getBlockPosition(6, 6));
-		assertArrayEquals(new int[]{3, 3}, shard.getBlockPosition(7, 7));
+		assertArrayEquals(new int[]{0, 0}, shard.getRelativeBlockPosition(4, 4));
+		assertArrayEquals(new int[]{1, 1}, shard.getRelativeBlockPosition(5, 5));
+		assertArrayEquals(new int[]{2, 2}, shard.getRelativeBlockPosition(6, 6));
+		assertArrayEquals(new int[]{3, 3}, shard.getRelativeBlockPosition(7, 7));
 	}
 
 	@Test
@@ -216,9 +216,9 @@ public class DatasetAttributesTest {
 
 		final int nd = attrs.getNumDimensions();
 		final int[] blocksPerShard = attrs.getBlocksPerShard();
-		return toStream( new GridIterator(attrs.shardsPerImage()))
+		return toStream( new GridIterator(attrs.shardsPerDataset()))
 				.flatMap( shardPosition -> {
-					final long[] min = attrs.getBlockPositionFromShardPosition(shardPosition, new long[nd]);
+					final long[] min = attrs.getBlockPositionFromShardPosition(shardPosition, new int[nd]);
 					return toStream(new GridIterator(GridIterator.int2long(blocksPerShard), min));
 				});
 	}

@@ -59,4 +59,8 @@ public interface Position extends Comparable<Position> {
 		return new FinalPosition(p);
 	}
 
+	static Position wrap(final int[] p) {
+		return new FinalPosition(GridIterator.int2long(p));
+	}
+
 }

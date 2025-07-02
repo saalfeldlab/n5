@@ -50,7 +50,7 @@ public interface DataBlock<T> {
 	int[] getSize();
 
 	/**
-	 * Returns the position of this data block on the block grid.
+	 * Returns the position of this data block on the block grid relative to dataset.
 	 * <p>
 	 * The dimensionality of the grid position is expected to be equal to the
 	 * dimensionality of the dataset. Consistency is not enforced.

@@ -365,7 +365,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 				return false; // Shard doesn't exist, so block doesn't exist -
 								// return false for consistency
 
-			if (!shard.blockExists(gridPosition))
+			final int[] relativePosition = shard.getRelativeBlockPosition(gridPosition);
+			if (!shard.blockExists(relativePosition))
 				return false;
 
 			// Convert to InMemoryShard to manipulate blocks

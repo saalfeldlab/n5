@@ -92,11 +92,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	}
 
 	@Override
-	public DataBlock<T> getBlock(long... blockGridPosition) {
-
-		final int[] relativePosition = getBlockPosition(blockGridPosition);
-		if (relativePosition == null)
-			throw new N5IOException("Attempted to read a block from the wrong shard.");
+	public DataBlock<T> getBlock(int... relativePosition) {
 
 		final ShardIndex idx = getIndex();
 		if (!idx.exists(relativePosition))
@@ -105,14 +101,14 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		final long blockOffset = idx.getOffset(relativePosition);
 		final long blockSize = idx.getNumBytes(relativePosition);
 
-		final long[] blockPosInImg = getDatasetAttributes().getBlockPositionFromShardPosition(getGridPosition(), blockGridPosition);
+		final long[] blockPosInDataset = getDatasetAttributes().getBlockPositionFromShardPosition(getGridPosition(), relativePosition);
 		try {
 			final ReadData blockData = shardData.slice(blockOffset, blockSize);
-			return getBlock(blockData, blockPosInImg);
+			return getBlock(blockData, blockPosInDataset);
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
 		} catch (final IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to read block from " + Arrays.toString(blockGridPosition), e);
+			throw new N5IOException("Failed to read block from " + Arrays.toString(blockPosInDataset), e);
 		}
 	}
 

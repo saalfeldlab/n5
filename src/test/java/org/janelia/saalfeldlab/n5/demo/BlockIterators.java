@@ -81,7 +81,7 @@ public class BlockIterators {
 				.flatMap( shardPosition -> {
 
 					final int nd = attrs.getNumDimensions();
-					final long[] min = attrs.getBlockPositionFromShardPosition(shardPosition, new long[nd]);
+					final long[] min = attrs.getBlockPositionFromShardPosition(shardPosition, new int[nd]);
 					return toStream(new GridIterator(GridIterator.int2long(blocksPerShard), min));
 				});
 	}

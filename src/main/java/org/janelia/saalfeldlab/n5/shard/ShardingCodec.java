@@ -136,8 +136,10 @@ public class ShardingCodec implements Codec.ArrayCodec {
 	public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5IOException {
 
 		final ReadData splitableReadData = readData.materialize();
-		final VirtualShard<T> shard = new VirtualShard<>(attributes, gridPosition, splitableReadData);
-		return shard.getBlock(gridPosition);
+		final long[] shardPosition = getPositionForBlock(attributes, gridPosition);
+		final VirtualShard<T> shard = new VirtualShard<>(attributes, shardPosition, splitableReadData);
+		final int[] relativeBlockPosition = shard.getRelativeBlockPosition(gridPosition);
+		return shard.getBlock(relativeBlockPosition);
 	}
 
 	public ShardIndex createIndex(final DatasetAttributes attributes) {

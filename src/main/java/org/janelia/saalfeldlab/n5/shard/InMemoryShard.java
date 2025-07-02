@@ -35,7 +35,7 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	}
 
 	@Override
-	public DataBlock<T> getBlock(long... blockGridPosition) {
+	public DataBlock<T> getBlock(int... blockGridPosition) {
 
 		return blocks.get(Position.wrap(blockGridPosition));
 	}

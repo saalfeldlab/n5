@@ -215,9 +215,9 @@ public class DatasetAttributes implements Serializable {
 	}
 
 	/**
-	 * Returns the number of blocks per dimension for a shard.
+	 * Returns the number of blocks per dimension for each shard.
 	 *
-	 * @return the size of the block grid of a shard
+	 * @return the blocks per shard
 	 */
 	public int[] getBlocksPerShard() {
 
@@ -232,29 +232,31 @@ public class DatasetAttributes implements Serializable {
 	}
 
 	/**
-	 * Returns the number of blocks per dimension that tile the image.
+	 * Returns the number of blocks per dimension for this dataset.
 	 *
-	 * @return blocks per image
+	 * @return blocks per dataset
 	 */
-	public long[] blocksPerImage() {
+	public long[] blocksPerDataset() {
 		return IntStream.range(0, getNumDimensions())
 				.mapToLong(i -> (long) Math.ceil((double)getDimensions()[i] / getBlockSize()[i]))
 				.toArray();
 	}
 
 	/**
-	 * Returns the number of shards per dimension that tile the image.
+	 * Returns the number of shards per dimension for this dataset.
 	 *
-	 * @return shards per image
+	 * @return shards per dataset
 	 */
-	public long[] shardsPerImage() {
+	public long[] shardsPerDataset() {
 		return IntStream.range(0, getNumDimensions())
 				.mapToLong(i -> (long)Math.ceil((double)getDimensions()[i] / getShardSize()[i]))
 				.toArray();
 	}
 
 	/**
-	 * @return the number of blocks per shard
+	 * Returns the total number of blocks in each shard.
+	 *
+	 * @return number of blocks in a shard
 	 */
 	public long getNumBlocksPerShard() {
 
@@ -262,10 +264,11 @@ public class DatasetAttributes implements Serializable {
 	}
 
 	/**
-	 * Given a block's position relative to the array, returns the position of the shard containing that block relative to the shard grid.
+	 * Given a block's position relative to the dataset, returns the position of
+	 * the shard containing that block.
 	 *
 	 * @param blockGridPosition
-	 *            position of a block relative to the array
+	 *            position of a block relative to the dataset
 	 * @return the position of the containing shard in the shard grid
 	 */
 	public long[] getShardPositionForBlock(final long... blockGridPosition) {
@@ -280,41 +283,51 @@ public class DatasetAttributes implements Serializable {
 	}
 
 	/**
-	 * Returns the block at the given position relative to this shard, or null if this shard does not contain the given block.
-	 *
-	 * @return the block position
+	 * Given a {@code datasetRelativeBlockPosition} returns the position
+	 * relative the the shard at position {@code shardPosition}.
+	 * 
+	 * @param shardPosition
+	 *            position of the shard
+	 * @param datasetRelativeBlockPosition
+	 *            position of the block relative to the dataset
+	 * @return position of the block relative to the shard
+	 * @see {@link #getBlockPositionFromShardPosition(long[], int[])}
 	 */
-	public int[] getBlockPositionInShard(final long[] shardPosition, final long[] blockPosition) {
+	public int[] getShardRelativeBlockPosition(final long[] shardPosition, final long[] datasetRelativeBlockPosition) {
 
-		final long[] shardPos = getShardPositionForBlock(blockPosition);
+		final long[] shardPos = getShardPositionForBlock(datasetRelativeBlockPosition);
 		if (!Arrays.equals(shardPosition, shardPos))
 			return null;
 
 		final int[] shardSize = getBlocksPerShard();
-		final int[] blockShardPos = new int[shardSize.length];
+		final int[] shardRelativeBlockPosition = new int[shardSize.length];
 		for (int i = 0; i < shardSize.length; i++) {
-			blockShardPos[i] = (int)(blockPosition[i] % shardSize[i]);
+			shardRelativeBlockPosition[i] = (int)(datasetRelativeBlockPosition[i] % shardSize[i]);
 		}
-		return blockShardPos;
+		return shardRelativeBlockPosition;
 	}
 
 	/**
-	 * Given a block's position relative to a shard, returns its position relative
-	 * to the image.
+	 * Given a {@code shardRelativeBlockPosition} relative to the shard at
+	 * position {@code shardPosition}, returns the block' position relative the
+	 * dataset.
 	 *
-	 * @param shardPosition shard position in the shard grid
-	 * @param blockPosition block position relative to the shard 
-	 * @return the block position in the block grid
+	 * @param shardPosition
+	 *            position of the shard
+	 * @param shardRelativeBlockPosition
+	 *            position of the block relative to the shard
+	 * @return position of the block relative to the dataset
+	 * @see {@link #getShardRelativeBlockPosition(long[], int[])}
 	 */
-	public long[] getBlockPositionFromShardPosition(final long[] shardPosition, final long[] blockPosition) {
+	public long[] getBlockPositionFromShardPosition(final long[] shardPosition, final int[] shardRelativeBlockPosition) {
 
 		final int[] shardBlockSize = getBlocksPerShard();
-		final long[] blockImagePos = new long[getNumDimensions()];
+		final long[] datasetRelativeBlockPosition = new long[getNumDimensions()];
 		for (int i = 0; i < getNumDimensions(); i++) {
-			blockImagePos[i] = (shardPosition[i] * shardBlockSize[i]) + (blockPosition[i]);
+			datasetRelativeBlockPosition[i] = (shardPosition[i] * shardBlockSize[i]) + (shardRelativeBlockPosition[i]);
 		}
 
-		return blockImagePos;
+		return datasetRelativeBlockPosition;
 	}
 
 	/**

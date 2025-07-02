@@ -30,7 +30,7 @@ public class N5BlockAsShardTest extends N5FSTest {
 				if (shard == null)
 					return null;
 
-				return shard.getBlock(gridPosition);
+				return shard.getBlock(shard.getRelativeBlockPosition(gridPosition));
 			}
 		};
 	}
@@ -47,7 +47,7 @@ public class N5BlockAsShardTest extends N5FSTest {
 				if (shard == null)
 					return null;
 
-				return shard.getBlock(gridPosition);
+				return shard.getBlock(shard.getRelativeBlockPosition(gridPosition));
 			}
 		};
 	}
