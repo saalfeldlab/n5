@@ -18,8 +18,31 @@ import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
+/**
+ * The ShardIndex tracks the offset and length of blocks contained within a
+ * shard.
+ * <p>
+ * Blocks in a shard are arrayed in an n-dimensional grid, referred to as the
+ * {@code shardBlockGrid}. The ShardIndex is implemented as an (n+1)-dimensional
+ * {@link LongArrayDataBlock}, where the 0th dimensions is length 2 and contains
+ * the block offsets and lengths. The grid position of the index iteself is meaningless,
+ * and as a result, {@link #getGridPosition()} will return {@code null}.
+ * <p>
+ * The index stores two values for each block: offset and number of bytes. Blocks
+ * that don't exist are marked with the special value {@link #EMPTY_INDEX_NBYTES}.
+ * <p>
+ * Block grid positions in this class are relative to the shard.
+ *
+ * @see <a href=
+ *      "https://zarr-specs.readthedocs.io/en/latest/v3/codecs/sharding-indexed/index.html#binary-shard-format">The
+ *      Zarr V3 specification for the binary shard format</a>
+ */
 public class ShardIndex extends LongArrayDataBlock {
 
+	/**
+	 * Special value indicating an empty block entry in the index.
+	 * Used for both offset and length when a block doesn't exist.
+	 */
 	public static final long EMPTY_INDEX_NBYTES = 0xFFFFFFFFFFFFFFFFL;
 	private static final int BYTES_PER_LONG = 8;
 	private static final int LONGS_PER_BLOCK = 2;
@@ -30,36 +53,75 @@ public class ShardIndex extends LongArrayDataBlock {
 	private final DeterministicSizeCodec[] codecs;
 	private final ShardIndexAttributes indexAttributes;
 
+	/**
+	 * Creates a ShardIndex with specified data.
+	 *
+	 * @param shardBlockGridSize the dimensions of the block grid within the shard
+	 * @param data the raw index data containing offsets and lengths
+	 * @param location where the index is stored (START or END of shard)
+	 * @param codecs compression codecs applied to the index
+	 */
 	public ShardIndex(int[] shardBlockGridSize, long[] data, IndexLocation location, final DeterministicSizeCodec... codecs) {
 
+		// prepend the number of longs per block to the shard block grid size
 		super(prepend(LONGS_PER_BLOCK, shardBlockGridSize), DUMMY_GRID_POSITION, data);
 		this.codecs = codecs;
 		this.location = location;
 		this.indexAttributes = new ShardIndexAttributes(this);
 	}
 
+	/**
+	 * Creates an empty ShardIndex with specified location.
+	 *
+	 * @param shardBlockGridSize the dimensions of the block grid within the shard
+	 * @param location where the index is stored (START or END of shard)
+	 * @param codecs compression codecs applied to the index
+	 */
 	public ShardIndex(int[] shardBlockGridSize, IndexLocation location, DeterministicSizeCodec... codecs) {
 
 		this(shardBlockGridSize, emptyIndexData(shardBlockGridSize), location, codecs);
 	}
 
+	/**
+	 * Creates an empty ShardIndex with default location (END).
+	 *
+	 * @param shardBlockGridSize the dimensions of the block grid within the shard
+	 * @param codecs compression codecs applied to the index
+	 */
 	public ShardIndex(int[] shardBlockGridSize, DeterministicSizeCodec... codecs) {
 
 		this(shardBlockGridSize, emptyIndexData(shardBlockGridSize), IndexLocation.END, codecs);
 	}
 
+	/**
+	 * Checks existence of the block at a given grid position.
+	 *
+	 * @param gridPosition the n-dimensional position of the block in the shard grid
+	 * @return true if the block exists, false otherwise
+	 */
 	public boolean exists(int[] gridPosition) {
 
 		return getOffset(gridPosition) != EMPTY_INDEX_NBYTES ||
 				getNumBytes(gridPosition) != EMPTY_INDEX_NBYTES;
 	}
 
-	public boolean exists(int blockNum) {
+	/**
+	 * Checks existence of the block at a given flat index.
+	 *
+	 * @param index the flattened index of the block
+	 * @return true if the block exists, false otherwise
+	 */
+	public boolean exists(int index) {
 
-		return data[blockNum * 2] != EMPTY_INDEX_NBYTES ||
-				data[blockNum * 2 + 1] != EMPTY_INDEX_NBYTES;
+		return data[index * 2] != EMPTY_INDEX_NBYTES ||
+				data[index * 2 + 1] != EMPTY_INDEX_NBYTES;
 	}
 
+	/**
+	 * Gets the total number of blocks that can be stored in this index.
+	 *
+	 * @return the total number of blocks in the shard grid
+	 */
 	public int getNumBlocks() {
 
 		/* getSize() is the number of data entries; each block takes 2 entries (offset and length)
@@ -67,36 +129,77 @@ public class ShardIndex extends LongArrayDataBlock {
 		return Arrays.stream(getSize()).reduce(1, (x, y) -> x * y) / 2;
 	}
 
+	/**
+	 * Checks if the index is completely empty (no blocks exist).
+	 *
+	 * @return true if no blocks exist in the index, false otherwise
+	 */
 	public boolean isEmpty() {
 
 		return !IntStream.range(0, getNumBlocks()).anyMatch(this::exists);
 	}
 
+	/**
+	 * Gets the location of this index within the shard.
+	 *
+	 * @return the index location (START or END)
+	 */
 	public IndexLocation getLocation() {
 
 		return location;
 	}
 
+	/**
+	 * Gets the offset in this shard in bytes for the block at a grid position.
+	 *
+	 * @param gridPosition the n-dimensional position of the block in the shard grid
+	 * @return the offset in bytes, or {@link #EMPTY_INDEX_NBYTES} if the block doesn't exist
+	 */
 	public long getOffset(int... gridPosition) {
 
 		return data[getOffsetIndex(gridPosition)];
 	}
 
+	/**
+	 * Gets the offset in this shard in bytes for the block at a given index.
+	 *
+	 * @param index the flattened index of the block
+	 * @return the offset in bytes, or {@link #EMPTY_INDEX_NBYTES} if the block doesn't exist
+	 */
 	public long getOffsetByBlockIndex(int index) {
 
 		return data[index * 2];
 	}
 
+	/**
+	 * Gets the number of bytes for the block at a grid position.
+	 *
+	 * @param gridPosition the n-dimensional position of the block in the shard grid
+	 * @return the number of bytes, or {@link #EMPTY_INDEX_NBYTES} if the block doesn't exist
+	 */
 	public long getNumBytes(int... gridPosition) {
 
 		return data[getNumBytesIndex(gridPosition)];
 	}
 
+	/**
+	 * Gets the number of bytes for the block at a given index.
+	 *
+	 * @param index the flattened index of the block
+	 * @return the number of bytes, or {@link #EMPTY_INDEX_NBYTES} if the block doesn't exist
+	 */
 	public long getNumBytesByBlockIndex(int index) {
 
 		return data[index * 2 + 1];
 	}
 
+	/**
+	 * Sets the offset and number of bytes for a block at the specified position.
+	 *
+	 * @param offset the byte offset of the block in the shard
+	 * @param nbytes the number of bytes the block occupies
+	 * @param gridPosition the n-dimensional position of the block in the shard grid
+	 */
 	public void set(long offset, long nbytes, int[] gridPosition) {
 
 		final int i = getOffsetIndex(gridPosition);
@@ -104,6 +207,22 @@ public class ShardIndex extends LongArrayDataBlock {
 		data[i + 1] = nbytes;
 	}
 
+	/**
+	 * Marks a block position as empty.
+	 *
+	 * @param gridPosition the n-dimensional position of the block to mark as empty
+	 */
+	public void setEmpty(int[] gridPosition) {
+
+		set(EMPTY_INDEX_NBYTES, EMPTY_INDEX_NBYTES, gridPosition);
+	}
+
+	/**
+	 * Calculates the flattened array index for the offset value of a block.
+	 *
+	 * @param gridPosition the n-dimensional position of the block
+	 * @return the index in the data array where the offset is stored
+	 */
 	protected int getOffsetIndex(int... gridPosition) {
 
 		int idx = (int) gridPosition[0];
@@ -115,11 +234,22 @@ public class ShardIndex extends LongArrayDataBlock {
 		return idx * 2;
 	}
 
+	/**
+	 * Calculates the flattened array index for the number of bytes value of a block.
+	 *
+	 * @param gridPosition the n-dimensional position of the block
+	 * @return the index in the data array where the number of bytes is stored
+	 */
 	protected int getNumBytesIndex(int... gridPosition) {
 
 		return getOffsetIndex(gridPosition) + 1;
 	}
 
+	/**
+	 * Calculates the total size of the index in bytes after compression.
+	 *
+	 * @return the total number of bytes the index occupies after applying all codecs
+	 */
 	public long numBytes() {
 
 		final int numEntries = Arrays.stream(getSize()).reduce(1, (x, y) -> x * y);
@@ -133,6 +263,13 @@ public class ShardIndex extends LongArrayDataBlock {
 		return totalNumBytes;
 	}
 
+	/**
+	 * Reads the index data from a shard.
+	 *
+	 * @param shardData the ReadData containing the entire shard
+	 * @param index the ShardIndex to populate with data
+	 * @throws N5IOException if the read operation fails or the shard data has invalid length
+	 */
 	public static void readFromShard(ReadData shardData, ShardIndex index) throws N5IOException {
 
 		/* we require a length, so materialize if we don't have one. */
@@ -148,6 +285,14 @@ public class ShardIndex extends LongArrayDataBlock {
 		ShardIndex.read(indexData, index);
 	}
 
+	/**
+	 * Reads index data from a ReadData source.
+	 *
+	 * @param indexData the ReadData containing the index
+	 * @param index the ShardIndex to populate with data
+	 * @return true if the read was successful, false if the key doesn't exist
+	 * @throws N5IOException if the read operation fails
+	 */
 	public static boolean read( final ReadData indexData, final ShardIndex index ) {
 
 		try (final InputStream in = indexData.inputStream()) {
@@ -160,6 +305,13 @@ public class ShardIndex extends LongArrayDataBlock {
 		}
 	}
 
+	/**
+	 * Reads index data from an InputStream.
+	 *
+	 * @param indexIn the InputStream containing the index data
+	 * @param index the ShardIndex to populate with data
+	 * @throws N5IOException if the read operation fails
+	 */
 	public static void read(InputStream indexIn, final ShardIndex index) throws N5IOException {
 
 		final ReadData dataIn = ReadData.from(indexIn);
@@ -168,6 +320,13 @@ public class ShardIndex extends LongArrayDataBlock {
 		System.arraycopy(indexBlock.getData(), 0, index.data, 0, index.data.length);
 	}
 
+	/**
+	 * Writes the index to an OutputStream.
+	 *
+	 * @param outputStream the OutputStream to write to
+	 * @param index the ShardIndex to write
+	 * @throws N5IOException if the write operation fails
+	 */
 	public static void write( final OutputStream outputStream, final ShardIndex index ) throws N5IOException {
 
 		final Codec.ArrayCodec indexCodec = index.indexAttributes.getArrayCodec();
@@ -175,12 +334,25 @@ public class ShardIndex extends LongArrayDataBlock {
 	}
 
 
+	/**
+	 * Gets the array codec used for encoding/decoding this index.
+	 *
+	 * @return the array codec
+	 */
 	public Codec.ArrayCodec getArrayCodec() {
 		return indexAttributes.getArrayCodec();
 	}
 
+	/**
+	 * DatasetAttributes for the ShardIndex, used for codec operations.
+	 */
 	private static class ShardIndexAttributes extends DatasetAttributes {
 
+		/**
+		 * Creates attributes for the given ShardIndex.
+		 *
+		 * @param index the ShardIndex
+		 */
 		public ShardIndexAttributes(ShardIndex index) {
 			super(
 					Arrays.stream(index.getSize()).mapToLong(it -> it).toArray(),
@@ -191,11 +363,26 @@ public class ShardIndex extends LongArrayDataBlock {
 		}
 	}
 
+	/**
+	 * Calculates the byte boundaries of the index within a shard.
+	 *
+	 * @param index the ShardIndex
+	 * @param objectSize the total size of the shard in bytes
+	 * @return the byte boundaries of the index
+	 */
 	public static IndexByteBounds byteBounds(final ShardIndex index, long objectSize) {
 
 		return byteBounds(index.numBytes(), index.location, objectSize);
 	}
 
+	/**
+	 * Calculates the byte boundaries of an index within a shard.
+	 *
+	 * @param indexSize the size of the index in bytes
+	 * @param indexLocation the location of the index (START or END)
+	 * @param objectSize the total size of the shard in bytes
+	 * @return the byte boundaries of the index
+	 */
 	public static IndexByteBounds byteBounds(final long indexSize, final IndexLocation indexLocation, final long objectSize) {
 
 		if (indexLocation == IndexLocation.START) {
@@ -205,12 +392,24 @@ public class ShardIndex extends LongArrayDataBlock {
 		}
 	}
 
+	/**
+	 * Represents the byte boundaries of an index within a shard.
+	 */
 	public static class IndexByteBounds {
 
+		/** The start byte position (inclusive) */
 		public final long start;
+		/** The end byte position (inclusive) */
 		public final long end;
+		/** The size in bytes */
 		public final long size;
 
+		/**
+		 * Creates byte boundaries.
+		 *
+		 * @param start the start position (inclusive)
+		 * @param end the end position (inclusive)
+		 */
 		public IndexByteBounds(long start, long end) {
 
 			this.start = start;
@@ -219,6 +418,12 @@ public class ShardIndex extends LongArrayDataBlock {
 		}
 	}
 
+	/**
+	 * Creates an empty index data array filled with {@link #EMPTY_INDEX_NBYTES}.
+	 *
+	 * @param size the dimensions of the block grid
+	 * @return an array filled with empty values
+	 */
 	private static long[] emptyIndexData(final int[] size) {
 
 		final int N = 2 * Arrays.stream(size).reduce(1, (x, y) -> x * y);
@@ -227,6 +432,13 @@ public class ShardIndex extends LongArrayDataBlock {
 		return data;
 	}
 
+	/**
+	 * Prepends a value to an array.
+	 *
+	 * @param value the value to prepend
+	 * @param array the original array
+	 * @return a new array with the value prepended
+	 */
 	private static int[] prepend(final int value, final int[] array) {
 
 		final int[] indexBlockSize = new int[array.length + 1];
@@ -254,4 +466,3 @@ public class ShardIndex extends LongArrayDataBlock {
 		return true;
 	}
 }
-
