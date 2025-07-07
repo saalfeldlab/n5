@@ -399,10 +399,13 @@ public class DatasetAttributes implements Serializable {
 	 * Only used for deserialization for N5 backwards compatibility.
 	 * {@link Compression} is no longer a special case. Prefer to reference {@link #getCodecs()}
 	 * Will return {@link RawCompression} if no compression is otherwise provided, for legacy compatibility.
+	 * <p>
+	 * Deprecated in favor of {@link #getCodecs()}.
 	 *
 	 * @return compression Codec, if one was present, or else RawCompression
 	 */
-	private Compression getCompression() {
+	@Deprecated
+	public Compression getCompression() {
 
 		return Arrays.stream(byteCodecs)
 				.filter(it -> it instanceof Compression)
@@ -473,25 +476,19 @@ public class DatasetAttributes implements Serializable {
 
 			final long[] dimensions = context.deserialize(obj.get(DIMENSIONS_KEY), long[].class);
 			final int[] blockSize = context.deserialize(obj.get(BLOCK_SIZE_KEY), int[].class);
-
-			int[] shardSize = null;
-			if (obj.has(SHARD_SIZE_KEY))
-				shardSize = context.deserialize(obj.get(SHARD_SIZE_KEY), int[].class);
+			final int[] shardSize = blockSize;
 
 			final DataType dataType = context.deserialize(obj.get(DATA_TYPE_KEY), DataType.class);
-
 
 			final Codec[] codecs;
 			if (obj.has(CODEC_KEY)) {
 				codecs = context.deserialize(obj.get(CODEC_KEY), Codec[].class);
 			} else if (obj.has(COMPRESSION_KEY)) {
 				final Compression compression = CompressionAdapter.getJsonAdapter().deserialize(obj.get(COMPRESSION_KEY), Compression.class, context);
-				final N5BlockCodec n5BlockCodec = new N5BlockCodec();
-				codecs = new Codec[]{compression, n5BlockCodec};
+				codecs = new Codec[]{compression};
 			} else if (obj.has(compressionTypeKey)) {
 				final Compression compression = getCompressionVersion0(obj.get(compressionTypeKey).getAsString());
-				final N5BlockCodec n5BlockCodec = new N5BlockCodec();
-				codecs = new Codec[]{compression, n5BlockCodec};
+				codecs = new Codec[]{compression};
 			} else {
 				return null;
 			}
