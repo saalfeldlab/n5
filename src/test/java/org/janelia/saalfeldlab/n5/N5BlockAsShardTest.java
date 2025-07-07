@@ -52,11 +52,4 @@ public class N5BlockAsShardTest extends N5FSTest {
 		};
 	}
 
-	@Override
-	@Ignore("irrelevant when creating a sharded dataset")
-	public void testShardDelete() { }
-
-	@Override
-	@Ignore("irrelevant when creating a sharded dataset")
-	public void testShardedBlockDelete() { }
 }

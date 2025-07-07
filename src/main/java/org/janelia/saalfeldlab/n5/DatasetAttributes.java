@@ -502,28 +502,16 @@ public class DatasetAttributes implements Serializable {
 			final JsonObject obj = new JsonObject();
 			obj.add(DIMENSIONS_KEY, context.serialize(src.dimensions));
 			obj.add(BLOCK_SIZE_KEY, context.serialize(src.blockSize));
-
-			//TODO Caleb: Type Hierarchy Adapter for extensions?
-			final int[] shardSize = src.getShardSize();
-			if (shardSize != null) {
-				obj.add(SHARD_SIZE_KEY, context.serialize(shardSize));
-			}
-
 			obj.add(DATA_TYPE_KEY, context.serialize(src.dataType));
-			obj.add(CODEC_KEY, context.serialize(concatenateCodecs(src)));
+
+			final BytesCodec[] codecs = src.getCodecs();
+			// length > 1 is actually invalid, but this is checked on construction
+			if (codecs.length == 0)
+				obj.add(COMPRESSION_KEY, context.serialize(new RawCompression()));
+			else
+				obj.add(COMPRESSION_KEY, context.serialize(codecs[0]));
 
 			return obj;
-		}
-
-		private static Codec[] concatenateCodecs(final DatasetAttributes attributes) {
-
-			final BytesCodec[] byteCodecs = attributes.byteCodecs;
-			final ArrayCodec arrayCodec = attributes.arrayCodec;
-			final Codec[] allCodecs = new Codec[byteCodecs.length + 1];
-			allCodecs[0] = arrayCodec;
-			System.arraycopy(byteCodecs, 0, allCodecs, 1, byteCodecs.length);
-
-			return allCodecs;
 		}
 
 		private static Compression getCompressionVersion0(final String compressionVersion0Name) {

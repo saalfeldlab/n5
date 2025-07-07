@@ -57,12 +57,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 import org.janelia.saalfeldlab.n5.N5Reader.Version;
 import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
 import org.janelia.saalfeldlab.n5.shard.Shard;
-import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 import org.janelia.saalfeldlab.n5.url.UriAttributeTest;
-import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
-import org.janelia.saalfeldlab.n5.codec.RawBytes;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -238,18 +233,18 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testCreateDataset() {
 
-		final DatasetAttributes info;
-		try (N5Writer writer = createTempN5Writer()) {
-			writer.createDataset(datasetName, dimensions, blockSize, DataType.UINT64);
+			final DatasetAttributes info;
+			try (N5Writer writer = createTempN5Writer()) {
+				writer.createDataset(datasetName, dimensions, blockSize, DataType.UINT64);
 
-			assertTrue("Dataset does not exist", writer.exists(datasetName));
+				assertTrue("Dataset does not exist", writer.exists(datasetName));
 
-			info = writer.getDatasetAttributes(datasetName);
-		}
-		assertArrayEquals(dimensions, info.getDimensions());
-		assertArrayEquals(blockSize, info.getBlockSize());
-		assertEquals(DataType.UINT64, info.getDataType());
-		assertEquals(0, info.getCodecs().length);
+				info = writer.getDatasetAttributes(datasetName);
+			}
+			assertArrayEquals(dimensions, info.getDimensions());
+			assertArrayEquals(blockSize, info.getBlockSize());
+			assertEquals(DataType.UINT64, info.getDataType());
+			assertEquals(0, info.getCodecs().length);
 	}
 
 	@Test
@@ -1174,186 +1169,6 @@ public abstract class AbstractN5Test {
 					/*Only try with resource to ensure `close()` is called.*/
 				}
 			});
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	@Test
-	public <T> void testShardDelete() {
-		try (GsonKeyValueN5Writer writer = (GsonKeyValueN5Writer)createTempN5Writer()) {
-			final String datasetName = "testShardDelete";
-
-			// Create a sharded dataset
-			final int[] shardSize = new int[]{blockSize[0] * 2, blockSize[1] * 2, blockSize[2] * 2};
-			final DatasetAttributes datasetAttributes = new DatasetAttributes(
-					dimensions,
-					shardSize,
-					blockSize,
-					DataType.UINT8,
-					new ShardingCodec(
-							blockSize,
-							new Codec[]{new N5BlockCodec()},
-							new DeterministicSizeCodec[]{new RawBytes()},
-							ShardingCodec.IndexLocation.END
-					)
-			);
-			writer.createDataset(datasetName, datasetAttributes);
-
-			// Create blocks in different shards
-			final long[] shardPosition1 = {0, 0, 0};
-			final long[] shardPosition2 = {0, 0, 1}; // Different shard in z dimension
-			final long[] shardPositionNonExistent = {0, 0, 2}; // Different shard in z dimension
-
-			// Create blocks within the first shard
-			final long[] blockPosition1 = {0, 0, 0};
-			final long[] blockPosition2 = {1, 0, 0};
-			final long[] blockPosition3 = {0, 1, 0};
-
-			// Create a block in the second shard
-			final long[] blockPosition4 = {0, 0, 2}; // This will be in
-														// shardPosition2
-
-			final ByteArrayDataBlock block1 = new ByteArrayDataBlock(blockSize, blockPosition1, byteBlock);
-			final ByteArrayDataBlock block2 = new ByteArrayDataBlock(blockSize, blockPosition2, byteBlock);
-			final ByteArrayDataBlock block3 = new ByteArrayDataBlock(blockSize, blockPosition3, byteBlock);
-			final ByteArrayDataBlock block4 = new ByteArrayDataBlock(blockSize, blockPosition4, byteBlock);
-
-			// Write blocks to create shards
-			writer.writeBlocks(datasetName, datasetAttributes, block1, block2, block3, block4);
-
-			// Verify shards exist
-			final Shard<T> shard1 = writer.readShard(datasetName, datasetAttributes, shardPosition1);
-			final Shard<T> shard2 = writer.readShard(datasetName, datasetAttributes, shardPosition2);
-			final Shard<T> shardDNE = writer.readShard(datasetName, datasetAttributes, shardPositionNonExistent);
-			assertNotNull("Shard 1 should exist", shard1);
-			assertNotNull("Shard 2 should exist", shard2);
-			assertNull("Shard 3 should not exist", shardDNE);
-			assertEquals("Shard 1 should contain 3 blocks", 3, shard1.getBlocks().size());
-			assertEquals("Shard 2 should contain 1 block", 1, shard2.getBlocks().size());
-
-			// Test deleteShard
-			boolean deleted1 = writer.deleteShard(datasetName, shardPosition1);
-			assertTrue("deleteShard should return true when shard exists", deleted1);
-
-			// Verify shard is deleted
-			final Shard<T> deletedShard1 = writer.readShard(datasetName, datasetAttributes, shardPosition1);
-			assertNull("Shard 1 should be deleted", deletedShard1);
-
-			// Verify blocks in the deleted shard are gone
-			assertNull("Block 1 should be deleted", writer.readBlock(datasetName, datasetAttributes, blockPosition1));
-			assertNull("Block 2 should be deleted", writer.readBlock(datasetName, datasetAttributes, blockPosition2));
-			assertNull("Block 3 should be deleted", writer.readBlock(datasetName, datasetAttributes, blockPosition3));
-
-			// Verify other shard is unaffected
-			final Shard<T> stillExistingShard2 = writer.readShard(datasetName, datasetAttributes, shardPosition2);
-			assertNotNull("Shard 2 should still exist", stillExistingShard2);
-			assertNotNull("Block 4 should still exist", writer.readBlock(datasetName, datasetAttributes, blockPosition4));
-
-			// Test deleting non-existent shard
-			boolean deletedAgain = writer.deleteShard(datasetName, shardPosition1);
-			assertFalse("deleteShard should return false when shard doesn't exist", deletedAgain);
-
-			// Test deleting shard at invalid position
-			final long[] invalidShardPosition = {100, 100, 100};
-			boolean deletedInvalid = writer.deleteShard(datasetName, invalidShardPosition);
-			assertFalse("deleteShard should return false for non-existent shard position", deletedInvalid);
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	@Test
-	public <T> void testShardedBlockDelete() {
-		try (GsonKeyValueN5Writer writer = (GsonKeyValueN5Writer)createTempN5Writer()) {
-			final String datasetName = "testShardBlockDelete";
-
-			// Create a sharded dataset
-			final int[] shardSize = new int[]{blockSize[0] * 2, blockSize[1] * 2, blockSize[2] * 2};
-			final DatasetAttributes datasetAttributes = new DatasetAttributes(
-					dimensions,
-					shardSize,
-					blockSize,
-					DataType.UINT8,
-					new ShardingCodec(
-							blockSize,
-							new Codec[]{new N5BlockCodec()},
-							new DeterministicSizeCodec[]{new RawBytes()},
-							ShardingCodec.IndexLocation.END
-					)
-			);
-			writer.createDataset(datasetName, datasetAttributes);
-
-			// Create blocks in different shards
-			final long[] shardPosition1 = {0, 0, 0};
-			final long[] shardPosition2 = {0, 0, 1}; // Different shard in z
-														// dimension
-			final long[] shardPositionNonExistent = {0, 0, 2}; // Different
-																// shard in z
-																// dimension
-
-			// Create blocks within the first shard
-			final long[] blockPosition1 = {0, 0, 0};
-			final long[] blockPosition2 = {1, 0, 0};
-			final long[] blockPosition3 = {0, 1, 0};
-
-			// Create a block in the second shard
-			final long[] blockPosition4 = {0, 0, 2}; // This will be in
-														// shardPosition2
-
-			final ByteArrayDataBlock block1 = new ByteArrayDataBlock(blockSize, blockPosition1, byteBlock);
-			final ByteArrayDataBlock block2 = new ByteArrayDataBlock(blockSize, blockPosition2, byteBlock);
-			final ByteArrayDataBlock block3 = new ByteArrayDataBlock(blockSize, blockPosition3, byteBlock);
-			final ByteArrayDataBlock block4 = new ByteArrayDataBlock(blockSize, blockPosition4, byteBlock);
-
-			// Write blocks to create shards
-			writer.writeBlocks(datasetName, datasetAttributes, block1, block2, block3, block4);
-
-			// Verify shards exist
-			Shard<T> shard1 = writer.readShard(datasetName, datasetAttributes, shardPosition1);
-			Shard<T> shard2 = writer.readShard(datasetName, datasetAttributes, shardPosition2);
-			Shard<T> shardDNE = writer.readShard(datasetName, datasetAttributes, shardPositionNonExistent);
-			assertNotNull("Shard 1 should exist", shard1);
-			assertNotNull("Shard 2 should exist", shard2);
-			assertNull("Shard 3 should not exist", shardDNE);
-			assertEquals("Shard 1 should contain 3 blocks", 3, shard1.getBlocks().size());
-			assertEquals("Shard 2 should contain 1 block", 1, shard2.getBlocks().size());
-
-			// Test delete one block from a multi-block shard
-			boolean deleted1 = writer.deleteBlock(datasetName, blockPosition1);
-			assertTrue("deleteBlock1", deleted1);
-			shard1 = writer.readShard(datasetName, datasetAttributes, shardPosition1);
-			assertNotNull("Shard 1 should still exist", shard1);
-			DataBlock<Object> blk1Read = writer.readBlock(datasetName, datasetAttributes, blockPosition1);
-			DataBlock<Object> blk2Read = writer.readBlock(datasetName, datasetAttributes, blockPosition2);
-			DataBlock<Object> blk3Read = writer.readBlock(datasetName, datasetAttributes, blockPosition3);
-			assertNull("Block 1 should not exist", blk1Read);
-			assertNotNull("Block 2 should exist", blk2Read);
-			assertNotNull("Block 3 should exist", blk3Read);
-
-			// Test delete one block from a multi-block shard
-			boolean deleted2 = writer.deleteBlock(datasetName, blockPosition2);
-			assertTrue("deleteBlock2", deleted2);
-			shard1 = writer.readShard(datasetName, datasetAttributes, shardPosition1);
-			assertNotNull("Shard 1 should still exist", shard1);
-			blk2Read = writer.readBlock(datasetName, datasetAttributes, blockPosition2);
-			blk3Read = writer.readBlock(datasetName, datasetAttributes, blockPosition3);
-			assertNull("Block 2 should not exist", blk2Read);
-			assertNotNull("Block 3 should exist", blk3Read);
-
-			// Test delete last block from a multi-block shard
-			boolean deleted3 = writer.deleteBlock(datasetName, blockPosition3);
-			assertTrue("deleteBlock3", deleted3);
-			shard1 = writer.readShard(datasetName, datasetAttributes, shardPosition1);
-			assertNull("Shard 1 should not exist", shard1);
-			blk3Read = writer.readBlock(datasetName, datasetAttributes, blockPosition3);
-			assertNull("Block 3 should not exist", blk3Read);
-
-			// Test delete last block from a multi-block shard
-			boolean deleted4 = writer.deleteBlock(datasetName, blockPosition4);
-			assertTrue("deleteBlock4", deleted4);
-			shard2 = writer.readShard(datasetName, datasetAttributes, shardPosition2);
-			assertNull("Shard 2 should not exist", shard2);
-			DataBlock<Object> blk4Read = writer.readBlock(datasetName, datasetAttributes, blockPosition4);
-			assertNull("Block 2 should not exist", blk4Read);
 		}
 	}
 
