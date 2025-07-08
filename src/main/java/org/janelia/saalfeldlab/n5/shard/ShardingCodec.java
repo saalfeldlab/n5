@@ -97,7 +97,7 @@ public class ShardingCodec implements Codec.ArrayCodec {
 		Objects.requireNonNull(codecs);
 		final BytesCodec[] bytesCodecs = new BytesCodec[codecs.length - 1];
 		for (int i = 1; i < codecs.length; i++)
-			bytesCodecs[i] = (BytesCodec)codecs[i];
+			bytesCodecs[i-1] = (BytesCodec)codecs[i];
 		return bytesCodecs;
 	}
 
