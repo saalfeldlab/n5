@@ -582,7 +582,6 @@ public class ShardTest {
 			gsonBuilder.registerTypeHierarchyAdapter(DatasetAttributes.class, new TestDatasetAttributesAdapter());
 			gsonBuilder.registerTypeHierarchyAdapter(ByteOrder.class, RawBytes.byteOrderAdapter);
 			gsonBuilder.registerTypeHierarchyAdapter(ShardingCodec.IndexLocation.class, ShardingCodec.indexLocationAdapter);
-			gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
 			gsonBuilder.disableHtmlEscaping();
 			gson = gsonBuilder.create();
 		}
