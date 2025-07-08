@@ -70,6 +70,9 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 
 	public static <T> InMemoryShard<T> fromShard(Shard<T> shard) {
 
+		if (shard == null)
+			return null;
+
 		if (shard instanceof InMemoryShard)
 			return (InMemoryShard<T>)shard;
 
