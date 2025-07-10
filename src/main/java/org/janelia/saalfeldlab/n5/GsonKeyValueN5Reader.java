@@ -43,6 +43,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.ShardIndex;
 import org.janelia.saalfeldlab.n5.shard.VirtualShard;
 import org.janelia.saalfeldlab.n5.util.Position;
 
@@ -97,6 +98,22 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		}
 	}
 
+	/**
+	 * Reads the {@link Shard} at the corresponding grid position.
+	 * <p>
+	 * This implementation returns null if the key is not present, or a {@link VirtualShard} otherwise.
+	 * It reads the shard index from the backend, but does not read blocks.
+	 *
+	 * @param <T>
+	 *            the data access type for the blocks in the shard
+	 * @param datasetPath
+	 *            to read the shard from
+	 * @param datasetAttributes
+	 *            attributes of the dataset containing the shard
+	 * @param shardGridPosition
+	 *            the position of the shard
+	 * @return the shard
+	 */
 	default <T> Shard<T> readShard(
 			final String keyPath,
 			final DatasetAttributes datasetAttributes,
@@ -104,8 +121,12 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(keyPath), shardGridPosition);
 		try {
-			final ReadData readData  = getKeyValueAccess().createReadData(path).materialize();
-			return new VirtualShard<>( datasetAttributes, shardGridPosition, readData);
+			final ReadData readData = getKeyValueAccess().createReadData(path);
+			final VirtualShard<T> shard = new VirtualShard<>(datasetAttributes, shardGridPosition, readData);
+			ShardIndex idx = shard.getIndex();
+			if (idx == null)
+				return null;
+			return shard;
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
 		}

@@ -99,7 +99,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	 * @param gridPosition the n-dimensional position of the block in the shard grid
 	 * @return true if the block exists, false otherwise
 	 */
-	public boolean exists(int[] gridPosition) {
+	public boolean exists(long[] gridPosition) {
 
 		return getOffset(gridPosition) != EMPTY_INDEX_NBYTES ||
 				getNumBytes(gridPosition) != EMPTY_INDEX_NBYTES;
@@ -119,14 +119,29 @@ public class ShardIndex extends LongArrayDataBlock {
 
 	/**
 	 * Gets the total number of blocks that can be stored in this index.
+	 * <p>
+	 * This is not th
 	 *
-	 * @return the total number of blocks in the shard grid
+	 * @return the total capacity of blocks in the shard grid
+	 * @see #getNumNonemptyBlocks()
 	 */
-	public int getNumBlocks() {
+	public int getBlockCapacity() {
 
 		/* getSize() is the number of data entries; each block takes 2 entries (offset and length)
 		* so the product of the dimension sizes, divided by 2, is the number of blocks. */
 		return Arrays.stream(getSize()).reduce(1, (x, y) -> x * y) / 2;
+	}
+
+	/**
+	 * Gets the total number of non-empty blocks that are currently stored in this shard.
+	 * <p>
+	 *
+	 * @return the total capacity of blocks in the shard grid
+	 * @see #getBlockCapacity
+	 */
+	public int getNumNonemptyBlocks() {
+
+		return (int)IntStream.range(0, getBlockCapacity()).filter(this::exists).count();
 	}
 
 	/**
@@ -136,7 +151,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	 */
 	public boolean isEmpty() {
 
-		return !IntStream.range(0, getNumBlocks()).anyMatch(this::exists);
+		return !IntStream.range(0, getBlockCapacity()).anyMatch(this::exists);
 	}
 
 	/**
@@ -155,7 +170,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	 * @param gridPosition the n-dimensional position of the block in the shard grid
 	 * @return the offset in bytes, or {@link #EMPTY_INDEX_NBYTES} if the block doesn't exist
 	 */
-	public long getOffset(int... gridPosition) {
+	public long getOffset(long... gridPosition) {
 
 		return data[getOffsetIndex(gridPosition)];
 	}
@@ -171,13 +186,18 @@ public class ShardIndex extends LongArrayDataBlock {
 		return data[index * 2];
 	}
 
+	public void setOffsetAtIndex(long offset, int index) {
+
+		data[index * 2] = offset;
+	}
+
 	/**
 	 * Gets the number of bytes for the block at a grid position.
 	 *
 	 * @param gridPosition the n-dimensional position of the block in the shard grid
 	 * @return the number of bytes, or {@link #EMPTY_INDEX_NBYTES} if the block doesn't exist
 	 */
-	public long getNumBytes(int... gridPosition) {
+	public long getNumBytes(long... gridPosition) {
 
 		return data[getNumBytesIndex(gridPosition)];
 	}
@@ -192,6 +212,11 @@ public class ShardIndex extends LongArrayDataBlock {
 
 		return data[index * 2 + 1];
 	}
+	
+	public void setNumBytesAtIndex(long nbytes, int index) {
+
+		data[index * 2 + 1] = nbytes;
+	}	
 
 	/**
 	 * Sets the offset and number of bytes for a block at the specified position.
@@ -200,7 +225,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	 * @param nbytes the number of bytes the block occupies
 	 * @param gridPosition the n-dimensional position of the block in the shard grid
 	 */
-	public void set(long offset, long nbytes, int[] gridPosition) {
+	public void set(long offset, long nbytes, long[] gridPosition) {
 
 		final int i = getOffsetIndex(gridPosition);
 		data[i] = offset;
@@ -212,7 +237,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	 *
 	 * @param gridPosition the n-dimensional position of the block to mark as empty
 	 */
-	public void setEmpty(int[] gridPosition) {
+	public void setEmpty(long[] gridPosition) {
 
 		set(EMPTY_INDEX_NBYTES, EMPTY_INDEX_NBYTES, gridPosition);
 	}
@@ -223,7 +248,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	 * @param gridPosition the n-dimensional position of the block
 	 * @return the index in the data array where the offset is stored
 	 */
-	protected int getOffsetIndex(int... gridPosition) {
+	protected int getOffsetIndex(long... gridPosition) {
 
 		int idx = (int) gridPosition[0];
 		int cumulativeSize = 1;
@@ -240,7 +265,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	 * @param gridPosition the n-dimensional position of the block
 	 * @return the index in the data array where the number of bytes is stored
 	 */
-	protected int getNumBytesIndex(int... gridPosition) {
+	protected int getNumBytesIndex(long... gridPosition) {
 
 		return getOffsetIndex(gridPosition) + 1;
 	}

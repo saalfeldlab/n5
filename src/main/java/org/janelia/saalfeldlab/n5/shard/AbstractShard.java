@@ -44,4 +44,11 @@ public abstract class AbstractShard<T> implements Shard<T> {
 
 		return gridPosition;
 	}
+
+	@Override
+	public ShardIndex getIndex() {
+
+		return index;
+	}
+	
 }

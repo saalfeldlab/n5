@@ -293,14 +293,14 @@ public class DatasetAttributes implements Serializable {
 	 * @return position of the block relative to the shard
 	 * @see {@link #getBlockPositionFromShardPosition(long[], int[])}
 	 */
-	public int[] getShardRelativeBlockPosition(final long[] shardPosition, final long[] datasetRelativeBlockPosition) {
+	public long[] getShardRelativeBlockPosition(final long[] shardPosition, final long[] datasetRelativeBlockPosition) {
 
 		final long[] shardPos = getShardPositionForBlock(datasetRelativeBlockPosition);
 		if (!Arrays.equals(shardPosition, shardPos))
 			return null;
 
 		final int[] shardSize = getBlocksPerShard();
-		final int[] shardRelativeBlockPosition = new int[shardSize.length];
+		final long[] shardRelativeBlockPosition = new long[shardSize.length];
 		for (int i = 0; i < shardSize.length; i++) {
 			shardRelativeBlockPosition[i] = (int)(datasetRelativeBlockPosition[i] % shardSize[i]);
 		}
@@ -319,7 +319,7 @@ public class DatasetAttributes implements Serializable {
 	 * @return position of the block relative to the dataset
 	 * @see {@link #getShardRelativeBlockPosition(long[], int[])}
 	 */
-	public long[] getBlockPositionFromShardPosition(final long[] shardPosition, final int[] shardRelativeBlockPosition) {
+	public long[] getBlockPositionFromShardPosition(final long[] shardPosition, final long[] shardRelativeBlockPosition) {
 
 		final int[] shardBlockSize = getBlocksPerShard();
 		final long[] datasetRelativeBlockPosition = new long[getNumDimensions()];

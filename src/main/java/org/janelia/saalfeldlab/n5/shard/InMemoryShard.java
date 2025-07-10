@@ -27,6 +27,9 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 
 		super(datasetAttributes, gridPosition, index);
 		blocks = new TreeMap<>();
+
+		if (this.index == null)
+			this.index = createIndex();
 	}
 
 	private void storeBlock(DataBlock<T> block) {
@@ -35,9 +38,15 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 	}
 
 	@Override
-	public DataBlock<T> getBlock(int... blockGridPosition) {
+	public DataBlock<T> getBlock(long... blockGridPosition) {
 
 		return blocks.get(Position.wrap(blockGridPosition));
+	}
+
+	@Override
+	public boolean removeBlock(long... blockGridPosition) {
+
+		return blocks.remove(Position.wrap(blockGridPosition)) != null;
 	}
 
 	/**
@@ -83,4 +92,5 @@ public class InMemoryShard<T> extends AbstractShard<T> {
 		shard.forEach(inMemoryShard::addBlock);
 		return inMemoryShard;
 	}
+
 }

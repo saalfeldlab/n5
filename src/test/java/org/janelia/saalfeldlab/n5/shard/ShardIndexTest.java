@@ -42,7 +42,7 @@ public class ShardIndexTest {
 		GridIterator it = new GridIterator(shardBlockGridSize);
 		int i = 0;
 		while (it.hasNext()) {
-			int j = index.getOffsetIndex(GridIterator.long2int(it.next()));
+			int j = index.getOffsetIndex(it.next());
 			assertEquals(i, j);
 			i += 2;
 		}
@@ -55,7 +55,7 @@ public class ShardIndexTest {
 		it = new GridIterator(shardBlockGridSize);
 		i = 0;
 		while (it.hasNext()) {
-			int j = index.getOffsetIndex(GridIterator.long2int(it.next()));
+			int j = index.getOffsetIndex(it.next());
 			assertEquals(i, j);
 			i += 2;
 		}
@@ -76,10 +76,10 @@ public class ShardIndexTest {
 		final String path = Paths.get(Paths.get(writer.getURI()).toAbsolutePath().toString(), "indexTest").toString();
 
 		final ShardIndex index = new ShardIndex(shardBlockGridSize, indexLocation, indexCodecs);
-		index.set(0, 6, new int[]{0, 0});
-		index.set(19, 32, new int[]{1, 0});
-		index.set(93, 111, new int[]{3, 0});
-		index.set(143, 1, new int[]{1, 2});
+		index.set(0, 6, new long[]{0, 0});
+		index.set(19, 32, new long[]{1, 0});
+		index.set(93, 111, new long[]{3, 0});
+		index.set(143, 1, new long[]{1, 2});
 
 		long currentSize;
 		try {

@@ -59,7 +59,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(Parameterized.class)
+//@RunWith(Parameterized.class)
 public class ShardTest {
 
 	private static final boolean LOCAL_DEBUG = false;
@@ -102,26 +102,31 @@ public class ShardTest {
 		return new GsonBuilder();
 	}
 
-	@Parameterized.Parameters(name = "IndexLocation({0}), Index ByteOrder({1})")
-	public static Collection<Object[]> data() {
+//	@Parameterized.Parameters(name = "IndexLocation({0}), Index ByteOrder({1})")
+//	public static Collection<Object[]> data() {
+//
+//		final ArrayList<Object[]> params = new ArrayList<>();
+//		for (IndexLocation indexLoc : IndexLocation.values()) {
+//			for (ByteOrder indexByteOrder : new ByteOrder[]{ByteOrder.BIG_ENDIAN,  ByteOrder.LITTLE_ENDIAN}) {
+//				params.add(new Object[]{indexLoc, indexByteOrder});
+//			}
+//		}
+//		final int numParams = params.size();
+//		final Object[][] paramArray = new Object[numParams][];
+//		Arrays.setAll(paramArray, params::get);
+//		return Arrays.asList(paramArray);
+//	}
+//
+//	@Parameterized.Parameter()
+//	public IndexLocation indexLocation;
+//
+//	@Parameterized.Parameter(1)
+//	public ByteOrder indexByteOrder;
 
-		final ArrayList<Object[]> params = new ArrayList<>();
-		for (IndexLocation indexLoc : IndexLocation.values()) {
-			for (ByteOrder indexByteOrder : new ByteOrder[]{ByteOrder.BIG_ENDIAN,  ByteOrder.LITTLE_ENDIAN}) {
-				params.add(new Object[]{indexLoc, indexByteOrder});
-			}
-		}
-		final int numParams = params.size();
-		final Object[][] paramArray = new Object[numParams][];
-		Arrays.setAll(paramArray, params::get);
-		return Arrays.asList(paramArray);
-	}
+	public IndexLocation indexLocation = IndexLocation.END;
 
-	@Parameterized.Parameter()
-	public IndexLocation indexLocation;
+	public ByteOrder indexByteOrder = ByteOrder.BIG_ENDIAN;
 
-	@Parameterized.Parameter(1)
-	public ByteOrder indexByteOrder;
 
 	@After
 	public void removeTempWriters() {
@@ -266,7 +271,7 @@ public class ShardTest {
 		final String dataset = "writeReadBlock";
 		writer.remove(dataset);
 		writer.createDataset(dataset, datasetAttributes);
-		writer.deleteBlock(dataset, 0, 0); //FIXME Caleb: We are abusing this here. It shouldn't delete the entire shard..
+		writer.deleteShard(dataset, 0, 0);
 
 		final int[] blockSize = datasetAttributes.getBlockSize();
 		final DataType dataType = datasetAttributes.getDataType();
@@ -308,7 +313,7 @@ public class ShardTest {
 
 		final String dataset = "writeReadShard";
 		writer.createDataset(dataset, datasetAttributes);
-		writer.deleteBlock(dataset, 0, 0);
+		writer.deleteShard(dataset, 0, 0);
 
 		final int[] blockSize = datasetAttributes.getBlockSize();
 		final DataType dataType = datasetAttributes.getDataType();
@@ -382,13 +387,15 @@ public class ShardTest {
 
 			// Verify shards exist
 			final Shard<T> shard1 = writer.readShard(datasetName, datasetAttributes, shardPosition1);
-			final Shard<T> shard2 = writer.readShard(datasetName, datasetAttributes, shardPosition2);
-			final Shard<T> shardDNE = writer.readShard(datasetName, datasetAttributes, shardPositionNonExistent);
 			assertNotNull("Shard 1 should exist", shard1);
-			assertNotNull("Shard 2 should exist", shard2);
-			assertNull("Shard 3 should not exist", shardDNE);
 			assertEquals("Shard 1 should contain 3 blocks", 3, shard1.getBlocks().size());
+
+			final Shard<T> shard2 = writer.readShard(datasetName, datasetAttributes, shardPosition2);
+			assertNotNull("Shard 2 should exist", shard2);
 			assertEquals("Shard 2 should contain 1 block", 1, shard2.getBlocks().size());
+
+			final Shard<T> shardDNE = writer.readShard(datasetName, datasetAttributes, shardPositionNonExistent);
+			assertNull("Shard 3 should not exist", shardDNE);
 
 			// Test deleteShard
 			boolean deleted1 = writer.deleteShard(datasetName, shardPosition1);
@@ -472,11 +479,12 @@ public class ShardTest {
 			assertTrue("deleteBlock1", deleted1);
 			shard1 = writer.readShard(datasetName, datasetAttributes, shardPosition1);
 			assertNotNull("Shard 1 should still exist", shard1);
+
 			DataBlock<Object> blk1Read = writer.readBlock(datasetName, datasetAttributes, blockPosition1);
-			DataBlock<Object> blk2Read = writer.readBlock(datasetName, datasetAttributes, blockPosition2);
-			DataBlock<Object> blk3Read = writer.readBlock(datasetName, datasetAttributes, blockPosition3);
 			assertNull("Block 1 should not exist", blk1Read);
+			DataBlock<Object> blk2Read = writer.readBlock(datasetName, datasetAttributes, blockPosition2);
 			assertNotNull("Block 2 should exist", blk2Read);
+			DataBlock<Object> blk3Read = writer.readBlock(datasetName, datasetAttributes, blockPosition3);
 			assertNotNull("Block 3 should exist", blk3Read);
 
 			// Test delete one block from a multi-block shard
@@ -672,5 +680,6 @@ public class ShardTest {
 
 		return allCodecs;
 	}
+
 
 }

@@ -92,6 +92,143 @@ public class ReadDataTests {
 		sliceTestHelper(readData, N);
 	}
 
+	@Test
+	public void testConcatenatedReadData() throws IOException {
+
+		final int N1 = 50;
+		final int N2 = 30;
+		final int N3 = 48;
+		final int totalN = N1 + N2 + N3;
+
+		byte[] data1 = new byte[N1];
+		byte[] data2 = new byte[N2];
+		byte[] data3 = new byte[N3];
+
+		for (int i = 0; i < N1; i++)
+			data1[i] = (byte) i;
+		for (int i = 0; i < N2; i++)
+			data2[i] = (byte) (i + N1);
+		for (int i = 0; i < N3; i++)
+			data3[i] = (byte) (i + N1 + N2);
+
+		final ReadData part1 = ReadData.from(data1);
+		final ReadData part2 = ReadData.from(data2);
+		final ReadData part3 = ReadData.from(data3);
+
+		final ConcatenatedReadData concatenated = new ConcatenatedReadData(part1, part2, part3);
+
+		assertEquals("concatenated length", totalN, concatenated.length());
+
+		byte[] allBytes = concatenated.allBytes();
+		assertEquals("all bytes length", totalN, allBytes.length);
+		for (int i = 0; i < totalN; i++) {
+			assertEquals("byte at " + i, (byte) i, allBytes[i]);
+		}
+
+		readDataTestHelper(concatenated, totalN);
+		sliceTestHelper(concatenated, totalN);
+
+		ReadData slice = concatenated.slice(40, 60);
+		assertEquals("slice length", 60, slice.length());
+		byte[] sliceBytes = slice.allBytes();
+		for (int i = 0; i < 60; i++) {
+			assertEquals("slice byte at " + i, (byte) (i + 40), sliceBytes[i]);
+		}
+
+		ReadData crossBoundarySlice = concatenated.slice(45, 20);
+		assertEquals("cross boundary slice length", 20, crossBoundarySlice.length());
+		byte[] crossBoundaryBytes = crossBoundarySlice.allBytes();
+		for (int i = 0; i < 20; i++) {
+			assertEquals("cross boundary byte at " + i, (byte) (i + 45), crossBoundaryBytes[i]);
+		}
+
+		ReadData emptySlice = concatenated.slice(50, 0);
+		assertEquals("empty slice length", 0, emptySlice.length());
+		assertEquals("empty slice bytes", 0, emptySlice.allBytes().length);
+	}
+
+	@Test
+	public void testConcatenatedReadDataWithUnknownLength() throws IOException {
+
+		final int N1 = 50;
+		final int N2 = 30;
+
+		byte[] data1 = new byte[N1];
+		byte[] data2 = new byte[N2];
+
+		for (int i = 0; i < N1; i++)
+			data1[i] = (byte) i;
+		for (int i = 0; i < N2; i++)
+			data2[i] = (byte) (i + N1);
+
+		final ReadData part1 = ReadData.from(data1);
+		final InputStream is = new InputStream() {
+			int val = N1;
+			int count = 0;
+			@Override
+			public int read() throws IOException {
+				if (count++ < N2)
+					return val++;
+				return -1;
+			}
+		};
+		final ReadData part2 = ReadData.from(is);
+
+		final ConcatenatedReadData concatenated = new ConcatenatedReadData(part1, part2);
+
+		assertEquals("concatenated with unknown length", -1, concatenated.length());
+
+		byte[] allBytes = concatenated.allBytes();
+		assertEquals("all bytes length", N1 + N2, allBytes.length);
+		for (int i = 0; i < N1 + N2; i++) {
+			assertEquals("byte at " + i, (byte) i, allBytes[i]);
+		}
+	}
+
+	@Test
+	public void testConcatenatedReadDataEdgeCases() throws IOException {
+
+		final ReadData part1 = ReadData.from(new byte[]{1, 2, 3});
+		final ReadData part2 = ReadData.from(new byte[]{4, 5, 6});
+		final ConcatenatedReadData concatenated = new ConcatenatedReadData(part1, part2);
+
+		assertThrows("negative offset", IndexOutOfBoundsException.class,
+				() -> concatenated.slice(-1, 3));
+
+		assertThrows("slice out of bounds", IndexOutOfBoundsException.class,
+				() -> concatenated.slice(5, 3));
+
+		ReadData materialized = concatenated.materialize();
+		assertTrue("materialized is ByteArrayReadData", materialized instanceof ByteArrayReadData);
+		assertArrayEquals("materialized content", new byte[]{1, 2, 3, 4, 5, 6}, materialized.allBytes());
+	}
+
+	@Test
+	public void testConcatenatedReadDataWithEmptyList() throws IOException {
+		// Test that ConcatenatedReadData behaves as an empty ReadData when created with empty list
+		final ConcatenatedReadData emptyFromList = new ConcatenatedReadData(Arrays.asList());
+		assertEquals("empty list length", 0, emptyFromList.length());
+		assertArrayEquals("empty list allBytes", new byte[0], emptyFromList.allBytes());
+		
+		// Test varargs constructor with no arguments
+		final ConcatenatedReadData emptyFromVarargs = new ConcatenatedReadData();
+		assertEquals("empty varargs length", 0, emptyFromVarargs.length());
+		assertArrayEquals("empty varargs allBytes", new byte[0], emptyFromVarargs.allBytes());
+		
+		// Test slicing empty ConcatenatedReadData
+		final ReadData emptySlice = emptyFromList.slice(0, 0);
+		assertEquals("empty slice length", 0, emptySlice.length());
+		assertArrayEquals("empty slice allBytes", new byte[0], emptySlice.allBytes());
+		
+		// Test that slicing with non-zero offset throws exception
+		assertThrows("slice with offset > 0", IndexOutOfBoundsException.class,
+				() -> emptyFromList.slice(1, 0));
+		
+		// Test null list still throws exception
+		assertThrows("null list", IllegalArgumentException.class,
+				() -> new ConcatenatedReadData((java.util.List<ReadData>) null));
+	}
+
 	private void readDataTestHelper( ReadData readData, int N ) throws IOException {
 
 		assertEquals("full length", N, readData.length());

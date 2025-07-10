@@ -41,14 +41,17 @@ import java.util.stream.Collectors;
 import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
+import org.janelia.saalfeldlab.n5.shard.ReadDataShard;
 import org.janelia.saalfeldlab.n5.shard.Shard;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex;
+import org.janelia.saalfeldlab.n5.shard.VirtualShard;
 import org.janelia.saalfeldlab.n5.util.Position;
 
 /**
@@ -252,8 +255,6 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		}
 	}
 
-
-
 	@Override
 	default <T> void writeBlock(
 			final String path,
@@ -348,52 +349,37 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		final DatasetAttributes datasetAttributes = getDatasetAttributes(normalPath);
 
 		if (datasetAttributes == null) {
-			return false; // Dataset doesn't exist - return true for consistency
+			return false; // Dataset doesn't exist
 		}
 
 		if (datasetAttributes.isSharded()) {
-			// For sharded datasets, we need to:
-			// 1. Find which shard contains this block
-			// 2. Read the shard
-			// 3. Remove the block from the shard
-			// 4. Write the shard back (or delete if empty)
 
 			final long[] shardPosition = datasetAttributes.getShardPositionForBlock(gridPosition);
-			final Shard<Object> shard = readShard(normalPath, datasetAttributes, shardPosition);
+			final Shard<?> shard = readShard(normalPath, datasetAttributes, shardPosition);
 
-			if (shard == null)
-				return false; // Shard doesn't exist, so block doesn't exist -
-								// return false for consistency
-
-			final int[] relativePosition = shard.getRelativeBlockPosition(gridPosition);
+			// check if the block exists, and return if not.
+			final long[] relativePosition = shard.getRelativeBlockPosition(gridPosition);
 			if (!shard.blockExists(relativePosition))
 				return false;
 
-			// Convert to InMemoryShard to manipulate blocks
-			final InMemoryShard<Object> inMemoryShard = InMemoryShard.fromShard(shard);
-
-			// Get all blocks except the one to remove
-			final List<DataBlock<Object>> remainingBlocks = new ArrayList<>();
-			for (DataBlock<Object> block : inMemoryShard.getBlocks()) {
-				if (!Arrays.equals(block.getGridPosition(), gridPosition)) {
-					remainingBlocks.add(block);
-				}
-			}
-
-			if (remainingBlocks.isEmpty()) {
-				// If no blocks remain, delete the entire shard
+			// if it is the only block, delete the entire shard.
+			final ShardIndex index = shard.getIndex();
+			if (index.getNumNonemptyBlocks() == 1)
 				return deleteShard(normalPath, shardPosition);
-			} else {
-				// Create new shard with remaining blocks
-				final InMemoryShard<Object> newShard = new InMemoryShard<>(datasetAttributes, shardPosition);
-				for (DataBlock<Object> block : remainingBlocks) {
-					newShard.addBlock(block);
-				}
 
-				// Write the updated shard
-				writeShard(normalPath, datasetAttributes, newShard);
-				return true;
-			}
+			/*
+			 * At this time, we know that the Shard is a VirtualShard,
+			 * and that its createReadData().materialize()
+			 * gets us the entire un-decoded contents of the shard.
+			 */
+
+			// if the block exists and we need to delete it, materialize
+			ReadDataShard<?> rdShard = ReadDataShard.fromShard(shard);
+			rdShard.removeBlock(relativePosition);
+
+			// Write the updated shard
+			writeShard(normalPath, datasetAttributes, rdShard);
+			return true;
 
 		} else {
 			// For non-sharded datasets, deleting the key deletes the block

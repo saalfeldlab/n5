@@ -16,8 +16,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-//TODO : consider different names? LazyShard? ShardView? PartialReadShard? OnDemand?
 public class VirtualShard<T> extends AbstractShard<T> {
+//TODO : consider different names? LazyShard? ShardView? PartialReadShard? OnDemand?
 
 	private final ReadData shardData;
 
@@ -30,10 +30,19 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		this.shardData = shardData;
 	}
 
-	@SuppressWarnings("unchecked")
 	public DataBlock<T> getBlock(ReadData blockData, long... blockGridPosition) throws IOException {
 
-		return datasetAttributes.<T>getShardingCodec().getArrayCodec().decode(blockData, blockGridPosition);
+		return datasetAttributes.getShardingCodec().getArrayCodec().decode(blockData, blockGridPosition);
+	}
+
+	@Override
+	public boolean removeBlock(long... blockGridPosition) {
+
+		if( !index.exists(blockGridPosition))
+			return false;
+
+		index.setEmpty(blockGridPosition);
+		return true;
 	}
 
 	@Override
@@ -92,7 +101,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	}
 
 	@Override
-	public DataBlock<T> getBlock(int... relativePosition) {
+	public DataBlock<T> getBlock(long... relativePosition) {
 
 		final ShardIndex idx = getIndex();
 		if (!idx.exists(relativePosition))
@@ -115,12 +124,31 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	@Override
 	public ShardIndex getIndex() {
 
-		index = createIndex();
-		try {
-			ShardIndex.readFromShard(shardData, index);
-		} catch (N5Exception.N5NoSuchKeyException e) {
-			return null;
-		}
+		if (index != null)
+			return index;
+
+		readIndex();
 		return index;
 	}
+
+	protected void readIndex() {
+
+		ShardIndex indexTmp = createIndex();
+		try {
+			ShardIndex.readFromShard(shardData, indexTmp);
+			index = indexTmp;
+		} catch (N5Exception.N5NoSuchKeyException e) {}
+	}
+
+	/**
+	 * This implementation directly returns the {@link ReadData} this
+	 * VirtualShard was created with.
+	 * 
+	 * @return the ReadData this VirtualShard points to
+	 */
+	@Override
+	public ReadData createReadData() {
+		return shardData;
+	}
+
 }

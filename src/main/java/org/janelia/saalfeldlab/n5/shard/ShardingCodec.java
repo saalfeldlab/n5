@@ -138,7 +138,7 @@ public class ShardingCodec implements Codec.ArrayCodec {
 		final ReadData splitableReadData = readData.materialize();
 		final long[] shardPosition = getPositionForBlock(attributes, gridPosition);
 		final VirtualShard<T> shard = new VirtualShard<>(attributes, shardPosition, splitableReadData);
-		final int[] relativeBlockPosition = shard.getRelativeBlockPosition(gridPosition);
+		final long[] relativeBlockPosition = shard.getRelativeBlockPosition(gridPosition);
 		return shard.getBlock(relativeBlockPosition);
 	}
 
