@@ -31,7 +31,6 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -41,17 +40,15 @@ import java.util.stream.Collectors;
 import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
-import org.janelia.saalfeldlab.n5.shard.ReadDataShard;
+
+import org.janelia.saalfeldlab.n5.shard.BlockReadDataShard;
 import org.janelia.saalfeldlab.n5.shard.Shard;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex;
-import org.janelia.saalfeldlab.n5.shard.VirtualShard;
 import org.janelia.saalfeldlab.n5.util.Position;
 
 /**
@@ -237,11 +234,11 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 				final long[] shardPosition = e.getKey().get();
 				final Shard<T> currentShard = readShard(datasetPath, datasetAttributes, shardPosition);
-				final InMemoryShard<T> newShard;
+				final BlockReadDataShard<T> newShard;
 				if (currentShard != null) {
-					newShard = InMemoryShard.fromShard(currentShard);
+					newShard = BlockReadDataShard.fromShard(currentShard);
 				} else {
-					newShard = new InMemoryShard<>(datasetAttributes, shardPosition);
+					newShard = new BlockReadDataShard<>(datasetAttributes, shardPosition);
 				}
 
 				for (DataBlock<T> blk : e.getValue())
@@ -374,7 +371,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			 */
 
 			// if the block exists and we need to delete it, materialize
-			ReadDataShard<?> rdShard = ReadDataShard.fromShard(shard);
+			BlockReadDataShard<?> rdShard = BlockReadDataShard.fromShard(shard);
 			rdShard.removeBlock(relativePosition);
 
 			// Write the updated shard
