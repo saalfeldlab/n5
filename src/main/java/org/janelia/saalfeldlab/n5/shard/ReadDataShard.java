@@ -108,7 +108,7 @@ public class ReadDataShard<T> extends VirtualShard<T> {
 			return getBlock(encodedBlock, blockPosInDataset);
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
-		} catch (final IOException | UncheckedIOException e) {
+		} catch (final N5IOException | UncheckedIOException e) {
 			throw new N5IOException("Failed to read block from " + Arrays.toString(blockPosInDataset), e);
 		}
 	}

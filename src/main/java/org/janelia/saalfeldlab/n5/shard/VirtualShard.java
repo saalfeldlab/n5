@@ -30,7 +30,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		this.shardData = shardData;
 	}
 
-	public DataBlock<T> getBlock(ReadData blockData, long... blockGridPosition) throws IOException {
+	public DataBlock<T> getBlock(ReadData blockData, long... blockGridPosition) {
 
 		return datasetAttributes.getShardingCodec().getArrayCodec().decode(blockData, blockGridPosition);
 	}
@@ -93,7 +93,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 				blocks.add(block);
 			} catch (final N5Exception.N5NoSuchKeyException e) {
 				return blocks;
-			} catch (final IOException | UncheckedIOException e) {
+			} catch (final N5IOException | UncheckedIOException e) {
 				throw new N5IOException("Failed to read block from " + Arrays.toString(position), e);
 			}
 		}
@@ -116,7 +116,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 			return getBlock(blockData, blockPosInDataset);
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
-		} catch (final IOException | UncheckedIOException e) {
+		} catch (final N5IOException | UncheckedIOException e) {
 			throw new N5IOException("Failed to read block from " + Arrays.toString(blockPosInDataset), e);
 		}
 	}
@@ -137,7 +137,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 		try {
 			ShardIndex.readFromShard(shardData, indexTmp);
 			index = indexTmp;
-		} catch (N5Exception.N5NoSuchKeyException e) {}
+		} catch (Exception e) {}
 	}
 
 	/**
