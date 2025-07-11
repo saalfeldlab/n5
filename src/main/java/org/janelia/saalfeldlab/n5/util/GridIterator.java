@@ -15,6 +15,8 @@ public class GridIterator implements Iterator<long[]> {
 
 	final protected int[] intPosition;
 
+	final protected Position positionObj;
+
 	final protected long[] min;
 
 	final protected int lastIndex;
@@ -41,6 +43,8 @@ public class GridIterator implements Iterator<long[]> {
 		final long dimm = dimensions[m];
 		this.dimensions[m] = dimm;
 		lastIndex = (int)(k * dimm - 1);
+
+		positionObj = Position.wrap(position);
 	}
 
 	public GridIterator(final long[] dimensions) {
@@ -75,6 +79,12 @@ public class GridIterator implements Iterator<long[]> {
 		fwd();
 		indexToPosition(index, dimensions, min, position);
 		return position;
+	}
+
+	public Position nextPosition() {
+
+		next();
+		return positionObj;
 	}
 
 	public int[] nextInt() {

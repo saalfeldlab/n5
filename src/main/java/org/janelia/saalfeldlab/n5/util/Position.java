@@ -29,6 +29,11 @@ public interface Position extends Comparable<Position> {
 		return 0;
 	}
 
+	default Position copy() {
+
+		return new FinalPosition(this);
+	}
+
 	static boolean equals(final Position a, final Object b) {
 
 		if (a == null && b == null)
