@@ -11,6 +11,7 @@ import org.janelia.saalfeldlab.n5.codec.RawBytes;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
+import org.janelia.saalfeldlab.n5.util.Position;
 import org.junit.After;
 import org.junit.Test;
 
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Paths;
+import java.util.Iterator;
 
 import static org.junit.Assert.assertEquals;
 
@@ -29,6 +31,33 @@ public class ShardIndexTest {
 	public void removeTempWriters() {
 
 		tempN5Factory.removeTempWriters();
+	}
+
+	@Test
+	public void testPositionIterator() {
+
+		int[] shardBlockGridSize = new int[]{5, 4, 3};
+		ShardIndex index = new ShardIndex(
+				shardBlockGridSize,
+				IndexLocation.END, new RawBytes());
+
+		final long[] p = new long[]{0, 0, 0};
+		for (int i = 0; i < shardBlockGridSize[0]; i++) {
+			p[0] = i;
+			index.set(4 - i, 1, p);
+		}
+
+		int j = 0;
+		final Iterator<Position> it = index.iterator();
+		while (it.hasNext()) {
+			assertEquals(j++, it.next().get()[0]);
+		}
+
+		j = 4;
+		final Iterator<Position> its = index.storageIterator();
+		while (its.hasNext()) {
+			assertEquals(j--, its.next().get()[0]);
+		}
 	}
 
 	@Test

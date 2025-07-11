@@ -10,12 +10,16 @@ import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
+import org.janelia.saalfeldlab.n5.util.GridIterator;
+import org.janelia.saalfeldlab.n5.util.Position;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.TreeMap;
 import java.util.stream.IntStream;
 
 /**
@@ -52,8 +56,9 @@ public class ShardIndex extends LongArrayDataBlock {
 
 	private final DeterministicSizeCodec[] codecs;
 	private final ShardIndexAttributes indexAttributes;
+	private final int[] shardBlockGridSize;
 
-	/**
+	/*blockPos*
 	 * Creates a ShardIndex with specified data.
 	 *
 	 * @param shardBlockGridSize the dimensions of the block grid within the shard
@@ -68,6 +73,7 @@ public class ShardIndex extends LongArrayDataBlock {
 		this.codecs = codecs;
 		this.location = location;
 		this.indexAttributes = new ShardIndexAttributes(this);
+		this.shardBlockGridSize = shardBlockGridSize;
 	}
 
 	/**
@@ -130,6 +136,17 @@ public class ShardIndex extends LongArrayDataBlock {
 		/* getSize() is the number of data entries; each block takes 2 entries (offset and length)
 		* so the product of the dimension sizes, divided by 2, is the number of blocks. */
 		return Arrays.stream(getSize()).reduce(1, (x, y) -> x * y) / 2;
+	}
+
+	/**
+	 * Gets the number of blocks per dimension in a shard that are tracked by this index.
+	 *
+	 * @return
+	 * 	number blocks per shard per dimension
+	 */
+	public int[] getBlocksPerShard() {
+
+		return shardBlockGridSize;
 	}
 
 	/**
@@ -289,6 +306,53 @@ public class ShardIndex extends LongArrayDataBlock {
 	}
 
 	/**
+	 * Calculates the total size in bytes of the block data tracked by the
+	 * 
+	 * @return the total number of bytes for blocks tracked by this index.
+	 */
+	public long numBlockDataBytes() {
+
+		long N = 0;
+		for (int i = 0; i < getBlockCapacity(); i++) {
+			final long numBytes = getNumBytesByBlockIndex(i);
+			if (numBytes != EMPTY_INDEX_NBYTES)
+				N += numBytes;
+		}
+		return N;
+	}
+
+	/**
+	 * Returns an {@link Iterator} over the positions of blocks that exist. 
+	 * <p>
+	 * Iteration order is the lexicographical position ordering.
+	 *
+	 * @return
+	 * 	a position iteration.
+	 */
+	public Iterator<Position> iterator() {
+
+		return new PositionIterator<>(this);
+	}
+
+	/**
+	 * Returns an {@link Iterator} over the positions of blocks that exist. 
+	 * <p>
+	 * Positions are ordered according to their offset in the storage,
+	 * with smallest offset first.
+	 *
+	 * @return
+	 * 	a position iterator
+	 */
+	public Iterator<Position> storageIterator() {
+
+		final TreeMap<Long,Position> tmp = new TreeMap<>();
+		new PositionIterator<>(this).forEachRemaining( p -> {
+			tmp.put( getOffset(p.get()), p.copy());
+		});
+		return tmp.values().iterator();
+	}
+
+	/**
 	 * Reads the index data from a shard.
 	 *
 	 * @param shardData the ReadData containing the entire shard
@@ -391,8 +455,10 @@ public class ShardIndex extends LongArrayDataBlock {
 	/**
 	 * Calculates the byte boundaries of the index within a shard.
 	 *
-	 * @param index the ShardIndex
-	 * @param objectSize the total size of the shard in bytes
+	 * @param index
+	 *            the ShardIndex
+	 * @param objectSize
+	 *            the total size of the shard in bytes
 	 * @return the byte boundaries of the index
 	 */
 	public static IndexByteBounds byteBounds(final ShardIndex index, long objectSize) {
@@ -417,30 +483,24 @@ public class ShardIndex extends LongArrayDataBlock {
 		}
 	}
 
-	/**
-	 * Represents the byte boundaries of an index within a shard.
-	 */
-	public static class IndexByteBounds {
+	@Override
+	public boolean equals(Object other) {
 
-		/** The start byte position (inclusive) */
-		public final long start;
-		/** The end byte position (inclusive) */
-		public final long end;
-		/** The size in bytes */
-		public final long size;
+		if (other instanceof ShardIndex) {
 
-		/**
-		 * Creates byte boundaries.
-		 *
-		 * @param start the start position (inclusive)
-		 * @param end the end position (inclusive)
-		 */
-		public IndexByteBounds(long start, long end) {
+			final ShardIndex index = (ShardIndex)other;
+			if (this.location != index.location)
+				return false;
 
-			this.start = start;
-			this.end = end;
-			this.size = end - start + 1;
+			if (!Arrays.equals(this.size, index.size))
+				return false;
+
+			if (!Arrays.equals(this.data, index.data))
+				return false;
+
+			return true;
 		}
+		return false;
 	}
 
 	/**
@@ -472,22 +532,77 @@ public class ShardIndex extends LongArrayDataBlock {
 		return indexBlockSize;
 	}
 
-	@Override
-	public boolean equals(Object other) {
+	/**
+	 * Represents the byte boundaries of an index within a shard.
+	 */
+	public static class IndexByteBounds {
 
-		if (other instanceof ShardIndex) {
+		/** The start byte position (inclusive) */
+		public final long start;
+		/** The end byte position (inclusive) */
+		public final long end;
+		/** The size in bytes */
+		public final long size;
 
-			final ShardIndex index = (ShardIndex)other;
-			if (this.location != index.location)
-				return false;
+		/**
+		 * Creates byte boundaries.
+		 *
+		 * @param start the start position (inclusive)
+		 * @param end the end position (inclusive)
+		 */
+		public IndexByteBounds(long start, long end) {
 
-			if (!Arrays.equals(this.size, index.size))
-				return false;
-
-			if (!Arrays.equals(this.data, index.data))
-				return false;
-
+			this.start = start;
+			this.end = end;
+			this.size = end - start + 1;
 		}
-		return true;
+	}
+
+	/**
+	 * Iterator implementation for traversing blocks within a shard.
+	 * <p>
+	 * This iterator only returns positions for blocks that exist, skipping
+	 * empty positions in the shard grid.
+	 *
+	 * @param <T> the data type of blocks
+	 */
+	private class PositionIterator<T> implements Iterator<Position> {
+
+		private final GridIterator it;
+		private final ShardIndex index;
+		private int blockIndex = 0;
+
+		/**
+		 * Creates a new iterator for the given shard.
+		 *
+		 * @param shard the shard to iterate over
+		 */
+		public PositionIterator(final ShardIndex index) {
+
+			this.index = index;
+			this.blockIndex = 0;
+			it = new GridIterator(index.getBlocksPerShard());
+		}
+
+		@Override
+		public boolean hasNext() {
+
+			if (index == null )
+				return false;
+
+			for (int i = blockIndex; i < index.getBlockCapacity(); i++) {
+				if (index.exists(i))
+					return true;
+			}
+			return false;
+		}
+
+		@Override
+		public Position next() {
+			while (!index.exists(blockIndex++))
+				it.fwd();
+
+			return it.nextPosition();
+		}
 	}
 }

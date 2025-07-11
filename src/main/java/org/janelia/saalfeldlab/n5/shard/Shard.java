@@ -11,7 +11,7 @@ import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
-import org.janelia.saalfeldlab.n5.util.GridIterator;
+import org.janelia.saalfeldlab.n5.util.Position;
 
 import static org.janelia.saalfeldlab.n5.N5Exception.*;
 
@@ -272,11 +272,8 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	 */
 	class DataBlockIterator<T> implements Iterator<DataBlock<T>> {
 
-		private final GridIterator it;
-		private final Shard<T> shard;
-		private final ShardIndex index;
-		private final DatasetAttributes attributes;
-		private int blockIndex = 0;
+		private Shard<T> shard;
+		private Iterator<Position> existingPositions;
 
 		/**
 		 * Creates a new iterator for the given shard.
@@ -286,31 +283,18 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		public DataBlockIterator(final Shard<T> shard) {
 
 			this.shard = shard;
-			this.index = shard.getIndex();
-			this.attributes = shard.getDatasetAttributes();
-			this.blockIndex = 0;
-			it = new GridIterator(shard.getBlockGridSize());
+			existingPositions = shard.getIndex().iterator();
 		}
 
 		@Override
 		public boolean hasNext() {
-
-			if (index == null )
-				return false;
-
-			for (int i = blockIndex; i < attributes.getNumBlocksPerShard(); i++) {
-				if (index.exists(i))
-					return true;
-			}
-			return false;
+			return existingPositions.hasNext();
 		}
 
 		@Override
 		public DataBlock<T> next() {
-			while (!index.exists(blockIndex++))
-				it.fwd();
 
-			return shard.getBlock(it.next());
+			return shard.getBlock(existingPositions.next().get());
 		}
 	}
 
