@@ -42,7 +42,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Fork(1)
 public class ReadDataBenchmarks {
 
-	@Param(value = { "10000000" })
+	@Param(value = {"100000", "1000000", "10000000"})
 	protected int objectSizeBytes;
 
 	protected Path basePath;
@@ -61,14 +61,32 @@ public class ReadDataBenchmarks {
 	}
 
 	@Benchmark
-	public void run(Blackhole hole) throws IOException {
+	public void runKva(final Blackhole hole) throws IOException {
 
-		hole.consume(read().materialize());
+		final ReadData rd = kva.createReadData(getPath().toString());
+		hole.consume(rd.materialize());
 	}
 
-	public ReadData read() throws IOException {
+	@Benchmark
+	public void runInputStream(final Blackhole hole) throws IOException {
 
-		return kva.createReadData(getPath().toString());
+		try ( 	final LockedChannel ch = kva.lockForReading(getPath().toString());
+				final InputStream is = ch.newInputStream(); ) {
+
+			final ReadData rd = ReadData.from(is);
+			hole.consume(rd.materialize());
+		}
+	}
+
+	@Benchmark
+	public void runInputStreamKnownLength(final Blackhole hole) throws IOException {
+
+		try ( 	final LockedChannel ch = kva.lockForReading(getPath().toString());
+				final InputStream is = ch.newInputStream(); ) {
+
+			final ReadData rd = ReadData.from(is, (int)ch.length());
+			hole.consume(rd.materialize());
+		}
 	}
 
 	protected Path getPath() {

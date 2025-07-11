@@ -123,6 +123,14 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			}
 		}
 
+		public long length() {
+			try {
+				return channel.size();
+			} catch (IOException e) {
+				throw new N5IOException(e);
+			}
+		}
+
 		protected FileChannel getFileChannel() {
 			return channel;
 		}

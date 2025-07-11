@@ -79,4 +79,8 @@ public interface LockedChannel extends Closeable {
 	 *             if an output stream could not be created
 	 */
 	OutputStream newOutputStream() throws N5IOException;
+	
+	default long length() throws N5IOException {
+		return -1;
+	}
 }
