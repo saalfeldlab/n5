@@ -20,6 +20,13 @@ import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.XzCompression;
+import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
+import org.janelia.saalfeldlab.n5.codec.RawBytes;
+import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -116,7 +123,18 @@ public class N5ShardWriteBenchmarks {
 
 			DataType dtype = DataType.fromString(dataType);
 
-			dsetAttrs = new DatasetAttributes(dims, shardSize, blockSize, dtype, getCompression(compressionString));
+			dsetAttrs = new DatasetAttributes(
+					dims,
+					shardSize,
+					blockSize,
+					dtype,
+					new ShardingCodec(
+							blockSize,
+							new Codec[]{new N5BlockCodec(), BenchmarkUtils.getCompression(compressionString)},
+							new DeterministicSizeCodec[]{new RawBytes(), new Crc32cChecksumCodec()},
+							IndexLocation.END
+					)
+			);
 			n5.createDataset("", dsetAttrs);
 
 			blocks = new ArrayList<>();
@@ -125,7 +143,7 @@ public class N5ShardWriteBenchmarks {
 				p[0] = i;
 
 				DataBlock<?> blk = dtype.createDataBlock(blockSize, p);
-				fillBlock(dtype, blk);
+				BenchmarkUtils.fillBlock(dtype, blk);
 				blocks.add(blk);
 
 				// write data into the read group
@@ -163,90 +181,4 @@ public class N5ShardWriteBenchmarks {
 		}
 	}
 
-	private void fillBlock(DataType dtype, DataBlock<?> blk) {
-
-		switch (dtype) {
-		case INT32:
-			fill((int[])blk.getData());
-			break;
-		case FLOAT32:
-			fill((float[])blk.getData());
-			break;
-		case FLOAT64:
-			fill((double[])blk.getData());
-			break;
-		case INT16:
-			fill((short[])blk.getData());
-			break;
-		case INT64:
-			fill((long[])blk.getData());
-			break;
-		case INT8:
-			fill((byte[])blk.getData());
-			break;
-		case OBJECT:
-			break;
-		case STRING:
-			break;
-		case UINT16:
-			fill((short[])blk.getData());
-			break;
-		case UINT32:
-			fill((int[])blk.getData());
-			break;
-		case UINT64:
-			fill((long[])blk.getData());
-			break;
-		case UINT8:
-			fill((byte[])blk.getData());
-			break;
-		default:
-			break;
-		}
-	}
-
-	private void fill(short[] arr) {
-		for (int i = 0; i < arr.length; i++)
-			arr[i] = (short)random.nextInt();
-	}
-
-	private void fill(int[] arr) {
-		for (int i = 0; i < arr.length; i++)
-			arr[i] = random.nextInt();
-	}
-
-	private void fill(long[] arr) {
-		for (int i = 0; i < arr.length; i++)
-			arr[i] = random.nextLong();
-	}
-
-	private void fill(float[] arr) {
-		for (int i = 0; i < arr.length; i++)
-			arr[i] = random.nextFloat();
-	}
-
-	private void fill(double[] arr) {
-		for (int i = 0; i < arr.length; i++)
-			arr[i] = random.nextDouble();
-	}
-
-	private void fill(byte[] arr) {
-		random.nextBytes(arr);
-	}
-
-	private static Compression getCompression(final String compressionArg) {
-
-		switch (compressionArg) {
-		case GZIP_COMPRESSION:
-			return new GzipCompression();
-		case LZ4_COMPRESSION:
-			return new Lz4Compression();
-		case XZ_COMPRESSION:
-			return new XzCompression();
-		case RAW_COMPRESSION:
-			return new RawCompression();
-		default:
-			throw new IllegalArgumentException("No compressor matches: " + compressionArg);
-		}
-	}
 }

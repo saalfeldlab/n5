@@ -23,8 +23,16 @@ import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.XzCompression;
+import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
+import org.janelia.saalfeldlab.n5.codec.RawBytes;
+import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.BlockReadDataShard;
+import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
 import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.Position;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -54,13 +62,6 @@ import com.google.gson.GsonBuilder;
 @Fork(1)
 public class N5ShardModifyBenchmarks {
 
-	public static final String GZIP_COMPRESSION = "gzip";
-	public static final String RAW_COMPRESSION = "raw";
-	public static final String LZ4_COMPRESSION = "lz4";
-	public static final String XZ_COMPRESSION = "xz";
-
-	Random random = new Random(7777);
-
 	final String dset = "";
 
 	N5Writer n5;
@@ -78,10 +79,10 @@ public class N5ShardModifyBenchmarks {
 	@Param( value = { "36" } )
 	protected int totalBlocksPerShard;
 
-	@Param( value = { "12" } )
+	@Param( value = { "18" } )
 	protected int initialBlocksPerShard;
 
-	@Param( value = { "4" } )
+	@Param( value = { "12" } )
 	protected int blocksToModify;
 
 	@Param( value = { "raw", "gzip" } )
@@ -118,17 +119,28 @@ public class N5ShardModifyBenchmarks {
 			final long[] dims = new long[]{ blockDim * totalBlocksPerShard };
 
 			final DataType dtype = DataType.fromString(dataType);
-			dsetAttrs = new DatasetAttributes(dims, shardSize, blockSize, dtype, getCompression(compressionString));
+			dsetAttrs = new DatasetAttributes(
+					dims,
+					shardSize,
+					blockSize,
+					dtype,
+					new ShardingCodec(
+							blockSize,
+							new Codec[]{new N5BlockCodec(), BenchmarkUtils.getCompression(compressionString)},
+							new DeterministicSizeCodec[]{new RawBytes(), new Crc32cChecksumCodec()},
+							IndexLocation.END
+					)
+			);
 			n5.createDataset("", dsetAttrs);
 
 			long[] p = new long[1];
 			blocks = new DataBlock[initialBlocksPerShard];
-			fillBlocks(blocks, dtype, blockSize, p);
+			BenchmarkUtils.fillBlocks(blocks, dtype, blockSize, p);
 
 			n5.writeBlocks(dset, dsetAttrs, (DataBlock<T>[])blocks);
 
 			blocksToAdd = new DataBlock[blocksToModify];
-			fillBlocks(blocksToAdd, dtype, blockSize, p);
+			BenchmarkUtils.fillBlocks(blocksToAdd, dtype, blockSize, p);
 
 			blocksToDelete = new ArrayList<>();
 			IntStream.range(0, blocksToModify).forEach(i -> {
@@ -137,18 +149,6 @@ public class N5ShardModifyBenchmarks {
 
 		} catch (final IOException e) {
 			e.printStackTrace();
-		}
-	}
-
-	private void fillBlocks(DataBlock<?>[] blocks, DataType dtype, int[] blockSize, long[] p) {
-
-		System.out.println(blocks);
-		for (int i = 0; i < blocks.length; i++) {
-			final DataBlock<?> blk = dtype.createDataBlock(blockSize, p);
-			System.out.println(blk);
-			fillBlock(dtype, blk);
-			blocks[i] = blk;
-			p[0]++;
 		}
 	}
 
@@ -199,86 +199,30 @@ public class N5ShardModifyBenchmarks {
 		}
 	}
 
-	private void fillBlock(DataType dtype, DataBlock<?> blk) {
+	@Benchmark
+	public <T> void removeBlocksBatchEncodeBenchmark() throws IOException {
 
-		switch (dtype) {
-		case INT32:
-			fill((int[])blk.getData());
-			break;
-		case FLOAT32:
-			fill((float[])blk.getData());
-			break;
-		case FLOAT64:
-			fill((double[])blk.getData());
-			break;
-		case INT16:
-			fill((short[])blk.getData());
-			break;
-		case INT64:
-			fill((long[])blk.getData());
-			break;
-		case INT8:
-			fill((byte[])blk.getData());
-			break;
-		case UINT16:
-			fill((short[])blk.getData());
-			break;
-		case UINT32:
-			fill((int[])blk.getData());
-			break;
-		case UINT64:
-			fill((long[])blk.getData());
-			break;
-		case UINT8:
-			fill((byte[])blk.getData());
-			break;
-		default:
-			break;
+		// Batch delete is not currently an API method for N5Writers,
+		// this is how it would be implemented
+
+		/* Group blocks by shard index */
+		final Map<Position, List<long[]>> shardBlockMap = dsetAttrs.groupBlockPositions(blocksToDelete);
+		for (final Entry<Position, List<long[]>> e : shardBlockMap.entrySet()) {
+
+			final long[] shardPosition = e.getKey().get();
+			final Shard<T> currentShard = n5.readShard(dset, dsetAttrs, shardPosition);
+			final InMemoryShard<T> newShard;
+			if (currentShard != null) {
+				newShard = InMemoryShard.fromShard(currentShard);
+			} else {
+				newShard = new InMemoryShard<>(dsetAttrs, shardPosition);
+			}
+
+			for (long[] p : e.getValue())
+				newShard.removeBlock(p);
+
+			n5.writeShard(dset, dsetAttrs, newShard);
 		}
 	}
 
-	private void fill(short[] arr) {
-		for (int i = 0; i < arr.length; i++)
-			arr[i] = (short)random.nextInt();
-	}
-
-	private void fill(int[] arr) {
-		for (int i = 0; i < arr.length; i++)
-			arr[i] = random.nextInt();
-	}
-
-	private void fill(long[] arr) {
-		for (int i = 0; i < arr.length; i++)
-			arr[i] = random.nextLong();
-	}
-
-	private void fill(float[] arr) {
-		for (int i = 0; i < arr.length; i++)
-			arr[i] = random.nextFloat();
-	}
-
-	private void fill(double[] arr) {
-		for (int i = 0; i < arr.length; i++)
-			arr[i] = random.nextDouble();
-	}
-
-	private void fill(byte[] arr) {
-		random.nextBytes(arr);
-	}
-
-	private static Compression getCompression(final String compressionArg) {
-
-		switch (compressionArg) {
-		case GZIP_COMPRESSION:
-			return new GzipCompression();
-		case LZ4_COMPRESSION:
-			return new Lz4Compression();
-		case XZ_COMPRESSION:
-			return new XzCompression();
-		case RAW_COMPRESSION:
-			return new RawCompression();
-		default:
-			throw new IllegalArgumentException("No compressor matches: " + compressionArg);
-		}
-	}
 }
