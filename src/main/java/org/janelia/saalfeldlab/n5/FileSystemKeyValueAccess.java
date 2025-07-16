@@ -68,7 +68,6 @@ import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
-import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
@@ -84,6 +83,7 @@ import java.nio.file.attribute.FileAttribute;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.concurrent.locks.Lock;
 import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -103,9 +103,11 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	 * {@link FileSystem} supports that. If the {@link FileSystem} does not
 	 * support locking, it returns immediately.
 	 */
-	protected class LockedFileChannel implements LockedChannel {
+	protected class LockedFileChannel implements LockedChannel, AutoCloseable {
 
 		protected final FileChannel channel;
+
+		protected Lock lock;
 
 		protected LockedFileChannel(final String path, final boolean readOnly) throws IOException {
 
@@ -114,10 +116,38 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		protected LockedFileChannel(final Path path, final boolean readOnly) throws IOException {
 
+			final String key = path.toAbsolutePath().toString();
+			boolean haveLock = false;
+			while( !haveLock ) {
+
+				if (readOnly) {
+					lock = keyLock.tryLockForReading(key);
+				}
+				else {
+					lock = keyLock.tryLockForWriting(key);
+				}
+
+				if (lock != null) {
+					haveLock = true;
+					break;
+				}
+
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					throw new N5Exception(e);
+				}
+			}
+
 			final OpenOption[] options;
 			if (readOnly) {
 				options = new OpenOption[]{StandardOpenOption.READ};
-				channel = FileChannel.open(path, options);
+				try {
+					channel = FileChannel.open(path, options);
+				} catch (final NoSuchFileException e) {
+					lock.unlock();
+					throw e;
+				}
 			} else {
 				options = new OpenOption[]{StandardOpenOption.READ, StandardOpenOption.WRITE,
 						StandardOpenOption.CREATE};
@@ -132,20 +162,6 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 				}
 			}
 
-			for (boolean waiting = true; waiting;) {
-				waiting = false;
-				try {
-					channel.lock(0L, Long.MAX_VALUE, readOnly);
-				} catch (final OverlappingFileLockException e) {
-					waiting = true;
-					try {
-						Thread.sleep(100);
-					} catch (final InterruptedException f) {
-						waiting = false;
-						Thread.currentThread().interrupt();
-					}
-				} catch (final IOException e) {}
-			}
 		}
 
 		protected FileChannel getFileChannel() {
@@ -191,10 +207,12 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		@Override
 		public void close() throws IOException {
-
+			lock.unlock();
 			channel.close();
 		}
 	}
+
+	protected final KeyLock keyLock;
 
 	protected final FileSystem fileSystem;
 
@@ -206,6 +224,12 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public FileSystemKeyValueAccess(final FileSystem fileSystem) {
 
 		this.fileSystem = fileSystem;
+		keyLock = new KeyLock();
+	}
+
+	public KeyLock getLocks() {
+
+		return keyLock;
 	}
 
 	@Override

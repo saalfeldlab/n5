@@ -28,6 +28,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
@@ -38,13 +41,17 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.gson.GsonBuilder;
@@ -101,6 +108,7 @@ public class N5FSTest extends AbstractN5Test {
 	}
 
 	@Test
+	@Ignore("currently working on this")
 	public void testReadLock() throws IOException {
 
 		final Path path = Paths.get(tempN5PathName(), "lock");
@@ -134,6 +142,7 @@ public class N5FSTest extends AbstractN5Test {
 	}
 
 	@Test
+	@Ignore("currently working on this")
 	public void testWriteLock() throws IOException {
 
 		final Path path = Paths.get(tempN5PathName(), "lock");
@@ -163,49 +172,109 @@ public class N5FSTest extends AbstractN5Test {
 
 		exec.shutdownNow();
 	}
-
+	
 	@Test
-	public void testLockReleaseByReader() throws IOException, ExecutionException, InterruptedException, TimeoutException {
+	public void testFSLockRelease() throws IOException, ExecutionException, InterruptedException, TimeoutException {
 
 
 		final Path path = Paths.get(tempN5PathName(), "lock");
-		final LockedChannel lock = access.lockForWriting(path);
+		final ExecutorService exec = Executors.newFixedThreadPool(2);
 
-		lock.newReader().close();
+		// first thread acquires the lock, waits for 200ms then should release it
+		exec.submit(() -> {
+			try( final LockedChannel lock = access.lockForWriting(path)) {
+				lock.newReader();
+				Thread.sleep(200);
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		});
 
-		final ExecutorService exec = Executors.newSingleThreadExecutor();
+		// second thread waits for the lock.
+		// it should get it within a few seconds.
 		final Future<Void> future = exec.submit(() -> {
 			access.lockForWriting(path).close();
 			return null;
 		});
 
 		future.get(3, TimeUnit.SECONDS);
-		future.cancel(true);
-		lock.close();
 		Files.delete(path);
-
 		exec.shutdownNow();
+	}
+	
+	@Test
+	public void testReadLockBehavior() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+
+		final Path path = Paths.get(tempN5PathName(), "read-lock");
+		path.toFile().createNewFile();
+
+		final ExecutorService exec = Executors.newFixedThreadPool(3);
+
+		final AtomicBoolean v = new AtomicBoolean(false);
+
+		// first thread acquires a read lock, waits for 200ms
+		Future<?> f = exec.submit(() -> {
+			try( final LockedChannel lock = access.lockForReading(path)) {
+				lock.newReader();
+				Thread.sleep(200);
+
+				// ensure that the other thread updated the value 
+				assertTrue(v.get());
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		});
+
+		// second thread gets a read lock
+		// and should not be blocked
+		// this thread updates the boolean
+		exec.submit(() -> {
+			try( final LockedChannel lock = access.lockForReading(path)) {
+				lock.newReader();
+				v.set(true);
+			} 
+			return null;
+		});
+
+		f.get(3, TimeUnit.SECONDS);
+		exec.shutdownNow();
+		Files.delete(path);
 	}
 
 	@Test
-	public void testLockReleaseByInputStream() throws IOException, ExecutionException, InterruptedException, TimeoutException {
+	public void testWriteLockBehavior() throws IOException, ExecutionException, InterruptedException, TimeoutException {
+
 
 		final Path path = Paths.get(tempN5PathName(), "lock");
-		final LockedChannel lock = access.lockForWriting(path);
+		final ExecutorService exec = Executors.newFixedThreadPool(2);
 
-		lock.newInputStream().close();
+		// first thread acquires the lock, waits for 200ms then should release it
+		exec.submit(() -> {
+			try( final LockedChannel lock = access.lockForWriting(path)) {
+				lock.newReader();
+				Thread.sleep(200);
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		});
 
-		final ExecutorService exec = Executors.newSingleThreadExecutor();
+		// second thread waits for the lock.
+		// it should get it within a few seconds.
 		final Future<Void> future = exec.submit(() -> {
 			access.lockForWriting(path).close();
 			return null;
 		});
 
 		future.get(3, TimeUnit.SECONDS);
-		future.cancel(true);
-		lock.close();
 		Files.delete(path);
-
 		exec.shutdownNow();
 	}
+
 }

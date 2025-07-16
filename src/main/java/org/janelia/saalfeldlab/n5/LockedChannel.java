@@ -56,7 +56,6 @@ package org.janelia.saalfeldlab.n5;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
