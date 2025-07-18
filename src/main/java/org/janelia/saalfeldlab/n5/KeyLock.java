@@ -140,8 +140,24 @@ public class KeyLock {
 		return false;
 	}
 
+	/**
+	 * Returns an {@link Optional} containing the lock for the given
+	 * key, if it exists.
+	 * <p>
+	 * This method can be useful for monitoring and debugging. For example,
+	 * to check how many threads are currently reading a key:
+	 * <pre>{@code
+	 * keyLock.getKeyLock("myKey").ifPresent(lock -> {
+	 *     System.out.println("Key 'myKey' has " + lock.getReadLockCount() + " readers");
+	 * });
+	 * }</pre>
+	 *
+	 * @param key
+	 * 	the key whose lock will be returned
+	 * @return an {@link Optional} containing the {@link ReentrantReadWriteLock}
+	 *         for the key, or empty if no lock exists for the key
+	 */
 	public Optional<ReentrantReadWriteLock> getKeyLock(String key) {
-		// TODO doc me
 		return Optional.ofNullable(locks.get(key));
 	}
 

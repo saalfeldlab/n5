@@ -38,6 +38,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 
 import org.junit.Test;
@@ -118,8 +119,7 @@ public class KeyLockTest {
 		// With ReentrantReadWriteLock, we should see true concurrent reads
 		assertTrue("Multiple readers should have been reading concurrently", maxConcurrentReaders.get() > 1);
 
-		// Time should be much less than sequential execution (numReaders *
-		// 100ms)
+		// Time should be much less than sequential execution (numReaders * 100ms)
 		assertTrue("Concurrent execution should be faster than sequential", duration < numReaders * 100);
 	}
 
@@ -162,7 +162,7 @@ public class KeyLockTest {
 	}
 
 	@Test
-	public void testTryLock() {
+	public void testTryLock() throws InterruptedException {
 
 		KeyLock keyLock = new KeyLock();
 		String testKey = "test-key";
@@ -187,9 +187,16 @@ public class KeyLockTest {
 		writeLock = keyLock.tryLockForWriting(testKey);
 		assertNotNull("Should acquire write lock after reads are released", writeLock);
 
-//		// Try acquiring read lock while write is held - should fail
-//		Lock readLock3 = keyLock.tryLockForReading(testKey);
-//		assertNull("Should not acquire read lock while write is held", readLock3);
+		// Try acquiring read lock from another thread while write is held - should fail
+		// Because
+		AtomicReference<Lock> readLock3 = new AtomicReference<>();
+		Thread readerThread = new Thread(() -> {
+			readLock3.set(keyLock.tryLockForReading(testKey));
+		});
+		readerThread.start();
+		readerThread.join();
+
+		assertNull("Should not acquire read lock while write is held", readLock3.get());
 
 		writeLock.unlock();
 	}
