@@ -85,6 +85,7 @@ public abstract class DataCodec<T> {
 
 	public static final DataCodec<String[]> STRING = new N5StringDataCodec();
 	public static final DataCodec<String[]> ZARR_STRING = new ZarrStringDataCodec();
+
 	public static final DataCodec<byte[]> OBJECT = new ObjectDataCodec();
 
 	public static DataCodec<short[]> SHORT(ByteOrder order) {
@@ -105,6 +106,10 @@ public abstract class DataCodec<T> {
 
 	public static DataCodec<double[]> DOUBLE(ByteOrder order) {
 		return order == ByteOrder.BIG_ENDIAN ? DOUBLE_BIG_ENDIAN : DOUBLE_LITTLE_ENDIAN;
+	}
+
+	public static DataCodec<String[]> ZARR_UNICODE(int nChars, ByteOrder order) {
+		return new ZarrUnicodeStringDataCodec(nChars, order);
 	}
 
 	// ---------------- implementations  -----------------
@@ -331,6 +336,68 @@ public abstract class DataCodec<T> {
 				actualData[i] = new String(encodedString, ENCODING);
 			}
 			return actualData;
+		}
+	}
+
+	private static final class ZarrUnicodeStringDataCodec extends DataCodec<String[]> {
+
+		private static final char NULL_CHAR = '\0';
+		private static final int BYTES_PER_CHAR = 4;
+
+		private final Charset charset;
+
+		ZarrUnicodeStringDataCodec(int nChar, ByteOrder order) {
+			super(nChar * BYTES_PER_CHAR, String[]::new);
+			if (order == ByteOrder.BIG_ENDIAN)
+				charset = Charset.forName("UTF-32BE");
+			else
+				charset = Charset.forName("UTF-32LE");
+		}
+
+		@Override
+		public ReadData serialize(String[] data) throws N5IOException {
+
+			if( data.length == 0 )
+				return ReadData.empty();
+
+			final int N = data.length;
+			final int maxLength = Arrays.stream(data).mapToInt( String::length).max().getAsInt();
+			final int fixedEncodedStringSize = maxLength * BYTES_PER_CHAR;
+			final int totalSize = N * fixedEncodedStringSize;
+			final ByteBuffer buf = ByteBuffer.allocate(totalSize);
+			int pos = 0;
+			for( int i = 0; i < N; i++ ) {
+				buf.position(pos);
+				buf.put(charset.encode(data[i]));
+				pos += fixedEncodedStringSize;
+			}
+			return ReadData.from(buf.array());
+		}
+
+		@Override
+		public String[] deserialize(ReadData readData, int numElements) throws N5IOException {
+
+			if (readData.length() % numElements != 0) {
+				throw new RuntimeException(String.format("Data of length (%d) bytes is not a multiple of numElements (%d)",
+						readData.length(), numElements));
+			}
+
+			final int bytesPerString = (int)readData.length() / numElements;
+			final ByteBuffer serialized = readData.toByteBuffer();
+			int pos = 0;
+			final String[] out = new String[numElements];
+			for (int i = 0; i < numElements; i++) {
+				serialized.position(pos);
+				serialized.limit(pos + bytesPerString);
+				out[i] = removeTrailingNullChars(charset.decode(serialized).toString());
+				pos += bytesPerString;
+			}
+			return out;
+		}
+
+		private static String removeTrailingNullChars(String str) {
+			int idx = str.indexOf(NULL_CHAR);
+			return idx < 0 ? str : str.substring(0, idx);
 		}
 	}
 
