@@ -38,7 +38,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.function.IntFunction;
 import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
@@ -84,7 +83,8 @@ public abstract class DataCodec<T> {
 	public static final DataCodec<double[]> DOUBLE_LITTLE_ENDIAN = new DoubleDataCodec(ByteOrder.LITTLE_ENDIAN);
 
 	public static final DataCodec<String[]> STRING = new N5StringDataCodec();
-	public static final DataCodec<String[]> ZARR_STRING = new ZarrStringDataCodec();
+	public static final DataCodec<String[]> ZARR_VAR_STRING = new ZarrStringDataCodec();
+
 	public static final DataCodec<byte[]> OBJECT = new ObjectDataCodec();
 
 	public static DataCodec<short[]> SHORT(ByteOrder order) {
@@ -105,6 +105,24 @@ public abstract class DataCodec<T> {
 
 	public static DataCodec<double[]> DOUBLE(ByteOrder order) {
 		return order == ByteOrder.BIG_ENDIAN ? DOUBLE_BIG_ENDIAN : DOUBLE_LITTLE_ENDIAN;
+	}
+
+	/**
+	 * Returns a {@link DataCodec} for fixed-length strings.
+	 * <p>
+	 * The resulting codec uses UTF-32 string encoding to encode / decode String
+	 * arrays to a pre-defined fixed-length. Shorter Strings will be padded as
+	 * necessary. If a String longer than maxLength are encountered, an
+	 * {@link IllegalArgumentException} will be thrown.
+	 *
+	 * @param maxLength
+	 *            the maximum number of characters per string
+	 * @param order
+	 *            the {@link ByteOrder} for encoding
+	 * @return a data codec for fixed-length strings
+	 */
+	public static DataCodec<String[]> ZARR_FIXED_STRING(int maxLength, ByteOrder order) {
+		return new ZarrFixedLengthStringDataCodec(maxLength, order);
 	}
 
 	// ---------------- implementations  -----------------
@@ -286,6 +304,22 @@ public abstract class DataCodec<T> {
 		}
 	}
 
+	/**
+	 * A {@link DataCodec} for variable-length strings.
+	 * <p>
+	 * Uses UTF-8 string encoding to encode / decode String arrays, the format
+	 * is:
+	 * <ul>
+	 * <li>The total number of Strings is encoded as an int.</li>
+	 * <li>For each String</li>
+	 * <ul>
+	 * <li>The number of characters in the string is encoded as an int</li>
+	 * <li>The String is encoded using UTF-8.</li>
+	 * </ul>
+	 * </ul>
+	 * 
+	 * @see {{@link #ZARR_FIXED_STRING(int, ByteOrder)}
+	 */
 	private static final class ZarrStringDataCodec extends DataCodec<String[]> {
 
 		private static final Charset ENCODING = StandardCharsets.UTF_8;
@@ -331,6 +365,85 @@ public abstract class DataCodec<T> {
 				actualData[i] = new String(encodedString, ENCODING);
 			}
 			return actualData;
+		}
+	}
+
+	/**
+	 * A {@link DataCodec} for fixed-length strings.
+	 * <p>
+	 * Uses UTF-32 string encoding to encode / decode String arrays to a
+	 * pre-defined fixed-length. Shorter Strings will be padded as necessary. An
+	 * {@link IllegalArgumentException} will be thrown if a String with length >
+	 * maxLength is encountered during encoding.
+	 *
+	 * @see {{@link #ZARR_FIXED_STRING(int, ByteOrder)}
+	 */
+	private static final class ZarrFixedLengthStringDataCodec extends DataCodec<String[]> {
+
+		private static final char NULL_CHAR = '\0';
+		private static final int BYTES_PER_CHAR = 4;
+
+		private final Charset charset;
+
+		private final int maxLength;
+
+		ZarrFixedLengthStringDataCodec(int maxLength, ByteOrder order) {
+			super(maxLength * BYTES_PER_CHAR, String[]::new);
+			this.maxLength = maxLength;
+			if (order == ByteOrder.BIG_ENDIAN)
+				charset = Charset.forName("UTF-32BE");
+			else
+				charset = Charset.forName("UTF-32LE");
+		}
+
+		@Override
+		public ReadData serialize(String[] data) throws N5IOException {
+
+			if (data.length == 0)
+				return ReadData.empty();
+
+			final int N = data.length;
+			final int encodedStringSize = maxLength * BYTES_PER_CHAR;
+			final int totalSize = N * encodedStringSize;
+			final ByteBuffer buf = ByteBuffer.allocate(totalSize);
+			int pos = 0;
+			for (int i = 0; i < N; i++) {
+
+				if (data[i].length() > maxLength)
+					throw new IllegalArgumentException("Can not encode string of length " +
+							data[i].length() + " when maxLength = " + maxLength);
+
+				buf.position(pos);
+				buf.put(charset.encode(data[i]));
+				pos += encodedStringSize;
+			}
+			return ReadData.from(buf.array());
+		}
+
+		@Override
+		public String[] deserialize(ReadData readData, int numElements) throws N5IOException {
+
+			if (readData.length() % numElements != 0) {
+				throw new RuntimeException(String.format("Data of length (%d) bytes is not a multiple of numElements (%d)",
+						readData.length(), numElements));
+			}
+
+			final int bytesPerString = (int)readData.length() / numElements;
+			final ByteBuffer serialized = readData.toByteBuffer();
+			int pos = 0;
+			final String[] out = new String[numElements];
+			for (int i = 0; i < numElements; i++) {
+				serialized.position(pos);
+				serialized.limit(pos + bytesPerString);
+				out[i] = removeTrailingNullChars(charset.decode(serialized).toString());
+				pos += bytesPerString;
+			}
+			return out;
+		}
+
+		private static String removeTrailingNullChars(String str) {
+			int idx = str.indexOf(NULL_CHAR);
+			return idx < 0 ? str : str.substring(0, idx);
 		}
 	}
 
