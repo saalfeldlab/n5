@@ -38,7 +38,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.function.IntFunction;
 import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
@@ -84,7 +83,7 @@ public abstract class DataCodec<T> {
 	public static final DataCodec<double[]> DOUBLE_LITTLE_ENDIAN = new DoubleDataCodec(ByteOrder.LITTLE_ENDIAN);
 
 	public static final DataCodec<String[]> STRING = new N5StringDataCodec();
-	public static final DataCodec<String[]> ZARR_STRING = new ZarrStringDataCodec();
+	public static final DataCodec<String[]> ZARR_VAR_STRING = new ZarrStringDataCodec();
 
 	public static final DataCodec<byte[]> OBJECT = new ObjectDataCodec();
 
@@ -108,8 +107,22 @@ public abstract class DataCodec<T> {
 		return order == ByteOrder.BIG_ENDIAN ? DOUBLE_BIG_ENDIAN : DOUBLE_LITTLE_ENDIAN;
 	}
 
-	public static DataCodec<String[]> ZARR_UNICODE(int nChars, ByteOrder order) {
-		return new ZarrUnicodeStringDataCodec(nChars, order);
+	/**
+	 * Returns a {@link DataCodec} for fixed-length strings.
+	 * <p>
+	 * The resulting codec uses UTF-32 string encoding to encode / decode
+	 * String arrays to a pre-defined fixed-length. Shorter (longer)
+	 * Strings will be padded (truncated) as necessary.
+	 *
+	 * @param maxLength
+	 * 	the maximum number of characters per string
+	 * @param order
+	 * 	the {@link ByteOrder} for encoding
+	 * @return
+	 * 	a data codec for fixed-length strings
+	 */
+	public static DataCodec<String[]> ZARR_FIXED_STRING(int maxLength, ByteOrder order) {
+		return new ZarrFixedLengthStringDataCodec(maxLength, order);
 	}
 
 	// ---------------- implementations  -----------------
@@ -291,6 +304,22 @@ public abstract class DataCodec<T> {
 		}
 	}
 
+	/**
+	 * A {@link DataCodec} for variable-length strings.
+	 * <p>
+	 * Uses UTF-8 string encoding to encode / decode String arrays, the format
+	 * is:
+	 * <ul>
+	 * <li>The total number of Strings is encoded as an int.</li>
+	 * <li>For each String</li>
+	 * <ul>
+	 * <li>The number of characters in the string is encoded as an int</li>
+	 * <li>The String is encoded using UTF-8.</li>
+	 * </ul>
+	 * </ul>
+	 * 
+	 * @see {{@link #ZARR_FIXED_STRING(int, ByteOrder)}
+	 */
 	private static final class ZarrStringDataCodec extends DataCodec<String[]> {
 
 		private static final Charset ENCODING = StandardCharsets.UTF_8;
@@ -339,15 +368,27 @@ public abstract class DataCodec<T> {
 		}
 	}
 
-	private static final class ZarrUnicodeStringDataCodec extends DataCodec<String[]> {
+	/**
+	 * A {@link DataCodec} for fixed-length strings.
+	 * <p>
+	 * Uses UTF-32 string encoding to encode / decode String arrays to a
+	 * pre-defined fixed-length. Shorter (longer) Strings will be padded
+	 * (truncated) as necessary.
+	 *
+	 * @see {{@link #ZARR_FIXED_STRING(int, ByteOrder)}
+	 */
+	private static final class ZarrFixedLengthStringDataCodec extends DataCodec<String[]> {
 
 		private static final char NULL_CHAR = '\0';
 		private static final int BYTES_PER_CHAR = 4;
 
 		private final Charset charset;
 
-		ZarrUnicodeStringDataCodec(int nChar, ByteOrder order) {
-			super(nChar * BYTES_PER_CHAR, String[]::new);
+		private final int maxLength;
+
+		ZarrFixedLengthStringDataCodec(int maxLength, ByteOrder order) {
+			super(maxLength * BYTES_PER_CHAR, String[]::new);
+			this.maxLength = maxLength;
 			if (order == ByteOrder.BIG_ENDIAN)
 				charset = Charset.forName("UTF-32BE");
 			else
@@ -361,15 +402,15 @@ public abstract class DataCodec<T> {
 				return ReadData.empty();
 
 			final int N = data.length;
-			final int maxLength = Arrays.stream(data).mapToInt( String::length).max().getAsInt();
-			final int fixedEncodedStringSize = maxLength * BYTES_PER_CHAR;
-			final int totalSize = N * fixedEncodedStringSize;
+			final int encodedStringSize = maxLength * BYTES_PER_CHAR;
+			final int totalSize = N * encodedStringSize;
 			final ByteBuffer buf = ByteBuffer.allocate(totalSize);
 			int pos = 0;
 			for( int i = 0; i < N; i++ ) {
 				buf.position(pos);
-				buf.put(charset.encode(data[i]));
-				pos += fixedEncodedStringSize;
+				final String s = data[i].length() > maxLength ? data[i].substring(0, maxLength) : data[i];
+				buf.put(charset.encode(s));
+				pos += encodedStringSize;
 			}
 			return ReadData.from(buf.array());
 		}
