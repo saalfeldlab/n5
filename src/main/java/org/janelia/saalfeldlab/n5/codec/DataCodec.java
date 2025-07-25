@@ -110,16 +110,16 @@ public abstract class DataCodec<T> {
 	/**
 	 * Returns a {@link DataCodec} for fixed-length strings.
 	 * <p>
-	 * The resulting codec uses UTF-32 string encoding to encode / decode
-	 * String arrays to a pre-defined fixed-length. Shorter (longer)
-	 * Strings will be padded (truncated) as necessary.
+	 * The resulting codec uses UTF-32 string encoding to encode / decode String
+	 * arrays to a pre-defined fixed-length. Shorter Strings will be padded as
+	 * necessary. If a String longer than maxLength are encountered, an
+	 * {@link IllegalArgumentException} will be thrown.
 	 *
 	 * @param maxLength
-	 * 	the maximum number of characters per string
+	 *            the maximum number of characters per string
 	 * @param order
-	 * 	the {@link ByteOrder} for encoding
-	 * @return
-	 * 	a data codec for fixed-length strings
+	 *            the {@link ByteOrder} for encoding
+	 * @return a data codec for fixed-length strings
 	 */
 	public static DataCodec<String[]> ZARR_FIXED_STRING(int maxLength, ByteOrder order) {
 		return new ZarrFixedLengthStringDataCodec(maxLength, order);
@@ -372,8 +372,9 @@ public abstract class DataCodec<T> {
 	 * A {@link DataCodec} for fixed-length strings.
 	 * <p>
 	 * Uses UTF-32 string encoding to encode / decode String arrays to a
-	 * pre-defined fixed-length. Shorter (longer) Strings will be padded
-	 * (truncated) as necessary.
+	 * pre-defined fixed-length. Shorter Strings will be padded as necessary. An
+	 * {@link IllegalArgumentException} will be thrown if a String with length >
+	 * maxLength is encountered during encoding.
 	 *
 	 * @see {{@link #ZARR_FIXED_STRING(int, ByteOrder)}
 	 */
@@ -398,7 +399,7 @@ public abstract class DataCodec<T> {
 		@Override
 		public ReadData serialize(String[] data) throws N5IOException {
 
-			if( data.length == 0 )
+			if (data.length == 0)
 				return ReadData.empty();
 
 			final int N = data.length;
@@ -406,10 +407,14 @@ public abstract class DataCodec<T> {
 			final int totalSize = N * encodedStringSize;
 			final ByteBuffer buf = ByteBuffer.allocate(totalSize);
 			int pos = 0;
-			for( int i = 0; i < N; i++ ) {
+			for (int i = 0; i < N; i++) {
+
+				if (data[i].length() > maxLength)
+					throw new IllegalArgumentException("Can not encode string of length " +
+							data[i].length() + " when maxLength = " + maxLength);
+
 				buf.position(pos);
-				final String s = data[i].length() > maxLength ? data[i].substring(0, maxLength) : data[i];
-				buf.put(charset.encode(s));
+				buf.put(charset.encode(data[i]));
 				pos += encodedStringSize;
 			}
 			return ReadData.from(buf.array());
