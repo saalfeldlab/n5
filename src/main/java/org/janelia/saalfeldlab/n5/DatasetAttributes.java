@@ -31,7 +31,6 @@ package org.janelia.saalfeldlab.n5;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
@@ -69,40 +68,53 @@ public class DatasetAttributes implements Serializable {
 
 	protected final ArrayCodec arrayCodec;
 	protected final BytesCodec[] byteCodecs;
+	
 
 	public DatasetAttributes(
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final Codec... codecs) {
+			final ArrayCodec arrayCodec,
+			final BytesCodec... codecs) {
 
 		this.dimensions = dimensions;
 		this.blockSize = blockSize;
 		this.dataType = dataType;
 
-		final Codec[] filteredCodecs = Arrays.stream(codecs).filter(it -> !(it instanceof RawCompression)).toArray(Codec[]::new);
-		if (filteredCodecs.length == 0) {
-			byteCodecs = new BytesCodec[]{};
-			arrayCodec = defaultArrayCodec();
-		} else if (filteredCodecs.length == 1 && filteredCodecs[0] instanceof Compression) {
-			final BytesCodec compression = (BytesCodec)filteredCodecs[0];
-			byteCodecs = compression instanceof RawCompression ? new BytesCodec[]{} : new BytesCodec[]{compression};
-			arrayCodec = defaultArrayCodec();
-		} else {
-			if (!(filteredCodecs[0] instanceof ArrayCodec))
-				throw new N5Exception("Expected first element of filteredCodecs to be ArrayCodec, but was: " + filteredCodecs[0].getClass());
+		this.arrayCodec = arrayCodec == null ? defaultArrayCodec() : arrayCodec;
+		byteCodecs = Arrays.stream(codecs).filter(it -> !(it instanceof RawCompression)).toArray(BytesCodec[]::new);
 
-			if (Arrays.stream(filteredCodecs).filter(c -> c instanceof ArrayCodec).count() > 1)
-				throw new N5Exception("Multiple ArrayCodecs found. Only one is allowed.");
+//		if (filteredCodecs.length == 0) {
+//			byteCodecs = new BytesCodec[]{};
+//			arrayCodec = defaultArrayCodec();
+//		} else if (filteredCodecs.length == 1 && filteredCodecs[0] instanceof Compression) {
+//			final BytesCodec compression = (BytesCodec)filteredCodecs[0];
+//			byteCodecs = compression instanceof RawCompression ? new BytesCodec[]{} : new BytesCodec[]{compression};
+//			arrayCodec = defaultArrayCodec();
+//		} else {
+//			if (!(filteredCodecs[0] instanceof ArrayCodec))
+//				throw new N5Exception("Expected first element of filteredCodecs to be ArrayCodec, but was: " + filteredCodecs[0].getClass());
+//
+//			if (Arrays.stream(filteredCodecs).filter(c -> c instanceof ArrayCodec).count() > 1)
+//				throw new N5Exception("Multiple ArrayCodecs found. Only one is allowed.");
+//
+//			arrayCodec = (ArrayCodec)filteredCodecs[0];
+//			byteCodecs = Stream.of(filteredCodecs)
+//					.skip(1)
+//					.filter(c -> c instanceof BytesCodec)
+//					.toArray(BytesCodec[]::new);
+//		}
 
-			arrayCodec = (ArrayCodec)filteredCodecs[0];
-			byteCodecs = Stream.of(filteredCodecs)
-					.skip(1)
-					.filter(c -> c instanceof BytesCodec)
-					.toArray(BytesCodec[]::new);
-		}
+		this.arrayCodec.initialize(this, byteCodecs);
+	}
+	
+	public DatasetAttributes(
+			final long[] dimensions,
+			final int[] blockSize,
+			final DataType dataType,
+			final BytesCodec compression) {
 
-		arrayCodec.initialize(this, byteCodecs);
+		this(dimensions, blockSize, dataType, null, compression);
 	}
 
 	protected Codec.ArrayCodec defaultArrayCodec() {
