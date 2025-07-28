@@ -107,41 +107,4 @@ public interface Compression extends Serializable, Codec.BytesCodec {
 		else
 			return compressionType.value();
 	}
-
-	// --------------------------------------------------
-	//
-
-	/**
-	 * Decode the given {@code readData}.
-	 * <p>
-	 * The returned decoded {@code ReadData} reports {@link ReadData#length()
-	 * length()}{@code == decodedLength}. Decoding may be lazy or eager,
-	 * depending on the {@code BytesCodec} implementation.
-	 *
-	 * @param readData
-	 * 		data to decode
-	 *
-	 * @return decoded ReadData
-	 *
-	 * @throws N5IOException
-	 * 		if any I/O error occurs
-	 */
-	ReadData decode(ReadData readData) throws N5IOException;
-
-	/**
-	 * Encode the given {@code readData}.
-	 * <p>
-	 * Encoding may be lazy or eager, depending on the {@code BytesCodec}
-	 * implementation.
-	 *
-	 * @param readData
-	 * 		data to encode
-	 *
-	 * @return encoded ReadData
-	 *
-	 * @throws N5IOException
-	 * 		if any I/O error occurs
-	 */
-	ReadData encode(ReadData readData) throws N5IOException;
-
 }
