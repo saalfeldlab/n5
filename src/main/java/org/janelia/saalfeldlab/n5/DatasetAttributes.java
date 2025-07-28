@@ -80,6 +80,10 @@ public class DatasetAttributes implements Serializable {
 		this.blockSize = blockSize;
 		this.dataType = dataType;
 
+		// TODO: Revise!
+		//       * Add a comment to explain what is supposed to happen here.
+		//       * Don't just filter stuff away and ignore it. Instead, throw
+		//         IllegalArgumentException if assumptions are violated.
 		final Codec[] filteredCodecs = Arrays.stream(codecs).filter(it -> !(it instanceof RawCompression)).toArray(Codec[]::new);
 		if (filteredCodecs.length == 0) {
 			byteCodecs = new BytesCodec[]{};
