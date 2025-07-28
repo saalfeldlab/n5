@@ -7,12 +7,10 @@ import org.janelia.saalfeldlab.n5.DoubleArrayDataBlock;
 import org.janelia.saalfeldlab.n5.FloatArrayDataBlock;
 import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
-import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.StringDataBlock;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
-import java.io.IOException;
 import java.nio.ByteOrder;
 
 public class RawBlockCodecs {
@@ -72,9 +70,12 @@ public class RawBlockCodecs {
 		DataBlockCodec<T> createDataBlockCodec(ByteOrder byteOrder, int[] blockSize, Codec.BytesCodec codecs);
 	}
 
-	private static class RawDataBlockCodec<T> extends N5Codecs.AbstractDataBlockCodec<T> {
+	private static class RawDataBlockCodec<T> implements DataBlockCodec<T> {
 
+		private final DataCodec<T> dataCodec;
+		private final DataBlock.DataBlockFactory<T> dataBlockFactory;
 		private final int[] blockSize;
+		private final Codec.BytesCodec codec;
 
 		RawDataBlockCodec(
 				final DataCodec<T> dataCodec,
@@ -82,8 +83,10 @@ public class RawBlockCodecs {
 				final int[] blockSize,
 				final Codec.BytesCodec codec) {
 
-			super(dataCodec, dataBlockFactory, codec);
+			this.dataCodec = dataCodec;
+			this.dataBlockFactory = dataBlockFactory;
 			this.blockSize = blockSize;
+			this.codec = codec;
 		}
 
 		private int numElements() {
