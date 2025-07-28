@@ -120,35 +120,16 @@ public class N5Codecs {
 		DataBlockCodec<T> createDataBlockCodec(Codec.BytesCodec codec);
 	}
 
-	abstract static class AbstractDataBlockCodec<T> implements DataBlockCodec<T> {
+	abstract static class N5AbstractDataBlockCodec<T> implements DataBlockCodec<T> {
 
-		private static final int VAR_OBJ_BYTES_PER_ELEMENT = 1;
+		private final DataCodec<T> dataCodec;
+		private final DataBlockFactory<T> dataBlockFactory;
+		private final Codec.BytesCodec codec;
 
-		protected final DataCodec<T> dataCodec;
-		protected final DataBlockFactory<T> dataBlockFactory;
-		protected final Codec.BytesCodec codec;
-
-		AbstractDataBlockCodec(
-				final DataCodec<T> dataCodec,
-				final DataBlockFactory<T> dataBlockFactory,
-				final Codec.BytesCodec codec
-		) {
+		N5AbstractDataBlockCodec(DataCodec<T> dataCodec, DataBlockFactory<T> dataBlockFactory, BytesCodec codec) {
 			this.dataCodec = dataCodec;
 			this.dataBlockFactory = dataBlockFactory;
 			this.codec = codec;
-		}
-
-		@Override
-		public abstract ReadData encode(DataBlock<T> dataBlock) throws N5IOException;
-
-		@Override
-		public abstract DataBlock<T> decode(final ReadData readData, final long[] gridPosition) throws N5IOException;
-	}
-
-	abstract static class N5AbstractDataBlockCodec<T> extends AbstractDataBlockCodec<T> {
-
-		N5AbstractDataBlockCodec(DataCodec<T> dataCodec, DataBlockFactory<T> dataBlockFactory, BytesCodec codec) {
-			super(dataCodec, dataBlockFactory, codec);
 		}
 
 		abstract BlockHeader createBlockHeader(final DataBlock<T> dataBlock, ReadData blockData) throws N5IOException;
