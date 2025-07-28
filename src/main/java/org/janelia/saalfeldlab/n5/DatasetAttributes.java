@@ -67,8 +67,8 @@ public class DatasetAttributes implements Serializable {
 	private final int[] blockSize;
 	private final DataType dataType;
 
-	protected final ArrayCodec arrayCodec;
-	protected final BytesCodec[] byteCodecs;
+	private final ArrayCodec arrayCodec;
+	private final BytesCodec[] byteCodecs;
 
 	public DatasetAttributes(
 			final long[] dimensions,
