@@ -5,10 +5,8 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
-import java.io.IOException;
-
-@NameConfig.Name(value = N5BlockCodec.TYPE)
-public class N5BlockCodec implements Codec.ArrayCodec {
+@NameConfig.Name(value = N5ArrayCodec.TYPE)
+public class N5ArrayCodec implements ArrayCodec {
 
 	private static final long serialVersionUID = 3523505403978222360L;
 
@@ -18,33 +16,35 @@ public class N5BlockCodec implements Codec.ArrayCodec {
 
 	private transient DatasetAttributes attributes;
 
-	//TODO Caleb: Extract to factory that returns N5BlockCodec wrapper for datablockCodec
-	@Override public void initialize(final DatasetAttributes attributes, final Codec.BytesCodec[] byteCodecs) {
+	@Override
+	public void initialize(final DatasetAttributes attributes, final BytesCodec[] bytesCodecs) {
 		this.attributes = attributes;
-		this.bytesCodec = new ConcatenatedBytesCodec(byteCodecs);
+		this.bytesCodec = BytesCodec.concatenate(bytesCodecs);
 	}
 
-	private <T> DataBlockCodec<T> getDataBlockCodec() {
-		/*TODO: Consider an attributes.createDataBlockCodec() without parameters? */
-		return N5Codecs.createDataBlockCodec(attributes.getDataType(), bytesCodec);
+	private <T> DataBlockSerializer<T> getDataBlockCodec() {
+		return N5DataBlockSerializers.createDataBlockCodec(attributes.getDataType(), bytesCodec);
 	}
 
 	@Override
 	public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) {
 
+		// TODO (TP): It is not good to create a new DataBlockCodec for every block.
 		return this.<T>getDataBlockCodec().decode(readData, gridPosition);
 	}
 
 	@Override
 	public <T> ReadData encode(DataBlock<T> dataBlock) {
 
+		// TODO (TP): It is not good to create a new DataBlockCodec for every block.
 		return this.<T>getDataBlockCodec().encode(dataBlock);
 	}
 
-	@Override public long encodedSize(long size) {
+	@Override
+	public long encodedSize(long size) {
 
 		final int[] blockSize = attributes.getBlockSize();
-		int headerSize = new N5Codecs.BlockHeader(blockSize, DataBlock.getNumElements(blockSize)).getSize();
+		int headerSize = new N5DataBlockSerializers.BlockHeader(blockSize, DataBlock.getNumElements(blockSize)).getSize();
 		return headerSize + size;
 	}
 

@@ -33,9 +33,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
+import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.N5ArrayCodec;
 
 /**
  * Mandatory dataset attributes:
@@ -116,8 +116,8 @@ public class DatasetAttributes implements Serializable {
 		this(dimensions, blockSize, dataType, null, compression);
 	}
 
-	protected Codec.ArrayCodec defaultArrayCodec() {
-		return new N5BlockCodec();
+	protected ArrayCodec defaultArrayCodec() {
+		return new N5ArrayCodec();
 	}
 
 	public long[] getDimensions() {

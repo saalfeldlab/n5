@@ -29,7 +29,6 @@
 package org.janelia.saalfeldlab.n5.codec;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
@@ -39,7 +38,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  * @param <T>
  * 		type of the data contained in the DataBlock
  */
-public interface DataBlockCodec<T> {
+public interface DataBlockSerializer<T> {
 
 	ReadData encode(DataBlock<T> dataBlock) throws N5IOException;
 

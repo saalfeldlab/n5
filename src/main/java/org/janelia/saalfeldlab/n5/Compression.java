@@ -60,9 +60,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.scijava.annotations.Indexable;
 
 /**
@@ -74,7 +72,7 @@ import org.scijava.annotations.Indexable;
  *
  * @author Stephan Saalfeld
  */
-public interface Compression extends Serializable, Codec.BytesCodec {
+public interface Compression extends Serializable, BytesCodec {
 
 	/**
 	 * Annotation for runtime discovery of compression schemes.

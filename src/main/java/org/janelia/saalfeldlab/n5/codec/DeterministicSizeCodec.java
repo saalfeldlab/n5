@@ -6,8 +6,10 @@ package org.janelia.saalfeldlab.n5.codec;
  */
 public interface DeterministicSizeCodec extends Codec {
 
-	public abstract long encodedSize(long size);
+	// TODO: Add javadoc. In particular: what is the unit of size? bytes?
+	long encodedSize(long size);
 
-	public abstract long decodedSize(long size);
+	// TODO: Add javadoc. In particular: what is the unit of size? bytes?
+	long decodedSize(long size);
 
 }

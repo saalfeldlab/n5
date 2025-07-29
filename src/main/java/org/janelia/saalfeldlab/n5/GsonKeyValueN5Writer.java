@@ -62,7 +62,7 @@ import java.util.Map;
 
 import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;

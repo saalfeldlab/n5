@@ -34,7 +34,7 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import com.google.gson.Gson;

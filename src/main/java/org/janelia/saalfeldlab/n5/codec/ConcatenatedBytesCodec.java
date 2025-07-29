@@ -2,38 +2,35 @@ package org.janelia.saalfeldlab.n5.codec;
 
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
-import java.io.IOException;
-
-public class ConcatenatedBytesCodec implements Codec.BytesCodec {
+class ConcatenatedBytesCodec implements BytesCodec {
 
 	private final BytesCodec[] codecs;
 
-	public ConcatenatedBytesCodec(final BytesCodec... codecs) {
+	ConcatenatedBytesCodec(final BytesCodec[] codecs) {
+
+		if (codecs == null) {
+			throw new NullPointerException();
+		}
 		this.codecs = codecs;
 	}
 
 	@Override
 	public ReadData encode(ReadData readData) {
 
-		ReadData encodeData = readData;
-		if (codecs != null) {
-			for (Codec.BytesCodec codec : codecs) {
-				encodeData = codec.encode(encodeData);
-			}
+		for (BytesCodec codec : codecs) {
+			readData = codec.encode(readData);
 		}
-		return encodeData;
+		return readData;
 	}
 
 	@Override
 	public ReadData decode(ReadData readData) {
-		ReadData decodeData = readData;
-		if (codecs != null) {
-			for (int i = codecs.length - 1; i >= 0; i--) {
-				final BytesCodec codec = codecs[i];
-				decodeData = codec.decode(decodeData);
-			}
+
+		for (int i = codecs.length - 1; i >= 0; i--) {
+			final BytesCodec codec = codecs[i];
+			readData = codec.decode(readData);
 		}
-		return decodeData;
+		return readData;
 	}
 
 	@Override
