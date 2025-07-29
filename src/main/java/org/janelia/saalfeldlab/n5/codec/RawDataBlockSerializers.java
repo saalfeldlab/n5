@@ -26,7 +26,7 @@ public class RawDataBlockSerializers {
 
 	private RawDataBlockSerializers() {}
 
-	public static <T> DataBlockSerializer<T> createDataBlockCodec( // TODO rename to createDataBlockSerializer() ?
+	public static <T> DataBlockSerializer<T> create(
 			final DataType dataType,
 			final ByteOrder byteOrder,
 			final int[] blockSize,
