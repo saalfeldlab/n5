@@ -8,19 +8,8 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  * {@code ArrayCodec}s encode {@link DataBlock}s into {@link ReadData} and
  * decode {@link ReadData} into {@link DataBlock}s.
  */
-public interface ArrayCodec extends DeterministicSizeCodec {
+public interface ArrayCodec extends Codec {
 
 	<T> DataBlockSerializer<T> initialize(final DatasetAttributes attributes, final BytesCodec... codecs);
 
-	@Override
-	default long encodedSize(long size) {
-
-		return size;
-	}
-
-	@Override
-	default long decodedSize(long size) {
-
-		return size;
-	}
 }
