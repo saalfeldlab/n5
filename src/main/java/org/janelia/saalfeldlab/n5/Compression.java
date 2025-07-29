@@ -64,11 +64,15 @@ import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.scijava.annotations.Indexable;
 
 /**
- * Deprecated: {@link Compression}s are no longer a special case.
- * <br>
- * Use the {@link BytesCodec} interface for implementing compressors.
+ * This interface is used to indicate that a {@link BytesCodec} can be
+ * serialized as a "compression" for the N5 format (using the N5 API).
  * <p>
- * Compression scheme interface.
+ * N5Readers and N5Writers for the N5 format can declare BytesCodecs that
+ * implement this interface so that the {@link CompressionAdapter} is used for
+ * serialization.
+ * <p>
+ * See also: an alternative method for serializing general {@link Codec}s is
+ * with the {@link NameConfigAdapter}.
  *
  * @author Stephan Saalfeld
  */
