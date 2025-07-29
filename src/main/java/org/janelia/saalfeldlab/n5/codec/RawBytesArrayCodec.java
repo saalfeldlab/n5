@@ -1,10 +1,8 @@
 package org.janelia.saalfeldlab.n5.codec;
 
 import java.nio.ByteOrder;
-import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 
@@ -18,10 +16,6 @@ public class RawBytesArrayCodec implements ArrayCodec {
 	@NameConfig.Parameter(value = "endian", optional = true)
 	protected final ByteOrder byteOrder;
 
-	private DatasetAttributes attributes;
-
-	private BytesCodec bytesCodec;
-
 	public RawBytesArrayCodec() {
 
 		this(ByteOrder.BIG_ENDIAN);
@@ -32,38 +26,20 @@ public class RawBytesArrayCodec implements ArrayCodec {
 		this.byteOrder = byteOrder;
 	}
 
+	@Override
+	public String getType() {
+
+		return TYPE;
+	}
+
 	public ByteOrder getByteOrder() {
 		return byteOrder;
 	}
 
 	@Override
-	public void initialize(DatasetAttributes attributes, BytesCodec[] bytesCodecs) {
+	public <T> DataBlockSerializer<T> initialize(final DatasetAttributes attributes, final BytesCodec... bytesCodecs) {
 		ensureValidByteOrder(attributes.getDataType(), getByteOrder());
-		this.attributes = attributes;
-		this.bytesCodec = BytesCodec.concatenate(bytesCodecs);
-	}
-
-	private <T> DataBlockSerializer<T> getDataBlockCodec() {
-
-		return RawDataBlockSerializers.createDataBlockCodec( attributes.getDataType(), getByteOrder(), attributes.getBlockSize(), bytesCodec );
-	}
-
-	@Override
-	public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) {
-		return this.<T>getDataBlockCodec().decode(readData, gridPosition);
-	}
-
-
-	@Override
-	public <T> ReadData encode(DataBlock<T> dataBlock) {
-
-		return this.<T>getDataBlockCodec().encode(dataBlock);
-	}
-
-	@Override
-	public String getType() {
-
-		return TYPE;
+		return N5DataBlockSerializers.create(attributes.getDataType(), BytesCodec.concatenate(bytesCodecs));
 	}
 
 	private static void ensureValidByteOrder(final DataType dataType, final ByteOrder byteOrder) {

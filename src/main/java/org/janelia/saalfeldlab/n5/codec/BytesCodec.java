@@ -47,6 +47,13 @@ public interface BytesCodec extends Codec {
 	 * the given order for encoding, and in reverse order for decoding.
 	 */
 	static BytesCodec concatenate(final BytesCodec... codecs) {
-		return new ConcatenatedBytesCodec(codecs == null ? new BytesCodec[0] : codecs);
+
+		if (codecs == null)
+			throw new NullPointerException();
+
+		if (codecs.length == 1)
+			return codecs[0];
+
+		return new ConcatenatedBytesCodec(codecs);
 	}
 }

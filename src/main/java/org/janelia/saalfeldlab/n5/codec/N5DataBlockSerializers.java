@@ -65,7 +65,7 @@ public class N5DataBlockSerializers {
 
 	private N5DataBlockSerializers() {}
 
-	public static <T> DataBlockSerializer<T> createDataBlockCodec( // TODO rename to createDataBlockSerializer() ?
+	public static <T> DataBlockSerializer<T> create(
 			final DataType dataType,
 			final BytesCodec codec) {
 
@@ -204,7 +204,7 @@ public class N5DataBlockSerializers {
 		@Override
 		protected BlockHeader createBlockHeader(final DataBlock<String[]> dataBlock, ReadData blockData) throws N5IOException {
 
-			return new BlockHeader(dataBlock.getSize(), (int)blockData.length());
+			return new BlockHeader(MODE_VARLENGTH, dataBlock.getSize(), (int)blockData.length());
 		}
 
 		@Override
