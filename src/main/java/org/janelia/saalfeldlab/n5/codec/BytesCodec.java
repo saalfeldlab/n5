@@ -45,6 +45,10 @@ public interface BytesCodec extends Codec {
 	/**
 	 * Create a {@code BytesCodec} that sequentially applies {@code codecs} in
 	 * the given order for encoding, and in reverse order for decoding.
+	 *
+	 * @param codecs
+	 *            a list of BytesCodecs
+	 * @return the concatenated BytesCodec
 	 */
 	static BytesCodec concatenate(final BytesCodec... codecs) {
 
