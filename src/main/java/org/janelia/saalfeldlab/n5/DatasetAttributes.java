@@ -85,29 +85,7 @@ public class DatasetAttributes implements Serializable {
 
 		this.arrayCodec = arrayCodec == null ? defaultArrayCodec() : arrayCodec;
 		byteCodecs = Arrays.stream(codecs).filter(it -> !(it instanceof RawCompression)).toArray(BytesCodec[]::new);
-
-//		if (filteredCodecs.length == 0) {
-//			byteCodecs = new BytesCodec[]{};
-//			arrayCodec = defaultArrayCodec();
-//		} else if (filteredCodecs.length == 1 && filteredCodecs[0] instanceof Compression) {
-//			final BytesCodec compression = (BytesCodec)filteredCodecs[0];
-//			byteCodecs = compression instanceof RawCompression ? new BytesCodec[]{} : new BytesCodec[]{compression};
-//			arrayCodec = defaultArrayCodec();
-//		} else {
-//			if (!(filteredCodecs[0] instanceof ArrayCodec))
-//				throw new N5Exception("Expected first element of filteredCodecs to be ArrayCodec, but was: " + filteredCodecs[0].getClass());
-//
-//			if (Arrays.stream(filteredCodecs).filter(c -> c instanceof ArrayCodec).count() > 1)
-//				throw new N5Exception("Multiple ArrayCodecs found. Only one is allowed.");
-//
-//			arrayCodec = (ArrayCodec)filteredCodecs[0];
-//			byteCodecs = Stream.of(filteredCodecs)
-//					.skip(1)
-//					.filter(c -> c instanceof BytesCodec)
-//					.toArray(BytesCodec[]::new);
-//		}
-
-		dataBlockSerializer = arrayCodec.initialize(this, byteCodecs);
+		dataBlockSerializer = this.arrayCodec.initialize(this, byteCodecs);
 	}
 
 	public DatasetAttributes(
