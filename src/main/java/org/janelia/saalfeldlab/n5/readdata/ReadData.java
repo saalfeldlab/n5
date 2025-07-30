@@ -32,8 +32,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-
-import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 /**
@@ -70,7 +68,7 @@ public interface ReadData {
 
 	/**
 	 * Returns a {@link ReadData} whose length is limited to the given value.
-	 * 
+	 *
 	 * @param length
 	 *            the length of the resulting ReadData
 	 * @return a length-limited ReadData
@@ -160,7 +158,7 @@ public interface ReadData {
 	 * <p>
 	 * The returned {@code ReadData} has a known {@link #length} and multiple
 	 * {@link #inputStream InputStreams} can be opened on it.
-	 * 
+	 *
 	 * @return
 	 * 		a materialized ReadData.
 	 * @throws N5IOException
