@@ -115,5 +115,16 @@ public class RawDataBlockSerializers {
 			final T data = dataCodec.deserialize(decodeData, numElements);
 			return dataBlockFactory.createDataBlock(blockSize, gridPosition, data);
 		}
+
+		@Override
+		public long encodedSize(final int[] blockSize) throws UnsupportedOperationException {
+			if (codec instanceof DeterministicSizeBytesCodec) {
+				final int bytesPerElement = dataCodec.bytesPerElement();
+				final int numElements = DataBlock.getNumElements(blockSize);
+				return ((DeterministicSizeBytesCodec) codec).encodedSize(numElements * bytesPerElement);
+			}
+			else
+				throw new UnsupportedOperationException();
+		}
 	}
 }
