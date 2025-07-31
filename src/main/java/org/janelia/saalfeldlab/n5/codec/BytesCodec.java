@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5.codec;
 
+import java.util.Arrays;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
@@ -45,6 +46,10 @@ public interface BytesCodec extends Codec {
 	/**
 	 * Create a {@code BytesCodec} that sequentially applies {@code codecs} in
 	 * the given order for encoding, and in reverse order for decoding.
+	 * <p>
+	 * If all {@code codecs} implement {@code DeterministicSizeBytesCodec}, the
+	 * returned {@code BytesCodec} will also be a {@code
+	 * DeterministicSizeBytesCodec}.
 	 *
 	 * @param codecs
 	 *            a list of BytesCodecs
@@ -58,6 +63,9 @@ public interface BytesCodec extends Codec {
 		if (codecs.length == 1)
 			return codecs[0];
 
-		return new ConcatenatedBytesCodec(codecs);
+		if (Arrays.stream(codecs).allMatch(DeterministicSizeBytesCodec.class::isInstance))
+			return new ConcatenatedDeterministicSizeBytesCodec(Arrays.copyOf(codecs, codecs.length, DeterministicSizeBytesCodec[].class));
+		else
+			return new ConcatenatedBytesCodec(codecs);
 	}
 }

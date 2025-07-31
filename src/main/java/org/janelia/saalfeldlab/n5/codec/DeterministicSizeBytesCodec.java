@@ -14,4 +14,24 @@ public interface DeterministicSizeBytesCodec extends BytesCodec {
 	 * @return encoded size in bytes
 	 */
 	long encodedSize(long size);
+
+	/**
+	 * Create a {@code DeterministicSizeBytesCodec} that sequentially applies
+	 * {@code codecs} in the given order for encoding, and in reverse order for
+	 * decoding.
+	 *
+	 * @param codecs
+	 *            a list of DeterministicSizeBytesCodec
+	 * @return the concatenated DeterministicSizeBytesCodec
+	 */
+	static DeterministicSizeBytesCodec concatenate(final DeterministicSizeBytesCodec... codecs) {
+
+		if (codecs == null)
+			throw new NullPointerException();
+
+		if (codecs.length == 1)
+			return codecs[0];
+
+		return new ConcatenatedDeterministicSizeBytesCodec(codecs);
+	}
 }
