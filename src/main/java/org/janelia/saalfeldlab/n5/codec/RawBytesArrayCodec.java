@@ -11,7 +11,7 @@ public class RawBytesArrayCodec implements ArrayCodec {
 
 	private static final long serialVersionUID = 3282569607795127005L;
 
-	public static final String TYPE = "bytes";
+	public static final String TYPE = "rawbytes";
 
 	@NameConfig.Parameter(value = "endian", optional = true)
 	private final ByteOrder byteOrder;
