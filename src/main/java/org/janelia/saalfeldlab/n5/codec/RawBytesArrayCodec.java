@@ -14,7 +14,7 @@ public class RawBytesArrayCodec implements ArrayCodec {
 	public static final String TYPE = "bytes";
 
 	@NameConfig.Parameter(value = "endian", optional = true)
-	protected final ByteOrder byteOrder;
+	private final ByteOrder byteOrder;
 
 	public RawBytesArrayCodec() {
 
@@ -39,7 +39,7 @@ public class RawBytesArrayCodec implements ArrayCodec {
 	@Override
 	public <T> DataBlockSerializer<T> initialize(final DatasetAttributes attributes, final BytesCodec... bytesCodecs) {
 		ensureValidByteOrder(attributes.getDataType(), getByteOrder());
-		return N5DataBlockSerializers.create(attributes.getDataType(), BytesCodec.concatenate(bytesCodecs));
+		return RawDataBlockSerializers.create(attributes.getDataType(), byteOrder, attributes.getBlockSize(), BytesCodec.concatenate(bytesCodecs));
 	}
 
 	private static void ensureValidByteOrder(final DataType dataType, final ByteOrder byteOrder) {
