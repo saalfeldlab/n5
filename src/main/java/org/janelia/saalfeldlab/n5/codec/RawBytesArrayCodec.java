@@ -1,6 +1,14 @@
 package org.janelia.saalfeldlab.n5.codec;
 
 import java.nio.ByteOrder;
+
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
@@ -11,10 +19,10 @@ public class RawBytesArrayCodec implements ArrayCodec {
 
 	private static final long serialVersionUID = 3282569607795127005L;
 
-	public static final String TYPE = "bytes";
+	public static final String TYPE = "rawbytes";
 
 	@NameConfig.Parameter(value = "endian", optional = true)
-	protected final ByteOrder byteOrder;
+	private final ByteOrder byteOrder;
 
 	public RawBytesArrayCodec() {
 
@@ -39,10 +47,14 @@ public class RawBytesArrayCodec implements ArrayCodec {
 	@Override
 	public <T> DataBlockSerializer<T> initialize(final DatasetAttributes attributes, final BytesCodec... bytesCodecs) {
 		ensureValidByteOrder(attributes.getDataType(), getByteOrder());
-		return N5DataBlockSerializers.create(attributes.getDataType(), BytesCodec.concatenate(bytesCodecs));
+		return RawDataBlockSerializers.create(attributes.getDataType(), byteOrder, attributes.getBlockSize(), BytesCodec.concatenate(bytesCodecs));
 	}
 
-	private static void ensureValidByteOrder(final DataType dataType, final ByteOrder byteOrder) {
+
+
+	public static final RawBytesArrayCodec.ByteOrderAdapter byteOrderAdapter = new ByteOrderAdapter();
+
+	public static void ensureValidByteOrder(final DataType dataType, final ByteOrder byteOrder) {
 
 		switch (dataType) {
 		case INT8:
@@ -54,5 +66,31 @@ public class RawBytesArrayCodec implements ArrayCodec {
 
 		if (byteOrder == null)
 			throw new IllegalArgumentException("DataType (" + dataType + ") requires ByteOrder, but was null");
+	}
+
+	public static class ByteOrderAdapter implements JsonDeserializer<ByteOrder>, JsonSerializer<ByteOrder> {
+
+		@Override
+		public JsonElement serialize(ByteOrder src, java.lang.reflect.Type typeOfSrc,
+				JsonSerializationContext context) {
+
+			if (src.equals(ByteOrder.LITTLE_ENDIAN))
+				return new JsonPrimitive("little");
+			else
+				return new JsonPrimitive("big");
+		}
+
+		@Override
+		public ByteOrder deserialize(JsonElement json, java.lang.reflect.Type typeOfT,
+				JsonDeserializationContext context) throws JsonParseException {
+
+			if (json.getAsString().equals("little"))
+				return ByteOrder.LITTLE_ENDIAN;
+			if (json.getAsString().equals("big"))
+				return ByteOrder.BIG_ENDIAN;
+
+			return null;
+		}
+
 	}
 }

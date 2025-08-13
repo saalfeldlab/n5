@@ -73,7 +73,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 			return null;
 
 		if (cacheMeta()) {
-			attributes = getCache().getAttributes(normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
+			attributes = getCache().getAttributes(normalPath, getAttributesKey());
 		} else {
 			attributes = GsonKeyValueN5Reader.super.getAttributes(normalPath);
 		}
@@ -99,7 +99,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 
 		final JsonElement attributes;
 		if (cacheMeta()) {
-			attributes = getCache().getAttributes(normalPathName, N5KeyValueReader.ATTRIBUTES_JSON);
+			attributes = getCache().getAttributes(normalPathName, getAttributesKey());
 		} else {
 			attributes = GsonKeyValueN5Reader.super.getAttributes(normalPathName);
 		}
@@ -120,7 +120,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
 		JsonElement attributes;
 		if (cacheMeta()) {
-			attributes = getCache().getAttributes(normalPathName, N5KeyValueReader.ATTRIBUTES_JSON);
+			attributes = getCache().getAttributes(normalPathName, getAttributesKey());
 		} else {
 			attributes = GsonKeyValueN5Reader.super.getAttributes(normalPathName);
 		}
@@ -136,7 +136,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 
 		final String normalPathName = N5URI.normalizeGroupPath(pathName);
 		if (cacheMeta())
-			return getCache().isGroup(normalPathName, N5KeyValueReader.ATTRIBUTES_JSON);
+			return getCache().isGroup(normalPathName, getAttributesKey());
 		else {
 			return existsFromContainer(normalPathName, null);
 		}
@@ -180,7 +180,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 
 		final String normalPathName = N5URI.normalizeGroupPath(pathName);
 		if (cacheMeta()) {
-			return getCache().isDataset(normalPathName, N5KeyValueReader.ATTRIBUTES_JSON);
+			return getCache().isDataset(normalPathName, getAttributesKey());
 		}
 		return isDatasetFromContainer(normalPathName);
 	}
@@ -212,7 +212,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 
 		/* If cached, return the cache */
 		if (cacheMeta()) {
-			return getCache().getAttributes(groupPath, N5KeyValueReader.ATTRIBUTES_JSON);
+			return getCache().getAttributes(groupPath, getAttributesKey());
 		} else {
 			return GsonKeyValueN5Reader.super.getAttributes(groupPath);
 		}

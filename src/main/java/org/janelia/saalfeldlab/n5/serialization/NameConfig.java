@@ -64,6 +64,20 @@ public interface NameConfig extends Serializable {
 	}
 
 	/**
+	 * Controls whether a class should be serializable as a {@code NameConfig}.
+	 * <p>
+	 * This annotation allows explicitly enabling or disabling serialization for a class.
+	 * <p>
+	 * By default, classes are serialized.
+	 */
+	@Retention(RetentionPolicy.RUNTIME)
+	@Inherited
+	@Target(ElementType.TYPE)
+	@Indexable @interface Serialize {
+		boolean value() default true;
+	}
+
+	/**
 	 * Marks a field as a parameter to be serialized.
 	 * <p>
 	 * This annotation identifies fields that should be included during serialization

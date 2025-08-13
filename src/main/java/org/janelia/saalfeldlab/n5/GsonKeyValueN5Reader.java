@@ -32,12 +32,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import org.janelia.saalfeldlab.n5.shard.Shard;
+import org.janelia.saalfeldlab.n5.shard.VirtualShard;
+import org.janelia.saalfeldlab.n5.util.Position;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
@@ -90,20 +96,66 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		}
 	}
 
+	default <T> Shard<T> readShard(
+			final String keyPath,
+			final DatasetAttributes datasetAttributes,
+			long... shardGridPosition) {
+
+		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(keyPath), shardGridPosition);
+		try {
+			final ReadData readData  = getKeyValueAccess().createReadData(path).materialize();
+			return new VirtualShard<>( datasetAttributes, shardGridPosition, readData);
+		} catch (N5Exception.N5NoSuchKeyException e) {
+			return null;
+		}
+	}
+
 	@Override
-	default DataBlock<?> readBlock(
+	default <T> DataBlock<T> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), gridPosition);
+		final long[] keyPos = datasetAttributes.getKeyPositionForBlock(gridPosition);
+		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), keyPos);
 
 		try {
-			final ReadData blockData = getKeyValueAccess().createReadData(path);
-			return datasetAttributes.getDataBlockSerializer().decode(blockData, gridPosition);
+			final ReadData keyData = getKeyValueAccess().createReadData(path);
+			//ArrayCodec knows how to get to the block from the shard, the DataBlockSerializer doesn't...
+			if (datasetAttributes.isSharded()) {
+				return datasetAttributes.getShardingCodec().decode(keyData, gridPosition);
+			}
+			return datasetAttributes.<T>getDataBlockSerializer().decode(keyData, gridPosition);
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
 		}
+	}
+
+
+	@Override
+	default <T> List<DataBlock<T>> readBlocks(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final List<long[]> blockPositions) throws N5Exception {
+
+		if (datasetAttributes.isSharded()) {
+			/* Group by shard position */
+			//TODO: make static?
+			final Map<Position, List<long[]>> shardBlockMap = datasetAttributes.groupBlockPositions(blockPositions);
+			final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
+			for( Map.Entry<Position, List<long[]>> e : shardBlockMap.entrySet()) {
+
+				Shard<T> currentShard = readShard(pathName, datasetAttributes, e.getKey().get());
+				if (currentShard == null)
+					continue;
+
+				for (final long[] blkPosition : e.getValue()) {
+					blocks.add(currentShard.getBlock(currentShard.getRelativeBlockPosition(blkPosition)));
+				}
+			}
+			return blocks;
+		}
+		return GsonN5Reader.super.readBlocks(pathName, datasetAttributes, blockPositions);
 	}
 
 	@Override
@@ -113,8 +165,11 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	/**
-	 * Constructs the path for a data block in a dataset at a given grid
-	 * position.
+	 * Constructs the path for a shard or data block in a dataset at a given
+	 * grid position.
+	 * <br>
+	 * If the gridPosition passed in refers to shard position in a sharded
+	 * dataset, this will return the path to the shard key.
 	 * <p>
 	 * The returned path is
 	 *
@@ -126,7 +181,8 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 *
 	 * @param normalPath
 	 *            normalized dataset path
-	 * @param gridPosition to the target data block
+	 * @param gridPosition
+	 *            to the target data block
 	 * @return the absolute path to the data block ad gridPosition
 	 */
 	default String absoluteDataBlockPath(
@@ -165,6 +221,6 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 */
 	default String absoluteAttributesPath(final String normalPath) {
 
-		return getKeyValueAccess().compose(getURI(), normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
+		return getKeyValueAccess().compose(getURI(), normalPath, getAttributesKey());
 	}
 }
