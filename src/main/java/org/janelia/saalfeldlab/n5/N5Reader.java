@@ -376,6 +376,16 @@ public interface N5Reader extends AutoCloseable {
 		}
 	}
 
+	default boolean blockExists(final String pathName, final DatasetAttributes attributes, final long[] blockPosition) {
+
+		final StringBuilder builder = new StringBuilder(pathName);
+		for (final long p : attributes.getKeyPositionForBlock(blockPosition)) {
+			builder.append(getGroupSeparator());
+			builder.append(p);
+		}
+		return exists(builder.toString());
+	}
+
 	/**
 	 * Test whether a group or dataset exists at a given path.
 	 *

@@ -6,8 +6,9 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.DataBlockSerializer;
+import org.janelia.saalfeldlab.n5.codec.IndexCodecAdapter;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
@@ -49,9 +50,8 @@ public class ShardIndex extends LongArrayDataBlock {
 	private static final long[] DUMMY_GRID_POSITION = null;
 
 	private final IndexLocation location;
-
-	private final DeterministicSizeCodec[] codecs;
 	private final ShardIndexAttributes indexAttributes;
+	private final IndexCodecAdapter indexCodexAdapter;
 
 	/**
 	 * Creates a ShardIndex with specified data.
@@ -59,38 +59,66 @@ public class ShardIndex extends LongArrayDataBlock {
 	 * @param shardBlockGridSize the dimensions of the block grid within the shard
 	 * @param data the raw index data containing offsets and lengths
 	 * @param location where the index is stored (START or END of shard)
-	 * @param codecs compression codecs applied to the index
+	 * @param indexCodecAdapter data object for Shard Index codecs.
 	 */
-	public ShardIndex(int[] shardBlockGridSize, long[] data, IndexLocation location, final DeterministicSizeCodec... codecs) {
+	public ShardIndex(int[] shardBlockGridSize, long[] data, IndexLocation location, final IndexCodecAdapter indexCodecAdapter) {
 
 		// prepend the number of longs per block to the shard block grid size
 		super(prepend(LONGS_PER_BLOCK, shardBlockGridSize), DUMMY_GRID_POSITION, data);
-		this.codecs = codecs;
+		this.indexCodexAdapter = indexCodecAdapter;
 		this.location = location;
 		this.indexAttributes = new ShardIndexAttributes(this);
 	}
 
 	/**
-	 * Creates an empty ShardIndex with specified location.
+	 * Creates an empty ShardIndex at the specified location.
 	 *
 	 * @param shardBlockGridSize the dimensions of the block grid within the shard
 	 * @param location where the index is stored (START or END of shard)
-	 * @param codecs compression codecs applied to the index
+	 * @param indexCodecAdapter data object for idnex codecs
 	 */
-	public ShardIndex(int[] shardBlockGridSize, IndexLocation location, DeterministicSizeCodec... codecs) {
+	public ShardIndex(int[] shardBlockGridSize, IndexLocation location, final IndexCodecAdapter indexCodecAdapter) {
 
-		this(shardBlockGridSize, emptyIndexData(shardBlockGridSize), location, codecs);
+		this(shardBlockGridSize, emptyIndexData(shardBlockGridSize), location, indexCodecAdapter);
 	}
 
 	/**
-	 * Creates an empty ShardIndex with default location (END).
+	 * Creates an empty ShardIndex at the default location (END).
 	 *
 	 * @param shardBlockGridSize the dimensions of the block grid within the shard
-	 * @param codecs compression codecs applied to the index
+	 * @param indexCodecAdapter data object for idnex codecs
 	 */
-	public ShardIndex(int[] shardBlockGridSize, DeterministicSizeCodec... codecs) {
+	public ShardIndex(int[] shardBlockGridSize, final IndexCodecAdapter indexCodecAdapter) {
 
-		this(shardBlockGridSize, emptyIndexData(shardBlockGridSize), IndexLocation.END, codecs);
+		this(shardBlockGridSize, IndexLocation.END, indexCodecAdapter);
+	}
+
+	/**
+	 * Creates an empty ShardIndex at the specified location.
+	 *
+	 * @param shardBlockGridSize the dimensions of the block grid within the shard
+	 * @param location where the index is stored (START or END of shard)
+	 * @param arrayCodec arrayCodec for the IndexCodecAdapter
+	 */
+	public ShardIndex(int[] shardBlockGridSize, IndexLocation location, final ArrayCodec arrayCodec) {
+
+		this(shardBlockGridSize, location, new IndexCodecAdapter(arrayCodec));
+	}
+
+	/**
+	 * Creates an empty ShardIndex at the default location (END).
+	 *
+	 * @param shardBlockGridSize the dimensions of the block grid within the shard
+	 * @param arrayCodec arrayCodec for the IndexCodecAdapter
+	 */
+	public ShardIndex(int[] shardBlockGridSize, final ArrayCodec arrayCodec) {
+
+		this(shardBlockGridSize, IndexLocation.END, arrayCodec);
+	}
+
+	public IndexCodecAdapter getIndexCodexAdapter() {
+
+		return indexCodexAdapter;
 	}
 
 	/**
@@ -252,15 +280,8 @@ public class ShardIndex extends LongArrayDataBlock {
 	 */
 	public long numBytes() {
 
-		final int numEntries = Arrays.stream(getSize()).reduce(1, (x, y) -> x * y);
-		final int numBytesFromBlocks = numEntries * BYTES_PER_LONG;
-		long totalNumBytes = numBytesFromBlocks;
-		for (Codec codec : codecs) {
-			if (codec instanceof DeterministicSizeCodec) {
-				totalNumBytes = ((DeterministicSizeCodec)codec).encodedSize(totalNumBytes);
-			}
-		}
-		return totalNumBytes;
+		final long numEntries = Arrays.stream(getSize()).reduce(1, (x, y) -> x * y);
+		return getIndexCodexAdapter().encodedSize(numEntries * BYTES_PER_LONG);
 	}
 
 	/**
@@ -280,8 +301,8 @@ public class ShardIndex extends LongArrayDataBlock {
 		if (length == -1)
 			throw new N5IOException("ReadData for shard index must have a valid length, but was " + length);
 
-		final ShardIndex.IndexByteBounds bounds = ShardIndex.byteBounds(index, length);
-		final ReadData indexData = shardData.slice(bounds.start, index.numBytes());
+		final long indexStartByte = ShardIndex.indexStartByte(index, length);
+		final ReadData indexData = shardData.slice(indexStartByte, index.numBytes());
 		ShardIndex.read(indexData, index);
 	}
 
@@ -293,16 +314,10 @@ public class ShardIndex extends LongArrayDataBlock {
 	 * @return true if the read was successful, false if the key doesn't exist
 	 * @throws N5IOException if the read operation fails
 	 */
-	public static boolean read( final ReadData indexData, final ShardIndex index ) {
+	public static void read( final ReadData indexData, final ShardIndex index ) {
 
-		try (final InputStream in = indexData.inputStream()) {
-			read(in, index);
-			return true;
-		} catch (final N5Exception.N5NoSuchKeyException e) {
-			return false;
-		} catch (final IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to read shard index", e);
-		}
+		final DataBlock<Object> decodedBlock = index.indexAttributes.getDataBlockSerializer().decode(indexData, index.gridPosition);
+		System.arraycopy(decodedBlock.getData(), 0, index.data, 0, index.data.length);
 	}
 
 	/**
@@ -315,9 +330,9 @@ public class ShardIndex extends LongArrayDataBlock {
 	public static void read(InputStream indexIn, final ShardIndex index) throws N5IOException {
 
 		final ReadData dataIn = ReadData.from(indexIn);
-		final Codec.ArrayCodec shardIndexCodec = index.indexAttributes.getArrayCodec();
+		final DataBlockSerializer<long[]> shardIndexCodec = index.indexAttributes.getDataBlockSerializer();
 		final DataBlock<long[]> indexBlock = shardIndexCodec.decode(dataIn, index.gridPosition);
-		System.arraycopy(indexBlock.getData(), 0, index.data, 0, index.data.length);
+		System.arraycopy(indexBlock.getData(), 0, index.data, 0, (int)index.data.length);
 	}
 
 	/**
@@ -329,18 +344,8 @@ public class ShardIndex extends LongArrayDataBlock {
 	 */
 	public static void write( final OutputStream outputStream, final ShardIndex index ) throws N5IOException {
 
-		final Codec.ArrayCodec indexCodec = index.indexAttributes.getArrayCodec();
-		indexCodec.<long[]>encode(index).writeTo(outputStream);
-	}
-
-
-	/**
-	 * Gets the array codec used for encoding/decoding this index.
-	 *
-	 * @return the array codec
-	 */
-	public Codec.ArrayCodec getArrayCodec() {
-		return indexAttributes.getArrayCodec();
+		final DataBlockSerializer<long[]> dataBlockSerializer = index.indexAttributes.getDataBlockSerializer();
+		dataBlockSerializer.encode(index).writeTo(outputStream);
 	}
 
 	/**
@@ -357,64 +362,40 @@ public class ShardIndex extends LongArrayDataBlock {
 			super(
 					Arrays.stream(index.getSize()).mapToLong(it -> it).toArray(),
 					index.getSize(),
+					index.getSize(),
 					DataType.UINT64,
-					index.codecs
+					index.indexCodexAdapter.getArrayCodec(),
+					index.indexCodexAdapter.getCodecs()
 					);
 		}
 	}
 
 	/**
-	 * Calculates the byte boundaries of the index within a shard.
+	 * Calculates the start byte of the index within a shard.
 	 *
 	 * @param index the ShardIndex
 	 * @param objectSize the total size of the shard in bytes
-	 * @return the byte boundaries of the index
+	 * @return the start byte of the index
 	 */
-	public static IndexByteBounds byteBounds(final ShardIndex index, long objectSize) {
+	public static long indexStartByte(final ShardIndex index, long objectSize) {
 
-		return byteBounds(index.numBytes(), index.location, objectSize);
+		return indexStartByte(index.numBytes(), index.location, objectSize);
 	}
 
 	/**
-	 * Calculates the byte boundaries of an index within a shard.
+	 * Calculates the start byte an index within a shard.
 	 *
 	 * @param indexSize the size of the index in bytes
 	 * @param indexLocation the location of the index (START or END)
 	 * @param objectSize the total size of the shard in bytes
-	 * @return the byte boundaries of the index
+	 * @return the start byte of the index
 	 */
-	public static IndexByteBounds byteBounds(final long indexSize, final IndexLocation indexLocation, final long objectSize) {
+	public static long indexStartByte(final long indexSize, final IndexLocation indexLocation, final long objectSize) {
 
 		if (indexLocation == IndexLocation.START) {
-			return new IndexByteBounds(0L, indexSize);
+			return 0L;
 		} else {
-			return new IndexByteBounds(objectSize - indexSize, objectSize - 1);
-		}
-	}
-
-	/**
-	 * Represents the byte boundaries of an index within a shard.
-	 */
-	public static class IndexByteBounds {
-
-		/** The start byte position (inclusive) */
-		public final long start;
-		/** The end byte position (inclusive) */
-		public final long end;
-		/** The size in bytes */
-		public final long size;
-
-		/**
-		 * Creates byte boundaries.
-		 *
-		 * @param start the start position (inclusive)
-		 * @param end the end position (inclusive)
-		 */
-		public IndexByteBounds(long start, long end) {
-
-			this.start = start;
-			this.end = end;
-			this.size = end - start + 1;
+			return objectSize - indexSize;
 		}
 	}
 

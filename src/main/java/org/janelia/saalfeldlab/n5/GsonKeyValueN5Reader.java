@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import com.google.gson.Gson;
@@ -117,13 +116,16 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		final long[] keyPos = datasetAttributes.getArrayCodec().getPositionForBlock(datasetAttributes, gridPosition);
+		final long[] keyPos = datasetAttributes.getKeyPositionForBlock(gridPosition);
 		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), keyPos);
 
 		try {
-			final ReadData readData = getKeyValueAccess().createReadData(path);
-			final ArrayCodec arrayCodec = datasetAttributes.getArrayCodec();
-			return arrayCodec.decode(readData, gridPosition);
+			final ReadData keyData = getKeyValueAccess().createReadData(path);
+			//ArrayCodec knows how to get to the block from the shard, the DataBlockSerializer doesn't...
+			if (datasetAttributes.isSharded()) {
+				return datasetAttributes.getShardingCodec().decode(keyData, gridPosition);
+			}
+			return datasetAttributes.<T>getDataBlockSerializer().decode(keyData, gridPosition);
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
 		}
@@ -164,7 +166,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	/**
 	 * Constructs the path for a shard or data block in a dataset at a given
-	 * grid position. 
+	 * grid position.
 	 * <br>
 	 * If the gridPosition passed in refers to shard position in a sharded
 	 * dataset, this will return the path to the shard key.

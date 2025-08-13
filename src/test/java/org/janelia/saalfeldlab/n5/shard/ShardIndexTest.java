@@ -5,9 +5,9 @@ import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5FSTest;
 import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
-import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
-import org.janelia.saalfeldlab.n5.codec.RawBytes;
+import org.janelia.saalfeldlab.n5.codec.IndexCodecAdapter;
+import org.janelia.saalfeldlab.n5.codec.N5ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.RawBytesArrayCodec;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
@@ -37,7 +37,7 @@ public class ShardIndexTest {
 		int[] shardBlockGridSize = new int[]{5, 4, 3};
 		ShardIndex index = new ShardIndex(
 				shardBlockGridSize,
-				IndexLocation.END, new RawBytes());
+				IndexLocation.END, new RawBytesArrayCodec());
 
 		GridIterator it = new GridIterator(shardBlockGridSize);
 		int i = 0;
@@ -50,7 +50,7 @@ public class ShardIndexTest {
 		shardBlockGridSize = new int[]{5, 4, 3, 13};
 		index = new ShardIndex(
 				shardBlockGridSize,
-				IndexLocation.END, new RawBytes());
+				IndexLocation.END, new RawBytesArrayCodec());
 
 		it = new GridIterator(shardBlockGridSize);
 		i = 0;
@@ -70,32 +70,27 @@ public class ShardIndexTest {
 
 		final int[] shardBlockGridSize = new int[]{6, 5};
 		final IndexLocation indexLocation = IndexLocation.END;
-		final DeterministicSizeCodec[] indexCodecs = new DeterministicSizeCodec[]{
-				new N5BlockCodec(),
-				new Crc32cChecksumCodec()};
-		final String path = Paths.get(Paths.get(writer.getURI()).toAbsolutePath().toString(), "indexTest").toString();
+		final IndexCodecAdapter indexCodecAdapter = new IndexCodecAdapter(
+				new RawBytesArrayCodec(),
+				new Crc32cChecksumCodec()
+		);
 
-		final ShardIndex index = new ShardIndex(shardBlockGridSize, indexLocation, indexCodecs);
+		final ShardIndex index = new ShardIndex(shardBlockGridSize, indexLocation, indexCodecAdapter);
 		index.set(0, 6, new int[]{0, 0});
 		index.set(19, 32, new int[]{1, 0});
 		index.set(93, 111, new int[]{3, 0});
 		index.set(143, 1, new int[]{1, 2});
 
-		long currentSize;
-		try {
-			currentSize = kva.size(path);
-		} catch (N5Exception.N5NoSuchKeyException e) {
-			currentSize = -1;
-		}
-		final ShardIndex.IndexByteBounds bounds = ShardIndex.byteBounds(index, currentSize);
+		final String path = Paths.get(Paths.get(writer.getURI()).toAbsolutePath().toString(), "indexTest").toString();
 		try (
 				final LockedChannel channel = kva.lockForWriting(path);
 				final OutputStream out = channel.newOutputStream()
 		) {
+
 			ShardIndex.write(out, index);
 		}
 
-		final ShardIndex indexRead = new ShardIndex(shardBlockGridSize, indexLocation, indexCodecs);
+		final ShardIndex indexRead = new ShardIndex(shardBlockGridSize, indexLocation, indexCodecAdapter);
 		try (
 				final LockedChannel channel = kva.lockForReading(path);
 				final InputStream in = channel.newInputStream()

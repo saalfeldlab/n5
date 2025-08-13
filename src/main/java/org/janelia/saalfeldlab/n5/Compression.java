@@ -35,21 +35,24 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.scijava.annotations.Indexable;
 
 /**
- * Deprecated: {@link Compression}s are no longer a special case.
- * <br>
- * Use the {@link BytesCodec} interface for implementing compressors.
+ * This interface is used to indicate that a {@link BytesCodec} can be
+ * serialized as a "compression" for the N5 format (using the N5 API).
  * <p>
- * Compression scheme interface.
+ * N5Readers and N5Writers for the N5 format can declare BytesCodecs that
+ * implement this interface so that the {@link CompressionAdapter} is used for
+ * serialization.
+ * <p>
+ * See also: an alternative method for serializing general {@link Codec}s is
+ * with the {@link NameConfigAdapter}.
  *
  * @author Stephan Saalfeld
  */
-public interface Compression extends Serializable, Codec.BytesCodec {
+public interface Compression extends Serializable, BytesCodec {
 
 	/**
 	 * Annotation for runtime discovery of compression schemes.
@@ -82,41 +85,4 @@ public interface Compression extends Serializable, Codec.BytesCodec {
 		else
 			return compressionType.value();
 	}
-
-	// --------------------------------------------------
-	//
-
-	/**
-	 * Decode the given {@code readData}.
-	 * <p>
-	 * The returned decoded {@code ReadData} reports {@link ReadData#length()
-	 * length()}{@code == decodedLength}. Decoding may be lazy or eager,
-	 * depending on the {@code BytesCodec} implementation.
-	 *
-	 * @param readData
-	 * 		data to decode
-	 *
-	 * @return decoded ReadData
-	 *
-	 * @throws N5IOException
-	 * 		if any I/O error occurs
-	 */
-	ReadData decode(ReadData readData) throws N5IOException;
-
-	/**
-	 * Encode the given {@code readData}.
-	 * <p>
-	 * Encoding may be lazy or eager, depending on the {@code BytesCodec}
-	 * implementation.
-	 *
-	 * @param readData
-	 * 		data to encode
-	 *
-	 * @return encoded ReadData
-	 *
-	 * @throws N5IOException
-	 * 		if any I/O error occurs
-	 */
-	ReadData encode(ReadData readData) throws N5IOException;
-
 }

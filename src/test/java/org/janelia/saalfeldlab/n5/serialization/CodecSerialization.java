@@ -5,7 +5,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.janelia.saalfeldlab.n5.GsonUtils;
 import org.janelia.saalfeldlab.n5.GzipCompression;
-import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.BytesCodecTests.BitShiftBytesCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.IdentityCodec;
@@ -45,7 +46,7 @@ public class CodecSerialization {
 				JsonElement.class);
 		assertEquals("bitshift json", expectedBitShift, bitShiftJson);
 
-		final BytesCodec deserializedCodec = gson.fromJson(bitShiftJson, Codec.BytesCodec.class);
+		final BytesCodec deserializedCodec = gson.fromJson(bitShiftJson, BytesCodec.class);
 		// Verify deserialized codec
 		assertEquals("Deserialized codec should equal original", codec, deserializedCodec);
 	}

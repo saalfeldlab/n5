@@ -9,7 +9,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.io.output.CountingOutputStream;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.DataBlockSerializer;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 
@@ -138,13 +139,16 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 		final DatasetAttributes datasetAttributes = getDatasetAttributes();
 		ShardingCodec shardingCodec = datasetAttributes.getShardingCodec();
-		final Codec.ArrayCodec arrayCodec = shardingCodec.getArrayCodec();
+		final DataBlockSerializer<T> arrayCodec = shardingCodec.getDataBlockSerializer();
 
 		final ShardIndex index = createIndex();
-		long blocksStartBytes = index.getLocation() == ShardingCodec.IndexLocation.START ? index.numBytes() : 0;
+		final long indexSize = index.numBytes();
+		long blocksStartBytes = index.getLocation() == ShardingCodec.IndexLocation.START ? indexSize : 0;
 		final AtomicLong blockOffset = new AtomicLong(blocksStartBytes);
 
-		if (index.getLocation() == ShardingCodec.IndexLocation.END) {
+		/* isIndexEmpty is true when writing to a non-sharded dataset through the Shard API. */
+		final boolean isIndexEmpty = indexSize == 0;
+		if (index.getLocation() == ShardingCodec.IndexLocation.END || isIndexEmpty) {
 			return ReadData.from(out -> {
 				try (final CountingOutputStream countOut = new CountingOutputStream(out)) {
 					long prevCount = 0;
@@ -154,13 +158,15 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 						final long curCount = countOut.getByteCount();
 						final long blockWrittenSize = curCount - prevCount;
 						prevCount = curCount;
+						if (!isIndexEmpty)
+							synchronized (index) {
+								index.set(blockOffset.getAndAdd(blockWrittenSize), blockWrittenSize, blockPosition);
+							}
+					}
+					if (!isIndexEmpty)
 						synchronized (index) {
-							index.set(blockOffset.getAndAdd(blockWrittenSize), blockWrittenSize, blockPosition);
+							ShardIndex.write(out, index);
 						}
-					}
-					synchronized (index) {
-						ShardIndex.write(out, index);
-					}
 				}
 			});
 		} else {

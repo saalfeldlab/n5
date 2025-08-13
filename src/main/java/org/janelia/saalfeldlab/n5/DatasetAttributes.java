@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -28,6 +28,22 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.DataBlockSerializer;
+import org.janelia.saalfeldlab.n5.codec.N5ArrayCodec;
+import org.janelia.saalfeldlab.n5.shard.BlockAsShardCodec;
+import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
+import org.janelia.saalfeldlab.n5.util.Position;
+
 import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -37,23 +53,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.Codec.BytesCodec;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
-import org.janelia.saalfeldlab.n5.shard.BlockAsShardCodec;
-
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
-import org.janelia.saalfeldlab.n5.util.Position;
 
 /**
  * Mandatory dataset attributes:
@@ -94,56 +93,35 @@ public class DatasetAttributes implements Serializable {
 	private final int[] shardSize;
 
 	private final DataType dataType;
+	private final ShardingCodec shardingCodec;
 	private final ArrayCodec arrayCodec;
 	private final BytesCodec[] byteCodecs;
 
-	/**
-	 * Constructs a DatasetAttributes instance with specified dimensions, block size, data type,
-	 * and array of codecs.
-	 *
-	 * @param dimensions the dimensions of the dataset
-	 * @param blockSize  the size of the blocks in the dataset
-	 * @param dataType   the data type of the dataset
-	 * @param codecs     the codecs used encode/decode the data
-	 */
+	private final DataBlockSerializer<?> dataBlockSerializer;
+
 	public DatasetAttributes(
 			final long[] dimensions,
 			final int[] shardSize,
 			final int[] blockSize,
 			final DataType dataType,
-			final Codec... codecs) {
+			final ArrayCodec arrayCodec,
+			final BytesCodec... codecs) {
 
 		validateBlockShardSizes(dimensions, shardSize, blockSize);
 
 		this.dimensions = dimensions;
-		this.shardSize = shardSize;
 		this.blockSize = blockSize;
+		this.shardSize = shardSize;
 		this.dataType = dataType;
 
-		//TODO: refactor?
-		final Codec[] filteredCodecs = Arrays.stream(codecs).filter(it -> !(it instanceof RawCompression)).toArray(Codec[]::new);
-		if (filteredCodecs.length == 0) {
-			byteCodecs = new BytesCodec[]{};
-			arrayCodec = defaultArrayCodec();
-		} else if (filteredCodecs.length == 1 && filteredCodecs[0] instanceof Compression) {
-			final BytesCodec compression = (BytesCodec)filteredCodecs[0];
-			byteCodecs = compression instanceof RawCompression ? new BytesCodec[]{} : new BytesCodec[]{compression};
-			arrayCodec = defaultArrayCodec();
-		} else {
-			if (!(filteredCodecs[0] instanceof ArrayCodec))
-				throw new N5Exception("Expected first element of filteredCodecs to be ArrayCodec, but was: " + filteredCodecs[0].getClass());
+		this.arrayCodec = arrayCodec == null ? defaultArrayCodec() : arrayCodec;
+		byteCodecs = Arrays.stream(codecs).filter(it -> !(it instanceof RawCompression)).toArray(BytesCodec[]::new);
+		if (this.arrayCodec instanceof ShardingCodec)
+			shardingCodec = (ShardingCodec)this.arrayCodec;
+		else
+			shardingCodec = new BlockAsShardCodec(this.arrayCodec);
+		dataBlockSerializer = this.shardingCodec.initialize(this, byteCodecs);
 
-			if (Arrays.stream(filteredCodecs).filter(c -> c instanceof ArrayCodec).count() > 1)
-				throw new N5Exception("Multiple ArrayCodecs found. Only one is allowed.");
-
-			arrayCodec = (ArrayCodec)filteredCodecs[0];
-			byteCodecs = Stream.of(filteredCodecs)
-					.skip(1)
-					.filter(c -> c instanceof BytesCodec)
-					.toArray(BytesCodec[]::new);
-		}
-
-		arrayCodec.initialize(this, byteCodecs);
 	}
 
 	private void validateBlockShardSizes(long[] dimensions, int[] shardSize, int[] blockSize) {
@@ -173,25 +151,42 @@ public class DatasetAttributes implements Serializable {
 		}
 	}
 
-	protected Codec.ArrayCodec defaultArrayCodec() {
-		return new N5BlockCodec();
+	protected ArrayCodec defaultArrayCodec() {
+
+		return new N5ArrayCodec();
 	}
 
 	/**
 	 * Constructs a DatasetAttributes instance with specified dimensions, block size, data type,
-	 * and array of codecs.
+	 * and single compressor with default codec.
 	 *
-	 * @param dimensions the dimensions of the dataset
-	 * @param blockSize  the size of the blocks in the dataset
-	 * @param dataType   the data type of the dataset
-	 * @param codecs     the codecs used encode/decode the data
+	 * @param dimensions  the dimensions of the dataset
+	 * @param blockSize   the size of the blocks in the dataset
+	 * @param dataType    the data type of the dataset
+	 * @param compression the codecs used encode/decode the data
 	 */
 	public DatasetAttributes(
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final Codec... codecs) {
-		this( dimensions, blockSize, blockSize, dataType, codecs );
+			final BytesCodec compression) {
+
+		this(dimensions, blockSize, blockSize, dataType, null, compression);
+	}
+
+	/**
+	 * Constructs a DatasetAttributes instance with specified dimensions, block size, data type, and default codecs
+	 *
+	 * @param dimensions the dimensions of the dataset
+	 * @param blockSize  the size of the blocks in the dataset
+	 * @param dataType   the data type of the dataset
+	 */
+	public DatasetAttributes(
+			final long[] dimensions,
+			final int[] blockSize,
+			final DataType dataType) {
+
+		this(dimensions, blockSize, blockSize, dataType, null);
 	}
 
 	public long[] getDimensions() {
@@ -237,8 +232,9 @@ public class DatasetAttributes implements Serializable {
 	 * @return blocks per dataset
 	 */
 	public long[] blocksPerDataset() {
+
 		return IntStream.range(0, getNumDimensions())
-				.mapToLong(i -> (long) Math.ceil((double)getDimensions()[i] / getBlockSize()[i]))
+				.mapToLong(i -> (long)Math.ceil((double)getDimensions()[i] / getBlockSize()[i]))
 				.toArray();
 	}
 
@@ -248,6 +244,7 @@ public class DatasetAttributes implements Serializable {
 	 * @return shards per dataset
 	 */
 	public long[] shardsPerDataset() {
+
 		return IntStream.range(0, getNumDimensions())
 				.mapToLong(i -> (long)Math.ceil((double)getDimensions()[i] / getShardSize()[i]))
 				.toArray();
@@ -263,12 +260,15 @@ public class DatasetAttributes implements Serializable {
 		return Arrays.stream(getBlocksPerShard()).reduce(1, (x, y) -> x * y);
 	}
 
+	public long[] getKeyPositionForBlock(final long... blockGridPosition) {
+		return getArrayCodec().getKeyPositionForBlock(this, blockGridPosition);
+	}
+
 	/**
 	 * Given a block's position relative to the dataset, returns the position of
 	 * the shard containing that block.
 	 *
-	 * @param blockGridPosition
-	 *            position of a block relative to the dataset
+	 * @param blockGridPosition position of a block relative to the dataset
 	 * @return the position of the containing shard in the shard grid
 	 */
 	public long[] getShardPositionForBlock(final long... blockGridPosition) {
@@ -285,11 +285,9 @@ public class DatasetAttributes implements Serializable {
 	/**
 	 * Given a {@code datasetRelativeBlockPosition} returns the position
 	 * relative the the shard at position {@code shardPosition}.
-	 * 
-	 * @param shardPosition
-	 *            position of the shard
-	 * @param datasetRelativeBlockPosition
-	 *            position of the block relative to the dataset
+	 *
+	 * @param shardPosition                position of the shard
+	 * @param datasetRelativeBlockPosition position of the block relative to the dataset
 	 * @return position of the block relative to the shard
 	 * @see {@link #getBlockPositionFromShardPosition(long[], int[])}
 	 */
@@ -312,10 +310,8 @@ public class DatasetAttributes implements Serializable {
 	 * position {@code shardPosition}, returns the block' position relative the
 	 * dataset.
 	 *
-	 * @param shardPosition
-	 *            position of the shard
-	 * @param shardRelativeBlockPosition
-	 *            position of the block relative to the shard
+	 * @param shardPosition              position of the shard
+	 * @param shardRelativeBlockPosition position of the block relative to the shard
 	 * @return position of the block relative to the dataset
 	 * @see {@link #getShardRelativeBlockPosition(long[], int[])}
 	 */
@@ -349,9 +345,9 @@ public class DatasetAttributes implements Serializable {
 	public Map<Position, List<long[]>> groupBlockPositions(final List<long[]> blockPositions) {
 
 		final TreeMap<Position, List<long[]>> map = new TreeMap<>();
-		for( final long[] blockPos : blockPositions ) {
+		for (final long[] blockPos : blockPositions) {
 			Position shardPos = Position.wrap(getShardPositionForBlock(blockPos));
-			if( !map.containsKey(shardPos)) {
+			if (!map.containsKey(shardPos)) {
 				map.put(shardPos, new ArrayList<>());
 			}
 			map.get(shardPos).add(blockPos);
@@ -376,23 +372,16 @@ public class DatasetAttributes implements Serializable {
 	}
 
 	public boolean isSharded() {
+
 		return getArrayCodec() instanceof ShardingCodec;
 	}
 
 	/**
-	 * If this dataset is sharded, return the ArrayCodec as a ShardingCodec.
-	 * If the dataset is NOT sharded, the returned ShardingCodec will allow you
-	 * to read and write blocks as if they were shards.
-	 *
 	 * @return the ShardingCodec
-	 *
 	 */
 	public ShardingCodec getShardingCodec() {
-		if (getArrayCodec() instanceof ShardingCodec)
-			return (ShardingCodec)getArrayCodec();
-		else {
-			return new BlockAsShardCodec(getArrayCodec());
-		}
+
+		return shardingCodec;
 	}
 
 	/**
@@ -429,18 +418,17 @@ public class DatasetAttributes implements Serializable {
 		return arrayCodec;
 	}
 
-
 	public BytesCodec[] getCodecs() {
 
 		return byteCodecs;
 	}
 
-	/**
-	 * TODO do we keep this? Deprecated in favor of {@link DatasetAttributesAdapter} for serialization
-	 *
-	 * @return serializable properties of {@link DatasetAttributes}
-	 */
-	@Deprecated
+	@SuppressWarnings("unchecked")
+	public <T> DataBlockSerializer<T> getDataBlockSerializer() {
+
+		return (DataBlockSerializer<T>)dataBlockSerializer;
+	}
+
 	public HashMap<String, Object> asMap() {
 
 		final HashMap<String, Object> map = new HashMap<>();
@@ -451,9 +439,10 @@ public class DatasetAttributes implements Serializable {
 		return map;
 	}
 
-
 	private static DatasetAttributesAdapter adapter = null;
+
 	public static DatasetAttributesAdapter getJsonAdapter() {
+
 		if (adapter == null) {
 			adapter = new DatasetAttributesAdapter();
 		}
@@ -464,7 +453,8 @@ public class DatasetAttributes implements Serializable {
 
 		@Override public DatasetAttributes deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
 
-			if (json == null || !json.isJsonObject()) return null;
+			if (json == null || !json.isJsonObject())
+				return null;
 			final JsonObject obj = json.getAsJsonObject();
 			final boolean validKeySet = obj.has(DIMENSIONS_KEY)
 					&& obj.has(BLOCK_SIZE_KEY)
@@ -480,19 +470,28 @@ public class DatasetAttributes implements Serializable {
 
 			final DataType dataType = context.deserialize(obj.get(DATA_TYPE_KEY), DataType.class);
 
-			final Codec[] codecs;
+			final ArrayCodec arrayCodec;
+			final BytesCodec[] bytesCodecs;
 			if (obj.has(CODEC_KEY)) {
-				codecs = context.deserialize(obj.get(CODEC_KEY), Codec[].class);
+				final Codec[] codecs = context.deserialize(obj.get(CODEC_KEY), Codec[].class);
+				arrayCodec = (ArrayCodec)codecs[0];
+				bytesCodecs = new BytesCodec[codecs.length - 1];
+				for (int i = 1; i < codecs.length; i++) {
+					bytesCodecs[i - 1] = (BytesCodec)codecs[i];
+				}
 			} else if (obj.has(COMPRESSION_KEY)) {
 				final Compression compression = CompressionAdapter.getJsonAdapter().deserialize(obj.get(COMPRESSION_KEY), Compression.class, context);
-				codecs = new Codec[]{compression};
+				bytesCodecs = new BytesCodec[]{compression};
+				arrayCodec = new N5ArrayCodec();
 			} else if (obj.has(compressionTypeKey)) {
 				final Compression compression = getCompressionVersion0(obj.get(compressionTypeKey).getAsString());
-				codecs = new Codec[]{compression};
+				bytesCodecs = new BytesCodec[]{compression};
+				arrayCodec = new N5ArrayCodec();
 			} else {
 				return null;
 			}
-			return new DatasetAttributes(dimensions, shardSize, blockSize, dataType, codecs);
+
+			return new DatasetAttributes(dimensions, shardSize, blockSize, dataType, arrayCodec, bytesCodecs);
 		}
 
 		//FIXME

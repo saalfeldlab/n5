@@ -1,5 +1,7 @@
 package org.janelia.saalfeldlab.n5.codec;
 
+import java.nio.ByteOrder;
+
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -7,65 +9,29 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
-import java.nio.ByteOrder;
 
-
-@NameConfig.Name(value = RawBytes.TYPE)
-public class RawBytes implements Codec.ArrayCodec {
+@NameConfig.Name(value = RawBytesArrayCodec.TYPE)
+public class RawBytesArrayCodec implements ArrayCodec {
 
 	private static final long serialVersionUID = 3282569607795127005L;
 
-	public static final String TYPE = "bytes";
+	public static final String TYPE = "rawbytes";
 
 	@NameConfig.Parameter(value = "endian", optional = true)
-	protected final ByteOrder byteOrder;
+	private final ByteOrder byteOrder;
 
-	private DatasetAttributes attributes;
-
-	private BytesCodec bytesCodec;
-
-	public RawBytes() {
+	public RawBytesArrayCodec() {
 
 		this(ByteOrder.BIG_ENDIAN);
 	}
 
-	public RawBytes(final ByteOrder byteOrder) {
+	public RawBytesArrayCodec(final ByteOrder byteOrder) {
 
 		this.byteOrder = byteOrder;
-	}
-
-	public ByteOrder getByteOrder() {
-		return byteOrder;
-	}
-
-	@Override public void initialize(DatasetAttributes attributes, BytesCodec[] byteCodecs) {
-		ensureValidByteOrder(attributes.getDataType(), getByteOrder());
-		this.attributes = attributes;
-		this.bytesCodec = new ConcatenatedBytesCodec(byteCodecs);
-	}
-	
-	private <T> DataBlockCodec<T> getDataBlockCodec() {
-
-		return RawBlockCodecs.createDataBlockCodec( attributes.getDataType(), getByteOrder(), attributes.getBlockSize(), bytesCodec );
-	}
-
-	@Override
-	public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) {
-
-		return this.<T>getDataBlockCodec().decode(readData, gridPosition);
-	}
-
-
-	@Override
-	public <T> ReadData encode(DataBlock<T> dataBlock) {
-
-		return this.<T>getDataBlockCodec().encode(dataBlock);
 	}
 
 	@Override
@@ -74,7 +40,19 @@ public class RawBytes implements Codec.ArrayCodec {
 		return TYPE;
 	}
 
-	public static final RawBytes.ByteOrderAdapter byteOrderAdapter = new ByteOrderAdapter();
+	public ByteOrder getByteOrder() {
+		return byteOrder;
+	}
+
+	@Override
+	public <T> DataBlockSerializer<T> initialize(final DatasetAttributes attributes, final BytesCodec... bytesCodecs) {
+		ensureValidByteOrder(attributes.getDataType(), getByteOrder());
+		return RawDataBlockSerializers.create(attributes.getDataType(), byteOrder, attributes.getBlockSize(), BytesCodec.concatenate(bytesCodecs));
+	}
+
+
+
+	public static final RawBytesArrayCodec.ByteOrderAdapter byteOrderAdapter = new ByteOrderAdapter();
 
 	public static void ensureValidByteOrder(final DataType dataType, final ByteOrder byteOrder) {
 
@@ -115,5 +93,4 @@ public class RawBytes implements Codec.ArrayCodec {
 		}
 
 	}
-
 }

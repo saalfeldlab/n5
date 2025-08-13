@@ -28,6 +28,8 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.shard.Shard;
 
@@ -230,7 +232,22 @@ public interface N5Writer extends N5Reader {
 			final DataType dataType,
 			final Codec... codecs) throws N5Exception {
 
-		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, codecs));
+		final ArrayCodec arrayCodec;
+		final BytesCodec[] bytesCodecs;
+		if (codecs == null || codecs.length == 0) {
+			arrayCodec = null;
+			bytesCodecs = new BytesCodec[0];
+		} else if (codecs[0] instanceof ArrayCodec) {
+			arrayCodec = (ArrayCodec) codecs[0];
+			bytesCodecs = new BytesCodec[codecs.length - 1];
+			System.arraycopy(codecs, 1, bytesCodecs, 0, bytesCodecs.length);
+		} else {
+			arrayCodec = null;
+			bytesCodecs = new BytesCodec[codecs.length];
+			System.arraycopy(codecs, 0, bytesCodecs, 0, bytesCodecs.length);
+		}
+
+		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, blockSize, dataType, arrayCodec, bytesCodecs));
 	}
 
 	/**

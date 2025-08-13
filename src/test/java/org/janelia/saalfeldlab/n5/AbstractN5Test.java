@@ -35,6 +35,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.net.URI;
@@ -1668,8 +1669,12 @@ public abstract class AbstractN5Test {
 			assertEquals(block0, writeBlocks.get(0));
 
 			writer.writeShard(datasetName, datasetAttributes, writeShard);
-			final Shard<T> readShard = writer.readShard(datasetName, datasetAttributes, writeShard.getGridPosition());
+			final DataBlock<T> readAsBlock0 = writer.readBlock(datasetName, datasetAttributes, block0.getGridPosition());
+			assertBlockEquals(block0, readAsBlock0);
 
+			assertFalse("Block 1 should not exist because it's not contained in the written shard", writer.blockExists(datasetName, datasetAttributes, block1.getGridPosition()));
+
+			final Shard<T> readShard = writer.readShard(datasetName, datasetAttributes, writeShard.getGridPosition());
 			Assert.assertArrayEquals("shard read position should be same as write position", writeShard.getGridPosition(), readShard.getGridPosition());
 			Assert.assertArrayEquals("shard position should be the same as block position when unsharded", block0.getGridPosition(), readShard.getGridPosition());
 			Assert.assertArrayEquals("shard size should equal block size when unsharded", readShard.getBlockSize(), readShard.getSize());
@@ -1677,13 +1682,39 @@ public abstract class AbstractN5Test {
 
 			final List<? extends DataBlock<T>> readBlocks = readShard.getBlocks();
 			assertEquals("read shard should contain one block", 1, readBlocks.size());
-			final DataBlock<T> readBlock = readBlocks.get(0);
-			Assert.assertArrayEquals("read block position should be same as block position when unsharded", block0.getGridPosition(), readBlock.getGridPosition());
-			Assert.assertArrayEquals("read block size should equal block size when unsharded", readBlock.getSize(), readBlock.getSize());
+			final DataBlock<T> readAsShardBlock0 = readBlocks.get(0);
 
-			assertArrayEquals("block written through shard should be identical", (long[])readBlock.getData(), (long[])block0.getData());
+			assertBlockEquals(block0, readAsShardBlock0);
 
 		}
+	}
+
+	public static void assertBlockEquals(final DataBlock<?> expected, final DataBlock<?> actual) {
+		assertEquals("Datablocks are different type",  expected.getClass(), actual.getClass());
+
+		Assert.assertArrayEquals("read block position should be same as block position when unsharded", expected.getGridPosition(), actual.getGridPosition());
+		Assert.assertArrayEquals("read block size should equal block size when unsharded", expected.getSize(), actual.getSize());
+
+		final Object expectedData = expected.getData();
+		final Object actualData = actual.getData();
+
+		final String dataEqualsMsg = "block written through shard should be identical";
+		if (expectedData instanceof byte[])
+			assertArrayEquals(dataEqualsMsg, (byte[])expectedData, (byte[])expectedData);
+		else if (expectedData instanceof short[])
+			assertArrayEquals(dataEqualsMsg, (short[])expectedData, (short[])actualData);
+		else if (expectedData instanceof int[])
+			assertArrayEquals(dataEqualsMsg, (int[])expectedData, (int[])actualData);
+		else if (expectedData instanceof long[])
+			assertArrayEquals(dataEqualsMsg, (long[])expectedData, (long[])actualData);
+		else if (expectedData instanceof float[])
+			assertArrayEquals(dataEqualsMsg, (float[])expectedData, (float[])actualData, 0f);
+		else if (expectedData instanceof double[])
+			assertArrayEquals(dataEqualsMsg, (double[])expectedData, (double[])actualData, 0d);
+		else if (expectedData instanceof String[])
+			assertArrayEquals(dataEqualsMsg, (String[])expectedData, (String[])actualData);
+		else
+			fail("Unsupported data type for block data: " + expectedData.getClass());
 	}
 
 	protected void assertDatasetAttributesEquals(final DatasetAttributes expected, final DatasetAttributes actual) {

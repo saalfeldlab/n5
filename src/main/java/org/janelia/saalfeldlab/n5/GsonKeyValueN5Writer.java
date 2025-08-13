@@ -40,7 +40,6 @@ import java.util.stream.Collectors;
 
 import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.codec.Codec.ArrayCodec;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -48,7 +47,6 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
 import org.janelia.saalfeldlab.n5.shard.Shard;
-import org.janelia.saalfeldlab.n5.shard.ShardIndex;
 import org.janelia.saalfeldlab.n5.util.Position;
 
 /**
@@ -265,14 +263,13 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			return;
 		}
 
-		final long[] keyPos = datasetAttributes.getArrayCodec().getPositionForBlock(datasetAttributes, dataBlock);
+		final long[] keyPos = datasetAttributes.getArrayCodec().getKeyPositionForBlock(datasetAttributes, dataBlock);
 		final String keyPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), keyPos);
 		try (
 				final LockedChannel channel = getKeyValueAccess().lockForWriting(keyPath);
 				final OutputStream out = channel.newOutputStream()
 		) {
-			final ArrayCodec codec = datasetAttributes.getArrayCodec();
-			codec.encode(dataBlock).writeTo(out);
+			datasetAttributes.<T>getDataBlockSerializer().encode(dataBlock).writeTo(out);
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,

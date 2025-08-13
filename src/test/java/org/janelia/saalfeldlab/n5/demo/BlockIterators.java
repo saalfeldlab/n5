@@ -11,8 +11,8 @@ import java.util.stream.StreamSupport;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.RawCompression;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
-import org.janelia.saalfeldlab.n5.codec.RawBytes;
+import org.janelia.saalfeldlab.n5.codec.N5ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.RawBytesArrayCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
@@ -36,8 +36,8 @@ public class BlockIterators {
 				DataType.UINT8,
 				new ShardingCodec(
 						new int[] {2, 2},
-						new Codec[] { new N5BlockCodec() },
-						new DeterministicSizeCodec[] { new RawBytes() },
+						new Codec[] { new N5ArrayCodec() },
+						new DeterministicSizeCodec[] { new RawBytesArrayCodec() },
 						IndexLocation.END
 				));
 

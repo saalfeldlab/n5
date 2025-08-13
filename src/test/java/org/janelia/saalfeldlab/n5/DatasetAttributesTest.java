@@ -44,8 +44,8 @@ import java.util.stream.StreamSupport;
 
 import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodec;
-import org.janelia.saalfeldlab.n5.codec.RawBytes;
+import org.janelia.saalfeldlab.n5.codec.N5ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.RawBytesArrayCodec;
 import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
@@ -71,7 +71,7 @@ public class DatasetAttributesTest {
 		DataType dataType = DataType.UINT8;
 
 		// This should not throw any exception
-		DatasetAttributes attrs = new DatasetAttributes(dimensions, shardSize, blockSize, dataType);
+		DatasetAttributes attrs = new DatasetAttributes(dimensions, shardSize, blockSize, dataType, null);
 		assertEquals(shardSize, attrs.getShardSize());
 		assertEquals(blockSize, attrs.getBlockSize());
 		assertArrayEquals(new int[]{1, 1, 1}, attrs.getBlocksPerShard());
@@ -79,7 +79,7 @@ public class DatasetAttributesTest {
 		// Test case 2: shard size is a multiple of block size
 		shardSize = new int[]{128};
 		blockSize = new int[]{64};
-		attrs = new DatasetAttributes(new long[]{128}, shardSize, blockSize, dataType);
+		attrs = new DatasetAttributes(new long[]{128}, shardSize, blockSize, dataType, null);
 		assertEquals(shardSize, attrs.getShardSize());
 		assertEquals(blockSize, attrs.getBlockSize());
 		assertArrayEquals(new int[]{2}, attrs.getBlocksPerShard());
@@ -87,7 +87,7 @@ public class DatasetAttributesTest {
 		// Test case 3: different multiples per dimension
 		shardSize = new int[]{128, 256, 32, 2};
 		blockSize = new int[]{32, 64, 32, 1};
-		attrs = new DatasetAttributes(new long[]{128, 128, 128, 128}, shardSize, blockSize, dataType);
+		attrs = new DatasetAttributes(new long[]{128, 128, 128, 128}, shardSize, blockSize, dataType, null);
 		assertEquals(shardSize, attrs.getShardSize());
 		assertEquals(blockSize, attrs.getBlockSize());
 		assertArrayEquals(new int[]{4, 4, 1, 2}, attrs.getBlocksPerShard());
@@ -95,7 +95,7 @@ public class DatasetAttributesTest {
 		// Test case 4: large multiples
 		shardSize = new int[]{1024, 2048, 512};
 		blockSize = new int[]{32, 64, 16};
-		attrs = new DatasetAttributes(dimensions, shardSize, blockSize, dataType);
+		attrs = new DatasetAttributes(dimensions, shardSize, blockSize, dataType, null);
 		assertEquals(shardSize, attrs.getShardSize());
 		assertEquals(blockSize, attrs.getBlockSize());
 		assertArrayEquals(new int[]{32, 32, 32}, attrs.getBlocksPerShard());
@@ -113,37 +113,37 @@ public class DatasetAttributesTest {
 		// Block size too small
 		IllegalArgumentException ex0 = assertThrows(
 				IllegalArgumentException.class,
-				() -> new DatasetAttributes(dimensions, new int[]{1, 1, 1}, new int[]{1, 0, -1}, dataType));
+				() -> new DatasetAttributes(dimensions, new int[]{1, 1, 1}, new int[]{1, 0, -1}, dataType, null));
 		assertTrue(ex0.getMessage().contains("<= 0"));
 
 		// Different number of dimensions
 		IllegalArgumentException ex1 = assertThrows(
 				IllegalArgumentException.class,
-				() -> new DatasetAttributes(dimensions, new int[]{64, 64}, new int[]{32, 32, 32}, dataType));
+				() -> new DatasetAttributes(dimensions, new int[]{64, 64}, new int[]{32, 32, 32}, dataType, null));
 		assertTrue(ex1.getMessage().contains("must equal number of dimensions"));
 
 		// Shard size smaller than block size
 		IllegalArgumentException ex2 = assertThrows(
 				IllegalArgumentException.class,
-				() -> new DatasetAttributes(dimensions, new int[]{32, 64, 64}, new int[]{64, 64, 64}, dataType));
+				() -> new DatasetAttributes(dimensions, new int[]{32, 64, 64}, new int[]{64, 64, 64}, dataType, null));
 		assertTrue(ex2.getMessage().contains("is larger than the block size"));
 
 		// Shard size not a multiple of block size
 		IllegalArgumentException ex3 = assertThrows(
 				IllegalArgumentException.class,
-				() -> new DatasetAttributes(dimensions, new int[]{100, 100, 100}, new int[]{64, 64, 64}, dataType));
+				() -> new DatasetAttributes(dimensions, new int[]{100, 100, 100}, new int[]{64, 64, 64}, dataType, null));
 		assertTrue(ex3.getMessage().contains("not a multiple of the block size"));
 
 		// Multiple violations - shard smaller than block in one dimension
 		IllegalArgumentException ex4 = assertThrows(
 				IllegalArgumentException.class,
-				() -> new DatasetAttributes(dimensions, new int[]{128, 32, 128}, new int[]{64, 64, 64}, dataType));
+				() -> new DatasetAttributes(dimensions, new int[]{128, 32, 128}, new int[]{64, 64, 64}, dataType, null));
 		assertTrue(ex4.getMessage().contains("is larger than the block size"));
 
 		// Edge case - shard size of 0
 		assertThrows(
 				IllegalArgumentException.class,
-				() -> new DatasetAttributes(dimensions, new int[]{0, 64, 64}, new int[]{64, 64, 64}, dataType));
+				() -> new DatasetAttributes(dimensions, new int[]{0, 64, 64}, new int[]{64, 64, 64}, dataType, null));
 	}
 
 	@Test
@@ -161,8 +161,8 @@ public class DatasetAttributesTest {
 				DataType.UINT8,
 				new ShardingCodec(
 						blkSize,
-						new Codec[]{new N5BlockCodec()},
-						new DeterministicSizeCodec[]{new RawBytes()},
+						new Codec[]{new N5ArrayCodec()},
+						new DeterministicSizeCodec[]{new RawBytesArrayCodec()},
 						IndexLocation.END
 				)
 		);
@@ -196,8 +196,8 @@ public class DatasetAttributesTest {
 				DataType.UINT8,
 				new ShardingCodec(
 						blkSize,
-						new Codec[]{ new N5BlockCodec() },
-						new DeterministicSizeCodec[]{new RawBytes()},
+						new Codec[]{ new N5ArrayCodec() },
+						new DeterministicSizeCodec[]{new RawBytesArrayCodec()},
 						IndexLocation.END
 				)
 		);

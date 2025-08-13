@@ -33,7 +33,7 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	@SuppressWarnings("unchecked")
 	public DataBlock<T> getBlock(ReadData blockData, long... blockGridPosition) throws IOException {
 
-		return datasetAttributes.<T>getShardingCodec().getArrayCodec().decode(blockData, blockGridPosition);
+		return datasetAttributes.getShardingCodec().<T>getDataBlockSerializer().decode(blockData, blockGridPosition);
 	}
 
 	@Override

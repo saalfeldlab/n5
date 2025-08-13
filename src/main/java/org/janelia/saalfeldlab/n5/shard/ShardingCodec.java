@@ -10,8 +10,11 @@ import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.codec.DataBlockSerializer;
+import org.janelia.saalfeldlab.n5.codec.IndexCodecAdapter;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.N5Annotations;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
@@ -20,7 +23,7 @@ import java.lang.reflect.Type;
 import java.util.Objects;
 
 @NameConfig.Name(ShardingCodec.TYPE)
-public class ShardingCodec implements Codec.ArrayCodec {
+public class ShardingCodec implements ArrayCodec {
 
 	private static final long serialVersionUID = -5879797314954717810L;
 
@@ -44,10 +47,12 @@ public class ShardingCodec implements Codec.ArrayCodec {
 	private final Codec[] codecs;
 
 	@NameConfig.Parameter(INDEX_CODECS_KEY)
-	private final DeterministicSizeCodec[] indexCodecs;
+	private final IndexCodecAdapter indexCodecs;
 
 	@NameConfig.Parameter(value = INDEX_LOCATION_KEY, optional = true)
 	private final IndexLocation indexLocation;
+
+	protected DataBlockSerializer<?> dataBlockSerializer = null;
 
 	/**
 	 * Used via reflections by the NameConfig serializer.
@@ -64,7 +69,7 @@ public class ShardingCodec implements Codec.ArrayCodec {
 	public ShardingCodec(
 			final int[] blockSize,
 			final Codec[] codecs,
-			final DeterministicSizeCodec[] indexCodecs,
+			final IndexCodecAdapter indexCodecs,
 			final IndexLocation indexLocation) {
 
 		this.blockSize = blockSize;
@@ -73,9 +78,13 @@ public class ShardingCodec implements Codec.ArrayCodec {
 		this.indexLocation = indexLocation;
 	}
 
-	public int[] getBlockSize() {
+	public ShardingCodec(
+			final int[] blockSize,
+			final Codec[] codecs,
+			final Codec[] indexCodecs,
+			final IndexLocation indexLocation) {
 
-		return blockSize;
+		this(blockSize, codecs, IndexCodecAdapter.create(indexCodecs), indexLocation);
 	}
 
 	public IndexLocation getIndexLocation() {
@@ -91,6 +100,10 @@ public class ShardingCodec implements Codec.ArrayCodec {
 
 		return (ArrayCodec)codecs[0];
 	}
+	public <T> DataBlockSerializer<T> getDataBlockSerializer() {
+
+		return (DataBlockSerializer<T>)dataBlockSerializer;
+	}
 
 	public BytesCodec[] getCodecs() {
 
@@ -101,42 +114,41 @@ public class ShardingCodec implements Codec.ArrayCodec {
 		return bytesCodecs;
 	}
 
-	public DeterministicSizeCodec[] getIndexCodecs() {
+	public IndexCodecAdapter getIndexCodecAdapter() {
 
 		return indexCodecs;
 	}
 
 	@Override
-	public long[] getPositionForBlock(DatasetAttributes attributes, DataBlock<?> datablock) {
+	public long[] getKeyPositionForBlock(DatasetAttributes attributes, DataBlock<?> datablock) {
 
 		final long[] blockPosition = datablock.getGridPosition();
 		return attributes.getShardPositionForBlock(blockPosition);
 	}
 
 	@Override
-	public long[] getPositionForBlock(DatasetAttributes attributes, final long... blockPosition) {
+	public long[] getKeyPositionForBlock(DatasetAttributes attributes, final long... blockPosition) {
 
 		return attributes.getShardPositionForBlock(blockPosition);
 	}
 
 	@Override
-	public void initialize(DatasetAttributes attributes, final BytesCodec[] codecs) {
+	public <T> DataBlockSerializer<T> initialize(DatasetAttributes attributes, final BytesCodec[] codecs) {
 
 		this.attributes = attributes;
-		getArrayCodec().initialize(attributes, getCodecs());
+		this.dataBlockSerializer = getArrayCodec().<T>initialize(attributes, getCodecs());
+		return ((DataBlockSerializer<T>)dataBlockSerializer);
 	}
 
-	@Override
 	public <T> ReadData encode(DataBlock<T> dataBlock) {
 
-		return getArrayCodec().encode(dataBlock);
+		return this.<T>getDataBlockSerializer().encode(dataBlock);
 	}
 
-	@Override
 	public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5IOException {
 
 		final ReadData splitableReadData = readData.materialize();
-		final long[] shardPosition = getPositionForBlock(attributes, gridPosition);
+		final long[] shardPosition = getKeyPositionForBlock(attributes, gridPosition);
 		final VirtualShard<T> shard = new VirtualShard<>(attributes, shardPosition, splitableReadData);
 		final int[] relativeBlockPosition = shard.getRelativeBlockPosition(gridPosition);
 		return shard.getBlock(relativeBlockPosition);
@@ -144,7 +156,7 @@ public class ShardingCodec implements Codec.ArrayCodec {
 
 	public ShardIndex createIndex(final DatasetAttributes attributes) {
 
-		return new ShardIndex(attributes.getBlocksPerShard(), getIndexLocation(), getIndexCodecs());
+		return new ShardIndex(attributes.getBlocksPerShard(), getIndexLocation(), getIndexCodecAdapter());
 	}
 
 	@Override
