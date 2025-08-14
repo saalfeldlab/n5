@@ -51,6 +51,7 @@ import static org.janelia.saalfeldlab.n5.N5Exception.*;
 import static org.janelia.saalfeldlab.n5.codec.N5DataBlockSerializers.BlockHeader.MODE_DEFAULT;
 import static org.janelia.saalfeldlab.n5.codec.N5DataBlockSerializers.BlockHeader.MODE_OBJECT;
 import static org.janelia.saalfeldlab.n5.codec.N5DataBlockSerializers.BlockHeader.MODE_VARLENGTH;
+import static org.janelia.saalfeldlab.n5.codec.N5DataBlockSerializers.BlockHeader.headerSizeInBytes;
 
 public class N5DataBlockSerializers {
 
@@ -120,7 +121,7 @@ public class N5DataBlockSerializers {
 
 	abstract static class N5AbstractDataBlockSerializer<T> implements DataBlockSerializer<T> {
 
-		private final FlatArraySerializer<T> dataCodec;
+		final FlatArraySerializer<T> dataCodec;
 		private final DataBlockFactory<T> dataBlockFactory;
 		private final BytesCodec codec;
 
@@ -189,6 +190,16 @@ public class N5DataBlockSerializers {
 
 			return BlockHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
 		}
+
+		@Override
+		public long encodedSize(final int[] blockSize) throws UnsupportedOperationException {
+
+			final int bytesPerElement = dataCodec.bytesPerElement();
+			final int numElements = DataBlock.getNumElements(blockSize);
+			final int headerSize = headerSizeInBytes(MODE_DEFAULT, blockSize.length);
+			return numElements * bytesPerElement + headerSize;
+		}
+
 	}
 
 	/**
@@ -212,6 +223,12 @@ public class N5DataBlockSerializers {
 
 			return BlockHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
 		}
+
+		@Override
+		public long encodedSize(final int[] blockSize) throws UnsupportedOperationException {
+
+			throw new UnsupportedOperationException();
+		}
 	}
 
 	/**
@@ -234,6 +251,12 @@ public class N5DataBlockSerializers {
 		protected BlockHeader decodeBlockHeader(final InputStream in) throws N5IOException {
 
 			return BlockHeader.readFrom(in, MODE_OBJECT);
+		}
+
+		@Override
+		public long encodedSize(final int[] blockSize) throws UnsupportedOperationException {
+
+			throw new UnsupportedOperationException();
 		}
 	}
 
@@ -312,6 +335,25 @@ public class N5DataBlockSerializers {
 					dos.writeInt(size);
 			} catch (IOException e) {
 				throw new N5IOException(e);
+			}
+		}
+
+		static int headerSizeInBytes( final short mode, final int numDimensions ) {
+			switch (mode) {
+			case MODE_DEFAULT:
+				return 2 + // 1 short for mode
+						2 + // 1 short for blockSize.length
+						4 * numDimensions; // 1 int for each blockSize element
+			case MODE_VARLENGTH:
+				return 2 +// 1 short for mode
+						2 + // 1 short for blockSize.length
+						4 * numDimensions + // 1 int for each blockSize dimension
+						4; // 1 int for numElements
+			case MODE_OBJECT:
+				return 2 + // 1 short for mode
+						4; // 1 int for numElements
+			default:
+				throw new N5Exception("unexpected mode: " + mode);
 			}
 		}
 
