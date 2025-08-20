@@ -166,6 +166,12 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	}
 
 	@Override
+	public String getAttributesKey() {
+
+		return ATTRIBUTES_JSON;
+	}
+
+	@Override
 	public KeyValueAccess getKeyValueAccess() {
 
 		return keyValueAccess;
