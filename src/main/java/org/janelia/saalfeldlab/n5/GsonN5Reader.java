@@ -43,6 +43,13 @@ public interface GsonN5Reader extends N5Reader {
 
 	Gson getGson();
 
+	/**
+	 * Get the key for the {@link KeyValueAccess}, that is used for storing attributes.
+	 *
+	 * @return the attributes key
+	 */
+	String getAttributesKey();
+
 	@Override
 	default Map<String, Class<?>> listAttributes(final String pathName) throws N5Exception {
 
