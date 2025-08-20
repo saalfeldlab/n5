@@ -32,7 +32,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import org.janelia.saalfeldlab.n5.codec.Codec;
 import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
 import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.DataBlockSerializer;
@@ -138,6 +137,11 @@ public class DatasetAttributes implements Serializable {
 	public ArrayCodec getArrayCodec() {
 
 		return arrayCodec;
+	}
+
+	public BytesCodec[] getCodecs() {
+
+		return byteCodecs;
 	}
 
 	@SuppressWarnings("unchecked")
