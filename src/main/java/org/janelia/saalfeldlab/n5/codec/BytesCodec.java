@@ -7,7 +7,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  * {@code BytesCodec}s transform one {@link ReadData} into another,
  * for example, compressing it.
  */
-public interface BytesCodec extends Codec {
+public interface BytesCodec extends CodecInfo {
 
 	/**
 	 * Decode the given {@link ReadData}.

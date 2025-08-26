@@ -8,7 +8,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  * {@code ArrayCodec}s encode {@link DataBlock}s into {@link ReadData} and
  * decode {@link ReadData} into {@link DataBlock}s.
  */
-public interface ArrayCodec extends Codec {
+public interface ArrayCodec extends CodecInfo {
 
 	<T> DataBlockSerializer<T> initialize(final DatasetAttributes attributes, final BytesCodec... codecs);
 

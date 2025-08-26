@@ -11,7 +11,7 @@ import org.janelia.saalfeldlab.n5.serialization.NameConfig;
  * Zarr.
  */
 @NameConfig.Prefix("codec")
-public interface Codec extends Serializable {
+public interface CodecInfo extends Serializable {
 
 	String getType();
 }

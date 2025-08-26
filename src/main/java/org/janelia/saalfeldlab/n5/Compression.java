@@ -61,7 +61,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.janelia.saalfeldlab.n5.codec.BytesCodec;
-import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.scijava.annotations.Indexable;
 
 /**
@@ -72,7 +72,7 @@ import org.scijava.annotations.Indexable;
  * implement this interface so that the {@link CompressionAdapter} is used for
  * serialization.
  * <p>
- * See also: an alternative method for serializing general {@link Codec}s is
+ * See also: an alternative method for serializing general {@link CodecInfo}s is
  * with the {@link NameConfigAdapter}.
  *
  * @author Stephan Saalfeld
