@@ -54,18 +54,18 @@ import static org.janelia.saalfeldlab.n5.codec.N5DataBlockSerializers.BlockHeade
 
 public class N5DataBlockSerializers {
 
-	private static final DataBlockSerializerFactory<byte[]>   BYTE   = c -> new DefaultDataBlockSerializer<>(FlatArraySerializer.BYTE, ByteArrayDataBlock::new, c);
-	private static final DataBlockSerializerFactory<short[]>  SHORT  = c -> new DefaultDataBlockSerializer<>(FlatArraySerializer.SHORT_BIG_ENDIAN, ShortArrayDataBlock::new, c);
-	private static final DataBlockSerializerFactory<int[]>    INT    = c -> new DefaultDataBlockSerializer<>(FlatArraySerializer.INT_BIG_ENDIAN, IntArrayDataBlock::new, c);
-	private static final DataBlockSerializerFactory<long[]>   LONG   = c -> new DefaultDataBlockSerializer<>(FlatArraySerializer.LONG_BIG_ENDIAN, LongArrayDataBlock::new, c);
-	private static final DataBlockSerializerFactory<float[]>  FLOAT  = c -> new DefaultDataBlockSerializer<>(FlatArraySerializer.FLOAT_BIG_ENDIAN, FloatArrayDataBlock::new, c);
-	private static final DataBlockSerializerFactory<double[]> DOUBLE = c -> new DefaultDataBlockSerializer<>(FlatArraySerializer.DOUBLE_BIG_ENDIAN, DoubleArrayDataBlock::new, c);
-	private static final DataBlockSerializerFactory<String[]> STRING = c -> new StringDataBlockSerializer(c);
-	private static final DataBlockSerializerFactory<byte[]>   OBJECT = c -> new ObjectDataBlockSerializer(c);
+	private static final DataBlockSerializerFactory<byte[]>   BYTE   = c -> new DefaultBlockCodec<>(FlatArraySerializer.BYTE, ByteArrayDataBlock::new, c);
+	private static final DataBlockSerializerFactory<short[]>  SHORT  = c -> new DefaultBlockCodec<>(FlatArraySerializer.SHORT_BIG_ENDIAN, ShortArrayDataBlock::new, c);
+	private static final DataBlockSerializerFactory<int[]>    INT    = c -> new DefaultBlockCodec<>(FlatArraySerializer.INT_BIG_ENDIAN, IntArrayDataBlock::new, c);
+	private static final DataBlockSerializerFactory<long[]>   LONG   = c -> new DefaultBlockCodec<>(FlatArraySerializer.LONG_BIG_ENDIAN, LongArrayDataBlock::new, c);
+	private static final DataBlockSerializerFactory<float[]>  FLOAT  = c -> new DefaultBlockCodec<>(FlatArraySerializer.FLOAT_BIG_ENDIAN, FloatArrayDataBlock::new, c);
+	private static final DataBlockSerializerFactory<double[]> DOUBLE = c -> new DefaultBlockCodec<>(FlatArraySerializer.DOUBLE_BIG_ENDIAN, DoubleArrayDataBlock::new, c);
+	private static final DataBlockSerializerFactory<String[]> STRING = c -> new StringBlockCodec(c);
+	private static final DataBlockSerializerFactory<byte[]>   OBJECT = c -> new ObjectBlockCodec(c);
 
 	private N5DataBlockSerializers() {}
 
-	public static <T> DataBlockSerializer<T> create(
+	public static <T> BlockCodec<T> create(
 			final DataType dataType,
 			final BytesCodec codec) {
 
@@ -110,21 +110,21 @@ public class N5DataBlockSerializers {
 	private interface DataBlockSerializerFactory<T> {
 
 		/**
-		 * Create a {@link DataBlockSerializer} that uses the specified {@code
+		 * Create a {@link BlockCodec} that uses the specified {@code
 		 * BytesCodec} and de/serializes {@code DataBlock<T>} to N5 format.
 		 *
 		 * @return N5 {@code DataBlockSerializer} for the specified {@code codec}
 		 */
-		DataBlockSerializer<T> create(BytesCodec codec);
+		BlockCodec<T> create(BytesCodec codec);
 	}
 
-	abstract static class N5AbstractDataBlockSerializer<T> implements DataBlockSerializer<T> {
+	abstract static class N5AbstractBlockCodec<T> implements BlockCodec<T> {
 
 		private final FlatArraySerializer<T> dataCodec;
 		private final DataBlockFactory<T> dataBlockFactory;
 		private final BytesCodec codec;
 
-		N5AbstractDataBlockSerializer(FlatArraySerializer<T> dataCodec, DataBlockFactory<T> dataBlockFactory, BytesCodec codec) {
+		N5AbstractBlockCodec(FlatArraySerializer<T> dataCodec, DataBlockFactory<T> dataBlockFactory, BytesCodec codec) {
 			this.dataCodec = dataCodec;
 			this.dataBlockFactory = dataBlockFactory;
 			this.codec = codec;
@@ -168,9 +168,9 @@ public class N5DataBlockSerializers {
 	/**
 	 * DataBlockCodec for all N5 data types, except STRING and OBJECT
 	 */
-	private static class DefaultDataBlockSerializer<T> extends N5AbstractDataBlockSerializer<T> {
+	private static class DefaultBlockCodec<T> extends N5AbstractBlockCodec<T> {
 
-		DefaultDataBlockSerializer(
+		DefaultBlockCodec(
 				final FlatArraySerializer<T> dataCodec,
 				final DataBlockFactory<T> dataBlockFactory,
 				final BytesCodec codec) {
@@ -194,9 +194,9 @@ public class N5DataBlockSerializers {
 	/**
 	 * DataBlockCodec for N5 data type STRING
 	 */
-	private static class StringDataBlockSerializer extends N5AbstractDataBlockSerializer<String[]> {
+	private static class StringBlockCodec extends N5AbstractBlockCodec<String[]> {
 
-		StringDataBlockSerializer(final BytesCodec codec) {
+		StringBlockCodec(final BytesCodec codec) {
 
 			super(FlatArraySerializer.STRING, StringDataBlock::new, codec);
 		}
@@ -217,9 +217,9 @@ public class N5DataBlockSerializers {
 	/**
 	 * DataBlockCodec for N5 data type OBJECT
 	 */
-	private static class ObjectDataBlockSerializer extends N5AbstractDataBlockSerializer<byte[]> {
+	private static class ObjectBlockCodec extends N5AbstractBlockCodec<byte[]> {
 
-		ObjectDataBlockSerializer(final BytesCodec codec) {
+		ObjectBlockCodec(final BytesCodec codec) {
 
 			super(FlatArraySerializer.OBJECT, ByteArrayDataBlock::new, codec);
 		}

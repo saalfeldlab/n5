@@ -10,6 +10,6 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  */
 public interface BlockCodecInfo extends CodecInfo {
 
-	<T> DataBlockSerializer<T> create(final DatasetAttributes attributes, final BytesCodec... codecs);
+	<T> BlockCodec<T> create(final DatasetAttributes attributes, final BytesCodec... codecs);
 
 }

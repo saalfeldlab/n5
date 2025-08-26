@@ -17,7 +17,7 @@ public class N5ArrayCodec implements BlockCodecInfo {
 	}
 
 	@Override
-	public <T> DataBlockSerializer<T> create(final DatasetAttributes attributes, final BytesCodec... bytesCodecs) {
+	public <T> BlockCodec<T> create(final DatasetAttributes attributes, final BytesCodec... bytesCodecs) {
 		return N5DataBlockSerializers.create(attributes.getDataType(), BytesCodec.concatenate(bytesCodecs));
 	}
 

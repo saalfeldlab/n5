@@ -34,7 +34,7 @@ import java.util.HashMap;
 
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.BytesCodec;
-import org.janelia.saalfeldlab.n5.codec.DataBlockSerializer;
+import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.N5ArrayCodec;
 
 /**
@@ -69,7 +69,7 @@ public class DatasetAttributes implements Serializable {
 	private final BlockCodecInfo blockCodecInfo;
 	private final BytesCodec[] byteCodecs;
 
-	private final DataBlockSerializer<?> dataBlockSerializer;
+	private final BlockCodec<?> blockCodec;
 
 	public DatasetAttributes(
 			final long[] dimensions,
@@ -84,7 +84,7 @@ public class DatasetAttributes implements Serializable {
 
 		this.blockCodecInfo = blockCodecInfo == null ? defaultBlockCodecInfo() : blockCodecInfo;
 		byteCodecs = Arrays.stream(codecs).filter(it -> !(it instanceof RawCompression)).toArray(BytesCodec[]::new);
-		dataBlockSerializer = this.blockCodecInfo.create(this, byteCodecs);
+		blockCodec = this.blockCodecInfo.create(this, byteCodecs);
 	}
 
 	public DatasetAttributes(
@@ -140,8 +140,8 @@ public class DatasetAttributes implements Serializable {
 	}
 
 	@SuppressWarnings("unchecked")
-	<T> DataBlockSerializer<T> getDataBlockSerializer() {
-		return (DataBlockSerializer<T>) dataBlockSerializer;
+	<T> BlockCodec<T> getBlockCodec() {
+		return (BlockCodec<T>) blockCodec;
 	}
 
 	public HashMap<String, Object> asMap() {

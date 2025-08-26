@@ -15,18 +15,18 @@ import java.nio.ByteOrder;
 
 public class RawDataBlockSerializers {
 
-	private static final DataBlockSerializerFactory<byte[]>   BYTE   = (byteOrder, blockSize, codec) -> new RawDataBlockSerializer<>(FlatArraySerializer.BYTE, ByteArrayDataBlock::new, blockSize, codec);
-	private static final DataBlockSerializerFactory<short[]>  SHORT  = (byteOrder, blockSize, codec) -> new RawDataBlockSerializer<>(FlatArraySerializer.SHORT(byteOrder), ShortArrayDataBlock::new, blockSize, codec);
-	private static final DataBlockSerializerFactory<int[]>    INT    = (byteOrder, blockSize, codec) -> new RawDataBlockSerializer<>(FlatArraySerializer.INT(byteOrder), IntArrayDataBlock::new, blockSize, codec);
-	private static final DataBlockSerializerFactory<long[]>   LONG   = (byteOrder, blockSize, codec) -> new RawDataBlockSerializer<>(FlatArraySerializer.LONG(byteOrder), LongArrayDataBlock::new, blockSize, codec);
-	private static final DataBlockSerializerFactory<float[]>  FLOAT  = (byteOrder, blockSize, codec) -> new RawDataBlockSerializer<>(FlatArraySerializer.FLOAT(byteOrder), FloatArrayDataBlock::new, blockSize, codec);
-	private static final DataBlockSerializerFactory<double[]> DOUBLE = (byteOrder, blockSize, codec) -> new RawDataBlockSerializer<>(FlatArraySerializer.DOUBLE(byteOrder), DoubleArrayDataBlock::new, blockSize, codec);
-	private static final DataBlockSerializerFactory<String[]> STRING = (byteOrder, blockSize, codec) -> new RawDataBlockSerializer<>(FlatArraySerializer.ZARR_STRING, StringDataBlock::new,  blockSize, codec);
-	private static final DataBlockSerializerFactory<byte[]>   OBJECT = (byteOrder, blockSize, codec) -> new RawDataBlockSerializer<>(FlatArraySerializer.OBJECT, ByteArrayDataBlock::new, blockSize, codec);
+	private static final DataBlockSerializerFactory<byte[]>   BYTE   = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.BYTE, ByteArrayDataBlock::new, blockSize, codec);
+	private static final DataBlockSerializerFactory<short[]>  SHORT  = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.SHORT(byteOrder), ShortArrayDataBlock::new, blockSize, codec);
+	private static final DataBlockSerializerFactory<int[]>    INT    = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.INT(byteOrder), IntArrayDataBlock::new, blockSize, codec);
+	private static final DataBlockSerializerFactory<long[]>   LONG   = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.LONG(byteOrder), LongArrayDataBlock::new, blockSize, codec);
+	private static final DataBlockSerializerFactory<float[]>  FLOAT  = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.FLOAT(byteOrder), FloatArrayDataBlock::new, blockSize, codec);
+	private static final DataBlockSerializerFactory<double[]> DOUBLE = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.DOUBLE(byteOrder), DoubleArrayDataBlock::new, blockSize, codec);
+	private static final DataBlockSerializerFactory<String[]> STRING = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.ZARR_STRING, StringDataBlock::new,  blockSize, codec);
+	private static final DataBlockSerializerFactory<byte[]>   OBJECT = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.OBJECT, ByteArrayDataBlock::new, blockSize, codec);
 
 	private RawDataBlockSerializers() {}
 
-	public static <T> DataBlockSerializer<T> create(
+	public static <T> BlockCodec<T> create(
 			final DataType dataType,
 			final ByteOrder byteOrder,
 			final int[] blockSize,
@@ -69,16 +69,16 @@ public class RawDataBlockSerializers {
 	private interface DataBlockSerializerFactory<T> {
 
 		/**
-		 * Create a {@link DataBlockSerializer} that uses the specified {@code
+		 * Create a {@link BlockCodec} that uses the specified {@code
 		 * ByteOrder} and {@code BytesCodes} and de/serializes {@code
 		 * DataBlock<T>} of the specified {@code blockSize} to raw format.
 		 *
 		 * @return Raw {@code DataBlockSerializer}
 		 */
-		DataBlockSerializer<T> create(ByteOrder byteOrder, int[] blockSize, BytesCodec codec);
+		BlockCodec<T> create(ByteOrder byteOrder, int[] blockSize, BytesCodec codec);
 	}
 
-	private static class RawDataBlockSerializer<T> implements DataBlockSerializer<T> {
+	private static class RawBlockCodec<T> implements BlockCodec<T> {
 
 		private final FlatArraySerializer<T> dataCodec;
 		private final DataBlock.DataBlockFactory<T> dataBlockFactory;
@@ -86,7 +86,7 @@ public class RawDataBlockSerializers {
 		private final int numElements;
 		private final BytesCodec codec;
 
-		RawDataBlockSerializer(
+		RawBlockCodec(
 				final FlatArraySerializer<T> dataCodec,
 				final DataBlock.DataBlockFactory<T> dataBlockFactory,
 				final int[] blockSize,

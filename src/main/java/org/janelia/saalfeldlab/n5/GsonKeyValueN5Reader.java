@@ -100,7 +100,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		try {
 			final ReadData blockData = getKeyValueAccess().createReadData(path);
-			return datasetAttributes.getDataBlockSerializer().decode(blockData, gridPosition);
+			return datasetAttributes.getBlockCodec().decode(blockData, gridPosition);
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
 		}

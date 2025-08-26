@@ -38,7 +38,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  * @param <T>
  * 		type of the data contained in the DataBlock
  */
-public interface DataBlockSerializer<T> {
+public interface BlockCodec<T> {
 
 	ReadData encode(DataBlock<T> dataBlock) throws N5IOException;
 
