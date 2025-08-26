@@ -4,7 +4,7 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @NameConfig.Name(value = N5ArrayCodec.TYPE)
-public class N5ArrayCodec implements ArrayCodec {
+public class N5ArrayCodec implements BlockCodecInfo {
 
 	private static final long serialVersionUID = 3523505403978222360L;
 
@@ -17,7 +17,7 @@ public class N5ArrayCodec implements ArrayCodec {
 	}
 
 	@Override
-	public <T> DataBlockSerializer<T> initialize(final DatasetAttributes attributes, final BytesCodec... bytesCodecs) {
+	public <T> DataBlockSerializer<T> create(final DatasetAttributes attributes, final BytesCodec... bytesCodecs) {
 		return N5DataBlockSerializers.create(attributes.getDataType(), BytesCodec.concatenate(bytesCodecs));
 	}
 

@@ -7,7 +7,7 @@ import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 
 @NameConfig.Name(value = RawBytesArrayCodec.TYPE)
-public class RawBytesArrayCodec implements ArrayCodec {
+public class RawBytesArrayCodec implements BlockCodecInfo {
 
 	private static final long serialVersionUID = 3282569607795127005L;
 
@@ -37,7 +37,7 @@ public class RawBytesArrayCodec implements ArrayCodec {
 	}
 
 	@Override
-	public <T> DataBlockSerializer<T> initialize(final DatasetAttributes attributes, final BytesCodec... bytesCodecs) {
+	public <T> DataBlockSerializer<T> create(final DatasetAttributes attributes, final BytesCodec... bytesCodecs) {
 		ensureValidByteOrder(attributes.getDataType(), getByteOrder());
 		return RawDataBlockSerializers.create(attributes.getDataType(), byteOrder, attributes.getBlockSize(), BytesCodec.concatenate(bytesCodecs));
 	}

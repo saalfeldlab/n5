@@ -32,7 +32,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.DataBlockSerializer;
 import org.janelia.saalfeldlab.n5.codec.N5ArrayCodec;
@@ -66,7 +66,7 @@ public class DatasetAttributes implements Serializable {
 	private final int[] blockSize;
 	private final DataType dataType;
 
-	private final ArrayCodec arrayCodec;
+	private final BlockCodecInfo blockCodecInfo;
 	private final BytesCodec[] byteCodecs;
 
 	private final DataBlockSerializer<?> dataBlockSerializer;
@@ -75,16 +75,16 @@ public class DatasetAttributes implements Serializable {
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final ArrayCodec arrayCodec,
+			final BlockCodecInfo blockCodecInfo,
 			final BytesCodec... codecs) {
 
 		this.dimensions = dimensions;
 		this.blockSize = blockSize;
 		this.dataType = dataType;
 
-		this.arrayCodec = arrayCodec == null ? defaultArrayCodec() : arrayCodec;
+		this.blockCodecInfo = blockCodecInfo == null ? defaultBlockCodecInfo() : blockCodecInfo;
 		byteCodecs = Arrays.stream(codecs).filter(it -> !(it instanceof RawCompression)).toArray(BytesCodec[]::new);
-		dataBlockSerializer = this.arrayCodec.initialize(this, byteCodecs);
+		dataBlockSerializer = this.blockCodecInfo.create(this, byteCodecs);
 	}
 
 	public DatasetAttributes(
@@ -96,7 +96,7 @@ public class DatasetAttributes implements Serializable {
 		this(dimensions, blockSize, dataType, null, compression);
 	}
 
-	protected ArrayCodec defaultArrayCodec() {
+	protected BlockCodecInfo defaultBlockCodecInfo() {
 		return new N5ArrayCodec();
 	}
 
@@ -130,13 +130,13 @@ public class DatasetAttributes implements Serializable {
 	}
 
 	/**
-	 * Get the {@link ArrayCodec} for this dataset.
+	 * Get the {@link BlockCodecInfo} for this dataset.
 	 *
-	 * @return the {@code ArrayCodec} for this dataset
+	 * @return the {@code BlockCodecInfo} for this dataset
 	 */
-	public ArrayCodec getArrayCodec() {
+	public BlockCodecInfo getBlockCodecInfo() {
 
-		return arrayCodec;
+		return blockCodecInfo;
 	}
 
 	@SuppressWarnings("unchecked")
