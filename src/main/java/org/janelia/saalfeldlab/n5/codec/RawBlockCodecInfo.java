@@ -6,8 +6,8 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 
-@NameConfig.Name(value = RawBytesArrayCodec.TYPE)
-public class RawBytesArrayCodec implements BlockCodecInfo {
+@NameConfig.Name(value = RawBlockCodecInfo.TYPE)
+public class RawBlockCodecInfo implements BlockCodecInfo {
 
 	private static final long serialVersionUID = 3282569607795127005L;
 
@@ -16,12 +16,12 @@ public class RawBytesArrayCodec implements BlockCodecInfo {
 	@NameConfig.Parameter(value = "endian", optional = true)
 	private final ByteOrder byteOrder;
 
-	public RawBytesArrayCodec() {
+	public RawBlockCodecInfo() {
 
 		this(ByteOrder.BIG_ENDIAN);
 	}
 
-	public RawBytesArrayCodec(final ByteOrder byteOrder) {
+	public RawBlockCodecInfo(final ByteOrder byteOrder) {
 
 		this.byteOrder = byteOrder;
 	}
