@@ -15,14 +15,14 @@ import java.nio.ByteOrder;
 
 public class RawDataBlockSerializers {
 
-	private static final DataBlockSerializerFactory<byte[]>   BYTE   = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.BYTE, ByteArrayDataBlock::new, blockSize, codec);
-	private static final DataBlockSerializerFactory<short[]>  SHORT  = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.SHORT(byteOrder), ShortArrayDataBlock::new, blockSize, codec);
-	private static final DataBlockSerializerFactory<int[]>    INT    = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.INT(byteOrder), IntArrayDataBlock::new, blockSize, codec);
-	private static final DataBlockSerializerFactory<long[]>   LONG   = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.LONG(byteOrder), LongArrayDataBlock::new, blockSize, codec);
-	private static final DataBlockSerializerFactory<float[]>  FLOAT  = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.FLOAT(byteOrder), FloatArrayDataBlock::new, blockSize, codec);
-	private static final DataBlockSerializerFactory<double[]> DOUBLE = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.DOUBLE(byteOrder), DoubleArrayDataBlock::new, blockSize, codec);
-	private static final DataBlockSerializerFactory<String[]> STRING = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.ZARR_STRING, StringDataBlock::new,  blockSize, codec);
-	private static final DataBlockSerializerFactory<byte[]>   OBJECT = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArraySerializer.OBJECT, ByteArrayDataBlock::new, blockSize, codec);
+	private static final DataBlockSerializerFactory<byte[]>   BYTE   = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.BYTE, ByteArrayDataBlock::new, blockSize, codec);
+	private static final DataBlockSerializerFactory<short[]>  SHORT  = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.SHORT(byteOrder), ShortArrayDataBlock::new, blockSize, codec);
+	private static final DataBlockSerializerFactory<int[]>    INT    = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.INT(byteOrder), IntArrayDataBlock::new, blockSize, codec);
+	private static final DataBlockSerializerFactory<long[]>   LONG   = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.LONG(byteOrder), LongArrayDataBlock::new, blockSize, codec);
+	private static final DataBlockSerializerFactory<float[]>  FLOAT  = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.FLOAT(byteOrder), FloatArrayDataBlock::new, blockSize, codec);
+	private static final DataBlockSerializerFactory<double[]> DOUBLE = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.DOUBLE(byteOrder), DoubleArrayDataBlock::new, blockSize, codec);
+	private static final DataBlockSerializerFactory<String[]> STRING = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.ZARR_STRING, StringDataBlock::new,  blockSize, codec);
+	private static final DataBlockSerializerFactory<byte[]>   OBJECT = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.OBJECT, ByteArrayDataBlock::new, blockSize, codec);
 
 	private RawDataBlockSerializers() {}
 
@@ -80,14 +80,14 @@ public class RawDataBlockSerializers {
 
 	private static class RawBlockCodec<T> implements BlockCodec<T> {
 
-		private final FlatArraySerializer<T> dataCodec;
+		private final FlatArrayCodec<T> dataCodec;
 		private final DataBlock.DataBlockFactory<T> dataBlockFactory;
 		private final int[] blockSize;
 		private final int numElements;
 		private final DataCodec codec;
 
 		RawBlockCodec(
-				final FlatArraySerializer<T> dataCodec,
+				final FlatArrayCodec<T> dataCodec,
 				final DataBlock.DataBlockFactory<T> dataBlockFactory,
 				final int[] blockSize,
 				final DataCodec codec) {
@@ -103,7 +103,7 @@ public class RawDataBlockSerializers {
 		public ReadData encode(DataBlock<T> dataBlock) {
 
 			return ReadData.from(out -> {
-				final ReadData blockData = dataCodec.serialize(dataBlock.getData());
+				final ReadData blockData = dataCodec.encode(dataBlock.getData());
 				codec.encode(blockData).writeTo(out);
 			});
 		}
@@ -112,7 +112,7 @@ public class RawDataBlockSerializers {
 		public DataBlock<T> decode(ReadData readData, long[] gridPosition) {
 
 			final ReadData decodeData = codec.decode(readData);
-			final T data = dataCodec.deserialize(decodeData, numElements);
+			final T data = dataCodec.decode(decodeData, numElements);
 			return dataBlockFactory.createDataBlock(blockSize, gridPosition, data);
 		}
 	}
