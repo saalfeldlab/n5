@@ -67,7 +67,7 @@ public class N5DataBlockSerializers {
 
 	public static <T> BlockCodec<T> create(
 			final DataType dataType,
-			final BytesCodec codec) {
+			final DataCodec codec) {
 
 		final DataBlockSerializerFactory<?> factory;
 		switch (dataType) {
@@ -110,21 +110,21 @@ public class N5DataBlockSerializers {
 	private interface DataBlockSerializerFactory<T> {
 
 		/**
-		 * Create a {@link BlockCodec} that uses the specified {@code
-		 * BytesCodec} and de/serializes {@code DataBlock<T>} to N5 format.
+		 * Create a {@link BlockCodec} that uses the specified {@code DataCodec}
+		 * and de/serializes {@code DataBlock<T>} to N5 format.
 		 *
 		 * @return N5 {@code DataBlockSerializer} for the specified {@code codec}
 		 */
-		BlockCodec<T> create(BytesCodec codec);
+		BlockCodec<T> create(DataCodec codec);
 	}
 
 	abstract static class N5AbstractBlockCodec<T> implements BlockCodec<T> {
 
 		private final FlatArraySerializer<T> dataCodec;
 		private final DataBlockFactory<T> dataBlockFactory;
-		private final BytesCodec codec;
+		private final DataCodec codec;
 
-		N5AbstractBlockCodec(FlatArraySerializer<T> dataCodec, DataBlockFactory<T> dataBlockFactory, BytesCodec codec) {
+		N5AbstractBlockCodec(FlatArraySerializer<T> dataCodec, DataBlockFactory<T> dataBlockFactory, DataCodec codec) {
 			this.dataCodec = dataCodec;
 			this.dataBlockFactory = dataBlockFactory;
 			this.codec = codec;
@@ -173,7 +173,7 @@ public class N5DataBlockSerializers {
 		DefaultBlockCodec(
 				final FlatArraySerializer<T> dataCodec,
 				final DataBlockFactory<T> dataBlockFactory,
-				final BytesCodec codec) {
+				final DataCodec codec) {
 
 			super(dataCodec, dataBlockFactory, codec);
 		}
@@ -196,7 +196,7 @@ public class N5DataBlockSerializers {
 	 */
 	private static class StringBlockCodec extends N5AbstractBlockCodec<String[]> {
 
-		StringBlockCodec(final BytesCodec codec) {
+		StringBlockCodec(final DataCodec codec) {
 
 			super(FlatArraySerializer.STRING, StringDataBlock::new, codec);
 		}
@@ -219,7 +219,7 @@ public class N5DataBlockSerializers {
 	 */
 	private static class ObjectBlockCodec extends N5AbstractBlockCodec<byte[]> {
 
-		ObjectBlockCodec(final BytesCodec codec) {
+		ObjectBlockCodec(final DataCodec codec) {
 
 			super(FlatArraySerializer.OBJECT, ByteArrayDataBlock::new, codec);
 		}

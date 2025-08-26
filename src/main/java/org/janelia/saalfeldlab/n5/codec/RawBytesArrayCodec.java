@@ -37,9 +37,9 @@ public class RawBytesArrayCodec implements BlockCodecInfo {
 	}
 
 	@Override
-	public <T> BlockCodec<T> create(final DatasetAttributes attributes, final BytesCodec... bytesCodecs) {
+	public <T> BlockCodec<T> create(final DatasetAttributes attributes, final DataCodec... dataCodecs) {
 		ensureValidByteOrder(attributes.getDataType(), getByteOrder());
-		return RawDataBlockSerializers.create(attributes.getDataType(), byteOrder, attributes.getBlockSize(), BytesCodec.concatenate(bytesCodecs));
+		return RawDataBlockSerializers.create(attributes.getDataType(), byteOrder, attributes.getBlockSize(), DataCodec.concatenate(dataCodecs));
 	}
 
 	private static void ensureValidByteOrder(final DataType dataType, final ByteOrder byteOrder) {

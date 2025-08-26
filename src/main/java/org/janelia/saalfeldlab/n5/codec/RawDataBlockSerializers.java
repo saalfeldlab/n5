@@ -30,7 +30,7 @@ public class RawDataBlockSerializers {
 			final DataType dataType,
 			final ByteOrder byteOrder,
 			final int[] blockSize,
-			final BytesCodec codec) {
+			final DataCodec codec) {
 		final DataBlockSerializerFactory<?> factory;
 		switch (dataType) {
 		case UINT8:
@@ -75,7 +75,7 @@ public class RawDataBlockSerializers {
 		 *
 		 * @return Raw {@code DataBlockSerializer}
 		 */
-		BlockCodec<T> create(ByteOrder byteOrder, int[] blockSize, BytesCodec codec);
+		BlockCodec<T> create(ByteOrder byteOrder, int[] blockSize, DataCodec codec);
 	}
 
 	private static class RawBlockCodec<T> implements BlockCodec<T> {
@@ -84,13 +84,13 @@ public class RawDataBlockSerializers {
 		private final DataBlock.DataBlockFactory<T> dataBlockFactory;
 		private final int[] blockSize;
 		private final int numElements;
-		private final BytesCodec codec;
+		private final DataCodec codec;
 
 		RawBlockCodec(
 				final FlatArraySerializer<T> dataCodec,
 				final DataBlock.DataBlockFactory<T> dataBlockFactory,
 				final int[] blockSize,
-				final BytesCodec codec) {
+				final DataCodec codec) {
 
 			this.dataCodec = dataCodec;
 			this.dataBlockFactory = dataBlockFactory;

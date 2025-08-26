@@ -33,8 +33,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.DataCodec;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
+import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5ArrayCodec;
 
 /**
@@ -67,7 +68,7 @@ public class DatasetAttributes implements Serializable {
 	private final DataType dataType;
 
 	private final BlockCodecInfo blockCodecInfo;
-	private final BytesCodec[] byteCodecs;
+	private final DataCodecInfo[] dataCodecInfos;
 
 	private final BlockCodec<?> blockCodec;
 
@@ -76,27 +77,28 @@ public class DatasetAttributes implements Serializable {
 			final int[] blockSize,
 			final DataType dataType,
 			final BlockCodecInfo blockCodecInfo,
-			final BytesCodec... codecs) {
+			final DataCodecInfo... dataCodecInfos) {
 
 		this.dimensions = dimensions;
 		this.blockSize = blockSize;
 		this.dataType = dataType;
 
 		this.blockCodecInfo = blockCodecInfo == null ? defaultBlockCodecInfo() : blockCodecInfo;
-		byteCodecs = Arrays.stream(codecs).filter(it -> !(it instanceof RawCompression)).toArray(BytesCodec[]::new);
-		blockCodec = this.blockCodecInfo.create(this, byteCodecs);
+		this.dataCodecInfos = Arrays.stream(dataCodecInfos).filter(it -> !(it instanceof RawCompression)).toArray(DataCodecInfo[]::new);
+		blockCodec = this.blockCodecInfo.create(this, this.dataCodecInfos);
 	}
 
 	public DatasetAttributes(
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final BytesCodec compression) {
+			final DataCodecInfo compression) {
 
 		this(dimensions, blockSize, dataType, null, compression);
 	}
 
 	protected BlockCodecInfo defaultBlockCodecInfo() {
+
 		return new N5ArrayCodec();
 	}
 
@@ -117,7 +119,7 @@ public class DatasetAttributes implements Serializable {
 
 	public Compression getCompression() {
 
-		return Arrays.stream(byteCodecs)
+		return Arrays.stream(dataCodecInfos)
 				.filter(it -> it instanceof Compression)
 				.map(it -> (Compression)it)
 				.findFirst()
@@ -141,6 +143,7 @@ public class DatasetAttributes implements Serializable {
 
 	@SuppressWarnings("unchecked")
 	<T> BlockCodec<T> getBlockCodec() {
+
 		return (BlockCodec<T>) blockCodec;
 	}
 
