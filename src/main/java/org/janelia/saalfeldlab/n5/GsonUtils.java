@@ -80,15 +80,6 @@ import org.janelia.saalfeldlab.n5.codec.Codec;
  */
 public interface GsonUtils {
 
-	static Gson registerGson(final GsonBuilder gsonBuilder) {
-
-		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
-		gsonBuilder.registerTypeHierarchyAdapter(Codec.class, NameConfigAdapter.getJsonAdapter(Codec.class));
-		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
-		gsonBuilder.disableHtmlEscaping();
-		return gsonBuilder.create();
-	}
-
 	/**
 	 * Reads the attributes json from a given {@link Reader}.
 	 *
