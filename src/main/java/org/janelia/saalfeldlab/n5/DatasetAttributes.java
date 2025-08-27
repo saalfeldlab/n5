@@ -156,11 +156,6 @@ public class DatasetAttributes implements Serializable {
 		return map;
 	}
 
-
-	record Coord(int[] pos, Coord nested) {
-
-	}
-
 	static DatasetAttributes from(
 			final long[] dimensions,
 			final DataType dataType,
