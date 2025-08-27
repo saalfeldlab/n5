@@ -32,11 +32,10 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.BytesCodec;
-import org.janelia.saalfeldlab.n5.codec.DataBlockSerializer;
-import org.janelia.saalfeldlab.n5.codec.N5ArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.BlockCodec;
+import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 
 /**
  * Mandatory dataset attributes:
@@ -67,38 +66,39 @@ public class DatasetAttributes implements Serializable {
 	private final int[] blockSize;
 	private final DataType dataType;
 
-	private final ArrayCodec arrayCodec;
-	private final BytesCodec[] byteCodecs;
+	private final BlockCodecInfo blockCodecInfo;
+	private final DataCodecInfo[] dataCodecInfos;
 
-	private final DataBlockSerializer<?> dataBlockSerializer;
+	private final BlockCodec<?> blockCodec;
 
 	public DatasetAttributes(
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final ArrayCodec arrayCodec,
-			final BytesCodec... codecs) {
+			final BlockCodecInfo blockCodecInfo,
+			final DataCodecInfo... dataCodecInfos) {
 
 		this.dimensions = dimensions;
 		this.blockSize = blockSize;
 		this.dataType = dataType;
 
-		this.arrayCodec = arrayCodec == null ? defaultArrayCodec() : arrayCodec;
-		byteCodecs = Arrays.stream(codecs).filter(it -> !(it instanceof RawCompression)).toArray(BytesCodec[]::new);
-		dataBlockSerializer = this.arrayCodec.initialize(this, byteCodecs);
+		this.blockCodecInfo = blockCodecInfo == null ? defaultBlockCodecInfo() : blockCodecInfo;
+		this.dataCodecInfos = Arrays.stream(dataCodecInfos).filter(it -> !(it instanceof RawCompression)).toArray(DataCodecInfo[]::new);
+		blockCodec = this.blockCodecInfo.create(this, this.dataCodecInfos);
 	}
 
 	public DatasetAttributes(
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final BytesCodec compression) {
+			final DataCodecInfo compression) {
 
 		this(dimensions, blockSize, dataType, null, compression);
 	}
 
-	protected ArrayCodec defaultArrayCodec() {
-		return new N5ArrayCodec();
+	protected BlockCodecInfo defaultBlockCodecInfo() {
+
+		return new N5BlockCodecInfo();
 	}
 
 	public long[] getDimensions() {
@@ -118,7 +118,7 @@ public class DatasetAttributes implements Serializable {
 
 	public Compression getCompression() {
 
-		return Arrays.stream(byteCodecs)
+		return Arrays.stream(dataCodecInfos)
 				.filter(it -> it instanceof Compression)
 				.map(it -> (Compression)it)
 				.findFirst()
@@ -131,18 +131,19 @@ public class DatasetAttributes implements Serializable {
 	}
 
 	/**
-	 * Get the {@link ArrayCodec} for this dataset.
+	 * Get the {@link BlockCodecInfo} for this dataset.
 	 *
-	 * @return the {@code ArrayCodec} for this dataset
+	 * @return the {@code BlockCodecInfo} for this dataset
 	 */
-	public ArrayCodec getArrayCodec() {
+	public BlockCodecInfo getBlockCodecInfo() {
 
-		return arrayCodec;
+		return blockCodecInfo;
 	}
 
 	@SuppressWarnings("unchecked")
-	<T> DataBlockSerializer<T> getDataBlockSerializer() {
-		return (DataBlockSerializer<T>) dataBlockSerializer;
+	<T> BlockCodec<T> getBlockCodec() {
+
+		return (BlockCodec<T>) blockCodec;
 	}
 
 	public HashMap<String, Object> asMap() {
