@@ -125,6 +125,22 @@ public abstract class DataCodec<T> {
 		return new ZarrFixedLengthStringDataCodec(maxLength, order);
 	}
 
+	/**
+	 * Returns a {@link DataCodec} for fixed-length strings.
+	 * <p>
+	 * The resulting codec uses ASCII string encoding to encode / decode String
+	 * arrays to a pre-defined fixed-length. Shorter Strings will be padded as
+	 * necessary. If a String longer than maxLength are encountered, an
+	 * {@link IllegalArgumentException} will be thrown.
+	 *
+	 * @param maxLength
+	 *            the maximum number of characters per string
+	 * @return a data codec for fixed-length strings
+	 */
+	public static DataCodec<String[]> ZARR_ASCII_FIXED_STRING(int maxLength) {
+		return new ZarrFixedLengthStringDataCodec(maxLength, 1, StandardCharsets.US_ASCII);
+	}
+
 	// ---------------- implementations  -----------------
 	//
 
@@ -381,19 +397,23 @@ public abstract class DataCodec<T> {
 	private static final class ZarrFixedLengthStringDataCodec extends DataCodec<String[]> {
 
 		private static final char NULL_CHAR = '\0';
-		private static final int BYTES_PER_CHAR = 4;
+		private static final int BYTES_PER_CHAR_UTF32 = 4;
 
 		private final Charset charset;
 
+		private final int bytePerChar;
 		private final int maxLength;
 
-		ZarrFixedLengthStringDataCodec(int maxLength, ByteOrder order) {
-			super(maxLength * BYTES_PER_CHAR, String[]::new);
+		ZarrFixedLengthStringDataCodec(int maxLength, int bytesPerChar, Charset charset) {
+			super(maxLength * bytesPerChar, String[]::new);
 			this.maxLength = maxLength;
-			if (order == ByteOrder.BIG_ENDIAN)
-				charset = Charset.forName("UTF-32BE");
-			else
-				charset = Charset.forName("UTF-32LE");
+			this.bytePerChar = bytesPerChar;
+			this.charset = charset;
+		}
+
+		ZarrFixedLengthStringDataCodec(int maxLength, ByteOrder order) {
+			this(maxLength, BYTES_PER_CHAR_UTF32,
+					order == ByteOrder.BIG_ENDIAN ? Charset.forName("UTF-32BE") : Charset.forName("UTF-32LE"));
 		}
 
 		@Override
@@ -403,7 +423,7 @@ public abstract class DataCodec<T> {
 				return ReadData.empty();
 
 			final int N = data.length;
-			final int encodedStringSize = maxLength * BYTES_PER_CHAR;
+			final int encodedStringSize = maxLength * bytePerChar;
 			final int totalSize = N * encodedStringSize;
 			final ByteBuffer buf = ByteBuffer.allocate(totalSize);
 			int pos = 0;
