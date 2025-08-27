@@ -4,17 +4,17 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
- * {@code BytesCodec}s transform one {@link ReadData} into another,
+ * {@code DataCodec}s transform one {@link ReadData} into another,
  * for example, compressing it.
  */
-public interface BytesCodec extends Codec {
+public interface DataCodec {
 
 	/**
 	 * Decode the given {@link ReadData}.
 	 * <p>
 	 * The returned decoded {@code ReadData} reports {@link ReadData#length()
 	 * length()}{@code == decodedLength}. Decoding may be lazy or eager,
-	 * depending on the {@code BytesCodec} implementation.
+	 * depending on the {@code DataCodec} implementation.
 	 *
 	 * @param readData
 	 * 		data to decode
@@ -29,7 +29,7 @@ public interface BytesCodec extends Codec {
 	/**
 	 * Encode the given {@link ReadData}.
 	 * <p>
-	 * Encoding may be lazy or eager, depending on the {@code BytesCodec}
+	 * Encoding may be lazy or eager, depending on the {@code DataCodec}
 	 * implementation.
 	 *
 	 * @param readData
@@ -43,14 +43,14 @@ public interface BytesCodec extends Codec {
 	ReadData encode(ReadData readData) throws N5IOException;
 
 	/**
-	 * Create a {@code BytesCodec} that sequentially applies {@code codecs} in
+	 * Create a {@code DataCodec} that sequentially applies {@code codecs} in
 	 * the given order for encoding, and in reverse order for decoding.
 	 *
 	 * @param codecs
-	 *            a list of BytesCodecs
-	 * @return the concatenated BytesCodec
+	 *            a list of DataCodecs
+	 * @return the concatenated DataCodec
 	 */
-	static BytesCodec concatenate(final BytesCodec... codecs) {
+	static DataCodec concatenate(final DataCodec... codecs) {
 
 		if (codecs == null)
 			throw new NullPointerException();
@@ -58,6 +58,6 @@ public interface BytesCodec extends Codec {
 		if (codecs.length == 1)
 			return codecs[0];
 
-		return new ConcatenatedBytesCodec(codecs);
+		return new ConcatenatedDataCodec(codecs);
 	}
 }

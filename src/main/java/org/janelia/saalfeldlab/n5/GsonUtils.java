@@ -63,7 +63,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -71,7 +70,6 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import org.janelia.saalfeldlab.n5.N5Exception.N5JsonParseException;
-import org.janelia.saalfeldlab.n5.codec.Codec;
 
 /**
  * Utility class for working with  JSON.

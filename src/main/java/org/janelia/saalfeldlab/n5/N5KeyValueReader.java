@@ -33,7 +33,7 @@ import java.net.URISyntaxException;
 
 import com.google.gson.JsonElement;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
-import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -163,7 +163,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	protected GsonBuilder registerGson(final GsonBuilder gsonBuilder) {
 
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
-		gsonBuilder.registerTypeHierarchyAdapter(Codec.class, NameConfigAdapter.getJsonAdapter(Codec.class));
+		gsonBuilder.registerTypeHierarchyAdapter(CodecInfo.class, NameConfigAdapter.getJsonAdapter(CodecInfo.class));
 		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
 		gsonBuilder.disableHtmlEscaping();
 		return gsonBuilder;
