@@ -63,6 +63,8 @@ public class ShardStuff {
 
 		// pos is relative to this shard
 		void setElementData(ReadData data, long[] pos);
+
+		// TODO: removeElement(long[] pos)
 	}
 
 
@@ -129,6 +131,8 @@ public class ShardStuff {
 		BlockCodecInfo getInnerBlockCodecInfo();
 
 		DataCodecInfo[] getInnerDataCodecInfos();
+
+		// TODO: IndexCodec
 
 		ShardCodec create(int[] blockSize, DataCodecInfo... codecs);
 
@@ -270,24 +274,16 @@ public class ShardStuff {
 			// TODO: handle missing shards / blocks
 
 			final int depth = nestedPos.depth();
-			final int n = nestedPos.numDimensions();
 
-			final long[] gridOffset = new long[n];
 			for (int i = 0; i < depth; ++i) {
-				final long[] relativeGridPos = nestedPos.relativePosition(i);
-
-				final long[] gridPosition = new long[n];
-				Arrays.setAll(gridPosition, d -> gridOffset[d] + relativeGridPos[d]);
+				final long[] gridPosition = nestedPos.absolutePosition(i);
 
 				if (i == depth - 1) {
 					return dataBlockCodec.decode(data, gridPosition);
 				} else {
 					final Shard shard = shardCodecs.get(i).decode(data, gridPosition);
-					data = shard.getElementData(relativeGridPos);
+					data = shard.getElementData(nestedPos.relativePosition(i + 1));
 				}
-
-				final int[] relativeGridSize = relativeChunkSizes.get(i);
-				Arrays.setAll(gridOffset, d -> gridPosition[d] * relativeGridSize[d]);
 			}
 
 			throw new IllegalStateException(); // we should never end up here
@@ -330,6 +326,8 @@ public class ShardStuff {
 	// TODO: Implement Comparable so that we can sort and aggregate for N5Reader.readBlocks(...).
 	//       For nested = {X,Y,Z} compare by X, then Y, then Z.
 	//       For X = {x,y,z} compare by z, then y, then x. (flattening order)
+
+
 	public static class NestedBlockPosition {
 
 		private final long[][] nestedRelative;
