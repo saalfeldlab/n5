@@ -13,13 +13,6 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 public class ShardStuff {
 
-	private static DataCodec[] instantiate(final DataCodecInfo... codecInfos) {
-		final DataCodec[] codecs = new DataCodec[codecInfos.length];
-		Arrays.setAll(codecs, i -> codecInfos[i].create());
-		return codecs;
-	}
-
-
 	public interface Block {
 
 		/**
@@ -54,7 +47,7 @@ public class ShardStuff {
 		 * <p>
 		 * Grid position is with respect to the level of the block (Shard, nested Shard, DataBlock, ...).
 		 * If a block has grid position (i, ...) the adjacent block (in X) has position (i+1, ...).
-		 * Grid position (0, ...) is the origin of the image, that is, grid positions are not relative to the containing shard etc.
+		 * Grid position (0, ...) is the origin of the dataset, that is, grid positions are not relative to the containing shard etc.
 		 * <p>
 		 * The dimensionality of the grid position is expected to be equal to the
 		 * dimensionality of the dataset. Consistency is not enforced.
@@ -68,11 +61,12 @@ public class ShardStuff {
 	public interface Shard extends Block {
 
 		// pos is relative to this shard
-		ReadData getElementData(int[] pos);
+		ReadData getElementData(long[] pos);
 
 		// pos is relative to this shard
-		void setElementData(ReadData data, int[] pos);
+		void setElementData(ReadData data, long[] pos);
 	}
+
 
 	public interface DataBlock<T> extends Block {
 
@@ -88,10 +82,21 @@ public class ShardStuff {
 //		}
 	}
 
+
+
+
+
+
+
 	public interface BlockCodec<B extends Block> {
 
 		ReadData encode(B block) throws N5IOException;
 
+		/**
+		 * {@code gridPosition} is with respect to the level of the block (Shard, nested Shard, DataBlock, ...).
+		 * If a block has gridPosition (i, ...), then the adjacent block (in X) has position (i+1, ...).
+		 * Grid position (0, ...) is the origin of the dataset, that is, grid positions are not relative to the containing shard etc.
+		 */
 		B decode(ReadData readData, long[] gridPosition) throws N5IOException;
 	}
 
@@ -100,6 +105,11 @@ public class ShardStuff {
 
 	public interface DataBlockCodec<T> extends BlockCodec<DataBlock<T>> {
 	}
+
+
+
+
+
 
 	public interface BlockCodecInfo extends CodecInfo {
 
@@ -122,11 +132,11 @@ public class ShardStuff {
 
 		DataCodecInfo[] getInnerDataCodecInfos();
 
-		<B extends Block> BlockCodec<B> create(int[] blockSize, DataCodecInfo... codecs);
+		ShardCodec create(int[] blockSize, DataCodecInfo... codecs);
 
 		@Override
 		default <T> BlockCodecs<T> createRecursive(DataType dataType, int[] blockSize, DataCodecInfo... codecs) {
-			final BlockCodec<Block> shardCodec = create(blockSize, codecs);
+			final ShardCodec shardCodec = create(blockSize, codecs);
 			final BlockCodecs<T> blockCodecs = getInnerBlockCodecInfo().createRecursive(
 					dataType, getChunkSize(),
 					getInnerDataCodecInfos());
@@ -145,32 +155,54 @@ public class ShardStuff {
 	}
 
 
+
+
+
+
 	public static class BlockCodecs<T> {
 
 		private final List<ShardCodec> shardCodecs = new ArrayList<>();
+		private final DataBlockCodec<T> dataBlockCodec;
 
+
+		// size of shard at a given level in units of DataBlocks
 		private final List<int[]> chunkSizesInDataBlocks = new ArrayList<>();
 
-		private final DataBlockCodec<T> dataBlockCodec;
+		// number of nested elements in shard at a given level
+		private final List<int[]> relativeChunkSizes = new ArrayList<>();
 
 		private final int[] dataBlockSize;
 
 		public BlockCodecs(final DataBlockCodec<T> dataBlockCodec, final int[] dataBlockSize) {
 			this.dataBlockCodec = dataBlockCodec;
 			this.dataBlockSize = dataBlockSize;
+
+			final int[] gridSize = new int[dataBlockSize.length];
+			Arrays.fill(gridSize, 1);
+			chunkSizesInDataBlocks.add(gridSize);
 		}
 
+		/**
+		 * @param shardSize in pixels
+		 */
 		public BlockCodecs(final ShardCodec codec, final int[] shardSize, final BlockCodecs<T> others) {
 			this(others.dataBlockCodec, others.dataBlockSize);
 			shardCodecs.add(codec);
 			shardCodecs.addAll(others.shardCodecs);
 
+			// TODO: verify that shardSize is integer multiple of dataBlockSize.
+			// TODO: verify that shardSize is integer multiple of nested shardSize
+
 			final int[] gridSize = new int[shardSize.length];
 			Arrays.setAll(gridSize, d -> shardSize[d] / dataBlockSize[d]);
 			chunkSizesInDataBlocks.add(gridSize);
-			// TODO: verify shardSize is integer multiple of dataBlockSize.
-			// TODO: verify size is integer multiple of nested chunkSizeInDataBlocks.
+			chunkSizesInDataBlocks.addAll(others.chunkSizesInDataBlocks);
 
+			final int[] relativeChunkSize = new int[shardSize.length];
+			final int[] nestedGridSize = others.chunkSizesInDataBlocks.get(0);
+			Arrays.setAll(relativeChunkSize, d -> gridSize[d] / nestedGridSize[d]);
+			relativeChunkSizes.add(relativeChunkSize);
+			relativeChunkSizes.addAll(others.relativeChunkSizes);
 		}
 
 		public int[] getDataBlockSize() {
@@ -199,13 +231,35 @@ public class ShardStuff {
 			return new NestedBlockPosition(nested);
 		}
 
-		public DataBlock<T> decodeDataBlock(final ReadData keyData, final NestedBlockPosition pos) {
+		public DataBlock<T> decodeDataBlock(final ReadData keyData, final NestedBlockPosition nestedPos) {
+
+
+			final int depth = nestedPos.depth();
+			final int n = nestedPos.numDimensions();
+
+			ReadData data = keyData;
+			final long[] gridOffset = new long[n];
+			for (int i = 0; i < depth; ++i) {
+				final long[] relativeGridPos = nestedPos.relativePosition(i);
+
+				final long[] gridPosition = new long[n];
+				Arrays.setAll(gridPosition, d -> gridOffset[d] + relativeGridPos[d]);
+
+				if ( i < depth - 1 ) {
+					final Shard shard = shardCodecs.get(i).decode(data, gridPosition);
+					data = shard.getElementData(relativeGridPos);
+				} else {
+					return dataBlockCodec.decode(data, gridPosition);
+				}
+
+				final int[] relativeGridSize = relativeChunkSizes.get(i);
+				Arrays.setAll(gridOffset, d -> gridPosition[d] * relativeGridSize[d]);
+			}
 
 
 
 
-
-			throw new UnsupportedOperationException();	
+			throw new UnsupportedOperationException();
 		}
 	}
 
@@ -223,6 +277,10 @@ public class ShardStuff {
 
 		public int depth() {
 			return nested.length;
+		}
+
+		public int numDimensions() {
+			return nested[0].length;
 		}
 
 		public long[] relativePosition(final int level) {
@@ -269,11 +327,27 @@ public class ShardStuff {
 			} catch (N5Exception.N5NoSuchKeyException e) {
 				return null;
 			}
-
-			throw new UnsupportedOperationException();
 		}
 
 
 	}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+	private static DataCodec[] instantiate(final DataCodecInfo... codecInfos) {
+		final DataCodec[] codecs = new DataCodec[codecInfos.length];
+		Arrays.setAll(codecs, i -> codecInfos[i].create());
+		return codecs;
+	}
 }
