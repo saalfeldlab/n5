@@ -166,6 +166,7 @@ public class ShardStuff {
 		// size of shard at a given level in units of DataBlocks
 		private final List<int[]> chunkSizesInDataBlocks = new ArrayList<>();
 
+		// TODO: remove?
 		// number of nested elements in shard at a given level
 		private final List<int[]> relativeChunkSizes = new ArrayList<>();
 
@@ -175,9 +176,9 @@ public class ShardStuff {
 			this.dataBlockCodec = dataBlockCodec;
 			this.dataBlockSize = dataBlockSize;
 
-			final int[] gridSize = new int[dataBlockSize.length];
-			Arrays.fill(gridSize, 1);
-			chunkSizesInDataBlocks.add(gridSize);
+			final int[] ones = new int[dataBlockSize.length];
+			Arrays.fill(ones, 1);
+			chunkSizesInDataBlocks.add(ones);
 		}
 
 		/**
@@ -214,67 +215,53 @@ public class ShardStuff {
 		//       	shard.getElementData(RELATIVE_GRID_POSITION),
 		//       	(shard|dataBlock)Codec.decode(data, ABSOLUTE_GRID_POSITION)
 		//       Maybe NestedBlockPosition should just contain both?
+		//       ==> Trying that now...
 
 		public NestedBlockPosition getNestedDataBlockPosition(final long[] gridPos) {
 			if (shardCodecs.isEmpty()) {
-				return new NestedBlockPosition(new long[][] {gridPos});
+				final long[][] nested = new long[][] {gridPos};
+				return new NestedBlockPosition(nested, nested);
 			}
 
 			final int n = gridPos.length;
 			final int m = shardCodecs.size() + 1;
 
-			final long[][] nested = new long[m][n];
-			final long[] pos = nested[m - 1];
-			Arrays.setAll(pos, d -> gridPos[d]);
+			final long[][] nestedAbsolute = new long[m][];
 			for (int i = 0; i < m - 1; ++i) {
+				nestedAbsolute[i] = new long[n];
 				final int[] gridSize = chunkSizesInDataBlocks.get(i);
 				for (int d = 0; d < n; ++d) {
-					nested[i][d] = pos[d] / gridSize[d];
-					pos[d] = pos[d] % gridSize[d];
+					nestedAbsolute[i][d] = gridPos[d] / gridSize[d];
+				}
+			}
+			nestedAbsolute[m - 1] = gridPos; // TODO: defensive clone() or not?
+
+			final long[][] nestedRelative = new long[m][];
+			nestedRelative[0] = nestedAbsolute[0];
+			for (int i = 1; i < m; ++i) {
+				nestedRelative[i] = new long[n];
+				final int[] relativeGridSize = relativeChunkSizes.get(i - 1);
+				for (int d = 0; d < n; ++d) {
+					nestedRelative[i][d] = nestedAbsolute[i][d] / relativeGridSize[d];
 				}
 			}
 
-			return new NestedBlockPosition(nested);
-		}
-
-		public NestedBlockPosition relativeToAbsolute(final NestedBlockPosition nestedPos) {
-
+			return new NestedBlockPosition(nestedAbsolute, nestedRelative);
 		}
 
 
+		// TODO
+		//   ====> NEXT
+		//   ====> NEXT
+		//   ====> NEXT
+		//   ====> NEXT
+		//   ====> NEXT
+		//   ====> NEXT
+		//   1) Rewrite extractDataBlock() to use relative/absolute coordinates form nestedPos
+		//   2) Extract something like "get the readData for nestedPos" which
+		//      can then be re-used to implement extractDataBlock() and extractShard() non-recursively
+		//   3) See whether that helps to think about writing / updating blocks
 
-
-
-
-
-		public Shard getShard(ReadData data, final NestedBlockPosition nestedPos) {
-
-			// TODO: validation: nestedPos should refer to a Shard (not a DataBlock)
-
-			// TODO: handle missing shards
-
-			final int depth = nestedPos.depth();
-			final int n = nestedPos.numDimensions();
-
-			final long[] gridOffset = new long[n];
-			for (int i = 0; i < depth; ++i) {
-				final long[] relativeGridPos = nestedPos.position(i);
-
-				final long[] gridPosition = new long[n];
-				Arrays.setAll(gridPosition, d -> gridOffset[d] + relativeGridPos[d]);
-
-				final Shard shard = shardCodecs.get(i).decode(data, gridPosition);
-				if ( i == depth - 1 ) {
-					return shard;
-				}
-				data = shard.getElementData(relativeGridPos);
-
-				final int[] relativeGridSize = relativeChunkSizes.get(i);
-				Arrays.setAll(gridOffset, d -> gridPosition[d] * relativeGridSize[d]);
-			}
-
-			throw new IllegalStateException(); // we should never end up here
-		}
 
 		public DataBlock<T> extractDataBlock(ReadData data, final NestedBlockPosition nestedPos) {
 
@@ -287,7 +274,7 @@ public class ShardStuff {
 
 			final long[] gridOffset = new long[n];
 			for (int i = 0; i < depth; ++i) {
-				final long[] relativeGridPos = nestedPos.position(i);
+				final long[] relativeGridPos = nestedPos.relativePosition(i);
 
 				final long[] gridPosition = new long[n];
 				Arrays.setAll(gridPosition, d -> gridOffset[d] + relativeGridPos[d]);
@@ -305,6 +292,38 @@ public class ShardStuff {
 
 			throw new IllegalStateException(); // we should never end up here
 		}
+
+
+
+//		public Shard getShard(ReadData data, final NestedBlockPosition nestedPos) {
+//
+//			// TODO: validation: nestedPos should refer to a Shard (not a DataBlock)
+//
+//			// TODO: handle missing shards
+//
+//			final int depth = nestedPos.depth();
+//			final int n = nestedPos.numDimensions();
+//
+//			final long[] gridOffset = new long[n];
+//			for (int i = 0; i < depth; ++i) {
+//				final long[] relativeGridPos = nestedPos.relativePosition(i);
+//
+//				final long[] gridPosition = new long[n];
+//				Arrays.setAll(gridPosition, d -> gridOffset[d] + relativeGridPos[d]);
+//
+//				final Shard shard = shardCodecs.get(i).decode(data, gridPosition);
+//				if ( i == depth - 1 ) {
+//					return shard;
+//				}
+//				data = shard.getElementData(relativeGridPos);
+//
+//				final int[] relativeGridSize = relativeChunkSizes.get(i);
+//				Arrays.setAll(gridOffset, d -> gridPosition[d] * relativeGridSize[d]);
+//			}
+//
+//			throw new IllegalStateException(); // we should never end up here
+//		}
+
 	}
 
 
@@ -313,27 +332,33 @@ public class ShardStuff {
 	//       For X = {x,y,z} compare by z, then y, then x. (flattening order)
 	public static class NestedBlockPosition {
 
-		private final long[][] nested;
+		private final long[][] nestedRelative;
+		private final long[][] nestedAbsolute;
 
-		NestedBlockPosition(final long[][] nested) {
-			// TODO: validation: nested != null, at least one level
-			this.nested = nested;
+		NestedBlockPosition(final long[][] nestedAbsolute, final long[][] nestedRelative) {
+			// TODO: validation: nestedRelative != null, at least one level, nestedAbsolute.length == nestedRelative.length
+			this.nestedAbsolute = nestedAbsolute;
+			this.nestedRelative = nestedRelative;
 		}
 
 		public int depth() {
-			return nested.length;
+			return nestedRelative.length;
 		}
 
 		public int numDimensions() {
-			return nested[0].length;
+			return nestedRelative[0].length;
 		}
 
-		public long[] position(final int level) {
-			return nested[level];
+		public long[] relativePosition(final int level) {
+			return nestedRelative[level];
+		}
+
+		public long[] absolutePosition(final int level) {
+			return nestedAbsolute[level];
 		}
 
 		public long[] keyPosition() {
-			return position(0);
+			return relativePosition(0);
 		}
 
 		public NestedBlockPosition prefix(final int depth) {
