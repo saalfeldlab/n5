@@ -13,7 +13,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  */
 public interface BlockCodecInfo extends CodecInfo {
 
-	<T> BlockCodec<T> create(final DatasetAttributes attributes, final DataCodec... codecs);
+	<T> BlockCodec<T> create(DatasetAttributes attributes, DataCodec... codecs);
 
 	default <T> BlockCodec<T> create(final DatasetAttributes attributes, final DataCodecInfo... codecInfos) {
 		final DataCodec[] codecs = new DataCodec[codecInfos.length];
