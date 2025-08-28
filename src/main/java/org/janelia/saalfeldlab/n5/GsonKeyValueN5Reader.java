@@ -129,6 +129,8 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 * @param gridPosition to the target data block
 	 * @return the absolute path to the data block ad gridPosition
 	 */
+	// TODO: revise javadoc -> see development branch
+	// TODO: rename to reflect that it may also refer to Shards
 	default String absoluteDataBlockPath(
 			final String normalPath,
 			final long... gridPosition) {
