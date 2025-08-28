@@ -1,7 +1,5 @@
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.Gson;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -209,6 +207,14 @@ public class ShardStuff {
 			return dataBlockSize;
 		}
 
+
+
+		// TODO: Decide whether to use absolute of relative NestedBlockPosition.
+		//       (For decoding we need both:
+		//       	shard.getElementData(RELATIVE_GRID_POSITION),
+		//       	(shard|dataBlock)Codec.decode(data, ABSOLUTE_GRID_POSITION)
+		//       Maybe NestedBlockPosition should just contain both?
+
 		public NestedBlockPosition getNestedDataBlockPosition(final long[] gridPos) {
 			if (shardCodecs.isEmpty()) {
 				return new NestedBlockPosition(new long[][] {gridPos});
@@ -231,37 +237,76 @@ public class ShardStuff {
 			return new NestedBlockPosition(nested);
 		}
 
-		public DataBlock<T> decodeDataBlock(final ReadData keyData, final NestedBlockPosition nestedPos) {
+		public NestedBlockPosition relativeToAbsolute(final NestedBlockPosition nestedPos) {
 
+		}
+
+
+
+
+
+
+
+		public Shard getShard(ReadData data, final NestedBlockPosition nestedPos) {
+
+			// TODO: validation: nestedPos should refer to a Shard (not a DataBlock)
+
+			// TODO: handle missing shards
 
 			final int depth = nestedPos.depth();
 			final int n = nestedPos.numDimensions();
 
-			ReadData data = keyData;
 			final long[] gridOffset = new long[n];
 			for (int i = 0; i < depth; ++i) {
-				final long[] relativeGridPos = nestedPos.relativePosition(i);
+				final long[] relativeGridPos = nestedPos.position(i);
 
 				final long[] gridPosition = new long[n];
 				Arrays.setAll(gridPosition, d -> gridOffset[d] + relativeGridPos[d]);
 
-				if ( i < depth - 1 ) {
+				final Shard shard = shardCodecs.get(i).decode(data, gridPosition);
+				if ( i == depth - 1 ) {
+					return shard;
+				}
+				data = shard.getElementData(relativeGridPos);
+
+				final int[] relativeGridSize = relativeChunkSizes.get(i);
+				Arrays.setAll(gridOffset, d -> gridPosition[d] * relativeGridSize[d]);
+			}
+
+			throw new IllegalStateException(); // we should never end up here
+		}
+
+		public DataBlock<T> extractDataBlock(ReadData data, final NestedBlockPosition nestedPos) {
+
+			// TODO: validation: nestedPos should refer to a DataBlock (not a Shard)
+
+			// TODO: handle missing shards / blocks
+
+			final int depth = nestedPos.depth();
+			final int n = nestedPos.numDimensions();
+
+			final long[] gridOffset = new long[n];
+			for (int i = 0; i < depth; ++i) {
+				final long[] relativeGridPos = nestedPos.position(i);
+
+				final long[] gridPosition = new long[n];
+				Arrays.setAll(gridPosition, d -> gridOffset[d] + relativeGridPos[d]);
+
+				if (i == depth - 1) {
+					return dataBlockCodec.decode(data, gridPosition);
+				} else {
 					final Shard shard = shardCodecs.get(i).decode(data, gridPosition);
 					data = shard.getElementData(relativeGridPos);
-				} else {
-					return dataBlockCodec.decode(data, gridPosition);
 				}
 
 				final int[] relativeGridSize = relativeChunkSizes.get(i);
 				Arrays.setAll(gridOffset, d -> gridPosition[d] * relativeGridSize[d]);
 			}
 
-
-
-
-			throw new UnsupportedOperationException();
+			throw new IllegalStateException(); // we should never end up here
 		}
 	}
+
 
 	// TODO: Implement Comparable so that we can sort and aggregate for N5Reader.readBlocks(...).
 	//       For nested = {X,Y,Z} compare by X, then Y, then Z.
@@ -283,14 +328,26 @@ public class ShardStuff {
 			return nested[0].length;
 		}
 
-		public long[] relativePosition(final int level) {
+		public long[] position(final int level) {
 			return nested[level];
 		}
 
 		public long[] keyPosition() {
-			return relativePosition(0);
+			return position(0);
+		}
+
+		public NestedBlockPosition prefix(final int depth) {
+			// TODO: implement
+			throw new UnsupportedOperationException("TODO");
 		}
 	}
+
+
+	// TODO: Implement NestedBlockPositions that recursively groups blocks under the same prefix.
+	//       This would be the input to
+
+
+
 
 
 	// DUMMY
@@ -323,7 +380,7 @@ public class ShardStuff {
 
 			try {
 				final ReadData keyData = getKeyValueAccess().createReadData(path);
-				return blockCodecs.decodeDataBlock(keyData, pos);
+				return blockCodecs.extractDataBlock(keyData, pos);
 			} catch (N5Exception.N5NoSuchKeyException e) {
 				return null;
 			}
