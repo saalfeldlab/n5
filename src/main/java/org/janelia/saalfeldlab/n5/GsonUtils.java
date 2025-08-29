@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 
+import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 
@@ -51,6 +52,7 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 import org.janelia.saalfeldlab.n5.N5Exception.N5JsonParseException;
+import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 
 /**
  * Utility class for working with  JSON.
@@ -62,6 +64,7 @@ public interface GsonUtils {
 	static Gson registerGson(final GsonBuilder gsonBuilder) {
 
 		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
+		gsonBuilder.registerTypeHierarchyAdapter(DataCodecInfo.class, NameConfigAdapter.getJsonAdapter(DataCodecInfo.class));
 		gsonBuilder.registerTypeHierarchyAdapter(CodecInfo.class, NameConfigAdapter.getJsonAdapter(CodecInfo.class));
 		gsonBuilder.registerTypeHierarchyAdapter(DatasetAttributes.class, DatasetAttributes.getJsonAdapter());
 		gsonBuilder.registerTypeHierarchyAdapter(ByteOrder.class, RawBlockCodecInfo.byteOrderAdapter);

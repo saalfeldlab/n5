@@ -31,6 +31,7 @@ package org.janelia.saalfeldlab.n5;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodec;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.shard.Shard;
 
 import java.io.ByteArrayOutputStream;
@@ -232,22 +233,22 @@ public interface N5Writer extends N5Reader {
 			final DataType dataType,
 			final CodecInfo... codecs) throws N5Exception {
 
-		final BlockCodecInfo arrayCodec;
-		final DataCodec[] bytesCodecs;
+		final BlockCodecInfo blockCodecInfo;
+		final DataCodecInfo[] dataCodecs;
 		if (codecs == null || codecs.length == 0) {
-			arrayCodec = null;
-			bytesCodecs = new DataCodec[0];
+			blockCodecInfo = null;
+			dataCodecs = new DataCodecInfo[0];
 		} else if (codecs[0] instanceof BlockCodecInfo) {
-			arrayCodec = (BlockCodecInfo) codecs[0];
-			bytesCodecs = new DataCodec[codecs.length - 1];
-			System.arraycopy(codecs, 1, bytesCodecs, 0, bytesCodecs.length);
+			blockCodecInfo = (BlockCodecInfo) codecs[0];
+			dataCodecs = new DataCodecInfo[codecs.length - 1];
+			System.arraycopy(codecs, 1, dataCodecs, 0, dataCodecs.length);
 		} else {
-			arrayCodec = null;
-			bytesCodecs = new DataCodec[codecs.length];
-			System.arraycopy(codecs, 0, bytesCodecs, 0, bytesCodecs.length);
+			blockCodecInfo = null;
+			dataCodecs = new DataCodecInfo[codecs.length];
+			System.arraycopy(codecs, 0, dataCodecs, 0, dataCodecs.length);
 		}
 
-		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, blockSize, dataType, arrayCodec, bytesCodecs));
+		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, blockSize, dataType, blockCodecInfo, dataCodecs));
 	}
 
 	/**

@@ -92,7 +92,7 @@ public class ShardingCodec implements BlockCodecInfo {
 		return indexLocation;
 	}
 
-	public BlockCodecInfo getArrayCodec() {
+	public BlockCodecInfo getBlockCodecInfo() {
 
 		Objects.requireNonNull(codecs);
 		if (codecs.length == 0)
@@ -100,7 +100,7 @@ public class ShardingCodec implements BlockCodecInfo {
 
 		return (BlockCodecInfo)codecs[0];
 	}
-	public <T> BlockCodec<T> getDataBlockSerializer() {
+	public <T> BlockCodec<T> getBlockCodec() {
 
 		return (BlockCodec<T>)dataBlockSerializer;
 	}
@@ -108,10 +108,10 @@ public class ShardingCodec implements BlockCodecInfo {
 	public DataCodec[] getCodecs() {
 
 		Objects.requireNonNull(codecs);
-		final DataCodec[] bytesCodecs = new DataCodec[codecs.length - 1];
+		final DataCodec[] dataCodecs = new DataCodec[codecs.length - 1];
 		for (int i = 1; i < codecs.length; i++)
-			bytesCodecs[i-1] = (DataCodec)codecs[i];
-		return bytesCodecs;
+			dataCodecs[i-1] = (DataCodec)codecs[i];
+		return dataCodecs;
 	}
 
 	public IndexCodecAdapter getIndexCodecAdapter() {
@@ -136,13 +136,13 @@ public class ShardingCodec implements BlockCodecInfo {
 	public <T> BlockCodec<T> create(DatasetAttributes attributes, final DataCodec[] codecs) {
 
 		this.attributes = attributes;
-		this.dataBlockSerializer = getArrayCodec().<T>create(attributes, getCodecs());
+		this.dataBlockSerializer = getBlockCodecInfo().<T>create(attributes, getCodecs());
 		return ((BlockCodec<T>)dataBlockSerializer);
 	}
 
 	public <T> ReadData encode(DataBlock<T> dataBlock) {
 
-		return this.<T>getDataBlockSerializer().encode(dataBlock);
+		return this.<T>getBlockCodec().encode(dataBlock);
 	}
 
 	public <T> DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5IOException {

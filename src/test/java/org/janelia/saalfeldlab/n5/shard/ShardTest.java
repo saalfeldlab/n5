@@ -15,8 +15,8 @@ import org.janelia.saalfeldlab.n5.NameConfigAdapter;
 import org.janelia.saalfeldlab.n5.DatasetAttributes.DatasetAttributesAdapter;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
-import org.janelia.saalfeldlab.n5.codec.DataCodec;
-import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
@@ -544,7 +544,7 @@ public class ShardTest {
 		// 	and detect shading in another way
 		final ShardingCodec innerShard = new ShardingCodec(innerShardSize,
 				new CodecInfo[]{new N5BlockCodecInfo()},
-				new DeterministicSizeCodec[]{new RawBlockCodecInfo(indexByteOrder), new Crc32cChecksumCodec()},
+				new DeterministicSizeCodecInfo[]{new RawBlockCodecInfo(indexByteOrder), new Crc32cChecksumCodec()},
 				IndexLocation.START);
 
 		return new DatasetAttributes(
@@ -552,7 +552,7 @@ public class ShardTest {
 				new ShardingCodec(
 						blockSize,
 						new CodecInfo[]{innerShard},
-						new DeterministicSizeCodec[]{new RawBlockCodecInfo(indexByteOrder), new Crc32cChecksumCodec()},
+						new DeterministicSizeCodecInfo[]{new RawBlockCodecInfo(indexByteOrder), new Crc32cChecksumCodec()},
 						IndexLocation.END)
 		);
 	}
@@ -640,17 +640,17 @@ public class ShardTest {
 			} else {
 				return null;
 			}
-			final BlockCodecInfo arrayCodec;
-			final DataCodec[] bytesCodecs;
+			final BlockCodecInfo blockCodecInfo;
+			final DataCodecInfo[] dataCodecInfos;
 			if (codecs[0] instanceof BlockCodecInfo) {
-				arrayCodec  = (BlockCodecInfo)codecs[0];
-				bytesCodecs = new DataCodec[codecs.length - 1];
-				System.arraycopy(codecs, 1, bytesCodecs, 0, bytesCodecs.length);
+				blockCodecInfo  = (BlockCodecInfo)codecs[0];
+				dataCodecInfos = new DataCodecInfo[codecs.length - 1];
+				System.arraycopy(codecs, 1, dataCodecInfos, 0, dataCodecInfos.length);
 			} else {
-				arrayCodec = null;
-				bytesCodecs = (DataCodec[])codecs;
+				blockCodecInfo = null;
+				dataCodecInfos = (DataCodecInfo[])codecs;
 			}
-			return new DatasetAttributes(dimensions, shardSize, blockSize, dataType, arrayCodec, bytesCodecs);
+			return new DatasetAttributes(dimensions, shardSize, blockSize, dataType, blockCodecInfo, dataCodecInfos);
 		}
 
 		@Override
@@ -673,10 +673,10 @@ public class ShardTest {
 
 	private static CodecInfo[] concatenateCodecs(final DatasetAttributes attributes) {
 
-		final DataCodec[] byteCodecs = attributes.getCodecs();
-		final BlockCodecInfo arrayCodec = attributes.getArrayCodec();
+		final DataCodecInfo[] byteCodecs = attributes.getDataCodecInfos();
+		final BlockCodecInfo blockCodecInfo = attributes.getBlockCodecInfo();
 		final CodecInfo[] allCodecs = new CodecInfo[byteCodecs.length + 1];
-		allCodecs[0] = arrayCodec;
+		allCodecs[0] = blockCodecInfo;
 		System.arraycopy(byteCodecs, 0, allCodecs, 1, byteCodecs.length);
 
 		return allCodecs;

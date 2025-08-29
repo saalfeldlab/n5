@@ -263,13 +263,13 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			return;
 		}
 
-		final long[] keyPos = datasetAttributes.getArrayCodec().getKeyPositionForBlock(datasetAttributes, dataBlock);
+		final long[] keyPos = datasetAttributes.getBlockCodecInfo().getKeyPositionForBlock(datasetAttributes, dataBlock);
 		final String keyPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), keyPos);
 		try (
 				final LockedChannel channel = getKeyValueAccess().lockForWriting(keyPath);
 				final OutputStream out = channel.newOutputStream()
 		) {
-			datasetAttributes.<T>getDataBlockSerializer().encode(dataBlock).writeTo(out);
+			datasetAttributes.<T>getBlockCodec().encode(dataBlock).writeTo(out);
 		} catch (final IOException | UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,

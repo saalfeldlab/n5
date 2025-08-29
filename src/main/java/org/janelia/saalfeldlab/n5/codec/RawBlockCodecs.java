@@ -15,14 +15,14 @@ import java.nio.ByteOrder;
 
 public class RawBlockCodecs {
 
-	private static final BlockCodecFactory<byte[]> BYTE   = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.BYTE, ByteArrayDataBlock::new, blockSize, codec);
-	private static final BlockCodecFactory<short[]> SHORT  = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.SHORT(byteOrder), ShortArrayDataBlock::new, blockSize, codec);
-	private static final BlockCodecFactory<int[]> INT    = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.INT(byteOrder), IntArrayDataBlock::new, blockSize, codec);
-	private static final BlockCodecFactory<long[]> LONG   = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.LONG(byteOrder), LongArrayDataBlock::new, blockSize, codec);
-	private static final BlockCodecFactory<float[]> FLOAT  = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.FLOAT(byteOrder), FloatArrayDataBlock::new, blockSize, codec);
+	private static final BlockCodecFactory<byte[]>   BYTE   = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.BYTE, ByteArrayDataBlock::new, blockSize, codec);
+	private static final BlockCodecFactory<short[]>  SHORT  = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.SHORT(byteOrder), ShortArrayDataBlock::new, blockSize, codec);
+	private static final BlockCodecFactory<int[]>    INT    = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.INT(byteOrder), IntArrayDataBlock::new, blockSize, codec);
+	private static final BlockCodecFactory<long[]>   LONG   = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.LONG(byteOrder), LongArrayDataBlock::new, blockSize, codec);
+	private static final BlockCodecFactory<float[]>  FLOAT  = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.FLOAT(byteOrder), FloatArrayDataBlock::new, blockSize, codec);
 	private static final BlockCodecFactory<double[]> DOUBLE = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.DOUBLE(byteOrder), DoubleArrayDataBlock::new, blockSize, codec);
 	private static final BlockCodecFactory<String[]> STRING = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.ZARR_STRING, StringDataBlock::new,  blockSize, codec);
-	private static final BlockCodecFactory<byte[]> OBJECT = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.OBJECT, ByteArrayDataBlock::new, blockSize, codec);
+	private static final BlockCodecFactory<byte[]>   OBJECT = (byteOrder, blockSize, codec) -> new RawBlockCodec<>(FlatArrayCodec.OBJECT, ByteArrayDataBlock::new, blockSize, codec);
 
 	private RawBlockCodecs() {}
 
@@ -69,13 +69,13 @@ public class RawBlockCodecs {
 	private interface BlockCodecFactory<T> {
 
 		/**
-		 * Create a {@link BlockCodec} that uses the specified {@code
-		 * ByteOrder} and {@code BytesCodes} and de/serializes {@code
-		 * DataBlock<T>} of the specified {@code blockSize} to raw format.
+		 * Create a {@link BlockCodec} that uses the specified {@code ByteOrder}
+		 * and {@code DataCodec} and de/serializes {@code DataBlock<T>} of the
+		 * specified {@code blockSize} to raw format.
 		 *
 		 * @return Raw {@code BlockCodec}
 		 */
-		BlockCodec<T> create(ByteOrder byteOrder, int[] blockSize, DataCodec codec);
+		BlockCodec<T> create(ByteOrder byteOrder, int[] blockSize, DataCodec dataCodec);
 	}
 
 	private static class RawBlockCodec<T> implements BlockCodec<T> {
@@ -103,7 +103,7 @@ public class RawBlockCodecs {
 		public ReadData encode(DataBlock<T> dataBlock) {
 
 			return ReadData.from(out -> {
-				final ReadData blockData = dataCodec.serialize(dataBlock.getData());
+				final ReadData blockData = dataCodec.encode(dataBlock.getData());
 				codec.encode(blockData).writeTo(out);
 			});
 		}
@@ -112,7 +112,7 @@ public class RawBlockCodecs {
 		public DataBlock<T> decode(ReadData readData, long[] gridPosition) {
 
 			final ReadData decodeData = codec.decode(readData);
-			final T data = dataCodec.deserialize(decodeData, numElements);
+			final T data = dataCodec.decode(decodeData, numElements);
 			return dataBlockFactory.createDataBlock(blockSize, gridPosition, data);
 		}
 	}

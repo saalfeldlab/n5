@@ -72,7 +72,7 @@ public class BytesCodecTests {
 		assertArrayEquals(bytes, decodedData.allBytes());
 	}
 
-	public static class ByteFunctionCodec implements DataCodec {
+	public static class ByteFunctionCodec implements DataCodec, DataCodecInfo {
 
 		IntUnaryOperator encoder;
 		IntUnaryOperator decoder;
@@ -93,6 +93,11 @@ public class BytesCodecTests {
 
 		public ReadData encode(ReadData data) {
 			return data.encode(new ByteFun(encoder));
+		}
+
+		@Override public DataCodec create() {
+
+			return this;
 		}
 	}
 
@@ -115,7 +120,11 @@ public class BytesCodecTests {
 	}
 
 	@NameConfig.Name(BitShiftBytesCodec.TYPE)
-	public static class BitShiftBytesCodec implements DataCodec {
+	public static class BitShiftBytesCodec implements DataCodec, DataCodecInfo {
+		@Override public DataCodec create() {
+
+			return this;
+		}
 
 		private static final String TYPE = "bitshift";
 

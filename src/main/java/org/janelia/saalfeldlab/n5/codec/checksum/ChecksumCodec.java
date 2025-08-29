@@ -11,13 +11,14 @@ import java.util.zip.Checksum;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodec;
-import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodecInfo;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
  * A {@link CodecInfo} that appends a checksum to data when encoding and can validate against that checksum when decoding.
  */
-public abstract class ChecksumCodec implements DataCodec, DeterministicSizeCodec {
+public abstract class ChecksumCodec implements DataCodec, DataCodecInfo, DeterministicSizeCodecInfo {
 
 	private static final long serialVersionUID = 3141427377277375077L;
 

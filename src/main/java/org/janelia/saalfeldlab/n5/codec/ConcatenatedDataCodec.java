@@ -32,10 +32,4 @@ class ConcatenatedDataCodec implements DataCodec {
 		}
 		return readData;
 	}
-
-	@Override
-	public String getType() {
-
-		return "internal-concatenated-codecs";
-	}
 }

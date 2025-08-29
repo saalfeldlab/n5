@@ -7,7 +7,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  * {@code DataCodec}s transform one {@link ReadData} into another,
  * for example, compressing it.
  */
-public interface DataCodec extends CodecInfo {
+public interface DataCodec {
 
 	/**
 	 * Decode the given {@link ReadData}.
@@ -47,7 +47,7 @@ public interface DataCodec extends CodecInfo {
 	 * the given order for encoding, and in reverse order for decoding.
 	 *
 	 * @param codecs
-	 *            a list of BytesCodecs
+	 *            a list of DataCodecs
 	 * @return the concatenated DataCodec
 	 */
 	static DataCodec concatenate(final DataCodec... codecs) {

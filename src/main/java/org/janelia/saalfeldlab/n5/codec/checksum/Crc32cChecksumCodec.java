@@ -1,5 +1,7 @@
 package org.janelia.saalfeldlab.n5.codec.checksum;
 
+import org.apache.commons.lang3.NotImplementedException;
+import org.janelia.saalfeldlab.n5.codec.DataCodec;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 import java.nio.ByteBuffer;
@@ -43,4 +45,8 @@ public class Crc32cChecksumCodec extends ChecksumCodec {
 		return TYPE;
 	}
 
+	@Override public DataCodec create() {
+
+		return this;
+	}
 }

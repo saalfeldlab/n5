@@ -14,7 +14,7 @@ import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodecInfo;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
@@ -37,7 +37,7 @@ public class BlockIterators {
 				new ShardingCodec(
 						new int[] {2, 2},
 						new CodecInfo[] { new N5BlockCodecInfo() },
-						new DeterministicSizeCodec[] { new RawBlockCodecInfo() },
+						new DeterministicSizeCodecInfo[] { new RawBlockCodecInfo() },
 						IndexLocation.END
 				));
 

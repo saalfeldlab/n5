@@ -43,7 +43,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
-import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.shard.InMemoryShard;
@@ -162,7 +162,7 @@ public class DatasetAttributesTest {
 				new ShardingCodec(
 						blkSize,
 						new CodecInfo[]{new N5BlockCodecInfo()},
-						new DeterministicSizeCodec[]{new RawBlockCodecInfo()},
+						new DeterministicSizeCodecInfo[]{new RawBlockCodecInfo()},
 						IndexLocation.END
 				)
 		);
@@ -197,7 +197,7 @@ public class DatasetAttributesTest {
 				new ShardingCodec(
 						blkSize,
 						new CodecInfo[]{ new N5BlockCodecInfo() },
-						new DeterministicSizeCodec[]{new RawBlockCodecInfo()},
+						new DeterministicSizeCodecInfo[]{new RawBlockCodecInfo()},
 						IndexLocation.END
 				)
 		);

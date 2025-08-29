@@ -46,45 +46,45 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  * DataBlock<T>} from/to a sequence of bytes.
  * <p>
  * Static fields {@code BYTE}, {@code SHORT_BIG_ENDIAN}, {@code
- * SHORT_LITTLE_ENDIAN}, etc. contain {@code DataCodec}s for all primitive array
- * types and big-endian / little-endian byte order.
+ * SHORT_LITTLE_ENDIAN}, etc. contain {@code FlatArrayCodec}s for all primitive
+ * array types and big-endian / little-endian byte order.
  *
  * @param <T>
  * 		type of the data contained in the DataBlock
  */
 public abstract class FlatArrayCodec<T> {
 
-	public abstract ReadData serialize(T data) throws N5IOException;
+	public abstract ReadData encode(T data) throws N5IOException;
 
-	public abstract T deserialize(ReadData readData, int numElements) throws N5IOException;
+	public abstract T decode(ReadData readData, int numElements) throws N5IOException;
 
 	public int bytesPerElement() {
 		return bytesPerElement;
 	}
 
-	public T createData(final int numElements) {
+	public T newArray(final int numElements) {
 		return dataFactory.apply(numElements);
 	}
 
 	// ------------------- instances  --------------------
 	//
 
-	public static final FlatArrayCodec<byte[]> BYTE              = new ByteArraySerializer();
-	public static final FlatArrayCodec<short[]> SHORT_BIG_ENDIAN  = new ShortArraySerializer(ByteOrder.BIG_ENDIAN);
-	public static final FlatArrayCodec<int[]> INT_BIG_ENDIAN    = new IntArraySerializer(ByteOrder.BIG_ENDIAN);
-	public static final FlatArrayCodec<long[]> LONG_BIG_ENDIAN   = new LongArraySerializer(ByteOrder.BIG_ENDIAN);
-	public static final FlatArrayCodec<float[]> FLOAT_BIG_ENDIAN  = new FloatArraySerializer(ByteOrder.BIG_ENDIAN);
-	public static final FlatArrayCodec<double[]> DOUBLE_BIG_ENDIAN = new DoubleArraySerializer(ByteOrder.BIG_ENDIAN);
+	public static final FlatArrayCodec<byte[]>   BYTE              = new ByteArrayCodec();
+	public static final FlatArrayCodec<short[]>  SHORT_BIG_ENDIAN  = new ShortArrayCodec(ByteOrder.BIG_ENDIAN);
+	public static final FlatArrayCodec<int[]>    INT_BIG_ENDIAN    = new IntArrayCodec(ByteOrder.BIG_ENDIAN);
+	public static final FlatArrayCodec<long[]>   LONG_BIG_ENDIAN   = new LongArrayCodec(ByteOrder.BIG_ENDIAN);
+	public static final FlatArrayCodec<float[]>  FLOAT_BIG_ENDIAN  = new FloatArrayCodec(ByteOrder.BIG_ENDIAN);
+	public static final FlatArrayCodec<double[]> DOUBLE_BIG_ENDIAN = new DoubleArrayCodec(ByteOrder.BIG_ENDIAN);
 
-	public static final FlatArrayCodec<short[]> SHORT_LITTLE_ENDIAN  = new ShortArraySerializer(ByteOrder.LITTLE_ENDIAN);
-	public static final FlatArrayCodec<int[]> INT_LITTLE_ENDIAN    = new IntArraySerializer(ByteOrder.LITTLE_ENDIAN);
-	public static final FlatArrayCodec<long[]> LONG_LITTLE_ENDIAN   = new LongArraySerializer(ByteOrder.LITTLE_ENDIAN);
-	public static final FlatArrayCodec<float[]> FLOAT_LITTLE_ENDIAN  = new FloatArraySerializer(ByteOrder.LITTLE_ENDIAN);
-	public static final FlatArrayCodec<double[]> DOUBLE_LITTLE_ENDIAN = new DoubleArraySerializer(ByteOrder.LITTLE_ENDIAN);
+	public static final FlatArrayCodec<short[]>  SHORT_LITTLE_ENDIAN  = new ShortArrayCodec(ByteOrder.LITTLE_ENDIAN);
+	public static final FlatArrayCodec<int[]>    INT_LITTLE_ENDIAN    = new IntArrayCodec(ByteOrder.LITTLE_ENDIAN);
+	public static final FlatArrayCodec<long[]>   LONG_LITTLE_ENDIAN   = new LongArrayCodec(ByteOrder.LITTLE_ENDIAN);
+	public static final FlatArrayCodec<float[]>  FLOAT_LITTLE_ENDIAN  = new FloatArrayCodec(ByteOrder.LITTLE_ENDIAN);
+	public static final FlatArrayCodec<double[]> DOUBLE_LITTLE_ENDIAN = new DoubleArrayCodec(ByteOrder.LITTLE_ENDIAN);
 
-	public static final FlatArrayCodec<String[]> STRING = new N5StringArraySerializer();
-	public static final FlatArrayCodec<String[]> ZARR_STRING = new ZarrStringArraySerializer();
-	public static final FlatArrayCodec<byte[]> OBJECT = new ObjectArraySerializer();
+	public static final FlatArrayCodec<String[]> STRING = new N5StringArrayCodec();
+	public static final FlatArrayCodec<String[]> ZARR_STRING = new ZarrStringArrayCodec();
+	public static final FlatArrayCodec<byte[]>   OBJECT = new ObjectArrayCodec();
 
 	public static FlatArrayCodec<short[]> SHORT(ByteOrder order) {
 		return order == ByteOrder.BIG_ENDIAN ? SHORT_BIG_ENDIAN : SHORT_LITTLE_ENDIAN;
@@ -117,20 +117,20 @@ public abstract class FlatArrayCodec<T> {
 		this.dataFactory = dataFactory;
 	}
 
-	private static final class ByteArraySerializer extends FlatArrayCodec<byte[]> {
+	private static final class ByteArrayCodec extends FlatArrayCodec<byte[]> {
 
-		private ByteArraySerializer() {
+		private ByteArrayCodec() {
 			super(Byte.BYTES, byte[]::new);
 		}
 
 		@Override
-		public ReadData serialize(final byte[] data) {
+		public ReadData encode(final byte[] data) {
 			return ReadData.from(data);
 		}
 
 		@Override
-		public byte[] deserialize(final ReadData readData, int numElements) throws N5IOException {
-			final byte[] data = createData(numElements);
+		public byte[] decode(final ReadData readData, int numElements) throws N5IOException {
+			final byte[] data = newArray(numElements);
 			try {
 				new DataInputStream(readData.inputStream()).readFully(data);
 			} catch (IOException e) {
@@ -140,49 +140,49 @@ public abstract class FlatArrayCodec<T> {
 		}
 	}
 
-	private static final class ShortArraySerializer extends FlatArrayCodec<short[]> {
+	private static final class ShortArrayCodec extends FlatArrayCodec<short[]> {
 
 		private final ByteOrder order;
 
-		ShortArraySerializer(ByteOrder order) {
+		ShortArrayCodec(ByteOrder order) {
 			super(Short.BYTES, short[]::new);
 			this.order = order;
 		}
 
 		@Override
-		public ReadData serialize(final short[] data) throws N5IOException {
+		public ReadData encode(final short[] data) throws N5IOException {
 			final ByteBuffer serialized = ByteBuffer.allocate(Short.BYTES * data.length);
 			serialized.order(order).asShortBuffer().put(data);
 			return ReadData.from(serialized);
 		}
 
 		@Override
-		public short[] deserialize(final ReadData readData, int numElements) throws N5IOException {
-			final short[] data = createData(numElements);
+		public short[] decode(final ReadData readData, int numElements) throws N5IOException {
+			final short[] data = newArray(numElements);
 			readData.toByteBuffer().order(order).asShortBuffer().get(data);
 			return data;
 		}
 	}
 
-	private static final class IntArraySerializer extends FlatArrayCodec<int[]> {
+	private static final class IntArrayCodec extends FlatArrayCodec<int[]> {
 
 		private final ByteOrder order;
 
-		IntArraySerializer(ByteOrder order) {
+		IntArrayCodec(ByteOrder order) {
 			super(Integer.BYTES, int[]::new);
 			this.order = order;
 		}
 
 		@Override
-		public ReadData serialize(final int[] data) throws N5IOException {
+		public ReadData encode(final int[] data) throws N5IOException {
 			final ByteBuffer serialized = ByteBuffer.allocate(Integer.BYTES * data.length);
 			serialized.order(order).asIntBuffer().put(data);
 			return ReadData.from(serialized);
 		}
 
 		@Override
-		public int[] deserialize(final ReadData readData, int numElements) throws N5IOException {
-			final int[] data = createData(numElements);
+		public int[] decode(final ReadData readData, int numElements) throws N5IOException {
+			final int[] data = newArray(numElements);
 			final ByteBuffer byteBuffer = readData.toByteBuffer();
 			final IntBuffer intBuffer = byteBuffer.order(order).asIntBuffer();
 			intBuffer.get(data);
@@ -190,111 +190,111 @@ public abstract class FlatArrayCodec<T> {
 		}
 	}
 
-	private static final class LongArraySerializer extends FlatArrayCodec<long[]> {
+	private static final class LongArrayCodec extends FlatArrayCodec<long[]> {
 
 		private final ByteOrder order;
 
-		LongArraySerializer(ByteOrder order) {
+		LongArrayCodec(ByteOrder order) {
 			super(Long.BYTES, long[]::new);
 			this.order = order;
 		}
 
 		@Override
-		public ReadData serialize(final long[] data) throws N5IOException {
+		public ReadData encode(final long[] data) throws N5IOException {
 			final ByteBuffer serialized = ByteBuffer.allocate(Long.BYTES * data.length);
 			serialized.order(order).asLongBuffer().put(data);
 			return ReadData.from(serialized);
 		}
 
 		@Override
-		public long[] deserialize(final ReadData readData, int numElements) throws N5IOException {
-			final long[] data = createData(numElements);
+		public long[] decode(final ReadData readData, int numElements) throws N5IOException {
+			final long[] data = newArray(numElements);
 			readData.toByteBuffer().order(order).asLongBuffer().get(data);
 			return data;
 		}
 	}
 
-	private static final class FloatArraySerializer extends FlatArrayCodec<float[]> {
+	private static final class FloatArrayCodec extends FlatArrayCodec<float[]> {
 
 		private final ByteOrder order;
 
-		FloatArraySerializer(ByteOrder order) {
+		FloatArrayCodec(ByteOrder order) {
 			super(Float.BYTES, float[]::new);
 			this.order = order;
 		}
 
 		@Override
-		public ReadData serialize(final float[] data) throws N5IOException {
+		public ReadData encode(final float[] data) throws N5IOException {
 			final ByteBuffer serialized = ByteBuffer.allocate(Float.BYTES * data.length);
 			serialized.order(order).asFloatBuffer().put(data);
 			return ReadData.from(serialized);
 		}
 
 		@Override
-		public float[] deserialize(final ReadData readData, int numElements) throws N5IOException {
-			final float[] data = createData(numElements);
+		public float[] decode(final ReadData readData, int numElements) throws N5IOException {
+			final float[] data = newArray(numElements);
 			readData.toByteBuffer().order(order).asFloatBuffer().get(data);
 			return data;
 		}
 	}
 
-	private static final class DoubleArraySerializer extends FlatArrayCodec<double[]> {
+	private static final class DoubleArrayCodec extends FlatArrayCodec<double[]> {
 
 		private final ByteOrder order;
 
-		DoubleArraySerializer(ByteOrder order) {
+		DoubleArrayCodec(ByteOrder order) {
 			super(Double.BYTES, double[]::new);
 			this.order = order;
 		}
 
 		@Override
-		public ReadData serialize(final double[] data) throws N5IOException {
+		public ReadData encode(final double[] data) throws N5IOException {
 			final ByteBuffer serialized = ByteBuffer.allocate(Double.BYTES * data.length);
 			serialized.order(order).asDoubleBuffer().put(data);
 			return ReadData.from(serialized);
 		}
 
 		@Override
-		public double[] deserialize(final ReadData readData, int numElements) throws N5IOException {
-			final double[] data = createData(numElements);
+		public double[] decode(final ReadData readData, int numElements) throws N5IOException {
+			final double[] data = newArray(numElements);
 			readData.toByteBuffer().order(order).asDoubleBuffer().get(data);
 			return data;
 		}
 	}
 
-	private static final class N5StringArraySerializer extends FlatArrayCodec<String[]> {
+	private static final class N5StringArrayCodec extends FlatArrayCodec<String[]> {
 
 		private static final Charset ENCODING = StandardCharsets.UTF_8;
 		private static final String NULLCHAR = "\0";
 
-		N5StringArraySerializer() {
+		N5StringArrayCodec() {
 			super( -1, String[]::new);
 		}
 
 		@Override
-		public ReadData serialize(String[] data) throws N5IOException {
+		public ReadData encode(String[] data) throws N5IOException {
 			final String flattenedArray = String.join(NULLCHAR, data) + NULLCHAR;
 			return ReadData.from(flattenedArray.getBytes(ENCODING));
 		}
 
 		@Override
-		public String[] deserialize(ReadData readData, int numElements) throws N5IOException {
+		public String[] decode(ReadData readData, int numElements) throws N5IOException {
 			final byte[] serializedData = readData.allBytes();
 			final String rawChars = new String(serializedData, ENCODING);
 			return rawChars.split(NULLCHAR);
 		}
 	}
 
-	private static final class ZarrStringArraySerializer extends FlatArrayCodec<String[]> {
+	private static final class ZarrStringArrayCodec extends FlatArrayCodec<String[]> {
 
 		private static final Charset ENCODING = StandardCharsets.UTF_8;
 
-		ZarrStringArraySerializer() {
+		ZarrStringArrayCodec() {
 			super( -1, String[]::new);
 		}
 
 		@Override
-		public ReadData serialize(String[] data) throws N5IOException {
+		public ReadData encode(String[] data) throws N5IOException {
 			final int N = data.length;
 			final byte[][] encodedStrings = Arrays.stream(data).map(str -> str.getBytes(ENCODING)).toArray(byte[][]::new);
 			final int[] lengths = Arrays.stream(encodedStrings).mapToInt(a -> a.length).toArray();
@@ -310,7 +310,7 @@ public abstract class FlatArrayCodec<T> {
 		}
 
 		@Override
-		public String[] deserialize(ReadData readData, int numElements) throws N5IOException {
+		public String[] decode(ReadData readData, int numElements) throws N5IOException {
 			final ByteBuffer serialized = readData.toByteBuffer();
 			serialized.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -333,20 +333,20 @@ public abstract class FlatArrayCodec<T> {
 		}
 	}
 
-	private static final class ObjectArraySerializer extends FlatArrayCodec<byte[]> {
+	private static final class ObjectArrayCodec extends FlatArrayCodec<byte[]> {
 
-		ObjectArraySerializer() {
+		ObjectArrayCodec() {
 			super(-1, byte[]::new);
 		}
 
 		@Override
-		public ReadData serialize(byte[] data) throws N5IOException {
+		public ReadData encode(byte[] data) throws N5IOException {
 			return ReadData.from(data);
 		}
 
 		@Override
-		public byte[] deserialize(ReadData readData, int numElements) throws N5IOException {
-			final byte[] data = createData(numElements);
+		public byte[] decode(ReadData readData, int numElements) throws N5IOException {
+			final byte[] data = newArray(numElements);
 			try {
 				new DataInputStream(readData.inputStream()).readFully(data);
 			} catch (IOException e) {

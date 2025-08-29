@@ -45,14 +45,10 @@ public class RawBlockCodecInfo implements BlockCodecInfo {
 	}
 
 	@Override
-	public <T> BlockCodec<T> create(final DatasetAttributes attributes, final DataCodec... bytesCodecs) {
+	public <T> BlockCodec<T> create(final DatasetAttributes attributes, final DataCodec... dataCodecs) {
 		ensureValidByteOrder(attributes.getDataType(), getByteOrder());
-		return RawBlockCodecs.create(attributes.getDataType(), byteOrder, attributes.getBlockSize(), DataCodec.concatenate(bytesCodecs));
+		return RawBlockCodecs.create(attributes.getDataType(), byteOrder, attributes.getBlockSize(), DataCodec.concatenate(dataCodecs));
 	}
-
-
-
-	public static final RawBlockCodecInfo.ByteOrderAdapter byteOrderAdapter = new ByteOrderAdapter();
 
 	public static void ensureValidByteOrder(final DataType dataType, final ByteOrder byteOrder) {
 
@@ -67,6 +63,8 @@ public class RawBlockCodecInfo implements BlockCodecInfo {
 		if (byteOrder == null)
 			throw new IllegalArgumentException("DataType (" + dataType + ") requires ByteOrder, but was null");
 	}
+
+	public static ByteOrderAdapter byteOrderAdapter = new ByteOrderAdapter();
 
 	public static class ByteOrderAdapter implements JsonDeserializer<ByteOrder>, JsonSerializer<ByteOrder> {
 

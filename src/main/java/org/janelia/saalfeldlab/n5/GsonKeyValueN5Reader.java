@@ -125,7 +125,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			if (datasetAttributes.isSharded()) {
 				return datasetAttributes.getShardingCodec().decode(keyData, gridPosition);
 			}
-			return datasetAttributes.<T>getDataBlockSerializer().decode(keyData, gridPosition);
+			return datasetAttributes.<T>getBlockCodec().decode(keyData, gridPosition);
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
 		}

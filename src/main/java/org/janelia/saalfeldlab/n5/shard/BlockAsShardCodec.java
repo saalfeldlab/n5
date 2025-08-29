@@ -7,7 +7,8 @@ import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.DataCodec;
-import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
+import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.IndexCodecAdapter;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -32,14 +33,14 @@ public class BlockAsShardCodec extends ShardingCodec {
 
 	private static final RawBlockCodecInfo VIRTUAL_SHARD_INDEX_CODEC = new RawBlockCodecInfo() {
 
-		@Override public BlockCodec<long[]> create(DatasetAttributes attributes, DataCodec... bytesCodecs) {
+		@Override public BlockCodec<long[]> create(DatasetAttributes attributes, DataCodec... dataCodec) {
 
 			return BLOCK_AS_SHARD_BLOCK_SERIALIZER;
 		}
 	};
-	private static final DataCodec[] EMPTY_SHARD_CODECS = new DataCodec[0];
+	private static final DataCodecInfo[] EMPTY_SHARD_CODECS = new DataCodecInfo[0];
 
-	private static final DeterministicSizeCodec[] NO_OP_INDEX_CODECS = new DeterministicSizeCodec[0];
+	private static final DeterministicSizeCodecInfo[] NO_OP_INDEX_CODECS = new DeterministicSizeCodecInfo[0];
 	private static final IndexCodecAdapter BLOCK_AS_SHARD_INDEX_CODEC_ADAPTER = new IndexCodecAdapter(VIRTUAL_SHARD_INDEX_CODEC, NO_OP_INDEX_CODECS) {
 
 		@Override public long encodedSize(long initialSize) {
@@ -63,7 +64,7 @@ public class BlockAsShardCodec extends ShardingCodec {
 	}
 
 	@Override
-	public BlockCodecInfo getArrayCodec() {
+	public BlockCodecInfo getBlockCodecInfo() {
 
 		return datasetArrayCodec;
 	}

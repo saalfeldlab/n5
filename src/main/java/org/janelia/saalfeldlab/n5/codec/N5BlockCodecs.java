@@ -54,14 +54,14 @@ import static org.janelia.saalfeldlab.n5.codec.N5BlockCodecs.BlockHeader.MODE_VA
 
 public class N5BlockCodecs {
 
-	private static final BlockCodecFactory<byte[]> BYTE   = c -> new DefaultBlockCodec<>(FlatArrayCodec.BYTE, ByteArrayDataBlock::new, c);
-	private static final BlockCodecFactory<short[]> SHORT  = c -> new DefaultBlockCodec<>(FlatArrayCodec.SHORT_BIG_ENDIAN, ShortArrayDataBlock::new, c);
-	private static final BlockCodecFactory<int[]> INT    = c -> new DefaultBlockCodec<>(FlatArrayCodec.INT_BIG_ENDIAN, IntArrayDataBlock::new, c);
-	private static final BlockCodecFactory<long[]> LONG   = c -> new DefaultBlockCodec<>(FlatArrayCodec.LONG_BIG_ENDIAN, LongArrayDataBlock::new, c);
-	private static final BlockCodecFactory<float[]> FLOAT  = c -> new DefaultBlockCodec<>(FlatArrayCodec.FLOAT_BIG_ENDIAN, FloatArrayDataBlock::new, c);
+	private static final BlockCodecFactory<byte[]>   BYTE   = c -> new DefaultBlockCodec<>(FlatArrayCodec.BYTE, ByteArrayDataBlock::new, c);
+	private static final BlockCodecFactory<short[]>  SHORT  = c -> new DefaultBlockCodec<>(FlatArrayCodec.SHORT_BIG_ENDIAN, ShortArrayDataBlock::new, c);
+	private static final BlockCodecFactory<int[]>    INT    = c -> new DefaultBlockCodec<>(FlatArrayCodec.INT_BIG_ENDIAN, IntArrayDataBlock::new, c);
+	private static final BlockCodecFactory<long[]>   LONG   = c -> new DefaultBlockCodec<>(FlatArrayCodec.LONG_BIG_ENDIAN, LongArrayDataBlock::new, c);
+	private static final BlockCodecFactory<float[]>  FLOAT  = c -> new DefaultBlockCodec<>(FlatArrayCodec.FLOAT_BIG_ENDIAN, FloatArrayDataBlock::new, c);
 	private static final BlockCodecFactory<double[]> DOUBLE = c -> new DefaultBlockCodec<>(FlatArrayCodec.DOUBLE_BIG_ENDIAN, DoubleArrayDataBlock::new, c);
 	private static final BlockCodecFactory<String[]> STRING = c -> new StringBlockCodec(c);
-	private static final BlockCodecFactory<byte[]> OBJECT = c -> new ObjectBlockCodec(c);
+	private static final BlockCodecFactory<byte[]>   OBJECT = c -> new ObjectBlockCodec(c);
 
 	private N5BlockCodecs() {}
 
@@ -110,21 +110,21 @@ public class N5BlockCodecs {
 	private interface BlockCodecFactory<T> {
 
 		/**
-		 * Create a {@link BlockCodec} that uses the specified {@code
-		 * DataCodec} and de/serializes {@code DataBlock<T>} to N5 format.
+		 * Create a {@link BlockCodec} that uses the specified {@code DataCodec}
+		 * and de/serializes {@code DataBlock<T>} to N5 format.
 		 *
-		 * @return N5 {@code BlockCodec} for the specified {@code codec}
+		 * @return N5 {@code BlockCodec} using the specified {@code DataCodec}
 		 */
-		BlockCodec<T> create(DataCodec codec);
+		BlockCodec<T> create(DataCodec dataCodec);
 	}
 
-	abstract static class N5AbstractDataBlockSerializer<T> implements BlockCodec<T> {
+	abstract static class N5AbstractBlockCodec<T> implements BlockCodec<T> {
 
 		private final FlatArrayCodec<T> dataCodec;
 		private final DataBlockFactory<T> dataBlockFactory;
 		private final DataCodec codec;
 
-		N5AbstractDataBlockSerializer(FlatArrayCodec<T> dataCodec, DataBlockFactory<T> dataBlockFactory, DataCodec codec) {
+		N5AbstractBlockCodec(FlatArrayCodec<T> dataCodec, DataBlockFactory<T> dataBlockFactory, DataCodec codec) {
 			this.dataCodec = dataCodec;
 			this.dataBlockFactory = dataBlockFactory;
 			this.codec = codec;
@@ -135,7 +135,7 @@ public class N5BlockCodecs {
 		@Override
 		public ReadData encode(DataBlock<T> dataBlock) throws N5IOException {
 			return ReadData.from(out -> {
-				final ReadData dataReadData = dataCodec.serialize(dataBlock.getData());
+				final ReadData dataReadData = dataCodec.encode(dataBlock.getData());
 				final BlockHeader header = createBlockHeader(dataBlock, dataReadData);
 
 				header.writeTo(out);
@@ -156,7 +156,7 @@ public class N5BlockCodecs {
 				final ReadData decodeData = codec.decode(ReadData.from(in));
 
 				// the dataCodec knows the number of bytes per element
-				final T data = dataCodec.deserialize(decodeData, numElements);
+				final T data = dataCodec.decode(decodeData, numElements);
 				return dataBlockFactory.createDataBlock(header.blockSize(), gridPosition, data);
 			} catch (IOException e) {
 				throw new N5IOException(e);
@@ -168,7 +168,7 @@ public class N5BlockCodecs {
 	/**
 	 * DataBlockCodec for all N5 data types, except STRING and OBJECT
 	 */
-	private static class DefaultBlockCodec<T> extends N5AbstractDataBlockSerializer<T> {
+	private static class DefaultBlockCodec<T> extends N5AbstractBlockCodec<T> {
 
 		DefaultBlockCodec(
 				final FlatArrayCodec<T> dataCodec,
@@ -194,7 +194,7 @@ public class N5BlockCodecs {
 	/**
 	 * DataBlockCodec for N5 data type STRING
 	 */
-	private static class StringBlockCodec extends N5AbstractDataBlockSerializer<String[]> {
+	private static class StringBlockCodec extends N5AbstractBlockCodec<String[]> {
 
 		StringBlockCodec(final DataCodec codec) {
 
@@ -217,7 +217,7 @@ public class N5BlockCodecs {
 	/**
 	 * DataBlockCodec for N5 data type OBJECT
 	 */
-	private static class ObjectBlockCodec extends N5AbstractDataBlockSerializer<byte[]> {
+	private static class ObjectBlockCodec extends N5AbstractBlockCodec<byte[]> {
 
 		ObjectBlockCodec(final DataCodec codec) {
 
@@ -269,16 +269,13 @@ public class N5BlockCodecs {
 
 		public int getSize() {
 
-			// two bytes for mode, two bytes for num dimensions
-			// four bytes per dimension.
-			// four more bytes for varlength
 			switch (mode) {
 				case MODE_DEFAULT:
-					return 4 + 4 * blockSize.length;
+					return 2 + 4 * blockSize.length;
 				case MODE_VARLENGTH:
-					return 4 + 4 * blockSize.length + 4;
+					return 2 + 4 * blockSize.length + 4;
 				case MODE_OBJECT:
-					return 4 + 4;
+					return 2 + 4;
 				default:
 					throw new IllegalArgumentException("Unexpected mode: " + mode);
 			}

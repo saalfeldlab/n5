@@ -138,7 +138,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 		final DatasetAttributes datasetAttributes = getDatasetAttributes();
 		ShardingCodec shardingCodec = datasetAttributes.getShardingCodec();
-		final BlockCodec<T> arrayCodec = shardingCodec.getDataBlockSerializer();
+		final BlockCodec<T> blockCodecInfo = shardingCodec.getBlockCodec();
 
 		final ShardIndex index = createIndex();
 		final long indexSize = index.numBytes();
@@ -152,7 +152,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 				try (final CountingOutputStream countOut = new CountingOutputStream(out)) {
 					long prevCount = 0;
 					for (DataBlock<T> block : getBlocks()) {
-						arrayCodec.encode(block).writeTo(countOut);
+						blockCodecInfo.encode(block).writeTo(countOut);
 						final int[] blockPosition = getRelativeBlockPosition(block.getGridPosition());
 						final long curCount = countOut.getByteCount();
 						final long blockWrittenSize = curCount - prevCount;
@@ -171,7 +171,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 		} else {
 			final ArrayList<ReadData> blocksData = new ArrayList<>();
 			for (DataBlock<T> dataBlock : getBlocks()) {
-				ReadData readDataBlock = ReadData.from(out -> arrayCodec.encode(dataBlock).writeTo(out));
+				ReadData readDataBlock = ReadData.from(out -> blockCodecInfo.encode(dataBlock).writeTo(out));
 				blocksData.add(readDataBlock);
 				final long length = readDataBlock.length();
 				synchronized (index) {
