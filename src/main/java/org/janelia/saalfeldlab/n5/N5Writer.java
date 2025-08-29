@@ -28,9 +28,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.BytesCodec;
-import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DataCodec;
+import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.shard.Shard;
 
 import java.io.ByteArrayOutputStream;
@@ -230,20 +230,20 @@ public interface N5Writer extends N5Reader {
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final Codec... codecs) throws N5Exception {
+			final CodecInfo... codecs) throws N5Exception {
 
-		final ArrayCodec arrayCodec;
-		final BytesCodec[] bytesCodecs;
+		final BlockCodecInfo arrayCodec;
+		final DataCodec[] bytesCodecs;
 		if (codecs == null || codecs.length == 0) {
 			arrayCodec = null;
-			bytesCodecs = new BytesCodec[0];
-		} else if (codecs[0] instanceof ArrayCodec) {
-			arrayCodec = (ArrayCodec) codecs[0];
-			bytesCodecs = new BytesCodec[codecs.length - 1];
+			bytesCodecs = new DataCodec[0];
+		} else if (codecs[0] instanceof BlockCodecInfo) {
+			arrayCodec = (BlockCodecInfo) codecs[0];
+			bytesCodecs = new DataCodec[codecs.length - 1];
 			System.arraycopy(codecs, 1, bytesCodecs, 0, bytesCodecs.length);
 		} else {
 			arrayCodec = null;
-			bytesCodecs = new BytesCodec[codecs.length];
+			bytesCodecs = new DataCodec[codecs.length];
 			System.arraycopy(codecs, 0, bytesCodecs, 0, bytesCodecs.length);
 		}
 

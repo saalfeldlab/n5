@@ -5,10 +5,10 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
- * {@code ArrayCodec}s encode {@link DataBlock}s into {@link ReadData} and
+ * {@code BlockCodecInfo}s encode {@link DataBlock}s into {@link ReadData} and
  * decode {@link ReadData} into {@link DataBlock}s.
  */
-public interface ArrayCodec extends Codec, DeterministicSizeCodec {
+public interface BlockCodecInfo extends CodecInfo, DeterministicSizeCodec {
 
 	default long[] getKeyPositionForBlock(final DatasetAttributes attributes, final DataBlock<?> datablock) {
 
@@ -20,7 +20,7 @@ public interface ArrayCodec extends Codec, DeterministicSizeCodec {
 		return blockPosition;
 	}
 
-	<T> DataBlockSerializer<T> initialize(final DatasetAttributes attributes, final BytesCodec... codecs);
+	<T> BlockCodec<T> create(final DatasetAttributes attributes, final DataCodec... codecs);
 
 	@Override default long encodedSize(long size) {
 

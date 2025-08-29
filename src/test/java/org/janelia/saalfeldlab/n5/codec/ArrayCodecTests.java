@@ -19,8 +19,6 @@ import org.janelia.saalfeldlab.n5.GzipCompression;
 import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
 import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
-import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.codec.BytesCodecTests.BitShiftBytesCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.junit.Test;
@@ -32,7 +30,7 @@ public class ArrayCodecTests {
 	final int[] blockSize = {11, 7, 5};
 	private final BitShiftBytesCodec shiftCodec = new BitShiftBytesCodec(3);
 	private final GzipCompression compressor = new GzipCompression();
-	private final BytesCodec[][] bytesCodecs = new BytesCodec[][]{
+	private final DataCodec[][] bytesCodecs = new DataCodec[][]{
 			{}, // empty: "raw" compression
 			{compressor},
 			{shiftCodec},
@@ -50,14 +48,14 @@ public class ArrayCodecTests {
 	@Test
 	public void testN5ArrayCodec() throws Exception {
 		for (DataType dataType : dataTypes) {
-			for (BytesCodec[] codecs : bytesCodecs) {
+			for (DataCodec[] codecs : bytesCodecs) {
 
 				final DatasetAttributes attributes = new DatasetAttributes(
 						new long[]{32, 32, 32},
 						blockSize,
 						blockSize,
 						dataType,
-						new N5ArrayCodec(),
+						new N5BlockCodecInfo(),
 						codecs);
 
 				testArrayCodecHelper(attributes);
@@ -67,13 +65,13 @@ public class ArrayCodecTests {
 
 	@Test
 	public void testRawBytesArrayCodecCodec() throws Exception {
-		// Test RawBytesArrayCodec codec with different byte orders and DataTypes
+		// Test RawBlockCodecInfo codec with different byte orders and DataTypes
 		final ByteOrder[] byteOrders = {ByteOrder.BIG_ENDIAN, ByteOrder.LITTLE_ENDIAN};
 		for (DataType dataType : dataTypes) {
 			for (ByteOrder byteOrder : byteOrders) {
-				for (BytesCodec[] codecs : bytesCodecs) {
+				for (DataCodec[] codecs : bytesCodecs) {
 
-					final RawBytesArrayCodec codec = new RawBytesArrayCodec(byteOrder);
+					final RawBlockCodecInfo codec = new RawBlockCodecInfo(byteOrder);
 					final DatasetAttributes attributes = new DatasetAttributes(
 							new long[]{32, 32, 32},
 							blockSize, //shardSize
@@ -95,7 +93,7 @@ public class ArrayCodecTests {
 
 		// Create appropriate data block based on type
 		DataBlock<T> originalBlock = ((DataBlock<T>)createRandomDataBlock(dataType, blockSize, gridPosition));
-		final DataBlockSerializer<T> codec = attributes.getDataBlockSerializer();
+		final BlockCodec<T> codec = attributes.getDataBlockSerializer();
 
 		// Test encode/decode roundtrip
 		final ReadData encoded = codec.encode(originalBlock);
@@ -115,7 +113,7 @@ public class ArrayCodecTests {
 		// Test handling of empty blocks
 		final int[] blockSize = {0, 0};
 		final long[] gridPosition = {0, 0};
-		final N5ArrayCodec arrayCodec = new N5ArrayCodec();
+		final N5BlockCodecInfo arrayCodec = new N5BlockCodecInfo();
 		final DatasetAttributes attributes = new DatasetAttributes(
 				new long[]{64, 64},
 				new int[]{8, 8},
@@ -123,7 +121,7 @@ public class ArrayCodecTests {
 				DataType.UINT8,
 				arrayCodec);
 
-		final DataBlockSerializer<byte[]> codec = attributes.getDataBlockSerializer();
+		final BlockCodec<byte[]> codec = attributes.getDataBlockSerializer();
 
 		// Test encode/decode
 		final ByteArrayDataBlock emptyBlock = new ByteArrayDataBlock(blockSize, gridPosition, new byte[0]);
@@ -142,7 +140,7 @@ public class ArrayCodecTests {
 				blockSize,
 				blockSize,
 				DataType.INT16,
-				new N5ArrayCodec());
+				new N5BlockCodecInfo());
 
 
 		final DatasetAttributes rawArrayAttrs = new DatasetAttributes(
@@ -150,12 +148,12 @@ public class ArrayCodecTests {
 				blockSize,
 				blockSize,
 				DataType.INT16,
-				new RawBytesArrayCodec());
+				new RawBlockCodecInfo());
 
 		// Calculate expected sizes
 		final long rawDataSize = blockSize[0] * blockSize[1] * 2; // INT16 has 2 bytes per element
 
-		// N5ArrayCodec adds a header
+		// N5BlockCodecInfo adds a header
 		// the estimate of the encoded size
 		final long n5EncodedSize = n5ArrayAttrs.getArrayCodec().encodedSize(rawDataSize);
 		assertTrue("N5 encoded size should be larger than raw size", n5EncodedSize > rawDataSize);
@@ -164,7 +162,7 @@ public class ArrayCodecTests {
 		ReadData n5EncodedDataBlock = n5ArrayAttrs.<short[]>getDataBlockSerializer().encode(dataBlock);
 		assertEquals("N5 actual encoded size should equal estimated size", n5EncodedSize, n5EncodedDataBlock.length());
 
-		// RawBytesArrayCodec should not change size
+		// RawBlockCodecInfo should not change size
 		final long rawEncodedSize = rawArrayAttrs.getArrayCodec().encodedSize(rawDataSize);
 		assertEquals("Raw encoded size should equal input size", rawDataSize, rawEncodedSize);
 

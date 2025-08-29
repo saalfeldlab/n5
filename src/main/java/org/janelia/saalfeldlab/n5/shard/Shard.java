@@ -9,8 +9,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.io.output.CountingOutputStream;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.DataBlockSerializer;
+import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 
@@ -139,7 +138,7 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 
 		final DatasetAttributes datasetAttributes = getDatasetAttributes();
 		ShardingCodec shardingCodec = datasetAttributes.getShardingCodec();
-		final DataBlockSerializer<T> arrayCodec = shardingCodec.getDataBlockSerializer();
+		final BlockCodec<T> arrayCodec = shardingCodec.getDataBlockSerializer();
 
 		final ShardIndex index = createIndex();
 		final long indexSize = index.numBytes();

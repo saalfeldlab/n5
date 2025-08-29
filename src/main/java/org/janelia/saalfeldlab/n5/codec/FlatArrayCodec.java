@@ -52,7 +52,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  * @param <T>
  * 		type of the data contained in the DataBlock
  */
-public abstract class FlatArraySerializer<T> {
+public abstract class FlatArrayCodec<T> {
 
 	public abstract ReadData serialize(T data) throws N5IOException;
 
@@ -69,40 +69,40 @@ public abstract class FlatArraySerializer<T> {
 	// ------------------- instances  --------------------
 	//
 
-	public static final FlatArraySerializer<byte[]>   BYTE              = new ByteArraySerializer();
-	public static final FlatArraySerializer<short[]>  SHORT_BIG_ENDIAN  = new ShortArraySerializer(ByteOrder.BIG_ENDIAN);
-	public static final FlatArraySerializer<int[]>    INT_BIG_ENDIAN    = new IntArraySerializer(ByteOrder.BIG_ENDIAN);
-	public static final FlatArraySerializer<long[]>   LONG_BIG_ENDIAN   = new LongArraySerializer(ByteOrder.BIG_ENDIAN);
-	public static final FlatArraySerializer<float[]>  FLOAT_BIG_ENDIAN  = new FloatArraySerializer(ByteOrder.BIG_ENDIAN);
-	public static final FlatArraySerializer<double[]> DOUBLE_BIG_ENDIAN = new DoubleArraySerializer(ByteOrder.BIG_ENDIAN);
+	public static final FlatArrayCodec<byte[]> BYTE              = new ByteArraySerializer();
+	public static final FlatArrayCodec<short[]> SHORT_BIG_ENDIAN  = new ShortArraySerializer(ByteOrder.BIG_ENDIAN);
+	public static final FlatArrayCodec<int[]> INT_BIG_ENDIAN    = new IntArraySerializer(ByteOrder.BIG_ENDIAN);
+	public static final FlatArrayCodec<long[]> LONG_BIG_ENDIAN   = new LongArraySerializer(ByteOrder.BIG_ENDIAN);
+	public static final FlatArrayCodec<float[]> FLOAT_BIG_ENDIAN  = new FloatArraySerializer(ByteOrder.BIG_ENDIAN);
+	public static final FlatArrayCodec<double[]> DOUBLE_BIG_ENDIAN = new DoubleArraySerializer(ByteOrder.BIG_ENDIAN);
 
-	public static final FlatArraySerializer<short[]>  SHORT_LITTLE_ENDIAN  = new ShortArraySerializer(ByteOrder.LITTLE_ENDIAN);
-	public static final FlatArraySerializer<int[]>    INT_LITTLE_ENDIAN    = new IntArraySerializer(ByteOrder.LITTLE_ENDIAN);
-	public static final FlatArraySerializer<long[]>   LONG_LITTLE_ENDIAN   = new LongArraySerializer(ByteOrder.LITTLE_ENDIAN);
-	public static final FlatArraySerializer<float[]>  FLOAT_LITTLE_ENDIAN  = new FloatArraySerializer(ByteOrder.LITTLE_ENDIAN);
-	public static final FlatArraySerializer<double[]> DOUBLE_LITTLE_ENDIAN = new DoubleArraySerializer(ByteOrder.LITTLE_ENDIAN);
+	public static final FlatArrayCodec<short[]> SHORT_LITTLE_ENDIAN  = new ShortArraySerializer(ByteOrder.LITTLE_ENDIAN);
+	public static final FlatArrayCodec<int[]> INT_LITTLE_ENDIAN    = new IntArraySerializer(ByteOrder.LITTLE_ENDIAN);
+	public static final FlatArrayCodec<long[]> LONG_LITTLE_ENDIAN   = new LongArraySerializer(ByteOrder.LITTLE_ENDIAN);
+	public static final FlatArrayCodec<float[]> FLOAT_LITTLE_ENDIAN  = new FloatArraySerializer(ByteOrder.LITTLE_ENDIAN);
+	public static final FlatArrayCodec<double[]> DOUBLE_LITTLE_ENDIAN = new DoubleArraySerializer(ByteOrder.LITTLE_ENDIAN);
 
-	public static final FlatArraySerializer<String[]> STRING = new N5StringArraySerializer();
-	public static final FlatArraySerializer<String[]> ZARR_STRING = new ZarrStringArraySerializer();
-	public static final FlatArraySerializer<byte[]>   OBJECT = new ObjectArraySerializer();
+	public static final FlatArrayCodec<String[]> STRING = new N5StringArraySerializer();
+	public static final FlatArrayCodec<String[]> ZARR_STRING = new ZarrStringArraySerializer();
+	public static final FlatArrayCodec<byte[]> OBJECT = new ObjectArraySerializer();
 
-	public static FlatArraySerializer<short[]> SHORT(ByteOrder order) {
+	public static FlatArrayCodec<short[]> SHORT(ByteOrder order) {
 		return order == ByteOrder.BIG_ENDIAN ? SHORT_BIG_ENDIAN : SHORT_LITTLE_ENDIAN;
 	}
 
-	public static FlatArraySerializer<int[]> INT(ByteOrder order) {
+	public static FlatArrayCodec<int[]> INT(ByteOrder order) {
 		return order == ByteOrder.BIG_ENDIAN ? INT_BIG_ENDIAN : INT_LITTLE_ENDIAN;
 	}
 
-	public static FlatArraySerializer<long[]> LONG(ByteOrder order) {
+	public static FlatArrayCodec<long[]> LONG(ByteOrder order) {
 		return order == ByteOrder.BIG_ENDIAN ? LONG_BIG_ENDIAN : LONG_LITTLE_ENDIAN;
 	}
 
-	public static FlatArraySerializer<float[]> FLOAT(ByteOrder order) {
+	public static FlatArrayCodec<float[]> FLOAT(ByteOrder order) {
 		return order == ByteOrder.BIG_ENDIAN ? FLOAT_BIG_ENDIAN : FLOAT_LITTLE_ENDIAN;
 	}
 
-	public static FlatArraySerializer<double[]> DOUBLE(ByteOrder order) {
+	public static FlatArrayCodec<double[]> DOUBLE(ByteOrder order) {
 		return order == ByteOrder.BIG_ENDIAN ? DOUBLE_BIG_ENDIAN : DOUBLE_LITTLE_ENDIAN;
 	}
 
@@ -112,12 +112,12 @@ public abstract class FlatArraySerializer<T> {
 	private final int bytesPerElement;
 	private final IntFunction<T> dataFactory;
 
-	private FlatArraySerializer(int bytesPerElement, IntFunction<T> dataFactory) {
+	private FlatArrayCodec(int bytesPerElement, IntFunction<T> dataFactory) {
 		this.bytesPerElement = bytesPerElement;
 		this.dataFactory = dataFactory;
 	}
 
-	private static final class ByteArraySerializer extends FlatArraySerializer<byte[]> {
+	private static final class ByteArraySerializer extends FlatArrayCodec<byte[]> {
 
 		private ByteArraySerializer() {
 			super(Byte.BYTES, byte[]::new);
@@ -140,7 +140,7 @@ public abstract class FlatArraySerializer<T> {
 		}
 	}
 
-	private static final class ShortArraySerializer extends FlatArraySerializer<short[]> {
+	private static final class ShortArraySerializer extends FlatArrayCodec<short[]> {
 
 		private final ByteOrder order;
 
@@ -164,7 +164,7 @@ public abstract class FlatArraySerializer<T> {
 		}
 	}
 
-	private static final class IntArraySerializer extends FlatArraySerializer<int[]> {
+	private static final class IntArraySerializer extends FlatArrayCodec<int[]> {
 
 		private final ByteOrder order;
 
@@ -190,7 +190,7 @@ public abstract class FlatArraySerializer<T> {
 		}
 	}
 
-	private static final class LongArraySerializer extends FlatArraySerializer<long[]> {
+	private static final class LongArraySerializer extends FlatArrayCodec<long[]> {
 
 		private final ByteOrder order;
 
@@ -214,7 +214,7 @@ public abstract class FlatArraySerializer<T> {
 		}
 	}
 
-	private static final class FloatArraySerializer extends FlatArraySerializer<float[]> {
+	private static final class FloatArraySerializer extends FlatArrayCodec<float[]> {
 
 		private final ByteOrder order;
 
@@ -238,7 +238,7 @@ public abstract class FlatArraySerializer<T> {
 		}
 	}
 
-	private static final class DoubleArraySerializer extends FlatArraySerializer<double[]> {
+	private static final class DoubleArraySerializer extends FlatArrayCodec<double[]> {
 
 		private final ByteOrder order;
 
@@ -262,7 +262,7 @@ public abstract class FlatArraySerializer<T> {
 		}
 	}
 
-	private static final class N5StringArraySerializer extends FlatArraySerializer<String[]> {
+	private static final class N5StringArraySerializer extends FlatArrayCodec<String[]> {
 
 		private static final Charset ENCODING = StandardCharsets.UTF_8;
 		private static final String NULLCHAR = "\0";
@@ -285,7 +285,7 @@ public abstract class FlatArraySerializer<T> {
 		}
 	}
 
-	private static final class ZarrStringArraySerializer extends FlatArraySerializer<String[]> {
+	private static final class ZarrStringArraySerializer extends FlatArrayCodec<String[]> {
 
 		private static final Charset ENCODING = StandardCharsets.UTF_8;
 
@@ -333,7 +333,7 @@ public abstract class FlatArraySerializer<T> {
 		}
 	}
 
-	private static final class ObjectArraySerializer extends FlatArraySerializer<byte[]> {
+	private static final class ObjectArraySerializer extends FlatArrayCodec<byte[]> {
 
 		ObjectArraySerializer() {
 			super(-1, byte[]::new);

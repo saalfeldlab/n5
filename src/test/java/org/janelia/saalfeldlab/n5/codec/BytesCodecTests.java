@@ -10,7 +10,6 @@ import java.util.Random;
 import java.util.function.IntUnaryOperator;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.codec.BytesCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.ReadData.OutputStreamOperator;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
@@ -62,9 +61,9 @@ public class BytesCodecTests {
 			expected[i] = (byte)(2 * bytes[i] + 3);
 		}
 
-		final BytesCodec a = new ByteFunctionCodec(x -> 2 * x, x -> x / 2);
-		final BytesCodec b = new ByteFunctionCodec(x -> x + 3, x -> x - 3 );
-		final ConcatenatedBytesCodec ab = new ConcatenatedBytesCodec(new BytesCodec[]{a, b});
+		final DataCodec a = new ByteFunctionCodec(x -> 2 * x, x -> x / 2);
+		final DataCodec b = new ByteFunctionCodec(x -> x + 3, x -> x - 3 );
+		final ConcatenatedDataCodec ab = new ConcatenatedDataCodec(new DataCodec[]{a, b});
 
 		final ReadData encodedData = ab.encode(data).materialize();
 		assertArrayEquals(expected, encodedData.allBytes());
@@ -73,7 +72,7 @@ public class BytesCodecTests {
 		assertArrayEquals(bytes, decodedData.allBytes());
 	}
 
-	public static class ByteFunctionCodec implements BytesCodec {
+	public static class ByteFunctionCodec implements DataCodec {
 
 		IntUnaryOperator encoder;
 		IntUnaryOperator decoder;
@@ -116,7 +115,7 @@ public class BytesCodecTests {
 	}
 
 	@NameConfig.Name(BitShiftBytesCodec.TYPE)
-	public static class BitShiftBytesCodec implements BytesCodec {
+	public static class BitShiftBytesCodec implements DataCodec {
 
 		private static final String TYPE = "bitshift";
 

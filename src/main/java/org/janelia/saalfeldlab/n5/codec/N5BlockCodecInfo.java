@@ -2,11 +2,10 @@ package org.janelia.saalfeldlab.n5.codec;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
-@NameConfig.Name(value = N5ArrayCodec.TYPE)
-public class N5ArrayCodec implements ArrayCodec {
+@NameConfig.Name(value = N5BlockCodecInfo.TYPE)
+public class N5BlockCodecInfo implements BlockCodecInfo {
 
 	private static final long serialVersionUID = 3523505403978222360L;
 
@@ -14,9 +13,9 @@ public class N5ArrayCodec implements ArrayCodec {
 
 	private transient DatasetAttributes attributes;
 
-	@Override public <T> DataBlockSerializer<T> initialize(final DatasetAttributes attributes, final BytesCodec... byteCodecs) {
+	@Override public <T> BlockCodec<T> create(final DatasetAttributes attributes, final DataCodec... byteCodecs) {
 		this.attributes = attributes;
-		return N5DataBlockSerializers.create(attributes.getDataType(), new ConcatenatedBytesCodec(byteCodecs));
+		return N5BlockCodecs.create(attributes.getDataType(), new ConcatenatedDataCodec(byteCodecs));
 	}
 
 	@Override public long[] getKeyPositionForBlock(DatasetAttributes attributes, DataBlock<?> datablock) {
@@ -32,7 +31,7 @@ public class N5ArrayCodec implements ArrayCodec {
 	@Override public long encodedSize(long size) {
 
 		final int[] blockSize = attributes.getBlockSize();
-		int headerSize = new N5DataBlockSerializers.BlockHeader(blockSize, DataBlock.getNumElements(blockSize)).getSize();
+		int headerSize = new N5BlockCodecs.BlockHeader(blockSize, DataBlock.getNumElements(blockSize)).getSize();
 		return headerSize + size;
 	}
 

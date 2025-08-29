@@ -121,7 +121,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		try {
 			final ReadData keyData = getKeyValueAccess().createReadData(path);
-			//ArrayCodec knows how to get to the block from the shard, the DataBlockSerializer doesn't...
+			//BlockCodecInfo knows how to get to the block from the shard, the BlockCodec doesn't...
 			if (datasetAttributes.isSharded()) {
 				return datasetAttributes.getShardingCodec().decode(keyData, gridPosition);
 			}

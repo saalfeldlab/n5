@@ -10,10 +10,10 @@ import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.BytesCodec;
-import org.janelia.saalfeldlab.n5.codec.Codec;
-import org.janelia.saalfeldlab.n5.codec.DataBlockSerializer;
+import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.BlockCodec;
+import org.janelia.saalfeldlab.n5.codec.DataCodec;
+import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.IndexCodecAdapter;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.N5Annotations;
@@ -23,7 +23,7 @@ import java.lang.reflect.Type;
 import java.util.Objects;
 
 @NameConfig.Name(ShardingCodec.TYPE)
-public class ShardingCodec implements ArrayCodec {
+public class ShardingCodec implements BlockCodecInfo {
 
 	private static final long serialVersionUID = -5879797314954717810L;
 
@@ -44,7 +44,7 @@ public class ShardingCodec implements ArrayCodec {
 	private final int[] blockSize;
 
 	@NameConfig.Parameter(CODECS_KEY)
-	private final Codec[] codecs;
+	private final CodecInfo[] codecs;
 
 	@NameConfig.Parameter(INDEX_CODECS_KEY)
 	private final IndexCodecAdapter indexCodecs;
@@ -52,7 +52,7 @@ public class ShardingCodec implements ArrayCodec {
 	@NameConfig.Parameter(value = INDEX_LOCATION_KEY, optional = true)
 	private final IndexLocation indexLocation;
 
-	protected DataBlockSerializer<?> dataBlockSerializer = null;
+	protected BlockCodec<?> dataBlockSerializer = null;
 
 	/**
 	 * Used via reflections by the NameConfig serializer.
@@ -68,7 +68,7 @@ public class ShardingCodec implements ArrayCodec {
 
 	public ShardingCodec(
 			final int[] blockSize,
-			final Codec[] codecs,
+			final CodecInfo[] codecs,
 			final IndexCodecAdapter indexCodecs,
 			final IndexLocation indexLocation) {
 
@@ -80,8 +80,8 @@ public class ShardingCodec implements ArrayCodec {
 
 	public ShardingCodec(
 			final int[] blockSize,
-			final Codec[] codecs,
-			final Codec[] indexCodecs,
+			final CodecInfo[] codecs,
+			final CodecInfo[] indexCodecs,
 			final IndexLocation indexLocation) {
 
 		this(blockSize, codecs, IndexCodecAdapter.create(indexCodecs), indexLocation);
@@ -92,25 +92,25 @@ public class ShardingCodec implements ArrayCodec {
 		return indexLocation;
 	}
 
-	public ArrayCodec getArrayCodec() {
+	public BlockCodecInfo getArrayCodec() {
 
 		Objects.requireNonNull(codecs);
 		if (codecs.length == 0)
-			throw new IllegalArgumentException("Sharding Codec requires a single ArrayCodec. None found.");
+			throw new IllegalArgumentException("Sharding CodecInfo requires a single BlockCodecInfo. None found.");
 
-		return (ArrayCodec)codecs[0];
+		return (BlockCodecInfo)codecs[0];
 	}
-	public <T> DataBlockSerializer<T> getDataBlockSerializer() {
+	public <T> BlockCodec<T> getDataBlockSerializer() {
 
-		return (DataBlockSerializer<T>)dataBlockSerializer;
+		return (BlockCodec<T>)dataBlockSerializer;
 	}
 
-	public BytesCodec[] getCodecs() {
+	public DataCodec[] getCodecs() {
 
 		Objects.requireNonNull(codecs);
-		final BytesCodec[] bytesCodecs = new BytesCodec[codecs.length - 1];
+		final DataCodec[] bytesCodecs = new DataCodec[codecs.length - 1];
 		for (int i = 1; i < codecs.length; i++)
-			bytesCodecs[i-1] = (BytesCodec)codecs[i];
+			bytesCodecs[i-1] = (DataCodec)codecs[i];
 		return bytesCodecs;
 	}
 
@@ -133,11 +133,11 @@ public class ShardingCodec implements ArrayCodec {
 	}
 
 	@Override
-	public <T> DataBlockSerializer<T> initialize(DatasetAttributes attributes, final BytesCodec[] codecs) {
+	public <T> BlockCodec<T> create(DatasetAttributes attributes, final DataCodec[] codecs) {
 
 		this.attributes = attributes;
-		this.dataBlockSerializer = getArrayCodec().<T>initialize(attributes, getCodecs());
-		return ((DataBlockSerializer<T>)dataBlockSerializer);
+		this.dataBlockSerializer = getArrayCodec().<T>create(attributes, getCodecs());
+		return ((BlockCodec<T>)dataBlockSerializer);
 	}
 
 	public <T> ReadData encode(DataBlock<T> dataBlock) {

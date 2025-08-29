@@ -14,18 +14,17 @@ import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.NameConfigAdapter;
 import org.janelia.saalfeldlab.n5.DatasetAttributes.DatasetAttributesAdapter;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
-import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.CodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DataCodec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
-import org.janelia.saalfeldlab.n5.codec.N5ArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.RawBytesArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -138,8 +137,8 @@ public class ShardTest {
 				DataType.UINT8,
 				new ShardingCodec(
 						blockSize,
-						new Codec[]{new N5ArrayCodec()},
-						new Codec[]{new RawBytesArrayCodec(), new Crc32cChecksumCodec()},
+						new CodecInfo[]{new N5BlockCodecInfo()},
+						new CodecInfo[]{new RawBlockCodecInfo(), new Crc32cChecksumCodec()},
 						indexLocation
 				)
 		);
@@ -544,16 +543,16 @@ public class ShardTest {
 		// 	probably better to forget about this class - only use DatasetAttributes
 		// 	and detect shading in another way
 		final ShardingCodec innerShard = new ShardingCodec(innerShardSize,
-				new Codec[]{new N5ArrayCodec()},
-				new DeterministicSizeCodec[]{new RawBytesArrayCodec(indexByteOrder), new Crc32cChecksumCodec()},
+				new CodecInfo[]{new N5BlockCodecInfo()},
+				new DeterministicSizeCodec[]{new RawBlockCodecInfo(indexByteOrder), new Crc32cChecksumCodec()},
 				IndexLocation.START);
 
 		return new DatasetAttributes(
 				dimensions, shardSize, blockSize, DataType.UINT8,
 				new ShardingCodec(
 						blockSize,
-						new Codec[]{innerShard},
-						new DeterministicSizeCodec[]{new RawBytesArrayCodec(indexByteOrder), new Crc32cChecksumCodec()},
+						new CodecInfo[]{innerShard},
+						new DeterministicSizeCodec[]{new RawBlockCodecInfo(indexByteOrder), new Crc32cChecksumCodec()},
 						IndexLocation.END)
 		);
 	}
@@ -578,9 +577,9 @@ public class ShardTest {
 
 			super(basePath);
 			gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
-			gsonBuilder.registerTypeHierarchyAdapter(Codec.class, NameConfigAdapter.getJsonAdapter(Codec.class));
+			gsonBuilder.registerTypeHierarchyAdapter(CodecInfo.class, NameConfigAdapter.getJsonAdapter(CodecInfo.class));
 			gsonBuilder.registerTypeHierarchyAdapter(DatasetAttributes.class, new TestDatasetAttributesAdapter());
-			gsonBuilder.registerTypeHierarchyAdapter(ByteOrder.class, RawBytesArrayCodec.byteOrderAdapter);
+			gsonBuilder.registerTypeHierarchyAdapter(ByteOrder.class, RawBlockCodecInfo.byteOrderAdapter);
 			gsonBuilder.registerTypeHierarchyAdapter(ShardingCodec.IndexLocation.class, ShardingCodec.indexLocationAdapter);
 			gsonBuilder.disableHtmlEscaping();
 			gson = gsonBuilder.create();
@@ -631,25 +630,25 @@ public class ShardTest {
 
 			final DataType dataType = context.deserialize(obj.get(DatasetAttributes.DATA_TYPE_KEY), DataType.class);
 
-			final Codec[] codecs;
+			final CodecInfo[] codecs;
 			if (obj.has(DatasetAttributes.CODEC_KEY)) {
-				codecs = context.deserialize(obj.get(DatasetAttributes.CODEC_KEY), Codec[].class);
+				codecs = context.deserialize(obj.get(DatasetAttributes.CODEC_KEY), CodecInfo[].class);
 			} else if (obj.has(DatasetAttributes.COMPRESSION_KEY)) {
 				final Compression compression
 						= CompressionAdapter.getJsonAdapter().deserialize(obj.get(DatasetAttributes.COMPRESSION_KEY), Compression.class, context);
-				codecs = new Codec[]{compression};
+				codecs = new CodecInfo[]{compression};
 			} else {
 				return null;
 			}
-			final ArrayCodec arrayCodec;
-			final BytesCodec[] bytesCodecs;
-			if (codecs[0] instanceof ArrayCodec) {
-				arrayCodec  = (ArrayCodec)codecs[0];
-				bytesCodecs = new BytesCodec[codecs.length - 1];
+			final BlockCodecInfo arrayCodec;
+			final DataCodec[] bytesCodecs;
+			if (codecs[0] instanceof BlockCodecInfo) {
+				arrayCodec  = (BlockCodecInfo)codecs[0];
+				bytesCodecs = new DataCodec[codecs.length - 1];
 				System.arraycopy(codecs, 1, bytesCodecs, 0, bytesCodecs.length);
 			} else {
 				arrayCodec = null;
-				bytesCodecs = (BytesCodec[])codecs;
+				bytesCodecs = (DataCodec[])codecs;
 			}
 			return new DatasetAttributes(dimensions, shardSize, blockSize, dataType, arrayCodec, bytesCodecs);
 		}
@@ -672,11 +671,11 @@ public class ShardTest {
 		}
 	}
 
-	private static Codec[] concatenateCodecs(final DatasetAttributes attributes) {
+	private static CodecInfo[] concatenateCodecs(final DatasetAttributes attributes) {
 
-		final BytesCodec[] byteCodecs = attributes.getCodecs();
-		final ArrayCodec arrayCodec = attributes.getArrayCodec();
-		final Codec[] allCodecs = new Codec[byteCodecs.length + 1];
+		final DataCodec[] byteCodecs = attributes.getCodecs();
+		final BlockCodecInfo arrayCodec = attributes.getArrayCodec();
+		final CodecInfo[] allCodecs = new CodecInfo[byteCodecs.length + 1];
 		allCodecs[0] = arrayCodec;
 		System.arraycopy(byteCodecs, 0, allCodecs, 1, byteCodecs.length);
 

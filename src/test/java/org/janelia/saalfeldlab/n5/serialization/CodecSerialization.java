@@ -5,10 +5,9 @@ import static org.junit.Assert.assertTrue;
 
 import org.janelia.saalfeldlab.n5.GsonUtils;
 import org.janelia.saalfeldlab.n5.GzipCompression;
-import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.BytesCodec;
+import org.janelia.saalfeldlab.n5.codec.DataCodec;
 import org.janelia.saalfeldlab.n5.codec.BytesCodecTests.BitShiftBytesCodec;
-import org.janelia.saalfeldlab.n5.codec.Codec;
+import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.IdentityCodec;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,7 +45,7 @@ public class CodecSerialization {
 				JsonElement.class);
 		assertEquals("bitshift json", expectedBitShift, bitShiftJson);
 
-		final BytesCodec deserializedCodec = gson.fromJson(bitShiftJson, BytesCodec.class);
+		final DataCodec deserializedCodec = gson.fromJson(bitShiftJson, DataCodec.class);
 		// Verify deserialized codec
 		assertEquals("Deserialized codec should equal original", codec, deserializedCodec);
 	}
@@ -54,7 +53,7 @@ public class CodecSerialization {
 	@Test
 	public void testSerializeCodecArray() {
 
-		Codec[] codecs = new Codec[]{
+		CodecInfo[] codecs = new CodecInfo[]{
 				new IdentityCodec()
 		};
 		JsonArray jsonCodecArray = gson.toJsonTree(codecs).getAsJsonArray();
@@ -63,11 +62,11 @@ public class CodecSerialization {
 				JsonElement.class);
 		assertEquals("codec array", expected, jsonCodecArray.getAsJsonArray());
 
-		Codec[] codecsDeserialized = gson.fromJson(expected, Codec[].class);
+		CodecInfo[] codecsDeserialized = gson.fromJson(expected, CodecInfo[].class);
 		assertEquals("codecs length not 1", 1, codecsDeserialized.length);
 		assertTrue("first codec not identity", codecsDeserialized[0] instanceof IdentityCodec);
 
-		codecs = new Codec[]{
+		codecs = new CodecInfo[]{
 				new GzipCompression()
 		};
 		jsonCodecArray = gson.toJsonTree(codecs).getAsJsonArray();
@@ -76,7 +75,7 @@ public class CodecSerialization {
 				JsonElement.class);
 		assertEquals("codec array", expected, jsonCodecArray.getAsJsonArray());
 
-		codecsDeserialized = gson.fromJson(expected, Codec[].class);
+		codecsDeserialized = gson.fromJson(expected, CodecInfo[].class);
 		assertEquals("codecs length not 1", 1, codecsDeserialized.length);
 		assertTrue("second codec not gzip", codecsDeserialized[0] instanceof GzipCompression);
 	}

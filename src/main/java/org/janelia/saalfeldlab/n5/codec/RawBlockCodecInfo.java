@@ -14,8 +14,8 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 
-@NameConfig.Name(value = RawBytesArrayCodec.TYPE)
-public class RawBytesArrayCodec implements ArrayCodec {
+@NameConfig.Name(value = RawBlockCodecInfo.TYPE)
+public class RawBlockCodecInfo implements BlockCodecInfo {
 
 	private static final long serialVersionUID = 3282569607795127005L;
 
@@ -24,12 +24,12 @@ public class RawBytesArrayCodec implements ArrayCodec {
 	@NameConfig.Parameter(value = "endian", optional = true)
 	private final ByteOrder byteOrder;
 
-	public RawBytesArrayCodec() {
+	public RawBlockCodecInfo() {
 
 		this(ByteOrder.BIG_ENDIAN);
 	}
 
-	public RawBytesArrayCodec(final ByteOrder byteOrder) {
+	public RawBlockCodecInfo(final ByteOrder byteOrder) {
 
 		this.byteOrder = byteOrder;
 	}
@@ -45,14 +45,14 @@ public class RawBytesArrayCodec implements ArrayCodec {
 	}
 
 	@Override
-	public <T> DataBlockSerializer<T> initialize(final DatasetAttributes attributes, final BytesCodec... bytesCodecs) {
+	public <T> BlockCodec<T> create(final DatasetAttributes attributes, final DataCodec... bytesCodecs) {
 		ensureValidByteOrder(attributes.getDataType(), getByteOrder());
-		return RawDataBlockSerializers.create(attributes.getDataType(), byteOrder, attributes.getBlockSize(), BytesCodec.concatenate(bytesCodecs));
+		return RawBlockCodecs.create(attributes.getDataType(), byteOrder, attributes.getBlockSize(), DataCodec.concatenate(bytesCodecs));
 	}
 
 
 
-	public static final RawBytesArrayCodec.ByteOrderAdapter byteOrderAdapter = new ByteOrderAdapter();
+	public static final RawBlockCodecInfo.ByteOrderAdapter byteOrderAdapter = new ByteOrderAdapter();
 
 	public static void ensureValidByteOrder(final DataType dataType, final ByteOrder byteOrder) {
 

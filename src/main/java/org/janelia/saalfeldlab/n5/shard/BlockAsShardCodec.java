@@ -4,12 +4,12 @@ import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception;
-import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.BytesCodec;
-import org.janelia.saalfeldlab.n5.codec.DataBlockSerializer;
+import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.BlockCodec;
+import org.janelia.saalfeldlab.n5.codec.DataCodec;
 import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodec;
 import org.janelia.saalfeldlab.n5.codec.IndexCodecAdapter;
-import org.janelia.saalfeldlab.n5.codec.RawBytesArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
@@ -17,7 +17,7 @@ import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 public class BlockAsShardCodec extends ShardingCodec {
 
 	private  static final LongArrayDataBlock BLOCK_AS_SHARD_INDEX = new LongArrayDataBlock(new int[0], new long[0], new long[]{0, -1});
-	private static final DataBlockSerializer<long[]> BLOCK_AS_SHARD_BLOCK_SERIALIZER = new DataBlockSerializer<long[]>() {
+	private static final BlockCodec<long[]> BLOCK_AS_SHARD_BLOCK_SERIALIZER = new BlockCodec<long[]>() {
 
 		@Override public ReadData encode(DataBlock<long[]> dataBlock) throws N5Exception.N5IOException {
 
@@ -30,14 +30,14 @@ public class BlockAsShardCodec extends ShardingCodec {
 		}
 	};
 
-	private static final RawBytesArrayCodec VIRTUAL_SHARD_INDEX_CODEC = new RawBytesArrayCodec() {
+	private static final RawBlockCodecInfo VIRTUAL_SHARD_INDEX_CODEC = new RawBlockCodecInfo() {
 
-		@Override public DataBlockSerializer<long[]> initialize(DatasetAttributes attributes, BytesCodec... bytesCodecs) {
+		@Override public BlockCodec<long[]> create(DatasetAttributes attributes, DataCodec... bytesCodecs) {
 
 			return BLOCK_AS_SHARD_BLOCK_SERIALIZER;
 		}
 	};
-	private static final BytesCodec[] EMPTY_SHARD_CODECS = new BytesCodec[0];
+	private static final DataCodec[] EMPTY_SHARD_CODECS = new DataCodec[0];
 
 	private static final DeterministicSizeCodec[] NO_OP_INDEX_CODECS = new DeterministicSizeCodec[0];
 	private static final IndexCodecAdapter BLOCK_AS_SHARD_INDEX_CODEC_ADAPTER = new IndexCodecAdapter(VIRTUAL_SHARD_INDEX_CODEC, NO_OP_INDEX_CODECS) {
@@ -48,9 +48,9 @@ public class BlockAsShardCodec extends ShardingCodec {
 		}
 	};
 
-	final ArrayCodec datasetArrayCodec;
+	final BlockCodecInfo datasetArrayCodec;
 
-	public BlockAsShardCodec(ArrayCodec datasetArrayCodec) {
+	public BlockAsShardCodec(BlockCodecInfo datasetArrayCodec) {
 
 		super(null, EMPTY_SHARD_CODECS, BLOCK_AS_SHARD_INDEX_CODEC_ADAPTER, IndexLocation.START);
 		this.datasetArrayCodec = datasetArrayCodec;
@@ -63,7 +63,7 @@ public class BlockAsShardCodec extends ShardingCodec {
 	}
 
 	@Override
-	public ArrayCodec getArrayCodec() {
+	public BlockCodecInfo getArrayCodec() {
 
 		return datasetArrayCodec;
 	}
@@ -81,10 +81,10 @@ public class BlockAsShardCodec extends ShardingCodec {
 	}
 
 	@Override
-	public <T> DataBlockSerializer<T> initialize(DatasetAttributes attributes, BytesCodec... codecs) {
+	public <T> BlockCodec<T> create(DatasetAttributes attributes, DataCodec... codecs) {
 
-		dataBlockSerializer = datasetArrayCodec.initialize(attributes, codecs);
-		return (DataBlockSerializer<T>)dataBlockSerializer;
+		dataBlockSerializer = datasetArrayCodec.create(attributes, codecs);
+		return (BlockCodec<T>)dataBlockSerializer;
 	}
 
 	@Override

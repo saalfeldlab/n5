@@ -49,7 +49,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
  * accessed (e.g., {@link #allBytes()}, {@link #writeTo(OutputStream)}).
  * <p>
  * {@code ReadData} can be {@code encoded} and {@code decoded} with a {@code
- * Codec}, which will also be lazy if possible.
+ * CodecInfo}, which will also be lazy if possible.
  */
 public interface ReadData {
 

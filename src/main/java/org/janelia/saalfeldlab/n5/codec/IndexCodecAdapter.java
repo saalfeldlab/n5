@@ -2,23 +2,23 @@ package org.janelia.saalfeldlab.n5.codec;
 
 public class IndexCodecAdapter {
 
-	private final ArrayCodec arrayCodec;
+	private final BlockCodecInfo arrayCodec;
 	private final DeterministicSizeCodec[] codecs;
 
-	public IndexCodecAdapter(final ArrayCodec arrayCodec, final DeterministicSizeCodec... codecs) {
+	public IndexCodecAdapter(final BlockCodecInfo arrayCodec, final DeterministicSizeCodec... codecs) {
 
 		this.arrayCodec = arrayCodec;
 		this.codecs = codecs;
 	}
 
-	public ArrayCodec getArrayCodec() {
+	public BlockCodecInfo getArrayCodec() {
 
 		return arrayCodec;
 	}
 
-	public BytesCodec[] getCodecs() {
+	public DataCodec[] getCodecs() {
 
-		final BytesCodec[] bytesCodecs = new BytesCodec[codecs.length];
+		final DataCodec[] bytesCodecs = new DataCodec[codecs.length];
 		System.arraycopy(codecs, 0, bytesCodecs, 0, codecs.length);
 		return bytesCodecs;
 	}
@@ -31,15 +31,15 @@ public class IndexCodecAdapter {
 		return totalNumBytes;
 	}
 
-	public static IndexCodecAdapter create(final Codec... codecs) {
+	public static IndexCodecAdapter create(final CodecInfo... codecs) {
 		if (codecs == null || codecs.length == 0)
-			return new IndexCodecAdapter(new RawBytesArrayCodec());
+			return new IndexCodecAdapter(new RawBlockCodecInfo());
 
-		if (codecs[0] instanceof ArrayCodec)
-			return new IndexCodecAdapter((ArrayCodec)codecs[0]);
+		if (codecs[0] instanceof BlockCodecInfo)
+			return new IndexCodecAdapter((BlockCodecInfo)codecs[0]);
 
 		final DeterministicSizeCodec[] indexCodecs = new DeterministicSizeCodec[codecs.length];
 		System.arraycopy(codecs, 0, indexCodecs, 0, codecs.length);
-		return new IndexCodecAdapter(new RawBytesArrayCodec(), indexCodecs);
+		return new IndexCodecAdapter(new RawBlockCodecInfo(), indexCodecs);
 	}
 }

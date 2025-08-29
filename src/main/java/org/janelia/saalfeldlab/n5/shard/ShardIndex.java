@@ -4,18 +4,15 @@ import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
-import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.codec.ArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.DataBlockSerializer;
+import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.IndexCodecAdapter;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
@@ -100,7 +97,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	 * @param location where the index is stored (START or END of shard)
 	 * @param arrayCodec arrayCodec for the IndexCodecAdapter
 	 */
-	public ShardIndex(int[] shardBlockGridSize, IndexLocation location, final ArrayCodec arrayCodec) {
+	public ShardIndex(int[] shardBlockGridSize, IndexLocation location, final BlockCodecInfo arrayCodec) {
 
 		this(shardBlockGridSize, location, new IndexCodecAdapter(arrayCodec));
 	}
@@ -111,7 +108,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	 * @param shardBlockGridSize the dimensions of the block grid within the shard
 	 * @param arrayCodec arrayCodec for the IndexCodecAdapter
 	 */
-	public ShardIndex(int[] shardBlockGridSize, final ArrayCodec arrayCodec) {
+	public ShardIndex(int[] shardBlockGridSize, final BlockCodecInfo arrayCodec) {
 
 		this(shardBlockGridSize, IndexLocation.END, arrayCodec);
 	}
@@ -330,7 +327,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	public static void read(InputStream indexIn, final ShardIndex index) throws N5IOException {
 
 		final ReadData dataIn = ReadData.from(indexIn);
-		final DataBlockSerializer<long[]> shardIndexCodec = index.indexAttributes.getDataBlockSerializer();
+		final BlockCodec<long[]> shardIndexCodec = index.indexAttributes.getDataBlockSerializer();
 		final DataBlock<long[]> indexBlock = shardIndexCodec.decode(dataIn, index.gridPosition);
 		System.arraycopy(indexBlock.getData(), 0, index.data, 0, (int)index.data.length);
 	}
@@ -344,7 +341,7 @@ public class ShardIndex extends LongArrayDataBlock {
 	 */
 	public static void write( final OutputStream outputStream, final ShardIndex index ) throws N5IOException {
 
-		final DataBlockSerializer<long[]> dataBlockSerializer = index.indexAttributes.getDataBlockSerializer();
+		final BlockCodec<long[]> dataBlockSerializer = index.indexAttributes.getDataBlockSerializer();
 		dataBlockSerializer.encode(index).writeTo(outputStream);
 	}
 

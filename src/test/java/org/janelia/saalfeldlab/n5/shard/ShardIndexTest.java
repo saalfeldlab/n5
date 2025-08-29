@@ -2,12 +2,10 @@ package org.janelia.saalfeldlab.n5.shard;
 
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
-import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5FSTest;
 import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
 import org.janelia.saalfeldlab.n5.codec.IndexCodecAdapter;
-import org.janelia.saalfeldlab.n5.codec.N5ArrayCodec;
-import org.janelia.saalfeldlab.n5.codec.RawBytesArrayCodec;
+import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
@@ -37,7 +35,7 @@ public class ShardIndexTest {
 		int[] shardBlockGridSize = new int[]{5, 4, 3};
 		ShardIndex index = new ShardIndex(
 				shardBlockGridSize,
-				IndexLocation.END, new RawBytesArrayCodec());
+				IndexLocation.END, new RawBlockCodecInfo());
 
 		GridIterator it = new GridIterator(shardBlockGridSize);
 		int i = 0;
@@ -50,7 +48,7 @@ public class ShardIndexTest {
 		shardBlockGridSize = new int[]{5, 4, 3, 13};
 		index = new ShardIndex(
 				shardBlockGridSize,
-				IndexLocation.END, new RawBytesArrayCodec());
+				IndexLocation.END, new RawBlockCodecInfo());
 
 		it = new GridIterator(shardBlockGridSize);
 		i = 0;
@@ -71,7 +69,7 @@ public class ShardIndexTest {
 		final int[] shardBlockGridSize = new int[]{6, 5};
 		final IndexLocation indexLocation = IndexLocation.END;
 		final IndexCodecAdapter indexCodecAdapter = new IndexCodecAdapter(
-				new RawBytesArrayCodec(),
+				new RawBlockCodecInfo(),
 				new Crc32cChecksumCodec()
 		);
 
