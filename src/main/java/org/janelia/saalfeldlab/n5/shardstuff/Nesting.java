@@ -14,10 +14,13 @@ package org.janelia.saalfeldlab.n5.shardstuff;
 //         [+] construct with source level 0
 //     [+] minimal abs/rel access methods
 //     [+] toString()
-//     [-] extract NestedPosition abstract class
+//     [-] extract NestedPosition interface
 //         ==> postpone until necessary
 //     [ ] equals / hashcode
 //     [ ] should we have prefix()? suffix()? head()? tail()?
+//     [ ] Implement Comparable so that we can sort and aggregate for N5Reader.readBlocks(...).
+//         For nested = {X,Y,Z} compare by Z, then Y, then X.
+//         For X = {x,y,z} compare by z, then y, then x. (flattening order)
 //
 // TODO ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -78,6 +81,7 @@ public class Nesting {
 		 *
 		 * @return relative grid position
 		 */
+		// TODO: rename to relative()? reads nicer in position.relative(l) ...
 		public long[] relativePosition(final int level) {
 			return grid.relativePosition(position, level);
 		}
@@ -90,10 +94,12 @@ public class Nesting {
 		 *
 		 * @return absolute grid position
 		 */
+		// TODO: rename to absolute()? reads nicer in position.absolute(l) ...
 		public long[] absolutePosition(final int level) {
 			return grid.relativePosition(position, level);
 		}
 
+		// TODO: rename to key()? to match absolute() and relative() ...
 		public long[] keyPosition() {
 			return relativePosition(grid.numLevels() - 1);
 		}
