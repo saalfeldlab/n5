@@ -1,9 +1,14 @@
-package org.janelia.saalfeldlab.n5;
+package org.janelia.saalfeldlab.n5.shardstuff;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
+import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5URI;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodec;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
