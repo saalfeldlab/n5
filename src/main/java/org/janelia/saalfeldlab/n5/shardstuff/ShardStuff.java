@@ -219,12 +219,14 @@ public class ShardStuff {
 
 
 
-		// TODO: Decide whether to use absolute of relative NestedBlockPosition.
-		//       (For decoding we need both:
-		//       	shard.getElementData(RELATIVE_GRID_POSITION),
-		//       	(shard|dataBlock)Codec.decode(data, ABSOLUTE_GRID_POSITION)
-		//       Maybe NestedBlockPosition should just contain both?
-		//       ==> Trying that now...
+		// TODO: [+] Decide whether to use absolute of relative NestedBlockPosition.
+		//           For decoding we need both:
+		//       	    shard.getElementData(RELATIVE_GRID_POSITION),
+		//       	    (shard|dataBlock)Codec.decode(data, ABSOLUTE_GRID_POSITION)
+		//           Maybe NestedBlockPosition should just contain both?
+		//           ==> Trying that now...
+
+		// TODO: [ ] split into separate NestedGrid class
 
 		public NestedBlockPosition getNestedDataBlockPosition(final long[] gridPos) {
 			if (shardCodecs.isEmpty()) {
@@ -259,17 +261,12 @@ public class ShardStuff {
 		}
 
 
-		// TODO
-		//   ====> NEXT
-		//   ====> NEXT
-		//   ====> NEXT
-		//   ====> NEXT
-		//   ====> NEXT
-		//   ====> NEXT
-		//   1) Rewrite extractDataBlock() to use relative/absolute coordinates form nestedPos
-		//   2) Extract something like "get the readData for nestedPos" which
-		//      can then be re-used to implement extractDataBlock() and extractShard() non-recursively
-		//   3) See whether that helps to think about writing / updating blocks
+		// TODO:
+		//
+		//   [+] Rewrite extractDataBlock() to use relative/absolute coordinates form nestedPos
+		//   [ ] Extract something like "get the readData for nestedPos" which
+		//       can then be re-used to implement extractDataBlock() and extractShard() non-recursively
+		//   [ ] See whether that helps to think about writing / updating blocks
 
 
 		public DataBlock<T> extractDataBlock(ReadData data, final NestedBlockPosition nestedPos) {
@@ -328,9 +325,18 @@ public class ShardStuff {
 	}
 
 
-	// TODO: Implement Comparable so that we can sort and aggregate for N5Reader.readBlocks(...).
-	//       For nested = {X,Y,Z} compare by X, then Y, then Z.
-	//       For X = {x,y,z} compare by z, then y, then x. (flattening order)
+
+
+
+
+
+	// TODO:
+	//  	[ ] Implement Comparable so that we can sort and aggregate for N5Reader.readBlocks(...).
+	//          For nested = {X,Y,Z} compare by X, then Y, then Z.
+	//          For X = {x,y,z} compare by z, then y, then x. (flattening order)
+	//      [ ] Split into interface and implementation
+	//      [ ] Add implementation based on NestedGrid and long[] gridPosition
+
 
 
 	public static class NestedBlockPosition {
