@@ -3,15 +3,118 @@ package org.janelia.saalfeldlab.n5.shardstuff;
 
 // TODO ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// [ ] NestedGrid javadoc
+// [ ] NestedGrid
+//     [ ] validation in constructor
+//     [ ] test for that validation
+//     [ ] javadoc
+//
 // [ ] NestedPosition interface
+//     [+] LazyNestedPosition class
+//         [+] fields: NestedGrid, long[] position, int level
+//         [+] construct with source level 0
+//     [+] minimal abs/rel access methods
+//     [+] toString()
+//     [-] extract NestedPosition abstract class
+//         ==> postpone until necessary
+//     [ ] equals / hashcode
+//     [ ] should we have prefix()? suffix()? head()? tail()?
 //
 // TODO ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 import java.util.Arrays;
 
 public class Nesting {
+
+	public static void main(String[] args) {
+		final int[][] blockSizes = {{1,1,1}, {3,2,2}, {6,4,4}, {24,24,24}};
+		final NestedGrid grid = new NestedGrid(blockSizes);
+		final NestedPosition pos = new NestedPosition(grid, new long[] {38, 7, 129});
+		System.out.println("pos = " + pos);
+		System.out.println("key = " + Arrays.toString(pos.keyPosition()));
+	}
+
+
+
+
+	public static class NestedPosition {
+
+		private final NestedGrid grid;
+		private final long[] position;
+		private final int level;
+
+		public NestedPosition(final NestedGrid grid, final long[] position, final int level) {
+			this.grid = grid;
+			this.position = position;
+			this.level = level;
+		}
+
+		public NestedPosition(final NestedGrid grid, final long[] position) {
+			this(grid, position, 0);
+		}
+
+		/**
+		 * Get the nesting level of this position.
+		 * <p>
+		 * Positions with {@code level=0} refer to DataBlocks, positions with
+		 * {@code level=1} refer to first-level shards (containing DataBlocks),
+		 * and so on.
+		 *
+		 * @return nesting level
+		 */
+		public int level() {
+			return level;
+		}
+
+		public int numDimensions() {
+			return grid.numDimensions();
+		}
+
+		/**
+		 * Get the relative grid position at {@code level}, that is, relative
+		 * offset within containing the {@code (level+1)} element.
+		 *
+		 * @param level
+		 * 		requested nesting level
+		 *
+		 * @return relative grid position
+		 */
+		public long[] relativePosition(final int level) {
+			return grid.relativePosition(position, level);
+		}
+
+		/**
+		 * Get the absolute grid position at {@code level}.
+		 *
+		 * @param level
+		 * 		requested nesting level
+		 *
+		 * @return absolute grid position
+		 */
+		public long[] absolutePosition(final int level) {
+			return grid.relativePosition(position, level);
+		}
+
+		public long[] keyPosition() {
+			return relativePosition(grid.numLevels() - 1);
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder sb = new StringBuilder();
+			sb.append('{');
+			for ( int l = level; l < grid.numLevels(); ++l ) {
+				if ( l > level ) {
+					sb.append(" / ");
+				}
+				sb.append(Arrays.toString(relativePosition(l)));
+			}
+			sb.append(" (level ").append(level).append(")}");
+			return sb.toString();
+		}
+
+		// TODO: equals() and hashCode()
+		// TODO: should we have prefix()? suffix()? head()? tail()?
+	}
 
 
 	/**
@@ -60,6 +163,14 @@ public class Nesting {
 					r[l][d] = blockSizes[l][d] / blockSizes[k][d];
 				}
 			}
+		}
+
+		public int numLevels() {
+			return m;
+		}
+
+		public int numDimensions() {
+			return n;
 		}
 
 		public void absolutePosition(
@@ -118,5 +229,6 @@ public class Nesting {
 			return relativePosition(sourcePos, 0, targetLevel);
 		}
 	}
+
 
 }
