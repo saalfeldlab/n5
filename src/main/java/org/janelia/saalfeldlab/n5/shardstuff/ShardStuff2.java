@@ -1,17 +1,9 @@
 package org.janelia.saalfeldlab.n5.shardstuff;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
-import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.N5URI;
-import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
-import org.janelia.saalfeldlab.n5.codec.DataCodec;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedGrid;
@@ -115,6 +107,10 @@ public class ShardStuff2 {
 	}
 
 
+	public interface BlockCodecInfo extends CodecInfo {
+		// when moving to Java 17+:
+		// this should be sealed, permitting ShardCodecInfo and DataBlockCodecInfo
+	}
 
 	public interface ShardCodecInfo extends BlockCodecInfo {
 
@@ -122,7 +118,7 @@ public class ShardStuff2 {
 		 * Chunk size of the elements in this block.
 		 * That is, (1, ...) for DataBlockCodecInfo, respectively inner block size for ShardCodecInfo.
 		 */
-		int[] getChunkSize();
+		int[] getInnerBlockSize();
 
 		/**
 		 * Nested BlockCodec.
@@ -143,6 +139,103 @@ public class ShardStuff2 {
 
 
 
+
+	// -----------------
+	// --- "testing" ---
+
+	public static void main(String[] args) {
+
+		// DataBlocks are 3x3x3
+		// Level 1 shards are 6x6x6 (contain 2x2x2 DataBlocks)
+		// Level 2 shards are 24x24x24 (contain 4x4x4 Level 1 shards)
+
+		final DataBlockCodecInfo c0 = new DummyDataBlockCodecInfo();
+		final ShardCodecInfo c1 = new DummyShardCodecInfo(
+				new int[] {3, 3, 3},
+				c0,
+				new DataCodecInfo[] {new RawCompression()}
+		);
+		final ShardCodecInfo c2 = new DummyShardCodecInfo(
+				new int[] {6, 6, 6},
+				c1,
+				new DataCodecInfo[] {new RawCompression()}
+		);
+
+		final WipShardingCodec<Object> wipShardingCodec = create(DataType.INT8,
+				new int[] {24, 24, 24},
+				c2,
+				new DataCodecInfo[] {new RawCompression()});
+
+		System.out.println("wipShardingCodec = " + wipShardingCodec);
+	}
+
+	public static class DummyShardCodecInfo implements ShardCodecInfo {
+
+		private final int[] innerBlockSize;
+		private final BlockCodecInfo innerBlockCodecInfo;
+		private final DataCodecInfo[] innerDataCodecInfos;
+
+		public DummyShardCodecInfo(
+				final int[] innerBlockSize,
+				final BlockCodecInfo innerBlockCodecInfo,
+				final DataCodecInfo[] innerDataCodecInfos) {
+			this.innerBlockSize = innerBlockSize;
+			this.innerBlockCodecInfo = innerBlockCodecInfo;
+			this.innerDataCodecInfos = innerDataCodecInfos;
+		}
+
+		@Override
+		public int[] getInnerBlockSize() {
+			return innerBlockSize;
+		}
+
+		@Override
+		public BlockCodecInfo getInnerBlockCodecInfo() {
+			return innerBlockCodecInfo;
+		}
+
+		@Override
+		public DataCodecInfo[] getInnerDataCodecInfos() {
+			return innerDataCodecInfos;
+		}
+
+		@Override
+		public ShardCodec create(final int[] blockSize, final DataCodecInfo... codecs) {
+			return null;
+		}
+
+		@Override
+		public String getType() {
+			return "DummyShardCodec";
+		}
+	}
+
+	public static class DummyDataBlockCodecInfo implements DataBlockCodecInfo {
+
+		@Override
+		public <T> DataBlockCodec<T> create(final DataType dataType, final int[] blockSize, final DataCodecInfo... codecs) {
+			return null;
+		}
+
+		@Override
+		public String getType() {
+			return "DummyDataBlockCodecInfo";
+		}
+	}
+
+	// --- "testing" ---
+	// -----------------
+
+
+
+
+
+
+
+
+
+
+
 	// NB: Something needs to get the ReadData from the KVA.
 	//     We cannot put readBlocks(...) logic into the (Data)BlockCodec, because that doesn't have access to the KVA.
 	//     We could put readBlocks(ReadData, ...) into the ShardCodec, to read several blocks from the same Shard.
@@ -151,7 +244,7 @@ public class ShardStuff2 {
 	// TODO: Consider making this really recursive.
 	//       ... but postpone until the overall shape is a bit clearer.
 
-	static class WipShardingCodec<T> implements DataBlockCodec<T> {
+	static class WipShardingCodec<T> {
 
 		private final NestedGrid grid;
 		private final DataBlockCodec<T> dataBlockCodec;
@@ -185,7 +278,7 @@ public class ShardStuff2 {
 		}
 
 		// TODO: alternative implementation that uses nestedCodec
-		public DataBlock<T> decode2(final ReadData readData, final NestedPosition position) throws N5IOException {
+		public DataBlock<T> decodeNested(final ReadData readData, final NestedPosition position) throws N5IOException {
 
 			// NB: Assuming position.level==0 (refers to a DataBlock) and has
 			// nesting corresponding (at least) to our grid. This should perhaps
@@ -195,7 +288,7 @@ public class ShardStuff2 {
 				final int l = shardCodecs.length - 1;
 				final Shard shard = shardCodecs[l].decode(readData, position.absolutePosition(l));
 				final ReadData nestedData = shard.getElementData(position.relativePosition(l - 1));
-				return nestedCodec.decode(nestedData, position);
+				return nestedCodec.decodeNested(nestedData, position);
 			} else {
 				return dataBlockCodec.decode(readData, position.absolutePosition(0));
 			}
@@ -204,16 +297,15 @@ public class ShardStuff2 {
 
 
 
+		// --- DataBlockCodec<T> ---
 
-		@Override
-		public ReadData encode(final DataBlock<T> block) throws N5IOException {
-			throw new UnsupportedOperationException("TODO");
-		}
-
-		@Override
-		public DataBlock<T> decode(final ReadData readData, final long[] gridPosition) throws N5IOException {
-			throw new UnsupportedOperationException("TODO");
-		}
+//		@Override
+//		public ReadData encode(final DataBlock<T> block) throws N5IOException {
+//		}
+//
+//		@Override
+//		public DataBlock<T> decode(final ReadData readData, final long[] gridPosition) throws N5IOException {
+//		}
 	}
 
 	static <T> WipShardingCodec<T> create(
@@ -230,7 +322,7 @@ public class ShardStuff2 {
 		final WipShardingCodec<T> nestedWipShardingCodec;
 		if ( m > 1 ) {
 			final ShardCodecInfo info = (ShardCodecInfo) blockCodecInfo;
-			nestedWipShardingCodec = create(dataType, info.getChunkSize(), info.getInnerBlockCodecInfo(), info.getInnerDataCodecInfos());
+			nestedWipShardingCodec = create(dataType, info.getInnerBlockSize(), info.getInnerBlockCodecInfo(), info.getInnerDataCodecInfos());
 		} else {
 			nestedWipShardingCodec = null;
 		}
@@ -249,7 +341,7 @@ public class ShardStuff2 {
 			shardCodecs[l] = info.create(blockSize, dataCodecInfos);
 			blockCodecInfo = info.getInnerBlockCodecInfo();
 			dataCodecInfos = info.getInnerDataCodecInfos();
-			blockSize = info.getChunkSize();
+			blockSize = info.getInnerBlockSize();
 		}
 
 		final DataBlockCodecInfo info = (DataBlockCodecInfo) blockCodecInfo; // TODO instanceof check
