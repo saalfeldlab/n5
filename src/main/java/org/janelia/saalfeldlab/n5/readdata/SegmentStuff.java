@@ -28,6 +28,9 @@ public class SegmentStuff {
 		 * @return all segments contained in this {@code ReadData}.
 		 */
 		// TODO: return Collection<Segment> instead? Or Segment[]?
+		//       Maybe: ordered by offset then length? Then offset of first
+		//       segment and offset+length of last segment could be used to
+		//       determine tight bounds of slice containing all segments.
 		List<Segment> segments();
 
 		// TODO: return wrapper of readData with one segment comprising the whole ReadData
@@ -43,7 +46,12 @@ public class SegmentStuff {
 
 		// TODO: return a SegmentedReadData wrapping a slice containing exactly the given segment
 		// throws IllegalArgumentException if segment is not contained in this ReadData
-		SegmentedReadData slice(Segment segment) throws IllegalArgumentException;
+		SegmentedReadData slice(Segment segment) throws IllegalArgumentException, N5IOException;
+
+		// TODO: has all segments fully contained in requested slice.
+		@Override
+		SegmentedReadData slice(final long offset, final long length) throws N5IOException;
+
 	}
 
 	// TODO: make Segment and SegmentLocation interfaces? Then we could make a
@@ -86,5 +94,11 @@ public class SegmentStuff {
 			return length;
 		}
 	}
+
+
+	public static class ReadDataWrapper implements ReadData {
+		private final ReadData delegate;
+	}
+
 
 }
