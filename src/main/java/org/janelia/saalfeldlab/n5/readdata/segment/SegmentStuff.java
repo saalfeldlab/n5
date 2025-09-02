@@ -53,6 +53,11 @@ public class SegmentStuff {
 			return SegmentedReadDataImpl.wrap(readData, locations);
 		}
 
+		@Override
+		default SegmentedReadData limit(final long length) throws N5IOException {
+			return slice(0, length);
+		}
+
 		/**
 		 * Return a {@code SegmentedReadData} wrapping a slice containing exactly the given segment.
 		 *
@@ -122,59 +127,4 @@ public class SegmentStuff {
 					'}';
 		}
 	}
-
-	static class ReadDataWrapper implements ReadData {
-		final ReadData delegate;
-
-		ReadDataWrapper(final ReadData delegate) {
-			this.delegate = delegate;
-		}
-
-		@Override
-		public long length() throws N5IOException {
-			return delegate.length();
-		}
-
-		@Override
-		public ReadData limit(final long length) throws N5IOException {
-			return delegate.limit(length);
-		}
-
-		@Override
-		public ReadData slice(final long offset, final long length) throws N5IOException {
-			return delegate.slice(offset, length);
-		}
-
-		@Override
-		public InputStream inputStream() throws N5IOException, IllegalStateException {
-			return delegate.inputStream();
-		}
-
-		@Override
-		public byte[] allBytes() throws N5IOException, IllegalStateException {
-			return delegate.allBytes();
-		}
-
-		@Override
-		public ByteBuffer toByteBuffer() throws N5IOException, IllegalStateException {
-			return delegate.toByteBuffer();
-		}
-
-		@Override
-		public ReadData materialize() throws N5IOException {
-			return delegate.materialize();
-		}
-
-		@Override
-		public void writeTo(final OutputStream outputStream) throws N5IOException, IllegalStateException {
-			delegate.writeTo(outputStream);
-		}
-
-		@Override
-		public ReadData encode(final OutputStreamOperator encoder) {
-			return delegate.encode(encoder);
-		}
-	}
-
-
 }

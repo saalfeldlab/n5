@@ -1,5 +1,8 @@
 package org.janelia.saalfeldlab.n5.readdata.segment;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -10,21 +13,35 @@ import org.janelia.saalfeldlab.n5.readdata.segment.SegmentStuff.SegmentLocation;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentStuff.SegmentLocationImpl;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentStuff.SegmentedReadData;
 
-class SegmentedReadDataImpl extends SegmentStuff.ReadDataWrapper implements SegmentedReadData {
+class SegmentedReadDataImpl implements SegmentedReadData {
 
-	// segments, ordered by location
-	private final List<SegmentImpl> segments;
+	/**
+	 * The {@code ReadData} providing our data. This is either {@code segmentSource} in
+	 * which case {@code offset==0}, or a slice into {@code segmentSource} in
+	 * which case {@code offset} is the offset of the slice.
+	 */
+	private final ReadData delegate;
 
+	/**
+	 * The {@link Segment#source() source} {@code ReadData} of all contained
+	 * segments.
+	 */
 	private final ReadData segmentSource;
 
+	/**
+	 * The offset of {@code delegate} withr espect to {@code segmentSource}.
+	 */
 	private final long offset;
+
+	/**
+	 * Contained segments, ordered by location.
+	 */
+	private final List<SegmentImpl> segments;
 
 	private static class SegmentImpl implements Segment, SegmentLocation {
 
 		private final ReadData source;
-
 		private final long offset;
-
 		private final long length;
 
 		public SegmentImpl(final ReadData source, final SegmentLocation location) {
@@ -54,16 +71,7 @@ class SegmentedReadDataImpl extends SegmentStuff.ReadDataWrapper implements Segm
 	}
 
 	private static class EnclosingSegmentImpl extends SegmentImpl {
-		/*
-				} else if (segmentSource.equals(segment.source()) && segment instanceof EnclosingSegmentImpl) {
-			final EnclosingSegmentImpl s = (EnclosingSegmentImpl) segment;
-			return new SegmentedReadDataImpl(
-					delegate.slice(s.offset(), s.length()),
-					segmentSource,
-					this.offset + s.offset(),
-					Collections.singletonList(s));
 
-		 */
 		public EnclosingSegmentImpl(final ReadData source) {
 			super(source, 0, -1);
 		}
@@ -74,16 +82,9 @@ class SegmentedReadDataImpl extends SegmentStuff.ReadDataWrapper implements Segm
 		}
 	}
 
-
-	@Override
-	public SegmentedReadData materialize() throws N5IOException {
-		delegate.materialize();
-		return this;
-	}
-
 	// assumes segments are ordered by location
 	private SegmentedReadDataImpl(final ReadData delegate, final ReadData segmentSource, final long offset, final List<SegmentImpl> segments) {
-		super(delegate);
+		this.delegate = delegate;
 		this.segmentSource = segmentSource;
 		this.offset = offset;
 		this.segments = segments;
@@ -98,7 +99,7 @@ class SegmentedReadDataImpl extends SegmentStuff.ReadDataWrapper implements Segm
 	//       should return Pair<SegmentedReadData, Segment[]> where segments are in
 	//       the same order as locations.
 	// TODO: use List<SegmentLocation> instead of SegmentLocation[]
-	public static SegmentedReadData wrap(final ReadData readData, final SegmentLocation[] locations) {
+	static SegmentedReadData wrap(final ReadData readData, final SegmentLocation[] locations) {
 		final List<SegmentImpl> segments = new ArrayList<>(locations.length);
 		for (SegmentLocation l : locations) {
 			segments.add(new SegmentImpl(readData, l));
@@ -107,7 +108,7 @@ class SegmentedReadDataImpl extends SegmentStuff.ReadDataWrapper implements Segm
 		return new SegmentedReadDataImpl(readData, segments);
 	}
 
-	public static SegmentedReadData wrap(final ReadData readData) {
+	static SegmentedReadData wrap(final ReadData readData) {
 		return new SegmentedReadDataImpl(readData, Collections.singletonList(new EnclosingSegmentImpl(readData)));
 	}
 
@@ -124,6 +125,11 @@ class SegmentedReadDataImpl extends SegmentStuff.ReadDataWrapper implements Segm
 	@Override
 	public List<? extends Segment> segments() {
 		return segments;
+	}
+
+	@Override
+	public long length() throws N5IOException {
+		return delegate.length();
 	}
 
 	@Override
@@ -175,5 +181,47 @@ class SegmentedReadDataImpl extends SegmentStuff.ReadDataWrapper implements Segm
 				segmentSource,
 				this.offset + offset,
 				contained);
+	}
+
+	@Override
+	public InputStream inputStream() throws N5IOException, IllegalStateException {
+		return delegate.inputStream();
+	}
+
+	@Override
+	public byte[] allBytes() throws N5IOException, IllegalStateException {
+		return delegate.allBytes();
+	}
+
+	@Override
+	public ByteBuffer toByteBuffer() throws N5IOException, IllegalStateException {
+		return delegate.toByteBuffer();
+	}
+
+	@Override
+	public SegmentedReadData materialize() throws N5IOException {
+		delegate.materialize();
+		return this;
+	}
+
+	@Override
+	public void writeTo(final OutputStream outputStream) throws N5IOException, IllegalStateException {
+		delegate.writeTo(outputStream);
+	}
+
+	/**
+	 * Returns a new ReadData that uses the given {@code OutputStreamOperator} to
+	 * encode this SegmentedReadData.
+	 * <p>
+	 * Note that segments are lost by encoding.
+	 *
+	 * @param encoder
+	 * 		OutputStreamOperator to use for encoding
+	 *
+	 * @return encoded ReadData
+	 */
+	@Override
+	public ReadData encode(final OutputStreamOperator encoder) {
+		return delegate.encode(encoder);
 	}
 }
