@@ -51,22 +51,6 @@ public class SegmentTest {
 	}
 
 	@Test
-	public void testWrapFully() {
-		System.out.println("readDataUnknownLength.length() = " + readDataUnknownLength.length());
-		final SegmentedReadData r = SegmentedReadData.wrap(readDataUnknownLength);
-		assertEquals(1, r.segments().size());
-
-		final SegmentLocation l0 = r.location(r.segments().get(0));
-		assertEquals(0, l0.offset());
-		assertEquals(-1, l0.length());
-
-		r.materialize();
-		final SegmentLocation l0m = r.location(r.segments().get(0));
-		assertEquals(0, l0m.offset());
-		assertEquals(100, l0m.length());
-	}
-
-	@Test
 	public void testSlice() {
 
 		final SegmentLocation[] locations = {
@@ -105,5 +89,61 @@ public class SegmentTest {
 		assertEquals(0, l0.offset());
 		assertEquals(20, l0.length());
 	}
+
+	@Test
+	public void testWrapFully() {
+		final SegmentedReadData r = SegmentedReadData.wrap(readDataUnknownLength);
+		assertEquals(1, r.segments().size());
+
+		final SegmentLocation l0 = r.location(r.segments().get(0));
+		assertEquals(0, l0.offset());
+		assertEquals(-1, l0.length());
+
+		final SegmentedReadData m = r.materialize();
+		final SegmentLocation l0m = r.location(r.segments().get(0));
+		assertEquals(0, l0m.offset());
+		assertEquals(100, l0m.length());
+
+		final SegmentLocation l0m2 = m.location(m.segments().get(0));
+		assertEquals(0, l0m2.offset());
+		assertEquals(100, l0m2.length());
+	}
+
+	@Test
+	public void testSliceFullyWrapped() {
+		final SegmentedReadData r = SegmentedReadData.wrap(readDataUnknownLength);
+		final SegmentedReadData s = r.slice(0, 100);
+		assertEquals(100, s.length());
+
+		assertEquals(1, s.segments().size());
+
+		final SegmentLocation l0 = s.location(s.segments().get(0));
+		assertEquals(0, l0.offset());
+		assertEquals(100, l0.length());
+
+		final SegmentedReadData s0 = r.slice(0, 99);
+		assertEquals(99, s0.length());
+		assertEquals(0, s0.segments().size());
+
+		final SegmentedReadData s1 = r.slice(1, 99);
+		assertEquals(99, s1.length());
+		assertEquals(0, s1.segments().size());
+	}
+
+	@Test
+	public void testSliceSegmentFullyWrapped() {
+
+		final SegmentedReadData r = SegmentedReadData.wrap(readDataUnknownLength);
+		final SegmentedReadData s = r.slice(r.segments().get(0));
+		assertEquals(-1, s.length());
+
+		assertEquals(1, s.segments().size());
+
+		final SegmentLocation l0 = s.location(s.segments().get(0));
+		assertEquals(0, l0.offset());
+		assertEquals(-1, l0.length());
+	}
+
+
 
 }

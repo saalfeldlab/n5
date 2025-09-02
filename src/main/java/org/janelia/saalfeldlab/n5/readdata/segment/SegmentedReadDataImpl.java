@@ -3,7 +3,7 @@ package org.janelia.saalfeldlab.n5.readdata.segment;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentStuff.Segment;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentStuff.SegmentLocation;
@@ -75,6 +75,11 @@ class SegmentedReadDataImpl extends SegmentStuff.ReadDataWrapper implements Segm
 	}
 
 
+	@Override
+	public SegmentedReadData materialize() throws N5IOException {
+		delegate.materialize();
+		return this;
+	}
 
 	// assumes segments are ordered by location
 	private SegmentedReadDataImpl(final ReadData delegate, final ReadData segmentSource, final long offset, final List<SegmentImpl> segments) {
@@ -122,32 +127,35 @@ class SegmentedReadDataImpl extends SegmentStuff.ReadDataWrapper implements Segm
 	}
 
 	@Override
-	public SegmentedReadData slice(final Segment segment) throws IllegalArgumentException, N5Exception.N5IOException {
-		if (segmentSource.equals(segment.source()) && segment instanceof SegmentImpl) {
-			final SegmentImpl s = (SegmentImpl) segment;
-			return new SegmentedReadDataImpl(
-					delegate.slice(s.offset(), s.length()),
-					segmentSource,
-					this.offset + s.offset(),
-					Collections.singletonList(s));
-		} else {
-			throw new IllegalArgumentException();
+	public SegmentedReadData slice(final Segment segment) throws IllegalArgumentException, N5IOException {
+		if (segmentSource.equals(segment.source())) {
+			if (segment instanceof EnclosingSegmentImpl) {
+				return this;
+			} else if (segment instanceof SegmentImpl) {
+				final SegmentImpl s = (SegmentImpl) segment;
+				return new SegmentedReadDataImpl(
+						delegate.slice(s.offset(), s.length()),
+						segmentSource,
+						this.offset + s.offset(),
+						Collections.singletonList(s));
+			}
 		}
+		throw new IllegalArgumentException();
 	}
 
 	@Override
-	public SegmentedReadData slice(final long offset, final long length) throws N5Exception.N5IOException {
+	public SegmentedReadData slice(final long offset, final long length) throws N5IOException {
 
 		final long sourceOffset = this.offset + offset;
 
 		// fromIndex: find first segment with offset >= sourceOffset
-		int fromIndex = Collections.binarySearch(segments, new SegmentLocationImpl(sourceOffset, 0), SegmentLocation.COMPARATOR);
+		int fromIndex = Collections.binarySearch(segments, new SegmentLocationImpl(sourceOffset, -1), SegmentLocation.COMPARATOR);
 		if (fromIndex < 0) {
 			fromIndex = -fromIndex - 1;
 		}
 
 		// toIndex: find first segment with offset >= sourceOffset + length
-		int toIndex = Collections.binarySearch(segments, new SegmentLocationImpl(sourceOffset + length, 0), SegmentLocation.COMPARATOR);
+		int toIndex = Collections.binarySearch(segments, new SegmentLocationImpl(sourceOffset + length, -1), SegmentLocation.COMPARATOR);
 		if (toIndex < 0) {
 			toIndex = -toIndex - 1;
 		}

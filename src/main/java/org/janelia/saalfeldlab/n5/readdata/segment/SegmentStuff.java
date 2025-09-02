@@ -67,6 +67,8 @@ public class SegmentStuff {
 		@Override
 		SegmentedReadData slice(final long offset, final long length) throws N5IOException;
 
+		@Override
+		SegmentedReadData materialize() throws N5IOException;
 	}
 
 	/**
@@ -89,82 +91,6 @@ public class SegmentStuff {
 
 		static SegmentLocation at(final long offset, final long length) {
 			return new SegmentLocationImpl(offset, length);
-		}
-	}
-
-
-
-	// TODO rename
-	static class SegmentedReadData_Single extends ReadDataWrapper implements SegmentedReadData {
-
-		private class SegmentImpl implements Segment, SegmentLocation {
-
-			@Override
-			public ReadData source() {
-				return delegate;
-			}
-
-			@Override
-			public long offset() {
-				return 0;
-			}
-
-			@Override
-			public long length() {
-				return delegate.length();
-			}
-		}
-
-		private final SegmentImpl segment = new SegmentImpl();
-
-		SegmentedReadData_Single(final ReadData delegate) {
-			super(delegate);
-		}
-
-		@Override
-		public SegmentLocation location(final Segment s) {
-			return (segment.equals(s)) ? segment : null;
-		}
-
-		@Override
-		public List<Segment> segments() {
-			return Collections.singletonList(segment);
-		}
-
-		@Override
-		public SegmentedReadData slice(final Segment s) throws IllegalArgumentException, N5IOException {
-			if (segment.equals(s)) {
-				return this;
-			} else {
-				throw new IllegalArgumentException("Provided segment is not part of this ");
-			}
-		}
-
-		@Override
-		public SegmentedReadData slice(final long offset, final long length) throws N5IOException {
-			final ReadData delegateSlice = delegate.slice(offset, length);
-			if (offset == segment.offset() && length == segment.length()) {
-				return this;
-			} else {
-				throw new UnsupportedOperationException("TODO");
-			}
-		}
-	}
-
-
-	static class SegmentImpl implements Segment {
-
-		private final ReadData source;
-
-		// TODO: add Segment id for debugging ...
-
-		public SegmentImpl(final ReadData source) {
-			this.source = source;
-		}
-
-		@Override
-		public ReadData source() {
-			return source;
 		}
 	}
 
