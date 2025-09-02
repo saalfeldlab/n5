@@ -39,7 +39,7 @@ public class SegmentStuff {
 		// TODO: return wrapper of readData with one segment comprising the whole ReadData
 		//       length of segment could return readData.length()
 		static SegmentedReadData wrap(ReadData readData) {
-			throw new UnsupportedOperationException("TODO");
+			return SegmentedReadDataImpl.wrap(readData);
 		}
 
 		/**

@@ -53,6 +53,29 @@ class SegmentedReadDataImpl extends SegmentStuff.ReadDataWrapper implements Segm
 		}
 	}
 
+	private static class EnclosingSegmentImpl extends SegmentImpl {
+		/*
+				} else if (segmentSource.equals(segment.source()) && segment instanceof EnclosingSegmentImpl) {
+			final EnclosingSegmentImpl s = (EnclosingSegmentImpl) segment;
+			return new SegmentedReadDataImpl(
+					delegate.slice(s.offset(), s.length()),
+					segmentSource,
+					this.offset + s.offset(),
+					Collections.singletonList(s));
+
+		 */
+		public EnclosingSegmentImpl(final ReadData source) {
+			super(source, 0, -1);
+		}
+
+		@Override
+		public long length() {
+			return source().length();
+		}
+	}
+
+
+
 	// assumes segments are ordered by location
 	private SegmentedReadDataImpl(final ReadData delegate, final ReadData segmentSource, final long offset, final List<SegmentImpl> segments) {
 		super(delegate);
@@ -77,6 +100,10 @@ class SegmentedReadDataImpl extends SegmentStuff.ReadDataWrapper implements Segm
 		}
 		segments.sort(SegmentLocation.COMPARATOR);
 		return new SegmentedReadDataImpl(readData, segments);
+	}
+
+	public static SegmentedReadData wrap(final ReadData readData) {
+		return new SegmentedReadDataImpl(readData, Collections.singletonList(new EnclosingSegmentImpl(readData)));
 	}
 
 	@Override

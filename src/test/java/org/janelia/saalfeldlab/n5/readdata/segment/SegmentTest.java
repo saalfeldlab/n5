@@ -1,5 +1,7 @@
 package org.janelia.saalfeldlab.n5.readdata.segment;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentStuff.SegmentLocation;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentStuff.SegmentedReadData;
@@ -12,6 +14,8 @@ public class SegmentTest {
 
 	private ReadData readData;
 
+	private ReadData readDataUnknownLength;
+
 	@Before
 	public void createReadData() {
 
@@ -20,6 +24,7 @@ public class SegmentTest {
 			data[i] = (byte) i;
 		}
 		readData = ReadData.from(data);
+		readDataUnknownLength = ReadData.from(new ByteArrayInputStream(data));
 	}
 
 	@Test
@@ -43,6 +48,22 @@ public class SegmentTest {
 		final SegmentLocation l2 = r.location(r.segments().get(2));
 		assertEquals(40, l2.offset());
 		assertEquals(20, l2.length());
+	}
+
+	@Test
+	public void testWrapFully() {
+		System.out.println("readDataUnknownLength.length() = " + readDataUnknownLength.length());
+		final SegmentedReadData r = SegmentedReadData.wrap(readDataUnknownLength);
+		assertEquals(1, r.segments().size());
+
+		final SegmentLocation l0 = r.location(r.segments().get(0));
+		assertEquals(0, l0.offset());
+		assertEquals(-1, l0.length());
+
+		r.materialize();
+		final SegmentLocation l0m = r.location(r.segments().get(0));
+		assertEquals(0, l0m.offset());
+		assertEquals(100, l0m.length());
 	}
 
 	@Test
@@ -81,7 +102,6 @@ public class SegmentTest {
 		assertEquals(1, s.segments().size());
 
 		final SegmentLocation l0 = s.location(s.segments().get(0));
-		System.out.println("l0 = " + l0);
 		assertEquals(0, l0.offset());
 		assertEquals(20, l0.length());
 	}
