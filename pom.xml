@@ -146,8 +146,6 @@
 		<releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
 
 		<n5-spec.version>4.0.0</n5-spec.version>
-
-		<scijava.jvm.version>24</scijava.jvm.version>
 	</properties>
 
 	<dependencies>
