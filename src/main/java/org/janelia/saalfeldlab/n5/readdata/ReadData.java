@@ -196,11 +196,11 @@ public interface ReadData {
 	//
 
 	/**
-	 * Returns a new ReadData that uses the given {@code OutputStreamEncoder} to
+	 * Returns a new ReadData that uses the given {@code OutputStreamOperator} to
 	 * encode this ReadData.
 	 *
 	 * @param encoder
-	 * 		OutputStreamEncoder to use for encoding
+	 * 		OutputStreamOperator to use for encoding
 	 *
 	 * @return encoded ReadData
 	 */

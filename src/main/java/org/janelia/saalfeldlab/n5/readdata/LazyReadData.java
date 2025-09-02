@@ -42,13 +42,13 @@ class LazyReadData implements ReadData {
 	}
 
 	/**
-	 * Construct a {@code LazyReadData} that uses the given {@code OutputStreamEncoder} to
+	 * Construct a {@code LazyReadData} that uses the given {@code OutputStreamOperator} to
 	 * encode the given {@code ReadData}.
 	 *
 	 * @param data
 	 * 		the ReadData to encode
 	 * @param encoder
-	 * 		OutputStreamEncoder to use for encoding
+	 * 		OutputStreamOperator to use for encoding
 	 */
 	LazyReadData(final ReadData data, final OutputStreamOperator encoder) {
 		this(outputStream -> {
@@ -69,23 +69,30 @@ class LazyReadData implements ReadData {
 			writeTo(baos);
 			bytes = new ByteArrayReadData(baos.toByteArray());
 		}
-		return bytes;
+		return this;
 	}
 
 	@Override
 	public long length() throws N5IOException {
+		return (bytes != null) ? bytes.length() : -1;
+	}
 
-		return materialize().length();
+	@Override
+	public ReadData slice(final long offset, final long length) throws N5IOException {
+		materialize();
+		return bytes.slice(offset, length);
 	}
 
 	@Override
 	public InputStream inputStream() throws N5IOException, IllegalStateException {
-		return materialize().inputStream();
+		materialize();
+		return bytes.inputStream();
 	}
 
 	@Override
 	public byte[] allBytes() throws N5IOException, IllegalStateException {
-		return materialize().allBytes();
+		materialize();
+		return bytes.allBytes();
 	}
 
 	@Override
@@ -105,7 +112,7 @@ class LazyReadData implements ReadData {
 	 * {@code UnaryOperator} that wraps {@code OutputStream} to intercept {@code
 	 * close()} and call {@code flush()} instead
 	 */
-	private static OutputStreamOperator interceptClose = o -> new ProxyOutputStream(o) {
+	private static final OutputStreamOperator interceptClose = o -> new ProxyOutputStream(o) {
 
 		@Override
 		public void close() throws IOException {

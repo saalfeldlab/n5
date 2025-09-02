@@ -34,7 +34,7 @@ public class ReadDataTests {
 		});
 		assertTrue(readData instanceof LazyReadData);
 
-		readDataTestHelper(readData, N);
+		readDataTestHelper(readData, -1, N);
 		sliceTestHelper(readData, N);
 	}
 
@@ -49,7 +49,7 @@ public class ReadDataTests {
 		ReadData readData = ReadData.from(data).materialize();
 		assertTrue(readData instanceof ByteArrayReadData);
 
-		readDataTestHelper(readData, N);
+		readDataTestHelper(readData, N, N);
 		readDataTestEncodeHelper(readData, N);
 		sliceTestHelper(readData, N);
 	}
@@ -67,7 +67,7 @@ public class ReadDataTests {
 		};
 
 		final ReadData readData = ReadData.from(is, N);
-		readDataTestHelper(readData, N);
+		readDataTestHelper(readData, N, N);
 		sliceTestHelper(readData, N);
 	}
 
@@ -92,9 +92,10 @@ public class ReadDataTests {
 		sliceTestHelper(readData, N);
 	}
 
-	private void readDataTestHelper( ReadData readData, int N ) throws IOException {
+	private void readDataTestHelper( ReadData readData, int N, int materializedN ) throws IOException {
 
 		assertEquals("full length", N, readData.length());
+		assertEquals("full length after materialize", materializedN, readData.materialize().length());
 	}
 
 	private void readDataTestEncodeHelper( ReadData readData, int N ) throws IOException {
