@@ -50,6 +50,17 @@ class InputStreamReadData implements ReadData {
 		return (bytes != null) ? bytes.length() : length;
 	}
 
+	// TODO: remove? Should this be the default implementation?
+	@Override
+	public long requireLength() throws N5IOException {
+		long l = length();
+		if ( l >= 0 ) {
+			return l;
+		} else {
+			return materialize().length();
+		}
+	}
+
 	@Override
 	public ReadData slice(final long offset, final long length) throws N5IOException {
 		materialize();

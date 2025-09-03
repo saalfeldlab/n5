@@ -58,13 +58,24 @@ public interface ReadData {
 	 * {@code -1}.
 	 *
 	 * @return number of bytes, if known, or -1
+	 */
+	default long length() {
+		return -1;
+	}
+
+	/**
+	 * Returns number of bytes in this {@link ReadData}. If the length is not
+	 * currently know, this method may retrieve the length using I/O operations,
+	 * {@link #materialize} this {@code ReadData}, or perform any other steps
+	 * necessary to obtain the length.
+	 *
+	 * @return number of bytes
 	 *
 	 * @throws N5IOException
 	 * 		if an I/O error occurs while trying to get the length
 	 */
-	default long length() throws N5IOException {
-		return -1;
-	}
+	long requireLength() throws N5IOException;
+	// TODO: default: {materialize(); return length();}
 
 	/**
 	 * Returns a {@link ReadData} whose length is limited to the given value.

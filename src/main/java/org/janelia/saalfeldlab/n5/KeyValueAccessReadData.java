@@ -29,8 +29,10 @@ public class KeyValueAccessReadData implements ReadData {
 
     @Override
 	public ReadData materialize() throws N5IOException {
-		if (materialized == null)
+		if (materialized == null) {
 			materialized = lazyRead.materialize(offset, length);
+			length = materialized.length();
+		}
 		return this;
 	}
 
@@ -78,13 +80,16 @@ public class KeyValueAccessReadData implements ReadData {
     }
 
     @Override
-    public long length() throws N5IOException {
-        if (materialized != null)
-            return materialized.length();
-        if (length < 0) {
-            length = lazyRead.size() - offset;
-        }
+    public long length() {
         return length;
     }
+
+	@Override
+	public long requireLength() throws N5IOException {
+		if (length < 0) {
+			length = lazyRead.size() - offset;
+		}
+		return length;
+	}
 
 }

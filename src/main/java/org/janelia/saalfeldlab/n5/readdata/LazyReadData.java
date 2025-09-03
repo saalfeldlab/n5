@@ -73,8 +73,20 @@ class LazyReadData implements ReadData {
 	}
 
 	@Override
-	public long length() throws N5IOException {
+	public long length() {
 		return (bytes != null) ? bytes.length() : -1;
+	}
+
+	// TODO: remove? Should this be the default implementation?
+	// TODO: could just always return materialize().length()?
+	@Override
+	public long requireLength() throws N5IOException {
+		long l = length();
+		if ( l >= 0 ) {
+			return l;
+		} else {
+			return materialize().length();
+		}
 	}
 
 	@Override
