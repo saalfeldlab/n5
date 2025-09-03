@@ -1,0 +1,159 @@
+package org.janelia.saalfeldlab.n5.readdata.segment;
+
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+
+class Concatenate implements SegmentedReadData {
+
+	private final List<SegmentedReadData> content;
+	private final ReadData delegate;
+	private final List<Segment> segments;
+	private final List<SegmentLocation> locations;
+	private final Map<Segment, SegmentLocation> segmentTolocation;
+	private boolean locationsBuilt;
+
+	Concatenate(final List<SegmentedReadData> content) {
+		this.content = content;
+		delegate = ReadData.from(os -> content.forEach(d -> d.writeTo(os)));
+		segments = new ArrayList<>();
+		locations = new ArrayList<>();
+		segmentTolocation = new HashMap<>();
+		locationsBuilt = false;
+	}
+
+	// constructor for slices
+	private Concatenate(final ReadData delegate, final List<Segment> segments,
+			final List<SegmentLocation> locations) {
+		content = null;
+		this.delegate = delegate;
+		this.segments = segments;
+		this.locations = locations;
+		segmentTolocation = new HashMap<>();
+		for (int i = 0; i < segments.size(); i++) {
+			segmentTolocation.put(segments.get(i), locations.get(i));
+		}
+		locationsBuilt = true;
+	}
+
+	private boolean ensureKnownSize() {
+		if (!locationsBuilt) {
+
+			long offset = 0;
+			for (int i = 0; i < content.size(); i++) {
+				final SegmentedReadData data = content.get(i);
+				if (data.length() < 0) {
+					throw new IllegalStateException("Some of concatenated ReadData don't know their length yet.");
+				}
+				segments.addAll(data.segments());
+				for (Segment segment : data.segments()) {
+					final SegmentLocation l = data.location(segment);
+					locations.add(SegmentLocation.at(l.offset() + offset, l.length()));
+				}
+				offset += data.length();
+			}
+
+			for (int i = 0; i < segments.size(); i++) {
+				segmentTolocation.put(segments.get(i), locations.get(i));
+			}
+
+			locationsBuilt = true;
+		}
+		return true;
+	}
+
+	@Override
+	public SegmentLocation location(final Segment segment) throws IllegalArgumentException {
+		ensureKnownSize();
+		final SegmentLocation location = segmentTolocation.get(segment);
+		if (location == null) {
+			throw new IllegalArgumentException();
+		}
+		return location;
+	}
+
+	@Override
+	public List<? extends Segment> segments() {
+		return segments;
+	}
+
+	@Override
+	public long length() throws N5Exception.N5IOException {
+		return delegate.length();
+	}
+
+	@Override
+	public SegmentedReadData slice(final Segment segment) throws IllegalArgumentException, N5Exception.N5IOException {
+		ensureKnownSize();
+		final SegmentLocation l = location(segment);
+		return slice(l.offset(), l.length());
+	}
+
+	@Override
+	public SegmentedReadData slice(final long offset, final long length) throws N5Exception.N5IOException {
+		ensureKnownSize();
+
+		// fromIndex: find first segment with offset >= sourceOffset
+		int fromIndex = Collections.binarySearch(locations, SegmentLocation.at(offset, -1), SegmentLocation.COMPARATOR);
+		if (fromIndex < 0) {
+			fromIndex = -fromIndex - 1;
+		}
+
+		// toIndex: find first segment with offset >= sourceOffset + length
+		int toIndex = Collections.binarySearch(locations, SegmentLocation.at(offset + length, -1), SegmentLocation.COMPARATOR);
+		if (toIndex < 0) {
+			toIndex = -toIndex - 1;
+		}
+
+		// contained: find segments in [fromIndex, toIndex) with s.offset() + s.length() <= sourceOffset + length
+		final List<Segment> containedSegments = new ArrayList<>();
+		final List<SegmentLocation> containedSegmentLocations = new ArrayList<>();
+		for (int i = fromIndex; i < toIndex; ++i) {
+			final SegmentLocation l = locations.get(i);
+			if (l.offset() + l.length() <= offset + length) {
+				containedSegments.add(segments.get(i));
+				containedSegmentLocations.add(SegmentLocation.at(l.offset() - offset, l.length()));
+			}
+		}
+
+		return new Concatenate(delegate.slice(offset, length), containedSegments, containedSegmentLocations);
+	}
+
+	@Override
+	public InputStream inputStream() throws N5Exception.N5IOException, IllegalStateException {
+		return delegate.inputStream();
+	}
+
+	@Override
+	public byte[] allBytes() throws N5Exception.N5IOException, IllegalStateException {
+		return delegate.allBytes();
+	}
+
+	@Override
+	public ByteBuffer toByteBuffer() throws N5Exception.N5IOException, IllegalStateException {
+		return delegate.toByteBuffer();
+	}
+
+	@Override
+	public SegmentedReadData materialize() throws N5Exception.N5IOException {
+		delegate.materialize();
+		return this;
+	}
+
+	@Override
+	public void writeTo(final OutputStream outputStream) throws N5Exception.N5IOException, IllegalStateException {
+		delegate.writeTo(outputStream);
+	}
+
+	@Override
+	public ReadData encode(final OutputStreamOperator encoder) {
+		return delegate.encode(encoder);
+	}
+}

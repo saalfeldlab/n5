@@ -1,10 +1,8 @@
 package org.janelia.saalfeldlab.n5.readdata.segment;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.util.List;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
-import org.janelia.saalfeldlab.n5.readdata.segment.SegmentStuff.SegmentLocation;
-import org.janelia.saalfeldlab.n5.readdata.segment.SegmentStuff.SegmentedReadData;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,7 +32,7 @@ public class SegmentTest {
 				SegmentLocation.at(0, 10),
 				SegmentLocation.at(10, 10),
 				SegmentLocation.at(40, 20)};
-		final SegmentedReadData r = SegmentedReadData.wrap(readData, locations);
+		final SegmentedReadData r = SegmentedReadData.wrap(readData, locations).data();
 		assertEquals(3, r.segments().size());
 
 		final SegmentLocation l0 = r.location(r.segments().get(0));
@@ -51,13 +49,39 @@ public class SegmentTest {
 	}
 
 	@Test
+	public void testWrapOrder() {
+
+		final SegmentLocation[] locations = {
+				SegmentLocation.at(10, 10),
+				SegmentLocation.at(0, 10),
+				SegmentLocation.at(40, 20)};
+		final SegmentedReadData.SegmentsAndData segmentsAndData = SegmentedReadData.wrap(readData, locations);
+		final SegmentedReadData r = segmentsAndData.data();
+		final List<Segment> segments = segmentsAndData.segments();
+
+		assertEquals(3, segments.size());
+
+		final SegmentLocation l0 = r.location(segments.get(0));
+		assertEquals(10, l0.offset());
+		assertEquals(10, l0.length());
+
+		final SegmentLocation l1 = r.location(segments.get(1));
+		assertEquals(0, l1.offset());
+		assertEquals(10, l1.length());
+
+		final SegmentLocation l2 = r.location(segments.get(2));
+		assertEquals(40, l2.offset());
+		assertEquals(20, l2.length());
+	}
+
+	@Test
 	public void testSlice() {
 
 		final SegmentLocation[] locations = {
 				SegmentLocation.at(0, 10),
 				SegmentLocation.at(10, 10),
 				SegmentLocation.at(40, 20)};
-		final SegmentedReadData r = SegmentedReadData.wrap(readData, locations);
+		final SegmentedReadData r = SegmentedReadData.wrap(readData, locations).data();
 		final SegmentedReadData s = r.slice(10, 60);
 		assertEquals(60, s.length());
 
@@ -79,7 +103,7 @@ public class SegmentTest {
 				SegmentLocation.at(0, 10),
 				SegmentLocation.at(10, 10),
 				SegmentLocation.at(40, 20)};
-		final SegmentedReadData r = SegmentedReadData.wrap(readData, locations);
+		final SegmentedReadData r = SegmentedReadData.wrap(readData, locations).data();
 		final SegmentedReadData s = r.slice(r.segments().get(2));
 		assertEquals(20, s.length());
 

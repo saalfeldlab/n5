@@ -8,12 +8,8 @@ import java.util.Collections;
 import java.util.List;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
-import org.janelia.saalfeldlab.n5.readdata.segment.SegmentStuff.Segment;
-import org.janelia.saalfeldlab.n5.readdata.segment.SegmentStuff.SegmentLocation;
-import org.janelia.saalfeldlab.n5.readdata.segment.SegmentStuff.SegmentLocationImpl;
-import org.janelia.saalfeldlab.n5.readdata.segment.SegmentStuff.SegmentedReadData;
 
-class SegmentedReadDataImpl implements SegmentedReadData {
+class DefaultSegmentedReadData implements SegmentedReadData {
 
 	/**
 	 * The {@code ReadData} providing our data. This is either {@code segmentSource} in
@@ -83,7 +79,7 @@ class SegmentedReadDataImpl implements SegmentedReadData {
 	}
 
 	// assumes segments are ordered by location
-	private SegmentedReadDataImpl(final ReadData delegate, final ReadData segmentSource, final long offset, final List<SegmentImpl> segments) {
+	private DefaultSegmentedReadData(final ReadData delegate, final ReadData segmentSource, final long offset, final List<SegmentImpl> segments) {
 		this.delegate = delegate;
 		this.segmentSource = segmentSource;
 		this.offset = offset;
@@ -91,32 +87,43 @@ class SegmentedReadDataImpl implements SegmentedReadData {
 	}
 
 	// assumes segments are ordered by location
-	private SegmentedReadDataImpl(final ReadData delegate, final List<SegmentImpl> segments) {
+	private DefaultSegmentedReadData(final ReadData delegate, final List<SegmentImpl> segments) {
 		this(delegate, delegate, 0, segments);
 	}
 
-	// TODO: does not assume ordered locations. to not lose track, this method
-	//       should return Pair<SegmentedReadData, Segment[]> where segments are in
-	//       the same order as locations.
-	// TODO: use List<SegmentLocation> instead of SegmentLocation[]
-	static SegmentedReadData wrap(final ReadData readData, final SegmentLocation[] locations) {
-		final List<SegmentImpl> segments = new ArrayList<>(locations.length);
+	static SegmentsAndData wrap(final ReadData readData, final List<SegmentLocation> locations) {
+		final List<SegmentImpl> sortedSegments = new ArrayList<>(locations.size());
 		for (SegmentLocation l : locations) {
-			segments.add(new SegmentImpl(readData, l));
+			sortedSegments.add(new SegmentImpl(readData, l));
 		}
-		segments.sort(SegmentLocation.COMPARATOR);
-		return new SegmentedReadDataImpl(readData, segments);
+		final List<Segment> segments = new ArrayList<>(sortedSegments);
+
+		sortedSegments.sort(SegmentLocation.COMPARATOR);
+		final DefaultSegmentedReadData data = new DefaultSegmentedReadData(readData, sortedSegments);
+
+		return new SegmentsAndData() {
+
+			@Override
+			public List<Segment> segments() {
+				return segments;
+			}
+
+			@Override
+			public SegmentedReadData data() {
+				return data;
+			}
+		};
 	}
 
 	static SegmentedReadData wrap(final ReadData readData) {
-		return new SegmentedReadDataImpl(readData, Collections.singletonList(new EnclosingSegmentImpl(readData)));
+		return new DefaultSegmentedReadData(readData, Collections.singletonList(new EnclosingSegmentImpl(readData)));
 	}
 
 	@Override
 	public SegmentLocation location(final Segment segment) {
 		if (segmentSource.equals(segment.source()) && segment instanceof SegmentLocation) {
 			final SegmentLocation l = (SegmentLocation) segment;
-			return offset == 0 ? l : new SegmentLocationImpl(l.offset() - offset, l.length());
+			return offset == 0 ? l : new DefaultSegmentLocation(l.offset() - offset, l.length());
 		} else {
 			throw new IllegalArgumentException();
 		}
@@ -139,7 +146,7 @@ class SegmentedReadDataImpl implements SegmentedReadData {
 				return this;
 			} else if (segment instanceof SegmentImpl) {
 				final SegmentImpl s = (SegmentImpl) segment;
-				return new SegmentedReadDataImpl(
+				return new DefaultSegmentedReadData(
 						delegate.slice(s.offset(), s.length()),
 						segmentSource,
 						this.offset + s.offset(),
@@ -155,13 +162,13 @@ class SegmentedReadDataImpl implements SegmentedReadData {
 		final long sourceOffset = this.offset + offset;
 
 		// fromIndex: find first segment with offset >= sourceOffset
-		int fromIndex = Collections.binarySearch(segments, new SegmentLocationImpl(sourceOffset, -1), SegmentLocation.COMPARATOR);
+		int fromIndex = Collections.binarySearch(segments, SegmentLocation.at(sourceOffset, -1), SegmentLocation.COMPARATOR);
 		if (fromIndex < 0) {
 			fromIndex = -fromIndex - 1;
 		}
 
 		// toIndex: find first segment with offset >= sourceOffset + length
-		int toIndex = Collections.binarySearch(segments, new SegmentLocationImpl(sourceOffset + length, -1), SegmentLocation.COMPARATOR);
+		int toIndex = Collections.binarySearch(segments, SegmentLocation.at(sourceOffset + length, -1), SegmentLocation.COMPARATOR);
 		if (toIndex < 0) {
 			toIndex = -toIndex - 1;
 		}
@@ -176,7 +183,7 @@ class SegmentedReadDataImpl implements SegmentedReadData {
 		});
 		contained.trimToSize();
 
-		return new SegmentedReadDataImpl(
+		return new DefaultSegmentedReadData(
 				delegate.slice(offset, length),
 				segmentSource,
 				this.offset + offset,
