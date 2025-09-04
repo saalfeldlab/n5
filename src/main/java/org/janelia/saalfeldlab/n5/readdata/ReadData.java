@@ -158,6 +158,11 @@ public interface ReadData {
 	 * <p>
 	 * The returned {@code ReadData} has a known {@link #length} and multiple
 	 * {@link #inputStream InputStreams} can be opened on it.
+	 * <p>
+	 * <em>Implementation note: This should be preferably implemented to return
+	 * {@code this}. For example, materialize into a new {@code byte[]}, {@code
+	 * ReadData}, or similar and then delegate to this materialized version
+	 * internally.</em>
 	 *
 	 * @return
 	 * 		a materialized ReadData.
