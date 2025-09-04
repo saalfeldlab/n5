@@ -159,7 +159,10 @@ class DefaultSegmentedReadData implements SegmentedReadData {
 	@Override
 	public SegmentedReadData slice(final long offset, final long length) throws N5IOException {
 
+		final ReadData delegateSlice = delegate.slice(offset, length);
 		final long sourceOffset = this.offset + offset;
+		final long sliceLength = delegateSlice.length();
+
 
 		// fromIndex: find first segment with offset >= sourceOffset
 		int fromIndex = Collections.binarySearch(segments, SegmentLocation.at(sourceOffset, -1), SegmentLocation.COMPARATOR);
@@ -168,26 +171,37 @@ class DefaultSegmentedReadData implements SegmentedReadData {
 		}
 
 		// toIndex: find first segment with offset >= sourceOffset + length
-		int toIndex = Collections.binarySearch(segments, SegmentLocation.at(sourceOffset + length, -1), SegmentLocation.COMPARATOR);
-		if (toIndex < 0) {
-			toIndex = -toIndex - 1;
+		int toIndex;
+		if (sliceLength < 0) {
+			toIndex = segments.size();
+		} else {
+			toIndex = Collections.binarySearch(segments, SegmentLocation.at(sourceOffset + sliceLength, -1), SegmentLocation.COMPARATOR);
+			if (toIndex < 0) {
+				toIndex = -toIndex - 1;
+			}
 		}
 
 		// contained: find segments in [fromIndex, toIndex) with s.offset() + s.length() <= sourceOffset + length
 		final List<SegmentImpl> candidates = segments.subList(fromIndex, toIndex);
-		final ArrayList<SegmentImpl> contained = new ArrayList<>(candidates.size());
-		candidates.forEach(s -> {
-			if (s.offset() + s.length() <= sourceOffset + length) {
-				contained.add(s);
-			}
-		});
-		contained.trimToSize();
+		final List<SegmentImpl> sliceSegments;
+		if (sliceLength < 0) {
+			sliceSegments = candidates;
+		} else {
+			final ArrayList<SegmentImpl> contained = new ArrayList<>(candidates.size());
+			candidates.forEach(s -> {
+				if (s.offset() + s.length() <= sourceOffset + sliceLength) {
+					contained.add(s);
+				}
+			});
+			contained.trimToSize();
+			sliceSegments = contained;
+		}
 
 		return new DefaultSegmentedReadData(
-				delegate.slice(offset, length),
+				delegateSlice,
 				segmentSource,
-				this.offset + offset,
-				contained);
+				sourceOffset,
+				sliceSegments);
 	}
 
 	@Override
