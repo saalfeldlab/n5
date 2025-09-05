@@ -135,8 +135,13 @@ class DefaultSegmentedReadData implements SegmentedReadData {
 	}
 
 	@Override
-	public long length() throws N5IOException {
+	public long length() {
 		return delegate.length();
+	}
+
+	@Override
+	public long requireLength() throws N5IOException {
+		return delegate.requireLength();
 	}
 
 	@Override

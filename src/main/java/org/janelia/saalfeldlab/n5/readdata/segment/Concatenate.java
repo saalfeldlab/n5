@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 class Concatenate implements SegmentedReadData {
@@ -45,9 +46,14 @@ class Concatenate implements SegmentedReadData {
 		locationsBuilt = true;
 	}
 
-	private boolean ensureKnownSize() {
+	/**
+	 * Verify that all {@code content} elements have known length.
+	 * Builds {@code segments} and {@code locations} if they have not been built yet.
+	 *
+	 * @throws IllegalStateException if any of the concatenated ReadData don't know their length yet
+	 */
+	private void ensureKnownSize() throws IllegalStateException {
 		if (!locationsBuilt) {
-
 			long offset = 0;
 			for (int i = 0; i < content.size(); i++) {
 				final SegmentedReadData data = content.get(i);
@@ -69,7 +75,6 @@ class Concatenate implements SegmentedReadData {
 
 			locationsBuilt = true;
 		}
-		return true;
 	}
 
 	@Override
@@ -88,7 +93,7 @@ class Concatenate implements SegmentedReadData {
 	}
 
 	@Override
-	public long length() throws N5Exception.N5IOException {
+	public long length() {
 		if (length < 0) {
 			length = 0;
 			for (final ReadData data : content) {
@@ -104,14 +109,25 @@ class Concatenate implements SegmentedReadData {
 	}
 
 	@Override
-	public SegmentedReadData slice(final Segment segment) throws IllegalArgumentException, N5Exception.N5IOException {
+	public long requireLength() throws N5IOException {
+		if (length < 0) {
+			length = 0;
+			for (final ReadData data : content) {
+				length += data.requireLength();
+			}
+		}
+		return length;
+	}
+
+	@Override
+	public SegmentedReadData slice(final Segment segment) throws IllegalArgumentException, N5IOException {
 		ensureKnownSize();
 		final SegmentLocation l = location(segment);
 		return slice(l.offset(), l.length());
 	}
 
 	@Override
-	public SegmentedReadData slice(final long offset, final long length) throws N5Exception.N5IOException {
+	public SegmentedReadData slice(final long offset, final long length) throws N5IOException {
 		ensureKnownSize();
 		final ReadData delegateSlice = delegate.slice(offset, length);
 		final long sliceLength = delegateSlice.length();
@@ -143,28 +159,28 @@ class Concatenate implements SegmentedReadData {
 	}
 
 	@Override
-	public InputStream inputStream() throws N5Exception.N5IOException, IllegalStateException {
+	public InputStream inputStream() throws N5IOException, IllegalStateException {
 		return delegate.inputStream();
 	}
 
 	@Override
-	public byte[] allBytes() throws N5Exception.N5IOException, IllegalStateException {
+	public byte[] allBytes() throws N5IOException, IllegalStateException {
 		return delegate.allBytes();
 	}
 
 	@Override
-	public ByteBuffer toByteBuffer() throws N5Exception.N5IOException, IllegalStateException {
+	public ByteBuffer toByteBuffer() throws N5IOException, IllegalStateException {
 		return delegate.toByteBuffer();
 	}
 
 	@Override
-	public SegmentedReadData materialize() throws N5Exception.N5IOException {
+	public SegmentedReadData materialize() throws N5IOException {
 		delegate.materialize();
 		return this;
 	}
 
 	@Override
-	public void writeTo(final OutputStream outputStream) throws N5Exception.N5IOException, IllegalStateException {
+	public void writeTo(final OutputStream outputStream) throws N5IOException, IllegalStateException {
 		delegate.writeTo(outputStream);
 	}
 
