@@ -7,5 +7,5 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  */
 public interface Segment {
 
-	ReadData source();
+	SegmentedReadData source();
 }

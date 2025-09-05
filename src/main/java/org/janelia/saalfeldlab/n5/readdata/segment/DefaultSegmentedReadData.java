@@ -36,15 +36,15 @@ class DefaultSegmentedReadData implements SegmentedReadData {
 
 	private static class SegmentImpl implements Segment, SegmentLocation {
 
-		private final ReadData source;
+		private final SegmentedReadData source;
 		private final long offset;
 		private final long length;
 
-		public SegmentImpl(final ReadData source, final SegmentLocation location) {
+		public SegmentImpl(final SegmentedReadData source, final SegmentLocation location) {
 			this(source, location.offset(), location.length());
 		}
 
-		public SegmentImpl(final ReadData source, final long offset, final long length) {
+		public SegmentImpl(final SegmentedReadData source, final long offset, final long length) {
 			this.source = source;
 			this.offset = offset;
 			this.length = length;
@@ -61,14 +61,14 @@ class DefaultSegmentedReadData implements SegmentedReadData {
 		}
 
 		@Override
-		public ReadData source() {
+		public SegmentedReadData source() {
 			return source;
 		}
 	}
 
 	private static class EnclosingSegmentImpl extends SegmentImpl {
 
-		public EnclosingSegmentImpl(final ReadData source) {
+		public EnclosingSegmentImpl(final SegmentedReadData source) {
 			super(source, 0, -1);
 		}
 
@@ -88,18 +88,20 @@ class DefaultSegmentedReadData implements SegmentedReadData {
 
 	// assumes segments are ordered by location
 	private DefaultSegmentedReadData(final ReadData delegate, final List<SegmentImpl> segments) {
-		this(delegate, delegate, 0, segments);
+		this.delegate = delegate;
+		this.segmentSource = this;
+		this.offset = 0;
+		this.segments = segments;
 	}
 
 	static SegmentsAndData wrap(final ReadData readData, final List<SegmentLocation> locations) {
 		final List<SegmentImpl> sortedSegments = new ArrayList<>(locations.size());
+		final DefaultSegmentedReadData data = new DefaultSegmentedReadData(readData, sortedSegments);
 		for (SegmentLocation l : locations) {
-			sortedSegments.add(new SegmentImpl(readData, l));
+			sortedSegments.add(new SegmentImpl(data, l));
 		}
 		final List<Segment> segments = new ArrayList<>(sortedSegments);
-
 		sortedSegments.sort(SegmentLocation.COMPARATOR);
-		final DefaultSegmentedReadData data = new DefaultSegmentedReadData(readData, sortedSegments);
 
 		return new SegmentsAndData() {
 
@@ -115,8 +117,15 @@ class DefaultSegmentedReadData implements SegmentedReadData {
 		};
 	}
 
+	private DefaultSegmentedReadData(final ReadData delegate) {
+		this.delegate = delegate;
+		this.segmentSource = this;
+		this.offset = 0;
+		this.segments = Collections.singletonList(new EnclosingSegmentImpl(this));
+	}
+
 	static SegmentedReadData wrap(final ReadData readData) {
-		return new DefaultSegmentedReadData(readData, Collections.singletonList(new EnclosingSegmentImpl(readData)));
+		return new DefaultSegmentedReadData(readData);
 	}
 
 	@Override
