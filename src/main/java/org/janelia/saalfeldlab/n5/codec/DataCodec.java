@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5.codec;
 
+import java.util.Arrays;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
@@ -60,4 +61,16 @@ public interface DataCodec {
 
 		return new ConcatenatedDataCodec(codecs);
 	}
+
+	static DataCodec create(final DataCodecInfo... codecInfos) {
+
+		if (codecInfos == null)
+			throw new NullPointerException();
+
+		final DataCodec[] codecs = new DataCodec[codecInfos.length];
+		Arrays.setAll(codecs, i -> codecInfos[i].create());
+
+		return DataCodec.concatenate(codecs);
+	}
+
 }
