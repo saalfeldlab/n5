@@ -19,21 +19,21 @@ public class ShardIndex {
 		START, END
 	}
 
-	static class Flattened<T> {
+	static class NDArray<T> {
 
 		final int[] size;
 		private final int[] stride;
 		final T[] data;
 
-		Flattened(final int[] size, final IntFunction<T[]> createArray) {
+		NDArray(final int[] size, final IntFunction<T[]> createArray) {
 			this.size = size;
-			stride = stride(size);
-			data = createArray.apply(numElements(size));
+			stride = getStrides(size);
+			data = createArray.apply(getNumElements(size));
 		}
 
-		Flattened(final int[] size, final T[] data) {
+		NDArray(final int[] size, final T[] data) {
 			this.size = size;
-			stride = stride(size);
+			stride = getStrides(size);
 			this.data = data;
 		}
 
@@ -56,9 +56,13 @@ public class ShardIndex {
 		public int[] size() {
 			return size;
 		}
+
+		public int numElements() {
+			return data.length;
+		}
 	}
 
-	static int numElements(final int[] size) {
+	static int getNumElements(final int[] size) {
 		int numElements = 1;
 		for (int s : size) {
 			numElements *= s;
@@ -66,7 +70,7 @@ public class ShardIndex {
 		return numElements;
 	}
 
-	static int[] stride(final int[] size) {
+	static int[] getStrides(final int[] size) {
 		final int n = size.length;
 		final int[] stride = new int[n];
 		stride[0] = 1;
@@ -82,43 +86,47 @@ public class ShardIndex {
 	 */
 	static final long EMPTY_INDEX_NBYTES = 0xFFFFFFFFFFFFFFFFL;
 
+	/**
+	 * Size of first dimension of the {@code DataBlock<long[]>} representation of the shard index.
+	 */
+	private static final int LONGS_PER_BLOCK = 2;
+
 	// TODO do we need additional offset here?
-	static Flattened<SegmentLocation> fromDataBlock( final DataBlock<long[]> block ) {
+	static NDArray<SegmentLocation> fromDataBlock( final DataBlock<long[]> block ) {
 
-		assert block.getSize()[ 0 ] == 2;
+		assert block.getSize()[ 0 ] == LONGS_PER_BLOCK;
 
-		final int[] blockSize = block.getSize();
 		final long[] blockData = block.getData();
 
-		final int[] size = Arrays.copyOfRange(blockSize, 1, blockSize.length);
-		final int n = numElements(size);
+		final int[] size = indexSizeFromBlockSize(block.getSize());
+		final int n = getNumElements(size);
 		final SegmentLocation[] locations = new SegmentLocation[n];
 
 		for (int i = 0; i < n; i++) {
-			long offset = blockData[ i * 2];
-			long length = blockData[ i * 2 + 1];
+			long offset = blockData[i * LONGS_PER_BLOCK];
+			long length = blockData[i * LONGS_PER_BLOCK + 1];
 			if (offset != EMPTY_INDEX_NBYTES && length != EMPTY_INDEX_NBYTES) {
 				locations[i] = SegmentLocation.at(offset, length);
 			}
 		}
-		return new Flattened<>(size, locations);
+		return new NDArray<>(size, locations);
 	}
 
 	// TODO do we use offset? If not, remove!
-	static DataBlock<long[]> toDataBlock( final Flattened<SegmentLocation> locations, final long offset ) {
+	static DataBlock<long[]> toDataBlock( final NDArray<SegmentLocation> locations, final long offset ) {
 
 		final SegmentLocation[] data = locations.data;
 
-		final int[] blockSize = prepend(2, locations.size);
+		final int[] blockSize = blockSizeFromIndexSize(locations.size);
 		final long[] blockData = new long[data.length * 2];
 
 		for (int i = 0; i < data.length; ++i) {
 			if (data[i] != null) {
-				blockData[i * 2] = data[i].offset() + offset;
-				blockData[i * 2 + 1] = data[i].length();
+				blockData[i * LONGS_PER_BLOCK] = data[i].offset() + offset;
+				blockData[i * LONGS_PER_BLOCK + 1] = data[i].length();
 			} else {
-				blockData[i * 2] = EMPTY_INDEX_NBYTES;
-				blockData[i * 2 + 1] = EMPTY_INDEX_NBYTES;
+				blockData[i * LONGS_PER_BLOCK] = EMPTY_INDEX_NBYTES;
+				blockData[i * LONGS_PER_BLOCK + 1] = EMPTY_INDEX_NBYTES;
 			}
 		}
 		return new LongArrayDataBlock(blockSize, new long[blockSize.length], blockData);
@@ -139,7 +147,15 @@ public class ShardIndex {
 		return indexBlockSize;
 	}
 
-	static Flattened<SegmentLocation> locations(final Flattened<Segment> segments, final SegmentedReadData readData) {
+	static int[] blockSizeFromIndexSize(final int[] indexSize) {
+		return prepend(LONGS_PER_BLOCK, indexSize);
+	}
+
+	static int[] indexSizeFromBlockSize(final int[] blockSize) {
+		return Arrays.copyOfRange(blockSize, 1, blockSize.length);
+	}
+
+	static NDArray<SegmentLocation> locations(final NDArray<Segment> segments, final SegmentedReadData readData) {
 
 		final Segment[] data = segments.data;
 		final SegmentLocation[] locations = new SegmentLocation[data.length];
@@ -149,15 +165,15 @@ public class ShardIndex {
 				locations[i] = readData.location(segment);
 			}
 		}
-		return new Flattened<>(segments.size, locations);
+		return new NDArray<>(segments.size, locations);
 	}
 
 	interface SegmentIndexAndData {
-		Flattened<Segment> index();
+		NDArray<Segment> index();
 		SegmentedReadData data();
 	}
 
-	static SegmentIndexAndData segments(final Flattened<SegmentLocation> locations, final ReadData readData) {
+	static SegmentIndexAndData segments(final NDArray<SegmentLocation> locations, final ReadData readData) {
 
 		final SegmentLocation[] locationsData = locations.data;
 		final Segment[] segmentsData = new Segment[locationsData.length];
@@ -177,10 +193,10 @@ public class ShardIndex {
 			}
 		}
 
-		final Flattened<Segment> index = new Flattened<>(locations.size, segmentsData);
+		final NDArray<Segment> index = new NDArray<>(locations.size, segmentsData);
 		final SegmentedReadData data = segmentsAndData.data();
 		return new SegmentIndexAndData() {
-			@Override public Flattened<Segment> index() {return index;}
+			@Override public NDArray<Segment> index() {return index;}
 			@Override public SegmentedReadData data() {return data;}
 		};
 	}

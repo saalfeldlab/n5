@@ -8,7 +8,15 @@ import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.segment.Segment;
+import org.janelia.saalfeldlab.n5.readdata.segment.SegmentLocation;
+import org.janelia.saalfeldlab.n5.readdata.segment.SegmentedReadData;
 import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedPosition;
+import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.NDArray;
+import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation;
+import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.SegmentIndexAndData;
+
+import static org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation.START;
 
 public class RawShardStuff {
 
@@ -27,56 +35,65 @@ public class RawShardStuff {
 
 	static class BasicRawShard implements RawShard {
 
-		BasicRawShard(final ReadData data, final int[] size) {
+		private long[] gridPosition;
 
-			// TODO:
-			//  [ ] read shard index (just assume some defaults)
-			//  [ ] construct SegmentedReadData
-			//  [ ] construct Map<Position, Segment> or flattened Segment[]
-			//  [ ] implement setElementData
-			//  [ ] implement getElementData
+		/**
+		 * The ReadData from which the shard was constructed, or {@code null}
+		 * for a new empty shard.
+		 */
+		private SegmentedReadData sourceData;
 
+		/**
+		 * maps grid position of shard elements to {@link Segment}s.
+		 */
+		private NDArray<Segment> index;
+
+		BasicRawShard(final int[] size) {
+			sourceData = null;
+			index = new NDArray<>(size, Segment[]::new);
 		}
+
+		BasicRawShard(final long[] gridPosition, final SegmentedReadData sourceData, final NDArray<Segment> index) {
+			this.gridPosition = gridPosition;
+			this.sourceData = sourceData;
+			this.index = index;
+		}
+
 
 		// --- RawShard ---
 
 		@Override
 		public ReadData getElementData(final long[] pos) {
-			// TODO
-			throw new UnsupportedOperationException();
+			final Segment segment = index.get(pos);
+			return segment == null ? null : segment.source().slice(segment);
 		}
 
 		@Override
 		public void setElementData(final ReadData data, final long[] pos) {
-			// TODO
-			throw new UnsupportedOperationException();
+			final Segment segment = SegmentedReadData.wrap(data).segments().getFirst();
+			index.set(segment, pos);
 		}
-
 
 
 		// --- DataBlock<Void> ---
 
 		@Override
 		public int[] getSize() {
-			// TODO
-			throw new UnsupportedOperationException();
+			return index.size();
 		}
 
 		@Override
 		public long[] getGridPosition() {
-			// TODO
-			throw new UnsupportedOperationException();
+			return gridPosition;
 		}
 
 		@Override
 		public int getNumElements() {
-			// TODO
-			throw new UnsupportedOperationException();
+			return index.numElements();
 		}
 
 		@Override
 		public Void getData() {
-			// TODO
 			return null;
 		}
 	}
@@ -98,9 +115,16 @@ public class RawShardStuff {
 		 * Number of elements (DataBlocks, nested shards) in each dimension per shard.
 		 */
 		private final int[] size;
+		private final IndexLocation indexLocation;
+		private final BlockCodec<long[]> indexCodec;
+		private final long indexBlockSizeInBytes;
 
-		BasicRawShardCodec(final int[] size) {
+		BasicRawShardCodec(final int[] size, final IndexLocation indexLocation, final BlockCodec<long[]> indexCodec) {
+
 			this.size = size;
+			this.indexLocation = indexLocation;
+			this.indexCodec = indexCodec;
+			indexBlockSizeInBytes = indexCodec.encodedSize(ShardIndex.blockSizeFromIndexSize(size));
 		}
 
 		@Override
@@ -111,8 +135,13 @@ public class RawShardStuff {
 
 		@Override
 		public RawShard decode(final ReadData readData, final long[] gridPosition) throws N5IOException {
-			// TODO
-			throw new UnsupportedOperationException();
+
+			final long indexOffset = (indexLocation == START) ? 0 : (readData.requireLength() - indexBlockSizeInBytes);
+			final ReadData indexReadData = readData.slice(indexOffset, indexBlockSizeInBytes);
+			final DataBlock<long[]> indexDataBlock = indexCodec.decode(indexReadData, new long[size.length]);
+			final NDArray<SegmentLocation> locations = ShardIndex.fromDataBlock(indexDataBlock);
+			final SegmentIndexAndData segments = ShardIndex.segments(locations, readData);
+			return new BasicRawShard(gridPosition, segments.data(), segments.index());
 		}
 	}
 
