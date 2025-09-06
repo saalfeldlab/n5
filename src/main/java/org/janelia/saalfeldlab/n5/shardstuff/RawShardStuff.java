@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5.shardstuff;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
@@ -8,6 +9,7 @@ import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.ReadData.OutputStreamWriter;
 import org.janelia.saalfeldlab.n5.readdata.segment.Segment;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentLocation;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentedReadData;
@@ -16,6 +18,7 @@ import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.NDArray;
 import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation;
 import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.SegmentIndexAndData;
 
+import static org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation.END;
 import static org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation.START;
 
 public class RawShardStuff {
@@ -134,22 +137,45 @@ public class RawShardStuff {
 
 		@Override
 		public ReadData encode(final DataBlock<RawShardData> shard) throws N5IOException {
-			
+
+			// concatenate slices for all non-null segments in shard.getData().index()
+			final NDArray<Segment> index = shard.getData().index();
+			final List<SegmentedReadData> readDatas = new ArrayList<>();
+			for (Segment segment : index.data) {
+				if (segment != null ) {
+					readDatas.add(segment.source().slice(segment));
+				}
+			}
+			final SegmentedReadData data = SegmentedReadData.concatenate(readDatas);
+
+			if (indexLocation == START) {
+				data.materialize();
+				final NDArray<SegmentLocation> locations = ShardIndex.locations(index, data);
+				final DataBlock<long[]> indexDataBlock = ShardIndex.toDataBlock(locations, indexBlockSizeInBytes);
+				final ReadData indexReadData = indexCodec.encode(indexDataBlock);
+				final OutputStreamWriter writer = out -> {
+					indexReadData.writeTo(out);
+					data.writeTo(out);
+				};
+				return ReadData.from(writer);
+			} else {
+
+			}
 			// TODO:
-			//  [ ] concatenate slices for all non-null segments in shard.getData().index()
+			//  [+] concatenate slices for all non-null segments in shard.getData().index()
+			//  [+] if IndexLocation == START:
+			//  	[+] materialize concatenated ReadData
+			//      [+] get SegmentLocations in concatenated ReadData, adding indexBlockSizeInBytes as offset.
+			//      [+] transform to DataBlock<long[]>
+			//      [+] write index
+			//  	[+] write concatenated ReadData
+			//      [+] package this whole sequence as OutputStreamWriter (or just the final writing steps)
 			//  [ ] if IndexLocation == END:
 			//  	[ ] write concatenated ReadData
 			//      [ ] get SegmentLocations in concatenated ReadData
 			//      [ ] transform to DataBlock<long[]>
 			//      [ ] write index
 			//      [ ] package this whole sequence as OutputStreamWriter
-			//  [ ] if IndexLocation == START:
-			//  	[ ] materialize concatenated ReadData
-			//      [ ] get SegmentLocations in concatenated ReadData, adding indexBlockSizeInBytes as offset.
-			//      [ ] transform to DataBlock<long[]>
-			//      [ ] write index
-			//  	[ ] write concatenated ReadData
-			//      [ ] package this whole sequence as OutputStreamWriter (or just the final writing steps)
 			//  [ ] return ReadData.from(OutputStreamWriter)
 
 			throw new UnsupportedOperationException();
