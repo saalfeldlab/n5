@@ -107,17 +107,7 @@ public class RawShardStuff {
 	}
 
 
-
-
-
-
-	public interface RawShardCodec extends BlockCodec<RawShardData> {
-
-		@Override
-		RawShard decode(ReadData readData, long[] gridPosition) throws N5IOException;
-	}
-
-	static class BasicRawShardCodec implements RawShardCodec {
+	public static class RawShardCodec implements BlockCodec<RawShardData> {
 
 		/**
 		 * Number of elements (DataBlocks, nested shards) in each dimension per shard.
@@ -127,7 +117,7 @@ public class RawShardStuff {
 		private final BlockCodec<long[]> indexCodec;
 		private final long indexBlockSizeInBytes;
 
-		BasicRawShardCodec(final int[] size, final IndexLocation indexLocation, final BlockCodec<long[]> indexCodec) {
+		RawShardCodec(final int[] size, final IndexLocation indexLocation, final BlockCodec<long[]> indexCodec) {
 
 			this.size = size;
 			this.indexLocation = indexLocation;
@@ -147,38 +137,26 @@ public class RawShardStuff {
 				}
 			}
 			final SegmentedReadData data = SegmentedReadData.concatenate(readDatas);
-
+			final OutputStreamWriter writer;
 			if (indexLocation == START) {
 				data.materialize();
 				final NDArray<SegmentLocation> locations = ShardIndex.locations(index, data);
 				final DataBlock<long[]> indexDataBlock = ShardIndex.toDataBlock(locations, indexBlockSizeInBytes);
 				final ReadData indexReadData = indexCodec.encode(indexDataBlock);
-				final OutputStreamWriter writer = out -> {
+				writer = out -> {
 					indexReadData.writeTo(out);
 					data.writeTo(out);
 				};
-				return ReadData.from(writer);
-			} else {
-
+			} else { // indexLocation == END
+				writer = out -> {
+					data.writeTo(out);
+					final NDArray<SegmentLocation> locations = ShardIndex.locations(index, data);
+					final DataBlock<long[]> indexDataBlock = ShardIndex.toDataBlock(locations, 0);
+					final ReadData indexReadData = indexCodec.encode(indexDataBlock);
+					indexReadData.writeTo(out);
+				};
 			}
-			// TODO:
-			//  [+] concatenate slices for all non-null segments in shard.getData().index()
-			//  [+] if IndexLocation == START:
-			//  	[+] materialize concatenated ReadData
-			//      [+] get SegmentLocations in concatenated ReadData, adding indexBlockSizeInBytes as offset.
-			//      [+] transform to DataBlock<long[]>
-			//      [+] write index
-			//  	[+] write concatenated ReadData
-			//      [+] package this whole sequence as OutputStreamWriter (or just the final writing steps)
-			//  [ ] if IndexLocation == END:
-			//  	[ ] write concatenated ReadData
-			//      [ ] get SegmentLocations in concatenated ReadData
-			//      [ ] transform to DataBlock<long[]>
-			//      [ ] write index
-			//      [ ] package this whole sequence as OutputStreamWriter
-			//  [ ] return ReadData.from(OutputStreamWriter)
-
-			throw new UnsupportedOperationException();
+			return ReadData.from(writer);
 		}
 
 		@Override
