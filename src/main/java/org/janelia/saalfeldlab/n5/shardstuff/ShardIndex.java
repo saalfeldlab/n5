@@ -29,7 +29,7 @@ public class ShardIndex {
 	 * @param <T>
 	 * 		element type
 	 */
-	static class NDArray<T> {
+	public static class NDArray<T> {
 
 		final int[] size;
 		private final int[] stride;
