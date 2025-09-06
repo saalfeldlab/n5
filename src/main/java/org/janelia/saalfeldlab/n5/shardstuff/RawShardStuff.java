@@ -14,11 +14,10 @@ import org.janelia.saalfeldlab.n5.readdata.segment.Segment;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentLocation;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentedReadData;
 import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedPosition;
-import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.NDArray;
 import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation;
+import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.NDArray;
 import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.SegmentIndexAndData;
 
-import static org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation.END;
 import static org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation.START;
 
 public class RawShardStuff {
