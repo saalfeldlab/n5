@@ -13,24 +13,29 @@ public interface SegmentedReadData extends ReadData {
 	}
 
 	/**
-	 * Wrap {@code readData} and create one segment comprising the entire {@code readData}.
+	 * Wrap {@code readData} and create one segment comprising the entire {@code
+	 * readData}. The segment can be retrieved as the first (and only) element
+	 * of {@link SegmentedReadData#segments()}.
 	 */
 	static SegmentedReadData wrap(ReadData readData) {
 		return DefaultSegmentedReadData.wrap(readData);
 	}
 
 	/**
-	 * Wrap {@code readData} and create segments at the given locations.
+	 * Wrap {@code readData} and create segments at the given locations. The
+	 * order of segments in the returned {@link SegmentsAndData#segments()} list
+	 * matches the order of the given {@code locations} (while the segments in the
+	 * {@link SegmentsAndData#data()} are ordered by offset).
 	 */
-	// TODO: does not assume ordered locations. to not lose track, this method
-	//       should return Pair<SegmentedReadData, Segment[]> where segments are in
-	//       the same order as locations.
 	static SegmentsAndData wrap(ReadData readData, SegmentLocation... locations) {
 		return wrap(readData, Arrays.asList(locations));
 	}
 
 	/**
-	 * Wrap {@code readData} and create segments at the given locations.
+	 * Wrap {@code readData} and create segments at the given locations. The
+	 * order of segments in the returned {@link SegmentsAndData#segments()} list
+	 * matches the order of the given {@code locations} (while the segments in the
+	 * {@link SegmentsAndData#data()} are ordered by offset).
 	 */
 	static SegmentsAndData wrap(ReadData readData, List<SegmentLocation> locations) {
 		return DefaultSegmentedReadData.wrap(readData, locations);
