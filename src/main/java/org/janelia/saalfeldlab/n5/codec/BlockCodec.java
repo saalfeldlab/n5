@@ -43,4 +43,26 @@ public interface BlockCodec<T> {
 	ReadData encode(DataBlock<T> dataBlock) throws N5IOException;
 
 	DataBlock<T> decode(ReadData readData, long[] gridPosition) throws N5IOException;
+
+	/**
+	 * Given the {@code blockSize} of a {@code DataBlock<T>} return the size of
+	 * the encoded block in bytes.
+	 * <p>
+	 * A {@code UnsupportedOperationException} is thrown, if this {@code
+	 * BlockCodec} cannot determine encoded size independent of block content.
+	 * For example, if the block type contains var-length elements or if the
+	 * serializer uses a non-deterministic {@code DataCodec}.
+	 *
+	 * @param blockSize
+	 * 		size of the block to be encoded
+	 *
+	 * @return size of the encoded block in bytes
+	 *
+	 * @throws UnsupportedOperationException
+	 * 		if this {@code DataBlockSerializer} cannot determine encoded size independent of block content
+	 */
+	default long encodedSize(int[] blockSize) throws UnsupportedOperationException {
+		// TODO: adapt https://github.com/saalfeldlab/n5/pull/165 to new naming
+		throw new UnsupportedOperationException("TODO: not implemented. See https://github.com/saalfeldlab/n5/pull/165.");
+	}
 }

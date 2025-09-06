@@ -15,6 +15,10 @@ import org.janelia.saalfeldlab.n5.readdata.segment.SegmentedReadData.SegmentsAnd
 
 public class ShardIndex {
 
+	public enum IndexLocation {
+		START, END
+	}
+
 	static class Flattened<T> {
 
 		final int[] size;

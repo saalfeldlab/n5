@@ -10,11 +10,11 @@ import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedPosition;
 
-public class ShardStuff3 {
+public class RawShardStuff {
 
 
 
-	public interface RawShard extends DataBlock<ReadData> {
+	public interface RawShard extends DataBlock<Void> {
 
 		// pos is relative to this shard
 		ReadData getElementData(long[] pos);
@@ -25,7 +25,7 @@ public class ShardStuff3 {
 		// TODO: removeElement(long[] pos)
 	}
 
-	static class BasicRawShard {
+	static class BasicRawShard implements RawShard {
 
 		BasicRawShard(final ReadData data, final int[] size) {
 
@@ -38,8 +38,47 @@ public class ShardStuff3 {
 
 		}
 
+		// --- RawShard ---
+
+		@Override
+		public ReadData getElementData(final long[] pos) {
+			// TODO
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void setElementData(final ReadData data, final long[] pos) {
+			// TODO
+			throw new UnsupportedOperationException();
+		}
 
 
+
+		// --- DataBlock<Void> ---
+
+		@Override
+		public int[] getSize() {
+			// TODO
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public long[] getGridPosition() {
+			// TODO
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public int getNumElements() {
+			// TODO
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public Void getData() {
+			// TODO
+			return null;
+		}
 	}
 
 
@@ -47,12 +86,35 @@ public class ShardStuff3 {
 
 
 
-	public interface RawShardCodec extends BlockCodec<ReadData> {
+	public interface RawShardCodec extends BlockCodec<Void> {
 
 		@Override
 		RawShard decode(ReadData readData, long[] gridPosition) throws N5IOException;
 	}
 
+	static class BasicRawShardCodec implements RawShardCodec {
+
+		/**
+		 * Number of elements (DataBlocks, nested shards) in each dimension per shard.
+		 */
+		private final int[] size;
+
+		BasicRawShardCodec(final int[] size) {
+			this.size = size;
+		}
+
+		@Override
+		public ReadData encode(final DataBlock<Void> dataBlock) throws N5IOException {
+			// TODO
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public RawShard decode(final ReadData readData, final long[] gridPosition) throws N5IOException {
+			// TODO
+			throw new UnsupportedOperationException();
+		}
+	}
 
 
 
