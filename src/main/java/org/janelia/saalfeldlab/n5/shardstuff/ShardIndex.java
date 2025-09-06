@@ -15,10 +15,20 @@ import org.janelia.saalfeldlab.n5.readdata.segment.SegmentedReadData.SegmentsAnd
 
 public class ShardIndex {
 
+	private ShardIndex() {
+		// utility class. should not be instantiated.
+	}
+
 	public enum IndexLocation {
 		START, END
 	}
 
+	/**
+	 * Access flat {@code T[]} array as n-dimensional array.
+	 *
+	 * @param <T>
+	 * 		element type
+	 */
 	static class NDArray<T> {
 
 		final int[] size;
@@ -94,10 +104,7 @@ public class ShardIndex {
 	// TODO do we need additional offset here?
 	static NDArray<SegmentLocation> fromDataBlock( final DataBlock<long[]> block ) {
 
-		assert block.getSize()[ 0 ] == LONGS_PER_BLOCK;
-
 		final long[] blockData = block.getData();
-
 		final int[] size = indexSizeFromBlockSize(block.getSize());
 		final int n = getNumElements(size);
 		final SegmentLocation[] locations = new SegmentLocation[n];
@@ -147,14 +154,26 @@ public class ShardIndex {
 		return indexBlockSize;
 	}
 
+	/**
+	 * Prepends {@code LONGS_PER_BLOCK} to the {@code indexSize} array.
+	 */
 	static int[] blockSizeFromIndexSize(final int[] indexSize) {
 		return prepend(LONGS_PER_BLOCK, indexSize);
 	}
 
+	/**
+	 * Strips first element (should be {@code LONGS_PER_BLOCK} from the {@code blockSize} array.
+	 */
 	static int[] indexSizeFromBlockSize(final int[] blockSize) {
+		assert blockSize[ 0 ] == LONGS_PER_BLOCK;
 		return Arrays.copyOfRange(blockSize, 1, blockSize.length);
 	}
 
+	/**
+	 * Retrieves the {@code SegmentLocation} of each non-null {@code Segment} in
+	 * {@code segments}. Returns a {@code NDArray<SegmentLocation>} with entries
+	 * corresponding tho the {@code segments} entries.
+	 */
 	static NDArray<SegmentLocation> locations(final NDArray<Segment> segments, final SegmentedReadData readData) {
 
 		final Segment[] data = segments.data;
@@ -173,6 +192,12 @@ public class ShardIndex {
 		SegmentedReadData data();
 	}
 
+	/**
+	 * Puts a {@code Segment} at each non-null {@code SegmentLocation} in {@code
+	 * locations} on the given {@code readData}. Returns both the {@code
+	 * SegmentedReadData} with these segments and a {@code NDArray<Segment>}
+	 * with segment entries corresponding to the {@code locations} entries.
+	 */
 	static SegmentIndexAndData segments(final NDArray<SegmentLocation> locations, final ReadData readData) {
 
 		final SegmentLocation[] locationsData = locations.data;
