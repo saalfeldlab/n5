@@ -169,34 +169,34 @@ public class RawShardStuff {
 	}
 
 
-
-
-
-	// TODO: rename?
-	public interface Sharding<T> {
-
-		List<DataBlock<T>> readBlocks(ReadData readData, List<NestedPosition> positions);
-
-		ReadData writeBlocks(ReadData readData, List<DataBlock<T>> blocks);
-	}
-
-	// TODO: this could be a class instead of an interface
 	public interface ShardCodecInfo extends BlockCodecInfo {
+
 		/**
-		 * Chunk size of the elements in this block.
-		 * That is, (1, ...) for DataBlockCodecInfo, respectively inner block size for ShardCodecInfo.
+		 * Chunk size of each shard element (either nested shard or DataBlock)
 		 */
 		int[] getInnerBlockSize();
 
 		/**
-		 * Nested Codec.
-		 * ({@code null} for DataBlockCodec.
+		 * BlockCodec for shard elements (either nested shard or DataBlock)
 		 */
 		BlockCodecInfo getInnerBlockCodecInfo();
 
+		/**
+		 * DataCodecs for inner BlockCodec
+		 */
 		DataCodecInfo[] getInnerDataCodecInfos();
 
-		// TODO: IndexCodec
+		/**
+		 * BlockCodec for shard index
+		 */
+		BlockCodecInfo getIndexBlockCodecInfo();
+
+		/**
+		 * Deterministic-size DataCodecs for index BlockCodec
+		 */
+		DataCodecInfo[] getIndexDataCodecInfos();
+
+		IndexLocation getIndexLocation();
 
 		@SuppressWarnings("unchecked")
 		@Override
@@ -205,11 +205,5 @@ public class RawShardStuff {
 		}
 
 		RawShardCodec create(int[] blockSize, DataCodecInfo... codecs);
-
-		// TODO: not sure about this one.
-		//  This could recursively built the whole codec list?
-		//  The result would have to be a BlockCodec<T>.
-		//
-//		??? create(DataType dataType, int[] blockSize, DataCodecInfo... codecs) {}
 	}
 }
