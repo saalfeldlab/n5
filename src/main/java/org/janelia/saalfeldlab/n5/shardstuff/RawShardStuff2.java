@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5.shardstuff;
 
+import java.util.Arrays;
 import java.util.List;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
@@ -31,7 +32,12 @@ public class RawShardStuff2 {
 
 
 
-	public static class DummyShardCodecInfo implements ShardCodecInfo {
+	public static class DefaultShardCodecInfo implements ShardCodecInfo {
+
+		@Override
+		public String getType() {
+			return "ShardingCodec";
+		}
 
 		private final int[] innerBlockSize;
 		private final BlockCodecInfo innerBlockCodecInfo;
@@ -40,7 +46,7 @@ public class RawShardStuff2 {
 		private final DataCodecInfo[] indexDataCodecInfos;
 		private final IndexLocation indexLocation;
 
-		public DummyShardCodecInfo(
+		public DefaultShardCodecInfo(
 				final int[] innerBlockSize,
 				final BlockCodecInfo innerBlockCodecInfo,
 				final DataCodecInfo[] innerDataCodecInfos,
@@ -87,12 +93,19 @@ public class RawShardStuff2 {
 
 		@Override
 		public RawShardCodec create(final int[] blockSize, final DataCodecInfo... codecs) {
-			return null;
-		}
 
-		@Override
-		public String getType() {
-			return "DummyShardCodec";
+			// Number of elements (DataBlocks, nested shards) in each dimension per shard.
+			final int[] size = new int[blockSize.length];
+			// blockSize argument is number of pixels in the shard
+			// innerBlockSize is number of pixels in each shard element (nested shard or DataBlock)
+			Arrays.setAll(size, d -> blockSize[d] / innerBlockSize[d]);
+
+			final BlockCodec<long[]> indexCodec = indexBlockCodecInfo.create(
+					DataType.UINT64,
+					ShardIndex.blockSizeFromIndexSize(size),
+					indexDataCodecInfos);
+
+			return new RawShardCodec(size, indexLocation, indexCodec);
 		}
 	}
 
