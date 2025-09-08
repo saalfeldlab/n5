@@ -15,7 +15,7 @@ import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation;
 
-public class RawShardStuff2 {
+public class RawShardTest {
 
 
 	public static void main(String[] args) {
@@ -92,6 +92,8 @@ public class RawShardStuff2 {
 
 		// deleting a non-existent block should not fail
 		datasetAccess.deleteBlock(store, new long[] {0, 0, 8});
+
+		System.out.println("all good");
 	}
 
 	private static void checkBlock(final DataBlock<byte[]> dataBlock, final boolean expectedNonNull, final int expectedFillValue) {
