@@ -65,6 +65,26 @@ public class RawShardStuff2 {
 		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {3, 2, 1}, 5));
 		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {8, 4, 1}, 6));
 
+		checkBlock(datasetAccess.readBlock(store, new long[] {0, 0, 0}), true, 1);
+		checkBlock(datasetAccess.readBlock(store, new long[] {1, 0, 0}), true, 2);
+		checkBlock(datasetAccess.readBlock(store, new long[] {0, 1, 0}), true, 3);
+		checkBlock(datasetAccess.readBlock(store, new long[] {1, 1, 0}), true, 4);
+		checkBlock(datasetAccess.readBlock(store, new long[] {3, 2, 1}), true, 5);
+		checkBlock(datasetAccess.readBlock(store, new long[] {8, 4, 1}), true, 6);
+	}
+
+	private static void checkBlock(final DataBlock<byte[]> dataBlock, final boolean expectedNonNull, final int expectedFillValue) {
+
+		if (dataBlock == null && expectedNonNull) {
+			throw new IllegalStateException("expected non-null dataBlock");
+		}
+
+		final byte[] bytes = dataBlock.getData();
+		for (byte b : bytes) {
+			if (b != (byte) expectedFillValue) {
+				throw new IllegalStateException("expected all values to be " + expectedFillValue);
+			}
+		}
 	}
 
 	private static DataBlock<byte[]> createDataBlock(int[] size, long[] gridPosition, int fillValue) {
@@ -137,6 +157,8 @@ public class RawShardStuff2 {
 
 		void writeBlock(PositionValueAccess kva, DataBlock<T> dataBlock) throws N5IOException;
 
+		void deleteBlock(PositionValueAccess kva, long[] gridPosition) throws N5IOException;
+
 		// TODO: batch read/write methods
 //		List<DataBlock<T>> readBlocks(PositionValueAccess kva, List<NestedPosition> positions);
 //		void writeBlocks(PositionValueAccess kva, List<DataBlock<T>> blocks);
@@ -185,6 +207,22 @@ public class RawShardStuff2 {
 			final ReadData existingData = kva.get(key);
 			final ReadData modifiedData = writeBlockRecursive(existingData, dataBlock, position, grid.numLevels() - 1);
 			kva.put(key, modifiedData);
+		}
+
+		@Override
+		public void deleteBlock(final PositionValueAccess kva, final long[] gridPosition) throws N5IOException {
+			// TODO
+			//  [ ] private ReadData deleteBlockRecursive(...)
+			//      [ ] in principle similar to writeBlockRecursive --> we need to decode/modify/re-encode shards
+			//      [ ] level == 0 should return null (no block to encode)
+			//     	    [ ] when receiving null for non-sharded dataset (probably sharded too) deleteBlock() should remove the key
+			//      [ ] if at any point existingReadData is already null, do nothing
+			//   	   --> maybe signal that by returning the same existing ReadData?
+			// 		[ ] when removing the last remaining block in a Shard, remove the shard
+			//         --> this is signalled by returning null from nested call
+			//             if this is a Shard, we will setElementData(null)
+			//             We then need to check whether the shard became empty by inspecting the shard index and counting non-null values
+			//      [ ] for sharded datasets, we don't even need to recursively descend to level 0. just immediately setElementData(null)
 		}
 
 		private ReadData writeBlockRecursive(
