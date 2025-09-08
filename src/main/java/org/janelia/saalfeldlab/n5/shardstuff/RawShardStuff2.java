@@ -1,6 +1,9 @@
 package org.janelia.saalfeldlab.n5.shardstuff;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
@@ -46,47 +49,74 @@ public class RawShardStuff2 {
 				IndexLocation.START
 		);
 
-		final DatasetAccess<Object> datasetAccess = create(DataType.INT8,
+		final DatasetAccess<byte[]> datasetAccess = create(DataType.INT8,
 				new int[] {24, 24, 24},
 				c2,
 				new DataCodecInfo[] {new RawCompression()});
 
-		System.out.println("datasetAccess = " + datasetAccess);
+		final PositionValueAccess store = new TestPositionValueAccess();
 
+		final int[] dataBlockSize = c1.getInnerBlockSize();
 
+		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {0, 0, 0}, 1));
+		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {1, 0, 0}, 2));
+		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {0, 1, 0}, 3));
+		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {1, 1, 0}, 4));
+		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {3, 2, 1}, 5));
+		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {8, 4, 1}, 6));
 
-		// TODO:
-		//   [ ] implement TestPositionValueAccess that wraps a Map<Position, byte[]>
-		//       where Position wraps long[]
-		//   [ ] create {3, 3, 3} INT8 DataBlock
-		//   [ ] write the DataBlock
 	}
 
-
+	private static DataBlock<byte[]> createDataBlock(int[] size, long[] gridPosition, int fillValue) {
+		final byte[] bytes = new byte[DataBlock.getNumElements(size)];
+		Arrays.fill(bytes, (byte) fillValue);
+		return new ByteArrayDataBlock(size, gridPosition, bytes);
+	}
 
 	static class TestPositionValueAccess implements PositionValueAccess {
 
-		Map<Position, T>
+		private static class Key {
 
+			private final long[] data;
+
+			Key(long[] data) {
+				this.data = data;
+			}
+
+			@Override
+			public final boolean equals(final Object o) {
+				if (!(o instanceof Key)) {
+					return false;
+				}
+				final Key key = (Key) o;
+				return Arrays.equals(data, key.data);
+			}
+
+			@Override
+			public int hashCode() {
+				return Arrays.hashCode(data);
+			}
+		}
+
+		private final Map<Key, byte[]> map = new HashMap<>();
 
 		@Override
-		public ReadData get(final long[] key) throws N5IOException {
-			return null;
+		public ReadData get(final long[] key) {
+			final byte[] bytes = map.get(new Key(key));
+			return bytes == null ? null : ReadData.from(bytes);
 		}
 
 		@Override
-		public void put(final long[] key, final ReadData data) throws N5IOException {
-
+		public void put(final long[] key, final ReadData data) {
+			final byte[] bytes = data == null ? null : data.allBytes();
+			map.put(new Key(key), bytes);
 		}
 
 		@Override
 		public void remove(final long[] key) throws N5IOException {
-
+			map.remove(new Key(key));
 		}
 	}
-
-
-
 
 
 	public interface PositionValueAccess {
