@@ -1,13 +1,14 @@
 package org.janelia.saalfeldlab.n5.shardstuff;
 
 import java.util.Arrays;
-import java.util.List;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.KeyValueAccess;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedGrid;
 import org.janelia.saalfeldlab.n5.shardstuff.RawShardStuff.RawShardCodec;
 import org.janelia.saalfeldlab.n5.shardstuff.RawShardStuff.ShardCodecInfo;
 import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation;
@@ -21,16 +22,70 @@ public class RawShardStuff2 {
 
 
 
-	// TODO: rename?
-	public interface Sharding<T> {
+	public interface DatasetAccess<T> {
 
-		List<DataBlock<T>> readBlocks(ReadData readData, List<Nesting.NestedPosition> positions);
+		DataBlock<T> readBlock(KeyValueAccess kva, long[] gridPosition) throws N5IOException;
 
-		ReadData writeBlocks(ReadData readData, List<DataBlock<T>> blocks);
+		void writeBlock(KeyValueAccess kva, DataBlock<T> dataBlock) throws N5IOException;
+
+//		List<DataBlock<T>> readBlocks(List<NestedPosition> positions);
+//		void writeBlocks(List<DataBlock<T>> blocks);
+	}
+
+	public static class ShardedDatasetAccess<T> implements DatasetAccess<T> {
+
+		private final NestedGrid grid;
+
+		public ShardedDatasetAccess(final NestedGrid grid, final BlockCodec<?>[] blockCodecs) {
+			this.grid = grid;
+		}
+
+		@Override
+		public DataBlock<T> readBlock(final KeyValueAccess kva, final long[] gridPosition) throws N5IOException {
+			throw new UnsupportedOperationException("TODO");
+		}
+
+		@Override
+		public void writeBlock(final KeyValueAccess kva, final DataBlock<T> dataBlock) throws N5IOException {
+			throw new UnsupportedOperationException("TODO");
+		}
 	}
 
 
+	static <T> DatasetAccess<T> create(
+			final DataType dataType,
+			int[] blockSize,
+			BlockCodecInfo blockCodecInfo,
+			DataCodecInfo[] dataCodecInfos
+	) {
+		final int m = nestingDepth(blockCodecInfo);
 
+		// There are m codecs: 1 DataBlock codecs, and m-1 shard codecs.
+		// The inner-most codec (the DataBlock codec) is at index 0.
+		final BlockCodec<?>[] blockCodecs = new BlockCodec[m];
+		final int[][] blockSizes = new int[m][];
+
+		for (int l = m - 1; l >= 0; --l) {
+			blockCodecs[l] = blockCodecInfo.create(dataType, blockSize, dataCodecInfos);
+			blockSizes[l] = blockSize;
+			if ( l > 0 ) {
+				final ShardCodecInfo info = (ShardCodecInfo) blockCodecInfo;
+				blockCodecInfo = info.getInnerBlockCodecInfo();
+				dataCodecInfos = info.getInnerDataCodecInfos();
+				blockSize = info.getInnerBlockSize();
+			}
+		}
+
+		return new ShardedDatasetAccess<>(new NestedGrid(blockSizes), blockCodecs);
+	}
+
+	private static int nestingDepth(BlockCodecInfo info) {
+		if (info instanceof ShardCodecInfo) {
+			return 1 + nestingDepth(((ShardCodecInfo) info).getInnerBlockCodecInfo());
+		} else {
+			return 1;
+		}
+	}
 
 	public static class DefaultShardCodecInfo implements ShardCodecInfo {
 
