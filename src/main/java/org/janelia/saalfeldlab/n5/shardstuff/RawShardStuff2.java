@@ -3,13 +3,16 @@ package org.janelia.saalfeldlab.n5.shardstuff;
 import java.util.Arrays;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedGrid;
+import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedPosition;
+import org.janelia.saalfeldlab.n5.shardstuff.RawShardStuff.RawShard;
 import org.janelia.saalfeldlab.n5.shardstuff.RawShardStuff.RawShardCodec;
+import org.janelia.saalfeldlab.n5.shardstuff.RawShardStuff.RawShardDataBlock;
 import org.janelia.saalfeldlab.n5.shardstuff.RawShardStuff.ShardCodecInfo;
 import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation;
 
@@ -21,38 +24,104 @@ public class RawShardStuff2 {
 
 
 
+	public interface PositionValueAccess {
+
+		/**
+		 * @return ReadData for the given key or {@code null} if the key doesn't exist
+		 */
+		ReadData get(long[] key) throws N5IOException;
+
+		void put(long[] key, ReadData data) throws N5IOException;
+
+		void remove(long[] key) throws N5IOException;
+	}
 
 	public interface DatasetAccess<T> {
 
-		DataBlock<T> readBlock(KeyValueAccess kva, long[] gridPosition) throws N5IOException;
+		DataBlock<T> readBlock(PositionValueAccess kva, long[] gridPosition) throws N5IOException;
 
-		void writeBlock(KeyValueAccess kva, DataBlock<T> dataBlock) throws N5IOException;
+		void writeBlock(PositionValueAccess kva, DataBlock<T> dataBlock) throws N5IOException;
 
-//		List<DataBlock<T>> readBlocks(List<NestedPosition> positions);
-//		void writeBlocks(List<DataBlock<T>> blocks);
+		// TODO: batch read/write methods
+//		List<DataBlock<T>> readBlocks(PositionValueAccess kva, List<NestedPosition> positions);
+//		void writeBlocks(PositionValueAccess kva, List<DataBlock<T>> blocks);
 	}
 
-	public static class ShardedDatasetAccess<T> implements DatasetAccess<T> {
+	static class ShardedDatasetAccess<T> implements DatasetAccess<T> {
 
 		private final NestedGrid grid;
+		private final BlockCodec<?>[] codecs;
 
-		public ShardedDatasetAccess(final NestedGrid grid, final BlockCodec<?>[] blockCodecs) {
+		public ShardedDatasetAccess(final NestedGrid grid, final BlockCodec<?>[] codecs) {
 			this.grid = grid;
+			this.codecs = codecs;
 		}
 
 		@Override
-		public DataBlock<T> readBlock(final KeyValueAccess kva, final long[] gridPosition) throws N5IOException {
-			throw new UnsupportedOperationException("TODO");
+		public DataBlock<T> readBlock(final PositionValueAccess kva, final long[] gridPosition) throws N5IOException {
+			final NestedPosition position = new NestedPosition(grid, gridPosition);
+			return readBlockRecursive(kva.get(position.key()), position, grid.numLevels() - 1);
+		}
+
+		private DataBlock<T> readBlockRecursive(
+				final ReadData readData,
+				final NestedPosition position,
+				final int level)
+		{
+			if (readData == null) {
+				return null;
+			} else if (level == 0) {
+				@SuppressWarnings("unchecked")
+				final BlockCodec<T> codec = (BlockCodec<T>) codecs[0];
+				return codec.decode(readData, position.absolute(0));
+			} else {
+				@SuppressWarnings("unchecked")
+				final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
+				final RawShard shard = codec.decode(readData, position.absolute(level)).getData();
+				return readBlockRecursive(shard.getElementData(position.relative(level - 1)), position, level - 1);
+
+			}
 		}
 
 		@Override
-		public void writeBlock(final KeyValueAccess kva, final DataBlock<T> dataBlock) throws N5IOException {
-			throw new UnsupportedOperationException("TODO");
+		public void writeBlock(final PositionValueAccess kva, final DataBlock<T> dataBlock) throws N5IOException {
+			final NestedPosition position = new NestedPosition(grid, dataBlock.getGridPosition());
+			final long[] key = position.key();
+			final ReadData existingData = kva.get(key);
+			final ReadData modifiedData = writeBlockRecursive(existingData, dataBlock, position, grid.numLevels() - 1);
+			kva.put(key, modifiedData);
+		}
+
+		private ReadData writeBlockRecursive(
+				final ReadData existingReadData,
+				final DataBlock<T> dataBlock,
+				final NestedPosition position,
+				final int level)
+		{
+			if ( level == 0 ) {
+				@SuppressWarnings("unchecked")
+				final BlockCodec<T> codec = (BlockCodec<T>) codecs[0];
+				return codec.encode(dataBlock);
+			} else {
+				@SuppressWarnings("unchecked")
+				final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
+				final long[] gridPos = position.absolute(level);
+				final RawShard shard = existingReadData == null ?
+						new RawShard(grid.relativeBlockSize(level)) :
+						codec.decode(existingReadData, gridPos).getData();
+				final long[] elementPos = position.relative(level - 1);
+				final ReadData existingElementData = (level == 1)
+						? null // if level == 1, we don't need to extract the nested (DataBlock<T>) ReadData because it will be overridden anyway
+						: shard.getElementData(elementPos);
+				final ReadData modifiedElementData = writeBlockRecursive(existingElementData, dataBlock, position, level - 1);
+				shard.setElementData(modifiedElementData, elementPos);
+				return codec.encode(new RawShardDataBlock(gridPos, shard));
+			}
 		}
 	}
 
 
-	static <T> DatasetAccess<T> create(
+	public static <T> DatasetAccess<T> create(
 			final DataType dataType,
 			int[] blockSize,
 			BlockCodecInfo blockCodecInfo,
@@ -163,21 +232,4 @@ public class RawShardStuff2 {
 			return new RawShardCodec(size, indexLocation, indexCodec);
 		}
 	}
-
-
-
-	public static class DummyDataBlockCodecInfo implements BlockCodecInfo {
-
-		@Override
-		public <T> BlockCodec<T> create(final DataType dataType, final int[] blockSize, final DataCodecInfo... codecs) {
-			return null;
-		}
-
-		@Override
-		public String getType() {
-			return "DummyDataBlockCodecInfo";
-		}
-	}
-
-
 }

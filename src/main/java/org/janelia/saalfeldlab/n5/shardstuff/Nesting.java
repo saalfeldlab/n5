@@ -33,7 +33,7 @@ public class Nesting {
 		final NestedGrid grid = new NestedGrid(blockSizes);
 		final NestedPosition pos = new NestedPosition(grid, new long[] {38, 7, 129});
 		System.out.println("pos = " + pos);
-		System.out.println("key = " + Arrays.toString(pos.keyPosition()));
+		System.out.println("key = " + Arrays.toString(pos.key()));
 	}
 
 
@@ -81,8 +81,7 @@ public class Nesting {
 		 *
 		 * @return relative grid position
 		 */
-		// TODO: rename to relative()? reads nicer in position.relative(l) ...
-		public long[] relativePosition(final int level) {
+		public long[] relative(final int level) {
 			return grid.relativePosition(position, level);
 		}
 
@@ -94,14 +93,12 @@ public class Nesting {
 		 *
 		 * @return absolute grid position
 		 */
-		// TODO: rename to absolute()? reads nicer in position.absolute(l) ...
-		public long[] absolutePosition(final int level) {
+		public long[] absolute(final int level) {
 			return grid.relativePosition(position, level);
 		}
 
-		// TODO: rename to key()? to match absolute() and relative() ...
-		public long[] keyPosition() {
-			return relativePosition(grid.numLevels() - 1);
+		public long[] key() {
+			return relative(grid.numLevels() - 1);
 		}
 
 		@Override
@@ -112,7 +109,7 @@ public class Nesting {
 				if ( l > level ) {
 					sb.append(" / ");
 				}
-				sb.append(Arrays.toString(relativePosition(l)));
+				sb.append(Arrays.toString(relative(l)));
 			}
 			sb.append(" (level ").append(level).append(")}");
 			return sb.toString();
@@ -139,9 +136,6 @@ public class Nesting {
 
 		// r[i][d] is block size at level i relative to level i-1
 		private final int[][] r;
-
-		// NB: as usual, level 0 is full resolution.
-		// TODO: BlockCodec stuff does this differently at the moment, but that should be changed ...
 
 		/**
 		 * {@code blockSizes[l][d]} is the block size at level {@code l} in dimension {@code d}.
@@ -233,6 +227,10 @@ public class Nesting {
 				final long[] sourcePos,
 				final int targetLevel) {
 			return relativePosition(sourcePos, 0, targetLevel);
+		}
+
+		public int[] relativeBlockSize(final int level) {
+			return r[level];
 		}
 	}
 

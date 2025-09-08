@@ -271,10 +271,10 @@ public class ShardStuff2 {
 			// be verified, at least during development.
 
 			for ( int l = grid.numLevels() - 1; l > 0; --l ) {
-				final Shard shard = shardCodecs[l].decode(readData, position.absolutePosition(l));
-				readData = shard.getElementData(position.relativePosition(l - 1));
+				final Shard shard = shardCodecs[l].decode(readData, position.absolute(l));
+				readData = shard.getElementData(position.relative(l - 1));
 			}
-			return dataBlockCodec.decode(readData, position.absolutePosition(0));
+			return dataBlockCodec.decode(readData, position.absolute(0));
 		}
 
 		// TODO: alternative implementation that uses nestedCodec
@@ -286,11 +286,11 @@ public class ShardStuff2 {
 
 			if ( nestedCodec != null ) {
 				final int l = shardCodecs.length - 1;
-				final Shard shard = shardCodecs[l].decode(readData, position.absolutePosition(l));
-				final ReadData nestedData = shard.getElementData(position.relativePosition(l - 1));
+				final Shard shard = shardCodecs[l].decode(readData, position.absolute(l));
+				final ReadData nestedData = shard.getElementData(position.relative(l - 1));
 				return nestedCodec.decodeNested(nestedData, position);
 			} else {
-				return dataBlockCodec.decode(readData, position.absolutePosition(0));
+				return dataBlockCodec.decode(readData, position.absolute(0));
 			}
 		}
 
