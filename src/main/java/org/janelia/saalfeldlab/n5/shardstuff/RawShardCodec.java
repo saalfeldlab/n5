@@ -38,12 +38,16 @@ public class RawShardCodec implements BlockCodec<RawShard> {
 		// concatenate slices for all non-null segments in shard.getData().index()
 		final NDArray<Segment> index = shard.getData().index();
 		final List<SegmentedReadData> readDatas = new ArrayList<>();
+		// TODO: Any clever ReadData grouping, slice merging, etc. should go here
+		//       This basic implementation just slices ReadData for all non-null
+		//       elements and concatenates in flat index order.
 		for (Segment segment : index.data) {
 			if (segment != null) {
 				readDatas.add(segment.source().slice(segment));
 			}
 		}
 		final SegmentedReadData data = SegmentedReadData.concatenate(readDatas);
+
 		final ReadData.OutputStreamWriter writer;
 		if (indexLocation == START) {
 			data.materialize();
