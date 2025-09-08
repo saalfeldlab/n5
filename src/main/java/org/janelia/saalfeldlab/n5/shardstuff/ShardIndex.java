@@ -70,6 +70,15 @@ public class ShardIndex {
 		public int numElements() {
 			return data.length;
 		}
+
+		public boolean allElementsNull() {
+			for (T t : data) {
+				if (t != null) {
+					return false;
+				}
+			}
+			return true;
+		}
 	}
 
 	static int getNumElements(final int[] size) {

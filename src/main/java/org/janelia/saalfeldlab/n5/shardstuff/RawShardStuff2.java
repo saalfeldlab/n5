@@ -29,8 +29,6 @@ public class RawShardStuff2 {
 		// DataBlocks are 3x3x3
 		// Level 1 shards are 6x6x6 (contain 2x2x2 DataBlocks)
 		// Level 2 shards are 24x24x24 (contain 4x4x4 Level 1 shards)
-
-
 		final BlockCodecInfo c0 = new N5BlockCodecInfo();
 		final ShardCodecInfo c1 = new DefaultShardCodecInfo(
 				new int[] {3, 3, 3},
@@ -71,18 +69,39 @@ public class RawShardStuff2 {
 		checkBlock(datasetAccess.readBlock(store, new long[] {1, 1, 0}), true, 4);
 		checkBlock(datasetAccess.readBlock(store, new long[] {3, 2, 1}), true, 5);
 		checkBlock(datasetAccess.readBlock(store, new long[] {8, 4, 1}), true, 6);
+
+		datasetAccess.deleteBlock(store, new long[] {0, 0, 0});
+		checkBlock(datasetAccess.readBlock(store, new long[] {0, 0, 0}), false, 1);
+		checkBlock(datasetAccess.readBlock(store, new long[] {1, 0, 0}), true, 2);
+
+		// if a shard becomes empty the corresponding key should be deleted
+		if ( store.get(new long[] {1, 0, 0}) == null ) {
+			throw new IllegalStateException("expected non-null readData");
+		}
+		datasetAccess.deleteBlock(store, new long[] {8, 4, 1});
+		if ( store.get(new long[] {1, 0, 0}) != null ) {
+			throw new IllegalStateException("expected null readData");
+		}
+
+		// deleting a non-existent block should not fail
+		datasetAccess.deleteBlock(store, new long[] {0, 0, 8});
 	}
 
 	private static void checkBlock(final DataBlock<byte[]> dataBlock, final boolean expectedNonNull, final int expectedFillValue) {
 
-		if (dataBlock == null && expectedNonNull) {
-			throw new IllegalStateException("expected non-null dataBlock");
-		}
-
-		final byte[] bytes = dataBlock.getData();
-		for (byte b : bytes) {
-			if (b != (byte) expectedFillValue) {
-				throw new IllegalStateException("expected all values to be " + expectedFillValue);
+		if (dataBlock == null) {
+			if (expectedNonNull) {
+				throw new IllegalStateException("expected non-null dataBlock");
+			}
+		} else {
+			if (!expectedNonNull) {
+				throw new IllegalStateException("expected null dataBlock");
+			}
+			final byte[] bytes = dataBlock.getData();
+			for (byte b : bytes) {
+				if (b != (byte) expectedFillValue) {
+					throw new IllegalStateException("expected all values to be " + expectedFillValue);
+				}
 			}
 		}
 	}
@@ -211,18 +230,59 @@ public class RawShardStuff2 {
 
 		@Override
 		public void deleteBlock(final PositionValueAccess kva, final long[] gridPosition) throws N5IOException {
-			// TODO
-			//  [ ] private ReadData deleteBlockRecursive(...)
-			//      [ ] in principle similar to writeBlockRecursive --> we need to decode/modify/re-encode shards
-			//      [ ] level == 0 should return null (no block to encode)
-			//     	    [ ] when receiving null for non-sharded dataset (probably sharded too) deleteBlock() should remove the key
-			//      [ ] if at any point existingReadData is already null, do nothing
-			//   	   --> maybe signal that by returning the same existing ReadData?
-			// 		[ ] when removing the last remaining block in a Shard, remove the shard
-			//         --> this is signalled by returning null from nested call
-			//             if this is a Shard, we will setElementData(null)
-			//             We then need to check whether the shard became empty by inspecting the shard index and counting non-null values
-			//      [ ] for sharded datasets, we don't even need to recursively descend to level 0. just immediately setElementData(null)
+			final NestedPosition position = new NestedPosition(grid, gridPosition);
+			final long[] key = position.key();
+			if ( grid.numLevels() == 1 ) {
+				// for non-sharded dataset, don't bother getting the value, just remove the key.
+				kva.remove(key);
+			} else {
+				final ReadData existingData = kva.get(key);
+				final ReadData modifiedData = deleteBlockRecursive(existingData, position, grid.numLevels() - 1);
+				if ( modifiedData == null ) {
+					kva.remove(key);
+				} else if ( modifiedData != existingData ) {
+					kva.put(key, modifiedData);
+				}
+			}
+		}
+
+		private ReadData deleteBlockRecursive(
+				final ReadData existingReadData,
+				final NestedPosition position,
+				final int level)
+		{
+			if ( level == 0 || existingReadData == null ) {
+				return null;
+			} else {
+				@SuppressWarnings("unchecked")
+				final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
+				final long[] gridPos = position.absolute(level);
+				final RawShard shard = codec.decode(existingReadData, gridPos).getData();
+				final long[] elementPos = position.relative(level - 1);
+				final ReadData existingElementData = shard.getElementData(elementPos);
+				if ( existingElementData == null ) {
+					// The DataBlock (or the whole nested shard containing it) does not exist.
+					// This shard remains unchanged.
+					return existingReadData;
+				} else {
+					final ReadData modifiedElementData = deleteBlockRecursive(existingElementData, position, level - 1);
+					if ( modifiedElementData == existingElementData ) {
+						// The nested shard was not modified.
+						// This shard remains unchanged.
+						return existingReadData;
+					}
+					shard.setElementData(modifiedElementData, elementPos);
+					if ( modifiedElementData == null ) {
+						// The DataBlock or nested shard was removed.
+						// Check whether this shard becomes empty.
+						if ( shard.index().allElementsNull() ) {
+							// This shard is empty and should be removed.
+							return null;
+						}
+					}
+					return codec.encode(new RawShardDataBlock(gridPos, shard));
+				}
+			}
 		}
 
 		private ReadData writeBlockRecursive(

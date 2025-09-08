@@ -65,7 +65,7 @@ public class RawShardStuff {
 		}
 
 		public void setElementData(final ReadData data, final long[] pos) {
-			final Segment segment = SegmentedReadData.wrap(data).segments().get(0);
+			final Segment segment = data == null ? null : SegmentedReadData.wrap(data).segments().get(0);
 			index.set(segment, pos);
 		}
 	}
