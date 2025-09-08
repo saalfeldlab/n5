@@ -47,15 +47,27 @@ public class RawShardStuff2 {
 				IndexLocation.START
 		);
 
+		// TODO: This should go into DatasetAttributes.
+		//       DatasetAccess<T> replaces DatasetAttributes.blockCodec
+		//       DatasetAttributes.getDataAccess() replaces DatasetAttributes.getBlockCodec()
+		//       All information required for create(...) is known to DatasetAttributes already.
 		final DatasetAccess<byte[]> datasetAccess = create(DataType.INT8,
 				new int[] {24, 24, 24},
 				c2,
 				new DataCodecInfo[] {new RawCompression()});
 
+		// TODO: N5Reader/Writer needs to provide a PositionValueAccess implementation on top of its KVA.
+		//       The read/write/deleteBlock methods would getDataAccess() from the DatasetAttributes and call it with that PositionValueAccess.
 		final PositionValueAccess store = new TestPositionValueAccess();
 
-		final int[] dataBlockSize = c1.getInnerBlockSize();
 
+		// ---------------------------------------------------------------
+		// Some "tests"
+		// TODO: Turn into unit tests
+		// ---------------------------------------------------------------
+
+		// write some blocks, filled with constant values
+		final int[] dataBlockSize = c1.getInnerBlockSize();
 		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {0, 0, 0}, 1));
 		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {1, 0, 0}, 2));
 		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {0, 1, 0}, 3));
@@ -63,6 +75,7 @@ public class RawShardStuff2 {
 		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {3, 2, 1}, 5));
 		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {8, 4, 1}, 6));
 
+		// verify that the written blocks can be read back with the correct values
 		checkBlock(datasetAccess.readBlock(store, new long[] {0, 0, 0}), true, 1);
 		checkBlock(datasetAccess.readBlock(store, new long[] {1, 0, 0}), true, 2);
 		checkBlock(datasetAccess.readBlock(store, new long[] {0, 1, 0}), true, 3);
@@ -70,6 +83,7 @@ public class RawShardStuff2 {
 		checkBlock(datasetAccess.readBlock(store, new long[] {3, 2, 1}), true, 5);
 		checkBlock(datasetAccess.readBlock(store, new long[] {8, 4, 1}), true, 6);
 
+		// verify that deleting a block removes it from the shard (while other blocks in the same shard are still present)
 		datasetAccess.deleteBlock(store, new long[] {0, 0, 0});
 		checkBlock(datasetAccess.readBlock(store, new long[] {0, 0, 0}), false, 1);
 		checkBlock(datasetAccess.readBlock(store, new long[] {1, 0, 0}), true, 2);
@@ -178,7 +192,7 @@ public class RawShardStuff2 {
 
 		void deleteBlock(PositionValueAccess kva, long[] gridPosition) throws N5IOException;
 
-		// TODO: batch read/write methods
+		// TODO: batch read/write/delete methods
 //		List<DataBlock<T>> readBlocks(PositionValueAccess kva, List<NestedPosition> positions);
 //		void writeBlocks(PositionValueAccess kva, List<DataBlock<T>> blocks);
 	}
