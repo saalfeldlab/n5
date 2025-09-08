@@ -4,9 +4,12 @@ import java.util.Arrays;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedGrid;
 import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedPosition;
@@ -19,6 +22,68 @@ import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation;
 public class RawShardStuff2 {
 
 
+	public static void main(String[] args) {
+		// DataBlocks are 3x3x3
+		// Level 1 shards are 6x6x6 (contain 2x2x2 DataBlocks)
+		// Level 2 shards are 24x24x24 (contain 4x4x4 Level 1 shards)
+
+
+		final BlockCodecInfo c0 = new N5BlockCodecInfo();
+		final ShardCodecInfo c1 = new DefaultShardCodecInfo(
+				new int[] {3, 3, 3},
+				c0,
+				new DataCodecInfo[] {new RawCompression()},
+				new RawBlockCodecInfo(),
+				new DataCodecInfo[] {new RawCompression()},
+				IndexLocation.END
+		);
+		final ShardCodecInfo c2 = new DefaultShardCodecInfo(
+				new int[] {6, 6, 6},
+				c1,
+				new DataCodecInfo[] {new RawCompression()},
+				new RawBlockCodecInfo(),
+				new DataCodecInfo[] {new RawCompression()},
+				IndexLocation.START
+		);
+
+		final DatasetAccess<Object> datasetAccess = create(DataType.INT8,
+				new int[] {24, 24, 24},
+				c2,
+				new DataCodecInfo[] {new RawCompression()});
+
+		System.out.println("datasetAccess = " + datasetAccess);
+
+
+
+		// TODO:
+		//   [ ] implement TestPositionValueAccess that wraps a Map<Position, byte[]>
+		//       where Position wraps long[]
+		//   [ ] create {3, 3, 3} INT8 DataBlock
+		//   [ ] write the DataBlock
+	}
+
+
+
+	static class TestPositionValueAccess implements PositionValueAccess {
+
+		Map<Position, T>
+
+
+		@Override
+		public ReadData get(final long[] key) throws N5IOException {
+			return null;
+		}
+
+		@Override
+		public void put(final long[] key, final ReadData data) throws N5IOException {
+
+		}
+
+		@Override
+		public void remove(final long[] key) throws N5IOException {
+
+		}
+	}
 
 
 

@@ -30,6 +30,7 @@ package org.janelia.saalfeldlab.n5.codec;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
@@ -62,7 +63,12 @@ public interface BlockCodec<T> {
 	 * 		if this {@code DataBlockSerializer} cannot determine encoded size independent of block content
 	 */
 	default long encodedSize(int[] blockSize) throws UnsupportedOperationException {
-		// TODO: adapt https://github.com/saalfeldlab/n5/pull/165 to new naming
-		throw new UnsupportedOperationException("TODO: not implemented. See https://github.com/saalfeldlab/n5/pull/165.");
+
+		// TODO: Adapt https://github.com/saalfeldlab/n5/pull/165 to new naming!
+
+		// TODO: REPLACE! This is a dirty hack, assuming this is only called for
+		//       ShardIndex (UINT64) and the ShardIndex uses RawBlockCodec and
+		//       RawCompression.
+		return DataBlock.getNumElements(blockSize) * 8L;
 	}
 }
