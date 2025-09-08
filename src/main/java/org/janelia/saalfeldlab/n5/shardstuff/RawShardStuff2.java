@@ -16,10 +16,6 @@ import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedGrid;
 import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedPosition;
-import org.janelia.saalfeldlab.n5.shardstuff.RawShardStuff.RawShard;
-import org.janelia.saalfeldlab.n5.shardstuff.RawShardStuff.RawShardCodec;
-import org.janelia.saalfeldlab.n5.shardstuff.RawShardStuff.RawShardDataBlock;
-import org.janelia.saalfeldlab.n5.shardstuff.RawShardStuff.ShardCodecInfo;
 import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation;
 
 public class RawShardStuff2 {
