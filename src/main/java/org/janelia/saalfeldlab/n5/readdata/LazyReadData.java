@@ -32,6 +32,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.io.output.ProxyOutputStream;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
@@ -62,19 +63,25 @@ class LazyReadData implements ReadData {
 
 	private ByteArrayReadData bytes;
 
+	private long length = -1;
+
 	@Override
 	public ReadData materialize() throws N5IOException {
 		if (bytes == null) {
-			final ByteArrayOutputStream baos = new ByteArrayOutputStream(8192);
-			writeTo(baos);
-			bytes = new ByteArrayReadData(baos.toByteArray());
+			try {
+				final ByteArrayOutputStream baos = new ByteArrayOutputStream(8192);
+				writer.writeTo(baos);
+				bytes = new ByteArrayReadData(baos.toByteArray());
+			} catch (IOException e) {
+				throw new N5IOException(e);
+			}
 		}
 		return this;
 	}
 
 	@Override
 	public long length() {
-		return (bytes != null) ? bytes.length() : -1;
+		return (bytes != null) ? bytes.length() : length;
 	}
 
 	// TODO: remove? Should this be the default implementation?
@@ -113,7 +120,9 @@ class LazyReadData implements ReadData {
 			if (bytes != null) {
 				outputStream.write(bytes.allBytes());
 			} else {
-				writer.writeTo(outputStream);
+				final CountingOutputStream cos = new CountingOutputStream(outputStream);
+				writer.writeTo(cos);
+				length = cos.getByteCount();
 			}
 		} catch (IOException e) {
 			throw new N5IOException(e);
