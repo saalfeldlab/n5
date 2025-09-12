@@ -17,6 +17,9 @@ public class RawShardDataBlock implements DataBlock<RawShard> {
 		this.shard = shard;
 	}
 
+	// TODO: should this be the number of elements in the Shard (number of
+	//       sub-shards / datablock) along each dimension, or the number of
+	//       pixels alon each dimension?
 	@Override
 	public int[] getSize() {
 		return shard.index().size();
