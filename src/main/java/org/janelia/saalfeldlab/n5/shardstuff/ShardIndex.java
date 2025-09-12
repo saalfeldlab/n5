@@ -110,7 +110,6 @@ class ShardIndex {
 	 */
 	private static final int LONGS_PER_BLOCK = 2;
 
-	// TODO do we need additional offset here?
 	static NDArray<SegmentLocation> fromDataBlock( final DataBlock<long[]> block ) {
 
 		final long[] blockData = block.getData();
@@ -128,7 +127,6 @@ class ShardIndex {
 		return new NDArray<>(size, locations);
 	}
 
-	// TODO do we use offset? If not, remove!
 	static DataBlock<long[]> toDataBlock( final NDArray<SegmentLocation> locations, final long offset ) {
 
 		final SegmentLocation[] data = locations.data;
