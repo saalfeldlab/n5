@@ -64,11 +64,6 @@ public interface BlockCodec<T> {
 	 */
 	default long encodedSize(int[] blockSize) throws UnsupportedOperationException {
 
-		// TODO: Adapt https://github.com/saalfeldlab/n5/pull/165 to new naming!
-
-		// TODO: REPLACE! This is a dirty hack, assuming this is only called for
-		//       ShardIndex (UINT64) and the ShardIndex uses RawBlockCodec and
-		//       RawCompression.
-		return DataBlock.getNumElements(blockSize) * 8L;
+		throw new UnsupportedOperationException();
 	}
 }
