@@ -46,6 +46,9 @@ public interface DataCodec {
 	/**
 	 * Create a {@code DataCodec} that sequentially applies {@code codecs} in
 	 * the given order for encoding, and in reverse order for decoding.
+	 * <p>
+	 * If all {@code codecs} implement {@code DeterministicSizeDataCodec}, the
+	 * returned {@code DataCodec} will also be a {@code DeterministicSizeDataCodec}.
 	 *
 	 * @param codecs
 	 *            a list of DataCodecs
@@ -59,7 +62,10 @@ public interface DataCodec {
 		if (codecs.length == 1)
 			return codecs[0];
 
-		return new ConcatenatedDataCodec(codecs);
+		if (Arrays.stream(codecs).allMatch(DeterministicSizeDataCodec.class::isInstance))
+			return new ConcatenatedDeterministicSizeDataCodec(Arrays.copyOf(codecs, codecs.length, DeterministicSizeDataCodec[].class));
+		else
+			return new ConcatenatedDataCodec(codecs);
 	}
 
 	static DataCodec create(final DataCodecInfo... codecInfos) {
