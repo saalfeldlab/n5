@@ -88,7 +88,8 @@ public class ReadDataTests {
 		final ReadData readData = new FileSystemKeyValueAccess(FileSystems.getDefault())
 				.createReadData(tmpF.getAbsolutePath());
 
-		assertEquals("file read data length", 128, readData.length());
+		assertEquals("file read data length", -1, readData.length());
+		assertEquals("file read data length", 128, readData.requireLength());
 		sliceTestHelper(readData, N);
 	}
 
