@@ -62,6 +62,7 @@ import java.util.Map;
 
 import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.shardstuff.PositionValueAccess;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -241,17 +242,16 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception {
 
-		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), dataBlock.getGridPosition());
-		try (
-				final LockedChannel lock = getKeyValueAccess().lockForWriting(blockPath);
-				final OutputStream out = lock.newOutputStream()
-		) {
-			datasetAttributes.<T>getBlockCodec().encode(dataBlock).writeTo(out);
-		} catch (final IOException | UncheckedIOException e) {
+		try {
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(
+					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path));
+			datasetAttributes.<T>getDatasetAccess().writeBlock(posKva, dataBlock);
+		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
 					e);
 		}
+
 	}
 
 	@Override

@@ -36,6 +36,8 @@ import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.shardstuff.DatasetAccess;
+import org.janelia.saalfeldlab.n5.shardstuff.ShardedDatasetAccess;
 
 /**
  * Mandatory dataset attributes:
@@ -135,15 +137,11 @@ public class DatasetAttributes implements Serializable {
 	 *
 	 * @return the {@code BlockCodecInfo} for this dataset
 	 */
-	public BlockCodecInfo getBlockCodecInfo() {
+	public <T> DatasetAccess<T> getDatasetAccess() {
 
-		return blockCodecInfo;
-	}
-
-	@SuppressWarnings("unchecked")
-	<T> BlockCodec<T> getBlockCodec() {
-
-		return (BlockCodec<T>) blockCodec;
+		return ShardedDatasetAccess.create(getDataType(),
+				new int[] {24, 24, 24},
+				blockCodecInfo, dataCodecInfos);
 	}
 
 	public HashMap<String, Object> asMap() {

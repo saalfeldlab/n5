@@ -10,7 +10,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedGrid;
 import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedPosition;
 
-class ShardedDatasetAccess<T> implements DatasetAccess<T> {
+public class ShardedDatasetAccess<T> implements DatasetAccess<T> {
 
 	private final NestedGrid grid;
 	private final BlockCodec<?>[] codecs;
@@ -41,7 +41,6 @@ class ShardedDatasetAccess<T> implements DatasetAccess<T> {
 			final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
 			final RawShard shard = codec.decode(readData, position.absolute(level)).getData();
 			return readBlockRecursive(shard.getElementData(position.relative(level - 1)), position, level - 1);
-
 		}
 	}
 

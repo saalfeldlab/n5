@@ -34,7 +34,7 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.shardstuff.PositionValueAccess;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -96,11 +96,10 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), gridPosition);
-
 		try {
-			final ReadData blockData = getKeyValueAccess().createReadData(path);
-			return datasetAttributes.getBlockCodec().decode(blockData, gridPosition);
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(
+					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName));
+			return datasetAttributes.getDatasetAccess().readBlock(posKva, gridPosition);
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
 		}
