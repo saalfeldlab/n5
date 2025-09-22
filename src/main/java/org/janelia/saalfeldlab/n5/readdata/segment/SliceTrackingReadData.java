@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -108,5 +109,18 @@ class SliceTrackingReadData implements ReadData {
 	@Override
 	public ReadData encode(final OutputStreamOperator encoder) {
 		return delegate.encode(encoder);
+	}
+
+
+	// --- -- - prefetching - -- ---
+
+	/**
+	 * Indicates that the given slices will be subsequently read.
+	 * {@code ReadData} implementations (optionally) may take steps to prepare
+	 * for these subsequent slices.
+	 */
+	// TODO: where to put this? Could be in ReadData interface with empty default implementation?
+	public void prefetch(final Collection<? extends SegmentLocation> slices) {
+
 	}
 }
