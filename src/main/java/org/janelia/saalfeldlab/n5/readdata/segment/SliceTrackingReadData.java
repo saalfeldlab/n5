@@ -120,7 +120,27 @@ class SliceTrackingReadData implements ReadData {
 	 * for these subsequent slices.
 	 */
 	// TODO: where to put this? Could be in ReadData interface with empty default implementation?
-	public void prefetch(final Collection<? extends SegmentLocation> slices) {
+	public void prefetch(final Collection<? extends SegmentLocation> ranges) {
 
+		// Minimal implementation: Find offset and length covering all ranges
+		// that are not yet fully covered by existing slices. Then materialize
+		// the slice covering that range.
+
+		long fromIndex = Long.MAX_VALUE;
+		long toIndex = Long.MIN_VALUE;
+		for (final SegmentLocation slice : ranges) {
+			if (!isCovered(slice)) {
+				fromIndex = Math.min(fromIndex, slice.offset());
+				toIndex = Math.max(toIndex, slice.end());
+			}
+		}
+
+		if (fromIndex < toIndex) {
+			slice(fromIndex, toIndex - fromIndex).materialize();
+		}
+	}
+
+	private boolean isCovered(final SegmentLocation slice) {
+		return Slices.findContainingSlice(slices, slice) != null;
 	}
 }
