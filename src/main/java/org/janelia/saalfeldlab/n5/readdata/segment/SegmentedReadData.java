@@ -18,7 +18,7 @@ public interface SegmentedReadData extends ReadData {
 	 * of {@link SegmentedReadData#segments()}.
 	 */
 	static SegmentedReadData wrap(ReadData readData) {
-		return DefaultSegmentedReadData.wrap(readData);
+		return DefaultSegmentedReadData.wrap(SliceTrackingReadData.wrap(readData));
 	}
 
 	/**
@@ -38,7 +38,7 @@ public interface SegmentedReadData extends ReadData {
 	 * {@link SegmentsAndData#data()} are ordered by offset).
 	 */
 	static SegmentsAndData wrap(ReadData readData, List<SegmentLocation> locations) {
-		return DefaultSegmentedReadData.wrap(readData, locations);
+		return DefaultSegmentedReadData.wrap(SliceTrackingReadData.wrap(readData), locations);
 	}
 
 	static SegmentedReadData concatenate(List<SegmentedReadData> readDatas) {
