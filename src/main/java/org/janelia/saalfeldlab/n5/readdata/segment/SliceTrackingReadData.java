@@ -111,20 +111,23 @@ class SliceTrackingReadData implements ReadData {
 		return delegate.encode(encoder);
 	}
 
-
-	// --- -- - prefetching - -- ---
-
 	/**
 	 * Indicates that the given slices will be subsequently read.
 	 * {@code ReadData} implementations (optionally) may take steps to prepare
 	 * for these subsequent slices.
+	 * <p>
+	 * Minimal implementation: Find offset and length covering all ranges that
+	 * are not yet fully covered by existing slices. Then materialize the slice
+	 * covering that range.
+	 *
+	 * @param ranges
+	 * 		slice ranges to prefetch
+	 *
+	 * @throws N5IOException
+	 * 		if any I/O error occurs
 	 */
-	// TODO: where to put this? Could be in ReadData interface with empty default implementation?
-	public void prefetch(final Collection<? extends SegmentLocation> ranges) {
-
-		// Minimal implementation: Find offset and length covering all ranges
-		// that are not yet fully covered by existing slices. Then materialize
-		// the slice covering that range.
+	@Override
+	public void prefetch(final Collection<? extends SegmentLocation> ranges) throws N5IOException {
 
 		long fromIndex = Long.MAX_VALUE;
 		long toIndex = Long.MIN_VALUE;
@@ -141,6 +144,7 @@ class SliceTrackingReadData implements ReadData {
 	}
 
 	private boolean isCovered(final SegmentLocation slice) {
+
 		return Slices.findContainingSlice(slices, slice) != null;
 	}
 }

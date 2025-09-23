@@ -32,7 +32,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.segment.SegmentLocation;
 
 /**
  * An abstraction over {@code byte[]} data.
@@ -206,6 +208,20 @@ public interface ReadData {
 		} catch (IOException e) {
 			throw new N5IOException(e);
 		}
+	}
+
+	/**
+	 * Indicates that the given slices will be subsequently read.
+	 * {@code ReadData} implementations (optionally) may take steps to prepare
+	 * for these subsequent slices.
+	 *
+	 * @param ranges
+	 * 		slice ranges to prefetch
+	 *
+	 * @throws N5IOException
+	 * 		if any I/O error occurs
+	 */
+	default void prefetch(final Collection<? extends SegmentLocation> ranges) throws N5IOException {
 	}
 
 	// ------------- Encoding / Decoding ----------------
