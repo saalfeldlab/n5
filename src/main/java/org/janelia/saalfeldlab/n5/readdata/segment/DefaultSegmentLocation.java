@@ -21,6 +21,22 @@ class DefaultSegmentLocation implements SegmentLocation {
 	}
 
 	@Override
+	public final boolean equals(final Object o) {
+		if (!(o instanceof DefaultSegmentLocation))
+			return false;
+
+		final DefaultSegmentLocation that = (DefaultSegmentLocation) o;
+		return offset == that.offset && length == that.length;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Long.hashCode(offset);
+		result = 31 * result + Long.hashCode(length);
+		return result;
+	}
+
+	@Override
 	public String toString() {
 		return "SegmentLocation{" +
 				"offset=" + offset +
