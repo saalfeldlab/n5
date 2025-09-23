@@ -335,7 +335,7 @@ public interface ReadData {
 	 *
 	 * @return an empty ReadData
 	 */
-	public static ReadData empty() {
+	static ReadData empty() {
 		return ByteArrayReadData.EMPTY;
 	}
 
