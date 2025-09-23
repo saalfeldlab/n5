@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
@@ -242,6 +243,11 @@ class DefaultSegmentedReadData implements SegmentedReadData {
 	@Override
 	public void writeTo(final OutputStream outputStream) throws N5IOException, IllegalStateException {
 		delegate.writeTo(outputStream);
+	}
+
+	@Override
+	public void prefetch(final Collection<? extends SegmentLocation> ranges) throws N5IOException {
+		delegate.prefetch(ranges);
 	}
 
 	/**
