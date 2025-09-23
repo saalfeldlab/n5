@@ -33,7 +33,7 @@ public class BlockAsShardCodec extends ShardingCodec {
 
 	private static final RawBlockCodecInfo VIRTUAL_SHARD_INDEX_CODEC = new RawBlockCodecInfo() {
 
-		@Override public BlockCodec<long[]> create(DatasetAttributes attributes, DataCodec... dataCodec) {
+		public BlockCodec<long[]> create(DatasetAttributes attributes, DataCodec... dataCodec) {
 
 			return BLOCK_AS_SHARD_BLOCK_SERIALIZER;
 		}
@@ -84,8 +84,11 @@ public class BlockAsShardCodec extends ShardingCodec {
 	@Override
 	public <T> BlockCodec<T> create(DatasetAttributes attributes, DataCodec... codecs) {
 
-		dataBlockSerializer = datasetArrayCodec.create(attributes, codecs);
-		return (BlockCodec<T>)dataBlockSerializer;
+		// TODO 
+		return null;
+
+//		dataBlockSerializer = datasetArrayCodec.create(attributes, codecs);
+//		return (BlockCodec<T>)dataBlockSerializer;
 	}
 
 	@Override

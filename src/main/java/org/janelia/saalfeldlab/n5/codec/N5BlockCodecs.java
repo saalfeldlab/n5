@@ -51,6 +51,7 @@ import static org.janelia.saalfeldlab.n5.N5Exception.*;
 import static org.janelia.saalfeldlab.n5.codec.N5BlockCodecs.BlockHeader.MODE_DEFAULT;
 import static org.janelia.saalfeldlab.n5.codec.N5BlockCodecs.BlockHeader.MODE_OBJECT;
 import static org.janelia.saalfeldlab.n5.codec.N5BlockCodecs.BlockHeader.MODE_VARLENGTH;
+import static org.janelia.saalfeldlab.n5.codec.N5BlockCodecs.BlockHeader.headerSizeInBytes;
 
 public class N5BlockCodecs {
 
@@ -120,9 +121,9 @@ public class N5BlockCodecs {
 
 	abstract static class N5AbstractBlockCodec<T> implements BlockCodec<T> {
 
-		private final FlatArrayCodec<T> dataCodec;
+		final FlatArrayCodec<T> dataCodec;
 		private final DataBlockFactory<T> dataBlockFactory;
-		private final DataCodec codec;
+		final DataCodec codec;
 
 		N5AbstractBlockCodec(FlatArrayCodec<T> dataCodec, DataBlockFactory<T> dataBlockFactory, DataCodec codec) {
 			this.dataCodec = dataCodec;
@@ -188,6 +189,18 @@ public class N5BlockCodecs {
 		protected BlockHeader decodeBlockHeader(final InputStream in) throws N5IOException {
 
 			return BlockHeader.readFrom(in, MODE_DEFAULT, MODE_VARLENGTH);
+		}
+
+		@Override
+		public long encodedSize(final int[] blockSize) throws UnsupportedOperationException {
+			if (codec instanceof DeterministicSizeDataCodec) {
+				final int bytesPerElement = dataCodec.bytesPerElement();
+				final int numElements = DataBlock.getNumElements(blockSize);
+				final int headerSize = headerSizeInBytes(MODE_DEFAULT, blockSize.length);
+				return headerSize + ((DeterministicSizeDataCodec) codec).encodedSize((long) numElements * bytesPerElement);
+			} else {
+				throw new UnsupportedOperationException();
+			}
 		}
 	}
 
@@ -312,6 +325,25 @@ public class N5BlockCodecs {
 					dos.writeInt(size);
 			} catch (IOException e) {
 				throw new N5IOException(e);
+			}
+		}
+
+		static int headerSizeInBytes(final short mode, final int numDimensions) {
+			switch (mode) {
+			case MODE_DEFAULT:
+				return 2 + // 1 short for mode
+						2 + // 1 short for blockSize.length
+						4 * numDimensions; // 1 int for each blockSize element
+			case MODE_VARLENGTH:
+				return 2 +// 1 short for mode
+						2 + // 1 short for blockSize.length
+						4 * numDimensions + // 1 int for each blockSize dimension
+						4; // 1 int for numElements
+			case MODE_OBJECT:
+				return 2 + // 1 short for mode
+						4; // 1 int for numElements
+			default:
+				throw new N5Exception("unexpected mode: " + mode);
 			}
 		}
 

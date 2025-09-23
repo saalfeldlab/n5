@@ -42,6 +42,9 @@ import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.shard.BlockAsShardCodec;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
 import org.janelia.saalfeldlab.n5.util.Position;
+import org.janelia.saalfeldlab.n5.shardstuff.DatasetAccess;
+import org.janelia.saalfeldlab.n5.shardstuff.ShardCodecInfo;
+import org.janelia.saalfeldlab.n5.shardstuff.ShardedDatasetAccess;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
@@ -54,6 +57,7 @@ import java.util.TreeMap;
 import java.util.stream.IntStream;
 
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+
 
 /**
  * Mandatory dataset attributes:
@@ -267,10 +271,6 @@ public class DatasetAttributes implements Serializable {
 		return Arrays.stream(getBlocksPerShard()).reduce(1, (x, y) -> x * y);
 	}
 
-	public long[] getKeyPositionForBlock(final long... blockGridPosition) {
-		return getBlockCodecInfo().getKeyPositionForBlock(this, blockGridPosition);
-	}
-
 	/**
 	 * Given a block's position relative to the dataset, returns the position of
 	 * the shard containing that block.
@@ -378,15 +378,7 @@ public class DatasetAttributes implements Serializable {
 
 	public boolean isSharded() {
 
-		return getBlockCodecInfo() instanceof ShardingCodec;
-	}
-
-	/**
-	 * @return the ShardingCodec
-	 */
-	public ShardingCodec getShardingCodec() {
-
-		return shardingCodec;
+		return blockCodecInfo instanceof ShardCodecInfo;
 	}
 
 	/**
@@ -418,20 +410,11 @@ public class DatasetAttributes implements Serializable {
 	 *
 	 * @return the {@code BlockCodecInfo} for this dataset
 	 */
-	public BlockCodecInfo getBlockCodecInfo() {
+	public <T> DatasetAccess<T> getDatasetAccess() {
 
-		return blockCodecInfo;
-	}
-
-	public DataCodecInfo[] getDataCodecInfos() {
-
-		return dataCodecInfos;
-	}
-
-	@SuppressWarnings("unchecked")
-	public <T> BlockCodec<T> getBlockCodec() {
-
-		return (BlockCodec<T>) blockCodec;
+		return ShardedDatasetAccess.create(getDataType(),
+				new int[] {24, 24, 24},
+				blockCodecInfo, dataCodecInfos);
 	}
 
 	public HashMap<String, Object> asMap() {
@@ -508,7 +491,7 @@ public class DatasetAttributes implements Serializable {
 			obj.add(BLOCK_SIZE_KEY, context.serialize(src.blockSize));
 			obj.add(DATA_TYPE_KEY, context.serialize(src.dataType));
 
-			final DataCodecInfo[] codecs = src.getDataCodecInfos();
+			final DataCodecInfo[] codecs = src.dataCodecInfos;
 			// length > 1 is actually invalid, but this is checked on construction
 			if (codecs.length == 0)
 				obj.add(COMPRESSION_KEY, context.serialize(new RawCompression()));

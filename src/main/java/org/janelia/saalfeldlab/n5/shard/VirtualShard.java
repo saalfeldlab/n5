@@ -33,7 +33,8 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	@SuppressWarnings("unchecked")
 	public DataBlock<T> getBlock(ReadData blockData, long... blockGridPosition) throws IOException {
 
-		return datasetAttributes.getShardingCodec().<T>getBlockCodec().decode(blockData, blockGridPosition);
+		// TODO
+		return null;
 	}
 
 	@Override
@@ -115,12 +116,15 @@ public class VirtualShard<T> extends AbstractShard<T> {
 	@Override
 	public ShardIndex getIndex() {
 
-		index = createIndex();
-		try {
-			ShardIndex.readFromShard(shardData, index);
-		} catch (N5Exception.N5NoSuchKeyException e) {
-			return null;
-		}
-		return index;
+		// TODO
+		return null;
+
+//		index = createIndex();
+//		try {
+//			ShardIndex.readFromShard(shardData, index);
+//		} catch (N5Exception.N5NoSuchKeyException e) {
+//			return null;
+//		}
+//		return index;
 	}
 }

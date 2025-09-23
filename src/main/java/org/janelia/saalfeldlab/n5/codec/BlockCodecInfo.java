@@ -1,7 +1,7 @@
 package org.janelia.saalfeldlab.n5.codec;
 
-import java.util.Arrays;
 import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
@@ -33,14 +33,10 @@ public interface BlockCodecInfo extends CodecInfo, DeterministicSizeCodecInfo {
 		return size;
 	}
 
-	<T> BlockCodec<T> create(final DatasetAttributes attributes, final DataCodec... codecs);
+	<T> BlockCodec<T> create(DataType dataType, int[] blockSize, DataCodecInfo... codecs);
 
 	default <T> BlockCodec<T> create(final DatasetAttributes attributes, final DataCodecInfo... codecInfos) {
 
-		final DataCodec[] codecs = new DataCodec[codecInfos.length];
-		Arrays.setAll(codecs, i -> codecInfos[i].create());
-		return create(attributes, codecs);
+		return create(attributes.getDataType(), attributes.getBlockSize(), codecInfos);
 	}
-
-	// TODO: Should we have both create() signatures?
 }

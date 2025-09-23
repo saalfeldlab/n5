@@ -11,6 +11,7 @@ import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.shardstuff.DatasetAccess;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 import static org.janelia.saalfeldlab.n5.N5Exception.*;
@@ -125,66 +126,67 @@ public interface Shard<T> extends Iterable<DataBlock<T>> {
 	 */
 	ShardIndex getIndex();
 
-	/**
-	 * @return and empty index of the correct size for the dataset
-	 */
-	default ShardIndex createIndex() {
-
-		final DatasetAttributes datasetAttributes = getDatasetAttributes();
-		return datasetAttributes.getShardingCodec().createIndex(datasetAttributes);
-	}
-
 	default ReadData createReadData() throws N5IOException {
 
 		final DatasetAttributes datasetAttributes = getDatasetAttributes();
-		ShardingCodec shardingCodec = datasetAttributes.getShardingCodec();
-		final BlockCodec<T> blockCodecInfo = shardingCodec.getBlockCodec();
+		DatasetAccess<T> access = datasetAttributes.getDatasetAccess();
 
-		final ShardIndex index = createIndex();
-		final long indexSize = index.numBytes();
-		long blocksStartBytes = index.getLocation() == ShardingCodec.IndexLocation.START ? indexSize : 0;
-		final AtomicLong blockOffset = new AtomicLong(blocksStartBytes);
-
-		/* isIndexEmpty is true when writing to a non-sharded dataset through the Shard API. */
-		final boolean isIndexEmpty = indexSize == 0;
-		if (index.getLocation() == ShardingCodec.IndexLocation.END || isIndexEmpty) {
-			return ReadData.from(out -> {
-				try (final CountingOutputStream countOut = new CountingOutputStream(out)) {
-					long prevCount = 0;
-					for (DataBlock<T> block : getBlocks()) {
-						blockCodecInfo.encode(block).writeTo(countOut);
-						final int[] blockPosition = getRelativeBlockPosition(block.getGridPosition());
-						final long curCount = countOut.getByteCount();
-						final long blockWrittenSize = curCount - prevCount;
-						prevCount = curCount;
-						if (!isIndexEmpty)
-							synchronized (index) {
-								index.set(blockOffset.getAndAdd(blockWrittenSize), blockWrittenSize, blockPosition);
-							}
-					}
-					if (!isIndexEmpty)
-						synchronized (index) {
-							ShardIndex.write(out, index);
-						}
-				}
-			});
-		} else {
-			final ArrayList<ReadData> blocksData = new ArrayList<>();
-			for (DataBlock<T> dataBlock : getBlocks()) {
-				ReadData readDataBlock = ReadData.from(out -> blockCodecInfo.encode(dataBlock).writeTo(out));
-				blocksData.add(readDataBlock);
-				final long length = readDataBlock.length();
-				synchronized (index) {
-					index.set(blockOffset.getAndAdd(length), length, getRelativeBlockPosition(dataBlock.getGridPosition()));
-				}
-			}
-			return ReadData.from(out -> {
-				ShardIndex.write(out, index);
-				for (ReadData blockData : blocksData) {
-					blockData.writeTo(out);
-				}
-			});
+		// TODO make a PositionValueAccess that just stores the ReadData
+		// and returns it?
+		for( DataBlock<T> b : this ) {
+			access.writeBlock(null, b);
 		}
+		
+		return null;
+
+//		ShardingCodec shardingCodec = datasetAttributes.getShardingCodec();
+//		final BlockCodec<T> blockCodecInfo = shardingCodec.getBlockCodec();
+
+//		final ShardIndex index = createIndex();
+//		final long indexSize = index.numBytes();
+//		long blocksStartBytes = index.getLocation() == ShardingCodec.IndexLocation.START ? indexSize : 0;
+//		final AtomicLong blockOffset = new AtomicLong(blocksStartBytes);
+//
+//		/* isIndexEmpty is true when writing to a non-sharded dataset through the Shard API. */
+//		final boolean isIndexEmpty = indexSize == 0;
+//		if (index.getLocation() == ShardingCodec.IndexLocation.END || isIndexEmpty) {
+//			return ReadData.from(out -> {
+//				try (final CountingOutputStream countOut = new CountingOutputStream(out)) {
+//					long prevCount = 0;
+//					for (DataBlock<T> block : getBlocks()) {
+//						blockCodecInfo.encode(block).writeTo(countOut);
+//						final int[] blockPosition = getRelativeBlockPosition(block.getGridPosition());
+//						final long curCount = countOut.getByteCount();
+//						final long blockWrittenSize = curCount - prevCount;
+//						prevCount = curCount;
+//						if (!isIndexEmpty)
+//							synchronized (index) {
+//								index.set(blockOffset.getAndAdd(blockWrittenSize), blockWrittenSize, blockPosition);
+//							}
+//					}
+//					if (!isIndexEmpty)
+//						synchronized (index) {
+//							ShardIndex.write(out, index);
+//						}
+//				}
+//			});
+//		} else {
+//			final ArrayList<ReadData> blocksData = new ArrayList<>();
+//			for (DataBlock<T> dataBlock : getBlocks()) {
+//				ReadData readDataBlock = ReadData.from(out -> blockCodecInfo.encode(dataBlock).writeTo(out));
+//				blocksData.add(readDataBlock);
+//				final long length = readDataBlock.length();
+//				synchronized (index) {
+//					index.set(blockOffset.getAndAdd(length), length, getRelativeBlockPosition(dataBlock.getGridPosition()));
+//				}
+//			}
+//			return ReadData.from(out -> {
+//				ShardIndex.write(out, index);
+//				for (ReadData blockData : blocksData) {
+//					blockData.writeTo(out);
+//				}
+//			});
+//		}
 	}
 
 	class DataBlockIterator<T> implements Iterator<DataBlock<T>> {

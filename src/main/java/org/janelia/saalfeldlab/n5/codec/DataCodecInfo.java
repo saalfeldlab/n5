@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5.codec;
 
+import java.util.Arrays;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 

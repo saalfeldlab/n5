@@ -10,7 +10,6 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 
@@ -45,9 +44,9 @@ public class RawBlockCodecInfo implements BlockCodecInfo {
 	}
 
 	@Override
-	public <T> BlockCodec<T> create(final DatasetAttributes attributes, final DataCodec... dataCodecs) {
-		ensureValidByteOrder(attributes.getDataType(), getByteOrder());
-		return RawBlockCodecs.create(attributes.getDataType(), byteOrder, attributes.getBlockSize(), DataCodec.concatenate(dataCodecs));
+	public <T> BlockCodec<T> create(final DataType dataType, final int[] blockSize, final DataCodecInfo... codecInfos) {
+		ensureValidByteOrder(dataType, getByteOrder());
+		return RawBlockCodecs.create(dataType, byteOrder, blockSize, DataCodec.create(codecInfos));
 	}
 
 	public static void ensureValidByteOrder(final DataType dataType, final ByteOrder byteOrder) {

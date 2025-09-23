@@ -1,0 +1,24 @@
+package org.janelia.saalfeldlab.n5.shardstuff;
+
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+
+/**
+ * Wrap an instantiated DataBlock/shard codec hierarchy to implement (single and
+ * batch) DataBlock read/write methods.
+ *
+ * @param <T>
+ * 		type of the data contained in the DataBlock
+ */
+public interface DatasetAccess<T> {
+
+	DataBlock<T> readBlock(PositionValueAccess kva, long[] gridPosition) throws N5IOException;
+
+	void writeBlock(PositionValueAccess kva, DataBlock<T> dataBlock) throws N5IOException;
+
+	void deleteBlock(PositionValueAccess kva, long[] gridPosition) throws N5IOException;
+
+	// TODO: batch read/write/delete methods
+//		List<DataBlock<T>> readBlocks(PositionValueAccess kva, List<NestedPosition> positions);
+//		void writeBlocks(PositionValueAccess kva, List<DataBlock<T>> blocks);
+}

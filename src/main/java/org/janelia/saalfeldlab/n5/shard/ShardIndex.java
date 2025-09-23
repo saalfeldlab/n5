@@ -1,18 +1,12 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.IndexCodecAdapter;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardingCodec.IndexLocation;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
@@ -281,69 +275,6 @@ public class ShardIndex extends LongArrayDataBlock {
 		return getIndexCodexAdapter().encodedSize(numEntries * BYTES_PER_LONG);
 	}
 
-	/**
-	 * Reads the index data from a shard.
-	 *
-	 * @param shardData the ReadData containing the entire shard
-	 * @param index the ShardIndex to populate with data
-	 * @throws N5IOException if the read operation fails or the shard data has invalid length
-	 */
-	public static void readFromShard(ReadData shardData, ShardIndex index) throws N5IOException {
-
-		/* we require a length, so materialize if we don't have one. */
-		if (shardData.length() == -1)
-			shardData.materialize();
-
-		final long length = shardData.length();
-		if (length == -1)
-			throw new N5IOException("ReadData for shard index must have a valid length, but was " + length);
-
-		final long indexStartByte = ShardIndex.indexStartByte(index, length);
-		final ReadData indexData = shardData.slice(indexStartByte, index.numBytes());
-		ShardIndex.read(indexData, index);
-	}
-
-	/**
-	 * Reads index data from a ReadData source.
-	 *
-	 * @param indexData the ReadData containing the index
-	 * @param index the ShardIndex to populate with data
-	 * @return true if the read was successful, false if the key doesn't exist
-	 * @throws N5IOException if the read operation fails
-	 */
-	public static void read( final ReadData indexData, final ShardIndex index ) {
-
-		final DataBlock<Object> decodedBlock = index.indexAttributes.getBlockCodec().decode(indexData, index.gridPosition);
-		System.arraycopy(decodedBlock.getData(), 0, index.data, 0, index.data.length);
-	}
-
-	/**
-	 * Reads index data from an InputStream.
-	 *
-	 * @param indexIn the InputStream containing the index data
-	 * @param index the ShardIndex to populate with data
-	 * @throws N5IOException if the read operation fails
-	 */
-	public static void read(InputStream indexIn, final ShardIndex index) throws N5IOException {
-
-		final ReadData dataIn = ReadData.from(indexIn);
-		final BlockCodec<long[]> shardIndexCodec = index.indexAttributes.getBlockCodec();
-		final DataBlock<long[]> indexBlock = shardIndexCodec.decode(dataIn, index.gridPosition);
-		System.arraycopy(indexBlock.getData(), 0, index.data, 0, (int)index.data.length);
-	}
-
-	/**
-	 * Writes the index to an OutputStream.
-	 *
-	 * @param outputStream the OutputStream to write to
-	 * @param index the ShardIndex to write
-	 * @throws N5IOException if the write operation fails
-	 */
-	public static void write( final OutputStream outputStream, final ShardIndex index ) throws N5IOException {
-
-		final BlockCodec<long[]> dataBlockSerializer = index.indexAttributes.getBlockCodec();
-		dataBlockSerializer.encode(index).writeTo(outputStream);
-	}
 
 	/**
 	 * DatasetAttributes for the ShardIndex, used for codec operations.

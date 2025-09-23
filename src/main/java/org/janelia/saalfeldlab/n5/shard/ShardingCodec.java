@@ -8,11 +8,13 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.DataCodec;
+import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.IndexCodecAdapter;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -132,12 +134,14 @@ public class ShardingCodec implements BlockCodecInfo {
 		return attributes.getShardPositionForBlock(blockPosition);
 	}
 
-	@Override
 	public <T> BlockCodec<T> create(DatasetAttributes attributes, final DataCodec[] codecs) {
 
-		this.attributes = attributes;
-		this.dataBlockSerializer = getBlockCodecInfo().<T>create(attributes, getCodecs());
-		return ((BlockCodec<T>)dataBlockSerializer);
+		// TODO 
+		return null;
+
+//		this.attributes = attributes;
+//		this.dataBlockSerializer = getBlockCodecInfo().<T>create(attributes, getCodecs());
+//		return ((BlockCodec<T>)dataBlockSerializer);
 	}
 
 	public <T> ReadData encode(DataBlock<T> dataBlock) {
@@ -183,6 +187,13 @@ public class ShardingCodec implements BlockCodecInfo {
 
 			return new JsonPrimitive(src.name().toLowerCase());
 		}
+	}
+
+	@Override
+	public <T> BlockCodec<T> create(DataType dataType, int[] blockSize, DataCodecInfo... codecs) {
+
+		// TODO
+		return null;
 	}
 
 }
