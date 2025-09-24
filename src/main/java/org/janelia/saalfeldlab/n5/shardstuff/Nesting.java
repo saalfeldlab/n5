@@ -174,14 +174,14 @@ public class Nesting {
 										l, blockSizes[l][d], d));
 					}
 
-					if (blockSizes[l][d] > blockSizes[k][d]) {
+					if (blockSizes[l][d] < blockSizes[k][d]) {
 						throw new IllegalArgumentException(
-								String.format("Block sizes at level %d (%d) is larger than previous level (%d) "
+								String.format("Block sizes at level %d (%d) is smaller than previous level (%d) "
 										+ " for dimension %d.",
 										l, blockSizes[l][d], blockSizes[k][d], d));
 					}
 
-					if (blockSizes[k][d] % blockSizes[l][d] != 0) {
+					if (blockSizes[l][d] % blockSizes[k][d] != 0) {
 						throw new IllegalArgumentException(
 								String.format("Block sizes at level %d (%d) not a multiple of previous level (%d) "
 										+ " for dimension %d.",
