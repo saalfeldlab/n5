@@ -146,11 +146,11 @@ public class Nesting {
 		 */
 		public NestedGrid(int[][] blockSizes) {
 
-			// TODO: validate
-			//       [ ] not null
-			//       [ ] nesteds not null
-			//       [ ] nesteds same length
-			//       [ ] sizes match up to integer multiples
+			if (blockSizes == null)
+				throw new IllegalArgumentException("blockSizes is null");
+
+			if (blockSizes[0] == null)
+				throw new IllegalArgumentException("blockSizes[0] is null");
 
 			m = blockSizes.length;
 			n = blockSizes[0].length;
@@ -158,7 +158,36 @@ public class Nesting {
 			r = new int[m][n];
 			for (int l = 0; l < m; ++l) {
 				final int k = Math.max(0, l - 1);
+
+				if (blockSizes[l] == null)
+					throw new IllegalArgumentException("blockSizes[" + l + "] null");
+
+				if (blockSizes[l].length != n)
+					throw new IllegalArgumentException(
+							String.format("Block size at level %d has a different length (%d vs %d)", l, n, blockSizes[l].length));
+
 				for (int d = 0; d < n; ++d) {
+
+					if (blockSizes[l][d] <= 0 ) {
+						throw new IllegalArgumentException(
+								String.format("Block sizes at level %d (%d) is negative for dimension %d.",
+										l, blockSizes[l][d], d));
+					}
+
+					if (blockSizes[l][d] > blockSizes[k][d]) {
+						throw new IllegalArgumentException(
+								String.format("Block sizes at level %d (%d) is larger than previous level (%d) "
+										+ " for dimension %d.",
+										l, blockSizes[l][d], blockSizes[k][d], d));
+					}
+
+					if (blockSizes[k][d] % blockSizes[l][d] != 0) {
+						throw new IllegalArgumentException(
+								String.format("Block sizes at level %d (%d) not a multiple of previous level (%d) "
+										+ " for dimension %d.",
+										l, blockSizes[l][d], blockSizes[k][d], d));
+					}
+
 					s[l][d] = blockSizes[l][d] / blockSizes[0][d];
 					r[l][d] = blockSizes[l][d] / blockSizes[k][d];
 				}
