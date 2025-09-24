@@ -139,7 +139,7 @@ public class ShardedDatasetAccess<T> implements DatasetAccess<T> {
 		}
 	}
 
-	public static <T> DatasetAccess<T> create(
+	public static <T> ShardedDatasetAccess<T> create(
 			final DataType dataType,
 			int[] blockSize,
 			BlockCodecInfo blockCodecInfo,

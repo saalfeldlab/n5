@@ -20,7 +20,6 @@ import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
 import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.codec.BytesCodecTests.BitShiftBytesCodec;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shardstuff.DatasetAccess;
 import org.janelia.saalfeldlab.n5.shardstuff.PositionValueAccess;
 import org.janelia.saalfeldlab.n5.shardstuff.TestPositionValueAccess;
@@ -56,7 +55,6 @@ public class BlockCodecTests {
 				final DatasetAttributes attributes = new DatasetAttributes(
 						new long[]{32, 32, 32},
 						blockSize,
-						blockSize,
 						dataType,
 						new N5BlockCodecInfo(),
 						dataCodecInfo);
@@ -77,7 +75,6 @@ public class BlockCodecTests {
 					final RawBlockCodecInfo codec = new RawBlockCodecInfo(byteOrder);
 					final DatasetAttributes attributes = new DatasetAttributes(
 							new long[]{32, 32, 32},
-							blockSize, //shardSize
 							blockSize,
 							dataType,
 							codec,
@@ -122,7 +119,6 @@ public class BlockCodecTests {
 		final N5BlockCodecInfo blockCodecInfo = new N5BlockCodecInfo();
 		final DatasetAttributes attributes = new DatasetAttributes(
 				new long[]{64, 64},
-				new int[]{8, 8},
 				new int[]{8, 8},
 				DataType.UINT8,
 				blockCodecInfo);

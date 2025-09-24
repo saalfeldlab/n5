@@ -13,7 +13,7 @@ import org.janelia.saalfeldlab.n5.readdata.segment.SegmentLocation;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentedReadData;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentedReadData.SegmentsAndData;
 
-class ShardIndex {
+public class ShardIndex {
 
 	private ShardIndex() {
 		// utility class. should not be instantiated.

@@ -248,7 +248,7 @@ public interface N5Writer extends N5Reader {
 			System.arraycopy(codecs, 0, dataCodecs, 0, dataCodecs.length);
 		}
 
-		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, blockSize, dataType, blockCodecInfo, dataCodecs));
+		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, blockCodecInfo, dataCodecs));
 	}
 
 	/**
