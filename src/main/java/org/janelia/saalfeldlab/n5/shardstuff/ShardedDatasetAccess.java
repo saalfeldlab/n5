@@ -20,6 +20,10 @@ public class ShardedDatasetAccess<T> implements DatasetAccess<T> {
 		this.codecs = codecs;
 	}
 
+	public NestedGrid getGrid() {
+		return grid;
+	}
+
 	@Override
 	public DataBlock<T> readBlock(final PositionValueAccess kva, final long[] gridPosition) throws N5IOException {
 		final NestedPosition position = new NestedPosition(grid, gridPosition);
@@ -145,11 +149,10 @@ public class ShardedDatasetAccess<T> implements DatasetAccess<T> {
 
 		// There are m codecs: 1 DataBlock codecs, and m-1 shard codecs.
 		// The inner-most codec (the DataBlock codec) is at index 0.
-		final BlockCodec<?>[] blockCodecs = new BlockCodec[m];
 		final int[][] blockSizes = new int[m][];
 
+
 		for (int l = m - 1; l >= 0; --l) {
-			blockCodecs[l] = blockCodecInfo.create(dataType, blockSize, dataCodecInfos);
 			blockSizes[l] = blockSize;
 			if (l > 0) {
 				final ShardCodecInfo info = (ShardCodecInfo) blockCodecInfo;
@@ -159,7 +162,15 @@ public class ShardedDatasetAccess<T> implements DatasetAccess<T> {
 			}
 		}
 
-		return new ShardedDatasetAccess<>(new NestedGrid(blockSizes), blockCodecs);
+		// NestedGrid validates block sizes, so instantiate it before creating the blockCodecs
+		final NestedGrid grid = new NestedGrid(blockSizes);
+
+		final BlockCodec<?>[] blockCodecs = new BlockCodec[m];
+		for (int l = m - 1; l >= 0; --l) {
+			blockCodecs[l] = blockCodecInfo.create(dataType, blockSize, dataCodecInfos);
+		}
+
+		return new ShardedDatasetAccess<>(grid, blockCodecs);
 	}
 
 	private static int nestingDepth(BlockCodecInfo info) {
