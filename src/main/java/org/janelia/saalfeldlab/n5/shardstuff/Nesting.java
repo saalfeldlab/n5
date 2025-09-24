@@ -137,6 +137,8 @@ public class Nesting {
 		// r[i][d] is block size at level i relative to level i-1
 		private final int[][] r;
 
+		private final int[][] blockSizes;
+
 		/**
 		 * {@code blockSizes[l][d]} is the block size at level {@code l} in dimension {@code d}.
 		 * Level 0 is the highest resolution (smallest block sizes).
@@ -151,6 +153,8 @@ public class Nesting {
 
 			if (blockSizes[0] == null)
 				throw new IllegalArgumentException("blockSizes[0] is null");
+
+			this.blockSizes = blockSizes;
 
 			m = blockSizes.length;
 			n = blockSizes[0].length;
@@ -200,6 +204,10 @@ public class Nesting {
 
 		public int numDimensions() {
 			return n;
+		}
+
+		public int[] getBlockSize(int level) {
+			return blockSizes[level];
 		}
 
 		public void absolutePosition(
