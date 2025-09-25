@@ -3,6 +3,7 @@ package org.janelia.saalfeldlab.n5.shardstuff;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
@@ -49,12 +50,22 @@ public class ShardedDatasetAccess<T> implements DatasetAccess<T> {
 	}
 
 	@Override
-	public void writeBlock(final PositionValueAccess kva, final DataBlock<T> dataBlock) throws N5IOException {
+	public void writeBlock(final PositionValueAccess pva, final DataBlock<T> dataBlock) throws N5IOException {
 		final NestedPosition position = new NestedPosition(grid, dataBlock.getGridPosition());
 		final long[] key = position.key();
-		final ReadData existingData = kva.get(key);
+
+		// need to read the shard anyway, and currently (Sept 24 2025)
+		// have no way to tell if they key exist from what is in this method except to attempt
+		// to materialize and catch the N5NoSuchKeyException 
+		ReadData existingData = null;
+		try {
+			existingData = pva.get(key);
+			if (existingData != null)
+				existingData.materialize();
+		} catch (N5NoSuchKeyException e) {}
+
 		final ReadData modifiedData = writeBlockRecursive(existingData, dataBlock, position, grid.numLevels() - 1);
-		kva.put(key, modifiedData);
+		pva.put(key, modifiedData);
 	}
 
 	private ReadData writeBlockRecursive(
