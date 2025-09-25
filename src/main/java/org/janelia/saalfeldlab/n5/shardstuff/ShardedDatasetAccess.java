@@ -151,23 +151,26 @@ public class ShardedDatasetAccess<T> implements DatasetAccess<T> {
 		// The inner-most codec (the DataBlock codec) is at index 0.
 		final int[][] blockSizes = new int[m][];
 
+		// NestedGrid validates block sizes, so instantiate it before creating the blockCodecs
+		// blockCodecInfo.create below could fail unexpecedly with invalid blockSizes
+		// so validate first
+		blockSizes[m-1] = blockSize;
+		BlockCodecInfo tmpInfo = blockCodecInfo;
+		for (int l = m - 1; l > 0; --l) {
+			final ShardCodecInfo info = (ShardCodecInfo) tmpInfo;
+			blockSizes[l-1] = info.getInnerBlockSize();
+			tmpInfo = info.getInnerBlockCodecInfo();
+		}
 
+		final NestedGrid grid = new NestedGrid(blockSizes);
+		final BlockCodec<?>[] blockCodecs = new BlockCodec[m];
 		for (int l = m - 1; l >= 0; --l) {
-			blockSizes[l] = blockSize;
+			blockCodecs[l] = blockCodecInfo.create(dataType, blockSizes[l], dataCodecInfos);
 			if (l > 0) {
 				final ShardCodecInfo info = (ShardCodecInfo) blockCodecInfo;
 				blockCodecInfo = info.getInnerBlockCodecInfo();
 				dataCodecInfos = info.getInnerDataCodecInfos();
-				blockSize = info.getInnerBlockSize();
 			}
-		}
-
-		// NestedGrid validates block sizes, so instantiate it before creating the blockCodecs
-		final NestedGrid grid = new NestedGrid(blockSizes);
-
-		final BlockCodec<?>[] blockCodecs = new BlockCodec[m];
-		for (int l = m - 1; l >= 0; --l) {
-			blockCodecs[l] = blockCodecInfo.create(dataType, blockSize, dataCodecInfos);
 		}
 
 		return new ShardedDatasetAccess<>(grid, blockCodecs);
