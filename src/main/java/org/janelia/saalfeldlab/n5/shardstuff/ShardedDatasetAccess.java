@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5.shardstuff;
 
+
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
@@ -62,7 +63,9 @@ public class ShardedDatasetAccess<T> implements DatasetAccess<T> {
 			existingData = pva.get(key);
 			if (existingData != null)
 				existingData.materialize();
-		} catch (N5NoSuchKeyException e) {}
+		} catch (N5NoSuchKeyException e) {
+			existingData = null;
+		}
 
 		final ReadData modifiedData = writeBlockRecursive(existingData, dataBlock, position, grid.numLevels() - 1);
 		pva.put(key, modifiedData);
