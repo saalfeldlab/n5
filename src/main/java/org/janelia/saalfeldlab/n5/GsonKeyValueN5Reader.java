@@ -32,9 +32,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.shardstuff.Nesting;
+import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedPosition;
 import org.janelia.saalfeldlab.n5.shardstuff.PositionValueAccess;
 
 import com.google.gson.Gson;
@@ -132,25 +136,13 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> blockPositions) throws N5Exception {
 
-		// TODO
-//		if (datasetAttributes.isSharded()) {
-//			/* Group by shard position */
-//			//TODO: make static?
-//			final Map<Position, List<long[]>> shardBlockMap = datasetAttributes.groupBlockPositions(blockPositions);
-//			final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
-//			for( Map.Entry<Position, List<long[]>> e : shardBlockMap.entrySet()) {
-//
-//				Shard<T> currentShard = readShard(pathName, datasetAttributes, e.getKey().get());
-//				if (currentShard == null)
-//					continue;
-//
-//				for (final long[] blkPosition : e.getValue()) {
-//					blocks.add(currentShard.getBlock(currentShard.getRelativeBlockPosition(blkPosition)));
-//				}
-//			}
-//			return blocks;
-//		}
-		return GsonN5Reader.super.readBlocks(pathName, datasetAttributes, blockPositions);
+		try {
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(
+					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName));
+			return datasetAttributes.<T>getDatasetAccess().readBlocks(posKva, blockPositions);
+		} catch (N5Exception.N5NoSuchKeyException e) {
+			return null;
+		}
 	}
 
 	@Override

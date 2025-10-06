@@ -18,7 +18,7 @@ package org.janelia.saalfeldlab.n5.shardstuff;
 //         ==> postpone until necessary
 //     [ ] equals / hashcode
 //     [ ] should we have prefix()? suffix()? head()? tail()?
-//     [ ] Implement Comparable so that we can sort and aggregate for N5Reader.readBlocks(...).
+//     [+] Implement Comparable so that we can sort and aggregate for N5Reader.readBlocks(...).
 //         For nested = {X,Y,Z} compare by Z, then Y, then X.
 //         For X = {x,y,z} compare by z, then y, then x. (flattening order)
 //
@@ -39,7 +39,7 @@ public class Nesting {
 
 
 
-	public static class NestedPosition {
+	public static class NestedPosition implements Comparable<NestedPosition> {
 
 		private final NestedGrid grid;
 		private final long[] position;
@@ -94,7 +94,7 @@ public class Nesting {
 		 * @return absolute grid position
 		 */
 		public long[] absolute(final int level) {
-			return grid.relativePosition(position, level);
+			return grid.absolutePosition(position, level);
 		}
 
 		public long[] key() {
@@ -115,13 +115,35 @@ public class Nesting {
 			return sb.toString();
 		}
 
+		@Override public int compareTo(NestedPosition o) {
+
+			final int dimensionInequality = Integer.compare(numDimensions(), o.numDimensions());
+			if (dimensionInequality != 0)
+				return dimensionInequality;
+
+			final int levelInequality = Integer.compare(level, o.level);
+			if (levelInequality != 0)
+				return levelInequality;
+
+			final long[] otherAbsPos = o.absolute(level);
+			final long[] absPos = absolute(level);
+
+			for (int i = absPos.length - 1; i >= 0; --i) {
+				final long diff = absPos[i] - otherAbsPos[i];
+				if (diff != 0)
+					return (int)diff;
+			}
+
+			return 0;
+		}
+
 		// TODO: equals() and hashCode()
 		// TODO: should we have prefix()? suffix()? head()? tail()?
 	}
 
 
 	/**
-	 * TODO
+	 * TODO better property names
 	 */
 	public static class NestedGrid {
 
