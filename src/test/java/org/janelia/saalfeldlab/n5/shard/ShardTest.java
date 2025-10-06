@@ -12,6 +12,7 @@ import org.janelia.saalfeldlab.n5.N5FSWriter;
 import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.NameConfigAdapter;
+import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.DatasetAttributes.DatasetAttributesAdapter;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
@@ -21,6 +22,8 @@ import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.checksum.Crc32cChecksumCodec;
+import org.janelia.saalfeldlab.n5.shardstuff.DefaultShardCodecInfo;
+import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation;
 import org.janelia.saalfeldlab.n5.util.GridIterator;
 import org.junit.After;
 import org.junit.Assert;
@@ -32,10 +35,12 @@ import org.junit.runners.Parameterized;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
 import java.io.File;
 import java.lang.reflect.Type;
@@ -63,201 +68,201 @@ public class ShardTest {
 	
 	// TODO
 
-//	private static final boolean LOCAL_DEBUG = false;
-//
-//	private static final N5FSTest tempN5Factory = new N5FSTest() {
-//
-//		@Override public N5Writer createTempN5Writer() {
-//
-//			if (LOCAL_DEBUG) {
-//				final N5Writer writer = new ShardedN5Writer("src/test/resources/test.n5");
-//				writer.remove(""); // Clear old when starting new test
-//				return writer;
-//			}
-//
-//			final String basePath = new File(tempN5PathName()).toURI().normalize().getPath();
-//			try {
-//				String uri = new URI("file", null, basePath, null).toString();
-//				return new ShardedN5Writer(uri);
-//			} catch (URISyntaxException e) {
-//				e.printStackTrace();
-//			}
-//			return null;
-//		}
-//
-//		private String tempN5PathName() {
-//
-//			try {
-//				final File tmpFile = Files.createTempDirectory("n5-shard-test-").toFile();
-//				tmpFile.delete();
-//				tmpFile.mkdir();
-//				tmpFile.deleteOnExit();
-//				return tmpFile.getCanonicalPath();
-//			} catch (final Exception e) {
-//				throw new RuntimeException(e);
-//			}
-//		}
-//	};
-//
-//	public static GsonBuilder gsonBuilder() {
-//		return new GsonBuilder();
-//	}
-//
-//	@Parameterized.Parameters(name = "IndexLocation({0}), Index ByteOrder({1})")
-//	public static Collection<Object[]> data() {
-//
-//		final ArrayList<Object[]> params = new ArrayList<>();
-//		for (IndexLocation indexLoc : IndexLocation.values()) {
-//			for (ByteOrder indexByteOrder : new ByteOrder[]{ByteOrder.BIG_ENDIAN,  ByteOrder.LITTLE_ENDIAN}) {
-//				params.add(new Object[]{indexLoc, indexByteOrder});
-//			}
-//		}
-//		final int numParams = params.size();
-//		final Object[][] paramArray = new Object[numParams][];
-//		Arrays.setAll(paramArray, params::get);
-//		return Arrays.asList(paramArray);
-//	}
-//
-//	@Parameterized.Parameter()
-//	public IndexLocation indexLocation;
-//
-//	@Parameterized.Parameter(1)
-//	public ByteOrder indexByteOrder;
-//
-//	@After
-//	public void removeTempWriters() {
-//
-//		tempN5Factory.removeTempWriters();
-//	}
-//
-//	private DatasetAttributes getTestAttributes(long[] dimensions, int[] shardSize, int[] blockSize) {
-//
-//		return new DatasetAttributes(
-//				dimensions,
-//				shardSize,
-//				blockSize,
-//				DataType.UINT8,
-//				new ShardingCodec(
-//						blockSize,
-//						new CodecInfo[]{new N5BlockCodecInfo()},
-//						new CodecInfo[]{new RawBlockCodecInfo(), new Crc32cChecksumCodec()},
-//						indexLocation
-//				)
-//		);
-//	}
-//
-//	private DatasetAttributes getTestAttributes() {
-//
-//		return getTestAttributes(new long[]{8, 8}, new int[]{4, 4}, new int[]{2, 2});
-//	}
-//
-//	private DatasetAttributes getTestAttributes3d() {
-//
-//		final int[] blockSize = {33, 22, 11};
-//		final int[] shardSize = {blockSize[0] * 2, blockSize[1] * 2, blockSize[2] * 2};
-//		return getTestAttributes(new long[]{10, 20, 30}, shardSize, blockSize);
-//	}
-//
-//	@Test
-//	public void writeReadBlocksTest() {
-//
-//		final N5Writer writer = tempN5Factory.createTempN5Writer();
-//		final DatasetAttributes datasetAttributes = getTestAttributes(
-//				new long[]{24, 24},
-//				new int[]{8, 8},
-//				new int[]{2, 2}
-//		);
-//
-//		final String dataset = "writeReadBlocks";
-//		writer.remove(dataset);
-//		writer.createDataset(dataset, datasetAttributes);
-//
-//		final int[] blockSize = datasetAttributes.getBlockSize();
-//		final int numElements = blockSize[0] * blockSize[1];
-//
-//		final byte[] data = new byte[numElements];
-//		for (int i = 0; i < data.length; i++) {
-//			data[i] = (byte)((100) + (10) + i);
-//		}
-//
-//		writer.writeBlocks(
-//				dataset,
-//				datasetAttributes,
-//				/* shard (0, 0) */
-//				new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data),
-//				new ByteArrayDataBlock(blockSize, new long[]{0, 1}, data),
-//				new ByteArrayDataBlock(blockSize, new long[]{1, 0}, data),
-//				new ByteArrayDataBlock(blockSize, new long[]{1, 1}, data),
-//
-//				/* shard (1, 0) */
-//				new ByteArrayDataBlock(blockSize, new long[]{4, 0}, data),
-//				new ByteArrayDataBlock(blockSize, new long[]{5, 0}, data),
-//
-//				/* shard (2, 2) */
-//				new ByteArrayDataBlock(blockSize, new long[]{11, 11}, data)
-//		);
-//
-//		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
-//
-//		final String[][] keys = new String[][]{
-//				{dataset, "0", "0"},
-//				{dataset, "1", "0"},
-//				{dataset, "2", "2"}
-//		};
-//		for (String[] key : keys) {
-//			final String shard = kva.compose(writer.getURI(), key);
-//			Assert.assertTrue("Shard at" + Arrays.toString(key) + "Does not exist", kva.exists(shard));
-//		}
-//
-//		final long[][] blockIndices = new long[][]{{0, 0}, {0, 1}, {1, 0}, {1, 1}, {4, 0}, {5, 0}, {11, 11}};
-//		for (long[] blockIndex : blockIndices) {
-//			final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, blockIndex);
-//			Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
-//		}
-//
-//		final byte[] data2 = new byte[numElements];
-//		for (int i = 0; i < data2.length; i++) {
-//			data2[i] = (byte)(10 + i);
-//		}
-//		writer.writeBlocks(
-//				dataset,
-//				datasetAttributes,
-//				/* shard (0, 0) */
-//				new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data2),
-//				new ByteArrayDataBlock(blockSize, new long[]{1, 1}, data2),
-//
-//				/* shard (0, 1) */
-//				new ByteArrayDataBlock(blockSize, new long[]{0, 4}, data2),
-//				new ByteArrayDataBlock(blockSize, new long[]{0, 5}, data2),
-//
-//				/* shard (2, 2) */
-//				new ByteArrayDataBlock(blockSize, new long[]{10, 10}, data2)
-//		);
-//
-//		final String[][] keys2 = new String[][]{
-//				{dataset, "0", "0"},
-//				{dataset, "1", "0"},
-//				{dataset, "0", "1"},
-//				{dataset, "2", "2"}
-//		};
-//		for (String[] key : keys2) {
-//			final String shard = kva.compose(writer.getURI(), key);
-//			Assert.assertTrue("Shard at" + Arrays.toString(key) + "Does not exist", kva.exists(shard));
-//		}
-//
-//		final long[][] oldBlockIndices = new long[][]{{0, 1}, {1, 0}, {4, 0}, {5, 0}, {11, 11}};
-//		for (long[] blockIndex : oldBlockIndices) {
-//			final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, blockIndex);
-//			Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
-//		}
-//
-//		final long[][] newBlockIndices = new long[][]{{0, 0}, {1, 1}, {0, 4}, {0, 5}, {10, 10}};
-//		for (long[] blockIndex : newBlockIndices) {
-//			final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, blockIndex);
-//			Assert.assertArrayEquals("Read from shard doesn't match", data2, (byte[])block.getData());
-//		}
-//	}
-//
+	private static final boolean LOCAL_DEBUG = false;
+
+	private static final N5FSTest tempN5Factory = new N5FSTest() {
+
+		@Override public N5Writer createTempN5Writer() {
+
+			if (LOCAL_DEBUG) {
+				final N5Writer writer = new ShardedN5Writer("src/test/resources/test.n5");
+				writer.remove(""); // Clear old when starting new test
+				return writer;
+			}
+
+			final String basePath = new File(tempN5PathName()).toURI().normalize().getPath();
+			try {
+				String uri = new URI("file", null, basePath, null).toString();
+				return new ShardedN5Writer(uri);
+			} catch (URISyntaxException e) {
+				e.printStackTrace();
+			}
+			return null;
+		}
+
+		private String tempN5PathName() {
+
+			try {
+				final File tmpFile = Files.createTempDirectory("n5-shard-test-").toFile();
+				tmpFile.delete();
+				tmpFile.mkdir();
+				tmpFile.deleteOnExit();
+				return tmpFile.getCanonicalPath();
+			} catch (final Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+	};
+
+	public static GsonBuilder gsonBuilder() {
+		return new GsonBuilder();
+	}
+
+	@Parameterized.Parameters(name = "IndexLocation({0}), Index ByteOrder({1})")
+	public static Collection<Object[]> data() {
+
+		final ArrayList<Object[]> params = new ArrayList<>();
+		for (IndexLocation indexLoc : IndexLocation.values()) {
+			for (ByteOrder indexByteOrder : new ByteOrder[]{ByteOrder.BIG_ENDIAN,  ByteOrder.LITTLE_ENDIAN}) {
+				params.add(new Object[]{indexLoc, indexByteOrder});
+			}
+		}
+		final int numParams = params.size();
+		final Object[][] paramArray = new Object[numParams][];
+		Arrays.setAll(paramArray, params::get);
+		return Arrays.asList(paramArray);
+	}
+
+	@Parameterized.Parameter()
+	public IndexLocation indexLocation;
+
+	@Parameterized.Parameter(1)
+	public ByteOrder indexByteOrder;
+
+	@After
+	public void removeTempWriters() {
+
+		tempN5Factory.removeTempWriters();
+	}
+
+	private DatasetAttributes getTestAttributes(long[] dimensions, int[] shardSize, int[] blockSize) {
+
+		return new DatasetAttributes(
+				dimensions,
+				shardSize,
+				blockSize,
+				DataType.UINT8);
+	}
+
+	private DatasetAttributes getTestAttributes() {
+
+		return getTestAttributes(new long[]{8, 8}, new int[]{4, 4}, new int[]{2, 2});
+	}
+
+	private DatasetAttributes getTestAttributes3d() {
+
+		final int[] blockSize = {33, 22, 11};
+		final int[] shardSize = {blockSize[0] * 2, blockSize[1] * 2, blockSize[2] * 2};
+		return getTestAttributes(new long[]{10, 20, 30}, shardSize, blockSize);
+	}
+
+	@Test
+	public void writeReadBlocksTest() {
+
+		final N5Writer writer = tempN5Factory.createTempN5Writer();
+
+		final DatasetAttributes datasetAttributes = getTestAttributes(
+				new long[]{24, 24},
+				new int[]{8, 8},
+				new int[]{2, 2}
+		);
+
+		final String dataset = "writeReadBlocks";
+		writer.remove(dataset);
+		writer.createDataset(dataset, datasetAttributes);
+
+		final int[] blockSize = datasetAttributes.getBlockSize();
+		final int numElements = blockSize[0] * blockSize[1];
+
+		final byte[] data = new byte[numElements];
+		for (int i = 0; i < data.length; i++) {
+			data[i] = (byte)((100) + (10) + i);
+		}
+
+		writer.writeBlocks(
+				dataset,
+				datasetAttributes,
+				/* shard (0, 0) */
+				new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{0, 1}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{1, 0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{1, 1}, data),
+
+				/* shard (1, 0) */
+				new ByteArrayDataBlock(blockSize, new long[]{4, 0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{5, 0}, data),
+
+				/* shard (2, 2) */
+				new ByteArrayDataBlock(blockSize, new long[]{11, 11}, data)
+		);
+
+		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
+
+		final String[][] keys = new String[][]{
+				{dataset, "0", "0"},
+				{dataset, "1", "0"},
+				{dataset, "2", "2"}
+		};
+
+		// TODO check that these are the only keys
+
+		for (String[] key : keys) {
+			final String shard = kva.compose(writer.getURI(), key);
+			Assert.assertTrue("Shard at" + Arrays.toString(key) + "Does not exist", kva.exists(shard));
+		}
+
+		final long[][] blockIndices = new long[][]{{0, 0}, {0, 1}, {1, 0}, {1, 1}, {4, 0}, {5, 0}, {11, 11}};
+		for (long[] blockIndex : blockIndices) {
+			final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, blockIndex);
+			Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
+		}
+
+		final byte[] data2 = new byte[numElements];
+		for (int i = 0; i < data2.length; i++) {
+			data2[i] = (byte)(10 + i);
+		}
+		writer.writeBlocks(
+				dataset,
+				datasetAttributes,
+				/* shard (0, 0) */
+				new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data2),
+				new ByteArrayDataBlock(blockSize, new long[]{1, 1}, data2),
+
+				/* shard (0, 1) */
+				new ByteArrayDataBlock(blockSize, new long[]{0, 4}, data2),
+				new ByteArrayDataBlock(blockSize, new long[]{0, 5}, data2),
+
+				/* shard (2, 2) */
+				new ByteArrayDataBlock(blockSize, new long[]{10, 10}, data2)
+		);
+
+		final String[][] keys2 = new String[][]{
+				{dataset, "0", "0"},
+				{dataset, "1", "0"},
+				{dataset, "0", "1"},
+				{dataset, "2", "2"}
+		};
+
+		// TODO check that other keys do not exist
+
+		for (String[] key : keys2) {
+			final String shard = kva.compose(writer.getURI(), key);
+			Assert.assertTrue("Shard at" + Arrays.toString(key) + "Does not exist", kva.exists(shard));
+		}
+
+		final long[][] oldBlockIndices = new long[][]{{0, 1}, {1, 0}, {4, 0}, {5, 0}, {11, 11}};
+		for (long[] blockIndex : oldBlockIndices) {
+			final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, blockIndex);
+			Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
+		}
+
+		final long[][] newBlockIndices = new long[][]{{0, 0}, {1, 1}, {0, 4}, {0, 5}, {10, 10}};
+		for (long[] blockIndex : newBlockIndices) {
+			final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, blockIndex);
+			Assert.assertArrayEquals("Read from shard doesn't match", data2, (byte[])block.getData());
+		}
+	}
+
 //	@Test
 //	public void writeReadBlockTest() {
 //
@@ -558,42 +563,42 @@ public class ShardTest {
 //						IndexLocation.END)
 //		);
 //	}
-//
-//	/**
-//	 * An N5Writer that serializing the sharding codecs, enabling testing of
-//	 * shard functionality, despite the fact that the N5 format does not support
-//	 * sharding.
-//	 */
-//	public static class ShardedN5Writer extends N5FSWriter {
-//
-//		Gson gson;
-//
+
+	/**
+	 * An N5Writer that serializing the sharding codecs, enabling testing of
+	 * shard functionality, despite the fact that the N5 format does not support
+	 * sharding.
+	 */
+	public static class ShardedN5Writer extends N5FSWriter {
+
+		Gson gson;
+
 //		TestDatasetAttributesAdapter adapter = new TestDatasetAttributesAdapter();
-//
-//		public ShardedN5Writer(String basePath) {
-//
-//			this(basePath, new GsonBuilder());
-//		}
-//
-//		public ShardedN5Writer(String basePath, GsonBuilder gsonBuilder) {
-//
-//			super(basePath);
-//			gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
-//			gsonBuilder.registerTypeHierarchyAdapter(CodecInfo.class, NameConfigAdapter.getJsonAdapter(CodecInfo.class));
+
+		public ShardedN5Writer(String basePath) {
+
+			this(basePath, new GsonBuilder());
+		}
+
+		public ShardedN5Writer(String basePath, GsonBuilder gsonBuilder) {
+
+			super(basePath);
+			gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
+			gsonBuilder.registerTypeHierarchyAdapter(CodecInfo.class, NameConfigAdapter.getJsonAdapter(CodecInfo.class));
 //			gsonBuilder.registerTypeHierarchyAdapter(DatasetAttributes.class, new TestDatasetAttributesAdapter());
-//			gsonBuilder.registerTypeHierarchyAdapter(ByteOrder.class, RawBlockCodecInfo.byteOrderAdapter);
-//			gsonBuilder.registerTypeHierarchyAdapter(ShardingCodec.IndexLocation.class, ShardingCodec.indexLocationAdapter);
-//			gsonBuilder.disableHtmlEscaping();
-//			gson = gsonBuilder.create();
-//		}
-//
-//		@Override
-//		public Gson getGson() {
-//
-//			// the super constructor needs the gson instance, unfortunately
-//			return gson == null ? super.gson : gson;
-//		}
-//
+			gsonBuilder.registerTypeHierarchyAdapter(ByteOrder.class, RawBlockCodecInfo.byteOrderAdapter);
+			gsonBuilder.registerTypeHierarchyAdapter(DefaultShardCodecInfo.class, DefaultShardCodecInfo.adapter);
+			gsonBuilder.disableHtmlEscaping();
+			gson = gsonBuilder.create();
+		}
+
+		@Override
+		public Gson getGson() {
+
+			// the super constructor needs the gson instance, unfortunately
+			return gson == null ? super.gson : gson;
+		}
+
 //		@Override
 //		public DatasetAttributes createDatasetAttributes(final JsonElement attributes) {
 //
@@ -608,8 +613,8 @@ public class ShardTest {
 //
 //			return adapter.deserialize(attributes, DatasetAttributes.class, context);
 //		}
-//	}
-//
+	}
+
 //	public static class TestDatasetAttributesAdapter extends DatasetAttributesAdapter {
 //
 //		@Override
@@ -628,12 +633,16 @@ public class ShardTest {
 //
 //			final long[] dimensions = context.deserialize(obj.get(DatasetAttributes.DIMENSIONS_KEY), long[].class);
 //			final int[] blockSize = context.deserialize(obj.get(DatasetAttributes.BLOCK_SIZE_KEY), int[].class);
-//			final int[] shardSize = context.deserialize(obj.get(DatasetAttributes.SHARD_SIZE_KEY), int[].class);
-//
 //			final DataType dataType = context.deserialize(obj.get(DatasetAttributes.DATA_TYPE_KEY), DataType.class);
 //
 //			final CodecInfo[] codecs;
-//			if (obj.has(DatasetAttributes.CODEC_KEY)) {
+//			if (obj.has(DatasetAttributes.CODEC_KEY)) {			DefaultShardCodecInfo shardCodecInfo = new DefaultShardCodecInfo(
+//					blockSize,
+//					new N5BlockCodecInfo(),
+//					new DataCodecInfo[]{new RawCompression()},
+//					new RawBlockCodecInfo(),
+//					new DataCodecInfo[]{new RawCompression()},
+//					IndexLocation.END);
 //				codecs = context.deserialize(obj.get(DatasetAttributes.CODEC_KEY), CodecInfo[].class);
 //			} else if (obj.has(DatasetAttributes.COMPRESSION_KEY)) {
 //				final Compression compression
@@ -652,7 +661,7 @@ public class ShardTest {
 //				blockCodecInfo = null;
 //				dataCodecInfos = (DataCodecInfo[])codecs;
 //			}
-//			return new DatasetAttributes(dimensions, shardSize, blockSize, dataType, blockCodecInfo, dataCodecInfos);
+//			return new DatasetAttributes(dimensions, blockSize, dataType, blockCodecInfo, dataCodecInfos);
 //		}
 //
 //		@Override
@@ -662,15 +671,34 @@ public class ShardTest {
 //			obj.add(DatasetAttributes.DIMENSIONS_KEY, context.serialize(src.getDimensions()));
 //			obj.add(DatasetAttributes.BLOCK_SIZE_KEY, context.serialize(src.getBlockSize()));
 //
-//			final int[] shardSize = src.getShardSize();
-//			if (shardSize != null) {
-//				obj.add(DatasetAttributes.SHARD_SIZE_KEY, context.serialize(shardSize));
-//			}
+//			obj.add(DatasetAttributes.DATA_TYPE_K//	public static class TestDatasetAttributesAdapter extends DatasetAttributesAdapter {EY, context.serialize(src.getDataType()));
+//			
+//			
+//			final DataCodecInfo[] byteCodecs = src.getDataCodecInfos();
+//			final BlockCodecInfo blockCodecInfo = src.getBlockCodecInfo();
+//			final CodecInfo[] allCodecs = new CodecInfo[byteCodecs.length + 1];
+//			allCodecs[0] = blockCodecInfo;
+//			System.arraycopy(byteCodecs, 0, allCodecs, 1, byteCodecs.length);
 //
-//			obj.add(DatasetAttributes.DATA_TYPE_KEY, context.serialize(src.getDataType()));
+//			
 //			obj.add(DatasetAttributes.CODEC_KEY, context.serialize(concatenateCodecs(src)));
 //			return obj;
+//
+////			final JsonElement out = context.serialize(src);
+////			return out;
 //		}
+//	}
+//	
+//
+//	private static CodecInfo[] concatenateCodecs(final DatasetAttributes attributes) {
+//
+//		final DataCodecInfo[] byteCodecs = attributes.getDataCodecInfos();
+//		final BlockCodecInfo blockCodecInfo = attributes.getBlockCodecInfo();
+//		final CodecInfo[] allCodecs = new CodecInfo[byteCodecs.length + 1];
+//		allCodecs[0] = blockCodecInfo;
+//		System.arraycopy(byteCodecs, 0, allCodecs, 1, byteCodecs.length);
+//
+//		return allCodecs;
 //	}
 
 
