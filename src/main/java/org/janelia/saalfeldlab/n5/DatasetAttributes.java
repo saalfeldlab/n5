@@ -101,7 +101,8 @@ public class DatasetAttributes implements Serializable {
 
 	private final BlockCodecInfo blockCodecInfo;
 	private final DataCodecInfo[] dataCodecInfos;
-	private final DatasetAccess<?> access;
+
+	private transient final DatasetAccess<?> access;
 
 	public DatasetAttributes(
 			final long[] dimensions,
@@ -172,6 +173,8 @@ public class DatasetAttributes implements Serializable {
 			final int[] blockSize,
 			final DataType dataType) {
 
+		// TODO add compression arg
+
 		this(dimensions, shardSize, dataType,
 				defaultShardCodecInfo(blockSize));
 	}
@@ -180,38 +183,11 @@ public class DatasetAttributes implements Serializable {
 
 		return new DefaultShardCodecInfo(
 				innerBlockSize,
-				new N5BlockCodecInfo(),
+				new N5BlockCodecInfo(), // TODO call default method
 				new DataCodecInfo[]{new RawCompression()},
 				new RawBlockCodecInfo(),
 				new DataCodecInfo[]{new RawCompression()},
 				IndexLocation.END);
-	}
-
-	private void validateBlockShardSizes(long[] dimensions, int[] shardSize, int[] blockSize) {
-
-		final int nd = dimensions.length;
-
-		if (blockSize.length != nd)
-			throw new IllegalArgumentException(String.format("Number of block dimensions (%d) must equal number of dimensions (%d).",
-					blockSize.length, nd));
-
-		if (shardSize.length != nd)
-			throw new IllegalArgumentException(String.format("Number of shard dimensions (%d) must equal number of dimensions (%d).",
-					shardSize.length, nd));
-
-		for (int i = 0; i < blockSize.length; i++) {
-
-			if (blockSize[i] <= 0)
-				throw new IllegalArgumentException(String.format("Block size in dimension %d (%d) is <= 0",
-						i, blockSize[i]));
-
-			if (shardSize[i] < blockSize[i])
-				throw new IllegalArgumentException(String.format("Shard size in dimension %d (%d) is larger than the block size (%d)",
-						i, shardSize[i], blockSize[i]));
-			else if (shardSize[i] % blockSize[i] != 0)
-				throw new IllegalArgumentException(String.format("Shard size in dimension %d (%d) not a multiple of the block size (%d)",
-						i, shardSize[i], blockSize[i]));
-		}
 	}
 
 	protected BlockCodecInfo defaultArrayCodec() {
