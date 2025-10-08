@@ -223,32 +223,14 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T>... dataBlocks) throws N5Exception {
 
-//		if (datasetAttributes.isSharded()) {
-//			/* Group blocks by shard index */
-//			final Map<Position, List<DataBlock<T>>> shardBlockMap = datasetAttributes.groupBlocks(
-//					Arrays.stream(dataBlocks).collect(Collectors.toList()));
-//
-//			//TODO: extract static method?
-//			for (final Entry<Position, List<DataBlock<T>>> e : shardBlockMap.entrySet()) {
-//
-//				final long[] shardPosition = e.getKey().get();
-//				final Shard<T> currentShard = readShard(datasetPath, datasetAttributes, shardPosition);
-//				final InMemoryShard<T> newShard;
-//				if (currentShard != null) {
-//					newShard = InMemoryShard.fromShard(currentShard);
-//				} else {
-//					newShard = new InMemoryShard<>(datasetAttributes, shardPosition);
-//				}
-//
-//				for (DataBlock<T> blk : e.getValue())
-//					newShard.addBlock(blk);
-//
-//				writeShard(datasetPath, datasetAttributes, newShard);
-//			}
-//
-//		} else {
-			GsonN5Writer.super.writeBlocks(datasetPath, datasetAttributes, dataBlocks);
-//		}
+		try {
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(
+					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(datasetPath));
+			datasetAttributes.<T>getDatasetAccess().writeBlocks(posKva, Arrays.asList(dataBlocks));
+		} catch (final UncheckedIOException e) {
+			throw new N5IOException(
+					"Failed to write blocks into dataset " + datasetPath, e);
+		}
 	}
 
 	@Override

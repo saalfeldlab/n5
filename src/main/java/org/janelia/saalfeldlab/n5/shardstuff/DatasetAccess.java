@@ -2,6 +2,9 @@ package org.janelia.saalfeldlab.n5.shardstuff;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedPosition;
+
+import java.util.List;
 
 /**
  * Wrap an instantiated DataBlock/shard codec hierarchy to implement (single and
@@ -18,7 +21,7 @@ public interface DatasetAccess<T> {
 
 	void deleteBlock(PositionValueAccess kva, long[] gridPosition) throws N5IOException;
 
-	// TODO: batch read/write/delete methods
-//		List<DataBlock<T>> readBlocks(PositionValueAccess kva, List<NestedPosition> positions);
-//		void writeBlocks(PositionValueAccess kva, List<DataBlock<T>> blocks);
+	List<DataBlock<T>> readBlocks(PositionValueAccess kva, List<long[]> positions);
+
+	void writeBlocks(PositionValueAccess kva, List<DataBlock<T>> blocks);
 }
