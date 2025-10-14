@@ -170,7 +170,6 @@ public class DatasetAttributes implements Serializable {
 			final DataType dataType) {
 
 		// TODO add compression arg
-
 		this(dimensions, shardSize, dataType,
 				defaultShardCodecInfo(blockSize));
 	}
@@ -402,6 +401,11 @@ public class DatasetAttributes implements Serializable {
 	public DataCodecInfo[] getDataCodecInfos() {
 
 		return dataCodecInfos;
+	}
+
+	public String relativeBlockPath(long... position) {
+
+		return Arrays.stream(position).mapToObj(Long::toString).collect(Collectors.joining("/"));
 	}
 
 	public HashMap<String, Object> asMap() {

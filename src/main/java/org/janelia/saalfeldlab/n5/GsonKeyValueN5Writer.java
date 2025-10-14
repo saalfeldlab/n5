@@ -225,7 +225,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		try {
 			final PositionValueAccess posKva = PositionValueAccess.fromKva(
-					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(datasetPath));
+					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(datasetPath),
+					p -> datasetAttributes.relativeBlockPath(p));
 			datasetAttributes.<T>getDatasetAccess().writeBlocks(posKva, Arrays.asList(dataBlocks));
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
@@ -241,7 +242,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		try {
 			final PositionValueAccess posKva = PositionValueAccess.fromKva(
-					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path));
+					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path),
+					p -> datasetAttributes.relativeBlockPath(p));
 			datasetAttributes.<T>getDatasetAccess().writeBlock(posKva, dataBlock);
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(

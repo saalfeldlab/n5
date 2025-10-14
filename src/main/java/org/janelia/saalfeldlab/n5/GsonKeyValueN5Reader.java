@@ -104,13 +104,13 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		try {
 			final PositionValueAccess posKva = PositionValueAccess.fromKva(
-					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName));
+					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName),
+					p -> datasetAttributes.relativeBlockPath(p));
 			return datasetAttributes.<T>getDatasetAccess().readBlock(posKva, gridPosition);
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
 		}
 	}
-
 
 	@Override
 	default <T> List<DataBlock<T>> readBlocks(
@@ -120,7 +120,8 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		try {
 			final PositionValueAccess posKva = PositionValueAccess.fromKva(
-					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName));
+					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName),
+					p -> datasetAttributes.relativeBlockPath(p));
 			return datasetAttributes.<T>getDatasetAccess().readBlocks(posKva, blockPositions);
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
@@ -160,13 +161,8 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final String normalPath,
 			final long... gridPosition) {
 
-		final String[] components = new String[gridPosition.length + 1];
-		components[0] = normalPath;
-		int i = 0;
-		for (final long p : gridPosition)
-			components[++i] = Long.toString(p);
-
-		return getKeyValueAccess().compose(getURI(), components);
+		final String relativeBlockPath = getDatasetAttributes(normalPath).relativeBlockPath(gridPosition);
+		return getKeyValueAccess().compose(getURI(), normalPath, relativeBlockPath);
 	}
 
 	/**

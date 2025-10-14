@@ -3,6 +3,7 @@ package org.janelia.saalfeldlab.n5.shardstuff;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.util.function.Function;
 
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
@@ -27,9 +28,10 @@ public interface PositionValueAccess {
 	public static PositionValueAccess fromKva(
 			final KeyValueAccess kva,
 			final URI uri,
-			final String normalPath) {
+			final String normalPath,
+			final Function<long[], String> blockPositionToPath) {
 
-		return new KvaPositionValueAccess(kva, uri, normalPath);
+		return new KvaPositionValueAccess(kva, uri, normalPath, blockPositionToPath);
 	}
 
 	class KvaPositionValueAccess implements PositionValueAccess {
@@ -37,27 +39,23 @@ public interface PositionValueAccess {
 		private final KeyValueAccess kva;
 		private final URI uri;
 		private final String normalPath;
+		private final Function<long[],String> blockPositionToPath;
 
 		KvaPositionValueAccess(final KeyValueAccess kva,
 				final URI uri,
-				final String normalPath) {
+				final String normalPath,
+				final Function<long[], String> blockPositionToPath) {
+
 			this.kva = kva;
 			this.uri = uri;
 			this.normalPath = normalPath;
+			this.blockPositionToPath = blockPositionToPath;
 		}
 
 		// TODO this duplicates GsonKeyValueReader.absoluteDataBlockPath
 		// is this where we want the logic?
-		private String absolutePath(
-				final long... gridPosition) {
-
-			final String[] components = new String[gridPosition.length + 1];
-			components[0] = normalPath;
-			int i = 0;
-			for (final long p : gridPosition)
-				components[++i] = Long.toString(p);
-
-			return kva.compose(uri, components);
+		private String absolutePath( final long... gridPosition) {
+			return kva.compose(uri, normalPath, blockPositionToPath.apply(gridPosition));
 		}
 
 		@Override
