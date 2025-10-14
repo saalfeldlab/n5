@@ -36,13 +36,9 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
-import org.janelia.saalfeldlab.n5.shard.BlockAsShardCodec;
-import org.janelia.saalfeldlab.n5.shard.ShardingCodec;
-import org.janelia.saalfeldlab.n5.util.Position;
 import org.janelia.saalfeldlab.n5.shardstuff.DatasetAccess;
 import org.janelia.saalfeldlab.n5.shardstuff.DefaultShardCodecInfo;
 import org.janelia.saalfeldlab.n5.shardstuff.ShardCodecInfo;
@@ -51,13 +47,9 @@ import org.janelia.saalfeldlab.n5.shardstuff.ShardedDatasetAccess;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.stream.IntStream;
+import java.util.stream.Collectors;
 
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 
@@ -138,15 +130,15 @@ public class DatasetAttributes implements Serializable {
 	 * @param dimensions  the dimensions of the dataset
 	 * @param blockSize   the size of the blocks in the dataset
 	 * @param dataType    the data type of the dataset
-	 * @param compression the codecs used encode/decode the data
+	 * @param dataCodecInfos the codecs used encode/decode the data
 	 */
 	public DatasetAttributes(
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final DataCodecInfo compression) {
+			final DataCodecInfo... dataCodecInfos) {
 
-		this(dimensions, blockSize, dataType, null, compression);
+		this(dimensions, blockSize, dataType, null, dataCodecInfos);
 	}
 
 	/**
@@ -161,7 +153,7 @@ public class DatasetAttributes implements Serializable {
 			final int[] blockSize,
 			final DataType dataType) {
 
-		this(dimensions, blockSize, dataType, null);
+		this(dimensions, blockSize, dataType, new DataCodecInfo[0]);
 	}
 
 	/**
@@ -193,12 +185,6 @@ public class DatasetAttributes implements Serializable {
 				new DataCodecInfo[]{new RawCompression()},
 				IndexLocation.END);
 	}
-
-	protected BlockCodecInfo defaultArrayCodec() {
-
-		return new N5BlockCodecInfo();
-	}
-
 
 	protected BlockCodecInfo defaultBlockCodecInfo() {
 
@@ -241,18 +227,6 @@ public class DatasetAttributes implements Serializable {
 //
 //		return blocksPerShard;
 //	}
-
-	/**
-	 * Returns the number of blocks per dimension for this dataset.
-	 *
-	 * @return blocks per dataset
-	 */
-	public long[] blocksPerDataset() {
-
-		return IntStream.range(0, getNumDimensions())
-				.mapToLong(i -> (long)Math.ceil((double)getDimensions()[i] / getBlockSize()[i]))
-				.toArray();
-	}
 
 //	/**
 //	 * Returns the number of shards per dimension for this dataset.
