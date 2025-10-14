@@ -394,6 +394,16 @@ public class DatasetAttributes implements Serializable {
 		return (DatasetAccess<T>)access;
 	}
 
+	public BlockCodecInfo getBlockCodecInfo() {
+
+		return blockCodecInfo;
+	}
+
+	public DataCodecInfo[] getDataCodecInfos() {
+
+		return dataCodecInfos;
+	}
+
 	public HashMap<String, Object> asMap() {
 
 		final HashMap<String, Object> map = new HashMap<>();
