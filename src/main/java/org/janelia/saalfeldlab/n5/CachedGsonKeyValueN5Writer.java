@@ -28,10 +28,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Arrays;
-
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 import com.google.gson.Gson;
