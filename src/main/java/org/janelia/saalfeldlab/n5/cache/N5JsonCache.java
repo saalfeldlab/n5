@@ -28,6 +28,7 @@
  */
 package org.janelia.saalfeldlab.n5.cache;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -183,6 +184,7 @@ public class N5JsonCache {
 		for (final String child : cacheInfo.children) {
 			children[i++] = child;
 		}
+		Arrays.sort(children);
 		return children;
 	}
 
