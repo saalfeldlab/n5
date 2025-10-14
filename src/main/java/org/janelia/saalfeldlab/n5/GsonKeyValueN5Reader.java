@@ -96,24 +96,6 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		}
 	}
 
-	default <T> Shard<T> readShard(
-			final String keyPath,
-			final DatasetAttributes datasetAttributes,
-			long... shardGridPosition) {
-
-		// TODO
-
-//		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(keyPath), shardGridPosition);
-//		try {
-//			final ReadData readData  = getKeyValueAccess().createReadData(path).materialize();
-//			return new VirtualShard<>( datasetAttributes, shardGridPosition, readData);
-//		} catch (N5Exception.N5NoSuchKeyException e) {
-//			return null;
-//		}
-
-		return null;
-	}
-
 	@Override
 	default <T> DataBlock<T> readBlock(
 			final String pathName,
