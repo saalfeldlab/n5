@@ -115,9 +115,13 @@ public class DatasetAttributes implements Serializable {
 		this.dataType = dataType;
 
 		this.blockCodecInfo = blockCodecInfo == null ? defaultBlockCodecInfo() : blockCodecInfo;
-		this.dataCodecInfos = Arrays.stream(dataCodecInfos)
-				.filter(it -> it != null && !(it instanceof RawCompression))
-				.toArray(DataCodecInfo[]::new);
+
+		if (dataCodecInfos == null)
+			this.dataCodecInfos = new DataCodecInfo[0];
+		else
+			this.dataCodecInfos = Arrays.stream(dataCodecInfos)
+					.filter(it -> it != null && !(it instanceof RawCompression))
+					.toArray(DataCodecInfo[]::new);
 
 		final ShardedDatasetAccess<?> shardAccess = ShardedDatasetAccess.create(
 				getDataType(), outerBlockSize,

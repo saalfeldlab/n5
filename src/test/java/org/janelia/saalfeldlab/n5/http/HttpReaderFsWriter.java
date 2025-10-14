@@ -39,7 +39,9 @@ import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.shard.Shard;
 
 import java.io.Serializable;
@@ -303,13 +305,9 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		writer.writeBlocks(datasetPath, datasetAttributes, dataBlocks);
 	}
 
-	@Override public <T> void writeShard(String path, DatasetAttributes datasetAttributes, Shard<T> shard) throws N5Exception {
+	@Override public void createDataset(String datasetPath, long[] dimensions, int[] blockSize, DataType dataType, 
+			BlockCodecInfo blockCodecInfo, DataCodecInfo[] dataCodecInfos) throws N5Exception {
 
-		writer.writeShard(path, datasetAttributes, shard);
-	}
-
-	@Override public void createDataset(String datasetPath, long[] dimensions, int[] blockSize, DataType dataType, CodecInfo... codecs) throws N5Exception {
-
-		writer.createDataset(datasetPath, dimensions, blockSize, dataType, codecs);
+		writer.createDataset(datasetPath, dimensions, blockSize, dataType, blockCodecInfo, dataCodecInfos);
 	}
 }

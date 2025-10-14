@@ -224,32 +224,43 @@ public interface N5Writer extends N5Reader {
 	 * @param dimensions the dataset dimensions
 	 * @param blockSize the block size
 	 * @param dataType the data type
-	 * @param codecs codecs to encode/decode with
-	 * @throws N5Exception the exception
+	 * @param blockCodecInfo the block codec
+	 * @param dataCodecs data codecs
 	 */
 	default void createDataset(
 			final String datasetPath,
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final CodecInfo... codecs) throws N5Exception {
+			final DataCodecInfo... dataCodecInfos) throws N5Exception {
 
-		final BlockCodecInfo blockCodecInfo;
-		final DataCodecInfo[] dataCodecs;
-		if (codecs == null || codecs.length == 0) {
-			blockCodecInfo = null;
-			dataCodecs = new DataCodecInfo[0];
-		} else if (codecs[0] instanceof BlockCodecInfo) {
-			blockCodecInfo = (BlockCodecInfo) codecs[0];
-			dataCodecs = new DataCodecInfo[codecs.length - 1];
-			System.arraycopy(codecs, 1, dataCodecs, 0, dataCodecs.length);
-		} else {
-			blockCodecInfo = null;
-			dataCodecs = new DataCodecInfo[codecs.length];
-			System.arraycopy(codecs, 0, dataCodecs, 0, dataCodecs.length);
-		}
+		// TODO default block codec?
+		// TODO better doc
+		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, dataCodecInfos));
+	}
 
-		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, blockCodecInfo, dataCodecs));
+	/**
+	 * Creates a dataset. This does not create any data but the path and
+	 * mandatory attributes only.
+	 *
+	 * @param datasetPath dataset path
+	 * @param dimensions the dataset dimensions
+	 * @param blockSize the block size
+	 * @param dataType the data type
+	 * @param blockCodecInfo the block codec
+	 * @param dataCodecs data codecs
+	 */
+	default void createDataset(
+			final String datasetPath,
+			final long[] dimensions,
+			final int[] blockSize,
+			final DataType dataType,
+			final BlockCodecInfo blockCodecInfo,
+			final DataCodecInfo[] dataCodecInfos) throws N5Exception {
+
+		// TODO default block codec?
+		// TODO better doc
+		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, blockCodecInfo, dataCodecInfos));
 	}
 
 	/**
