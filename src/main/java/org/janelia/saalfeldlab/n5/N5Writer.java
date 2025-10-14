@@ -286,20 +286,6 @@ public interface N5Writer extends N5Reader {
 	}
 
 	/**
-	 * Writes a {@link Shard}.
-	 *
-	 * @param datasetPath dataset path
-	 * @param datasetAttributes the dataset attributes
-	 * @param shard the shard
-	 * @param <T> the data block data type
-	 * @throws N5Exception the exception
-	 */
-	<T> void writeShard(
-			final String datasetPath,
-			final DatasetAttributes datasetAttributes,
-			final Shard<T> shard) throws N5Exception;
-
-	/**
 	 * Deletes the block at {@code gridPosition}.
 	 *
 	 * @param datasetPath dataset path
@@ -309,19 +295,6 @@ public interface N5Writer extends N5Reader {
 	 * @return {@code true} if the block at {@code gridPosition} existed and was deleted.
 	 */
 	boolean deleteBlock(
-			final String datasetPath,
-			final long... gridPosition) throws N5Exception;
-
-	/**
-	 * Deletes the shard at {@code gridPosition}.
-	 *
-	 * @param datasetPath dataset path
-	 * @param gridPosition position of shard to be deleted
-	 * @throws N5Exception if the block exists but could not be deleted
-	 *
-	 * @return {@code true} if the shard at {@code gridPosition} existed and was deleted.
-	 */
-	boolean deleteShard(
 			final String datasetPath,
 			final long... gridPosition) throws N5Exception;
 

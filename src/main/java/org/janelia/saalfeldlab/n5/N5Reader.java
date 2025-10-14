@@ -302,17 +302,6 @@ public interface N5Reader extends AutoCloseable {
 			final long... gridPosition) throws N5Exception;
 
 	/**
-	 * Reads the {@link Shard} at the corresponding grid position.
-	 *
-	 * @param <T> the data access type for the blocks in the shard
-	 * @param datasetPath to read the shard from
-	 * @param datasetAttributes for the shard
-	 * @param shardGridPosition of the shard we are reading
-	 * @return the shard
-	 */
-	<T> Shard<T> readShard(final String datasetPath, final DatasetAttributes datasetAttributes, long... shardGridPosition);
-
-	/**
 	 * Reads multiple {@link DataBlock}s.
 	 * <p>
 	 * Implementations may optimize / batch read operations when possible, e.g.
