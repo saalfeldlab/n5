@@ -261,7 +261,6 @@ public abstract class AbstractN5Test {
 
 					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 					assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
-
 				}
 			}
 		}
@@ -492,8 +491,9 @@ public abstract class AbstractN5Test {
 	@Test
 	public void testOverwriteBlock() {
 
-		try (final N5Writer n5 = createTempN5Writer("test.n5")) {
-			n5.createDataset(datasetName, dimensions, blockSize, DataType.INT32, new GzipCompression());
+		final Compression compression = getCompressions()[0];
+		try (final N5Writer n5 = createTempN5Writer("test-overwrite")) {
+			n5.createDataset(datasetName, dimensions, blockSize, DataType.INT32, compression);
 			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 
 			final IntArrayDataBlock randomDataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
