@@ -49,11 +49,12 @@ import org.scijava.annotations.Indexable;
  * serialization.
  * <p>
  * See also: an alternative method for serializing general {@link CodecInfo}s is
- * with the {@link NameConfigAdapter}.
+ * with the {@link NameConfigAdapter}. This interface remains for legacy
+ * (de)serialization.
  *
  * @author Stephan Saalfeld
  */
-public interface Compression extends Serializable, DataCodecInfo, DataCodec {
+public interface Compression extends Serializable, DataCodec, DataCodecInfo {
 
 	/**
 	 * Annotation for runtime discovery of compression schemes.
@@ -77,7 +78,6 @@ public interface Compression extends Serializable, DataCodecInfo, DataCodec {
 	@Target(ElementType.FIELD)
 	@interface CompressionParameter {}
 
-	@Override
 	default String getType() {
 
 		final CompressionType compressionType = getClass().getAnnotation(CompressionType.class);
@@ -91,4 +91,5 @@ public interface Compression extends Serializable, DataCodecInfo, DataCodec {
 	default DataCodec create() {
 		return this;
 	}
+
 }

@@ -38,7 +38,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @CompressionType("bzip2")
-@NameConfig.Name("bzip2")
+@NameConfig.Name("bzip2-compression")
 public class Bzip2Compression implements Compression {
 
 	private static final long serialVersionUID = -4873117458390529118L;
