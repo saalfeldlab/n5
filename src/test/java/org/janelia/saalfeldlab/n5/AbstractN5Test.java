@@ -187,7 +187,7 @@ public abstract class AbstractN5Test {
 	@Before
 	public void setUpOnce() {
 
-		final Random rnd = new Random();
+		final Random rnd = new Random(111);
 		byteBlock = new byte[blockNumElements];
 		shortBlock = new short[blockNumElements];
 		intBlock = new int[blockNumElements];
