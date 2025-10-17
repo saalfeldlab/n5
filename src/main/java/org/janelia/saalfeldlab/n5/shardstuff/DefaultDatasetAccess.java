@@ -3,6 +3,7 @@ package org.janelia.saalfeldlab.n5.shardstuff;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
@@ -13,18 +14,19 @@ import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedGrid;
 import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedPosition;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-public class ShardedDatasetAccess<T> implements DatasetAccess<T> {
+public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 	private final NestedGrid grid;
 	private final BlockCodec<?>[] codecs;
 
-	public ShardedDatasetAccess(final NestedGrid grid, final BlockCodec<?>[] codecs) {
+	public DefaultDatasetAccess(final NestedGrid grid, final BlockCodec<?>[] codecs) {
 		this.grid = grid;
 		this.codecs = codecs;
 	}
@@ -108,7 +110,6 @@ public class ShardedDatasetAccess<T> implements DatasetAccess<T> {
 		if (positions.isEmpty()) {
 			return Collections.emptyList();
 		}
-
 
 		final NestedPosition firstBlock = positions.get(0);
 		final long[] shardPosition = firstBlock.absolute(level);
@@ -302,51 +303,6 @@ public class ShardedDatasetAccess<T> implements DatasetAccess<T> {
 				}
 				return codec.encode(new RawShardDataBlock(gridPos, shard));
 			}
-		}
-	}
-
-	public static <T> ShardedDatasetAccess<T> create(
-			final DataType dataType,
-			int[] blockSize,
-			BlockCodecInfo blockCodecInfo,
-			DataCodecInfo[] dataCodecInfos
-	) {
-		final int m = nestingDepth(blockCodecInfo);
-
-		// There are m codecs: 1 DataBlock codecs, and m-1 shard codecs.
-		// The inner-most codec (the DataBlock codec) is at index 0.
-		final int[][] blockSizes = new int[m][];
-
-		// NestedGrid validates block sizes, so instantiate it before creating the blockCodecs
-		// blockCodecInfo.create below could fail unexpecedly with invalid blockSizes
-		// so validate first
-		blockSizes[m-1] = blockSize;
-		BlockCodecInfo tmpInfo = blockCodecInfo;
-		for (int l = m - 1; l > 0; --l) {
-			final ShardCodecInfo info = (ShardCodecInfo) tmpInfo;
-			blockSizes[l-1] = info.getInnerBlockSize();
-			tmpInfo = info.getInnerBlockCodecInfo();
-		}
-
-		final NestedGrid grid = new NestedGrid(blockSizes);
-		final BlockCodec<?>[] blockCodecs = new BlockCodec[m];
-		for (int l = m - 1; l >= 0; --l) {
-			blockCodecs[l] = blockCodecInfo.create(dataType, blockSizes[l], dataCodecInfos);
-			if (l > 0) {
-				final ShardCodecInfo info = (ShardCodecInfo) blockCodecInfo;
-				blockCodecInfo = info.getInnerBlockCodecInfo();
-				dataCodecInfos = info.getInnerDataCodecInfos();
-			}
-		}
-
-		return new ShardedDatasetAccess<>(grid, blockCodecs);
-	}
-
-	private static int nestingDepth(BlockCodecInfo info) {
-		if (info instanceof ShardCodecInfo) {
-			return 1 + nestingDepth(((ShardCodecInfo) info).getInnerBlockCodecInfo());
-		} else {
-			return 1;
 		}
 	}
 

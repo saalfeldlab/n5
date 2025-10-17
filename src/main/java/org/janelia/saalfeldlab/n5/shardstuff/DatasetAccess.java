@@ -2,7 +2,7 @@ package org.janelia.saalfeldlab.n5.shardstuff;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedPosition;
+import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedGrid;
 
 import java.util.List;
 
@@ -24,4 +24,6 @@ public interface DatasetAccess<T> {
 	List<DataBlock<T>> readBlocks(PositionValueAccess kva, List<long[]> positions);
 
 	void writeBlocks(PositionValueAccess kva, List<DataBlock<T>> blocks);
+
+	NestedGrid getGrid();
 }

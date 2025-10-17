@@ -35,15 +35,18 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+
+import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.shardstuff.DatasetAccess;
+import org.janelia.saalfeldlab.n5.shardstuff.DefaultDatasetAccess;
 import org.janelia.saalfeldlab.n5.shardstuff.DefaultShardCodecInfo;
+import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedGrid;
 import org.janelia.saalfeldlab.n5.shardstuff.ShardCodecInfo;
 import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation;
-import org.janelia.saalfeldlab.n5.shardstuff.ShardedDatasetAccess;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
@@ -89,6 +92,10 @@ public class DatasetAttributes implements Serializable {
 	// number of samples per block per dimension
 	private final int[] blockSize;
 
+	// TODO add a getter?
+	// the shard size
+	private final int[] outerBlockSize;
+
 	private final DataType dataType;
 
 	private final BlockCodecInfo blockCodecInfo;
@@ -105,6 +112,7 @@ public class DatasetAttributes implements Serializable {
 
 		this.dimensions = dimensions;
 		this.dataType = dataType;
+		this.outerBlockSize = outerBlockSize;
 
 		this.blockCodecInfo = blockCodecInfo == null ? defaultBlockCodecInfo() : blockCodecInfo;
 
@@ -115,12 +123,8 @@ public class DatasetAttributes implements Serializable {
 					.filter(it -> it != null && !(it instanceof RawCompression))
 					.toArray(DataCodecInfo[]::new);
 
-		final ShardedDatasetAccess<?> shardAccess = ShardedDatasetAccess.create(
-				getDataType(), outerBlockSize,
-				this.blockCodecInfo, this.dataCodecInfos);
-		access = shardAccess;
-
-		this.blockSize = shardAccess.getGrid().getBlockSize(0);
+		access = createDatasetAccess();
+		blockSize = access.getGrid().getBlockSize(0);
 	}
 
 	/**
@@ -172,6 +176,51 @@ public class DatasetAttributes implements Serializable {
 		// TODO add compression arg
 		this(dimensions, shardSize, dataType,
 				defaultShardCodecInfo(blockSize));
+	}
+
+	private DatasetAccess<?> createDatasetAccess() {
+
+		final int m = nestingDepth(blockCodecInfo);
+
+		// There are m codecs: 1 DataBlock codecs, and m-1 shard codecs.
+		// The inner-most codec (the DataBlock codec) is at index 0.
+		final int[][] blockSizes = new int[m][];
+
+		// NestedGrid validates block sizes, so instantiate it before creating the blockCodecs  
+		// blockCodecInfo.create below could fail unexpecedly with invalid
+		// blockSizes so validate first
+		blockSizes[m - 1] = outerBlockSize;
+		BlockCodecInfo tmpInfo = blockCodecInfo;
+		for (int l = m - 1; l > 0; --l) {
+			final ShardCodecInfo info = (ShardCodecInfo)tmpInfo;
+			blockSizes[l - 1] = info.getInnerBlockSize();
+			tmpInfo = info.getInnerBlockCodecInfo();
+		}
+
+		BlockCodecInfo currentBlockCodecInfo = blockCodecInfo;
+		DataCodecInfo[] currentDataCodecInfos = dataCodecInfos;
+
+		final NestedGrid grid = new NestedGrid(blockSizes);
+		final BlockCodec<?>[] blockCodecs = new BlockCodec[m];
+		for (int l = m - 1; l >= 0; --l) {
+			blockCodecs[l] = currentBlockCodecInfo.create(dataType, blockSizes[l], currentDataCodecInfos);
+			if (l > 0) {
+				final ShardCodecInfo info = (ShardCodecInfo)currentBlockCodecInfo;
+				currentBlockCodecInfo = info.getInnerBlockCodecInfo();
+				currentDataCodecInfos = info.getInnerDataCodecInfos();
+			}
+		}
+
+		return new DefaultDatasetAccess<>(grid, blockCodecs);
+	}
+
+	private static int nestingDepth(BlockCodecInfo info) {
+
+		if (info instanceof ShardCodecInfo) {
+			return 1 + nestingDepth(((ShardCodecInfo)info).getInnerBlockCodecInfo());
+		} else {
+			return 1;
+		}
 	}
 
 	protected static BlockCodecInfo defaultShardCodecInfo(int[] innerBlockSize) {

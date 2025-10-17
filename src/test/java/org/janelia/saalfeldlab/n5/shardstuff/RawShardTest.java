@@ -4,25 +4,29 @@ import java.util.Arrays;
 import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation;
 
 public class RawShardTest {
 
 
 	public static void main(String[] args) {
+
+		int[] datablockSize = {3, 3, 3};
+		int[] level1ShardSize = {6, 6, 6};
+		int[] level2ShardSize = {24, 24, 24};
+
 		// DataBlocks are 3x3x3
 		// Level 1 shards are 6x6x6 (contain 2x2x2 DataBlocks)
 		// Level 2 shards are 24x24x24 (contain 4x4x4 Level 1 shards)
 		final BlockCodecInfo c0 = new N5BlockCodecInfo();
 		final ShardCodecInfo c1 = new DefaultShardCodecInfo(
-				new int[] {3, 3, 3},
+				datablockSize,
 				c0,
 				new DataCodecInfo[] {new RawCompression()},
 				new RawBlockCodecInfo(),
@@ -30,7 +34,7 @@ public class RawShardTest {
 				IndexLocation.END
 		);
 		final ShardCodecInfo c2 = new DefaultShardCodecInfo(
-				new int[] {6, 6, 6},
+				level1ShardSize,
 				c1,
 				new DataCodecInfo[] {new RawCompression()},
 				new RawBlockCodecInfo(),
@@ -38,14 +42,14 @@ public class RawShardTest {
 				IndexLocation.START
 		);
 
-		// TODO: This should go into DatasetAttributes.
-		//       DatasetAccess<T> replaces DatasetAttributes.blockCodec
-		//       DatasetAttributes.getDataAccess() replaces DatasetAttributes.getBlockCodec()
-		//       All information required for ShardedDatasetAccess.create(...) is known to DatasetAttributes already.
-		final DatasetAccess<byte[]> datasetAccess = ShardedDatasetAccess.create(DataType.INT8,
-				new int[] {24, 24, 24},
+		DatasetAttributes attributes = new DatasetAttributes(
+				new long[] {},
+				level2ShardSize,
+				DataType.INT8,
 				c2,
-				new DataCodecInfo[] {new RawCompression()});
+				new RawCompression());
+
+		final DatasetAccess<byte[]> datasetAccess = attributes.getDatasetAccess();
 
 		// TODO: N5Reader/Writer needs to provide a PositionValueAccess implementation on top of its KVA.
 		//       The read/write/deleteBlock methods would getDataAccess() from the DatasetAttributes and call it with that PositionValueAccess.
