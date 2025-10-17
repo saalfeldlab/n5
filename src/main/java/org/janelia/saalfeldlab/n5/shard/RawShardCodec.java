@@ -1,4 +1,6 @@
-package org.janelia.saalfeldlab.n5.shardstuff;
+package org.janelia.saalfeldlab.n5.shard;
+
+import static org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation.START;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,10 +11,8 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.segment.Segment;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentLocation;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentedReadData;
-import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation;
-import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.NDArray;
-
-import static org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation.START;
+import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
+import org.janelia.saalfeldlab.n5.shard.ShardIndex.NDArray;
 
 public class RawShardCodec implements BlockCodec<RawShard> {
 

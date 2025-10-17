@@ -1,4 +1,4 @@
-package org.janelia.saalfeldlab.n5.shardstuff;
+package org.janelia.saalfeldlab.n5.shard;
 
 import java.lang.reflect.Type;
 import java.util.Arrays;
@@ -7,7 +7,7 @@ import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
-import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation;
+import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;

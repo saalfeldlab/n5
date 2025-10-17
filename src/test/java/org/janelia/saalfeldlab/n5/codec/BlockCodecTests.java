@@ -20,8 +20,8 @@ import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
 import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.codec.BytesCodecTests.BitShiftBytesCodec;
-import org.janelia.saalfeldlab.n5.shardstuff.DatasetAccess;
-import org.janelia.saalfeldlab.n5.shardstuff.PositionValueAccess;
+import org.janelia.saalfeldlab.n5.shard.DatasetAccess;
+import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 import org.janelia.saalfeldlab.n5.shardstuff.TestPositionValueAccess;
 import org.junit.Test;
 

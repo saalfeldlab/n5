@@ -1,4 +1,4 @@
-package org.janelia.saalfeldlab.n5.shardstuff;
+package org.janelia.saalfeldlab.n5.shard;
 
 
 import org.janelia.saalfeldlab.n5.DataBlock;
@@ -10,8 +10,8 @@ import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
-import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedGrid;
-import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedPosition;
+import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
+import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
 
 import java.util.ArrayList;
 import java.util.Arrays;

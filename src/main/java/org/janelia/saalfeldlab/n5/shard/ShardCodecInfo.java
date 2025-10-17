@@ -1,9 +1,9 @@
-package org.janelia.saalfeldlab.n5.shardstuff;
+package org.janelia.saalfeldlab.n5.shard;
 
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
-import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation;
+import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 
 public interface ShardCodecInfo extends BlockCodecInfo {
 

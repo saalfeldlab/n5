@@ -41,12 +41,12 @@ import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
-import org.janelia.saalfeldlab.n5.shardstuff.DatasetAccess;
-import org.janelia.saalfeldlab.n5.shardstuff.DefaultDatasetAccess;
-import org.janelia.saalfeldlab.n5.shardstuff.DefaultShardCodecInfo;
-import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedGrid;
-import org.janelia.saalfeldlab.n5.shardstuff.ShardCodecInfo;
-import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.IndexLocation;
+import org.janelia.saalfeldlab.n5.shard.DatasetAccess;
+import org.janelia.saalfeldlab.n5.shard.DefaultDatasetAccess;
+import org.janelia.saalfeldlab.n5.shard.DefaultShardCodecInfo;
+import org.janelia.saalfeldlab.n5.shard.ShardCodecInfo;
+import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
+import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;

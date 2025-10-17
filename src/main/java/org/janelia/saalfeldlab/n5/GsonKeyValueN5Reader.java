@@ -32,18 +32,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.shardstuff.Nesting;
-import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedPosition;
-import org.janelia.saalfeldlab.n5.shardstuff.PositionValueAccess;
+import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import org.janelia.saalfeldlab.n5.shard.Shard;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON

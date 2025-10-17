@@ -1,9 +1,9 @@
-package org.janelia.saalfeldlab.n5.shardstuff;
+package org.janelia.saalfeldlab.n5.shard;
 
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.segment.Segment;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentedReadData;
-import org.janelia.saalfeldlab.n5.shardstuff.ShardIndex.NDArray;
+import org.janelia.saalfeldlab.n5.shard.ShardIndex.NDArray;
 
 public class RawShard {
 

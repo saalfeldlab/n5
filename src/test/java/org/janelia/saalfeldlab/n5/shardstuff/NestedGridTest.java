@@ -1,6 +1,6 @@
 package org.janelia.saalfeldlab.n5.shardstuff;
 
-import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedGrid;
+import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 import org.junit.Assert;
 import org.junit.Test;
 

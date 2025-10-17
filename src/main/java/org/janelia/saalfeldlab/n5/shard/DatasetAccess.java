@@ -1,8 +1,8 @@
-package org.janelia.saalfeldlab.n5.shardstuff;
+package org.janelia.saalfeldlab.n5.shard;
 
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.shardstuff.Nesting.NestedGrid;
+import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 
 import java.util.List;
 
