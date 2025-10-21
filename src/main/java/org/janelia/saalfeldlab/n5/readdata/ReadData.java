@@ -34,6 +34,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.codec.DataCodec;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentLocation;
 
 /**
@@ -48,10 +49,12 @@ import org.janelia.saalfeldlab.n5.readdata.segment.SegmentLocation;
  * <p>
  * {@code ReadData} may be lazy-loaded. For example, for {@code InputStream} and
  * {@code KeyValueAccess} sources, loading is deferred until the data is
- * accessed (e.g., {@link #allBytes()}, {@link #writeTo(OutputStream)}).
+ * accessed (e.g., {@link #allBytes()}, {@link #writeTo(OutputStream)}), or
+ * explicitly {@link #materialize() meterialized}.
  * <p>
- * {@code ReadData} can be {@code encoded} and {@code decoded} with a {@code
- * CodecInfo}, which will also be lazy if possible.
+ * {@code ReadData} can be {@link DataCodec#encode encoded} and {@link
+ * DataCodec#decode decoded} by a {@link DataCodec}, which will also be lazy if
+ * possible.
  */
 public interface ReadData {
 
@@ -241,7 +244,12 @@ public interface ReadData {
 	}
 
 	/**
-	 * Like {@code UnaryOperator<OutputStream>}, but {@code apply} throws {@code IOException}.
+	 * {@code OutputStreamOperator} is {@link #apply applied} to an {@code
+	 * OutputStream} to transform it into another(e.g., compressed) {@code
+	 * OutputStream}.
+	 * <p>
+	 * This is basically {@code UnaryOperator<OutputStream>}, but {@link #apply}
+	 * throws {@code IOException}.
 	 */
 	@FunctionalInterface
 	interface OutputStreamOperator {
