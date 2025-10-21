@@ -98,13 +98,25 @@ public interface ReadData {
 	 * Returns a new {@link ReadData} representing a slice, or subset
 	 * of this ReadData.
 	 *
-	 * @param offset the offset relative to this
-	 * @param length of the returned ReadData
+	 * @param offset the offset relative to this ReadData
+	 * @param length length of the returned ReadData
 	 * @return a slice
 	 * @throws N5IOException an exception
 	 */
 	default ReadData slice(final long offset, final long length) throws N5IOException {
 		return materialize().slice(offset, length);
+	}
+
+	/**
+	 * Returns a new {@link ReadData} representing a slice, or subset
+	 * of this ReadData.
+	 *
+	 * @param range a range in this ReadData
+	 * @return a slice
+	 * @throws N5IOException an exception
+	 */
+	default ReadData slice(final Range range) throws N5IOException {
+		return slice(range.offset(), range.length());
 	}
 
 	/**

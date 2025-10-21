@@ -7,6 +7,10 @@ import java.util.Comparator;
  */
 public interface Range {
 
+	/**
+	 * Order {@code Range}s by {@link #offset}.
+	 * Ranges with the same offset are ordered by {@link #length}.
+	 */
 	Comparator<Range> COMPARATOR = Comparator
 			.comparingLong(Range::offset)
 			.thenComparingLong(Range::length);
