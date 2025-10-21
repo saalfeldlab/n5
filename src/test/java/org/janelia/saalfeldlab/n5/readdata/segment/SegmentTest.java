@@ -2,6 +2,7 @@ package org.janelia.saalfeldlab.n5.readdata.segment;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
+import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,22 +29,22 @@ public class SegmentTest {
 	@Test
 	public void testWrap() {
 
-		final SegmentLocation[] locations = {
-				SegmentLocation.at(0, 10),
-				SegmentLocation.at(10, 10),
-				SegmentLocation.at(40, 20)};
+		final Range[] locations = {
+				Range.at(0, 10),
+				Range.at(10, 10),
+				Range.at(40, 20)};
 		final SegmentedReadData r = SegmentedReadData.wrap(readData, locations).data();
 		assertEquals(3, r.segments().size());
 
-		final SegmentLocation l0 = r.location(r.segments().get(0));
+		final Range l0 = r.location(r.segments().get(0));
 		assertEquals(0, l0.offset());
 		assertEquals(10, l0.length());
 
-		final SegmentLocation l1 = r.location(r.segments().get(1));
+		final Range l1 = r.location(r.segments().get(1));
 		assertEquals(10, l1.offset());
 		assertEquals(10, l1.length());
 
-		final SegmentLocation l2 = r.location(r.segments().get(2));
+		final Range l2 = r.location(r.segments().get(2));
 		assertEquals(40, l2.offset());
 		assertEquals(20, l2.length());
 	}
@@ -51,25 +52,25 @@ public class SegmentTest {
 	@Test
 	public void testWrapOrder() {
 
-		final SegmentLocation[] locations = {
-				SegmentLocation.at(10, 10),
-				SegmentLocation.at(0, 10),
-				SegmentLocation.at(40, 20)};
+		final Range[] locations = {
+				Range.at(10, 10),
+				Range.at(0, 10),
+				Range.at(40, 20)};
 		final SegmentedReadData.SegmentsAndData segmentsAndData = SegmentedReadData.wrap(readData, locations);
 		final SegmentedReadData r = segmentsAndData.data();
 		final List<Segment> segments = segmentsAndData.segments();
 
 		assertEquals(3, segments.size());
 
-		final SegmentLocation l0 = r.location(segments.get(0));
+		final Range l0 = r.location(segments.get(0));
 		assertEquals(10, l0.offset());
 		assertEquals(10, l0.length());
 
-		final SegmentLocation l1 = r.location(segments.get(1));
+		final Range l1 = r.location(segments.get(1));
 		assertEquals(0, l1.offset());
 		assertEquals(10, l1.length());
 
-		final SegmentLocation l2 = r.location(segments.get(2));
+		final Range l2 = r.location(segments.get(2));
 		assertEquals(40, l2.offset());
 		assertEquals(20, l2.length());
 	}
@@ -77,21 +78,21 @@ public class SegmentTest {
 	@Test
 	public void testSlice() {
 
-		final SegmentLocation[] locations = {
-				SegmentLocation.at(0, 10),
-				SegmentLocation.at(10, 10),
-				SegmentLocation.at(40, 20)};
+		final Range[] locations = {
+				Range.at(0, 10),
+				Range.at(10, 10),
+				Range.at(40, 20)};
 		final SegmentedReadData r = SegmentedReadData.wrap(readData, locations).data();
 		final SegmentedReadData s = r.slice(10, 60);
 		assertEquals(60, s.length());
 
 		assertEquals(2, s.segments().size());
 
-		final SegmentLocation l0 = s.location(s.segments().get(0));
+		final Range l0 = s.location(s.segments().get(0));
 		assertEquals(0, l0.offset());
 		assertEquals(10, l0.length());
 
-		final SegmentLocation l1 = s.location(s.segments().get(1));
+		final Range l1 = s.location(s.segments().get(1));
 		assertEquals(30, l1.offset());
 		assertEquals(20, l1.length());
 	}
@@ -99,17 +100,17 @@ public class SegmentTest {
 	@Test
 	public void testSliceSegment() {
 
-		final SegmentLocation[] locations = {
-				SegmentLocation.at(0, 10),
-				SegmentLocation.at(10, 10),
-				SegmentLocation.at(40, 20)};
+		final Range[] locations = {
+				Range.at(0, 10),
+				Range.at(10, 10),
+				Range.at(40, 20)};
 		final SegmentedReadData r = SegmentedReadData.wrap(readData, locations).data();
 		final SegmentedReadData s = r.slice(r.segments().get(2));
 		assertEquals(20, s.length());
 
 		assertEquals(1, s.segments().size());
 
-		final SegmentLocation l0 = s.location(s.segments().get(0));
+		final Range l0 = s.location(s.segments().get(0));
 		assertEquals(0, l0.offset());
 		assertEquals(20, l0.length());
 	}
@@ -119,16 +120,16 @@ public class SegmentTest {
 		final SegmentedReadData r = SegmentedReadData.wrap(readDataUnknownLength);
 		assertEquals(1, r.segments().size());
 
-		final SegmentLocation l0 = r.location(r.segments().get(0));
+		final Range l0 = r.location(r.segments().get(0));
 		assertEquals(0, l0.offset());
 		assertEquals(-1, l0.length());
 
 		final SegmentedReadData m = r.materialize();
-		final SegmentLocation l0m = r.location(r.segments().get(0));
+		final Range l0m = r.location(r.segments().get(0));
 		assertEquals(0, l0m.offset());
 		assertEquals(100, l0m.length());
 
-		final SegmentLocation l0m2 = m.location(m.segments().get(0));
+		final Range l0m2 = m.location(m.segments().get(0));
 		assertEquals(0, l0m2.offset());
 		assertEquals(100, l0m2.length());
 	}
@@ -141,7 +142,7 @@ public class SegmentTest {
 
 		assertEquals(1, s.segments().size());
 
-		final SegmentLocation l0 = s.location(s.segments().get(0));
+		final Range l0 = s.location(s.segments().get(0));
 		assertEquals(0, l0.offset());
 		assertEquals(100, l0.length());
 
@@ -163,7 +164,7 @@ public class SegmentTest {
 
 		assertEquals(1, s.segments().size());
 
-		final SegmentLocation l0 = s.location(s.segments().get(0));
+		final Range l0 = s.location(s.segments().get(0));
 		assertEquals(0, l0.offset());
 		assertEquals(-1, l0.length());
 	}

@@ -9,7 +9,7 @@ import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.segment.Segment;
-import org.janelia.saalfeldlab.n5.readdata.segment.SegmentLocation;
+import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentedReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.NDArray;
@@ -51,7 +51,7 @@ public class RawShardCodec implements BlockCodec<RawShard> {
 		final ReadData.OutputStreamWriter writer;
 		if (indexLocation == START) {
 			data.materialize();
-			final NDArray<SegmentLocation> locations = ShardIndex.locations(index, data);
+			final NDArray<Range> locations = ShardIndex.locations(index, data);
 			final DataBlock<long[]> indexDataBlock = ShardIndex.toDataBlock(locations, indexBlockSizeInBytes);
 			final ReadData indexReadData = indexCodec.encode(indexDataBlock);
 			writer = out -> {
@@ -61,7 +61,7 @@ public class RawShardCodec implements BlockCodec<RawShard> {
 		} else { // indexLocation == END
 			writer = out -> {
 				data.writeTo(out);
-				final NDArray<SegmentLocation> locations = ShardIndex.locations(index, data);
+				final NDArray<Range> locations = ShardIndex.locations(index, data);
 				final DataBlock<long[]> indexDataBlock = ShardIndex.toDataBlock(locations, 0);
 				final ReadData indexReadData = indexCodec.encode(indexDataBlock);
 				indexReadData.writeTo(out);
@@ -76,7 +76,7 @@ public class RawShardCodec implements BlockCodec<RawShard> {
 		final long indexOffset = (indexLocation == START) ? 0 : (readData.requireLength() - indexBlockSizeInBytes);
 		final ReadData indexReadData = readData.slice(indexOffset, indexBlockSizeInBytes);
 		final DataBlock<long[]> indexDataBlock = indexCodec.decode(indexReadData, new long[size.length]);
-		final NDArray<SegmentLocation> locations = ShardIndex.fromDataBlock(indexDataBlock);
+		final NDArray<Range> locations = ShardIndex.fromDataBlock(indexDataBlock);
 		final ShardIndex.SegmentIndexAndData segments = ShardIndex.segments(locations, readData);
 		return new RawShardDataBlock(gridPosition, new RawShard(segments));
 	}

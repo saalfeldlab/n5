@@ -3,6 +3,7 @@ package org.janelia.saalfeldlab.n5.readdata.segment;
 import java.util.Arrays;
 import java.util.List;
 import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 public interface SegmentedReadData extends ReadData {
@@ -27,7 +28,7 @@ public interface SegmentedReadData extends ReadData {
 	 * matches the order of the given {@code locations} (while the segments in the
 	 * {@link SegmentsAndData#data()} are ordered by offset).
 	 */
-	static SegmentsAndData wrap(ReadData readData, SegmentLocation... locations) {
+	static SegmentsAndData wrap(ReadData readData, Range... locations) {
 		return wrap(readData, Arrays.asList(locations));
 	}
 
@@ -37,7 +38,7 @@ public interface SegmentedReadData extends ReadData {
 	 * matches the order of the given {@code locations} (while the segments in the
 	 * {@link SegmentsAndData#data()} are ordered by offset).
 	 */
-	static SegmentsAndData wrap(ReadData readData, List<SegmentLocation> locations) {
+	static SegmentsAndData wrap(ReadData readData, List<Range> locations) {
 		return DefaultSegmentedReadData.wrap(SliceTrackingReadData.wrap(readData), locations);
 	}
 
@@ -64,7 +65,7 @@ public interface SegmentedReadData extends ReadData {
 	 * @throws IllegalArgumentException
 	 * 		if the segment is not contained in this ReadData
 	 */
-	SegmentLocation location(Segment segment) throws IllegalArgumentException;
+	Range location(Segment segment) throws IllegalArgumentException;
 
 	/**
 	 * @return all segments contained in this {@code ReadData}.

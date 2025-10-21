@@ -9,7 +9,7 @@ import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.segment.Segment;
-import org.janelia.saalfeldlab.n5.readdata.segment.SegmentLocation;
+import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentedReadData;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentedReadData.SegmentsAndData;
 
@@ -110,26 +110,26 @@ public class ShardIndex {
 	 */
 	private static final int LONGS_PER_BLOCK = 2;
 
-	static NDArray<SegmentLocation> fromDataBlock( final DataBlock<long[]> block ) {
+	static NDArray<Range> fromDataBlock( final DataBlock<long[]> block ) {
 
 		final long[] blockData = block.getData();
 		final int[] size = indexSizeFromBlockSize(block.getSize());
 		final int n = getNumElements(size);
-		final SegmentLocation[] locations = new SegmentLocation[n];
+		final Range[] locations = new Range[n];
 
 		for (int i = 0; i < n; i++) {
 			long offset = blockData[i * LONGS_PER_BLOCK];
 			long length = blockData[i * LONGS_PER_BLOCK + 1];
 			if (offset != EMPTY_INDEX_NBYTES && length != EMPTY_INDEX_NBYTES) {
-				locations[i] = SegmentLocation.at(offset, length);
+				locations[i] = Range.at(offset, length);
 			}
 		}
 		return new NDArray<>(size, locations);
 	}
 
-	static DataBlock<long[]> toDataBlock( final NDArray<SegmentLocation> locations, final long offset ) {
+	static DataBlock<long[]> toDataBlock( final NDArray<Range> locations, final long offset ) {
 
-		final SegmentLocation[] data = locations.data;
+		final Range[] data = locations.data;
 
 		final int[] blockSize = blockSizeFromIndexSize(locations.size);
 		final long[] blockData = new long[data.length * 2];
@@ -181,10 +181,10 @@ public class ShardIndex {
 	 * {@code segments}. Returns a {@code NDArray<SegmentLocation>} with entries
 	 * corresponding tho the {@code segments} entries.
 	 */
-	static NDArray<SegmentLocation> locations(final NDArray<Segment> segments, final SegmentedReadData readData) {
+	static NDArray<Range> locations(final NDArray<Segment> segments, final SegmentedReadData readData) {
 
 		final Segment[] data = segments.data;
-		final SegmentLocation[] locations = new SegmentLocation[data.length];
+		final Range[] locations = new Range[data.length];
 		for (int i = 0; i < data.length; ++i) {
 			final Segment segment = data[i];
 			if ( segment != null ) {
@@ -205,12 +205,12 @@ public class ShardIndex {
 	 * SegmentedReadData} with these segments and a {@code NDArray<Segment>}
 	 * with segment entries corresponding to the {@code locations} entries.
 	 */
-	static SegmentIndexAndData segments(final NDArray<SegmentLocation> locations, final ReadData readData) {
+	static SegmentIndexAndData segments(final NDArray<Range> locations, final ReadData readData) {
 
-		final SegmentLocation[] locationsData = locations.data;
+		final Range[] locationsData = locations.data;
 		final Segment[] segmentsData = new Segment[locationsData.length];
 
-		final List<SegmentLocation> presentLocations = new ArrayList<>();
+		final List<Range> presentLocations = new ArrayList<>();
 		for (int i = 0; i < locationsData.length; i++) {
 			if (locationsData[i] != null) {
 				presentLocations.add(locationsData[i]);

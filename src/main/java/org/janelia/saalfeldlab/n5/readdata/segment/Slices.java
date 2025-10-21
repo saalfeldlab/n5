@@ -3,6 +3,7 @@ package org.janelia.saalfeldlab.n5.readdata.segment;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import org.janelia.saalfeldlab.n5.readdata.Range;
 
 class Slices {
 
@@ -24,10 +25,10 @@ class Slices {
 	 *
 	 * @return
 	 */
-	static <T extends SegmentLocation> T findContainingSlice(final List<T> slices, final long offset, final long length) {
+	static <T extends Range> T findContainingSlice(final List<T> slices, final long offset, final long length) {
 		// Find the slice s with largest s.offset <= offset.
 
-		final int i = Collections.binarySearch(slices, SegmentLocation.at(offset, 0), Comparator.comparingLong(SegmentLocation::offset));
+		final int i = Collections.binarySearch(slices, Range.at(offset, 0), Comparator.comparingLong(Range::offset));
 
 		// Largest index of a slice with slice.offset <= offset.
 		final int index = i < 0 ? -i - 2 : i;
@@ -45,7 +46,7 @@ class Slices {
 		return slice;
 	}
 
-	static <T extends SegmentLocation> T findContainingSlice(final List<T> slices, final SegmentLocation range) {
+	static <T extends Range> T findContainingSlice(final List<T> slices, final Range range) {
 		return findContainingSlice(slices, range.offset(), range.length());
 	}
 
@@ -54,9 +55,9 @@ class Slices {
 	 * Note, that the new {@code slice} is expected to not be fully contained in an existing slice!
 	 * This will insert {@code slice} into the list at the correct position ({@code slices} is ordered by slice offset), and remove all existing slices that are fully contained in the new {@code slice}.
 	 */
-	static <T extends SegmentLocation> void addSlice(final List<T> slices, final T slice) {
+	static <T extends Range> void addSlice(final List<T> slices, final T slice) {
 
-		final int i = Collections.binarySearch(slices, slice, Comparator.comparingLong(SegmentLocation::offset));
+		final int i = Collections.binarySearch(slices, slice, Comparator.comparingLong(Range::offset));
 		final int from = i < 0 ? -i - 1 : i;
 
 		int to = from;

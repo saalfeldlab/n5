@@ -2,6 +2,7 @@ package org.janelia.saalfeldlab.n5.readdata.segment;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -9,10 +10,10 @@ import static org.junit.Assert.assertEquals;
 
 public class SlicesTest {
 
-	private List<SegmentLocation> createSlices(final long[] offsets, final long[] lengths) {
-		final List<SegmentLocation> slices = new ArrayList<>();
+	private List<Range> createSlices(final long[] offsets, final long[] lengths) {
+		final List<Range> slices = new ArrayList<>();
 		for (int i = 0; i < offsets.length; ++i) {
-			slices.add(SegmentLocation.at(offsets[i], lengths[i]));
+			slices.add(Range.at(offsets[i], lengths[i]));
 		}
 		return slices;
 	}
@@ -25,10 +26,10 @@ public class SlicesTest {
 		// (6,4)            [---------]
 		// (8,6)                [-----------]
 
-		final List<SegmentLocation> slices = createSlices(
+		final List<Range> slices = createSlices(
 				new long[] {2, 6, 8},
 				new long[] {6, 4, 6});
-		SegmentLocation slice;
+		Range slice;
 
 		//       0 1 2 3 4 5 6 7 8 9 A B C D E F
 		// (1,1)  [-]
@@ -84,14 +85,14 @@ public class SlicesTest {
 		// (2,6)     [-----------]
 		// (6,4)             [---------]
 		// (8,6)                 [-----------]
-		final List<SegmentLocation> initial = createSlices(
+		final List<Range> initial = createSlices(
 				new long[] {2, 6, 8},
 				new long[] {6, 4, 6});
-		List<SegmentLocation> slices;
+		List<Range> slices;
 
 
 		slices = new ArrayList<>(initial);
-		Slices.addSlice(slices, SegmentLocation.at(0, 1));
+		Slices.addSlice(slices, Range.at(0, 1));
 		//        0 1 2 3 4 5 6 7 8 9 A B C D E F
 		// (0,1) [-]
 		// (2,6)     [-----------]
@@ -103,7 +104,7 @@ public class SlicesTest {
 
 
 		slices = new ArrayList<>(initial);
-		Slices.addSlice(slices, SegmentLocation.at(0, 16));
+		Slices.addSlice(slices, Range.at(0, 16));
 		//        0 1 2 3 4 5 6 7 8 9 A B C D E F
 		// (0,16)[-------------------------------]
 		assertEquals(createSlices(
@@ -112,7 +113,7 @@ public class SlicesTest {
 
 
 		slices = new ArrayList<>(initial);
-		Slices.addSlice(slices, SegmentLocation.at(2, 8));
+		Slices.addSlice(slices, Range.at(2, 8));
 		//        0 1 2 3 4 5 6 7 8 9 A B C D E F
 		// (2,8)     [-----------------]
 		// (8,6)                 [-----------]
@@ -122,7 +123,7 @@ public class SlicesTest {
 
 
 		slices = new ArrayList<>(initial);
-		Slices.addSlice(slices, SegmentLocation.at(1, 10));
+		Slices.addSlice(slices, Range.at(1, 10));
 		//        0 1 2 3 4 5 6 7 8 9 A B C D E F
 		// (1,10)  [---------------------]
 		// (8,6)                 [-----------]

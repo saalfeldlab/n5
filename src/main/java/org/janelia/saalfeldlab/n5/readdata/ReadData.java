@@ -35,7 +35,6 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.DataCodec;
-import org.janelia.saalfeldlab.n5.readdata.segment.SegmentLocation;
 
 /**
  * An abstraction over {@code byte[]} data.
@@ -224,7 +223,7 @@ public interface ReadData {
 	 * @throws N5IOException
 	 * 		if any I/O error occurs
 	 */
-	default void prefetch(final Collection<? extends SegmentLocation> ranges) throws N5IOException {
+	default void prefetch(final Collection<? extends Range> ranges) throws N5IOException {
 	}
 
 	// ------------- Encoding / Decoding ----------------

@@ -8,8 +8,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 class Concatenate implements SegmentedReadData {
@@ -17,8 +17,8 @@ class Concatenate implements SegmentedReadData {
 	private final List<SegmentedReadData> content;
 	private final ReadData delegate;
 	private final List<Segment> segments;
-	private final List<SegmentLocation> locations;
-	private final Map<Segment, SegmentLocation> segmentToLocation;
+	private final List<Range> locations;
+	private final Map<Segment, Range> segmentToLocation;
 	private boolean locationsBuilt;
 	private long length;
 
@@ -34,7 +34,7 @@ class Concatenate implements SegmentedReadData {
 
 	// constructor for slices
 	private Concatenate(final ReadData delegate, final List<Segment> segments,
-			final List<SegmentLocation> locations) {
+			final List<Range> locations) {
 		content = null;
 		this.delegate = delegate;
 		this.segments = segments;
@@ -62,8 +62,8 @@ class Concatenate implements SegmentedReadData {
 				}
 				segments.addAll(data.segments());
 				for (Segment segment : data.segments()) {
-					final SegmentLocation l = data.location(segment);
-					locations.add(SegmentLocation.at(l.offset() + offset, l.length()));
+					final Range l = data.location(segment);
+					locations.add(Range.at(l.offset() + offset, l.length()));
 				}
 				offset += data.length();
 			}
@@ -78,9 +78,9 @@ class Concatenate implements SegmentedReadData {
 	}
 
 	@Override
-	public SegmentLocation location(final Segment segment) throws IllegalArgumentException {
+	public Range location(final Segment segment) throws IllegalArgumentException {
 		ensureKnownSize();
-		final SegmentLocation location = segmentToLocation.get(segment);
+		final Range location = segmentToLocation.get(segment);
 		if (location == null) {
 			throw new IllegalArgumentException();
 		}
@@ -122,7 +122,7 @@ class Concatenate implements SegmentedReadData {
 	@Override
 	public SegmentedReadData slice(final Segment segment) throws IllegalArgumentException, N5IOException {
 		ensureKnownSize();
-		final SegmentLocation l = location(segment);
+		final Range l = location(segment);
 		return slice(l.offset(), l.length());
 	}
 
@@ -133,25 +133,25 @@ class Concatenate implements SegmentedReadData {
 		final long sliceLength = delegateSlice.length();
 
 		// fromIndex: find first segment with offset >= sourceOffset
-		int fromIndex = Collections.binarySearch(locations, SegmentLocation.at(offset, -1), SegmentLocation.COMPARATOR);
+		int fromIndex = Collections.binarySearch(locations, Range.at(offset, -1), Range.COMPARATOR);
 		if (fromIndex < 0) {
 			fromIndex = -fromIndex - 1;
 		}
 
 		// toIndex: find first segment with offset >= sourceOffset + length
-		int toIndex = Collections.binarySearch(locations, SegmentLocation.at(offset + sliceLength, -1), SegmentLocation.COMPARATOR);
+		int toIndex = Collections.binarySearch(locations, Range.at(offset + sliceLength, -1), Range.COMPARATOR);
 		if (toIndex < 0) {
 			toIndex = -toIndex - 1;
 		}
 
 		// contained: find segments in [fromIndex, toIndex) with s.offset() + s.length() <= sourceOffset + length
 		final List<Segment> containedSegments = new ArrayList<>();
-		final List<SegmentLocation> containedSegmentLocations = new ArrayList<>();
+		final List<Range> containedSegmentLocations = new ArrayList<>();
 		for (int i = fromIndex; i < toIndex; ++i) {
-			final SegmentLocation l = locations.get(i);
+			final Range l = locations.get(i);
 			if (l.offset() + l.length() <= offset + sliceLength) {
 				containedSegments.add(segments.get(i));
-				containedSegmentLocations.add(SegmentLocation.at(l.offset() - offset, l.length()));
+				containedSegmentLocations.add(Range.at(l.offset() - offset, l.length()));
 			}
 		}
 

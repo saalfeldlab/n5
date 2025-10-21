@@ -7,11 +7,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 class SliceTrackingReadData implements ReadData {
 
-	private static class Slice implements SegmentLocation {
+	private static class Slice implements Range {
 
 		private final long offset;
 		private final long length;
@@ -127,11 +128,11 @@ class SliceTrackingReadData implements ReadData {
 	 * 		if any I/O error occurs
 	 */
 	@Override
-	public void prefetch(final Collection<? extends SegmentLocation> ranges) throws N5IOException {
+	public void prefetch(final Collection<? extends Range> ranges) throws N5IOException {
 
 		long fromIndex = Long.MAX_VALUE;
 		long toIndex = Long.MIN_VALUE;
-		for (final SegmentLocation slice : ranges) {
+		for (final Range slice : ranges) {
 			if (!isCovered(slice)) {
 				fromIndex = Math.min(fromIndex, slice.offset());
 				toIndex = Math.max(toIndex, slice.end());
@@ -143,7 +144,7 @@ class SliceTrackingReadData implements ReadData {
 		}
 	}
 
-	private boolean isCovered(final SegmentLocation slice) {
+	private boolean isCovered(final Range slice) {
 
 		return Slices.findContainingSlice(slices, slice) != null;
 	}

@@ -1,31 +1,41 @@
-package org.janelia.saalfeldlab.n5.readdata.segment;
+package org.janelia.saalfeldlab.n5.readdata;
 
 import java.util.Comparator;
 
-// TODO: If we use this to describe slices, it should be renamed probably!?
-//       Ideas: Range, SliceLocation
-public interface SegmentLocation {
+/**
+ * A range specified as a {@link #offset}, {@link #length} pair.
+ */
+public interface Range {
 
-	Comparator<SegmentLocation> COMPARATOR = Comparator
-			.comparingLong(SegmentLocation::offset)
-			.thenComparingLong(SegmentLocation::length);
+	Comparator<Range> COMPARATOR = Comparator
+			.comparingLong(Range::offset)
+			.thenComparingLong(Range::length);
 
+	/**
+	 * @return start index (inclusive)
+	 */
 	long offset();
 
+	/**
+	 * @return number of elements
+	 */
 	long length();
 
+	/**
+	 * @return end index (exclusive)
+	 */
 	default long end() {
 		return offset() + length();
 	}
 
-	static SegmentLocation at(final long offset, final long length) {
+	static Range at(final long offset, final long length) {
 
-		class DefaultSegmentLocation implements SegmentLocation {
+		class DefaultRange implements Range {
 
 			private final long offset;
 			private final long length;
 
-			public DefaultSegmentLocation(final long offset, final long length) {
+			public DefaultRange(final long offset, final long length) {
 				this.offset = offset;
 				this.length = length;
 			}
@@ -42,10 +52,10 @@ public interface SegmentLocation {
 
 			@Override
 			public final boolean equals(final Object o) {
-				if (!(o instanceof DefaultSegmentLocation))
+				if (!(o instanceof DefaultRange))
 					return false;
 
-				final DefaultSegmentLocation that = (DefaultSegmentLocation) o;
+				final DefaultRange that = (DefaultRange) o;
 				return offset == that.offset && length == that.length;
 			}
 
@@ -65,6 +75,6 @@ public interface SegmentLocation {
 			}
 		}
 
-		return new DefaultSegmentLocation(offset, length);
+		return new DefaultRange(offset, length);
 	}
 }
