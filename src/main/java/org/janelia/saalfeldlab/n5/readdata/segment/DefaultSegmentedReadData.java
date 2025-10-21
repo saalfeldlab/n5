@@ -133,7 +133,7 @@ class DefaultSegmentedReadData implements SegmentedReadData {
 	public SegmentLocation location(final Segment segment) {
 		if (segmentSource.equals(segment.source()) && segment instanceof SegmentLocation) {
 			final SegmentLocation l = (SegmentLocation) segment;
-			return offset == 0 ? l : new DefaultSegmentLocation(l.offset() - offset, l.length());
+			return offset == 0 ? l : SegmentLocation.at(l.offset() - offset, l.length());
 		} else {
 			throw new IllegalArgumentException();
 		}
