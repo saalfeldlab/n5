@@ -113,14 +113,10 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> blockPositions) throws N5Exception {
 
-		try {
 			final PositionValueAccess posKva = PositionValueAccess.fromKva(
 					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName),
 					p -> datasetAttributes.relativeBlockPath(p));
 			return datasetAttributes.<T>getDatasetAccess().readBlocks(posKva, blockPositions);
-		} catch (N5Exception.N5NoSuchKeyException e) {
-			return null;
-		}
 	}
 
 	@Override

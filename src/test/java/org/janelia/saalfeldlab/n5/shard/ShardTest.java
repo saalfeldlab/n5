@@ -52,8 +52,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -257,54 +259,75 @@ public class ShardTest {
 		}
 
 		final long[][] newBlockIndices = new long[][]{{0, 0}, {1, 1}, {0, 4}, {0, 5}, {10, 10}};
-		for (long[] blockIndex : newBlockIndices) {
+		final List<long[]> newBlockIndexList = Arrays.asList(newBlockIndices);
+		final List<DataBlock<Object>> readBlocks = writer.readBlocks(dataset, datasetAttributes, newBlockIndexList);
+		for (int i = 0; i < newBlockIndices.length; i++) {
+			final long[] blockIndex = newBlockIndices[i];
 			final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, blockIndex);
 			Assert.assertArrayEquals("Read from shard doesn't match", data2, (byte[])block.getData());
+			final DataBlock<?> blockFromReadBlocks = readBlocks.get(i);
+			Assert.assertArrayEquals("Read from shard doesn't match", data2, (byte[])blockFromReadBlocks.getData());
 		}
 	}
 
-//	@Test
-//	public void writeReadBlockTest() {
-//
-//		final N5Writer writer = tempN5Factory.createTempN5Writer();
-//		final DatasetAttributes datasetAttributes = getTestAttributes();
-//
-//		final String dataset = "writeReadBlock";
-//		writer.remove(dataset);
-//		writer.createDataset(dataset, datasetAttributes);
-//		writer.deleteBlock(dataset, 0, 0); //FIXME Caleb: We are abusing this here. It shouldn't delete the entire shard..
-//
-//		final int[] blockSize = datasetAttributes.getBlockSize();
-//		final DataType dataType = datasetAttributes.getDataType();
-//		final int numElements = 2 * 2;
-//
-//		final HashMap<long[], byte[]> writtenBlocks = new HashMap<>();
-//
-//		for (int idx1 = 1; idx1 >= 0; idx1--) {
-//			for (int idx2 = 1; idx2 >= 0; idx2--) {
-//				final long[] gridPosition = {idx1, idx2};
-//				final DataBlock<byte[]> dataBlock = (DataBlock<byte[]>)dataType.createDataBlock(blockSize, gridPosition, numElements);
-//				byte[] data = dataBlock.getData();
-//				for (int i = 0; i < data.length; i++) {
-//					data[i] = (byte)((idx1 * 100) + (idx2 * 10) + i);
-//				}
-//				writer.writeBlock(dataset, datasetAttributes, dataBlock);
-//
-//				final DataBlock<byte[]> block = writer.readBlock(dataset, datasetAttributes, dataBlock.getGridPosition().clone());
-//				Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
-//
-//				for (Map.Entry<long[], byte[]> entry : writtenBlocks.entrySet()) {
-//					final long[] otherGridPosition = entry.getKey();
-//					final byte[] otherData = entry.getValue();
-//					final DataBlock<?> otherBlock = writer.readBlock(dataset, datasetAttributes, otherGridPosition);
-//					Assert.assertArrayEquals("Read prior write from shard no loner matches", otherData, (byte[])otherBlock.getData());
-//				}
-//
-//				writtenBlocks.put(gridPosition, data);
-//			}
-//		}
-//	}
-//
+	@Test
+	public void readBlocksTest() {
+
+		final N5Writer n5 = tempN5Factory.createTempN5Writer();
+		final DatasetAttributes datasetAttributes = getTestAttributes(
+				new long[]{24, 24},
+				new int[]{8, 8},
+				new int[]{2, 2}
+		);
+
+		final String dataset = "writeReadBlocks";
+		final long[][] newBlockIndices = new long[][]{{0, 0}, {1, 1}, {0, 4}, {0, 5}, {10, 10}};
+		final List<DataBlock<Object>> readBlocks = n5.readBlocks(dataset, datasetAttributes, Arrays.asList(newBlockIndices));
+		System.out.println(readBlocks.size());
+	}
+
+	@Test
+	public void writeReadBlockTest() {
+
+		final N5Writer writer = tempN5Factory.createTempN5Writer();
+		final DatasetAttributes datasetAttributes = getTestAttributes();
+
+		final String dataset = "writeReadBlock";
+		writer.remove(dataset);
+		writer.createDataset(dataset, datasetAttributes);
+		writer.deleteBlock(dataset, 0, 0); //FIXME Caleb: We are abusing this here. It shouldn't delete the entire shard..
+
+		final int[] blockSize = datasetAttributes.getBlockSize();
+		final DataType dataType = datasetAttributes.getDataType();
+		final int numElements = 2 * 2;
+
+		final HashMap<long[], byte[]> writtenBlocks = new HashMap<>();
+
+		for (int idx1 = 1; idx1 >= 0; idx1--) {
+			for (int idx2 = 1; idx2 >= 0; idx2--) {
+				final long[] gridPosition = {idx1, idx2};
+				final DataBlock<byte[]> dataBlock = (DataBlock<byte[]>)dataType.createDataBlock(blockSize, gridPosition, numElements);
+				byte[] data = dataBlock.getData();
+				for (int i = 0; i < data.length; i++) {
+					data[i] = (byte)((idx1 * 100) + (idx2 * 10) + i);
+				}
+				writer.writeBlock(dataset, datasetAttributes, dataBlock);
+
+				final DataBlock<byte[]> block = writer.readBlock(dataset, datasetAttributes, dataBlock.getGridPosition().clone());
+				Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
+
+				for (Map.Entry<long[], byte[]> entry : writtenBlocks.entrySet()) {
+					final long[] otherGridPosition = entry.getKey();
+					final byte[] otherData = entry.getValue();
+					final DataBlock<?> otherBlock = writer.readBlock(dataset, datasetAttributes, otherGridPosition);
+					Assert.assertArrayEquals("Read prior write from shard no loner matches", otherData, (byte[])otherBlock.getData());
+				}
+
+				writtenBlocks.put(gridPosition, data);
+			}
+		}
+	}
+
 //	@Test
 //	public void writeReadShardTest() {
 //

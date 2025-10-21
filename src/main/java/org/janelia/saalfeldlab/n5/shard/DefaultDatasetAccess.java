@@ -71,13 +71,17 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 			final NestedPosition firstBlock = blocksInSingleShard.get(0);
 			final ReadData readData = pva.get(firstBlock.key());
-			final List<DataBlock<T>> shardBlocks = readShardRecursive(readData, blocksInSingleShard, outermostLevel);
+			final List<DataBlock<T>> shardBlocks;
+			try {
+				shardBlocks = readShardRecursive(readData, blocksInSingleShard, outermostLevel);
+			} catch (N5NoSuchKeyException e) {
+				continue;
+			}
 
 			blocks.addAll(shardBlocks);
 		}
 
 		//TODO Caleb: No guarantee of order; If we want that, we need to sort the result.
-		//TODO Caleb: Also no guarantee of uniqueness. May want to use a Set instead of a list if we care.
 		return blocks;
 	}
 
@@ -189,6 +193,8 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final NestedPositionDataBlock<T> firstDataBlock = dataBlocksForShard.get(0);
 			final long[] shardKey = firstDataBlock.key();
 
+			//TODO Caleb: When writing all blocks in a shard, we don't need to read existing data.
+			//	Also, could only materialize the index and skip reading if we are overwriting all existing blocks.
 			final ReadData existingReadData = getExistingReadData(pva, shardKey);
 			final ReadData writeShardReadData = writeShardRecursive(existingReadData, dataBlocksForShard, outermostLevel);
 
