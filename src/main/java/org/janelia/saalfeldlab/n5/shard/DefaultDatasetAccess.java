@@ -1,25 +1,18 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-
-import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
-import org.janelia.saalfeldlab.n5.codec.BlockCodec;
-import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
-import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
-import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
-
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
+import org.janelia.saalfeldlab.n5.codec.BlockCodec;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
+import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
 
 public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
