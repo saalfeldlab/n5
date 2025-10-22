@@ -214,11 +214,21 @@ public class ShardTest {
 				{dataset, "2", "2"}
 		};
 
-		// TODO check that these are the only keys
-
 		for (String[] key : keys) {
 			final String shard = kva.compose(writer.getURI(), key);
 			Assert.assertTrue("Shard at" + Arrays.toString(key) + "Does not exist", kva.exists(shard));
+		}
+
+		final String[][] someUnusedKeys = new String[][]{
+			{dataset, "0", "1"},
+			{dataset, "1", "1"},
+			{dataset, "1", "2"},
+			{dataset, "2", "1"}
+		};
+
+		for (String[] key : someUnusedKeys) {
+			final String shard = kva.compose(writer.getURI(), key);
+			Assert.assertFalse("Shard at" + Arrays.toString(key) + " exists but should not.", kva.exists(shard));
 		}
 
 		final long[][] blockIndices = new long[][]{{0, 0}, {0, 1}, {1, 0}, {1, 1}, {4, 0}, {5, 0}, {11, 11}};
@@ -253,11 +263,20 @@ public class ShardTest {
 				{dataset, "2", "2"}
 		};
 
-		// TODO check that other keys do not exist
-
 		for (String[] key : keys2) {
 			final String shard = kva.compose(writer.getURI(), key);
 			Assert.assertTrue("Shard at" + Arrays.toString(key) + "Does not exist", kva.exists(shard));
+		}
+
+		final String[][] someUnusedKeys2 = new String[][]{
+			{dataset, "1", "1"},
+			{dataset, "1", "2"},
+			{dataset, "2", "1"}
+		};
+
+		for (String[] key : someUnusedKeys2) {
+			final String shard = kva.compose(writer.getURI(), key);
+			Assert.assertFalse("Shard at" + Arrays.toString(key) + " exists but should not.", kva.exists(shard));
 		}
 
 		final long[][] oldBlockIndices = new long[][]{{0, 1}, {1, 0}, {4, 0}, {5, 0}, {11, 11}};
@@ -276,6 +295,78 @@ public class ShardTest {
 			final DataBlock<?> blockFromReadBlocks = readBlocks.get(i);
 			Assert.assertArrayEquals("Read from shard doesn't match", data2, (byte[])blockFromReadBlocks.getData());
 		}
+	}
+	
+	@Test
+	public void writeShardDataSizeTest() {
+
+		// note: this test depends on the use of raw compression
+		final N5Writer writer = tempN5Factory.createTempN5Writer();
+
+		int numBlocksPerShard = 16;
+		final int n5HeaderSizeBytes = 12; // 2 + 2 + 4*2
+		final DatasetAttributes datasetAttributes = getTestAttributes(
+				new long[]{24, 24},
+				new int[]{8, 8},
+				new int[]{2, 2}
+		);
+
+		final String dataset = "writeBlocksShardSize";
+		writer.remove(dataset);
+		writer.createDataset(dataset, datasetAttributes);
+		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
+
+		final int[] blockSize = datasetAttributes.getBlockSize();
+		final int numElements = blockSize[0] * blockSize[1];
+
+		final byte[] data = new byte[numElements];
+		for (int i = 0; i < data.length; i++) {
+			data[i] = (byte)((100) + (10) + i);
+		}
+
+		writer.writeBlocks(
+				dataset,
+				datasetAttributes,
+				/* shard (0, 0) */
+				new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{0, 1}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{1, 0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{1, 1}, data),
+
+				/* shard (1, 0) */
+				new ByteArrayDataBlock(blockSize, new long[]{4, 0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{5, 0}, data),
+
+				/* shard (2, 2) */
+				new ByteArrayDataBlock(blockSize, new long[]{11, 11}, data)
+		);
+
+		final int indexSizeBytes = numBlocksPerShard * 16; // 8 bytes per long *
+		final int blockDataSizeBytes = numElements + n5HeaderSizeBytes;
+
+		// shard 0,0 has 4 blocks so should be this size:
+		long shard00SizeBytes = indexSizeBytes + 4 * blockDataSizeBytes;
+		long shard10SizeBytes = indexSizeBytes + 2 * blockDataSizeBytes;
+		long shard22SizeBytes = indexSizeBytes + 1 * blockDataSizeBytes;
+
+		final String[][] keys = new String[][]{
+				{dataset, "0", "0"},
+				{dataset, "1", "0"},
+				{dataset, "2", "2"}
+		};
+
+		long[] shardSizes = new long[]{
+				shard00SizeBytes,
+				shard10SizeBytes,
+				shard22SizeBytes
+		};
+
+		int i = 0;
+		for (String[] key : keys) {
+			final String shardPath = kva.compose(writer.getURI(), key);
+			Assert.assertEquals("shard at " + shardPath + " was the wrong size", shardSizes[i++], kva.size(shardPath));
+		}
+
 	}
 
 	@Test
@@ -377,7 +468,7 @@ public class ShardTest {
 //			Assert.assertArrayEquals("Read prior write from shard no loner matches", otherData, (byte[])otherBlock.getData());
 //		}
 //	}
-//
+
 //	@SuppressWarnings("unchecked")
 //	@Test
 //	public <T> void testShardDelete() {
