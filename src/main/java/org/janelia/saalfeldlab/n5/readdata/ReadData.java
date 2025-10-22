@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.codec.DataCodec;
 
 /**
  * An abstraction over {@code byte[]} data.
@@ -46,10 +47,12 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
  * <p>
  * {@code ReadData} may be lazy-loaded. For example, for {@code InputStream} and
  * {@code KeyValueAccess} sources, loading is deferred until the data is
- * accessed (e.g., {@link #allBytes()}, {@link #writeTo(OutputStream)}).
+ * accessed (e.g., {@link #allBytes()}, {@link #writeTo(OutputStream)}), or
+ * explicitly {@link #materialize() materialized}.
  * <p>
- * {@code ReadData} can be {@code encoded} and {@code decoded} with a {@code
- * Codec}, which will also be lazy if possible.
+ * {@code ReadData} can be {@link DataCodec#encode encoded} and {@link
+ * DataCodec#decode decoded} by a {@link DataCodec}, which will also be lazy if
+ * possible.
  */
 public interface ReadData {
 
@@ -58,13 +61,23 @@ public interface ReadData {
 	 * {@code -1}.
 	 *
 	 * @return number of bytes, if known, or -1
+	 */
+	default long length() {
+		return -1;
+	}
+
+	/**
+	 * Returns number of bytes in this {@link ReadData}. If the length is not
+	 * currently know, this method may retrieve the length using I/O operations,
+	 * {@link #materialize} this {@code ReadData}, or perform any other steps
+	 * necessary to obtain the length.
+	 *
+	 * @return number of bytes
 	 *
 	 * @throws N5IOException
 	 * 		if an I/O error occurs while trying to get the length
 	 */
-	default long length() throws N5IOException {
-		return -1;
-	}
+	long requireLength() throws N5IOException;
 
 	/**
 	 * Returns a {@link ReadData} whose length is limited to the given value.
@@ -83,8 +96,8 @@ public interface ReadData {
 	 * Returns a new {@link ReadData} representing a slice, or subset
 	 * of this ReadData.
 	 *
-	 * @param offset the offset relative to this
-	 * @param length of the returned ReadData
+	 * @param offset the offset relative to this ReadData
+	 * @param length length of the returned ReadData
 	 * @return a slice
 	 * @throws N5IOException an exception
 	 */
@@ -158,6 +171,11 @@ public interface ReadData {
 	 * <p>
 	 * The returned {@code ReadData} has a known {@link #length} and multiple
 	 * {@link #inputStream InputStreams} can be opened on it.
+	 * <p>
+	 * <em>Implementation note: This should be preferably implemented to return
+	 * {@code this}. For example, materialize into a new {@code byte[]}, {@code
+	 * ReadData}, or similar and then delegate to this materialized version
+	 * internally.</em>
 	 *
 	 * @return
 	 * 		a materialized ReadData.
@@ -196,11 +214,11 @@ public interface ReadData {
 	//
 
 	/**
-	 * Returns a new ReadData that uses the given {@code OutputStreamEncoder} to
+	 * Returns a new ReadData that uses the given {@code OutputStreamOperator} to
 	 * encode this ReadData.
 	 *
 	 * @param encoder
-	 * 		OutputStreamEncoder to use for encoding
+	 * 		OutputStreamOperator to use for encoding
 	 *
 	 * @return encoded ReadData
 	 */
@@ -209,7 +227,12 @@ public interface ReadData {
 	}
 
 	/**
-	 * Like {@code UnaryOperator<OutputStream>}, but {@code apply} throws {@code IOException}.
+	 * {@code OutputStreamOperator} is {@link #apply applied} to an {@code
+	 * OutputStream} to transform it into another(e.g., compressed) {@code
+	 * OutputStream}.
+	 * <p>
+	 * This is basically {@code UnaryOperator<OutputStream>}, but {@link #apply}
+	 * throws {@code IOException}.
 	 */
 	@FunctionalInterface
 	interface OutputStreamOperator {
@@ -319,7 +342,7 @@ public interface ReadData {
 	 *
 	 * @return an empty ReadData
 	 */
-	public static ReadData empty() {
+	static ReadData empty() {
 		return ByteArrayReadData.EMPTY;
 	}
 
