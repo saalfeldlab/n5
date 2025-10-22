@@ -4,7 +4,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @NameConfig.Name(IdentityCodec.TYPE)
-public class IdentityCodec implements DataCodec, DataCodecInfo {
+public class IdentityCodec implements DeterministicSizeDataCodec, DataCodecInfo {
 
 	private static final long serialVersionUID = 8354269325800855621L;
 
@@ -31,5 +31,11 @@ public class IdentityCodec implements DataCodec, DataCodecInfo {
 	@Override public DataCodec create() {
 
 		return this;
+	}
+
+	@Override
+	public long encodedSize(long size) {
+
+		return size;
 	}
 }
