@@ -7,6 +7,10 @@ import java.util.Comparator;
  */
 public interface Range {
 
+	/**
+	 * Order {@code Range}s by {@link #offset}.
+	 * Ranges with the same offset are ordered by {@link #length}.
+	 */
 	Comparator<Range> COMPARATOR = Comparator
 			.comparingLong(Range::offset)
 			.thenComparingLong(Range::length);
@@ -26,6 +30,16 @@ public interface Range {
 	 */
 	default long end() {
 		return offset() + length();
+	}
+
+	static boolean equals(final Range r0, final Range r1) {
+		if (r0 == null && r1==null) {
+			return true;
+		} else if (r0 == null || r1 == null) {
+			return false;
+		} else {
+			return r0.offset() == r1.offset() && r0.length() == r1.length();
+		}
 	}
 
 	static Range at(final long offset, final long length) {

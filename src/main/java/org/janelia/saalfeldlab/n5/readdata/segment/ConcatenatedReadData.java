@@ -12,7 +12,21 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
-class Concatenate implements SegmentedReadData {
+/**
+ * Implementation of a {@link SegmentedReadData} representing the concatenation
+ * of several {@code SegmentedReadData}s.
+ * <p>
+ * {@code ConcatenatedReadData} contains the segments of all concatenated {@code
+ * SegmentedReadData}s with appropriately offset locations.
+ * <p>
+ * In particular, it is also possible to concatenate {@code SegmentedReadData}s
+ * with (yet) unknown length. (This is useful for postponing compression of
+ * DataBlocks until they are actually written.) In that case, segment locations
+ * are only available, after all lengths become known. This happens when this
+ * {@code ConcatenatedReadData} (or all its constituents) is
+ * {@link #materialize() materialized} or {@link #writeTo(OutputStream) written}.
+ */
+class ConcatenatedReadData implements SegmentedReadData {
 
 	private final List<SegmentedReadData> content;
 	private final ReadData delegate;
@@ -22,7 +36,7 @@ class Concatenate implements SegmentedReadData {
 	private boolean locationsBuilt;
 	private long length;
 
-	Concatenate(final List<SegmentedReadData> content) {
+	ConcatenatedReadData(final List<SegmentedReadData> content) {
 		this.content = content;
 		delegate = ReadData.from(os -> content.forEach(d -> d.writeTo(os)));
 		segments = new ArrayList<>();
@@ -33,7 +47,7 @@ class Concatenate implements SegmentedReadData {
 	}
 
 	// constructor for slices
-	private Concatenate(final ReadData delegate, final List<Segment> segments,
+	private ConcatenatedReadData(final ReadData delegate, final List<Segment> segments,
 			final List<Range> locations) {
 		content = null;
 		this.delegate = delegate;
@@ -155,7 +169,7 @@ class Concatenate implements SegmentedReadData {
 			}
 		}
 
-		return new Concatenate(delegateSlice, containedSegments, containedSegmentLocations);
+		return new ConcatenatedReadData(delegateSlice, containedSegments, containedSegmentLocations);
 	}
 
 	@Override

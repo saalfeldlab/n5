@@ -11,6 +11,15 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
+/**
+ * Implementation of a {@link SegmentedReadData} wrapper around an existing {@code ReadData} delegate.
+ * <p>
+ * It is used for
+ * <ul>
+ * <li>adding segment information to vanilla ReadData (see {@link SegmentedReadData#wrap(ReadData, Range...)}),</li>
+ * <li>representing slices into other {@code DefaultSegmentedReadData}.</li>
+ * </ul
+ */
 class DefaultSegmentedReadData implements SegmentedReadData {
 
 	/**
@@ -96,6 +105,12 @@ class DefaultSegmentedReadData implements SegmentedReadData {
 		this.segments = segments;
 	}
 
+	/**
+	 * Wrap {@code readData} and create segments at the given locations. The
+	 * order of segments in the returned {@link SegmentsAndData#segments()} list
+	 * matches the order of the given {@code locations} (while the {@link
+	 * #segments} in the {@link SegmentsAndData#data()} are ordered by offset).
+	 */
 	static SegmentsAndData wrap(final ReadData readData, final List<Range> locations) {
 		final List<SegmentImpl> sortedSegments = new ArrayList<>(locations.size());
 		final DefaultSegmentedReadData data = new DefaultSegmentedReadData(readData, sortedSegments);
@@ -119,15 +134,14 @@ class DefaultSegmentedReadData implements SegmentedReadData {
 		};
 	}
 
-	private DefaultSegmentedReadData(final ReadData delegate) {
+	/**
+	 * Wrap the given {@code delegate} with a single segment fully containing it.
+	 */
+	DefaultSegmentedReadData(final ReadData delegate) {
 		this.delegate = delegate;
 		this.segmentSource = this;
 		this.offset = 0;
 		this.segments = Collections.singletonList(new EnclosingSegmentImpl(this));
-	}
-
-	static SegmentedReadData wrap(final ReadData readData) {
-		return new DefaultSegmentedReadData(readData);
 	}
 
 	@Override
