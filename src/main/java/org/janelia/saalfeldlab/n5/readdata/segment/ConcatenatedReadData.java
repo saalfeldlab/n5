@@ -12,7 +12,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
-class Concatenate implements SegmentedReadData {
+class ConcatenatedReadData implements SegmentedReadData {
 
 	private final List<SegmentedReadData> content;
 	private final ReadData delegate;
@@ -22,7 +22,7 @@ class Concatenate implements SegmentedReadData {
 	private boolean locationsBuilt;
 	private long length;
 
-	Concatenate(final List<SegmentedReadData> content) {
+	ConcatenatedReadData(final List<SegmentedReadData> content) {
 		this.content = content;
 		delegate = ReadData.from(os -> content.forEach(d -> d.writeTo(os)));
 		segments = new ArrayList<>();
@@ -33,7 +33,7 @@ class Concatenate implements SegmentedReadData {
 	}
 
 	// constructor for slices
-	private Concatenate(final ReadData delegate, final List<Segment> segments,
+	private ConcatenatedReadData(final ReadData delegate, final List<Segment> segments,
 			final List<Range> locations) {
 		content = null;
 		this.delegate = delegate;
@@ -155,7 +155,7 @@ class Concatenate implements SegmentedReadData {
 			}
 		}
 
-		return new Concatenate(delegateSlice, containedSegments, containedSegmentLocations);
+		return new ConcatenatedReadData(delegateSlice, containedSegments, containedSegmentLocations);
 	}
 
 	@Override

@@ -11,7 +11,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class ConcatenateTest {
+public class ConcatenatedReadDataTest {
 
 	private ReadData readData;
 

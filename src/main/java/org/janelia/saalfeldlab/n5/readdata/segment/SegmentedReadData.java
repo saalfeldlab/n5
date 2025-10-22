@@ -52,7 +52,7 @@ public interface SegmentedReadData extends ReadData {
 	}
 
 	static SegmentedReadData concatenate(List<SegmentedReadData> readDatas) {
-		return new Concatenate(readDatas);
+		return new ConcatenatedReadData(readDatas);
 	}
 
 
