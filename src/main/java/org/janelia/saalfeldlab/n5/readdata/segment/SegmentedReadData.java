@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5.readdata.segment;
 
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 import org.janelia.saalfeldlab.n5.N5Exception;
@@ -28,7 +29,7 @@ public interface SegmentedReadData extends ReadData {
 	 * of {@link SegmentedReadData#segments()}.
 	 */
 	static SegmentedReadData wrap(ReadData readData) {
-		return DefaultSegmentedReadData.wrap(SliceTrackingReadData.wrap(readData));
+		return new DefaultSegmentedReadData(SliceTrackingReadData.wrap(readData));
 	}
 
 	/**
@@ -51,6 +52,18 @@ public interface SegmentedReadData extends ReadData {
 		return DefaultSegmentedReadData.wrap(SliceTrackingReadData.wrap(readData), locations);
 	}
 
+	/**
+	 * Return a {@link SegmentedReadData} representing the concatenation of the
+	 * given {@code readDatas}. The concatenation contains the segments of all
+	 * concatenated {@code readData}s with appropriately offset locations.
+	 * <p>
+	 * In particular, it is also possible to concatenate {@code SegmentedReadData}s
+	 * with (yet) unknown length. (This is useful for postponing compression of
+	 * DataBlocks until they are actually written.) In that case, segment locations
+	 * are only available after all lengths become known. This happens when
+	 * concatenation (or all its constituents) is {@link #materialize()
+	 * materialized} or {@link #writeTo(OutputStream) written}.
+	 */
 	static SegmentedReadData concatenate(List<SegmentedReadData> readDatas) {
 		return new ConcatenatedReadData(readDatas);
 	}

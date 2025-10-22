@@ -12,6 +12,20 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
+/**
+ * Implementation of a {@link SegmentedReadData} representing the concatenation
+ * of several {@code SegmentedReadData}s.
+ * <p>
+ * {@code ConcatenatedReadData} contains the segments of all concatenated {@code
+ * SegmentedReadData}s with appropriately offset locations.
+ * <p>
+ * In particular, it is also possible to concatenate {@code SegmentedReadData}s
+ * with (yet) unknown length. (This is useful for postponing compression of
+ * DataBlocks until they are actually written.) In that case, segment locations
+ * are only available, after all lengths become known. This happens when this
+ * {@code ConcatenatedReadData} (or all its constituents) is
+ * {@link #materialize() materialized} or {@link #writeTo(OutputStream) written}.
+ */
 class ConcatenatedReadData implements SegmentedReadData {
 
 	private final List<SegmentedReadData> content;
