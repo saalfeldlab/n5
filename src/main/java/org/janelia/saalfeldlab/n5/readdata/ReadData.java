@@ -79,7 +79,6 @@ public interface ReadData {
 	 * 		if an I/O error occurs while trying to get the length
 	 */
 	long requireLength() throws N5IOException;
-	// TODO: default: {materialize(); return length();}
 
 	/**
 	 * Returns a {@link ReadData} whose length is limited to the given value.
