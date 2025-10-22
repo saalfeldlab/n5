@@ -49,7 +49,7 @@ import org.janelia.saalfeldlab.n5.codec.DataCodec;
  * {@code ReadData} may be lazy-loaded. For example, for {@code InputStream} and
  * {@code KeyValueAccess} sources, loading is deferred until the data is
  * accessed (e.g., {@link #allBytes()}, {@link #writeTo(OutputStream)}), or
- * explicitly {@link #materialize() meterialized}.
+ * explicitly {@link #materialize() materialized}.
  * <p>
  * {@code ReadData} can be {@link DataCodec#encode encoded} and {@link
  * DataCodec#decode decoded} by a {@link DataCodec}, which will also be lazy if
@@ -79,7 +79,6 @@ public interface ReadData {
 	 * 		if an I/O error occurs while trying to get the length
 	 */
 	long requireLength() throws N5IOException;
-	// TODO: default: {materialize(); return length();}
 
 	/**
 	 * Returns a {@link ReadData} whose length is limited to the given value.
