@@ -139,11 +139,19 @@ public class ShardTest {
 
 	private DatasetAttributes getTestAttributes(long[] dimensions, int[] shardSize, int[] blockSize) {
 
+		DefaultShardCodecInfo blockCodec = new DefaultShardCodecInfo(
+				blockSize,
+				new N5BlockCodecInfo(),
+				new DataCodecInfo[]{new RawCompression()},
+				new RawBlockCodecInfo(),
+				new DataCodecInfo[]{new RawCompression()},
+				IndexLocation.END);
+
 		return new DatasetAttributes(
 				dimensions,
 				shardSize,
-				blockSize,
-				DataType.UINT8);
+				DataType.UINT8,
+				blockCodec);
 	}
 
 	private DatasetAttributes getTestAttributes() {
@@ -610,7 +618,6 @@ public class ShardTest {
 			gsonBuilder.registerTypeHierarchyAdapter(CodecInfo.class, NameConfigAdapter.getJsonAdapter(CodecInfo.class));
 //			gsonBuilder.registerTypeHierarchyAdapter(DatasetAttributes.class, new TestDatasetAttributesAdapter());
 			gsonBuilder.registerTypeHierarchyAdapter(ByteOrder.class, RawBlockCodecInfo.byteOrderAdapter);
-			gsonBuilder.registerTypeHierarchyAdapter(DefaultShardCodecInfo.class, DefaultShardCodecInfo.adapter);
 			gsonBuilder.disableHtmlEscaping();
 			gson = gsonBuilder.create();
 		}
