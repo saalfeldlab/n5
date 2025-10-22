@@ -221,42 +221,16 @@ public interface N5Writer extends N5Reader {
 	 * @param blockSize the block size
 	 * @param dataType the data type
 	 * @param blockCodecInfo the block codec
-	 * @param dataCodecs data codecs
+	 * @param compression the compression
 	 */
 	default void createDataset(
 			final String datasetPath,
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
-			final DataCodecInfo... dataCodecInfos) throws N5Exception {
+			final Compression compression) throws N5Exception {
 
-		// TODO default block codec?
-		// TODO better doc
-		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, dataCodecInfos));
-	}
-
-	/**
-	 * Creates a dataset. This does not create any data but the path and
-	 * mandatory attributes only.
-	 *
-	 * @param datasetPath dataset path
-	 * @param dimensions the dataset dimensions
-	 * @param blockSize the block size
-	 * @param dataType the data type
-	 * @param blockCodecInfo the block codec
-	 * @param dataCodecs data codecs
-	 */
-	default void createDataset(
-			final String datasetPath,
-			final long[] dimensions,
-			final int[] blockSize,
-			final DataType dataType,
-			final BlockCodecInfo blockCodecInfo,
-			final DataCodecInfo[] dataCodecInfos) throws N5Exception {
-
-		// TODO default block codec?
-		// TODO better doc
-		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, blockCodecInfo, dataCodecInfos));
+		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, compression));
 	}
 
 	/**

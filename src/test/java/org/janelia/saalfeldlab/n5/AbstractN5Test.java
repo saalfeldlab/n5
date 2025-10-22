@@ -235,7 +235,7 @@ public abstract class AbstractN5Test {
 
 			final DatasetAttributes info;
 			try (N5Writer writer = createTempN5Writer()) {
-				writer.createDataset(datasetName, dimensions, blockSize, DataType.UINT64);
+				writer.createDataset(datasetName, dimensions, blockSize, DataType.UINT64, new RawCompression());
 
 				assertTrue("Dataset does not exist", writer.exists(datasetName));
 

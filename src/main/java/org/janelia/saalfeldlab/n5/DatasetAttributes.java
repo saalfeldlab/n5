@@ -40,13 +40,10 @@ import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.shard.DatasetAccess;
 import org.janelia.saalfeldlab.n5.shard.DefaultDatasetAccess;
-import org.janelia.saalfeldlab.n5.shard.DefaultShardCodecInfo;
 import org.janelia.saalfeldlab.n5.shard.ShardCodecInfo;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
-import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
@@ -160,25 +157,7 @@ public class DatasetAttributes implements Serializable {
 		this(dimensions, blockSize, dataType, new DataCodecInfo[0]);
 	}
 
-	/**
-	 * Constructs a DatasetAttributes instance with specified dimensions, block size, data type, and default codecs
-	 *
-	 * @param dimensions the dimensions of the dataset
-	 * @param blockSize  the size of the blocks in the dataset
-	 * @param dataType   the data type of the dataset
-	 */
-	public DatasetAttributes(
-			final long[] dimensions,
-			final int[] shardSize,
-			final int[] blockSize,
-			final DataType dataType) {
-
-		// TODO add compression arg
-		this(dimensions, shardSize, dataType,
-				defaultShardCodecInfo(blockSize));
-	}
-
-	private DatasetAccess<?> createDatasetAccess() {
+	protected DatasetAccess<?> createDatasetAccess() {
 
 		final int m = nestingDepth(blockCodecInfo);
 
@@ -223,16 +202,6 @@ public class DatasetAttributes implements Serializable {
 		}
 	}
 
-	protected static BlockCodecInfo defaultShardCodecInfo(int[] innerBlockSize) {
-
-		return new DefaultShardCodecInfo(
-				innerBlockSize,
-				new N5BlockCodecInfo(), // TODO call default method
-				new DataCodecInfo[]{new RawCompression()},
-				new RawBlockCodecInfo(),
-				new DataCodecInfo[]{new RawCompression()},
-				IndexLocation.END);
-	}
 
 	protected BlockCodecInfo defaultBlockCodecInfo() {
 

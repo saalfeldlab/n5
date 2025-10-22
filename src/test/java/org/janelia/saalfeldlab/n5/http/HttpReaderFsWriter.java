@@ -302,10 +302,4 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
 		writer.writeBlocks(datasetPath, datasetAttributes, dataBlocks);
 	}
-
-	@Override public void createDataset(String datasetPath, long[] dimensions, int[] blockSize, DataType dataType, 
-			BlockCodecInfo blockCodecInfo, DataCodecInfo[] dataCodecInfos) throws N5Exception {
-
-		writer.createDataset(datasetPath, dimensions, blockSize, dataType, blockCodecInfo, dataCodecInfos);
-	}
 }
