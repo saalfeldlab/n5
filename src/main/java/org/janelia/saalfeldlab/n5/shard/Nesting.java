@@ -141,29 +141,26 @@ public class Nesting {
 		// TODO: should we have prefix()? suffix()? head()? tail()?
 	}
 
-
 	/**
-	 * TODO better property names
+	 * A nested grid of blocks used to coordinate the relationships of shards and the blocks / chunks they contain.
 	 */
 	public static class NestedGrid {
 
-		// num levels
-		private final int m;
+		private final int numLevels;
 
-		// num dimensions
-		private final int n;
+		private final int numDimensions;
 
-		// s[i][d] is block size at level i relative to level 0
-		private final int[][] s;
+		// relativeToBase[i][d] is block size at level i relative to level 0
+		private final int[][] relativeToBase;
 
-		// r[i][d] is block size at level i relative to level i-1
-		private final int[][] r;
+		// relativeToAdjacent[i][d] is block size at level i relative to level i-1
+		private final int[][] relativeToAdjacent;
 
 		private final int[][] blockSizes;
 
 		/**
 		 * {@code blockSizes[l][d]} is the block size at level {@code l} in dimension {@code d}.
-		 * Level 0 is the highest resolution (smallest block sizes).
+		 * Level 0 contains the smallest blocks. blockSizes[l+1][d] must be a multiple of blockSizes[l][d].
 		 *
 		 * @param blockSizes
 		 * 		block sizes for all levels and dimensions.
@@ -178,21 +175,21 @@ public class Nesting {
 
 			this.blockSizes = blockSizes;
 
-			m = blockSizes.length;
-			n = blockSizes[0].length;
-			s = new int[m][n];
-			r = new int[m][n];
-			for (int l = 0; l < m; ++l) {
+			numLevels = blockSizes.length;
+			numDimensions = blockSizes[0].length;
+			relativeToBase = new int[numLevels][numDimensions];
+			relativeToAdjacent = new int[numLevels][numDimensions];
+			for (int l = 0; l < numLevels; ++l) {
 				final int k = Math.max(0, l - 1);
 
 				if (blockSizes[l] == null)
 					throw new IllegalArgumentException("blockSizes[" + l + "] null");
 
-				if (blockSizes[l].length != n)
+				if (blockSizes[l].length != numDimensions)
 					throw new IllegalArgumentException(
-							String.format("Block size at level %d has a different length (%d vs %d)", l, n, blockSizes[l].length));
+							String.format("Block size at level %d has a different length (%d vs %d)", l, numDimensions, blockSizes[l].length));
 
-				for (int d = 0; d < n; ++d) {
+				for (int d = 0; d < numDimensions; ++d) {
 
 					if (blockSizes[l][d] <= 0 ) {
 						throw new IllegalArgumentException(
@@ -214,18 +211,18 @@ public class Nesting {
 										l, blockSizes[l][d], blockSizes[k][d], d));
 					}
 
-					s[l][d] = blockSizes[l][d] / blockSizes[0][d];
-					r[l][d] = blockSizes[l][d] / blockSizes[k][d];
+					relativeToBase[l][d] = blockSizes[l][d] / blockSizes[0][d];
+					relativeToAdjacent[l][d] = blockSizes[l][d] / blockSizes[k][d];
 				}
 			}
 		}
 
 		public int numLevels() {
-			return m;
+			return numLevels;
 		}
 
 		public int numDimensions() {
-			return n;
+			return numDimensions;
 		}
 
 		public int[] getBlockSize(int level) {
@@ -237,9 +234,9 @@ public class Nesting {
 				final int sourceLevel,
 				final long[] targetPos,
 				final int targetLevel) {
-			final int[] sk = s[sourceLevel];
-			final int[] si = s[targetLevel];
-			for (int d = 0; d < n; ++d) {
+			final int[] sk = relativeToBase[sourceLevel];
+			final int[] si = relativeToBase[targetLevel];
+			for (int d = 0; d < numDimensions; ++d) {
 				targetPos[d] = sourcePos[d] * sk[d] / si[d];
 			}
 		}
@@ -250,23 +247,39 @@ public class Nesting {
 				final long[] targetPos,
 				final int targetLevel) {
 			absolutePosition(sourcePos, sourceLevel, targetPos, targetLevel);
-			if (targetLevel < m - 1) {
-				final int[] rj = r[targetLevel + 1];
-				for (int d = 0; d < n; ++d) {
+			if (targetLevel < numLevels - 1) {
+				final int[] rj = relativeToAdjacent[targetLevel + 1];
+				for (int d = 0; d < numDimensions; ++d) {
 					targetPos[d] %= rj[d];
 				}
 			}
 		}
 
+		/**
+		 * The absolute position of * source position for the given source level at the target level.
+		 * 
+		 * @param sourcePos the source position j
+		 * @param sourceLevel the source level
+		 * @param targetLevel the target level
+		 * @return absolute position at the target level
+		 */
 		public long[] absolutePosition(
 				final long[] sourcePos,
 				final int sourceLevel,
 				final int targetLevel) {
-			final long[] targetPos = new long[n];
+			final long[] targetPos = new long[numDimensions];
 			absolutePosition(sourcePos, sourceLevel, targetPos, targetLevel);
 			return targetPos;
 		}
 
+		/**
+		 * The absolute position of the level 0 source position at
+		 * the target level.
+		 * 
+		 * @param sourcePos the source position j
+		 * @param targetLevel the target level
+		 * @return absolute position at the target level
+		 */
 		public long[] absolutePosition(
 				final long[] sourcePos,
 				final int targetLevel) {
@@ -277,7 +290,7 @@ public class Nesting {
 				final long[] sourcePos,
 				final int sourceLevel,
 				final int targetLevel) {
-			final long[] targetPos = new long[n];
+			final long[] targetPos = new long[numDimensions];
 			relativePosition(sourcePos, sourceLevel, targetPos, targetLevel);
 			return targetPos;
 		}
@@ -289,7 +302,7 @@ public class Nesting {
 		}
 
 		public int[] relativeBlockSize(final int level) {
-			return r[level];
+			return relativeToAdjacent[level];
 		}
 	}
 
