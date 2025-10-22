@@ -1,40 +1,46 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import java.lang.reflect.Type;
 import java.util.Arrays;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.serialization.N5Annotations;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
-
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 
 /**
  * Default (and probably only) implementation of {@link ShardCodecInfo}.
  */
-// TODO rename?
-@NameConfig.Name(value = "ShardingCodec")
+@NameConfig.Name(value = "sharding_indexed")
 public class DefaultShardCodecInfo implements ShardCodecInfo {
 
 	@Override
 	public String getType() {
-		return "ShardingCodec";
+		return "sharding_indexed";
 	}
 
+	@N5Annotations.ReverseArray
+	@NameConfig.Parameter(value = "chunk_shape")
 	private final int[] innerBlockSize;
-	private final BlockCodecInfo innerBlockCodecInfo;
-	private final DataCodecInfo[] innerDataCodecInfos;
-	private final BlockCodecInfo indexBlockCodecInfo;
-	private final DataCodecInfo[] indexDataCodecInfos;
+
+	@NameConfig.Parameter(value = "index_location")
 	private final IndexLocation indexLocation;
+
+	@NameConfig.Parameter
+	private CodecInfo[] codecs;
+
+	@NameConfig.Parameter(value = "index_codecs")
+	private CodecInfo[] indexCodecs;
+
+	private transient final BlockCodecInfo innerBlockCodecInfo;
+
+	private transient final DataCodecInfo[] innerDataCodecInfos;
+
+	private transient final BlockCodecInfo indexBlockCodecInfo;
+
+	private transient final DataCodecInfo[] indexDataCodecInfos;
 
 	DefaultShardCodecInfo() {
 		// for serialization
@@ -48,12 +54,16 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 			final BlockCodecInfo indexBlockCodecInfo,
 			final DataCodecInfo[] indexDataCodecInfos,
 			final IndexLocation indexLocation) {
+
 		this.innerBlockSize = innerBlockSize;
 		this.innerBlockCodecInfo = innerBlockCodecInfo;
 		this.innerDataCodecInfos = innerDataCodecInfos;
 		this.indexBlockCodecInfo = indexBlockCodecInfo;
 		this.indexDataCodecInfos = indexDataCodecInfos;
 		this.indexLocation = indexLocation;
+
+		codecs = concatenateCodecs(innerBlockCodecInfo, innerDataCodecInfos);
+		indexCodecs = concatenateCodecs(indexBlockCodecInfo, indexDataCodecInfos);
 	}
 
 	@Override
@@ -86,6 +96,14 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 		return indexLocation;
 	}
 
+	public CodecInfo[] getCodecs() {
+		return codecs;
+	}
+
+	public CodecInfo[] getIndexCodecs() {
+		return indexCodecs;
+	}
+
 	@Override
 	public RawShardCodec create(final int[] blockSize, final DataCodecInfo... codecs) {
 
@@ -103,40 +121,16 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 		return new RawShardCodec(size, indexLocation, indexCodec);
 	}
 
-	public static DefaultShardCodecInfoAdapter adapter = new DefaultShardCodecInfoAdapter();
+	private static CodecInfo[] concatenateCodecs(BlockCodecInfo blkInfo, DataCodecInfo[] dataInfos) {
 
-	public static class DefaultShardCodecInfoAdapter implements JsonDeserializer<DefaultShardCodecInfo>, JsonSerializer<DefaultShardCodecInfo> {
-
-		@Override
-		public DefaultShardCodecInfo deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-
-			if (!json.isJsonObject())
-				return null;
-
-			JsonObject obj = json.getAsJsonObject();
-
-			int[] innerBlockSize = context.deserialize(obj.get("innerBlockSize"), int[].class);
-			BlockCodecInfo innerBlockCodecInfo = context.deserialize(obj.get("innerBlockCodecInfo"), BlockCodecInfo[].class);
-			DataCodecInfo[] innerDataCodecInfos = context.deserialize(obj.get("innerDataCodecInfos"), DataCodecInfo[].class);
-			BlockCodecInfo indexBlockCodecInfo = context.deserialize(obj.get("indexBlockCodecInfo"), BlockCodecInfo[].class);
-			DataCodecInfo[] indexDataCodecInfos = context.deserialize(obj.get("indexDataCodecInfos"), DataCodecInfo[].class);
-			IndexLocation indexLocation = IndexLocation.valueOf(obj.get("indexLocation").getAsString());
-
-			return new DefaultShardCodecInfo(innerBlockSize, innerBlockCodecInfo, innerDataCodecInfos, indexBlockCodecInfo, indexDataCodecInfos, indexLocation);
+		if (dataInfos == null) {
+			return new CodecInfo[]{blkInfo};
 		}
 
-		@Override
-		public JsonElement serialize(DefaultShardCodecInfo src, Type typeOfSrc, JsonSerializationContext context) {
+		final CodecInfo[] allCodecs = new CodecInfo[dataInfos.length + 1];
+		allCodecs[0] = blkInfo;
+		System.arraycopy(dataInfos, 0, allCodecs, 1, dataInfos.length);
 
-			final JsonObject obj = new JsonObject();
-			obj.add("innerBlockSize", context.serialize(src.innerBlockSize));
-			obj.add("innerBlockCodecInfo", context.serialize(src.innerBlockCodecInfo));
-			obj.add("innerDataCodecInfos", context.serialize(src.innerDataCodecInfos));
-			obj.add("indexBlockCodecInfo", context.serialize(src.indexBlockCodecInfo));
-			obj.add("indexDataCodecInfos", context.serialize(src.indexDataCodecInfos));
-			obj.add("indexLocation", context.serialize(src.indexLocation));
-			return obj;
-		}
+		return allCodecs;
 	}
-
 }

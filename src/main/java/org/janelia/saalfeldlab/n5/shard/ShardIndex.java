@@ -13,6 +13,8 @@ import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentedReadData;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentedReadData.SegmentsAndData;
 
+import com.google.gson.annotations.SerializedName;
+
 public class ShardIndex {
 
 	private ShardIndex() {
@@ -20,7 +22,8 @@ public class ShardIndex {
 	}
 
 	public enum IndexLocation {
-		START, END
+		@SerializedName("start") START,
+		@SerializedName("end") END
 	}
 
 	/**
