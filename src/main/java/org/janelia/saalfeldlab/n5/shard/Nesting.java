@@ -1,6 +1,8 @@
 package org.janelia.saalfeldlab.n5.shard;
 
 
+import java.util.ArrayList;
+
 // TODO ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 // [ ] NestedGrid
@@ -25,6 +27,9 @@ package org.janelia.saalfeldlab.n5.shard;
 // TODO ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 import java.util.Arrays;
+import java.util.List;
+
+import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 public class Nesting {
 
@@ -35,9 +40,6 @@ public class Nesting {
 		System.out.println("pos = " + pos);
 		System.out.println("key = " + Arrays.toString(pos.key()));
 	}
-
-
-
 
 	public static class NestedPosition implements Comparable<NestedPosition> {
 
@@ -304,7 +306,42 @@ public class Nesting {
 		public int[] relativeBlockSize(final int level) {
 			return relativeToAdjacent[level];
 		}
-	}
 
+		public int[] absoluteBlockSize(final int level) {
+			return relativeToBase[level];
+		}
+
+		/**
+		 * Given a block position at a particular level, returns a list of
+		 * positions of all sub-blocks at a particular subLevel.
+		 * <p>
+		 * Can be used to get a list of chunk positions for a shard with a
+		 * particular position.
+		 *
+		 * @param position
+		 *            a block position
+		 * @param level
+		 *            the blocks level
+		 * @param subLevel
+		 *            the sub-level of positions to return
+		 * @return the sub-block positions
+		 */
+		public List<long[]> positionInSubGrid(long[] position, int level, int subLevel) {
+
+			final long[] subPosition = new long[numDimensions()];
+			absolutePosition(position, level, subPosition, subLevel);
+
+			final int[] numElementsInSubGrid = absoluteBlockSize(numLevels() - 1);
+			final GridIterator git = new GridIterator(GridIterator.int2long(numElementsInSubGrid), subPosition);
+
+			// TODO return NestedPositions instead?
+			final ArrayList<long[]> positions = new ArrayList<>();
+			while (git.hasNext())
+				positions.add(git.next().clone());
+
+			return positions;
+		}
+
+	}
 
 }
