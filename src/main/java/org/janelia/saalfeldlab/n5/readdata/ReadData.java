@@ -106,6 +106,18 @@ public interface ReadData {
 	}
 
 	/**
+	 * Returns a new {@link ReadData} representing a slice, or subset
+	 * of this ReadData.
+	 *
+	 * @param range a range in this ReadData
+	 * @return a slice
+	 * @throws N5IOException an exception
+	 */
+	default ReadData slice(final Range range) throws N5IOException {
+		return slice(range.offset(), range.length());
+	}
+
+	/**
 	 * Open a {@code InputStream} on this data.
 	 * <p>
 	 * Repeatedly calling this method may or may not work, depending on how
