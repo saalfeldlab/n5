@@ -46,6 +46,12 @@ public interface GsonN5Reader extends N5Reader {
 
 	Gson getGson();
 
+	/**
+	 * Get the key for the {@link KeyValueAccess}, that is used for storing attributes.
+	 * The N5 format uses "attributes.json".
+	 *
+	 * @return the attributes key
+	 */
 	String getAttributesKey();
 
 	@Override

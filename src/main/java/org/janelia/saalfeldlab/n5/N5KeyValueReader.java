@@ -127,7 +127,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			throws N5Exception {
 
 		this.keyValueAccess = keyValueAccess;
-		this.gson = GsonUtils.registerGson(gsonBuilder);
+		this.gson = registerGson(gsonBuilder).create();
 		this.cacheMeta = cacheMeta;
 
 		if (this.cacheMeta)
@@ -161,6 +161,15 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 		final JsonElement attributes = getAttributes(path);
 		return attributes != null || exists(path);
+	}
+
+	protected GsonBuilder registerGson(final GsonBuilder gsonBuilder) {
+
+		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
+		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
+		gsonBuilder.registerTypeHierarchyAdapter(DatasetAttributes.class, DatasetAttributes.getJsonAdapter());
+		gsonBuilder.disableHtmlEscaping();
+		return gsonBuilder;
 	}
 
 	@Override

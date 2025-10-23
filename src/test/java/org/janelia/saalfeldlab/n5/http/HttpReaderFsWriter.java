@@ -87,7 +87,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
 	@Override public String getAttributesKey() {
 
-		return ATTRIBUTES_JSON;
+		return writer.getAttributesKey();
 	}
 
 	@Override public Version getVersion() throws N5Exception {
