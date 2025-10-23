@@ -11,7 +11,7 @@ public class RawBlockCodecInfo implements BlockCodecInfo {
 
 	private static final long serialVersionUID = 3282569607795127005L;
 
-	public static final String TYPE = "rawbytes";
+	public static final String TYPE = "bytes";
 
 	@NameConfig.Parameter(value = "endian", optional = true)
 	private final ByteOrder byteOrder;

@@ -140,6 +140,11 @@ public class DatasetAttributes implements Serializable {
 		return blockCodecInfo;
 	}
 
+	public DataCodecInfo[] getDataCodecInfos() {
+
+		return dataCodecInfos;
+	}
+
 	@SuppressWarnings("unchecked")
 	<T> BlockCodec<T> getBlockCodec() {
 

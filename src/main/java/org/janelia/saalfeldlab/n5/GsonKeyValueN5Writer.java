@@ -218,7 +218,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			throw new N5Exception.N5ClassCastException(e);
 		}
 		if (obj != null) {
-			writeAttributes(normalPath, attributes);
+			setAttributes(normalPath, attributes);
 		}
 		return obj;
 	}

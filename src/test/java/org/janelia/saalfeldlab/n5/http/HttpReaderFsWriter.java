@@ -273,4 +273,9 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
 		writer.writeSerializedBlock(object, datasetPath, datasetAttributes, gridPosition);
 	}
+
+	@Override
+	public String getAttributesKey() {
+		return writer.getAttributesKey();
+	}
 }
