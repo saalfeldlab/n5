@@ -116,6 +116,25 @@ public class SegmentTest {
 	}
 
 	@Test
+	public void testPartialSliceSegment() {
+
+		final Range[] locations = {
+				Range.at(0, 10),
+				Range.at(10, 10),
+				Range.at(40, 20)};
+		final SegmentedReadData r = SegmentedReadData.wrap(readData, locations).data();
+		// slice covers all of second segment, part of first and third
+		final SegmentedReadData s = r.slice(9, 15);
+		assertEquals(15, s.length());
+
+		assertEquals(1, s.segments().size());
+
+		final Range l0 = s.location(s.segments().get(0));
+		assertEquals(1, l0.offset());
+		assertEquals(10, l0.length());
+	}
+
+	@Test
 	public void testWrapFully() {
 		final SegmentedReadData r = SegmentedReadData.wrap(readDataUnknownLength);
 		assertEquals(1, r.segments().size());

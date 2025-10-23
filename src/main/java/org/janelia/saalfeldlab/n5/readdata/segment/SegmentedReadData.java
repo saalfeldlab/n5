@@ -29,7 +29,7 @@ public interface SegmentedReadData extends ReadData {
 	 * of {@link SegmentedReadData#segments()}.
 	 */
 	static SegmentedReadData wrap(ReadData readData) {
-		return new DefaultSegmentedReadData(SliceTrackingReadData.wrap(readData));
+		return new DefaultSegmentedReadData(readData);
 	}
 
 	/**
@@ -49,7 +49,7 @@ public interface SegmentedReadData extends ReadData {
 	 * #segments} in the {@link SegmentsAndData#data()} are ordered by offset).
 	 */
 	static SegmentsAndData wrap(ReadData readData, List<Range> locations) {
-		return DefaultSegmentedReadData.wrap(SliceTrackingReadData.wrap(readData), locations);
+		return DefaultSegmentedReadData.wrap(readData, locations);
 	}
 
 	/**

@@ -17,7 +17,7 @@ public class KeyValueAccessReadData implements ReadData {
     private final long offset;
     private long length;
 
-    KeyValueAccessReadData(final LazyRead lazyRead) {
+	public KeyValueAccessReadData(final LazyRead lazyRead) {
         this(lazyRead, 0, -1);
     }
 
