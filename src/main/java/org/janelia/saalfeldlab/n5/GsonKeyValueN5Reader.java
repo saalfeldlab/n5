@@ -32,9 +32,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.util.List;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -91,19 +92,31 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	@Override
-	default DataBlock<?> readBlock(
+	default <T> DataBlock<T> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), gridPosition);
-
 		try {
-			final ReadData blockData = getKeyValueAccess().createReadData(path);
-			return datasetAttributes.getDataBlockSerializer().decode(blockData, gridPosition);
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(
+					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName),
+					p -> datasetAttributes.relativeBlockPath(p));
+			return datasetAttributes.<T>getDatasetAccess().readBlock(posKva, gridPosition);
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
 		}
+	}
+
+	@Override
+	default <T> List<DataBlock<T>> readBlocks(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final List<long[]> blockPositions) throws N5Exception {
+
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(
+					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName),
+					p -> datasetAttributes.relativeBlockPath(p));
+			return datasetAttributes.<T>getDatasetAccess().readBlocks(posKva, blockPositions);
 	}
 
 	@Override
@@ -113,8 +126,11 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	/**
-	 * Constructs the path for a data block in a dataset at a given grid
-	 * position.
+	 * Constructs the path for a shard or data block in a dataset at a given
+	 * grid position.
+	 * <br>
+	 * If the gridPosition passed in refers to shard position in a sharded
+	 * dataset, this will return the path to the shard key.
 	 * <p>
 	 * The returned path is
 	 *
@@ -126,20 +142,18 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 *
 	 * @param normalPath
 	 *            normalized dataset path
-	 * @param gridPosition to the target data block
+	 * @param gridPosition
+	 *            to the target data block
 	 * @return the absolute path to the data block ad gridPosition
 	 */
+	// TODO: revise javadoc -> see development branch
+	// TODO: rename to reflect that it may also refer to Shards
 	default String absoluteDataBlockPath(
 			final String normalPath,
 			final long... gridPosition) {
 
-		final String[] components = new String[gridPosition.length + 1];
-		components[0] = normalPath;
-		int i = 0;
-		for (final long p : gridPosition)
-			components[++i] = Long.toString(p);
-
-		return getKeyValueAccess().compose(getURI(), components);
+		final String relativeBlockPath = getDatasetAttributes(normalPath).relativeBlockPath(gridPosition);
+		return getKeyValueAccess().compose(getURI(), normalPath, relativeBlockPath);
 	}
 
 	/**
@@ -165,6 +179,6 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 */
 	default String absoluteAttributesPath(final String normalPath) {
 
-		return getKeyValueAccess().compose(getURI(), normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
+		return getKeyValueAccess().compose(getURI(), normalPath, getAttributesKey());
 	}
 }

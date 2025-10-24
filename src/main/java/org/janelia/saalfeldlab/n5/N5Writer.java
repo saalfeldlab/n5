@@ -26,32 +26,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * #L%
  */
-/**
- * Copyright (c) 2017, Stephan Saalfeld
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
 package org.janelia.saalfeldlab.n5;
+
+import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -163,7 +141,7 @@ public interface N5Writer extends N5Reader {
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes) throws N5Exception {
 
-		setAttributes(datasetPath, datasetAttributes.asMap());
+		setAttribute(datasetPath, "/", datasetAttributes);
 	}
 
 	/**
@@ -236,15 +214,14 @@ public interface N5Writer extends N5Reader {
 
 	/**
 	 * Creates a dataset. This does not create any data but the path and
-	 * mandatory
-	 * attributes only.
+	 * mandatory attributes only.
 	 *
 	 * @param datasetPath dataset path
 	 * @param dimensions the dataset dimensions
 	 * @param blockSize the block size
 	 * @param dataType the data type
+	 * @param blockCodecInfo the block codec
 	 * @param compression the compression
-	 * @throws N5Exception the exception
 	 */
 	default void createDataset(
 			final String datasetPath,
@@ -271,19 +248,32 @@ public interface N5Writer extends N5Reader {
 			final DataBlock<T> dataBlock) throws N5Exception;
 
 	/**
-	 * Deletes the block at {@code gridPosition}
+	 * Write multiple data blocks, useful for request aggregation.
+	 *
+	 * @param datasetPath dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param dataBlocks the data block
+	 * @param <T> the data block data type
+	 * @throws N5Exception the exception
+	 */
+	default <T> void writeBlocks(
+			final String datasetPath,
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T>... dataBlocks) throws N5Exception {
+
+		// default method is naive
+		for (DataBlock<T> block : dataBlocks)
+			writeBlock(datasetPath, datasetAttributes, block);
+	}
+
+	/**
+	 * Deletes the block at {@code gridPosition}.
 	 *
 	 * @param datasetPath dataset path
 	 * @param gridPosition position of block to be deleted
-	 * @throws N5Exception the exception
+	 * @throws N5Exception if the block exists but could not be deleted
 	 *
-	 * @return {@code true} if the block at {@code gridPosition} is "empty"
-	 *         after
-	 *         deletion. The meaning of "empty" is implementation dependent. For
-	 *         example "empty" means that no file exists on the file system for
-	 *         the
-	 *         deleted block in case of the file system implementation.
-	 *
+	 * @return {@code true} if the block at {@code gridPosition} existed and was deleted.
 	 */
 	boolean deleteBlock(
 			final String datasetPath,

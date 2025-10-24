@@ -31,14 +31,11 @@ package org.janelia.saalfeldlab.n5;
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
 import org.janelia.saalfeldlab.n5.Compression.CompressionType;
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
-import java.io.IOException;
-
 @CompressionType("lz4")
-@NameConfig.Name("lz4")
+@NameConfig.Name("lz4-compression")
 public class Lz4Compression implements Compression {
 
 	private static final long serialVersionUID = -9071316415067427256L;
@@ -67,7 +64,7 @@ public class Lz4Compression implements Compression {
 	}
 
 	@Override
-	public ReadData decode(final ReadData readData) throws N5IOException {
+	public ReadData decode(final ReadData readData) {
 
 		return ReadData.from(new LZ4BlockInputStream(readData.inputStream()));
 	}

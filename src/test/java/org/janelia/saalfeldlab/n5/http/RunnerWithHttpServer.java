@@ -133,7 +133,9 @@ public class RunnerWithHttpServer extends BlockJUnit4ClassRunner {
 	public void startHttpServer() throws Exception {
 
 		httpServerDirectory = createTmpServerDirectory();
-		ProcessBuilder processBuilder = new ProcessBuilder("python", "-m", "http.server");
+		final String osName = System.getProperty("os.name");
+		final String pythonBinary = "Mac OS X".equals(osName) ? "python3" : "python";
+		ProcessBuilder processBuilder = new ProcessBuilder(pythonBinary, "-m", "http.server");
 		processBuilder.directory(httpServerDirectory.toFile());
 		processBuilder.redirectErrorStream(true);
 		process = processBuilder.start();
