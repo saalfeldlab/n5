@@ -85,8 +85,8 @@ public abstract class AbstractN5Test {
 	static protected final String groupName = "/test/group";
 	static protected final String[] subGroupNames = new String[]{"a", "b", "c"};
 	static protected final String datasetName = "/test/group/dataset";
-	static protected final long[] dimensions = new long[]{10, 20, 30};
-	static protected final int[] blockSize = new int[]{33, 22, 11};
+	static protected final long[] dimensions = new long[]{6, 15, 35};
+	static protected final int[] blockSize = new int[]{3, 5, 7};
 	static protected final int blockNumElements = blockSize[0] * blockSize[1] * blockSize[2];
 
 	static protected byte[] byteBlock;
@@ -245,6 +245,92 @@ public abstract class AbstractN5Test {
 			assertArrayEquals(blockSize, info.getBlockSize());
 			assertEquals(DataType.UINT64, info.getDataType());
 	}
+
+	@Test
+	public void testBlocksLargerThanDimensions() {
+
+		// Test case where block size is larger than dataset dimensions
+		final long[] smallDimensions = new long[]{2, 3, 4};
+		final int[] largeBlockSize = new int[]{5, 7, 10};
+
+		try (final N5Writer n5 = createTempN5Writer()) {
+			n5.createDataset(datasetName, smallDimensions, largeBlockSize, DataType.UINT8, new RawCompression());
+			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+
+			// Create a block that is larger than the dataset dimensions
+			final int numElements = largeBlockSize[0] * largeBlockSize[1] * largeBlockSize[2];
+			final byte[] data = new byte[numElements];
+			for (int i = 0; i < numElements; i++) {
+				data[i] = (byte)(i % 256);
+			}
+
+			final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(largeBlockSize, new long[]{0, 0, 0}, data);
+			n5.writeBlock(datasetName, attributes, dataBlock);
+
+			// Read the block back
+			final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
+			assertNotNull("Block should be readable", loadedDataBlock);
+			assertArrayEquals("Block size should match", largeBlockSize, loadedDataBlock.getSize());
+			assertArrayEquals("Block data should match", data, (byte[])loadedDataBlock.getData());
+		}
+	}
+
+	@Test
+	public void testUnalignedBlocksTruncatedAtEnd() {
+
+		// Test case where dimensions don't evenly divide by block size
+		final long[] unalignedDimensions = new long[]{5, 14, 33};
+		final int[] testBlockSize = new int[]{3, 5, 7};
+
+		try (final N5Writer n5 = createTempN5Writer()) {
+			n5.createDataset(datasetName, unalignedDimensions, testBlockSize, DataType.INT32, new RawCompression());
+			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+
+			// Test writing to the last block in dimension 0 (should be truncated to size 2 instead of 3)
+			final int[] truncatedBlockSize0 = new int[]{2, 5, 7}; // [3-4] in dim 0
+			final int numElements0 = truncatedBlockSize0[0] * truncatedBlockSize0[1] * truncatedBlockSize0[2];
+			final int[] data0 = new int[numElements0];
+			for (int i = 0; i < numElements0; i++) {
+				data0[i] = i + 1000;
+			}
+			final IntArrayDataBlock dataBlock0 = new IntArrayDataBlock(truncatedBlockSize0, new long[]{1, 0, 0}, data0);
+			n5.writeBlock(datasetName, attributes, dataBlock0);
+
+			final DataBlock<?> loadedBlock0 = n5.readBlock(datasetName, attributes, 1, 0, 0);
+			assertNotNull("Truncated block should be readable", loadedBlock0);
+			assertArrayEquals("Truncated block data should match", data0, (int[])loadedBlock0.getData());
+
+			// Test writing to the last block in dimension 1 (should be truncated to size 4 instead of 5)
+			final int[] truncatedBlockSize1 = new int[]{3, 4, 7}; // [10-13] in dim 1
+			final int numElements1 = truncatedBlockSize1[0] * truncatedBlockSize1[1] * truncatedBlockSize1[2];
+			final int[] data1 = new int[numElements1];
+			for (int i = 0; i < numElements1; i++) {
+				data1[i] = i + 2000;
+			}
+			final IntArrayDataBlock dataBlock1 = new IntArrayDataBlock(truncatedBlockSize1, new long[]{0, 2, 0}, data1);
+			n5.writeBlock(datasetName, attributes, dataBlock1);
+
+			final DataBlock<?> loadedBlock1 = n5.readBlock(datasetName, attributes, 0, 2, 0);
+			assertNotNull("Truncated block should be readable", loadedBlock1);
+			assertArrayEquals("Truncated block data should match", data1, (int[])loadedBlock1.getData());
+
+			// Test writing to the last block in dimension 2 (should be truncated to size 5 instead of 7)
+			final int[] truncatedBlockSize2 = new int[]{3, 5, 5}; // [28-32] in dim 2
+			final int numElements2 = truncatedBlockSize2[0] * truncatedBlockSize2[1] * truncatedBlockSize2[2];
+			final int[] data2 = new int[numElements2];
+			for (int i = 0; i < numElements2; i++) {
+				data2[i] = i + 3000;
+			}
+			final IntArrayDataBlock dataBlock2 = new IntArrayDataBlock(truncatedBlockSize2, new long[]{0, 0, 4}, data2);
+			n5.writeBlock(datasetName, attributes, dataBlock2);
+
+			final DataBlock<?> loadedBlock2 = n5.readBlock(datasetName, attributes, 0, 0, 4);
+			assertNotNull("Truncated block should be readable", loadedBlock2);
+			assertArrayEquals("Truncated block data should match", data2, (int[])loadedBlock2.getData());
+		}
+	}
+
+
 
 	@Test
 	public void testWriteReadByteBlock() {
