@@ -319,11 +319,11 @@ public class Nesting {
 		 * particular position.
 		 *
 		 * @param position
-		 *            a block position
+		 *            a position
 		 * @param level
-		 *            the blocks level
+		 *            the nesting level of the given position
 		 * @param subLevel
-		 *            the sub-level of positions to return
+		 *            the nesting sub-level of positions to return
 		 * @return the sub-block positions
 		 */
 		public List<long[]> positionInSubGrid(long[] position, int level, int subLevel) {
