@@ -154,16 +154,9 @@ public class ShardTest {
 				blockCodec);
 	}
 
-	private DatasetAttributes getTestAttributes() {
+	protected DatasetAttributes getTestAttributes() {
 
 		return getTestAttributes(new long[]{8, 8}, new int[]{4, 4}, new int[]{2, 2});
-	}
-
-	private DatasetAttributes getTestAttributes3d() {
-
-		final int[] blockSize = {33, 22, 11};
-		final int[] shardSize = {blockSize[0] * 2, blockSize[1] * 2, blockSize[2] * 2};
-		return getTestAttributes(new long[]{10, 20, 30}, shardSize, blockSize);
 	}
 
 	@Test
@@ -208,28 +201,21 @@ public class ShardTest {
 
 		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
 
-		final String[][] keys = new String[][]{
-				{dataset, "0", "0"},
-				{dataset, "1", "0"},
-				{dataset, "2", "2"}
+		long[][] keys = new long[][]{
+				{0, 0},
+				{1, 0},
+				{2, 2}
 		};
 
-		for (String[] key : keys) {
-			final String shard = kva.compose(writer.getURI(), key);
-			Assert.assertTrue("Shard at" + Arrays.toString(key) + "Does not exist", kva.exists(shard));
-		}
-
-		final String[][] someUnusedKeys = new String[][]{
-			{dataset, "0", "1"},
-			{dataset, "1", "1"},
-			{dataset, "1", "2"},
-			{dataset, "2", "1"}
+		final long[][] someUnusedKeys = new long[][]{
+				{0, 1},
+				{1, 1},
+				{1, 2},
+				{2, 1}
 		};
 
-		for (String[] key : someUnusedKeys) {
-			final String shard = kva.compose(writer.getURI(), key);
-			Assert.assertFalse("Shard at" + Arrays.toString(key) + " exists but should not.", kva.exists(shard));
-		}
+		ensureKeysExist(kva, writer.getURI(), dataset, datasetAttributes, keys);
+		ensureKeysDoNotExist(kva, writer.getURI(), dataset, datasetAttributes, someUnusedKeys);
 
 		final long[][] blockIndices = new long[][]{{0, 0}, {0, 1}, {1, 0}, {1, 1}, {4, 0}, {5, 0}, {11, 11}};
 		for (long[] blockIndex : blockIndices) {
@@ -241,6 +227,7 @@ public class ShardTest {
 		for (int i = 0; i < data2.length; i++) {
 			data2[i] = (byte)(10 + i);
 		}
+
 		writer.writeBlocks(
 				dataset,
 				datasetAttributes,
@@ -253,31 +240,23 @@ public class ShardTest {
 				new ByteArrayDataBlock(blockSize, new long[]{0, 5}, data2),
 
 				/* shard (2, 2) */
-				new ByteArrayDataBlock(blockSize, new long[]{10, 10}, data2)
-		);
+				new ByteArrayDataBlock(blockSize, new long[]{10, 10}, data2));
 
-		final String[][] keys2 = new String[][]{
-				{dataset, "0", "0"},
-				{dataset, "1", "0"},
-				{dataset, "0", "1"},
-				{dataset, "2", "2"}
+		long[][] keys2 = new long[][]{
+				{0, 0},
+				{1, 0},
+				{0, 1},
+				{2, 2}
 		};
 
-		for (String[] key : keys2) {
-			final String shard = kva.compose(writer.getURI(), key);
-			Assert.assertTrue("Shard at" + Arrays.toString(key) + "Does not exist", kva.exists(shard));
-		}
-
-		final String[][] someUnusedKeys2 = new String[][]{
-			{dataset, "1", "1"},
-			{dataset, "1", "2"},
-			{dataset, "2", "1"}
+		long[][] someUnusedKeys2 = new long[][]{
+				{1, 1},
+				{1, 2},
+				{2, 1}
 		};
 
-		for (String[] key : someUnusedKeys2) {
-			final String shard = kva.compose(writer.getURI(), key);
-			Assert.assertFalse("Shard at" + Arrays.toString(key) + " exists but should not.", kva.exists(shard));
-		}
+		ensureKeysExist(kva, writer.getURI(), dataset, datasetAttributes, keys2);
+		ensureKeysDoNotExist(kva, writer.getURI(), dataset, datasetAttributes, someUnusedKeys2);
 
 		final long[][] oldBlockIndices = new long[][]{{0, 1}, {1, 0}, {4, 0}, {5, 0}, {11, 11}};
 		for (long[] blockIndex : oldBlockIndices) {
@@ -294,6 +273,24 @@ public class ShardTest {
 			Assert.assertArrayEquals("Read from shard doesn't match", data2, (byte[])block.getData());
 			final DataBlock<?> blockFromReadBlocks = readBlocks.get(i);
 			Assert.assertArrayEquals("Read from shard doesn't match", data2, (byte[])blockFromReadBlocks.getData());
+		}
+	}
+
+	private void ensureKeysExist(KeyValueAccess kva, URI uri, String dataset,
+			DatasetAttributes datasetAttributes, long[][] keys) {
+
+		for (long[] key : keys) {
+			final String shard = kva.compose(uri, dataset, datasetAttributes.relativeBlockPath(key));
+			Assert.assertTrue("Shard at" + shard + "Does not exist", kva.exists(shard));
+		}
+	}
+
+	private void ensureKeysDoNotExist(KeyValueAccess kva, URI uri, String dataset,
+			DatasetAttributes datasetAttributes, long[][] keys) {
+
+		for (long[] key : keys) {
+			final String shard = kva.compose(uri, dataset, datasetAttributes.relativeBlockPath(key));
+			Assert.assertFalse("Shard at" + shard + " exists but should not.", kva.exists(shard));
 		}
 	}
 	
@@ -382,7 +379,6 @@ public class ShardTest {
 		final String dataset = "writeReadBlocks";
 		final long[][] newBlockIndices = new long[][]{{0, 0}, {1, 1}, {0, 4}, {0, 5}, {10, 10}};
 		final List<DataBlock<Object>> readBlocks = n5.readBlocks(dataset, datasetAttributes, Arrays.asList(newBlockIndices));
-		System.out.println(readBlocks.size());
 	}
 
 	@Test
