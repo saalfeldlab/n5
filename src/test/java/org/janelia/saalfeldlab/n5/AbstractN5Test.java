@@ -1699,13 +1699,17 @@ public abstract class AbstractN5Test {
 		}
 	}
 
+	protected String[] illegalChars() {
+		return new String[]{" ", "#", "%"};
+	}
+
 	@Test
 	public void testPathsWithIllegalUriCharacters() throws IOException, URISyntaxException {
 
 		try (N5Writer writer = createTempN5Writer()) {
 			try (N5Reader reader = createN5Reader(writer.getURI().toString())) {
 
-				final String[] illegalChars = {" ", "#", "%"};
+				final String[] illegalChars = illegalChars();
 				for (final String illegalChar : illegalChars) {
 					final String groupWithIllegalChar = "test" + illegalChar + "group";
 					assertThrows("list over group should throw prior to create", N5Exception.N5IOException.class, () -> writer.list(groupWithIllegalChar));
