@@ -361,7 +361,7 @@ public abstract class AbstractN5Test {
 		final String[] stringBlock = new String[]{"", "a", "bc", "de", "fgh", ":-þ"};
 
 		for (final Compression compression : getCompressions()) {
-			try (final N5Writer n5 = createTempN5Writer("test.n5")) {
+			try (final N5Writer n5 = createTempN5Writer()) {
 				n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 				final StringDataBlock dataBlock = new StringDataBlock(blockSize, new long[]{0L, 0L, 0L}, stringBlock);
@@ -578,7 +578,7 @@ public abstract class AbstractN5Test {
 	public void testOverwriteBlock() {
 
 		final Compression compression = getCompressions()[0];
-		try (final N5Writer n5 = createTempN5Writer("test-overwrite")) {
+		try (final N5Writer n5 = createTempN5Writer()) {
 			n5.createDataset(datasetName, dimensions, blockSize, DataType.INT32, compression);
 			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 
