@@ -66,14 +66,19 @@ class ByteArrayReadData implements ReadData {
 	}
 
 	@Override
+	public long requireLength() {
+		return length;
+	}
+
+	@Override
 	public InputStream inputStream() {
+
 		return new ByteArrayInputStream(data, offset, length);
 	}
 
 	@Override
 	public byte[] allBytes() {
 
-		// alternatively, we could always return the requested length
 		if (offset == 0 && data.length == length) {
 			return data;
 		} else {

@@ -209,7 +209,7 @@ public class N5CacheTest {
 
 		// Test addChildIfPresent on cached parent without children list
 		cache.exists("parent2", null);
-		children = cache.list("parent2"); // initialize children array
+		children = cache.list("parent2"); // create children array
 		cache.addChildIfPresent("parent2", "child");
 		children = cache.list("parent2");
 		assertTrue(Arrays.asList(children).contains("child"));
