@@ -2,7 +2,6 @@ package org.janelia.saalfeldlab.n5.codec;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteOrder;
@@ -18,10 +17,12 @@ import org.janelia.saalfeldlab.n5.FloatArrayDataBlock;
 import org.janelia.saalfeldlab.n5.GzipCompression;
 import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
 import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
+import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.codec.BytesCodecTests.BitShiftBytesCodec;
 import org.janelia.saalfeldlab.n5.shard.DatasetAccess;
 import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
+import org.janelia.saalfeldlab.n5.shardstuff.RawShardTest;
 import org.janelia.saalfeldlab.n5.shardstuff.TestPositionValueAccess;
 import org.junit.Test;
 
@@ -117,14 +118,15 @@ public class BlockCodecTests {
 		final int[] blockSize = {0, 0};
 		final long[] gridPosition = {0, 0};
 		final N5BlockCodecInfo blockCodecInfo = new N5BlockCodecInfo();
-		final DatasetAttributes attributes = new DatasetAttributes(
+		final RawShardTest.TestDatasetAttributes attributes = new RawShardTest.TestDatasetAttributes(
 				new long[]{64, 64},
 				new int[]{8, 8},
 				DataType.UINT8,
-				blockCodecInfo);
+				blockCodecInfo,
+				new RawCompression());
 
 		final PositionValueAccess store = new TestPositionValueAccess();
-		DatasetAccess access = attributes.getDatasetAccess();
+		DatasetAccess access = attributes.datasetAccess();
 
 		// Test encode/decode
 		final ByteArrayDataBlock emptyBlock = new ByteArrayDataBlock(blockSize, gridPosition, new byte[0]);
@@ -284,4 +286,6 @@ public class BlockCodecTests {
 			throw new IllegalArgumentException("Unknown data type");
 		}
 	}
+
+
 }
