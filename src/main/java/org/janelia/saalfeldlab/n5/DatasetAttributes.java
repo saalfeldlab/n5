@@ -402,15 +402,15 @@ public class DatasetAttributes implements Serializable {
 	}
 
 	/**
-	 * Get the {@link BlockCodecInfo} for this dataset.
+	 * Get the {@link DatasetAccess} for this dataset.
 	 *
-	 * @return the {@code BlockCodecInfo} for this dataset
+	 * @return the {@code DatasetAccess} for this dataset
 	 */
 	<T> DatasetAccess<T> getDatasetAccess() {
 
 		return (DatasetAccess<T>)access;
 	}
-	
+
 	/**
 	 * Returns the {@code NestedGrid} for this dataset, from which block and
 	 * shard sizes are accessible.
