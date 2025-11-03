@@ -220,7 +220,6 @@ public interface N5Writer extends N5Reader {
 	 * @param dimensions the dataset dimensions
 	 * @param blockSize the block size
 	 * @param dataType the data type
-	 * @param blockCodecInfo the block codec
 	 * @param compression the compression
 	 */
 	default void createDataset(
