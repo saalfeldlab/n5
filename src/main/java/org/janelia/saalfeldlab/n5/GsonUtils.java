@@ -53,18 +53,6 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5JsonParseException;
  */
 public interface GsonUtils {
 
-//	static Gson registerGson(final GsonBuilder gsonBuilder) {
-//
-//		gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
-//		gsonBuilder.registerTypeHierarchyAdapter(DataCodecInfo.class, NameConfigAdapter.getJsonAdapter(DataCodecInfo.class));
-//		gsonBuilder.registerTypeHierarchyAdapter(CodecInfo.class, NameConfigAdapter.getJsonAdapter(CodecInfo.class));
-//		gsonBuilder.registerTypeHierarchyAdapter(DatasetAttributes.class, DatasetAttributes.getJsonAdapter());
-//		gsonBuilder.registerTypeHierarchyAdapter(ByteOrder.class, RawBlockCodecInfo.byteOrderAdapter);
-//		gsonBuilder.registerTypeHierarchyAdapter(Compression.class, CompressionAdapter.getJsonAdapter());
-//		gsonBuilder.disableHtmlEscaping();
-//		return gsonBuilder.create();
-//	}
-
 	/**
 	 * Reads the attributes json from a given {@link Reader}.
 	 *
