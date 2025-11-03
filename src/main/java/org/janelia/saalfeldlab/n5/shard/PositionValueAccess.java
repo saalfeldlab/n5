@@ -3,8 +3,8 @@ package org.janelia.saalfeldlab.n5.shard;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
-import java.util.function.Function;
 
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
@@ -29,9 +29,9 @@ public interface PositionValueAccess {
 			final KeyValueAccess kva,
 			final URI uri,
 			final String normalPath,
-			final Function<long[], String> blockPositionToPath) {
+			final DatasetAttributes attributes) {
 
-		return new KvaPositionValueAccess(kva, uri, normalPath, blockPositionToPath);
+		return new KvaPositionValueAccess(kva, uri, normalPath, attributes);
 	}
 
 	class KvaPositionValueAccess implements PositionValueAccess {
@@ -39,17 +39,17 @@ public interface PositionValueAccess {
 		private final KeyValueAccess kva;
 		private final URI uri;
 		private final String normalPath;
-		private final Function<long[],String> blockPositionToPath;
+		private final DatasetAttributes attributes;
 
 		KvaPositionValueAccess(final KeyValueAccess kva,
 				final URI uri,
 				final String normalPath,
-				final Function<long[], String> blockPositionToPath) {
+				final DatasetAttributes attributes) {
 
 			this.kva = kva;
 			this.uri = uri;
 			this.normalPath = normalPath;
-			this.blockPositionToPath = blockPositionToPath;
+			this.attributes = attributes;
 		}
 
 		/**
@@ -66,7 +66,7 @@ public interface PositionValueAccess {
 		 * @return the absolute path to the data block ad gridPosition
 		 */
 		protected String absolutePath( final long... gridPosition) {
-			return kva.compose(uri, normalPath, blockPositionToPath.apply(gridPosition));
+			return kva.compose(uri, normalPath, attributes.relativeBlockPath(gridPosition));
 		}
 
 		@Override

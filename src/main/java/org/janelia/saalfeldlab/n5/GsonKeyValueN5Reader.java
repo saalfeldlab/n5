@@ -98,15 +98,9 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final long... gridPosition) throws N5Exception {
 
 		try {
-
-			// method that creates a PositionValueAccess?
-			// that enables their re-use!
-
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(
-					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName),
-					p -> datasetAttributes.relativeBlockPath(p));
-
-			return datasetAttributes.<T>getDatasetAccess().readBlock(posKva, gridPosition);
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName),
+					datasetAttributes);
+			return datasetAttributes.<T> getDatasetAccess().readBlock(posKva, gridPosition);
 
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
@@ -119,10 +113,8 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> blockPositions) throws N5Exception {
 
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(
-					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName),
-					p -> datasetAttributes.relativeBlockPath(p));
-			return datasetAttributes.<T>getDatasetAccess().readBlocks(posKva, blockPositions);
+		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName), datasetAttributes);
+		return datasetAttributes.<T> getDatasetAccess().readBlocks(posKva, blockPositions);
 	}
 
 	@Override

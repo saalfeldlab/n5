@@ -217,9 +217,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DataBlock<T>... dataBlocks) throws N5Exception {
 
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(
-					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(datasetPath),
-					p -> datasetAttributes.relativeBlockPath(p));
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(datasetPath), datasetAttributes);
 			datasetAttributes.<T>getDatasetAccess().writeBlocks(posKva, Arrays.asList(dataBlocks));
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
@@ -234,10 +232,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DataBlock<T> dataBlock) throws N5Exception {
 
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(
-					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path),
-					p -> datasetAttributes.relativeBlockPath(p));
-			datasetAttributes.<T>getDatasetAccess().writeBlock(posKva, dataBlock);
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), datasetAttributes);
+			datasetAttributes.<T> getDatasetAccess().writeBlock(posKva, dataBlock);
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
@@ -265,11 +261,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		final String normalPath = N5URI.normalizeGroupPath(path);
 		final DatasetAttributes datasetAttributes = getDatasetAttributes(normalPath);
-		final PositionValueAccess posKva = PositionValueAccess.fromKva(
-				getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path),
-				p -> datasetAttributes.relativeBlockPath(p));
-
+		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), datasetAttributes);
 		return datasetAttributes.getDatasetAccess().deleteBlock(posKva, gridPosition);
-
 	}
 }
