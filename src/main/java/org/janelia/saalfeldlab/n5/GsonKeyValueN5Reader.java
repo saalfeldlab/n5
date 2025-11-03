@@ -98,10 +98,16 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final long... gridPosition) throws N5Exception {
 
 		try {
+
+			// method that creates a PositionValueAccess?
+			// that enables their re-use!
+
 			final PositionValueAccess posKva = PositionValueAccess.fromKva(
 					getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName),
 					p -> datasetAttributes.relativeBlockPath(p));
+
 			return datasetAttributes.<T>getDatasetAccess().readBlock(posKva, gridPosition);
+
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
 		}
@@ -123,37 +129,6 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	default String[] list(final String pathName) throws N5Exception {
 
 		return getKeyValueAccess().listDirectories(absoluteGroupPath(pathName));
-	}
-
-	/**
-	 * Constructs the path for a shard or data block in a dataset at a given
-	 * grid position.
-	 * <br>
-	 * If the gridPosition passed in refers to shard position in a sharded
-	 * dataset, this will return the path to the shard key.
-	 * <p>
-	 * The returned path is
-	 *
-	 * <pre>
-	 * $basePath/datasetPathName/$gridPosition[0]/$gridPosition[1]/.../$gridPosition[n]
-	 * </pre>
-	 * <p>
-	 * This is the file into which the data block will be stored.
-	 *
-	 * @param normalPath
-	 *            normalized dataset path
-	 * @param gridPosition
-	 *            to the target data block
-	 * @return the absolute path to the data block ad gridPosition
-	 */
-	// TODO: revise javadoc -> see development branch
-	// TODO: rename to reflect that it may also refer to Shards
-	default String absoluteDataBlockPath(
-			final String normalPath,
-			final long... gridPosition) {
-
-		final String relativeBlockPath = getDatasetAttributes(normalPath).relativeBlockPath(gridPosition);
-		return getKeyValueAccess().compose(getURI(), normalPath, relativeBlockPath);
 	}
 
 	/**
