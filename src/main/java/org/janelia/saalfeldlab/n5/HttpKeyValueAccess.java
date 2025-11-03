@@ -305,7 +305,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		if (code >= 200 && code < (allowRedirect ? 400 : 300)) return null;
 
 		final RuntimeException cause = new RuntimeException(message + "( "+ responseMsg + ")(" + code + ")");
-		if (code == 404)
+		if (code == 404 | code == 410)
 			return new N5Exception.N5NoSuchKeyException(message, cause);
 
 		return new N5Exception(message, cause);
@@ -384,6 +384,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 				}
 				return conn.getInputStream();
 			} catch (FileNotFoundException e) {
+				/*default HttpURLConnection throws FileNotFoundException on 404 or 410 */
 				throw new N5Exception.N5NoSuchKeyException("Could not open stream for " + uri, e);
 			} catch (IOException e) {
 				throw new N5IOException("Could not open stream for " + uri, e);
@@ -397,7 +398,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		public Reader newReader() throws N5IOException {
+		public Reader newReader() {
 
 			final InputStreamReader reader = new InputStreamReader(newInputStream(), StandardCharsets.UTF_8);
 			synchronized (resources) {
@@ -407,13 +408,13 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		public OutputStream newOutputStream() throws N5IOException {
+		public OutputStream newOutputStream() {
 
 			throw new NonWritableChannelException();
 		}
 
 		@Override
-		public Writer newWriter() throws N5IOException {
+		public Writer newWriter() {
 
 			throw new NonWritableChannelException();
 		}

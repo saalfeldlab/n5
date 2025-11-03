@@ -87,6 +87,11 @@ public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer
 			Class<T> clazz;
 			try {
 				clazz = (Class<T>)Class.forName(item.className());
+
+				final NameConfig.Serialize serialize = clazz.getAnnotation(NameConfig.Serialize.class);
+				if (serialize != null && !serialize.value())
+					continue;
+
 				final String name = clazz.getAnnotation(NameConfig.Name.class).value();
 				final String type = prefix + "." + name;
 

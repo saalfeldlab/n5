@@ -26,9 +26,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * #L%
  */
-/**
- *
- */
 package org.janelia.saalfeldlab.n5.kva;
 
 import static org.junit.Assert.assertArrayEquals;

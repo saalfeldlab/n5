@@ -1,6 +1,8 @@
 package org.janelia.saalfeldlab.n5.codec;
 
+import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 @NameConfig.Name(value = N5BlockCodecInfo.TYPE)
@@ -10,6 +12,25 @@ public class N5BlockCodecInfo implements BlockCodecInfo {
 
 	public static final String TYPE = "n5bytes";
 
+	private transient DatasetAttributes attributes;
+
+	@Override public long[] getKeyPositionForBlock(DatasetAttributes attributes, DataBlock<?> datablock) {
+
+		return datablock.getGridPosition();
+	}
+
+	@Override public long[] getKeyPositionForBlock(DatasetAttributes attributes, long... blockPosition) {
+
+		return blockPosition;
+	}
+
+	@Override public long encodedSize(long size) {
+
+		final int[] blockSize = attributes.getBlockSize();
+		int headerSize = new N5BlockCodecs.BlockHeader(blockSize, DataBlock.getNumElements(blockSize)).getSize();
+		return headerSize + size;
+	}
+
 	@Override
 	public String getType() {
 
@@ -17,8 +38,7 @@ public class N5BlockCodecInfo implements BlockCodecInfo {
 	}
 
 	@Override
-	public <T> BlockCodec<T> create(final DatasetAttributes attributes, final DataCodec... dataCodecs) {
-		return N5BlockCodecs.create(attributes.getDataType(), DataCodec.concatenate(dataCodecs));
+	public <T> BlockCodec<T> create(final DataType dataType, final int[] blockSize, final DataCodecInfo... codecInfos) {
+		return N5BlockCodecs.create(dataType, DataCodec.create(codecInfos));
 	}
-
 }
