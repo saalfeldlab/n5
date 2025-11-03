@@ -1735,50 +1735,6 @@ public abstract class AbstractN5Test {
 		}
 	}
 
-	@Test
-	public <T> void testWriteReadShardOnUnshardedDataset() {
-		// TODO
-//		try (N5Writer writer = createTempN5Writer()) {
-//			final String datasetName = "testWriteShardOnUnshardedDataset";
-//			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64, new RawCompression());
-//			writer.createDataset(datasetName, datasetAttributes);
-//
-//
-//			final DataBlock<T> block0 = (DataBlock<T>) DataType.UINT64.createDataBlock(blockSize, new long[]{0,0,0});
-//			final DataBlock<T> block1 = (DataBlock<T>) DataType.UINT64.createDataBlock(blockSize, new long[]{1,0,0});
-//
-//			final InMemoryShard<T> writeShard = new InMemoryShard<>(datasetAttributes, new long[]{0, 0, 0});
-//			boolean added0 = writeShard.addBlock(block0);
-//			boolean added1 = writeShard.addBlock(block1);
-//
-//			assertTrue("Block 0 should be added to shard", added0);
-//			assertFalse("Block 1 should not be added to shard because it's in a different shard position", added1);
-//
-//			final List<DataBlock<T>> writeBlocks = writeShard.getBlocks();
-//			assertEquals("block as shard should not have the second block which is outside this shard", 1, writeBlocks.size());
-//			assertEquals(block0, writeBlocks.get(0));
-//
-//			writer.writeShard(datasetName, datasetAttributes, writeShard);
-//			final DataBlock<T> readAsBlock0 = writer.readBlock(datasetName, datasetAttributes, block0.getGridPosition());
-//			assertBlockEquals(block0, readAsBlock0);
-//
-//			assertFalse("Block 1 should not exist because it's not contained in the written shard", writer.blockExists(datasetName, datasetAttributes, block1.getGridPosition()));
-//
-//			final Shard<T> readShard = writer.readShard(datasetName, datasetAttributes, writeShard.getGridPosition());
-//			Assert.assertArrayEquals("shard read position should be same as write position", writeShard.getGridPosition(), readShard.getGridPosition());
-//			Assert.assertArrayEquals("shard position should be the same as block position when unsharded", block0.getGridPosition(), readShard.getGridPosition());
-//			Assert.assertArrayEquals("shard size should equal block size when unsharded", readShard.getBlockSize(), readShard.getSize());
-//
-//
-//			final List<? extends DataBlock<T>> readBlocks = readShard.getBlocks();
-//			assertEquals("read shard should contain one block", 1, readBlocks.size());
-//			final DataBlock<T> readAsShardBlock0 = readBlocks.get(0);
-//
-//			assertBlockEquals(block0, readAsShardBlock0);
-//
-//		}
-	}
-
 	public static void assertBlockEquals(final DataBlock<?> expected, final DataBlock<?> actual) {
 		assertEquals("Datablocks are different type",  expected.getClass(), actual.getClass());
 
