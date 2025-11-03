@@ -26,15 +26,20 @@ public class RawShard {
 	}
 
 	/**
-	 * The ReadData from which the shard was constructed, or {@code null}
-	 * for a new empty shard.
+	 * The ReadData from which the shard was constructed, or {@code null} for a
+	 * new empty shard.
+	 * 
+	 * @return this shard's source ReadData, or null.
 	 */
 	public SegmentedReadData sourceData() {
 		return sourceData;
 	}
 
 	/**
-	 * Maps grid position of shard elements to {@link Segment}s.
+	 * Maps grid position of shard elements to {@link Segment}s that give the
+	 * byte range for the blocks in this shard.
+	 * 
+	 * @return an NDArray of segments
 	 */
 	public NDArray<Segment> index() {
 		return index;

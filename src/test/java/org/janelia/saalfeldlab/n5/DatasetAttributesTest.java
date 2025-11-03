@@ -28,29 +28,16 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.shard.DefaultShardCodecInfo;
+import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
-import org.janelia.saalfeldlab.n5.util.GridIterator;
-import org.janelia.saalfeldlab.n5.util.Position;
 import org.junit.Test;
 
 /**
@@ -72,33 +59,37 @@ public class DatasetAttributesTest {
 
 		// This should not throw any exception
 		DatasetAttributes attrs = shardDatasetAttributes(dimensions, shardSize, blockSize, dataType);
-//		assertEquals(shardSize, attrs.getShardSize());
 		assertEquals(blockSize, attrs.getBlockSize());
-//		assertArrayEquals(new int[]{1, 1, 1}, attrs.getBlocksPerShard());
+		NestedGrid grid = attrs.getNestedBlockGrid();
+		assertEquals(blockSize, grid.getBlockSize(0));
+		assertEquals(shardSize, grid.getBlockSize(1));
 
 		// Test case 2: shard size is a multiple of block size
 		shardSize = new int[]{128};
 		blockSize = new int[]{64};
 		attrs = shardDatasetAttributes(new long[]{128}, shardSize, blockSize, dataType);
-//		assertEquals(shardSize, attrs.getShardSize());
 		assertEquals(blockSize, attrs.getBlockSize());
-//		assertArrayEquals(new int[]{2}, attrs.getBlocksPerShard());
+		grid = attrs.getNestedBlockGrid();
+		assertEquals(blockSize, grid.getBlockSize(0));
+		assertEquals(shardSize, grid.getBlockSize(1));
 
 		// Test case 3: different multiples per dimension
 		shardSize = new int[]{128, 256, 32, 2};
 		blockSize = new int[]{32, 64, 32, 1};
 		attrs = shardDatasetAttributes(new long[]{128, 128, 128, 128}, shardSize, blockSize, dataType );
-//		assertEquals(shardSize, attrs.getShardSize());
 		assertEquals(blockSize, attrs.getBlockSize());
-//		assertArrayEquals(new int[]{4, 4, 1, 2}, attrs.getBlocksPerShard());
+		grid = attrs.getNestedBlockGrid();
+		assertEquals(blockSize, grid.getBlockSize(0));
+		assertEquals(shardSize, grid.getBlockSize(1));
 
 		// Test case 4: large multiples
 		shardSize = new int[]{1024, 2048, 512};
 		blockSize = new int[]{32, 64, 16};
 		attrs = shardDatasetAttributes(dimensions, shardSize, blockSize, dataType);
-//		assertEquals(shardSize, attrs.getShardSize());
 		assertEquals(blockSize, attrs.getBlockSize());
-//		assertArrayEquals(new int[]{32, 32, 32}, attrs.getBlocksPerShard());
+		grid = attrs.getNestedBlockGrid();
+		assertEquals(blockSize, grid.getBlockSize(0));
+		assertEquals(shardSize, grid.getBlockSize(1));
 	}
 
 	private static DatasetAttributes shardDatasetAttributes(
@@ -158,90 +149,6 @@ public class DatasetAttributesTest {
 		assertThrows(
 				IllegalArgumentException.class,
 				() -> shardDatasetAttributes(dimensions, new int[]{0, 64, 64}, new int[]{64, 64, 64}, dataType));
-	}
-
-//	@Test
-//	public void testShardProperties() {
-//
-//		final long[] arraySize = new long[]{16, 16};
-//		final int[] shardSize = new int[]{16, 16};
-//		final long[] shardPosition = new long[]{1, 1};
-//		final int[] blkSize = new int[]{4, 4};
-//
-//		final DatasetAttributes dsetAttrs = new DatasetAttributes(
-//				arraySize,
-//				shardSize,
-//				blkSize,
-//				DataType.UINT8,
-//				new ShardingCodec(
-//						blkSize,
-//						new CodecInfo[]{new N5BlockCodecInfo()},
-//						new DeterministicSizeCodecInfo[]{new RawBlockCodecInfo()},
-//						IndexLocation.END
-//				)
-//		);
-//
-//		final InMemoryShard shard = new InMemoryShard(dsetAttrs, shardPosition, null);
-//
-//		assertArrayEquals(new int[]{4, 4}, shard.getBlockGridSize());
-//
-//		assertArrayEquals(new long[]{0, 0}, dsetAttrs.getShardPositionForBlock(0, 0));
-//		assertArrayEquals(new long[]{1, 1}, dsetAttrs.getShardPositionForBlock(5, 5));
-//		assertArrayEquals(new long[]{1, 0}, dsetAttrs.getShardPositionForBlock(5, 0));
-//		assertArrayEquals(new long[]{0, 1}, dsetAttrs.getShardPositionForBlock(0, 5));
-//
-//		assertArrayEquals(new int[]{0, 0}, shard.getRelativeBlockPosition(4, 4));
-//		assertArrayEquals(new int[]{1, 1}, shard.getRelativeBlockPosition(5, 5));
-//		assertArrayEquals(new int[]{2, 2}, shard.getRelativeBlockPosition(6, 6));
-//		assertArrayEquals(new int[]{3, 3}, shard.getRelativeBlockPosition(7, 7));
-//	}
-
-//	@Test
-//	public void testShardGrouping() {
-//
-//		final long[] arraySize = new long[]{8, 12};
-//		final int[] shardSize = new int[]{4, 6};
-//		final int[] blkSize = new int[]{2, 3};
-//
-//		final DatasetAttributes attrs = new DatasetAttributes(
-//				arraySize,
-//				shardSize,
-//				blkSize,
-//				DataType.UINT8,
-//				new ShardingCodec(
-//						blkSize,
-//						new CodecInfo[]{ new N5BlockCodecInfo() },
-//						new DeterministicSizeCodecInfo[]{new RawBlockCodecInfo()},
-//						IndexLocation.END
-//				)
-//		);
-//
-//		List<long[]> blockPositions = blockPositions(attrs).collect(Collectors.toList());
-//		final Map<Position, List<long[]>> result = attrs.groupBlockPositions(blockPositions);
-//
-//		// there are four shards in this image
-//		assertEquals(4, result.size());
-//
-//		// there are four blocks per shard in this image
-//		result.values().forEach(x -> assertEquals(4, x.size()));
-//	}
-
-//	private static Stream<long[]> blockPositions( final DatasetAttributes attrs  ) {
-//
-//		final int nd = attrs.getNumDimensions();
-//		final int[] blocksPerShard = attrs.getBlocksPerShard();
-//		return toStream( new GridIterator(attrs.shardsPerDataset()))
-//				.flatMap( shardPosition -> {
-//					final long[] min = attrs.getBlockPositionFromShardPosition(shardPosition, new int[nd]);
-//					return toStream(new GridIterator(GridIterator.int2long(blocksPerShard), min));
-//				});
-//	}
-
-	private static <T> Stream<T> toStream( final Iterator<T> it ) {
-
-		return StreamSupport.stream(
-				Spliterators.spliteratorUnknownSize(it, Spliterator.ORDERED),
-				false);
 	}
 
 }

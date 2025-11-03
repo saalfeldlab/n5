@@ -284,6 +284,8 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Reads a {@link DataBlock}.
 	 *
+	 * @param <T>
+	 *            the DataBlock data type
 	 * @param pathName
 	 *            dataset path
 	 * @param datasetAttributes
@@ -305,6 +307,8 @@ public interface N5Reader extends AutoCloseable {
 	 * Implementations may optimize / batch read operations when possible, e.g.
 	 * in the case that the datasets are sharded.
 	 *
+	 * @param <T>
+	 *            the DataBlock data type
 	 * @param pathName
 	 *            dataset path
 	 * @param datasetAttributes

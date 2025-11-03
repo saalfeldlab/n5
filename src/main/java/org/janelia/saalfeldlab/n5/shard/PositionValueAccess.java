@@ -17,7 +17,15 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 public interface PositionValueAccess {
 
 	/**
-	 * @return ReadData for the given key or {@code null} if the key doesn't exist
+	 * Gets the {@link ReadData} for the DataBlock (or shard) at the given
+	 * position in the block (or shard) grid.
+	 * 
+	 * @param key
+	 *            The position of the data block or shard
+	 * @return ReadData for the given key or {@code null} if the key doesn't
+	 *         exist
+	 * @throws N5Exception.N5IOException
+	 *             if an error occurs while reading
 	 */
 	ReadData get(long[] key) throws N5Exception.N5IOException;
 
@@ -53,14 +61,9 @@ public interface PositionValueAccess {
 		}
 
 		/**
-		 * Constructs the path for a shard or data block at a given
-		 * grid position.
-		 * <br>
-		 * If the gridPosition passed in refers to shard position in a sharded
-		 * dataset, this will return the path to the shard key.
+		 * Constructs the absolute path for a data block (or shard) at a given grid
+		 * position.
 		 *
-		 * @param normalPath
-		 *            normalized dataset path
 		 * @param gridPosition
 		 *            to the target data block
 		 * @return the absolute path to the data block ad gridPosition

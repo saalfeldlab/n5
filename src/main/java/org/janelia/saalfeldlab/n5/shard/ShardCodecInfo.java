@@ -9,26 +9,35 @@ public interface ShardCodecInfo extends BlockCodecInfo {
 
 	/**
 	 * Chunk size of each shard element (either nested shard or DataBlock)
+	 * 
+	 * @return the size of each shard element
 	 */
 	int[] getInnerBlockSize();
 
 	/**
-	 * BlockCodec for shard elements (either nested shard or DataBlock)
+	 * BlockCodecInfo for shard elements (either nested shard or DataBlock)
+	 *
+	 * @return the BlockCodecInfo for DataBlocks in this shard
 	 */
 	BlockCodecInfo getInnerBlockCodecInfo();
 
 	/**
-	 * DataCodecs for inner BlockCodec
+	 * @return the collection of DataCodecInfos applied to data blocks for this
+	 *         shard.
 	 */
 	DataCodecInfo[] getInnerDataCodecInfos();
 
 	/**
 	 * BlockCodec for shard index
+	 * 
+	 * @return the BlockCodecInfo for this shard's index
 	 */
 	BlockCodecInfo getIndexBlockCodecInfo();
 
 	/**
 	 * Deterministic-size DataCodecs for index BlockCodec
+	 * 
+	 * @return the collection of DataCodecInfos for this shard's index
 	 */
 	DataCodecInfo[] getIndexDataCodecInfos();
 
