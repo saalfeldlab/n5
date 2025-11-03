@@ -363,12 +363,6 @@ public interface N5Reader extends AutoCloseable {
 		}
 	}
 
-	default boolean blockExists(final String pathName, final DatasetAttributes attributes, final long[] blockPosition) {
-
-		// TODO implement me? or remove method?
-		return true;
-	}
-
 	/**
 	 * Test whether a group or dataset exists at a given path.
 	 *
