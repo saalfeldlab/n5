@@ -1,4 +1,4 @@
-package org.janelia.saalfeldlab.n5.shardstuff;
+package org.janelia.saalfeldlab.n5.shard;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThrows;

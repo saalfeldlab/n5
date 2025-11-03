@@ -1,4 +1,4 @@
-package org.janelia.saalfeldlab.n5.shardstuff;
+package org.janelia.saalfeldlab.n5.shard;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -25,8 +25,8 @@ public class TestPositionValueAccess implements PositionValueAccess {
 	}
 
 	@Override
-	public void remove(final long[] key) throws N5IOException {
-		map.remove(new Key(key));
+	public boolean remove(final long[] key) throws N5IOException {
+		return map.remove(new Key(key)) != null;
 	}
 
 	private static class Key {

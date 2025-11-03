@@ -19,7 +19,7 @@ public interface DatasetAccess<T> {
 
 	void writeBlock(PositionValueAccess kva, DataBlock<T> dataBlock) throws N5IOException;
 
-	void deleteBlock(PositionValueAccess kva, long[] gridPosition) throws N5IOException;
+	boolean deleteBlock(PositionValueAccess kva, long[] gridPosition) throws N5IOException;
 
 	List<DataBlock<T>> readBlocks(PositionValueAccess kva, List<long[]> positions);
 

@@ -1,4 +1,4 @@
-package org.janelia.saalfeldlab.n5.shardstuff;
+package org.janelia.saalfeldlab.n5.shard;
 
 import java.util.Arrays;
 import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
@@ -10,10 +10,6 @@ import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
-import org.janelia.saalfeldlab.n5.shard.DatasetAccess;
-import org.janelia.saalfeldlab.n5.shard.DefaultShardCodecInfo;
-import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
-import org.janelia.saalfeldlab.n5.shard.ShardCodecInfo;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 
 public class RawShardTest {

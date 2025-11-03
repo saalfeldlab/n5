@@ -23,7 +23,7 @@ public interface PositionValueAccess {
 
 	void put(long[] key, ReadData data) throws N5Exception.N5IOException;
 
-	void remove(long[] key) throws N5Exception.N5IOException;
+	boolean remove(long[] key) throws N5Exception.N5IOException;
 
 	public static PositionValueAccess fromKva(
 			final KeyValueAccess kva,
@@ -52,9 +52,20 @@ public interface PositionValueAccess {
 			this.blockPositionToPath = blockPositionToPath;
 		}
 
-		// TODO this duplicates GsonKeyValueReader.absoluteDataBlockPath
-		// is this where we want the logic?
-		private String absolutePath( final long... gridPosition) {
+		/**
+		 * Constructs the path for a shard or data block at a given
+		 * grid position.
+		 * <br>
+		 * If the gridPosition passed in refers to shard position in a sharded
+		 * dataset, this will return the path to the shard key.
+		 *
+		 * @param normalPath
+		 *            normalized dataset path
+		 * @param gridPosition
+		 *            to the target data block
+		 * @return the absolute path to the data block ad gridPosition
+		 */
+		protected String absolutePath( final long... gridPosition) {
 			return kva.compose(uri, normalPath, blockPositionToPath.apply(gridPosition));
 		}
 
@@ -75,8 +86,14 @@ public interface PositionValueAccess {
 		}
 
 		@Override
-		public void remove(long[] key) throws N5IOException {
-			kva.delete( absolutePath(key));
+		public boolean remove(long[] gridPosition) throws N5IOException {
+
+			final String key = absolutePath(gridPosition);
+			if (!kva.isFile(key))
+				return false;
+
+			kva.delete(key);
+			return true;
 		}
 
 	}

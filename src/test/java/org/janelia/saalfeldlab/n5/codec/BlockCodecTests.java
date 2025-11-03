@@ -22,8 +22,8 @@ import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.codec.BytesCodecTests.BitShiftBytesCodec;
 import org.janelia.saalfeldlab.n5.shard.DatasetAccess;
 import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
-import org.janelia.saalfeldlab.n5.shardstuff.RawShardTest;
-import org.janelia.saalfeldlab.n5.shardstuff.TestPositionValueAccess;
+import org.janelia.saalfeldlab.n5.shard.RawShardTest;
+import org.janelia.saalfeldlab.n5.shard.TestPositionValueAccess;
 import org.junit.Test;
 
 public class BlockCodecTests {

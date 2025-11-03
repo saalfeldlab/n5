@@ -1,12 +1,14 @@
 package org.janelia.saalfeldlab.n5.shard;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
@@ -250,19 +252,26 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	}
 
 	@Override
-	public void deleteBlock(final PositionValueAccess kva, final long[] gridPosition) throws N5IOException {
+	public boolean deleteBlock(final PositionValueAccess kva, final long[] gridPosition) throws N5IOException {
 		final NestedPosition position = new NestedPosition(grid, gridPosition);
 		final long[] key = position.key();
 		if (grid.numLevels() == 1) {
 			// for non-sharded dataset, don't bother getting the value, just remove the key.
-			kva.remove(key);
+			try {
+				return kva.remove(key);
+			} catch (final Exception e) {
+				throw new N5Exception("The shard at " + Arrays.toString(key) + " could not be deleted.", e);
+			}
 		} else {
 			final ReadData existingData = kva.get(key);
 			final ReadData modifiedData = deleteBlockRecursive(existingData, position, grid.numLevels() - 1);
-			if (modifiedData == null) {
-				kva.remove(key);
+			if (existingData != null && modifiedData == null) {
+				return kva.remove(key);
 			} else if (modifiedData != existingData) {
 				kva.put(key, modifiedData);
+				return true;
+			} else {
+				return false;
 			}
 		}
 	}

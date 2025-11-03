@@ -258,35 +258,6 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		return true;
 	}
 
-	/**
-	 * Delete a shard at the specified position.
-	 *
-	 * @param path
-	 *            the dataset path
-	 * @param shardPosition
-	 *            the position of the shard to delete
-	 * @return true if the shard existed was successfully deleted. 
-	 * @throws N5Exception
-	 *             if an error occurs during deletion
-	 */
-	default boolean deleteShard(
-			final String path,
-			final long... shardPosition) throws N5Exception {
-
-		final String shardPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), shardPosition);
-		if (getKeyValueAccess().isFile(shardPath)) {
-			try {
-				getKeyValueAccess().delete(shardPath);
-				return true;
-			} catch (final Exception e) {
-				throw new N5Exception("The shard at " + 
-						Arrays.toString(shardPosition) + 
-						" could not be deleted.", e);
-			}
-		}
-		return false;
-	}
-
 	@Override
 	default boolean deleteBlock(
 			final String path,
@@ -294,60 +265,11 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		final String normalPath = N5URI.normalizeGroupPath(path);
 		final DatasetAttributes datasetAttributes = getDatasetAttributes(normalPath);
+		final PositionValueAccess posKva = PositionValueAccess.fromKva(
+				getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path),
+				p -> datasetAttributes.relativeBlockPath(p));
 
-		if (datasetAttributes == null) {
-			return false; // Dataset doesn't exist - return true for consistency
-		}
+		return datasetAttributes.getDatasetAccess().deleteBlock(posKva, gridPosition);
 
-		// TODO
-//		if (datasetAttributes.isSharded()) {
-//			// For sharded datasets, we need to:
-//			// 1. Find which shard contains this block
-//			// 2. Read the shard
-//			// 3. Remove the block from the shard
-//			// 4. Write the shard back (or delete if empty)
-//
-//			final long[] shardPosition = datasetAttributes.getShardPositionForBlock(gridPosition);
-//			final Shard<Object> shard = readShard(normalPath, datasetAttributes, shardPosition);
-//
-//			if (shard == null)
-//				return false; // Shard doesn't exist, so block doesn't exist -
-//								// return false for consistency
-//
-//			final int[] relativePosition = shard.getRelativeBlockPosition(gridPosition);
-//			if (!shard.blockExists(relativePosition))
-//				return false;
-//
-//			// Convert to InMemoryShard to manipulate blocks
-//			final InMemoryShard<Object> inMemoryShard = InMemoryShard.fromShard(shard);
-//
-//			// Get all blocks except the one to remove
-//			final List<DataBlock<Object>> remainingBlocks = new ArrayList<>();
-//			for (DataBlock<Object> block : inMemoryShard.getBlocks()) {
-//				if (!Arrays.equals(block.getGridPosition(), gridPosition)) {
-//					remainingBlocks.add(block);
-//				}
-//			}
-//
-//			if (remainingBlocks.isEmpty()) {
-//				// If no blocks remain, delete the entire shard
-//				return deleteShard(normalPath, shardPosition);
-//			} else {
-//				// Create new shard with remaining blocks
-//				final InMemoryShard<Object> newShard = new InMemoryShard<>(datasetAttributes, shardPosition);
-//				for (DataBlock<Object> block : remainingBlocks) {
-//					newShard.addBlock(block);
-//				}
-//
-//				// Write the updated shard
-//				writeShard(normalPath, datasetAttributes, newShard);
-//				return true;
-//			}
-//
-//		} else {
-			// For non-sharded datasets, deleting the key deletes the block
-			// and deleteShard deletes the key for gridPosition
-			return deleteShard(path, gridPosition);
-//		}
 	}
 }
