@@ -57,19 +57,11 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		// avoid hitting the backend if this path is already a group according to the cache
 		// else if exists is true (then a dataset is present) so throw an exception to avoid
 		// overwriting / invalidating existing data
-		if (cacheMeta()) {
-			if (getCache().isGroup(normalPath, getAttributesKey()))
-				return;
-			else if (getCache().exists(normalPath, getAttributesKey())) {
-				throw new N5Exception("Can't make a group on existing path.");
-			}
-		}
+		if (groupExists(normalPath))
+			return;
+		else if (datasetExists(normalPath))
+			throw new N5Exception("Can't make a group on existing dataset.");
 
-		// N5Writer.super.createGroup(path);
-		/*
-		 * the lines below duplicate the single line above but would have to call
-		 * normalizeGroupPath again the below duplicates code, but avoids extra work
-		 */
 		getKeyValueAccess().createDirectories(absoluteGroupPath(normalPath));
 
 		if (cacheMeta()) {
