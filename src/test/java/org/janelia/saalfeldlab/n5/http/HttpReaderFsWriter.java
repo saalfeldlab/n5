@@ -39,8 +39,7 @@ import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception;
-import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.N5KeyValueReader;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -70,8 +69,13 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 			if (cachedReader.cacheMeta()) {
 				/* Hack necessary to test HTTP reader caching without creating the data entirely first */
 				try {
-					// Access the private 'cache' field in the reader
-					final Field cacheField = reader.getClass().getDeclaredField("cache");
+					// Access the private 'cache' field in the reader (or the N5KeyValueReader as a fallback)
+					Field cacheField;
+					try {
+						cacheField = reader.getClass().getDeclaredField("cache");
+					} catch (NoSuchFieldException e) {
+						cacheField = N5KeyValueReader.class.getDeclaredField("cache");
+					}
 					cacheField.setAccessible(true);
 
 					// Set the value of 'cache' to the one from writer.getCache()
