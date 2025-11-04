@@ -158,7 +158,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	public boolean isDirectory(final String normalPath) {
 
 		try {
-			requireValidHttpResponse(getDirectoryPath(normalPath), HEAD, (code,  msg,http) -> {
+			requireValidHttpResponse(getDirectoryPath(normalPath), HEAD, false, (code,  msg,http) -> {
 				final N5Exception cause = validExistsResponse(code, "Error checking directory: " + normalPath, msg, true);
 				if (code >= 300 && code < 400) {
 					final String redirectLocation = http.getHeaderField("Location");
@@ -200,7 +200,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 
 		/* Files must not end in `/` And Don't accept a redirect to a location ending in `/` */
 		try {
-			requireValidHttpResponse(getFilePath(normalPath), HEAD, (code, msg, http) -> {
+			requireValidHttpResponse(getFilePath(normalPath), HEAD, false, (code, msg, http) -> {
 				final N5Exception cause = validExistsResponse(code, "Error accessing file: " + normalPath, msg, true);
 				if (code >= 300 && code < 400) {
 					final String redirectLocation = http.getHeaderField("Location");
@@ -316,12 +316,17 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	}
 
 	private HttpURLConnection requireValidHttpResponse(String uri, String method, TriFunction<Integer, String, HttpURLConnection, N5Exception> filterCode) throws N5Exception {
+		return requireValidHttpResponse(uri, method, true, filterCode);
+	}
+
+	private HttpURLConnection requireValidHttpResponse(String uri, String method, boolean followRedirects, TriFunction<Integer, String, HttpURLConnection, N5Exception> filterCode) throws N5Exception {
 
 		final int code;
 		final HttpURLConnection http;
 		final String responseMsg;
 		try {
 			http = httpRequest(uri, method);
+			http.setInstanceFollowRedirects(followRedirects);
 			code = http.getResponseCode();
 			responseMsg = http.getResponseMessage();
 		} catch (IOException e) {
