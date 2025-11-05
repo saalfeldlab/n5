@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception;
@@ -15,6 +14,8 @@ import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
+
+import static org.janelia.saalfeldlab.n5.shard.DatasetAccess.*;
 
 public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
@@ -326,39 +327,6 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		} catch (N5NoSuchKeyException e) {
 			return null;
 		}
-	}
-
-	/**
-	 * Sort a list of {@link NestedPosition}s by their parent level {@link NestedPosition}.
-	 * nestedPositions are grouped at `outerLevel`.
-	 * If {@code NestedPosition.level()} level is already equivalent to {@code NestedGrid.numLevels() - 1}, nestedPositions is returned.
-	 *
-	 * @param grid to sort the blocky by
-	 * @param nestedPositions to group per shard.
-	 * @param outerLevel of the outerLevel shard position to group by. must be in range {@code [1, NestedGrid.numLevels() - 1]}
-	 * @return map of outerLevel shard positions to inner level block positions
-	 */
-	private static <T extends NestedPosition> Collection<List<T>> groupInnerPositions(final NestedGrid grid, final List<T> nestedPositions, final int outerLevel)  {
-
-		if (outerLevel < 1 || outerLevel >= grid.numLevels())
-			throw new IllegalArgumentException("outerLevel must be in range [1, grid.numLevels() - 1]");
-
-		if (nestedPositions.isEmpty())
-			return Collections.emptyList();
-
-		final TreeMap<NestedPosition, List<T>> blocksPerShard = new TreeMap<>();
-		for (T nestedPosition : nestedPositions) {
-			final NestedPosition outerNestedPosition;
-			if (nestedPosition.level() == outerLevel)
-				outerNestedPosition = nestedPosition;
-			else
-				outerNestedPosition = new NestedPosition(grid, nestedPosition.absolute(0), outerLevel);
-
-
-			final List<T> blocks = blocksPerShard.computeIfAbsent(outerNestedPosition, it -> new ArrayList<>());
-			blocks.add(nestedPosition);
-		}
-		return blocksPerShard.values();
 	}
 
 	/**
