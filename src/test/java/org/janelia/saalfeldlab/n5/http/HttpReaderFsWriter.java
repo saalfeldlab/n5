@@ -29,9 +29,9 @@
 package org.janelia.saalfeldlab.n5.http;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Reader;
 import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Writer;
-import org.janelia.saalfeldlab.n5.Compression;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
@@ -39,6 +39,7 @@ import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5KeyValueReader;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -49,6 +50,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
+
+import static org.janelia.saalfeldlab.n5.N5KeyValueReader.ATTRIBUTES_JSON;
 
 public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
@@ -66,8 +69,13 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 			if (cachedReader.cacheMeta()) {
 				/* Hack necessary to test HTTP reader caching without creating the data entirely first */
 				try {
-					// Access the private 'cache' field in the reader
-					final Field cacheField = reader.getClass().getDeclaredField("cache");
+					// Access the private 'cache' field in the reader (or the N5KeyValueReader as a fallback)
+					Field cacheField;
+					try {
+						cacheField = reader.getClass().getDeclaredField("cache");
+					} catch (NoSuchFieldException e) {
+						cacheField = N5KeyValueReader.class.getDeclaredField("cache");
+					}
 					cacheField.setAccessible(true);
 
 					// Set the value of 'cache' to the one from writer.getCache()
@@ -79,6 +87,11 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		}
 
 
+	}
+
+	@Override public String getAttributesKey() {
+
+		return writer.getAttributesKey();
 	}
 
 	@Override public Version getVersion() throws N5Exception {
@@ -255,11 +268,6 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		writer.createDataset(datasetPath, datasetAttributes);
 	}
 
-	@Override public void createDataset(String datasetPath, long[] dimensions, int[] blockSize, DataType dataType, Compression compression) throws N5Exception {
-
-		writer.createDataset(datasetPath, dimensions, blockSize, dataType, compression);
-	}
-
 	@Override public <T> void writeBlock(String datasetPath, DatasetAttributes datasetAttributes, DataBlock<T> dataBlock) throws N5Exception {
 		writer.writeBlock(datasetPath, datasetAttributes, dataBlock);
 	}
@@ -272,5 +280,30 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	@Override public void writeSerializedBlock(Serializable object, String datasetPath, DatasetAttributes datasetAttributes, long... gridPosition) throws N5Exception {
 
 		writer.writeSerializedBlock(object, datasetPath, datasetAttributes, gridPosition);
+	}
+
+	@Override public void setVersion(String path) {
+
+		writer.setVersion(path);
+	}
+
+	@Override public void writeAttributes(String normalGroupPath, JsonElement attributes) throws N5Exception {
+
+		writer.writeAttributes(normalGroupPath, attributes);
+	}
+
+	@Override public void setAttributes(String path, JsonElement attributes) throws N5Exception {
+
+		writer.setAttributes(path, attributes);
+	}
+
+	@Override public void writeAttributes(String normalGroupPath, Map<String, ?> attributes) throws N5Exception {
+
+		writer.writeAttributes(normalGroupPath, attributes);
+	}
+
+	@Override public <T> void writeBlocks(String datasetPath, DatasetAttributes datasetAttributes, DataBlock<T>... dataBlocks) throws N5Exception {
+
+		writer.writeBlocks(datasetPath, datasetAttributes, dataBlocks);
 	}
 }

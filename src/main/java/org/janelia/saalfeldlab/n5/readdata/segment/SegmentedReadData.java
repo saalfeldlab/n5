@@ -24,9 +24,14 @@ public interface SegmentedReadData extends ReadData {
 	}
 
 	/**
-	 * Wrap {@code readData} and create one segment comprising the entire {@code
+	 * Wrap a {@link ReadData} and create one segment comprising the entire
+	 * {@code
 	 * readData}. The segment can be retrieved as the first (and only) element
 	 * of {@link SegmentedReadData#segments()}.
+	 * 
+	 * @param readData
+	 *            the ReadData to wrap
+	 * @return the SegmentedReadData
 	 */
 	static SegmentedReadData wrap(ReadData readData) {
 		return new DefaultSegmentedReadData(readData);
@@ -35,8 +40,15 @@ public interface SegmentedReadData extends ReadData {
 	/**
 	 * Wrap {@code readData} and create segments at the given locations. The
 	 * order of segments in the returned {@link SegmentsAndData#segments()} list
-	 * matches the order of the given {@code locations} (while the {@link
-	 * #segments} in the {@link SegmentsAndData#data()} are ordered by offset).
+	 * matches the order of the given {@code locations} (while the
+	 * {@link #segments} in the {@link SegmentsAndData#data()} are ordered by
+	 * offset).
+	 * 
+	 * @param readData
+	 *            the ReadData to wrap
+	 * @param locations
+	 *            the ranges for segments
+	 * @return the SegmentsAndData
 	 */
 	static SegmentsAndData wrap(ReadData readData, Range... locations) {
 		return wrap(readData, Arrays.asList(locations));
@@ -45,8 +57,15 @@ public interface SegmentedReadData extends ReadData {
 	/**
 	 * Wrap {@code readData} and create segments at the given locations. The
 	 * order of segments in the returned {@link SegmentsAndData#segments()} list
-	 * matches the order of the given {@code locations} (while the {@link
-	 * #segments} in the {@link SegmentsAndData#data()} are ordered by offset).
+	 * matches the order of the given {@code locations} (while the
+	 * {@link #segments} in the {@link SegmentsAndData#data()} are ordered by
+	 * offset).
+	 * 
+	 * @param readData
+	 *            the ReadData to wrap
+	 * @param locations
+	 *            the ranges for segments
+	 * @return the SegmentsAndData
 	 */
 	static SegmentsAndData wrap(ReadData readData, List<Range> locations) {
 		return DefaultSegmentedReadData.wrap(readData, locations);
@@ -57,41 +76,45 @@ public interface SegmentedReadData extends ReadData {
 	 * given {@code readDatas}. The concatenation contains the segments of all
 	 * concatenated {@code readData}s with appropriately offset locations.
 	 * <p>
-	 * In particular, it is also possible to concatenate {@code SegmentedReadData}s
-	 * with (yet) unknown length. (This is useful for postponing compression of
-	 * DataBlocks until they are actually written.) In that case, segment locations
-	 * are only available after all lengths become known. This happens when
-	 * concatenation (or all its constituents) is {@link #materialize()
-	 * materialized} or {@link #writeTo(OutputStream) written}.
+	 * In particular, it is also possible to concatenate
+	 * {@code SegmentedReadData}s with (yet) unknown length. (This is useful for
+	 * postponing compression of DataBlocks until they are actually written.) In
+	 * that case, segment locations are only available after all lengths become
+	 * known. This happens when concatenation (or all its constituents) is
+	 * {@link #materialize() materialized} or {@link #writeTo(OutputStream)
+	 * written}.
+	 * 
+	 * @param readDatas
+	 *            a list of ReadDatra to concatenate
+	 * @return the SegmentedReadData comprising all the input readDatas
 	 */
 	static SegmentedReadData concatenate(List<SegmentedReadData> readDatas) {
 		return new ConcatenatedReadData(readDatas);
 	}
 
-
-
 	/**
 	 * Returns the location of {@code segment} in this {@code ReadData}.
 	 * <p>
-	 * Note that this {@code ReadData} is not necessarily the source of the segment.
+	 * Note that this {@code ReadData} is not necessarily the source of the
+	 * segment.
 	 * <p>
 	 * The returned {@code Range} may be {@code {offset=0, length=-1}}, which
-	 * means that the segment comprises this whole {@code ReadData} (and the length of
-	 * this {@code ReadData} is not yet known).
+	 * means that the segment comprises this whole {@code ReadData} (and the
+	 * length of this {@code ReadData} is not yet known).
 	 *
 	 * @param segment
-	 * 		the segment id
+	 *            the segment id
 	 *
 	 * @return location of the segment, or null
 	 *
 	 * @throws IllegalArgumentException
-	 * 		if the segment is not contained in this ReadData
+	 *             if the segment is not contained in this ReadData
 	 */
 	Range location(Segment segment) throws IllegalArgumentException;
 
 	/**
-	 * Return all segments (fully) contained in this {@code ReadData}, ordered by location
-	 * (that is, sorted by {@link Range#COMPARATOR}).
+	 * Return all segments (fully) contained in this {@code ReadData}, ordered
+	 * by location (that is, sorted by {@link Range#COMPARATOR}).
 	 *
 	 * @return all segments contained in this {@code ReadData}.
 	 */

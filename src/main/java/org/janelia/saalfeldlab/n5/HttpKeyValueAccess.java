@@ -158,7 +158,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	public boolean isDirectory(final String normalPath) {
 
 		try {
-			requireValidHttpResponse(getDirectoryPath(normalPath), HEAD, (code,  msg,http) -> {
+			requireValidHttpResponse(getDirectoryPath(normalPath), HEAD, false, (code,  msg,http) -> {
 				final N5Exception cause = validExistsResponse(code, "Error checking directory: " + normalPath, msg, true);
 				if (code >= 300 && code < 400) {
 					final String redirectLocation = http.getHeaderField("Location");
@@ -200,7 +200,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 
 		/* Files must not end in `/` And Don't accept a redirect to a location ending in `/` */
 		try {
-			requireValidHttpResponse(getFilePath(normalPath), HEAD, (code, msg, http) -> {
+			requireValidHttpResponse(getFilePath(normalPath), HEAD, false, (code, msg, http) -> {
 				final N5Exception cause = validExistsResponse(code, "Error accessing file: " + normalPath, msg, true);
 				if (code >= 300 && code < 400) {
 					final String redirectLocation = http.getHeaderField("Location");
@@ -305,7 +305,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		if (code >= 200 && code < (allowRedirect ? 400 : 300)) return null;
 
 		final RuntimeException cause = new RuntimeException(message + "( "+ responseMsg + ")(" + code + ")");
-		if (code == 404)
+		if (code == 404 | code == 410)
 			return new N5Exception.N5NoSuchKeyException(message, cause);
 
 		return new N5Exception(message, cause);
@@ -316,12 +316,17 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	}
 
 	private HttpURLConnection requireValidHttpResponse(String uri, String method, TriFunction<Integer, String, HttpURLConnection, N5Exception> filterCode) throws N5Exception {
+		return requireValidHttpResponse(uri, method, true, filterCode);
+	}
+
+	private HttpURLConnection requireValidHttpResponse(String uri, String method, boolean followRedirects, TriFunction<Integer, String, HttpURLConnection, N5Exception> filterCode) throws N5Exception {
 
 		final int code;
 		final HttpURLConnection http;
 		final String responseMsg;
 		try {
 			http = httpRequest(uri, method);
+			http.setInstanceFollowRedirects(followRedirects);
 			code = http.getResponseCode();
 			responseMsg = http.getResponseMessage();
 		} catch (IOException e) {
@@ -384,6 +389,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 				}
 				return conn.getInputStream();
 			} catch (FileNotFoundException e) {
+				/*default HttpURLConnection throws FileNotFoundException on 404 or 410 */
 				throw new N5Exception.N5NoSuchKeyException("Could not open stream for " + uri, e);
 			} catch (IOException e) {
 				throw new N5IOException("Could not open stream for " + uri, e);
@@ -397,7 +403,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		public Reader newReader() throws N5IOException {
+		public Reader newReader() {
 
 			final InputStreamReader reader = new InputStreamReader(newInputStream(), StandardCharsets.UTF_8);
 			synchronized (resources) {
@@ -407,13 +413,13 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		public OutputStream newOutputStream() throws N5IOException {
+		public OutputStream newOutputStream() {
 
 			throw new NonWritableChannelException();
 		}
 
 		@Override
-		public Writer newWriter() throws N5IOException {
+		public Writer newWriter() {
 
 			throw new NonWritableChannelException();
 		}

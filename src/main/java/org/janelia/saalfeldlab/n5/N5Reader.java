@@ -26,31 +26,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * #L%
  */
-/**
- * Copyright (c) 2017, Stephan Saalfeld
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
 package org.janelia.saalfeldlab.n5;
 
 import java.io.ByteArrayInputStream;
@@ -252,8 +227,6 @@ public interface N5Reader extends AutoCloseable {
 	 *
 	 * @return the base path URI
 	 */
-	// TODO: should this throw URISyntaxException or can we assume that this is
-	// never possible if we were able to instantiate this N5Reader?
 	URI getURI();
 
 	/**
@@ -311,6 +284,8 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Reads a {@link DataBlock}.
 	 *
+	 * @param <T>
+	 *            the DataBlock data type
 	 * @param pathName
 	 *            dataset path
 	 * @param datasetAttributes
@@ -321,10 +296,40 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws N5Exception
 	 *             the exception
 	 */
-	DataBlock<?> readBlock(
+	<T> DataBlock<T> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception;
+
+	/**
+	 * Reads multiple {@link DataBlock}s.
+	 * <p>
+	 * Implementations may optimize / batch read operations when possible, e.g.
+	 * in the case that the datasets are sharded.
+	 *
+	 * @param <T>
+	 *            the DataBlock data type
+	 * @param pathName
+	 *            dataset path
+	 * @param datasetAttributes
+	 *            the dataset attributes
+	 * @param gridPositions
+	 *            a list of grid positions
+	 * @return a list of data blocks
+	 * @throws N5Exception
+	 *             the exception
+	 */
+	default <T> List<DataBlock<T>> readBlocks(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final List<long[]> gridPositions) throws N5Exception {
+
+		final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
+		for( final long[] p : gridPositions )
+			blocks.add(readBlock(pathName, datasetAttributes, p));
+
+		return blocks;
+	}
 
 	/**
 	 * Load a {@link DataBlock} as a {@link Serializable}. The offset is given
@@ -345,13 +350,12 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws ClassNotFoundException
 	 *             the class not found exception
 	 */
-	@SuppressWarnings("unchecked")
 	default <T> T readSerializedBlock(
 			final String dataset,
 			final DatasetAttributes attributes,
 			final long... gridPosition) throws N5Exception, ClassNotFoundException {
 
-		final DataBlock<byte[]> block = (DataBlock<byte[]>) readBlock(dataset, attributes, gridPosition);
+		final DataBlock<byte[]> block = readBlock(dataset, attributes, gridPosition);
 		if (block == null)
 			return null;
 

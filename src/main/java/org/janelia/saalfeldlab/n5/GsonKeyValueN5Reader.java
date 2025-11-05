@@ -32,9 +32,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.util.List;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -91,55 +92,35 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	@Override
-	default DataBlock<?> readBlock(
+	default <T> DataBlock<T> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		final String path = absoluteDataBlockPath(N5URI.normalizeGroupPath(pathName), gridPosition);
-
 		try {
-			final ReadData blockData = getKeyValueAccess().createReadData(path);
-			return datasetAttributes.getBlockCodec().decode(blockData, gridPosition);
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName),
+					datasetAttributes);
+			return datasetAttributes.<T> getDatasetAccess().readBlock(posKva, gridPosition);
+
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
 		}
 	}
 
 	@Override
+	default <T> List<DataBlock<T>> readBlocks(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final List<long[]> blockPositions) throws N5Exception {
+
+		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName), datasetAttributes);
+		return datasetAttributes.<T> getDatasetAccess().readBlocks(posKva, blockPositions);
+	}
+
+	@Override
 	default String[] list(final String pathName) throws N5Exception {
 
 		return getKeyValueAccess().listDirectories(absoluteGroupPath(pathName));
-	}
-
-	/**
-	 * Constructs the path for a data block in a dataset at a given grid
-	 * position.
-	 * <p>
-	 * The returned path is
-	 *
-	 * <pre>
-	 * $basePath/datasetPathName/$gridPosition[0]/$gridPosition[1]/.../$gridPosition[n]
-	 * </pre>
-	 * <p>
-	 * This is the file into which the data block will be stored.
-	 *
-	 * @param normalPath
-	 *            normalized dataset path
-	 * @param gridPosition to the target data block
-	 * @return the absolute path to the data block ad gridPosition
-	 */
-	default String absoluteDataBlockPath(
-			final String normalPath,
-			final long... gridPosition) {
-
-		final String[] components = new String[gridPosition.length + 1];
-		components[0] = normalPath;
-		int i = 0;
-		for (final long p : gridPosition)
-			components[++i] = Long.toString(p);
-
-		return getKeyValueAccess().compose(getURI(), components);
 	}
 
 	/**
@@ -165,6 +146,6 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 */
 	default String absoluteAttributesPath(final String normalPath) {
 
-		return getKeyValueAccess().compose(getURI(), normalPath, N5KeyValueReader.ATTRIBUTES_JSON);
+		return getKeyValueAccess().compose(getURI(), normalPath, getAttributesKey());
 	}
 }

@@ -1,7 +1,7 @@
 package org.janelia.saalfeldlab.n5.codec;
 
-import java.util.Arrays;
 import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
@@ -11,15 +11,32 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  * {@code BlockCodec}s encode {@link DataBlock}s into {@link ReadData} and
  * decode {@link ReadData} into {@link DataBlock}s.
  */
-public interface BlockCodecInfo extends CodecInfo {
+public interface BlockCodecInfo extends CodecInfo, DeterministicSizeCodecInfo {
 
-	<T> BlockCodec<T> create(final DatasetAttributes attributes, final DataCodec... codecs);
+	default long[] getKeyPositionForBlock(final DatasetAttributes attributes, final DataBlock<?> datablock) {
 
-	default <T> BlockCodec<T> create(final DatasetAttributes attributes, final DataCodecInfo... codecInfos) {
-		final DataCodec[] codecs = new DataCodec[codecInfos.length];
-		Arrays.setAll(codecs, i -> codecInfos[i].create());
-		return create(attributes, codecs);
+		return datablock.getGridPosition();
 	}
 
-	// TODO: Should we have both create() signatures?
+	default long[] getKeyPositionForBlock(final DatasetAttributes attributes, final long... blockPosition) {
+
+		return blockPosition;
+	}
+
+	@Override default long encodedSize(long size) {
+
+		return size;
+	}
+
+	@Override default long decodedSize(long size) {
+
+		return size;
+	}
+
+	<T> BlockCodec<T> create(DataType dataType, int[] blockSize, DataCodecInfo... codecs);
+
+	default <T> BlockCodec<T> create(final DatasetAttributes attributes, final DataCodecInfo... codecInfos) {
+
+		return create(attributes.getDataType(), attributes.getBlockSize(), codecInfos);
+	}
 }

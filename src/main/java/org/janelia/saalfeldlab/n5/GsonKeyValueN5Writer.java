@@ -26,35 +26,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * #L%
  */
-/**
- * Copyright (c) 2017--2021, Stephan Saalfeld
- * All rights reserved.
- * <p>
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * <p>
- * 1. Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- * <p>
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
@@ -62,6 +36,7 @@ import java.util.Map;
 
 import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -218,7 +193,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			throw new N5Exception.N5ClassCastException(e);
 		}
 		if (obj != null) {
-			writeAttributes(normalPath, attributes);
+			setAttributes(normalPath, attributes);
 		}
 		return obj;
 	}
@@ -236,22 +211,35 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	}
 
 	@Override
+	default <T> void writeBlocks(
+			final String datasetPath,
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T>... dataBlocks) throws N5Exception {
+
+		try {
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(datasetPath), datasetAttributes);
+			datasetAttributes.<T>getDatasetAccess().writeBlocks(posKva, Arrays.asList(dataBlocks));
+		} catch (final UncheckedIOException e) {
+			throw new N5IOException(
+					"Failed to write blocks into dataset " + datasetPath, e);
+		}
+	}
+
+	@Override
 	default <T> void writeBlock(
 			final String path,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception {
 
-		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), dataBlock.getGridPosition());
-		try (
-				final LockedChannel lock = getKeyValueAccess().lockForWriting(blockPath);
-				final OutputStream out = lock.newOutputStream()
-		) {
-			datasetAttributes.<T>getBlockCodec().encode(dataBlock).writeTo(out);
-		} catch (final IOException | UncheckedIOException e) {
+		try {
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), datasetAttributes);
+			datasetAttributes.<T> getDatasetAccess().writeBlock(posKva, dataBlock);
+		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
 					e);
 		}
+
 	}
 
 	@Override
@@ -271,12 +259,9 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final String path,
 			final long... gridPosition) throws N5Exception {
 
-		final String blockPath = absoluteDataBlockPath(N5URI.normalizeGroupPath(path), gridPosition);
-		if (getKeyValueAccess().isFile(blockPath))
-			getKeyValueAccess().delete(blockPath);
-
-
-		/* an IOException should have occurred if anything had failed midway */
-		return true;
+		final String normalPath = N5URI.normalizeGroupPath(path);
+		final DatasetAttributes datasetAttributes = getDatasetAttributes(normalPath);
+		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), datasetAttributes);
+		return datasetAttributes.getDatasetAccess().deleteBlock(posKva, gridPosition);
 	}
 }
