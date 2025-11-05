@@ -4,18 +4,22 @@ import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
+import org.janelia.saalfeldlab.n5.KeyValueAccessReadData;
+import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5FSTest;
-import org.janelia.saalfeldlab.n5.N5FSWriter;
 import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
 import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.NameConfigAdapter;
 import org.janelia.saalfeldlab.n5.RawCompression;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 import org.junit.After;
 import org.junit.Assert;
@@ -27,13 +31,21 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -393,22 +405,82 @@ public class ShardTest {
 	}
 
 	/**
+	 * Checks how many read calls to the backend are performed for a particular readBlocks
+	 * call. At this time (Nov 4 2025), one read for the index, and one read per block are performed.
+	 */
+	public void numReadsTest() {
+
+		final ShardedN5Writer writer = (ShardedN5Writer)tempN5Factory.createTempN5Writer();
+
+		final DatasetAttributes datasetAttributes = getTestAttributes(
+				new long[]{24, 24},
+				new int[]{8, 8},
+				new int[]{2, 2}
+		);
+
+		final String dataset = "writeReadBlocks";
+		writer.remove(dataset);
+		writer.createDataset(dataset, datasetAttributes);
+
+		final int[] blockSize = datasetAttributes.getBlockSize();
+		final int numElements = blockSize[0] * blockSize[1];
+
+		final byte[] data = new byte[numElements];
+		for (int i = 0; i < data.length; i++) {
+			data[i] = (byte)((100) + (10) + i);
+		}
+
+		writer.writeBlocks(
+				dataset,
+				datasetAttributes,
+				/* shard (0, 0) */
+				new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{0, 1}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{1, 0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{1, 1}, data),
+
+				/* shard (1, 0) */
+				new ByteArrayDataBlock(blockSize, new long[]{4, 0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{5, 0}, data),
+
+				/* shard (2, 2) */
+				new ByteArrayDataBlock(blockSize, new long[]{11, 11}, data)
+		);
+
+		writer.resetNumMaterializeCalls();
+		writer.readBlocks(dataset, datasetAttributes, Collections.singletonList(new long[] {0,0}));
+		System.out.println(writer.getNumMaterializeCalls());
+
+		ArrayList ptList = new ArrayList<>();
+		ptList.add(new long[] {0,0});
+		ptList.add(new long[] {0,1});
+		ptList.add(new long[] {1,0});
+		ptList.add(new long[] {1,1});
+
+		writer.resetNumMaterializeCalls();
+		writer.readBlocks(dataset, datasetAttributes, ptList);
+		System.out.println(writer.getNumMaterializeCalls());
+		System.out.println("");
+	}
+
+	/**
 	 * An N5Writer that serializing the sharding codecs, enabling testing of
 	 * shard functionality, despite the fact that the N5 format does not support
 	 * sharding.
 	 */
-	public static class ShardedN5Writer extends N5FSWriter {
+	public static class ShardedN5Writer extends N5KeyValueWriter {
 
 		Gson gson;
 
 		public ShardedN5Writer(String basePath) {
 
-			this(basePath, new GsonBuilder());
+			super( new TrackingFileSystemKeyValueAccess(FileSystems.getDefault()),
+					basePath, new GsonBuilder(), false);
 		}
 
 		public ShardedN5Writer(String basePath, GsonBuilder gsonBuilder) {
 
-			super(basePath);
+			this(basePath);
 			gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
 			gsonBuilder.registerTypeHierarchyAdapter(CodecInfo.class, NameConfigAdapter.getJsonAdapter(CodecInfo.class));
 			gsonBuilder.registerTypeHierarchyAdapter(ByteOrder.class, RawBlockCodecInfo.byteOrderAdapter);
@@ -416,11 +488,99 @@ public class ShardTest {
 			gson = gsonBuilder.create();
 		}
 
+		public void resetNumMaterializeCalls() {
+			((TrackingFileSystemKeyValueAccess)super.getKeyValueAccess()).numMaterializeCalls = 0;
+		}
+
+		public int getNumMaterializeCalls() {
+			return ((TrackingFileSystemKeyValueAccess)super.getKeyValueAccess()).numMaterializeCalls;
+		}
+
 		@Override
 		public Gson getGson() {
-
 			// the super constructor needs the gson instance, unfortunately
 			return gson == null ? super.gson : gson;
+		}
+	}
+
+	private static class TrackingFileSystemKeyValueAccess extends FileSystemKeyValueAccess {
+
+		private int numMaterializeCalls = 0;
+
+		protected TrackingFileSystemKeyValueAccess(FileSystem fileSystem) {
+			super(fileSystem);
+		}
+
+		@Override
+		public ReadData createReadData(final String normalPath) {
+			return new KeyValueAccessReadData(new TrackingFileLazyRead(normalPath));
+		}
+
+		private class TrackingFileLazyRead implements LazyRead {
+
+			private final String normalKey;
+
+			TrackingFileLazyRead(String normalKey) {
+				this.normalKey = normalKey;
+			}
+
+			@Override
+			public long size() {
+				return TrackingFileSystemKeyValueAccess.this.size(normalKey);
+			}
+
+		    @Override
+		    public ReadData materialize(final long offset, final long length) {
+
+				numMaterializeCalls++;
+
+				try (final TrackingLockedFileChannel lfs = new TrackingLockedFileChannel(normalKey, true);
+						final FileChannel channel = lfs.getFileChannel()) {
+
+					channel.position(offset);
+					if (length > Integer.MAX_VALUE)
+						throw new IOException("Attempt to materialize too large data");
+
+					final long channelSize = channel.size();
+					if (!validBounds(channelSize, offset, length))
+						throw new IndexOutOfBoundsException();
+
+					final int sz = (int)(length < 0 ? channelSize : length);
+					final byte[] data = new byte[sz];
+					final ByteBuffer buf = ByteBuffer.wrap(data);
+					channel.read(buf);
+					return ReadData.from(data);
+
+				} catch (final NoSuchFileException e) {
+					throw new N5NoSuchKeyException("No such file", e);
+				} catch (IOException | UncheckedIOException e) {
+					throw new N5Exception.N5IOException(e);
+				}
+			}
+		}
+
+		private class TrackingLockedFileChannel extends LockedFileChannel {
+
+			protected TrackingLockedFileChannel(String path, boolean readOnly) throws IOException {
+				super(path, readOnly);
+			}
+
+			@Override
+			protected FileChannel getFileChannel() {
+				return channel;
+			}
+		}
+
+		private static boolean validBounds(long channelSize, long offset, long length) {
+
+			if (offset < 0)
+				return false;
+			else if (channelSize > 0 && offset >= channelSize) // offset == 0 and arrayLength == 0 is okay
+				return false;
+			else if (length >= 0 && offset + length > channelSize)
+				return false;
+
+			return true;
 		}
 	}
 
