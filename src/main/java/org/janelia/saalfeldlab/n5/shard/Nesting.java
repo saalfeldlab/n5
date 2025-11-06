@@ -144,7 +144,15 @@ public class Nesting {
 	}
 
 	/**
-	 * A nested grid of blocks used to coordinate the relationships of shards and the blocks / chunks they contain.
+	 * A nested grid of blocks used to coordinate the relationships of shards
+	 * and the blocks / chunks they contain.
+	 * <p>
+	 * The nesting depth ({@link #numLevels()}) of the {@code NestedGrid} is 1
+	 * for non-sharded datasets, 2 for simple sharded datasets (where shards
+	 * contain datablocks), and &ge;3 for nested sharded datasets.
+	 * <p>
+	 * Positions with {@code level=0} refer to the DataBlock grid, positions
+	 * with {@code level=1} refer to first-level Shard grid, and so on.
 	 */
 	public static class NestedGrid {
 
@@ -152,12 +160,19 @@ public class Nesting {
 
 		private final int numDimensions;
 
-		// relativeToBase[i][d] is block size at level i relative to level 0
+		/**
+		 * relativeToBase[i][d] is block size (in dimension d) at level i relative to level 0
+		 */
 		private final int[][] relativeToBase;
 
-		// relativeToAdjacent[i][d] is block size at level i relative to level i-1
+		/**
+		 * relativeToAdjacent[i][d] is block size (in dimension d) at level i relative to level i-1
+		 */
 		private final int[][] relativeToAdjacent;
 
+		/**
+		 * blockSizes[l][d] is the block size in pixels at level l in dimension d
+		 */
 		private final int[][] blockSizes;
 
 		/**
@@ -227,10 +242,31 @@ public class Nesting {
 			return numDimensions;
 		}
 
-		public int[] getBlockSize(int level) {
+		/**
+		 * Get the block size in pixels at the given {@code level}.
+		 */
+		public int[] getBlockSize(final int level) {
 			return blockSizes[level];
 		}
 
+		/**
+		 * Computes the absolute {@code targetPos} grid position at {@code
+		 * targetLevel} for the given {@code sourcePos} grid position at {@code
+		 * sourceLevel}.
+		 * <p>
+		 * For example, this can be used to compute the coordinates on the shard
+		 * grid ({@code targetLevel==1}) of the shard containing a given
+		 * datablock ({@code sourcePos} at {@code sourceLevel==0}).
+		 *
+		 * @param sourcePos
+		 * 		a grid position at {@code sourceLevel}
+		 * @param sourceLevel
+		 * 		nesting level of {@code sourcePos}
+		 * @param targetPos
+		 * 		the grid position at {@code targetLevel} will be stored here
+		 * @param targetLevel
+		 * 		nesting level of {@code targetPos}
+		 */
 		public void absolutePosition(
 				final long[] sourcePos,
 				final int sourceLevel,
@@ -243,23 +279,14 @@ public class Nesting {
 			}
 		}
 
-		public void relativePosition(
-				final long[] sourcePos,
-				final int sourceLevel,
-				final long[] targetPos,
-				final int targetLevel) {
-			absolutePosition(sourcePos, sourceLevel, targetPos, targetLevel);
-			if (targetLevel < numLevels - 1) {
-				final int[] rj = relativeToAdjacent[targetLevel + 1];
-				for (int d = 0; d < numDimensions; ++d) {
-					targetPos[d] %= rj[d];
-				}
-			}
-		}
-
 		/**
-		 * The absolute position of * source position for the given source level at the target level.
-		 * 
+		 * Get the absolute grid position at {@code targetLevel} for the given
+		 * {@code sourcePos} grid position at {@code sourceLevel}.
+		 * <p>
+		 * For example, this can be used to compute the coordinates on the shard
+		 * grid ({@code targetLevel==1}) of the shard containing a given
+		 * datablock ({@code sourcePos} at {@code sourceLevel==0}).
+		 *
 		 * @param sourcePos the source position j
 		 * @param sourceLevel the source level
 		 * @param targetLevel the target level
@@ -275,9 +302,13 @@ public class Nesting {
 		}
 
 		/**
-		 * The absolute position of the level 0 source position at
-		 * the target level.
-		 * 
+		 * Get the absolute grid position at {@code targetLevel} for the given
+		 * {@code sourcePos} block grid position (level 0).
+		 * <p>
+		 * For example, this can be used to compute the coordinates on the shard
+		 * grid ({@code targetLevel==1}) of the shard containing a given
+		 * datablock ({@code sourcePos}.
+		 *
 		 * @param sourcePos the source position j
 		 * @param targetLevel the target level
 		 * @return absolute position at the target level
@@ -286,6 +317,42 @@ public class Nesting {
 				final long[] sourcePos,
 				final int targetLevel) {
 			return absolutePosition(sourcePos, 0, targetLevel);
+		}
+
+		/**
+		 * Computes the {@code targetPos} grid position at {@code targetLevel}
+		 * for the given {@code sourcePos} grid position at {@code sourceLevel},
+		 * relative to the containing element at {@code targetLevel+1}.
+		 * (The containing element is a shard for {@code targetLevel+1 <
+		 * numLevels} or the dataset for {@code targetLevel+1 == numLevels}.)
+		 * <p>
+		 * For example, this can be used to compute the grid coordinates {@code
+		 * targetLevel==0} of a given datablock ({@code sourcePos} at {@code
+		 * sourceLevel==0}) withing a shard (containing element at level {@code
+		 * targetLevel+1==1}).
+		 * </p>
+		 *
+		 * @param sourcePos
+		 * 		a grid position at {@code sourceLevel}
+		 * @param sourceLevel
+		 * 		nesting level of {@code sourcePos}
+		 * @param targetPos
+		 * 		the grid position at {@code targetLevel} will be stored here
+		 * @param targetLevel
+		 * 		nesting level of {@code targetPos}
+		 */
+		public void relativePosition(
+				final long[] sourcePos,
+				final int sourceLevel,
+				final long[] targetPos,
+				final int targetLevel) {
+			absolutePosition(sourcePos, sourceLevel, targetPos, targetLevel);
+			if (targetLevel < numLevels - 1) {
+				final int[] rj = relativeToAdjacent[targetLevel + 1];
+				for (int d = 0; d < numDimensions; ++d) {
+					targetPos[d] %= rj[d];
+				}
+			}
 		}
 
 		public long[] relativePosition(
@@ -303,6 +370,13 @@ public class Nesting {
 			return relativePosition(sourcePos, 0, targetLevel);
 		}
 
+		/**
+		 * Get size of a block at the given {@code level} relative to {@code
+		 * level-1} (that is, in units of {@code level-1} blocks).
+		 * <p>
+		 * For example {@code relativeBlockSize(1)} returns the number of
+		 * datablocks in a (non-nested) shard.
+		 */
 		public int[] relativeBlockSize(final int level) {
 			return relativeToAdjacent[level];
 		}
