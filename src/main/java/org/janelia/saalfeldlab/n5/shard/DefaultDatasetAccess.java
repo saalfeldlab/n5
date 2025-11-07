@@ -56,7 +56,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	}
 
 	@Override
-	public List<DataBlock<T>> readBlocks(PositionValueAccess pva, List<long[]> positions) {
+	public List<DataBlock<T>> readBlocks(PositionValueAccess pva, List<long[]> positions) throws N5IOException {
 
 		if (grid.numLevels() == 1) {
 			return positions.stream().map(it -> readBlock(pva, it)).collect(Collectors.toList());
@@ -175,7 +175,8 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		}
 	}
 
-	@Override public void writeBlocks(PositionValueAccess pva, List<DataBlock<T>> dataBlocks) {
+	@Override
+	public void writeBlocks(final PositionValueAccess pva, final List<DataBlock<T>> dataBlocks) throws N5IOException {
 
 		if (grid.numLevels() == 1) {
 			dataBlocks.forEach(it -> writeBlock(pva, it));
@@ -317,7 +318,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 	private static ReadData getExistingReadData(final PositionValueAccess pva, final long[] key) {
 		// need to read the shard anyway, and currently (Sept 24 2025)
-		// have no way to tell if they key exist from what is in this method except to attempt
+		// have no way to tell if the key exists from what is in this method except to attempt
 		// to materialize and catch the N5NoSuchKeyException
 		try {
 			ReadData existingData = pva.get(key);

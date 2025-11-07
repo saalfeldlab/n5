@@ -26,9 +26,9 @@ public interface DatasetAccess<T> {
 
 	boolean deleteBlock(PositionValueAccess kva, long[] gridPosition) throws N5IOException;
 
-	List<DataBlock<T>> readBlocks(PositionValueAccess kva, List<long[]> positions);
+	List<DataBlock<T>> readBlocks(PositionValueAccess kva, List<long[]> positions) throws N5IOException;
 
-	void writeBlocks(PositionValueAccess kva, List<DataBlock<T>> blocks);
+	void writeBlocks(PositionValueAccess kva, List<DataBlock<T>> blocks) throws N5IOException;
 
 	NestedGrid getGrid();
 
