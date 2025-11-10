@@ -5,17 +5,20 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
+import org.janelia.saalfeldlab.n5.N5Writer.DataBlockSupplier;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
 
-import static org.janelia.saalfeldlab.n5.shard.DatasetAccess.*;
+import static org.janelia.saalfeldlab.n5.shard.DatasetAccess.groupInnerPositions;
 
 public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
@@ -251,6 +254,96 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			}
 		}
 		return codec.encode(new RawShardDataBlock(shardPosition, shard));
+	}
+
+	public void writeRegion(
+			final PositionValueAccess pva,
+			final long[] min,
+			final long[] size,
+			final DataBlockSupplier<T> blocks,
+			final long[] datasetDimensions,
+			final boolean writeFully
+	) throws N5IOException {
+
+		final Region region = new Region(min, size, grid, datasetDimensions);
+
+		for (long[] key : Region.gridPositions(region.minPos().key(), region.maxPos().key())) {
+			final NestedPosition pos = grid.nestedPosition(key, grid.numLevels() - 1);
+			final boolean nestedWriteFully = writeFully || region.fullyContains(pos);
+			final ReadData existingData = nestedWriteFully ? null : getExistingReadData(pva, key);
+			final ReadData modifiedData = writeRegionRecursive(existingData, region, blocks, pos);
+			pva.put(key, modifiedData);
+		}
+	}
+
+	@Override
+	public void writeRegion(
+			final PositionValueAccess pva,
+			final long[] min,
+			final long[] size,
+			final DataBlockSupplier<T> blocks,
+			final long[] datasetDimensions,
+			final boolean writeFully,
+			final ExecutorService exec) throws N5Exception, InterruptedException, ExecutionException {
+
+		final Region region = new Region(min, size, grid, datasetDimensions);
+
+		for (long[] key : Region.gridPositions(region.minPos().key(), region.maxPos().key())) {
+			exec.submit(() -> {
+				final NestedPosition pos = grid.nestedPosition(key, grid.numLevels() - 1);
+				final boolean nestedWriteFully = writeFully || region.fullyContains(pos);
+				final ReadData existingData = nestedWriteFully ? null : getExistingReadData(pva, key);
+				final ReadData modifiedData = writeRegionRecursive(existingData, region, blocks, pos);
+				pva.put(key, modifiedData);
+			});
+		}
+	}
+
+	private ReadData writeRegionRecursive(
+			final ReadData existingReadData, // may be null
+			final Region region,
+			final DataBlockSupplier<T> blocks,
+			final NestedPosition position
+	) {
+		final boolean writeFully = existingReadData == null;
+		final int level = position.level();
+		String indent = "";
+		for (int i = 0; i < 2-level; ++i)
+			indent += "    ";
+		System.out.println(indent + "position = " + position + (writeFully ? " (writeFully)" : ""));
+		if ( level == 0 ) {
+
+			@SuppressWarnings("unchecked")
+			final BlockCodec<T> codec = (BlockCodec<T>) codecs[0];
+			final long[] gridPosition = position.absolute(0);
+
+			// If the DataBlock is not fully contained in the region, we will
+			// get existingReadData != null. In that case, we decode the
+			// existing DataBlock and pass it to the BlockSupplier for modification.
+			final DataBlock<T> existingDataBlock = (existingReadData == null)
+					? null
+					: codec.decode(existingReadData, gridPosition);
+			final DataBlock<T> dataBlock = blocks.get(gridPosition, existingDataBlock);
+
+			return codec.encode(dataBlock);
+		} else {
+
+			@SuppressWarnings("unchecked")
+			final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
+			final long[] gridPos = position.absolute(level);
+			final RawShard shard = existingReadData == null ?
+					new RawShard(grid.relativeBlockSize(level)) :
+					codec.decode(existingReadData, gridPos).getData();
+			for (NestedPosition pos : region.containedNestedPositions(position)) {
+				final boolean nestedWriteFully = writeFully || region.fullyContains(pos);
+				final long[] elementPos = pos.relative();
+				final ReadData existingElementData = nestedWriteFully ? null : shard.getElementData(elementPos);
+				final ReadData modifiedElementData = writeRegionRecursive(existingElementData, region, blocks, pos);
+				shard.setElementData(modifiedElementData, elementPos);
+			}
+
+			return codec.encode(new RawShardDataBlock(gridPos, shard));
+		}
 	}
 
 	@Override

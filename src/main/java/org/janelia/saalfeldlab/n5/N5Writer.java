@@ -28,9 +28,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -39,6 +36,8 @@ import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 
 /**
  * A simple structured container API for hierarchies of chunked
@@ -264,6 +263,56 @@ public interface N5Writer extends N5Reader {
 		for (DataBlock<T> block : dataBlocks)
 			writeBlock(datasetPath, datasetAttributes, block);
 	}
+
+	@FunctionalInterface
+	interface DataBlockSupplier<T> {
+
+		/**
+		 *
+		 * @param gridPos
+		 * @param existingDataBlock
+		 * 		existing data to be merged into the new data block (maybe {@code null})
+		 *
+		 * @return data block at the given gridPos
+		 */
+		DataBlock<T> get(long[] gridPos, final DataBlock<T> existingDataBlock);
+	}
+
+	/**
+	 * @param datasetPath the dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param min min pixel coordinate of region to write
+	 * @param size size in pixels of region to write
+	 * @param dataBlocks is asked to create blocks within the given region
+	 * @param writeFully if false, merge existing data in shards/blocks that overlap the region boundary. if true, override everything.
+	 * @throws N5Exception the exception
+	 */
+	<T> void writeRegion(
+			String datasetPath,
+			DatasetAttributes datasetAttributes,
+			long[] min,
+			long[] size,
+			DataBlockSupplier<T> dataBlocks,
+			boolean writeFully) throws N5Exception;
+
+	/**
+	 * @param datasetPath the dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param min min pixel coordinate of region to write
+	 * @param size size in pixels of region to write
+	 * @param dataBlocks is asked to create blocks within the given region
+	 * @param writeFully if false, merge existing data in shards/blocks that overlap the region boundary. if true, override everything.
+	 * @param exec used to parallelize over blocks and shards
+	 * @throws N5Exception the exception
+	 */
+	<T> void writeRegion(
+			String datasetPath,
+			DatasetAttributes datasetAttributes,
+			long[] min,
+			long[] size,
+			DataBlockSupplier<T> dataBlocks,
+			boolean writeFully,
+			ExecutorService exec) throws N5Exception, InterruptedException, ExecutionException;
 
 	/**
 	 * Deletes the block at {@code gridPosition}.
