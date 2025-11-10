@@ -3,29 +3,6 @@ package org.janelia.saalfeldlab.n5.shard;
 
 import java.util.ArrayList;
 
-// TODO ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// [ ] NestedGrid
-//     [ ] validation in constructor
-//     [ ] test for that validation
-//     [ ] javadoc
-//
-// [ ] NestedPosition interface
-//     [+] LazyNestedPosition class
-//         [+] fields: NestedGrid, long[] position, int level
-//         [+] construct with source level 0
-//     [+] minimal abs/rel access methods
-//     [+] toString()
-//     [-] extract NestedPosition interface
-//         ==> postpone until necessary
-//     [ ] equals / hashcode
-//     [ ] should we have prefix()? suffix()? head()? tail()?
-//     [+] Implement Comparable so that we can sort and aggregate for N5Reader.readBlocks(...).
-//         For nested = {X,Y,Z} compare by Z, then Y, then X.
-//         For X = {x,y,z} compare by z, then y, then x. (flattening order)
-//
-// TODO ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 import java.util.Arrays;
 import java.util.List;
 
@@ -33,28 +10,16 @@ import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 public class Nesting {
 
-	public static void main(String[] args) {
-		final int[][] blockSizes = {{1,1,1}, {3,2,2}, {6,4,4}, {24,24,24}};
-		final NestedGrid grid = new NestedGrid(blockSizes);
-		final NestedPosition pos = new NestedPosition(grid, new long[] {38, 7, 129});
-		System.out.println("pos = " + pos);
-		System.out.println("key = " + Arrays.toString(pos.key()));
-	}
-
 	public static class NestedPosition implements Comparable<NestedPosition> {
 
 		private final NestedGrid grid;
 		private final long[] position;
 		private final int level;
 
-		public NestedPosition(final NestedGrid grid, final long[] position, final int level) {
+		protected NestedPosition(final NestedGrid grid, final long[] position, final int level) {
 			this.grid = grid;
 			this.position = position;
 			this.level = level;
-		}
-
-		public NestedPosition(final NestedGrid grid, final long[] position) {
-			this(grid, position, 0);
 		}
 
 		/**
@@ -84,7 +49,18 @@ public class Nesting {
 		 * @return relative grid position
 		 */
 		public long[] relative(final int level) {
-			return grid.relativePosition(position, level);
+			return grid.relativePosition(position, this.level, level);
+		}
+
+		/**
+		 * Get the relative grid position at this positions {@link #level()},
+		 * that is, relative offset within containing the {@code (level+1)}
+		 * element.
+		 *
+		 * @return relative grid position
+		 */
+		public long[] relative() {
+			return relative(level());
 		}
 
 		/**
@@ -96,11 +72,15 @@ public class Nesting {
 		 * @return absolute grid position
 		 */
 		public long[] absolute(final int level) {
-			return grid.absolutePosition(position, level);
+			return grid.absolutePosition(position, this.level, level);
 		}
 
 		public long[] key() {
 			return relative(grid.numLevels() - 1);
+		}
+
+		public long[] pixelPosition() {
+			return grid.pixelPosition(position, level);
 		}
 
 		@Override
@@ -117,7 +97,8 @@ public class Nesting {
 			return sb.toString();
 		}
 
-		@Override public int compareTo(NestedPosition o) {
+		@Override
+		public int compareTo(NestedPosition o) {
 
 			final int dimensionInequality = Integer.compare(numDimensions(), o.numDimensions());
 			if (dimensionInequality != 0)
@@ -127,13 +108,10 @@ public class Nesting {
 			if (levelInequality != 0)
 				return levelInequality;
 
-			final long[] otherAbsPos = o.absolute(level);
-			final long[] absPos = absolute(level);
-
-			for (int i = absPos.length - 1; i >= 0; --i) {
-				final long diff = absPos[i] - otherAbsPos[i];
+			for (int i = position.length - 1; i >= 0; --i) {
+				final long diff = position[i] - o.position[i];
 				if (diff != 0)
-					return (int)diff;
+					return (int) diff;
 			}
 
 			return 0;
@@ -155,6 +133,52 @@ public class Nesting {
 	 * with {@code level=1} refer to first-level Shard grid, and so on.
 	 */
 	public static class NestedGrid {
+
+		/**
+		 * Create a {@code NestedPosition} at the specified nesting {@code
+		 * level} grid {@code position}.
+		 * <p>
+		 * Note that {@code position} is in units of grid elements at {@code
+		 * level}. Positions with {@code level=0} refer to the DataBlock grid,
+		 * positions with {@code level=1} refer to first-level Shard grid, and
+		 * so on.
+		 * <p>
+		 * The returned {@code NestedPosition} will have
+		 * {@link NestedPosition#level() level()==level}.
+		 *
+		 * @param position
+		 * 		position at {@code level}
+		 * @param level
+		 * 		nesting level of {@code position}
+		 *
+		 * @return a NestedPosition representation of the specified grid position and nesting level
+		 */
+		public NestedPosition nestedPosition(final long[] position, final int level) {
+			return new NestedPosition(this, position, level);
+		}
+
+		/**
+		 * Create a {@code NestedPosition} at the specified block grid {@code
+		 * position} (that is, at nesting level 0).
+		 * <p>
+		 * Note that {@code position} is in units of DataBlocks.
+		 * <p>
+		 * The returned {@code NestedPosition} will have
+		 * {@link NestedPosition#level() level()==0}.
+		 *
+		 * @param position
+		 * 		position at level 0 (block grid)
+		 *
+		 * @return a NestedPosition representation of the specified block grid position
+		 */
+		public NestedPosition nestedPosition(final long[] position) {
+			return nestedPosition(position, 0);
+		}
+
+
+
+
+
 
 		private final int numLevels;
 
@@ -250,6 +274,46 @@ public class Nesting {
 		}
 
 		/**
+		 * Computes the pixel position for the given {@code sourcePos} grid
+		 * position at {@code sourceLevel}.
+		 *
+		 * @param sourcePos
+		 * 		a grid position at {@code sourceLevel}
+		 * @param sourceLevel
+		 * 		nesting level of {@code sourcePos}
+		 * @param targetPos
+		 * 		the pixel position will be stored here
+		 */
+		public void pixelPosition(
+				final long[] sourcePos,
+				final int sourceLevel,
+				final long[] targetPos) {
+			final int[] s = blockSizes[sourceLevel];
+			for (int d = 0; d < numDimensions; ++d) {
+				targetPos[d] = sourcePos[d] * s[d];
+			}
+		}
+
+		/**
+		 * Get the pixel position for the given {@code sourcePos} grid position
+		 * at {@code sourceLevel}.
+		 *
+		 * @param sourcePos
+		 * 		a grid position at {@code sourceLevel}
+		 * @param sourceLevel
+		 * 		nesting level of {@code sourcePos}
+		 *
+		 * @return the pixel position
+		 */
+		public long[] pixelPosition(
+				final long[] sourcePos,
+				final int sourceLevel) {
+			final long[] targetPos = new long[numDimensions];
+			pixelPosition(sourcePos, sourceLevel, targetPos);
+			return targetPos;
+		}
+
+		/**
 		 * Computes the absolute {@code targetPos} grid position at {@code
 		 * targetLevel} for the given {@code sourcePos} grid position at {@code
 		 * sourceLevel}.
@@ -296,6 +360,9 @@ public class Nesting {
 				final long[] sourcePos,
 				final int sourceLevel,
 				final int targetLevel) {
+			if (sourceLevel == targetLevel) {
+				return sourcePos;
+			}
 			final long[] targetPos = new long[numDimensions];
 			absolutePosition(sourcePos, sourceLevel, targetPos, targetLevel);
 			return targetPos;
@@ -381,10 +448,6 @@ public class Nesting {
 			return relativeToAdjacent[level];
 		}
 
-		public int[] absoluteBlockSize(final int level) {
-			return relativeToBase[level];
-		}
-
 		/**
 		 * Given a block position at a particular level, returns a list of
 		 * positions of all sub-blocks at a particular subLevel.
@@ -400,22 +463,24 @@ public class Nesting {
 		 *            the nesting sub-level of positions to return
 		 * @return the sub-block positions
 		 */
+		// TODO:  rename to positionsInSubGrid
 		public List<long[]> positionInSubGrid(long[] position, int level, int subLevel) {
 
-			final long[] subPosition = new long[numDimensions()];
-			absolutePosition(position, level, subPosition, subLevel);
+			// find the starting (subLevel grid) coordinates corresponding to the
+			// first subLevel block in the element at the given level and position
+			final long[] subPosition = absolutePosition(position, level, subLevel);
 
-			final int[] numElementsInSubGrid = absoluteBlockSize(numLevels() - 1);
-			final GridIterator git = new GridIterator(GridIterator.int2long(numElementsInSubGrid), subPosition);
+			// find the dimensions (number of subLevel blocks in one level block, along each dimension)
+			final long[] one = new long[numDimensions];
+			Arrays.fill(one, 1);
+			final long[] dimensions = absolutePosition(one, level, subLevel);
 
-			// TODO return NestedPositions instead?
+			final GridIterator git = new GridIterator(dimensions, subPosition);
 			final ArrayList<long[]> positions = new ArrayList<>();
 			while (git.hasNext())
 				positions.add(git.next().clone());
 
 			return positions;
 		}
-
 	}
-
 }

@@ -56,7 +56,7 @@ public interface DatasetAccess<T> {
 			if (nestedPosition.level() == outerLevel)
 				outerNestedPosition = nestedPosition;
 			else
-				outerNestedPosition = new NestedPosition(grid, nestedPosition.absolute(0), outerLevel);
+				outerNestedPosition = grid.nestedPosition(nestedPosition.absolute(outerLevel), outerLevel);
 
 
 			final List<T> blocks = blocksPerShard.computeIfAbsent(outerNestedPosition, it -> new ArrayList<>());
