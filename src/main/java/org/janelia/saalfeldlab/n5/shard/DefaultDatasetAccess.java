@@ -335,10 +335,6 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	) {
 		final boolean writeFully = existingReadData == null;
 		final int level = position.level();
-		String indent = "";
-		for (int i = 0; i < 2-level; ++i)
-			indent += "    ";
-		System.out.println(indent + "position = " + position + (writeFully ? " (writeFully)" : ""));
 		if ( level == 0 ) {
 
 			@SuppressWarnings("unchecked")
