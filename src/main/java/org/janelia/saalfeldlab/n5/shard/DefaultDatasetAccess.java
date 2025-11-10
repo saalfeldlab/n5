@@ -33,7 +33,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 	@Override
 	public DataBlock<T> readBlock(final PositionValueAccess kva, final long[] gridPosition) throws N5IOException {
-		final NestedPosition position = new NestedPosition(grid, gridPosition);
+		final NestedPosition position = grid.nestedPosition(gridPosition);
 		return readBlockRecursive(kva.get(position.key()), position, grid.numLevels() - 1);
 	}
 
@@ -62,7 +62,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			return positions.stream().map(it -> readBlock(pva, it)).collect(Collectors.toList());
 		}
 
-		final List<NestedPosition> blockPositions = positions.stream().map(it -> new NestedPosition(grid, it)).collect(Collectors.toList());
+		final List<NestedPosition> blockPositions = positions.stream().map(grid::nestedPosition).collect(Collectors.toList());
 
 		final int outermostLevel = grid.numLevels() - 1;
 		final Collection<List<NestedPosition>> blocksPerOutermostShard = groupInnerPositions(grid, blockPositions, outermostLevel);
@@ -141,7 +141,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 	@Override
 	public void writeBlock(final PositionValueAccess pva, final DataBlock<T> dataBlock) throws N5IOException {
-		final NestedPosition position = new NestedPosition(grid, dataBlock.getGridPosition());
+		final NestedPosition position = grid.nestedPosition(dataBlock.getGridPosition());
 		final long[] key = position.key();
 
 		final ReadData existingData = getExistingReadData(pva, key);
@@ -255,7 +255,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 	@Override
 	public boolean deleteBlock(final PositionValueAccess kva, final long[] gridPosition) throws N5IOException {
-		final NestedPosition position = new NestedPosition(grid, gridPosition);
+		final NestedPosition position = grid.nestedPosition(gridPosition);
 		final long[] key = position.key();
 		if (grid.numLevels() == 1) {
 			// for non-sharded dataset, don't bother getting the value, just remove the key.
