@@ -51,8 +51,6 @@ public class RawShardTest {
 
 		final DatasetAccess<byte[]> datasetAccess = attributes.datasetAccess();
 
-		// TODO: N5Reader/Writer needs to provide a PositionValueAccess implementation on top of its KVA.
-		//       The read/write/deleteBlock methods would getDataAccess() from the DatasetAttributes and call it with that PositionValueAccess.
 		final PositionValueAccess store = new TestPositionValueAccess();
 
 
@@ -122,7 +120,7 @@ public class RawShardTest {
 		Arrays.fill(bytes, (byte) fillValue);
 		return new ByteArrayDataBlock(size, gridPosition, bytes);
 	}
-	
+
 	public static class TestDatasetAttributes extends DatasetAttributes {
 
 		public TestDatasetAttributes(long[] dimensions, int[] outerBlockSize, DataType dataType, BlockCodecInfo blockCodecInfo,
