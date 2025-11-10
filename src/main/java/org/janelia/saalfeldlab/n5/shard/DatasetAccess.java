@@ -23,19 +23,19 @@ import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
  */
 public interface DatasetAccess<T> {
 
-	DataBlock<T> readBlock(PositionValueAccess kva, long[] gridPosition) throws N5IOException;
+	DataBlock<T> readBlock(PositionValueAccess pva, long[] gridPosition) throws N5IOException;
 
-	void writeBlock(PositionValueAccess kva, DataBlock<T> dataBlock) throws N5IOException;
+	void writeBlock(PositionValueAccess pva, DataBlock<T> dataBlock) throws N5IOException;
 
-	boolean deleteBlock(PositionValueAccess kva, long[] gridPosition) throws N5IOException;
+	boolean deleteBlock(PositionValueAccess pva, long[] gridPosition) throws N5IOException;
 
 
-	List<DataBlock<T>> readBlocks(PositionValueAccess kva, List<long[]> positions) throws N5IOException;
+	List<DataBlock<T>> readBlocks(PositionValueAccess pva, List<long[]> positions) throws N5IOException;
 
-	void writeBlocks(PositionValueAccess kva, List<DataBlock<T>> blocks) throws N5IOException;
+	void writeBlocks(PositionValueAccess pva, List<DataBlock<T>> blocks) throws N5IOException;
 
 //	TODO:
-//	  boolean deleteBlocks(PositionValueAccess kva, List<long[]> positions) throws N5IOException;
+//	  boolean deleteBlocks(PositionValueAccess pva, List<long[]> positions) throws N5IOException;
 
 
 	/**
@@ -91,7 +91,6 @@ public interface DatasetAccess<T> {
 			ExecutorService exec
 	) throws N5Exception, InterruptedException, ExecutionException;
 
-
 	NestedGrid getGrid();
 
 	/**
@@ -104,6 +103,7 @@ public interface DatasetAccess<T> {
 	 * @param outerLevel of the outerLevel shard position to group by. must be in range {@code [1, NestedGrid.numLevels() - 1]}
 	 * @return map of outerLevel shard positions to inner level block positions
 	 */
+	// TODO: move to Nesting
 	static <T extends NestedPosition> Collection<List<T>> groupInnerPositions(final NestedGrid grid, final List<T> innerPositions, final int outerLevel)  {
 
 		if (outerLevel < 1 || outerLevel >= grid.numLevels())

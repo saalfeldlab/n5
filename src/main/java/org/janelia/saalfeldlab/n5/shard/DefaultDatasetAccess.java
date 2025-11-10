@@ -35,9 +35,9 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	}
 
 	@Override
-	public DataBlock<T> readBlock(final PositionValueAccess kva, final long[] gridPosition) throws N5IOException {
+	public DataBlock<T> readBlock(final PositionValueAccess pva, final long[] gridPosition) throws N5IOException {
 		final NestedPosition position = grid.nestedPosition(gridPosition);
-		return readBlockRecursive(kva.get(position.key()), position, grid.numLevels() - 1);
+		return readBlockRecursive(pva.get(position.key()), position, grid.numLevels() - 1);
 	}
 
 	private DataBlock<T> readBlockRecursive(
@@ -347,23 +347,23 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	}
 
 	@Override
-	public boolean deleteBlock(final PositionValueAccess kva, final long[] gridPosition) throws N5IOException {
+	public boolean deleteBlock(final PositionValueAccess pva, final long[] gridPosition) throws N5IOException {
 		final NestedPosition position = grid.nestedPosition(gridPosition);
 		final long[] key = position.key();
 		if (grid.numLevels() == 1) {
 			// for non-sharded dataset, don't bother getting the value, just remove the key.
 			try {
-				return kva.remove(key);
+				return pva.remove(key);
 			} catch (final Exception e) {
 				throw new N5Exception("The shard at " + Arrays.toString(key) + " could not be deleted.", e);
 			}
 		} else {
-			final ReadData existingData = kva.get(key);
+			final ReadData existingData = pva.get(key);
 			final ReadData modifiedData = deleteBlockRecursive(existingData, position, grid.numLevels() - 1);
 			if (existingData != null && modifiedData == null) {
-				return kva.remove(key);
+				return pva.remove(key);
 			} else if (modifiedData != existingData) {
-				kva.put(key, modifiedData);
+				pva.put(key, modifiedData);
 				return true;
 			} else {
 				return false;
