@@ -1,15 +1,18 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
-import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Writer.DataBlockSupplier;
+import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
+import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
 
 /**
  * Wrap an instantiated DataBlock/shard codec hierarchy to implement (single and
@@ -26,9 +29,65 @@ public interface DatasetAccess<T> {
 
 	boolean deleteBlock(PositionValueAccess kva, long[] gridPosition) throws N5IOException;
 
+
 	List<DataBlock<T>> readBlocks(PositionValueAccess kva, List<long[]> positions) throws N5IOException;
 
 	void writeBlocks(PositionValueAccess kva, List<DataBlock<T>> blocks) throws N5IOException;
+
+
+	/**
+	 *
+	 * @param pva
+	 * @param min
+	 * 		min pixel coordinate of region to write
+	 * @param size
+	 * 		size in pixels of region to write
+	 * @param blocks
+	 * 		is asked to create blocks within the given region
+	 * @param datasetDimensions
+	 * @param writeFully
+	 * 		if false, merge existing data in shards/blocks that overlap the region boundary. if true, override everything.
+	 *
+	 * @throws N5IOException
+	 */
+	void writeRegion(
+			PositionValueAccess pva,
+			long[] min,
+			long[] size,
+			DataBlockSupplier<T> blocks,
+			long[] datasetDimensions,
+			boolean writeFully
+	) throws N5IOException;
+
+	/**
+	 *
+	 * @param pva
+	 * @param min
+	 * 		min pixel coordinate of region to write
+	 * @param size
+	 * 		size in pixels of region to write
+	 * @param blocks
+	 * 		is asked to create blocks within the given region. must be thread-safe.
+	 * @param datasetDimensions
+	 * @param writeFully
+	 * 		if false, merge existing data in shards/blocks that overlap the region boundary. if true, override everything.
+	 * @param exec
+	 * 		used to parallelize over blocks and shards
+	 *
+	 * @throws N5Exception
+	 * @throws InterruptedException
+	 * @throws ExecutionException
+	 */
+	void writeRegion(
+			PositionValueAccess pva,
+			long[] min,
+			long[] size,
+			DataBlockSupplier<T> blocks,
+			long[] datasetDimensions,
+			boolean writeFully,
+			ExecutorService exec
+	) throws N5Exception, InterruptedException, ExecutionException;
+
 
 	NestedGrid getGrid();
 
