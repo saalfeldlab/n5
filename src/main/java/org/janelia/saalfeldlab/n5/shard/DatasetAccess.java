@@ -34,6 +34,9 @@ public interface DatasetAccess<T> {
 
 	void writeBlocks(PositionValueAccess kva, List<DataBlock<T>> blocks) throws N5IOException;
 
+//	TODO:
+//	  boolean deleteBlocks(PositionValueAccess kva, List<long[]> positions) throws N5IOException;
+
 
 	/**
 	 *

@@ -328,6 +328,24 @@ public interface N5Writer extends N5Reader {
 			final long... gridPosition) throws N5Exception;
 
 	/**
+	 * Deletes the blocks at the given {@code gridPositions}.
+	 *
+	 * @param datasetPath dataset path
+	 * @param gridPositions a list of grid positions
+	 * @return {@code true} if any of the specified blocks existed and was deleted
+	 * @throws N5Exception if any of the block exists but could not be deleted
+	 */
+	default boolean deleteBlocks(
+			final String datasetPath,
+			final List<long[]> gridPositions) throws N5Exception {
+		boolean deleted = false;
+		for (long[] pos : gridPositions) {
+			deleted |= deleteBlock(datasetPath, pos);
+		}
+		return deleted;
+	}
+
+	/**
 	 * Save a {@link Serializable} as an N5 {@link DataBlock} at a given offset.
 	 * The
 	 * offset is given in {@link DataBlock} grid coordinates.
