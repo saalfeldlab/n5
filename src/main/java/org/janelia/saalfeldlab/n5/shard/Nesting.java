@@ -1,12 +1,7 @@
 package org.janelia.saalfeldlab.n5.shard;
 
 
-import java.util.ArrayList;
-
 import java.util.Arrays;
-import java.util.List;
-
-import org.janelia.saalfeldlab.n5.util.GridIterator;
 
 public class Nesting {
 
@@ -446,41 +441,6 @@ public class Nesting {
 		 */
 		public int[] relativeBlockSize(final int level) {
 			return relativeToAdjacent[level];
-		}
-
-		/**
-		 * Given a block position at a particular level, returns a list of
-		 * positions of all sub-blocks at a particular subLevel.
-		 * <p>
-		 * Can be used to get a list of chunk positions for a shard with a
-		 * particular position.
-		 *
-		 * @param position
-		 *            a position
-		 * @param level
-		 *            the nesting level of the given position
-		 * @param subLevel
-		 *            the nesting sub-level of positions to return
-		 * @return the sub-block positions
-		 */
-		// TODO:  rename to positionsInSubGrid
-		public List<long[]> positionInSubGrid(long[] position, int level, int subLevel) {
-
-			// find the starting (subLevel grid) coordinates corresponding to the
-			// first subLevel block in the element at the given level and position
-			final long[] subPosition = absolutePosition(position, level, subLevel);
-
-			// find the dimensions (number of subLevel blocks in one level block, along each dimension)
-			final long[] one = new long[numDimensions];
-			Arrays.fill(one, 1);
-			final long[] dimensions = absolutePosition(one, level, subLevel);
-
-			final GridIterator git = new GridIterator(dimensions, subPosition);
-			final ArrayList<long[]> positions = new ArrayList<>();
-			while (git.hasNext())
-				positions.add(git.next().clone());
-
-			return positions;
 		}
 	}
 }
