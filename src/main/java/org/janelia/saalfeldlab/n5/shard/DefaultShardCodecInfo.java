@@ -53,7 +53,7 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 	@NameConfig.Parameter(value = "chunk_shape")
 	private final int[] innerBlockSize;
 
-	@NameConfig.Parameter(value = "index_location")
+	@NameConfig.Parameter(value = "index_location", optional = true)
 	private final IndexLocation indexLocation;
 
 	@NameConfig.Parameter
@@ -72,7 +72,7 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 
 	DefaultShardCodecInfo() {
 		// for serialization
-		this(null, null, null, null, null, null);
+		this(null, null, null, null, null, IndexLocation.END);
 	}
 
 	public DefaultShardCodecInfo(
