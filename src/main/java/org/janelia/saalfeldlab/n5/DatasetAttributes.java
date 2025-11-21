@@ -52,6 +52,7 @@ import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DatasetCodecInfo;
 
 
 /**
@@ -97,6 +98,7 @@ public class DatasetAttributes implements Serializable {
 
 	private final BlockCodecInfo blockCodecInfo;
 	private final DataCodecInfo[] dataCodecInfos;
+	private final DatasetCodecInfo[] datasetCodecInfos;
 
 	private transient final DatasetAccess<?> access;
 
@@ -105,6 +107,7 @@ public class DatasetAttributes implements Serializable {
 			final int[] outerBlockSize,
 			final DataType dataType,
 			final BlockCodecInfo blockCodecInfo,
+			final DatasetCodecInfo[] datasetCodecInfos,
 			final DataCodecInfo... dataCodecInfos) {
 
 		this.dimensions = dimensions;
@@ -112,6 +115,7 @@ public class DatasetAttributes implements Serializable {
 		this.outerBlockSize = outerBlockSize;
 
 		this.blockCodecInfo = blockCodecInfo == null ? defaultBlockCodecInfo() : blockCodecInfo;
+		this.datasetCodecInfos = datasetCodecInfos;
 
 		if (dataCodecInfos == null)
 			this.dataCodecInfos = new DataCodecInfo[0];
@@ -122,6 +126,16 @@ public class DatasetAttributes implements Serializable {
 
 		access = createDatasetAccess();
 		blockSize = access.getGrid().getBlockSize(0);
+	}
+
+	public DatasetAttributes(
+			final long[] dimensions,
+			final int[] outerBlockSize,
+			final DataType dataType,
+			final BlockCodecInfo blockCodecInfo,
+			final DataCodecInfo... dataCodecInfos) {
+
+		this(dimensions, outerBlockSize, dataType, blockCodecInfo, null, dataCodecInfos);
 	}
 
 	/**
@@ -282,6 +296,11 @@ public class DatasetAttributes implements Serializable {
 	public DataCodecInfo[] getDataCodecInfos() {
 
 		return dataCodecInfos;
+	}
+
+	public DatasetCodecInfo[] getDatasetCodecInfos() {
+
+		return datasetCodecInfos;
 	}
 
 	public String relativeBlockPath(long... position) {
