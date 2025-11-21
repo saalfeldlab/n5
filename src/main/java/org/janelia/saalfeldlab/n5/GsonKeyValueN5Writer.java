@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.gson.JsonSyntaxException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 
@@ -208,6 +210,41 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			removed |= removeAttribute(normalPath, normalKey);
 		}
 		return removed;
+	}
+
+	@Override
+	default <T> void writeRegion(
+			final String datasetPath,
+			final DatasetAttributes datasetAttributes,
+			final long[] min,
+			final long[] size,
+			final DataBlockSupplier<T> dataBlocks,
+			final boolean writeFully) throws N5Exception {
+		try {
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(datasetPath), datasetAttributes);
+			datasetAttributes.<T>getDatasetAccess().writeRegion(posKva, min, size, dataBlocks, datasetAttributes.getDimensions(), writeFully);
+		} catch (final UncheckedIOException e) {
+			throw new N5IOException(
+					"Failed to write blocks into dataset " + datasetPath, e);
+		}
+	}
+
+	@Override
+	default <T> void writeRegion(
+			final String datasetPath,
+			final DatasetAttributes datasetAttributes,
+			final long[] min,
+			final long[] size,
+			final DataBlockSupplier<T> dataBlocks,
+			final boolean writeFully,
+			final ExecutorService exec) throws N5Exception, InterruptedException, ExecutionException {
+		try {
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(datasetPath), datasetAttributes);
+			datasetAttributes.<T>getDatasetAccess().writeRegion(posKva, min, size, dataBlocks, datasetAttributes.getDimensions(), writeFully, exec);
+		} catch (final UncheckedIOException e) {
+			throw new N5IOException(
+					"Failed to write blocks into dataset " + datasetPath, e);
+		}
 	}
 
 	@Override

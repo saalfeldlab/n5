@@ -39,6 +39,8 @@ import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 
 /**
  * A simple structured container API for hierarchies of chunked
@@ -265,6 +267,56 @@ public interface N5Writer extends N5Reader {
 			writeBlock(datasetPath, datasetAttributes, block);
 	}
 
+	@FunctionalInterface
+	interface DataBlockSupplier<T> {
+
+		/**
+		 *
+		 * @param gridPos
+		 * @param existingDataBlock
+		 * 		existing data to be merged into the new data block (maybe {@code null})
+		 *
+		 * @return data block at the given gridPos
+		 */
+		DataBlock<T> get(long[] gridPos, final DataBlock<T> existingDataBlock);
+	}
+
+	/**
+	 * @param datasetPath the dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param min min pixel coordinate of region to write
+	 * @param size size in pixels of region to write
+	 * @param dataBlocks is asked to create blocks within the given region
+	 * @param writeFully if false, merge existing data in shards/blocks that overlap the region boundary. if true, override everything.
+	 * @throws N5Exception the exception
+	 */
+	<T> void writeRegion(
+			String datasetPath,
+			DatasetAttributes datasetAttributes,
+			long[] min,
+			long[] size,
+			DataBlockSupplier<T> dataBlocks,
+			boolean writeFully) throws N5Exception;
+
+	/**
+	 * @param datasetPath the dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param min min pixel coordinate of region to write
+	 * @param size size in pixels of region to write
+	 * @param dataBlocks is asked to create blocks within the given region
+	 * @param writeFully if false, merge existing data in shards/blocks that overlap the region boundary. if true, override everything.
+	 * @param exec used to parallelize over blocks and shards
+	 * @throws N5Exception the exception
+	 */
+	<T> void writeRegion(
+			String datasetPath,
+			DatasetAttributes datasetAttributes,
+			long[] min,
+			long[] size,
+			DataBlockSupplier<T> dataBlocks,
+			boolean writeFully,
+			ExecutorService exec) throws N5Exception, InterruptedException, ExecutionException;
+
 	/**
 	 * Deletes the block at {@code gridPosition}.
 	 *
@@ -277,6 +329,24 @@ public interface N5Writer extends N5Reader {
 	boolean deleteBlock(
 			final String datasetPath,
 			final long... gridPosition) throws N5Exception;
+
+	/**
+	 * Deletes the blocks at the given {@code gridPositions}.
+	 *
+	 * @param datasetPath dataset path
+	 * @param gridPositions a list of grid positions
+	 * @return {@code true} if any of the specified blocks existed and was deleted
+	 * @throws N5Exception if any of the block exists but could not be deleted
+	 */
+	default boolean deleteBlocks(
+			final String datasetPath,
+			final List<long[]> gridPositions) throws N5Exception {
+		boolean deleted = false;
+		for (long[] pos : gridPositions) {
+			deleted |= deleteBlock(datasetPath, pos);
+		}
+		return deleted;
+	}
 
 	/**
 	 * Save a {@link Serializable} as an N5 {@link DataBlock} at a given offset.
