@@ -28,6 +28,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -196,39 +197,46 @@ public interface N5Writer extends N5Reader {
 
 	/**
 	 * Creates a dataset. This does not create any data but the path and
-	 * mandatory attributes only.
+	 * mandatory attributes only. The returned DatasetAttributes should be used
+	 * for future read/write operations on this dataset. It may not be the same
+	 * DatasetAttributes object that was provided, depending on the implementation.
 	 *
 	 * @param datasetPath dataset path
 	 * @param datasetAttributes the dataset attributes
-	 * @throws N5Exception the exception
+	 * @return DatasetAttributes optimal attributes object to be used for read/write operations
+	 * @throws N5Exception
 	 */
-	default void createDataset(
+	default DatasetAttributes createDataset(
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes) throws N5Exception {
 
 		final String normalPath = N5URI.normalizeGroupPath(datasetPath);
 		createGroup(normalPath);
 		setDatasetAttributes(normalPath, datasetAttributes);
+		return datasetAttributes;
 	}
 
 	/**
 	 * Creates a dataset. This does not create any data but the path and
-	 * mandatory attributes only.
+	 * mandatory attributes only. Returns the DatasetAttributes object to be
+	 * used for future read/write operations on this dataset.
 	 *
 	 * @param datasetPath dataset path
 	 * @param dimensions the dataset dimensions
 	 * @param blockSize the block size
 	 * @param dataType the data type
 	 * @param compression the compression
+	 * @return DatasetAttributes optimal attributes object to be used for read/write operations
+	 * @throws N5Exception
 	 */
-	default void createDataset(
+	default DatasetAttributes createDataset(
 			final String datasetPath,
 			final long[] dimensions,
 			final int[] blockSize,
 			final DataType dataType,
 			final Compression compression) throws N5Exception {
 
-		createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, compression));
+		return createDataset(datasetPath, new DatasetAttributes(dimensions, blockSize, dataType, compression));
 	}
 
 	/**
