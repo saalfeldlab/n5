@@ -30,6 +30,8 @@ package org.janelia.saalfeldlab.n5.readdata;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -80,6 +82,66 @@ public class ReadDataTests {
 		readDataTestHelper(readData, N, N);
 		readDataTestEncodeHelper(readData, N);
 		sliceTestHelper(readData, N);
+	}
+
+	@Test
+	public void lazyInputStreamReadData() throws IOException {
+
+		final int N = 128;
+		final byte[] data = new byte[N];
+		for (int i = 0; i < N; i++)
+			data[i] = (byte)i;
+
+		/* Track whether the data has been materialized */
+		final boolean[] materialized = {false};
+
+		/* Create LazyReadData with a writer that tracks materialization */
+		final ReadData readData = ReadData.from(out -> {
+			materialized[0] = true;
+			out.write(data);
+		});
+		assertTrue("Should be LazyReadData", readData instanceof LazyReadData);
+
+		/* Get the input stream - should not materialize yet */
+		final InputStream is = readData.inputStream();
+		assertTrue("Should be LazyInputStream", is instanceof LazyInputStream);
+
+
+		final InputStream is2 = readData.inputStream();
+		assertTrue("Should still be LazyInputStream since it hasn't been read yet", is2 instanceof LazyInputStream);
+		assertNotSame(is, is2);
+		is2.close();
+
+		assertFalse("Should not materialize when getting inputStream", materialized[0]);
+
+	 	assertEquals("available() should be 0 before first read", 0, is.available());
+		assertFalse("Should still not be materialized after available()", materialized[0]);
+
+		/* First read should trigger materialization */
+		final int firstByte = is.read();
+		assertEquals("First byte should be 0", 0, firstByte);
+		assertTrue("Should be materialized after first read", materialized[0]);
+
+		/* Read remaining bytes */
+		final byte[] remaining = new byte[N - 1];
+		final int bytesRead = is.read(remaining);
+		assertEquals("Should read remaining bytes", N - 1, bytesRead);
+
+		/* Verify all data was read correctly */
+		for (int i = 0; i < N - 1; i++) {
+			assertEquals("Byte at position " + (i + 1), (byte)(i + 1), remaining[i]);
+		}
+
+		is.close();
+
+		/* Call inputStream() again - should return a new stream from the already materialized bytes */
+		final InputStream is3 = readData.inputStream();
+		assertFalse("Should be not LazyInputStream", is3 instanceof LazyInputStream);
+
+		final byte[] allDataAgain = new byte[N];
+		is3.read(allDataAgain);
+		assertArrayEquals("Second inputStream should return same data", data, allDataAgain);
+		is3.close();
 	}
 
 	@Test

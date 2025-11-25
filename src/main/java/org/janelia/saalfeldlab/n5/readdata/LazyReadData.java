@@ -102,8 +102,10 @@ class LazyReadData implements ReadData {
 
 	@Override
 	public InputStream inputStream() throws N5IOException, IllegalStateException {
-		materialize();
-		return bytes.inputStream();
+		if (bytes != null)
+			return bytes.inputStream();
+
+		return new LazyInputStream(() -> materialize().inputStream());
 	}
 
 	@Override
