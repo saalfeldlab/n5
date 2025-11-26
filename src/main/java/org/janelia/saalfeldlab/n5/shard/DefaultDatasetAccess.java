@@ -42,6 +42,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Writer.DataBlockSupplier;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
+import org.janelia.saalfeldlab.n5.codec.DatasetCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
@@ -52,10 +53,16 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 	private final NestedGrid grid;
 	private final BlockCodec<?>[] codecs;
+	private final DatasetCodec<?>[] datasetCodecs;
 
-	public DefaultDatasetAccess(final NestedGrid grid, final BlockCodec<?>[] codecs) {
+	public DefaultDatasetAccess(final NestedGrid grid, final BlockCodec<?>[] codecs, DatasetCodec<?>[] datasetCodecs ) {
 		this.grid = grid;
 		this.codecs = codecs;
+		this.datasetCodecs = datasetCodecs;
+	}
+
+	public DefaultDatasetAccess(final NestedGrid grid, final BlockCodec<?>[] codecs) {
+		this( grid, codecs, new DatasetCodec[0]);
 	}
 
 	public NestedGrid getGrid() {
@@ -65,7 +72,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	@Override
 	public DataBlock<T> readBlock(final PositionValueAccess pva, final long[] gridPosition) throws N5IOException {
 		final NestedPosition position = grid.nestedPosition(gridPosition);
-		return readBlockRecursive(pva.get(position.key()), position, grid.numLevels() - 1);
+		return (DataBlock<T>)decodeWithDatasetCodecs(readBlockRecursive(pva.get(position.key()), position, grid.numLevels() - 1));
 	}
 
 	private DataBlock<T> readBlockRecursive(
@@ -145,6 +152,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		final NestedPosition firstBlock = positions.get(0);
 		final long[] shardPosition = firstBlock.absolute(level);
 
+		@SuppressWarnings("unchecked")
 		final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
 		final RawShard shard = codec.decode(readData, shardPosition).getData();
 
@@ -171,7 +179,10 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	}
 
 	@Override
-	public void writeBlock(final PositionValueAccess pva, final DataBlock<T> dataBlock) throws N5IOException {
+	public void writeBlock(final PositionValueAccess pva, final DataBlock<T> dataBlockArg) throws N5IOException {
+
+		@SuppressWarnings("unchecked")
+		final DataBlock<T> dataBlock = (DataBlock<T>)encodeWithDatasetCodecs(dataBlockArg);
 		final NestedPosition position = grid.nestedPosition(dataBlock.getGridPosition());
 		final long[] key = position.key();
 
@@ -467,4 +478,24 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			return dataBlock;
 		}
 	}
+
+	private DataBlock<?> decodeWithDatasetCodecs(DataBlock<?> block) {
+
+		DataBlock<?> result = block;
+		for (DatasetCodec<?> codec : datasetCodecs) {
+			result = codec.decode(result);
+		}
+		return result;
+	}
+
+	private DataBlock<?> encodeWithDatasetCodecs(DataBlock<?> block) {
+
+		DataBlock<?> result = block;
+		for (DatasetCodec codec : datasetCodecs) {
+			result = codec.encode(result);
+		}
+		return result;
+	}
+
+
 }
