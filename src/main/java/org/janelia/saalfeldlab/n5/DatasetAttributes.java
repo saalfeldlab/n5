@@ -52,6 +52,7 @@ import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DatasetCodec;
 import org.janelia.saalfeldlab.n5.codec.DatasetCodecInfo;
 
 
@@ -204,7 +205,16 @@ public class DatasetAttributes implements Serializable {
 			}
 		}
 
-		return new DefaultDatasetAccess<>(grid, blockCodecs);
+		final DatasetCodec[] datasetCodecs;
+		if (datasetCodecInfos != null) {
+			datasetCodecs = new DatasetCodec[datasetCodecInfos.length];
+			for (int i = 0; i < datasetCodecInfos.length; i++)
+				datasetCodecs[i] = datasetCodecInfos[i].create(this);
+
+		} else
+			datasetCodecs = new DatasetCodec[0];
+
+		return new DefaultDatasetAccess<>(grid, blockCodecs, datasetCodecs);
 	}
 
 	private static int nestingDepth(BlockCodecInfo info) {
