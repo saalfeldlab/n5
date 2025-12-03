@@ -28,7 +28,6 @@
  */
 package org.janelia.saalfeldlab.n5.codec.checksum;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.janelia.saalfeldlab.n5.codec.DataCodec;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
@@ -45,18 +44,6 @@ public class Crc32cChecksumCodec extends ChecksumCodec {
 	public Crc32cChecksumCodec() {
 
 		super(new CRC32(), 4);
-	}
-
-	@Override
-	public long encodedSize(final long size) {
-
-		return size + numChecksumBytes();
-	}
-
-	@Override
-	public long decodedSize(final long size) {
-
-		return size - numChecksumBytes();
 	}
 
 	@Override
@@ -77,4 +64,5 @@ public class Crc32cChecksumCodec extends ChecksumCodec {
 
 		return this;
 	}
+
 }

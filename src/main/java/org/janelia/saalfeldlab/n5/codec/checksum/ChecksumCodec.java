@@ -40,13 +40,13 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodec;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.DeterministicSizeCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DeterministicSizeDataCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
  * A {@link CodecInfo} that appends a checksum to data when encoding and can validate against that checksum when decoding.
  */
-public abstract class ChecksumCodec implements DataCodec, DataCodecInfo, DeterministicSizeCodecInfo {
+public abstract class ChecksumCodec implements DataCodec, DataCodecInfo, DeterministicSizeDataCodec {
 
 	private static final long serialVersionUID = 3141427377277375077L;
 
@@ -93,7 +93,6 @@ public abstract class ChecksumCodec implements DataCodec, DataCodecInfo, Determi
 
 	@Override public ReadData decode(ReadData readData) throws N5IOException {
 
-
 		return ReadData.from(new CheckedInputStream(readData.inputStream(), getChecksum()));
 	}
 
@@ -101,12 +100,6 @@ public abstract class ChecksumCodec implements DataCodec, DataCodecInfo, Determi
 	public long encodedSize(final long size) {
 
 		return size + numChecksumBytes();
-	}
-
-	@Override
-	public long decodedSize(final long size) {
-
-		return size - numChecksumBytes();
 	}
 
 	protected boolean valid(InputStream in) throws IOException {
