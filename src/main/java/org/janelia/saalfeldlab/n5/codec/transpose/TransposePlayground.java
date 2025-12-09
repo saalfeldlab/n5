@@ -1,6 +1,7 @@
 package org.janelia.saalfeldlab.n5.codec.transpose;
 
 import java.util.Arrays;
+
 import org.janelia.saalfeldlab.n5.DataType;
 
 /**
@@ -9,9 +10,9 @@ import org.janelia.saalfeldlab.n5.DataType;
 public class TransposePlayground {
 
 	public static void main(String[] args) {
-		transpose2D();
-		System.out.println("\n\n --------------------------------------- \n\n");
-		transpose3D();
+//		transpose2D();
+//		System.out.println("\n\n --------------------------------------- \n\n");
+//		transpose3D();
 	}
 
 	public static void transpose2D() {
@@ -24,7 +25,8 @@ public class TransposePlayground {
 		};
 
 		int[] decoded_size = {3, 2};
-		int[] order = {1, 0};
+		int[] order = {0, 1};
+//		int[] order = {1, 0};
 		System.out.println("decoded_size = " + Arrays.toString(decoded_size));
 		System.out.println("order = " + Arrays.toString(order));
 

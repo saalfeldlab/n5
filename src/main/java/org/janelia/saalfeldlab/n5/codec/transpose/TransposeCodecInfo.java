@@ -17,10 +17,10 @@ import org.janelia.saalfeldlab.n5.serialization.NameConfig;
  * Example:
  * 		order  = [1, 2, 0]
  * 		input  = [7, 8, 9] 		// interpret as a block size
- * 		result = [9, 7, 8] 		// permuted chunk size
+ * 		result = [9, 7, 8] 		// permuted block size
  *
  * <p>
- * See the specification of the <a href="https://zarr-specs.readthedocs.io/en/latest/v3/codecs/transpose/index.html#transpose-codec">Zarr's Transpose codec<a>.
+ * See the specification of <a href="https://zarr-specs.readthedocs.io/en/latest/v3/codecs/transpose/index.html#transpose-codec">Zarr's Transpose codec<a>.
  */
 @NameConfig.Name(value = TransposeCodecInfo.TYPE)
 public class TransposeCodecInfo implements DatasetCodecInfo {
