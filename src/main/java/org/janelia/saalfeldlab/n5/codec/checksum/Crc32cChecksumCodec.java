@@ -28,11 +28,13 @@
  */
 package org.janelia.saalfeldlab.n5.codec.checksum;
 
+import org.apache.commons.codec.digest.PureJavaCrc32C;
 import org.janelia.saalfeldlab.n5.codec.DataCodec;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 import java.nio.ByteBuffer;
-import java.util.zip.CRC32;
+import java.nio.ByteOrder;
+import java.util.zip.Checksum;
 
 @NameConfig.Name(Crc32cChecksumCodec.TYPE)
 public class Crc32cChecksumCodec extends ChecksumCodec {
@@ -43,14 +45,14 @@ public class Crc32cChecksumCodec extends ChecksumCodec {
 
 	public Crc32cChecksumCodec() {
 
-		super(new CRC32(), 4);
+		super(() -> new PureJavaCrc32C(), 4);
 	}
 
 	@Override
-	public ByteBuffer getChecksumValue() {
+	public ByteBuffer getChecksumValue(Checksum checksum) {
 
 		final ByteBuffer buf = ByteBuffer.allocate(numChecksumBytes());
-		buf.putInt((int)getChecksum().getValue());
+		buf.order(ByteOrder.LITTLE_ENDIAN).putInt((int)checksum.getValue());
 		return buf;
 	}
 

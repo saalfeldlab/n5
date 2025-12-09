@@ -29,13 +29,14 @@
 package org.janelia.saalfeldlab.n5.codec.checksum;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.zip.CheckedInputStream;
+import java.nio.ByteOrder;
+import java.util.function.Supplier;
 import java.util.zip.CheckedOutputStream;
 import java.util.zip.Checksum;
 
+import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodec;
@@ -44,7 +45,14 @@ import org.janelia.saalfeldlab.n5.codec.DeterministicSizeDataCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
- * A {@link CodecInfo} that appends a checksum to data when encoding and can validate against that checksum when decoding.
+ * A {@link CodecInfo} that appends a checksum to data when encoding and can
+ * validate against that checksum when decoding.
+ * <p>
+ * Checksum codec instances are expected to be thread safe, but {@link Checksum}
+ * implementations may not be. As a result, subclasses of this implementation
+ * provide a {@link Supplier} for an appropriate Checksum type, a new instance
+ * of which is created by {@link #getChecksum()} for each
+ * {@link #encode(ReadData)} and {@link #decode(ReadData)} call.
  */
 public abstract class ChecksumCodec implements DataCodec, DataCodecInfo, DeterministicSizeDataCodec {
 
@@ -52,17 +60,22 @@ public abstract class ChecksumCodec implements DataCodec, DataCodecInfo, Determi
 
 	private int numChecksumBytes;
 
-	private Checksum checksum;
+	private Supplier<Checksum> checksumSupplier;
 
-	public ChecksumCodec(Checksum checksum, int numChecksumBytes) {
+	public ChecksumCodec(Supplier<Checksum> checksumSupplier, int numChecksumBytes) {
 
-		this.checksum = checksum;
+		this.checksumSupplier = checksumSupplier;
 		this.numChecksumBytes = numChecksumBytes;
 	}
 
+	/**
+	 * Returns a new {@link Checksum} instance. 
+	 *
+	 * @return the checksum 
+	 */
 	public Checksum getChecksum() {
 
-		return checksum;
+		return checksumSupplier.get();
 	}
 
 	public int numChecksumBytes() {
@@ -71,13 +84,14 @@ public abstract class ChecksumCodec implements DataCodec, DataCodecInfo, Determi
 	}
 
 	private CheckedOutputStream createStream(OutputStream out) {
-		return new CheckedOutputStream(out, getChecksum()) {
 
+		final Checksum checksum = getChecksum();
+		return new CheckedOutputStream(out, checksum) {
 			private boolean closed = false;
-			@Override public void close() throws IOException {
-
+			@Override
+			public void close() throws IOException {
 				if (!closed) {
-					writeChecksum(out);
+					writeChecksum(checksum, out);
 					closed = true;
 					out.close();
 				}
@@ -88,12 +102,24 @@ public abstract class ChecksumCodec implements DataCodec, DataCodecInfo, Determi
 	@Override public ReadData encode(ReadData readData) {
 
 		return readData.encode(this::createStream);
-
 	}
 
 	@Override public ReadData decode(ReadData readData) throws N5IOException {
 
-		return ReadData.from(new CheckedInputStream(readData.inputStream(), getChecksum()));
+		final ReadData rdm = readData.materialize();
+		final long N = rdm.requireLength();
+
+		final ReadData data = rdm.slice(0, N - numChecksumBytes);
+		final long calculatedChecksum = computeChecksum(data);
+
+		final ReadData checksumRd = rdm.slice(N - numChecksumBytes, numChecksumBytes);
+		final long storedChecksum = readChecksum(checksumRd);
+
+		if( calculatedChecksum != storedChecksum)
+			throw new N5Exception(String.format("Calculated checksum (%d) does not match stored checksum (%d).",
+					calculatedChecksum, storedChecksum));
+
+		return data;
 	}
 
 	@Override
@@ -102,16 +128,17 @@ public abstract class ChecksumCodec implements DataCodec, DataCodecInfo, Determi
 		return size + numChecksumBytes();
 	}
 
-	protected boolean valid(InputStream in) throws IOException {
+	protected long readChecksum(ReadData checksumData) {
 
-		return readChecksum(in) == getChecksum().getValue();
+		return (long)checksumData.toByteBuffer()
+				.order(ByteOrder.LITTLE_ENDIAN)
+				.getInt();
 	}
 
-	protected long readChecksum(InputStream in) throws IOException {
-
-		final byte[] checksum = new byte[numChecksumBytes()];
-		in.read(checksum);
-		return ByteBuffer.wrap(checksum).getLong();
+	protected long computeChecksum(ReadData checksumData) {
+		final Checksum checksum = getChecksum();
+		checksum.update(checksumData.allBytes(), 0, (int)checksumData.requireLength());
+		return checksum.getValue();
 	}
 
 	/**
@@ -119,12 +146,11 @@ public abstract class ChecksumCodec implements DataCodec, DataCodecInfo, Determi
 	 *
 	 * @return a ByteBuffer representing the checksum value
 	 */
-	public abstract ByteBuffer getChecksumValue();
+	public abstract ByteBuffer getChecksumValue(Checksum checksum);
 
-	public void writeChecksum(OutputStream out) throws IOException {
+	protected void writeChecksum(Checksum checksum, OutputStream out) throws IOException {
 
-		out.write(getChecksumValue().array());
+		out.write(getChecksumValue(checksum).array());
 	}
-
 
 }
