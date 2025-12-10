@@ -31,6 +31,7 @@ package org.janelia.saalfeldlab.n5;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
@@ -97,6 +98,8 @@ public class DatasetAttributes implements Serializable {
 
 	private final DataType dataType;
 
+	private final JsonElement defaultValue;
+
 	private final BlockCodecInfo blockCodecInfo;
 	private final DataCodecInfo[] dataCodecInfos;
 	private final DatasetCodecInfo[] datasetCodecInfos;
@@ -107,6 +110,7 @@ public class DatasetAttributes implements Serializable {
 			final long[] dimensions,
 			final int[] outerBlockSize,
 			final DataType dataType,
+			final JsonElement defaultValue,
 			final BlockCodecInfo blockCodecInfo,
 			final DatasetCodecInfo[] datasetCodecInfos,
 			final DataCodecInfo... dataCodecInfos) {
@@ -114,6 +118,7 @@ public class DatasetAttributes implements Serializable {
 		this.dimensions = dimensions;
 		this.dataType = dataType;
 		this.outerBlockSize = outerBlockSize;
+		this.defaultValue = defaultValue == null ? JsonNull.INSTANCE : defaultValue;
 
 		this.blockCodecInfo = blockCodecInfo == null ? defaultBlockCodecInfo() : blockCodecInfo;
 		this.datasetCodecInfos = datasetCodecInfos;
@@ -127,6 +132,18 @@ public class DatasetAttributes implements Serializable {
 
 		access = createDatasetAccess();
 		blockSize = access.getGrid().getBlockSize(0);
+	}
+
+	public DatasetAttributes(
+			final long[] dimensions,
+			final int[] outerBlockSize,
+			final DataType dataType,
+			final BlockCodecInfo blockCodecInfo,
+			final DatasetCodecInfo[] datasetCodecInfos,
+			final DataCodecInfo... dataCodecInfos) {
+
+		this(dimensions, outerBlockSize, dataType, JsonNull.INSTANCE,
+				blockCodecInfo, datasetCodecInfos, dataCodecInfos);
 	}
 
 	public DatasetAttributes(
@@ -226,7 +243,6 @@ public class DatasetAttributes implements Serializable {
 		}
 	}
 
-
 	protected BlockCodecInfo defaultBlockCodecInfo() {
 
 		return new N5BlockCodecInfo();
@@ -245,6 +261,11 @@ public class DatasetAttributes implements Serializable {
 	public int[] getBlockSize() {
 
 		return blockSize;
+	}
+
+	public JsonElement getDefaultValue() {
+
+		return defaultValue;
 	}
 
 	public boolean isSharded() {
