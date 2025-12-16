@@ -40,13 +40,12 @@ import com.google.gson.JsonSerializer;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
-
 @NameConfig.Name(value = RawBlockCodecInfo.TYPE)
 public class RawBlockCodecInfo implements BlockCodecInfo {
 
 	private static final long serialVersionUID = 3282569607795127005L;
 
-	public static final String TYPE = "bytes";
+	public static final String TYPE = "raw-bytes";
 
 	@NameConfig.Parameter(value = "endian", optional = true)
 	private final ByteOrder byteOrder;
