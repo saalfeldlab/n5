@@ -130,14 +130,19 @@ public abstract class ChecksumCodec implements DataCodec, DataCodecInfo, Determi
 
 	protected long readChecksum(ReadData checksumData) {
 
-		return (long)checksumData.toByteBuffer()
-				.order(ByteOrder.LITTLE_ENDIAN)
-				.getInt();
+		// the computed checksum is a long that can take values in [0, 2^32 - 1]
+		// so convert the four bytes to an appropriate long
+		ByteBuffer buf = ByteBuffer.allocate(8);
+		buf.order(ByteOrder.LITTLE_ENDIAN);
+		buf.put(checksumData.allBytes());
+		buf.putInt(0);
+		buf.rewind();
+		return buf.getLong();
 	}
 
-	protected long computeChecksum(ReadData checksumData) {
+	protected long computeChecksum(ReadData data) {
 		final Checksum checksum = getChecksum();
-		checksum.update(checksumData.allBytes(), 0, (int)checksumData.requireLength());
+		checksum.update(data.allBytes(), 0, (int)data.requireLength());
 		return checksum.getValue();
 	}
 
