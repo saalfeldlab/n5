@@ -82,6 +82,8 @@ public class TransposeCodecInfo implements DatasetCodecInfo {
 
 		if( infos == null || infos.length == 0)
 			return null;
+		else if (infos.length == 1)
+			return infos[0];
 
 		// copy the initial order so we don't modify to the original
 		int[] order = new int[infos[0].order.length];
