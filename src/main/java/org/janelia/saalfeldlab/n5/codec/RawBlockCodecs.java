@@ -130,6 +130,12 @@ public class RawBlockCodecs {
 		@Override
 		public ReadData encode(DataBlock<T> dataBlock) {
 
+			// Handle null dataBlock (empty/default block)
+			// Returning null signals that this block should not be written
+			if (dataBlock == null) {
+				return null;
+			}
+
 			return ReadData.from(out -> {
 				final ReadData blockData = dataCodec.encode(dataBlock.getData());
 				codec.encode(blockData).writeTo(out);
