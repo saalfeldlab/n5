@@ -300,7 +300,10 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final boolean nestedWriteFully = writeFully || region.fullyContains(pos);
 			final ReadData existingData = nestedWriteFully ? null : getExistingReadData(pva, key);
 			final ReadData modifiedData = writeRegionRecursive(existingData, region, blocks, pos);
-			pva.put(key, modifiedData);
+			// Skip empty blocks (null modifiedData means block contains only default values)
+			if (modifiedData != null) {
+				pva.put(key, modifiedData);
+			}
 		}
 	}
 
