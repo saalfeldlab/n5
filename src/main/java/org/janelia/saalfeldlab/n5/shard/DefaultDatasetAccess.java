@@ -72,7 +72,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	@Override
 	public DataBlock<T> readBlock(final PositionValueAccess pva, final long[] gridPosition) throws N5IOException {
 		final NestedPosition position = grid.nestedPosition(gridPosition);
-		return (DataBlock<T>)decodeWithDatasetCodecs(readBlockRecursive(pva.get(position.key()), position, grid.numLevels() - 1));
+		return readBlockRecursive(pva.get(position.key()), position, grid.numLevels() - 1);
 	}
 
 	private DataBlock<T> readBlockRecursive(
@@ -83,8 +83,9 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			return null;
 		} else if (level == 0) {
 			@SuppressWarnings("unchecked")
-			final BlockCodec<T> codec = (BlockCodec<T>) codecs[0];
-			return codec.decode(readData, position.absolute(0));
+			final BlockCodec<?> codec = codecs[0];
+			DataBlock<?> rawBlock = codec.decode(readData, position.absolute(0));
+			return (DataBlock<T>)decodeWithDatasetCodecs(rawBlock);
 		} else {
 			@SuppressWarnings("unchecked")
 			final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
@@ -182,12 +183,11 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	public void writeBlock(final PositionValueAccess pva, final DataBlock<T> dataBlockArg) throws N5IOException {
 
 		@SuppressWarnings("unchecked")
-		final DataBlock<T> dataBlock = (DataBlock<T>)encodeWithDatasetCodecs(dataBlockArg);
-		final NestedPosition position = grid.nestedPosition(dataBlock.getGridPosition());
+		final NestedPosition position = grid.nestedPosition(dataBlockArg.getGridPosition());
 		final long[] key = position.key();
 
 		final ReadData existingData = getExistingReadData(pva, key);
-		final ReadData modifiedData = writeBlockRecursive(existingData, dataBlock, position, grid.numLevels() - 1);
+		final ReadData modifiedData = writeBlockRecursive(existingData, dataBlockArg, position, grid.numLevels() - 1);
 		pva.put(key, modifiedData);
 	}
 
@@ -199,7 +199,8 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		if (level == 0) {
 			@SuppressWarnings("unchecked")
 			final BlockCodec<T> codec = (BlockCodec<T>) codecs[0];
-			return codec.encode(dataBlock);
+			DataBlock<T> datasetEncodedDataBlock = (DataBlock<T>)encodeWithDatasetCodecs(dataBlock);
+			return codec.encode(datasetEncodedDataBlock);
 		} else {
 			@SuppressWarnings("unchecked")
 			final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
