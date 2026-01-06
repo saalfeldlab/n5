@@ -342,6 +342,11 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 					: codec.decode(existingReadData, gridPosition);
 			final DataBlock<T> dataBlock = blocks.get(gridPosition, existingDataBlock);
 
+			// null blocks may be provided when they contain only the fill value
+			// and only non-empty blocks should be written, for example
+			if (dataBlock == null)
+				return null;
+
 			return codec.encode(dataBlock);
 		} else {
 

@@ -115,6 +115,13 @@ public interface PositionValueAccess {
 		@Override
 		public void put(long[] key, ReadData data) throws N5IOException {
 
+			// TODO is this the behavior we want?
+			// if so, consider changing this method's name to 'update', say
+			if (data == null) {
+				remove(key);
+				return;
+			}
+
 			try ( final LockedChannel ch = kva.lockForWriting(absolutePath(key));
 				  final OutputStream outputStream = ch.newOutputStream();) {
 				data.writeTo(outputStream);
