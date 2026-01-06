@@ -364,6 +364,10 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				shard.setElementData(modifiedElementData, elementPos);
 			}
 
+			// do not write empty shards
+			if (shard.isEmpty())
+				return null;
+
 			return codec.encode(new RawShardDataBlock(gridPos, shard));
 		}
 	}

@@ -73,6 +73,10 @@ public class RawShard {
 		return index;
 	}
 
+	public boolean isEmpty() {
+		return index().allElementsNull();
+	}
+
 	public ReadData getElementData(final long[] pos) {
 		final Segment segment = index.get(pos);
 		return segment == null ? null : segment.source().slice(segment);
