@@ -60,6 +60,23 @@ public interface DatasetAccess<T> {
 
 	List<DataBlock<T>> readBlocks(PositionValueAccess pva, List<long[]> positions) throws N5IOException;
 
+	/**
+	 * Attempt to read all blocks at the given {@code positions}, and return a list of the blocks that exist.
+	 * <p>
+	 * For non-sharded datasets, this checks if each block value in the KV store exists, and read those that do.
+	 * For sharded datasets, this reads the shard index first to determine which blocks exist,
+	 * then reads only those blocks.
+	 *
+	 * @param pva
+	 * 		the position value access
+	 * @param positions
+	 * 		the list of block grid positions to check
+	 * @return list of blocks that exist (excludes non-existent blocks)
+	 * @throws N5IOException
+	 * 		if an error occurs
+	 */
+	List<DataBlock<T>> readBlocksExists(PositionValueAccess pva, List<long[]> positions) throws N5IOException;
+
 	void writeBlocks(PositionValueAccess pva, List<DataBlock<T>> blocks) throws N5IOException;
 
 //	TODO:

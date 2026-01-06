@@ -42,11 +42,11 @@ import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
-import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.*;
+import org.janelia.saalfeldlab.n5.codec.transpose.TransposeCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
+import org.janelia.saalfeldlab.n5.codec.transpose.TransposeCodecInfo;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -76,6 +76,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RunWith(Parameterized.class)
 public class ShardTest {
@@ -488,32 +489,407 @@ public class ShardTest {
 		System.out.println("");
 	}
 
+	@Test
+	public void shardExistsTest() {
+
+		final N5Writer writer = tempN5Factory.createTempN5Writer();
+
+		final DatasetAttributes datasetAttributes = getTestAttributes(
+				new long[]{24, 24},
+				new int[]{8, 8},
+				new int[]{2, 2}
+		);
+
+		final String dataset = "shardExists";
+		writer.remove(dataset);
+		writer.createDataset(dataset, datasetAttributes);
+
+		final int[] blockSize = datasetAttributes.getBlockSize();
+		final int numElements = blockSize[0] * blockSize[1];
+
+		final byte[] data = new byte[numElements];
+		for (int i = 0; i < data.length; i++) {
+			data[i] = (byte)(i);
+		}
+
+		/* write blocks to shards (0,0), (1,0), and (2,2) */
+		writer.writeBlocks(
+				dataset,
+				datasetAttributes,
+				new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data),  /* shard (0, 0) */
+				new ByteArrayDataBlock(blockSize, new long[]{4, 0}, data),  /* shard (1, 0) */
+				new ByteArrayDataBlock(blockSize, new long[]{11, 11}, data) /* shard (2, 2) */
+		);
+
+		/* shards that should exist */
+		Assert.assertTrue("Shard (0,0) should exist", writer.shardExists(dataset, datasetAttributes, 0, 0));
+		Assert.assertTrue("Shard (1,0) should exist", writer.shardExists(dataset, datasetAttributes, 1, 0));
+		Assert.assertTrue("Shard (2,2) should exist", writer.shardExists(dataset, datasetAttributes, 2, 2));
+
+		/* shards that should NOT exist */
+		Assert.assertFalse("Shard (0,1) should not exist", writer.shardExists(dataset, datasetAttributes, 0, 1));
+		Assert.assertFalse("Shard (1,1) should not exist", writer.shardExists(dataset, datasetAttributes, 1, 1));
+		Assert.assertFalse("Shard (2,0) should not exist", writer.shardExists(dataset, datasetAttributes, 2, 0));
+		Assert.assertFalse("Shard (0,2) should not exist", writer.shardExists(dataset, datasetAttributes, 0, 2));
+	}
+
+	@Test
+	public void readBlocksExistsTest() {
+
+		final TrackingN5Writer writer = (TrackingN5Writer)tempN5Factory.createTempN5Writer();
+
+		final DatasetAttributes datasetAttributes = getTestAttributes(
+				new long[]{24, 24},
+				new int[]{8, 8},
+				new int[]{2, 2}
+		);
+
+		final String dataset = "readBlocksExists";
+		writer.remove(dataset);
+		writer.createDataset(dataset, datasetAttributes);
+
+		final int[] blockSize = datasetAttributes.getBlockSize();
+		final int numElements = blockSize[0] * blockSize[1];
+
+		final byte[] data = new byte[numElements];
+		for (int i = 0; i < data.length; i++) {
+			data[i] = (byte)(i);
+		}
+
+		/* write only some blocks: (0,0), (1,1) in shard (0,0) and (4,0) in shard (1,0) */
+		final long[][] blockPositions = new long[][]{
+				{0, 0},
+				{1, 1},
+				{4, 0}
+		};
+		writer.writeBlocks(
+				dataset,
+				datasetAttributes,
+				new ByteArrayDataBlock(blockSize, blockPositions[0], data),
+				new ByteArrayDataBlock(blockSize, blockPositions[1], data),
+				new ByteArrayDataBlock(blockSize, blockPositions[2], data)
+		);
+
+		/* request a mix of existing and non-existing blocks */
+		final List<long[]> requestedPositions = Arrays.asList(
+				new long[]{0, 0},   /* exists in shard (0,0) */
+				new long[]{0, 1},   /* does NOT exist in shard (0,0) */
+				new long[]{1, 1},   /* exists in shard (0,0) */
+				new long[]{4, 0},   /* exists in shard (1,0) */
+				new long[]{5, 0},   /* does NOT exist in shard (1,0) */
+				new long[]{10, 10}  /* shard (2,2) does NOT exist at all */
+		);
+
+		final List<DataBlock<Object>> existingBlocks = writer.readBlocksExists(dataset, datasetAttributes, requestedPositions);
+
+		/* should only return the 3 existing blocks */
+		Assert.assertEquals("Should return exactly 3 existing blocks", 3, existingBlocks.size());
+
+		/* sort returned blocks by grid position for comparison */
+		existingBlocks.sort((a, b) -> {
+			final long[] posA = a.getGridPosition();
+			final long[] posB = b.getGridPosition();
+			for (int i = 0; i < posA.length; i++) {
+				int cmp = Long.compare(posA[i], posB[i]);
+				if (cmp != 0)
+					return cmp;
+			}
+			return 0;
+		});
+
+
+
+		/* verify grid positions and data of returned blocks */
+		for (int i = 0; i < existingBlocks.size(); i++) {
+			final DataBlock<Object> block = existingBlocks.get(i);
+			Assert.assertArrayEquals("Block grid position should match", blockPositions[i], block.getGridPosition());
+			Assert.assertArrayEquals("Block data should match", data, (byte[])block.getData());
+		}
+	}
+
+	@Test
+	public void readBlocksExistsNoReadBeforeExistenceCheckTest() {
+
+		final TrackingN5Writer writer = (TrackingN5Writer)tempN5Factory.createTempN5Writer();
+
+		final DatasetAttributes datasetAttributes = getTestAttributes(
+				new long[]{24, 24},
+				new int[]{8, 8},
+				new int[]{2, 2}
+		);
+
+		final String dataset = "readBlocksExistsNoReadBeforeCheck";
+		writer.remove(dataset);
+		writer.createDataset(dataset, datasetAttributes);
+
+		final int[] blockSize = datasetAttributes.getBlockSize();
+		final int numElements = blockSize[0] * blockSize[1];
+
+		final byte[] data = new byte[numElements];
+		for (int i = 0; i < data.length; i++) {
+			data[i] = (byte)(i);
+		}
+
+		writer.writeBlock(dataset, datasetAttributes, new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data));
+
+		writer.resetNumMaterializeCalls();
+		writer.resetNumIsFileCalls();
+
+		final List<long[]> nonExistentShardPositions = Arrays.asList(
+				new long[]{8, 8},
+				new long[]{9, 9},
+				new long[]{10, 10}
+		);
+
+		final List<DataBlock<Object>> blocksFromNonExistentShard = writer.readBlocksExists(
+				dataset, datasetAttributes, nonExistentShardPositions);
+
+		Assert.assertTrue("Should return no blocks from non-existent shard", blocksFromNonExistentShard.isEmpty());
+		Assert.assertTrue("Should have checked existence via isFile", writer.getNumIsFileCalls() > 0);
+		Assert.assertEquals("Should not materialize data for non-existent shard", 0, writer.getNumMaterializeCalls());
+	}
+
+	@Test
+	public void readBlocksExistsOnlyReadsExistingBlocksInShardTest() {
+
+		final TrackingN5Writer writer = (TrackingN5Writer)tempN5Factory.createTempN5Writer();
+
+		/*
+		 * shard size 8x8 with block size 2x2 means 16 block slots per shard
+		 * N5 block header is 12 bytes, block data is 4 bytes = 16 bytes per block
+		 * index is 16 blocks * 16 bytes (2 longs per block) = 256 bytes
+		 */
+		final int n5HeaderSizeBytes = 12;
+
+		DefaultShardCodecInfo blockCodec = new DefaultShardCodecInfo(
+				new int[]{2, 2},
+				new N5BlockCodecInfo(),
+				new DataCodecInfo[]{new RawCompression()},
+				new RawBlockCodecInfo(),
+				new DataCodecInfo[]{new RawCompression()},
+				IndexLocation.END);
+
+		final DatasetAttributes datasetAttributes = new DatasetAttributes(
+				new long[]{24, 24},
+				new int[]{8, 8},
+				DataType.UINT8,
+				blockCodec);
+
+		final String dataset = "readBlocksExistsOnlyReadsExisting";
+		writer.remove(dataset);
+		writer.createDataset(dataset, datasetAttributes);
+
+		final int[] blockSize = datasetAttributes.getBlockSize();
+		final int numElements = blockSize[0] * blockSize[1];
+		final int blockDataSize = numElements + n5HeaderSizeBytes;
+		final int indexSize = 16 * 16; /* 16 blocks * 2 longs * 8 bytes */
+
+		final byte[] data = new byte[numElements];
+		for (int i = 0; i < data.length; i++) {
+			data[i] = (byte)(i);
+		}
+
+		/* write only 2 blocks to the shard (0,0) out of 16 possible slots */
+		writer.writeBlocks(
+				dataset,
+				datasetAttributes,
+				new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data),
+				new ByteArrayDataBlock(blockSize, new long[]{1, 1}, data)
+		);
+
+		final KeyValueAccess kva = writer.getKeyValueAccess();
+		final String shardPath = kva.compose(writer.getURI(), dataset, "0", "0");
+		final long fullShardSize = kva.size(shardPath);
+
+		/* the shard should contain: index (256 bytes) + 2 blocks (16 bytes each) = 288 bytes */
+		final long expectedShardSize = indexSize + 2 * blockDataSize;
+		Assert.assertEquals("Shard size should match expected", expectedShardSize, fullShardSize);
+
+		writer.resetAllTracking();
+
+		/*
+		 * request 4 blocks: 2 exist, 2 don't exist (but are in the same shard)
+		 * we should only read: index + 2 existing blocks, NOT the non-existent block data
+		 */
+		final List<long[]> requestedPositions = Arrays.asList(
+				new long[]{0, 0}, /* exists */
+				new long[]{0, 1}, /* does NOT exist */
+				new long[]{1, 0}, /* does NOT exist */
+				new long[]{1, 1}  /* exists */
+		);
+
+		final List<DataBlock<Object>> existingBlocks = writer.readBlocksExists(
+				dataset, datasetAttributes, requestedPositions);
+
+		Assert.assertEquals("Should return exactly 2 existing blocks", 2, existingBlocks.size());
+
+		/*
+		 * the total bytes read should be: index + 2 blocks
+		 * this verifies we didn't try to read non-existent blocks
+		 */
+		final long expectedBytesRead = indexSize + 2 * blockDataSize;
+		final long actualBytesRead = writer.getTotalBytesRead();
+
+		Assert.assertEquals(
+				"Should only read index + existing blocks, not non-existent block data",
+				expectedBytesRead,
+				actualBytesRead);
+	}
+
 	/**
-	 * An N5Writer that tracks the number of materialize calls performed by 
+	 * Tests that dataset codecs (like transpose) are correctly applied when
+	 * reading blocks from a sharded dataset using bulk read operations.
+	 */
+	@Test
+	public void readBlocksAppliesDatasetCodecsTest() {
+
+		final N5Writer writer = tempN5Factory.createTempN5Writer();
+
+		/* 2x3 block with transpose codec [1, 0] will swap to 3x2 in storage */
+		final int[] blockSize = new int[]{2, 3};
+		final int[] shardSize = new int[]{4, 6};
+		final long[] dimensions = new long[]{4, 6};
+
+
+		final DefaultShardCodecInfo shardCodec = new DefaultShardCodecInfo(
+				blockSize,
+				new N5BlockCodecInfo(),
+				new DataCodecInfo[]{new RawCompression()},
+				new RawBlockCodecInfo(),
+				new DataCodecInfo[]{new RawCompression()},
+				IndexLocation.END);
+
+		AtomicInteger transposeEncodeCount = new AtomicInteger(0);
+		AtomicInteger transposeDecodeCount = new AtomicInteger(0);
+
+		final TransposeCodecInfo trackingTransposeCodec = new TransposeCodecInfo(new int[]{1, 0}) {
+			@Override
+			public <T> DatasetCodec<T> create(DatasetAttributes datasetAttributes) {
+
+				return new TransposeCodec<T>(datasetAttributes.getDataType(), getOrder()) {
+					@Override
+					public DataBlock<?> encode(DataBlock<T> dataBlock) {
+						transposeEncodeCount.incrementAndGet();
+						return super.encode(dataBlock);
+					}
+
+					@Override
+					public DataBlock<T> decode(DataBlock<?> dataBlock) {
+						transposeDecodeCount.incrementAndGet();
+						return super.decode(dataBlock);
+					}
+				};
+			}
+		};
+
+        final DatasetAttributes datasetAttributes = new DatasetAttributes(
+				dimensions,
+				shardSize,
+				DataType.UINT8,
+				shardCodec,
+				new DatasetCodecInfo[]{trackingTransposeCodec});
+
+		final String dataset = "readBlocksDatasetCodecs";
+		writer.remove(dataset);
+		writer.createDataset(dataset, datasetAttributes);
+
+		/*
+		 * Create asymmetric data so we can detect if transpose was applied.
+		 * For a 2x3 block, we'll use row-major data:
+		 *   [0, 1]
+		 *   [2, 3]
+		 *   [4, 5]
+		 * If transpose is NOT applied on read, data would be in storage order
+		 * (3x2 transposed layout).
+		 */
+		final byte[] originalData = new byte[]{0, 1, 2, 3, 4, 5};
+		final ByteArrayDataBlock block = new ByteArrayDataBlock(blockSize, new long[]{0, 0}, originalData);
+
+		writer.writeBlocks(dataset, datasetAttributes, block);
+		Assert.assertEquals("Transpose Encode called once", 1, transposeEncodeCount.get());
+		Assert.assertEquals("Transpose Decode not called", 0, transposeDecodeCount.get());
+
+		/* read back using bulk read (readBlocks) which uses the sharded path */
+		final List<long[]> positions = Collections.singletonList(new long[]{0, 0});
+		final List<DataBlock<Object>> readBlocks = writer.readBlocks(dataset, datasetAttributes, positions);
+
+		Assert.assertEquals("Should read exactly 1 block", 1, readBlocks.size());
+
+		final DataBlock<Object> readBlock = readBlocks.get(0);
+		final byte[] readData = (byte[])readBlock.getData();
+
+
+		Assert.assertEquals("Transpose Encode called once still", 1, transposeEncodeCount.get());
+		Assert.assertEquals("Transpose Decode called once now", 1, transposeDecodeCount.get());
+
+		/*
+		 * If decodeWithDatasetCodecs was applied, the data should match original.
+		 * If NOT applied, data would still be in transposed storage order.
+		 */
+		Assert.assertArrayEquals(
+				"Block data should match original after dataset codec decode",
+				originalData,
+				readData);
+	}
+
+	/**
+	 * An N5Writer that tracks the number of materialize calls performed by
 	 * its underlying key value access.
 	 */
 	public static class TrackingN5Writer extends N5KeyValueWriter {
+
+		final TrackingFileSystemKeyValueAccess tkva;
 		public TrackingN5Writer(String basePath) {
 
-			super( new TrackingFileSystemKeyValueAccess(FileSystems.getDefault()),
-					basePath, new GsonBuilder(), false);
+			super( new TrackingFileSystemKeyValueAccess(FileSystems.getDefault()), basePath, new GsonBuilder(), false);
+			tkva = (TrackingFileSystemKeyValueAccess)getKeyValueAccess();
 		}
 
 		public void resetNumMaterializeCalls() {
-			((TrackingFileSystemKeyValueAccess)super.getKeyValueAccess()).numMaterializeCalls = 0;
+			tkva.numMaterializeCalls = 0;
 		}
 
 		public int getNumMaterializeCalls() {
-			return ((TrackingFileSystemKeyValueAccess)super.getKeyValueAccess()).numMaterializeCalls;
+			return tkva.numMaterializeCalls;
+		}
+
+		public void resetNumIsFileCalls() {
+			tkva.numIsFileCalls = 0;
+		}
+
+		public int getNumIsFileCalls() {
+			return tkva.numIsFileCalls;
+		}
+
+		public void resetTotalBytesRead() {
+			tkva.totalBytesRead = 0;
+		}
+
+		public long getTotalBytesRead() {
+			return tkva.totalBytesRead;
+		}
+
+		public void resetAllTracking() {
+			tkva.numMaterializeCalls = 0;
+			tkva.numIsFileCalls = 0;
+			tkva.totalBytesRead = 0;
 		}
 	}
 
 	private static class TrackingFileSystemKeyValueAccess extends FileSystemKeyValueAccess {
 
 		private int numMaterializeCalls = 0;
+		private int numIsFileCalls = 0;
+		private long totalBytesRead = 0;
 
 		protected TrackingFileSystemKeyValueAccess(FileSystem fileSystem) {
 			super(fileSystem);
+		}
+
+		@Override
+		public boolean isFile(String normalPath) {
+			numIsFileCalls++;
+			return super.isFile(normalPath);
 		}
 
 		@Override
@@ -551,6 +927,7 @@ public class ShardTest {
 						throw new IndexOutOfBoundsException();
 
 					final int sz = (int)(length < 0 ? channelSize : length);
+					totalBytesRead += sz;
 					final byte[] data = new byte[sz];
 					final ByteBuffer buf = ByteBuffer.wrap(data);
 					channel.read(buf);

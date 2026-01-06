@@ -59,6 +59,8 @@ public interface PositionValueAccess {
 
 	void put(long[] key, ReadData data) throws N5Exception.N5IOException;
 
+	boolean exists(long[] key) throws N5Exception.N5IOException;
+
 	boolean remove(long[] key) throws N5Exception.N5IOException;
 
 	public static PositionValueAccess fromKva(
@@ -103,6 +105,11 @@ public interface PositionValueAccess {
 		@Override
 		public ReadData get(long[] key) throws N5IOException {
 			return kva.createReadData(absolutePath(key));
+		}
+
+		@Override
+		public boolean exists(long[] key) throws N5IOException {
+			return kva.isFile(absolutePath(key));
 		}
 
 		@Override

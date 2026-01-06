@@ -128,6 +128,122 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	}
 
 	/**
+	 * For a Non-Sharded dataset, reads all existing data blocks from the given positions.
+	 * The method checks if a block exists at a given position before attempting to read it.
+	 *
+	 * @param pva a {@code PositionValueAccess} instance to access data based on positions
+	 * @param positions a list of long arrays representing the grid positions of the blocks to be read
+	 * @return a list of {@code DataBlock<T>} objects for all valid and existing blocks at the specified positions
+	 */
+	private List<DataBlock<T>> readBlocksExistsNonSharded(PositionValueAccess pva, List<long[]> positions) {
+		final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
+		for (long[] pos : positions) {
+			final NestedPosition position = grid.nestedPosition(pos);
+			if (pva.exists(position.key())) {
+				final DataBlock<T> block = readBlock(pva, pos);
+				if (block != null)
+					blocks.add(block);
+			}
+		}
+		return blocks;
+	}
+
+	/**
+	 * For a Sharded Dataset, reads all existing data blocks from the given positions.
+	 * The method groups blocks by shard, checks shard existence, reads shard data,
+	 * and determines which blocks within the shard exist before returning them.
+	 * If the KVA supports partial reads, this should take advantage of reading
+	 * the index only to check existence and only read blocks that exist.
+	 *
+	 * @param pva a {@code PositionValueAccess} instance to access data based on shard keys
+	 * @param positions a list of long arrays representing the grid positions of the blocks to be read
+	 * @return a list of {@code DataBlock<T>} objects for all valid and existing blocks at the specified positions
+	 */
+	private List<DataBlock<T>> readBlocksExistsSharded(PositionValueAccess pva, List<long[]> positions) {
+		/* group blocks by shard, read shard index to determine which blocks exist */
+		final List<NestedPosition> blockPositions = positions.stream().map(grid::nestedPosition).collect(Collectors.toList());
+		final int outermostLevel = grid.numLevels() - 1;
+		final Collection<List<NestedPosition>> blocksPerOutermostShard = groupInnerPositions(grid, blockPositions, outermostLevel);
+
+		final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
+		for (List<NestedPosition> blocksInSingleShard : blocksPerOutermostShard) {
+			if (blocksInSingleShard.isEmpty())
+				continue;
+
+			final NestedPosition firstBlock = blocksInSingleShard.get(0);
+			final long[] shardKey = firstBlock.key();
+
+			/* check if the shard key value exists */
+			boolean shardExists = pva.exists(shardKey);
+			if (!shardExists)
+				continue;
+
+
+			final ReadData shardData = pva.get(shardKey);
+			final List<DataBlock<T>> shardBlocks = readBlocksExistsShardedRecursive(shardData, blocksInSingleShard, outermostLevel);
+			blocks.addAll(shardBlocks);
+		}
+		return blocks;
+	}
+
+	/**
+	 * Read only the blocks that exist within a shard by checking the shard index first.
+	 */
+	private List<DataBlock<T>> readBlocksExistsShardedRecursive(
+			final ReadData readData,
+			final List<NestedPosition> positions,
+			final int level) {
+
+		if (readData == null || level == 0 || positions.isEmpty())
+			return Collections.emptyList();
+
+		final NestedPosition firstBlock = positions.get(0);
+		final long[] shardPosition = firstBlock.absolute(level);
+
+		final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
+		final RawShard shard = codec.decode(readData, shardPosition).getData();
+
+		final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
+		if (level == 1) {
+			/* base case: check the index and read blocks that exist */
+			for (NestedPosition blockPosition : positions) {
+				final long[] elementPos = blockPosition.relative(0);
+				if (shard.index().get(elementPos) != null) {
+					final ReadData elementData = shard.getElementData(elementPos);
+					final DataBlock<T> block = readBlockRecursive(elementData, blockPosition, 0);
+					if (block != null)
+						blocks.add(block);
+				}
+			}
+		} else {
+			/* nested shards: group by next level and recurse */
+			final Collection<List<NestedPosition>> nextLevelShards = groupInnerPositions(grid, positions, level - 1);
+			for (List<NestedPosition> innerPositions : nextLevelShards) {
+				if (innerPositions.isEmpty())
+					continue;
+				final NestedPosition firstInner = innerPositions.get(0);
+				final long[] innerShardPos = firstInner.relative(level - 1);
+				if (shard.index().get(innerShardPos) != null) {
+					final ReadData innerShardData = shard.getElementData(innerShardPos);
+					blocks.addAll(readBlocksExistsShardedRecursive(innerShardData, innerPositions, level - 1));
+				}
+			}
+		}
+
+		return blocks;
+	}
+
+	@Override
+	public List<DataBlock<T>> readBlocksExists(PositionValueAccess pva, List<long[]> positions) throws N5IOException {
+
+		boolean unsharded = grid.numLevels() == 1;
+		if (unsharded)
+			return readBlocksExistsNonSharded(pva, positions);
+		else
+			return readBlocksExistsSharded(pva, positions);
+	}
+
+	/**
 	 * Bulk Read operation on a shard. `positions` MUST all be in the same shard.
 	 * That is, for each `position` in `positions`, `position.absolute(level)` must be the same.
 	 *

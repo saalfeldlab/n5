@@ -148,4 +148,27 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		return getKeyValueAccess().compose(getURI(), normalPath, getAttributesKey());
 	}
+
+	@Override
+	default boolean shardExists(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final long... gridPosition) throws N5Exception {
+
+		final String normalPath = N5URI.normalizeGroupPath(pathName);
+		final String blockPath = getKeyValueAccess().compose(getURI(), normalPath,
+				datasetAttributes.relativeBlockPath(gridPosition));
+		return getKeyValueAccess().isFile(blockPath);
+	}
+
+	@Override
+	default <T> List<DataBlock<T>> readBlocksExists(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final List<long[]> gridPositions) throws N5Exception {
+
+		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(),
+				N5URI.normalizeGroupPath(pathName), datasetAttributes);
+		return datasetAttributes.<T>getDatasetAccess().readBlocksExists(posKva, gridPositions);
+	}
 }
