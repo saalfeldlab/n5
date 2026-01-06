@@ -6,7 +6,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 /**
  * A Codec that transforms the contents of a {@link DataBlock}.
  * <p>
- * This class is N5's analogue to Zarr's array -> array codec.
+ * This class is N5's analogue to Zarr's array-to-array codec.
  */
 public interface DatasetCodec<T> {
 
