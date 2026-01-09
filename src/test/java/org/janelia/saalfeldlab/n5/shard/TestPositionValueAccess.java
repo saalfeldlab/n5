@@ -34,7 +34,6 @@ import java.util.Map;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
-import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 
 public class TestPositionValueAccess implements PositionValueAccess {
 
@@ -50,6 +49,11 @@ public class TestPositionValueAccess implements PositionValueAccess {
 	public void put(final long[] key, final ReadData data) {
 		final byte[] bytes = data == null ? null : data.allBytes();
 		map.put(new Key(key), bytes);
+	}
+
+	@Override
+	public boolean exists(long[] key) throws N5IOException {
+		return map.containsKey(new Key(key));
 	}
 
 	@Override

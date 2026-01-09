@@ -39,14 +39,10 @@ import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5FSTest;
 import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
 import org.janelia.saalfeldlab.n5.N5Writer;
-import org.janelia.saalfeldlab.n5.NameConfigAdapter;
 import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
-import org.janelia.saalfeldlab.n5.codec.CodecInfo;
-import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.*;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 import org.junit.After;
@@ -55,8 +51,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -77,6 +75,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 @RunWith(Parameterized.class)
 public class ShardTest {
@@ -88,7 +90,7 @@ public class ShardTest {
 		@Override public N5Writer createTempN5Writer() {
 
 			if (LOCAL_DEBUG) {
-				final N5Writer writer = new ShardedN5Writer("src/test/resources/test.n5");
+				final N5Writer writer = new TrackingN5Writer("src/test/resources/test.n5");
 				writer.remove(""); // Clear old when starting new test
 				return writer;
 			}
@@ -96,7 +98,7 @@ public class ShardTest {
 			final String basePath = new File(tempN5PathName()).toURI().normalize().getPath();
 			try {
 				String uri = new URI("file", null, basePath, null).toString();
-				return new ShardedN5Writer(uri);
+				return new TrackingN5Writer(uri);
 			} catch (URISyntaxException e) {
 				e.printStackTrace();
 			}
@@ -116,10 +118,6 @@ public class ShardTest {
 			}
 		}
 	};
-
-	public static GsonBuilder gsonBuilder() {
-		return new GsonBuilder();
-	}
 
 	@Parameterized.Parameters(name = "IndexLocation({0}), Index ByteOrder({1})")
 	public static Collection<Object[]> data() {
@@ -313,7 +311,7 @@ public class ShardTest {
 
 		int numBlocksPerShard = 16;
 		final int n5HeaderSizeBytes = 12; // 2 + 2 + 4*2
-		final DatasetAttributes datasetAttributes = getTestAttributes(
+		final DatasetAttributes attrs = getTestAttributes(
 				new long[]{24, 24},
 				new int[]{8, 8},
 				new int[]{2, 2}
@@ -321,7 +319,9 @@ public class ShardTest {
 
 		final String dataset = "writeBlocksShardSize";
 		writer.remove(dataset);
-		writer.createDataset(dataset, datasetAttributes);
+		final DatasetAttributes datasetAttributes = writer.createDataset(dataset, attrs);
+		assertTrue(datasetAttributes.isSharded());
+
 		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
 
 		final int[] blockSize = datasetAttributes.getBlockSize();
@@ -438,7 +438,7 @@ public class ShardTest {
 	 */
 	public void numReadsTest() {
 
-		final ShardedN5Writer writer = (ShardedN5Writer)tempN5Factory.createTempN5Writer();
+		final TrackingN5Writer writer = (TrackingN5Writer)tempN5Factory.createTempN5Writer();
 
 		final DatasetAttributes datasetAttributes = getTestAttributes(
 				new long[]{24, 24},
@@ -491,52 +491,120 @@ public class ShardTest {
 		System.out.println("");
 	}
 
-	/**
-	 * An N5Writer that serializing the sharding codecs, enabling testing of
-	 * shard functionality, despite the fact that the N5 format does not support
-	 * sharding.
-	 */
-	public static class ShardedN5Writer extends N5KeyValueWriter {
+	@Test
+	public void shardExistsTest() {
 
-		Gson gson;
+		final N5Writer writer = tempN5Factory.createTempN5Writer();
 
-		public ShardedN5Writer(String basePath) {
+		final DatasetAttributes datasetAttributes = getTestAttributes(
+				new long[]{24, 24},
+				new int[]{8, 8},
+				new int[]{2, 2}
+		);
 
-			super( new TrackingFileSystemKeyValueAccess(FileSystems.getDefault()),
-					basePath, new GsonBuilder(), false);
+		final String dataset = "shardExists";
+		writer.remove(dataset);
+		writer.createDataset(dataset, datasetAttributes);
+
+		final int[] blockSize = datasetAttributes.getBlockSize();
+		final int numElements = blockSize[0] * blockSize[1];
+
+		final byte[] data = new byte[numElements];
+		for (int i = 0; i < data.length; i++) {
+			data[i] = (byte)(i);
 		}
 
-		public ShardedN5Writer(String basePath, GsonBuilder gsonBuilder) {
+		/* write blocks to shards (0,0), (1,0), and (2,2) */
+		writer.writeBlocks(
+				dataset,
+				datasetAttributes,
+				new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data),  /* shard (0, 0) */
+				new ByteArrayDataBlock(blockSize, new long[]{4, 0}, data),  /* shard (1, 0) */
+				new ByteArrayDataBlock(blockSize, new long[]{11, 11}, data) /* shard (2, 2) */
+		);
 
-			this(basePath);
-			gsonBuilder.registerTypeAdapter(DataType.class, new DataType.JsonAdapter());
-			gsonBuilder.registerTypeHierarchyAdapter(CodecInfo.class, NameConfigAdapter.getJsonAdapter(CodecInfo.class));
-			gsonBuilder.registerTypeHierarchyAdapter(ByteOrder.class, RawBlockCodecInfo.byteOrderAdapter);
-			gsonBuilder.disableHtmlEscaping();
-			gson = gsonBuilder.create();
+		TrackingN5Writer trackingWriter = ((TrackingN5Writer) writer);
+
+		Function<long[], Boolean> assertShardExistsTracking = (gridPosition) -> {
+			trackingWriter.resetAllTracking();
+			final Boolean exists = writer.shardExists(dataset, datasetAttributes, gridPosition);
+			assertEquals("isFileCheck incremented", 1, trackingWriter.getNumIsFileCalls());
+			assertEquals("No Bytes Read", 0, trackingWriter.getTotalBytesRead());
+			return exists;
+		};
+
+
+		trackingWriter.resetAllTracking();
+		/* shards that should exist should only check file  */
+		Assert.assertTrue("Shard (0,0) should exist", assertShardExistsTracking.apply(new long[]{0, 0}));
+		Assert.assertTrue("Shard (1,0) should exist", assertShardExistsTracking.apply(new long[]{1, 0}));
+		Assert.assertTrue("Shard (2,2) should exist", assertShardExistsTracking.apply(new long[]{2, 2}));
+
+		/* shards that should NOT exist */
+		Assert.assertFalse("Shard (0,1) should not exist", assertShardExistsTracking.apply(new long[]{0, 1}));
+		Assert.assertFalse("Shard (1,1) should not exist", assertShardExistsTracking.apply(new long[]{1, 1}));
+		Assert.assertFalse("Shard (2,0) should not exist", assertShardExistsTracking.apply(new long[]{2, 0}));
+		Assert.assertFalse("Shard (0,2) should not exist", assertShardExistsTracking.apply(new long[]{0, 2}));
+	}
+
+	/**
+	 * An N5Writer that tracks the number of materialize calls performed by
+	 * its underlying key value access.
+	 */
+	public static class TrackingN5Writer extends N5KeyValueWriter {
+
+		final TrackingFileSystemKeyValueAccess tkva;
+		public TrackingN5Writer(String basePath) {
+
+			super( new TrackingFileSystemKeyValueAccess(FileSystems.getDefault()), basePath, new GsonBuilder(), false);
+			tkva = (TrackingFileSystemKeyValueAccess)getKeyValueAccess();
 		}
 
 		public void resetNumMaterializeCalls() {
-			((TrackingFileSystemKeyValueAccess)super.getKeyValueAccess()).numMaterializeCalls = 0;
+			tkva.numMaterializeCalls = 0;
 		}
 
 		public int getNumMaterializeCalls() {
-			return ((TrackingFileSystemKeyValueAccess)super.getKeyValueAccess()).numMaterializeCalls;
+			return tkva.numMaterializeCalls;
 		}
 
-		@Override
-		public Gson getGson() {
-			// the super constructor needs the gson instance, unfortunately
-			return gson == null ? super.gson : gson;
+		public void resetNumIsFileCalls() {
+			tkva.numIsFileCalls = 0;
+		}
+
+		public int getNumIsFileCalls() {
+			return tkva.numIsFileCalls;
+		}
+
+		public void resetTotalBytesRead() {
+			tkva.totalBytesRead = 0;
+		}
+
+		public long getTotalBytesRead() {
+			return tkva.totalBytesRead;
+		}
+
+		public void resetAllTracking() {
+			tkva.numMaterializeCalls = 0;
+			tkva.numIsFileCalls = 0;
+			tkva.totalBytesRead = 0;
 		}
 	}
 
 	private static class TrackingFileSystemKeyValueAccess extends FileSystemKeyValueAccess {
 
 		private int numMaterializeCalls = 0;
+		private int numIsFileCalls = 0;
+		private long totalBytesRead = 0;
 
 		protected TrackingFileSystemKeyValueAccess(FileSystem fileSystem) {
 			super(fileSystem);
+		}
+
+		@Override
+		public boolean isFile(String normalPath) {
+			numIsFileCalls++;
+			return super.isFile(normalPath);
 		}
 
 		@Override
@@ -574,6 +642,7 @@ public class ShardTest {
 						throw new IndexOutOfBoundsException();
 
 					final int sz = (int)(length < 0 ? channelSize : length);
+					totalBytesRead += sz;
 					final byte[] data = new byte[sz];
 					final ByteBuffer buf = ByteBuffer.wrap(data);
 					channel.read(buf);
