@@ -7,7 +7,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 /**
  * A Codec that transforms the contents of a {@link DataBlock}.
  * <p>
- * This class is N5's analogue to Zarr's array -> array codec.
+ * This class is N5's analogue to Zarr's array-to-array codec.
  *
  * @param <S> source data type (data contained in decoded blocks)
  * @param <T> target data type (data contained in encoded blocks)
