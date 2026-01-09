@@ -75,7 +75,6 @@ public interface DatasetAccess<T> {
 	 * 		size in pixels of region to write
 	 * @param blocks
 	 * 		is asked to create blocks within the given region
-	 * @param datasetDimensions
 	 * @param writeFully
 	 * 		if false, merge existing data in shards/blocks that overlap the region boundary. if true, override everything.
 	 *
@@ -86,7 +85,6 @@ public interface DatasetAccess<T> {
 			long[] min,
 			long[] size,
 			DataBlockSupplier<T> blocks,
-			long[] datasetDimensions,
 			boolean writeFully
 	) throws N5IOException;
 
@@ -99,7 +97,6 @@ public interface DatasetAccess<T> {
 	 * 		size in pixels of region to write
 	 * @param blocks
 	 * 		is asked to create blocks within the given region. must be thread-safe.
-	 * @param datasetDimensions
 	 * @param writeFully
 	 * 		if false, merge existing data in shards/blocks that overlap the region boundary. if true, override everything.
 	 * @param exec
@@ -114,7 +111,6 @@ public interface DatasetAccess<T> {
 			long[] min,
 			long[] size,
 			DataBlockSupplier<T> blocks,
-			long[] datasetDimensions,
 			boolean writeFully,
 			ExecutorService exec
 	) throws N5Exception, InterruptedException, ExecutionException;

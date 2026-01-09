@@ -222,7 +222,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final boolean writeFully) throws N5Exception {
 		try {
 			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(datasetPath), datasetAttributes);
-			datasetAttributes.<T>getDatasetAccess().writeRegion(posKva, min, size, dataBlocks, datasetAttributes.getDimensions(), writeFully);
+			datasetAttributes.<T>getDatasetAccess().writeRegion(posKva, min, size, dataBlocks, writeFully);
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write blocks into dataset " + datasetPath, e);
@@ -240,7 +240,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final ExecutorService exec) throws N5Exception, InterruptedException, ExecutionException {
 		try {
 			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(datasetPath), datasetAttributes);
-			datasetAttributes.<T>getDatasetAccess().writeRegion(posKva, min, size, dataBlocks, datasetAttributes.getDimensions(), writeFully, exec);
+			datasetAttributes.<T>getDatasetAccess().writeRegion(posKva, min, size, dataBlocks, writeFully, exec);
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write blocks into dataset " + datasetPath, e);

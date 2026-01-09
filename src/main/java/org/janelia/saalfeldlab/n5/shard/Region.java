@@ -31,6 +31,7 @@ package org.janelia.saalfeldlab.n5.shard;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 
 /**
  * Bounds, in pixel coordinates, of a region in a dataset.
@@ -43,17 +44,13 @@ class Region {
 	/**
 	 * The dimensions of the full dataset.
 	 * This is used to decide whether DataBlocks are on the border (and therefore possibly truncated).
-	 * <p>
-	 * TODO:
-	 *   Currently, the constructor expands this to {@code min + size} (if that is larger than the provided datasetDimensions).
-	 *   Do we want this, or should we rather throw an {@code }IllegalArgumentException} in that case?
 	 */
 	private final long[] datasetDimensions;
 
 	/**
 	 * The nested grid of the dataset
 	 */
-	private final Nesting.NestedGrid grid;
+	private final NestedGrid grid;
 
 	/**
 	 * min pixel position in the region
@@ -75,15 +72,13 @@ class Region {
 	 */
 	private final Nesting.NestedPosition maxPos;
 
-	Region(final long[] min, final long[] size, final Nesting.NestedGrid grid, final long[] datasetDimensions) {
+	Region(final long[] min, final long[] size, final NestedGrid grid) {
 		this.min = min;
 		this.size = size;
 		this.grid = grid;
+		this.datasetDimensions = grid.getDatasetSize();
 
 		final int n = min.length;
-		this.datasetDimensions = new long[n];
-		Arrays.setAll(this.datasetDimensions, d -> Math.max(min[d] + size[d], datasetDimensions[d]));
-
 		final int[] blockSize = grid.getBlockSize(0);
 
 		final long[] minBlock = new long[n];
@@ -177,7 +172,6 @@ class Region {
 		return nestedPositions;
 	}
 
-	// TODO: Can this fully replace GridIterator?
 	// TODO: Revise to accept Consumer<long[]> for handling each position
 	static List<long[]> gridPositions(final long[] min, final long[] max) {
 		final int n = min.length;
