@@ -141,7 +141,7 @@ public interface N5Writer extends N5Reader {
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes) throws N5Exception {
 
-		setAttribute(datasetPath, "/", datasetAttributes);
+		setAttribute(datasetPath, "/", getConvertedDatasetAttributes(datasetAttributes));
 	}
 
 	/**
@@ -212,8 +212,9 @@ public interface N5Writer extends N5Reader {
 
 		final String normalPath = N5URI.normalizeGroupPath(datasetPath);
 		createGroup(normalPath);
-		setDatasetAttributes(normalPath, datasetAttributes);
-		return datasetAttributes;
+		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		setDatasetAttributes(normalPath, convertedDatasetAttributes);
+		return convertedDatasetAttributes;
 	}
 
 	/**
@@ -268,8 +269,10 @@ public interface N5Writer extends N5Reader {
 			final DataBlock<T>... dataBlocks) throws N5Exception {
 
 		// default method is naive
-		for (DataBlock<T> block : dataBlocks)
-			writeBlock(datasetPath, datasetAttributes, block);
+		DatasetAttributes convertedAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		for (DataBlock<T> block : dataBlocks) {
+			writeBlock(datasetPath, convertedAttributes, block);
+		}
 	}
 
 	@FunctionalInterface

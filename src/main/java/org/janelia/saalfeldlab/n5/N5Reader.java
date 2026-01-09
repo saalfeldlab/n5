@@ -282,6 +282,22 @@ public interface N5Reader extends AutoCloseable {
 	DatasetAttributes getDatasetAttributes(final String pathName) throws N5Exception;
 
 	/**
+	 * Some implementations may need to convert arbitrary DatasetAttributes to their specific equivalent variant.
+	 * Ideally, this method would be `protected`, but that's not valid for the interface. The default implementation
+	 * is the identity (returns the input DatasetAttributes unchanged).
+	 * <p>
+	 * The returned DatasetAttributes is not guaranteed to be a unique instance.
+	 *
+	 * @param attributes
+	 * 				to convert
+	 * @return the converted attributes
+	 */
+	default DatasetAttributes getConvertedDatasetAttributes(final DatasetAttributes attributes) {
+		return attributes;
+	}
+
+
+	/**
 	 * Reads a {@link DataBlock}.
 	 *
 	 * @param <T>
@@ -324,9 +340,10 @@ public interface N5Reader extends AutoCloseable {
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> gridPositions) throws N5Exception {
 
+		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
 		for( final long[] p : gridPositions )
-			blocks.add(readBlock(pathName, datasetAttributes, p));
+			blocks.add(readBlock(pathName, convertedDatasetAttributes, p));
 
 		return blocks;
 	}
@@ -376,7 +393,8 @@ public interface N5Reader extends AutoCloseable {
 			final DatasetAttributes attributes,
 			final long... gridPosition) throws N5Exception, ClassNotFoundException {
 
-		final DataBlock<byte[]> block = readBlock(dataset, attributes, gridPosition);
+		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(attributes);
+		final DataBlock<byte[]> block = readBlock(dataset, convertedDatasetAttributes, gridPosition);
 		if (block == null)
 			return null;
 
