@@ -20,7 +20,7 @@ import org.janelia.saalfeldlab.n5.serialization.NameConfig;
  * 		result = [9, 7, 8] 		// permuted block size
  *
  * <p>
- * See the specification of <a href="https://zarr-specs.readthedocs.io/en/latest/v3/codecs/transpose/index.html#transpose-codec">Zarr's Transpose codec<a>.
+ * See the specification of <a href="https://zarr-specs.readthedocs.io/en/latest/v3/codecs/transpose/index.html#transpose-codec">Zarr's Transpose codec</a>.
  */
 @NameConfig.Name(value = TransposeCodecInfo.TYPE)
 public class TransposeCodecInfo implements DatasetCodecInfo {
