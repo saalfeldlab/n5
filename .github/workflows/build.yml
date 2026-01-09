@@ -4,11 +4,13 @@ on:
   push:
     branches:
       - master
+      - development
     tags:
       - "*-[0-9]+.*"
   pull_request:
     branches:
       - master
+      - development
 
 jobs:
   build:
