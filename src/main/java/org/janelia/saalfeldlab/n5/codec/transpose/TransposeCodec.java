@@ -4,39 +4,37 @@ import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.codec.DatasetCodec;
 
-public class TransposeCodec<T> implements DatasetCodec<T> {
+public class TransposeCodec<T> implements DatasetCodec<T, T> {
 
-	private DataType dataType;
+	private final DataType dataType;
 	private final int[] order;
 
 	private final Transpose<T> transpose;
 
-	public TransposeCodec(DataType dataType, int[] order) {
+	public TransposeCodec(final DataType dataType, final int[] order) {
 
 		this.order = order;
 		this.dataType = dataType;
 		transpose = Transpose.of(dataType, order.length);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public DataBlock<?> encode(DataBlock<T> dataBlock) {
+	public DataBlock<T> encode(final DataBlock<T> dataBlock) {
 
 		DataBlock<T> encodedBlock = (DataBlock<T>)dataType.createDataBlock(dataBlock.getSize(), dataBlock.getGridPosition(), dataBlock.getNumElements());
 		transpose.encode(dataBlock.getData(), encodedBlock.getData(), dataBlock.getSize(), order);
 		return encodedBlock;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public DataBlock<T> decode(DataBlock<?> dataBlock) {
+	public DataBlock<T> decode(final DataBlock<T> dataBlock) {
 
 		DataBlock<T> decodedBlock = (DataBlock<T>)dataType.createDataBlock(dataBlock.getSize(), dataBlock.getGridPosition(), dataBlock.getNumElements());
 		transpose.decode((T)dataBlock.getData(), decodedBlock.getData(), dataBlock.getSize(), order);
 		return decodedBlock;
 	}
 
-	public static boolean isIdentity(int[] permutation) {
+	public static boolean isIdentity(final int[] permutation) {
 
 		for (int i = 0; i < permutation.length; i++)
 			if (permutation[i] != i)
@@ -45,7 +43,7 @@ public class TransposeCodec<T> implements DatasetCodec<T> {
 		return true;
 	}
 
-	public static boolean isReversal(int[] permutation) {
+	public static boolean isReversal(final int[] permutation) {
 
 		for (int i = 0; i < permutation.length; i++)
 			if (permutation[i] != i)
@@ -65,7 +63,7 @@ public class TransposeCodec<T> implements DatasetCodec<T> {
 
 	/**
 	 * Composes two permutations: result[i] = first[second[i]].
-	 * 
+	 *
 	 * @param first
 	 *            the first permutation
 	 * @param second
@@ -85,7 +83,7 @@ public class TransposeCodec<T> implements DatasetCodec<T> {
 	/**
 	 * Conjugates a permutation with the reversal permutation: rev * p * rev^-1,
 	 * where rev is the permutation that reverses the elements.
-	 * 
+	 *
 	 * @param p
 	 *            the permutation to conjugate
 	 * @return the conjugated permutation
