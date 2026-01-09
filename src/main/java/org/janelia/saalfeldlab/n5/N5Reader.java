@@ -332,6 +332,27 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
+	 * Checks if a shard (or block for non-sharded datasets) exists at the
+	 * given grid position without reading the data.
+	 * <p>
+	 * This method only checks for the presence of the key value for the gridPosition, it does not
+	 * read or validate the contents.
+	 *
+	 * @param pathName
+	 *            dataset path
+	 * @param datasetAttributes
+	 *            the dataset attributes
+	 * @param gridPosition
+	 *            the shard grid position (or block position for non-sharded datasets)
+	 * @return true if the shard (or block) file exists
+	 * @throws N5Exception
+	 *             the exception
+	 */
+	boolean shardExists(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final long... gridPosition) throws N5Exception;
+	/**
 	 * Load a {@link DataBlock} as a {@link Serializable}. The offset is given
 	 * in
 	 * {@link DataBlock} grid coordinates.
