@@ -211,7 +211,7 @@ public class DatasetAttributes implements Serializable {
 		BlockCodecInfo currentBlockCodecInfo = blockCodecInfo;
 		DataCodecInfo[] currentDataCodecInfos = dataCodecInfos;
 
-		final NestedGrid grid = new NestedGrid(blockSizes);
+		final NestedGrid grid = new NestedGrid(blockSizes, dimensions);
 		final BlockCodec<?>[] blockCodecs = new BlockCodec[m];
 		for (int l = m - 1; l >= 0; --l) {
 			blockCodecs[l] = currentBlockCodecInfo.create(dataType, blockSizes[l], currentDataCodecInfos);

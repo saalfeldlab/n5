@@ -223,13 +223,25 @@ public class Nesting {
 		private final int[][] blockSizes;
 
 		/**
+		 * dimensions of the dataset in pixels.
+		 */
+		private final long[] datasetSize;
+
+		/**
+		 * dimensions of the dataset in (level-0) blocks.
+		 */
+		private final long[] datasetSizeInBlocks;
+
+		/**
 		 * {@code blockSizes[l][d]} is the block size at level {@code l} in dimension {@code d}.
 		 * Level 0 contains the smallest blocks. blockSizes[l+1][d] must be a multiple of blockSizes[l][d].
 		 *
 		 * @param blockSizes
 		 * 		block sizes for all levels and dimensions.
+		 * @param datasetSize
+		 * 		size of the dataset.
 		 */
-		public NestedGrid(int[][] blockSizes) {
+		public NestedGrid(int[][] blockSizes, long[] datasetSize) {
 
 			if (blockSizes == null)
 				throw new IllegalArgumentException("blockSizes is null");
@@ -238,6 +250,7 @@ public class Nesting {
 				throw new IllegalArgumentException("blockSizes[0] is null");
 
 			this.blockSizes = blockSizes;
+			this.datasetSize = datasetSize;
 
 			numLevels = blockSizes.length;
 			numDimensions = blockSizes[0].length;
@@ -255,7 +268,7 @@ public class Nesting {
 
 				for (int d = 0; d < numDimensions; ++d) {
 
-					if (blockSizes[l][d] <= 0 ) {
+					if (blockSizes[l][d] <= 0) {
 						throw new IllegalArgumentException(
 								String.format("Block sizes at level %d (%d) is negative for dimension %d.",
 										l, blockSizes[l][d], d));
@@ -264,14 +277,14 @@ public class Nesting {
 					if (blockSizes[l][d] < blockSizes[k][d]) {
 						throw new IllegalArgumentException(
 								String.format("Block sizes at level %d (%d) is smaller than previous level (%d) "
-										+ " for dimension %d.",
+												+ " for dimension %d.",
 										l, blockSizes[l][d], blockSizes[k][d], d));
 					}
 
 					if (blockSizes[l][d] % blockSizes[k][d] != 0) {
 						throw new IllegalArgumentException(
 								String.format("Block sizes at level %d (%d) not a multiple of previous level (%d) "
-										+ " for dimension %d.",
+												+ " for dimension %d.",
 										l, blockSizes[l][d], blockSizes[k][d], d));
 					}
 
@@ -279,6 +292,17 @@ public class Nesting {
 					relativeToAdjacent[l][d] = blockSizes[l][d] / blockSizes[k][d];
 				}
 			}
+
+			if (datasetSize == null) {
+				datasetSizeInBlocks = null;
+			} else {
+				datasetSizeInBlocks = new long[numDimensions];
+				Arrays.setAll(datasetSizeInBlocks, d -> (datasetSize[d] + blockSizes[0][d] - 1) / blockSizes[0][d]);
+			}
+		}
+
+		public NestedGrid(int[][] blockSizes) {
+			this(blockSizes, null);
 		}
 
 		public int numLevels() {
@@ -469,6 +493,30 @@ public class Nesting {
 		 */
 		public int[] relativeBlockSize(final int level) {
 			return relativeToAdjacent[level];
+		}
+
+		/**
+		 * Get the size of the dataset in pixels.
+		 * <p>
+		 * This might return {@code null}, if this {@code NestedGrid} was not
+		 * constructed with dataset dimensions.
+		 *
+		 * @return size of the dataset in pixels
+		 */
+		public long[] getDatasetSize() {
+			return datasetSize;
+		}
+
+		/**
+		 * Get the size of the dataset in units of DataBlocks.
+		 * <p>
+		 * This might return {@code null}, if this {@code NestedGrid} was not
+		 * constructed with dataset dimensions.
+		 *
+		 * @return size of the dataset in pixels
+		 */
+		public long[] getDatasetSizeInBlocks() {
+			return datasetSizeInBlocks;
 		}
 	}
 }

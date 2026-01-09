@@ -291,11 +291,10 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final long[] min,
 			final long[] size,
 			final DataBlockSupplier<T> blocks,
-			final long[] datasetDimensions,
 			final boolean writeFully
 	) throws N5IOException {
 
-		final Region region = new Region(min, size, grid, datasetDimensions);
+		final Region region = new Region(min, size, grid);
 
 		for (long[] key : Region.gridPositions(region.minPos().key(), region.maxPos().key())) {
 			final NestedPosition pos = grid.nestedPosition(key, grid.numLevels() - 1);
@@ -312,11 +311,10 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final long[] min,
 			final long[] size,
 			final DataBlockSupplier<T> blocks,
-			final long[] datasetDimensions,
 			final boolean writeFully,
 			final ExecutorService exec) throws N5Exception, InterruptedException, ExecutionException {
 
-		final Region region = new Region(min, size, grid, datasetDimensions);
+		final Region region = new Region(min, size, grid);
 
 		for (long[] key : Region.gridPositions(region.minPos().key(), region.maxPos().key())) {
 			exec.submit(() -> {
