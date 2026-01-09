@@ -51,10 +51,10 @@ public class TransposeCodecInfo implements DatasetCodecInfo {
 	}
 
 	@Override
-	public <T> DatasetCodec<T> create(DatasetAttributes datasetAttributes) {
+	public TransposeCodec<?> create(DatasetAttributes datasetAttributes) {
 
 		validate();
-		return new TransposeCodec<T>(datasetAttributes.getDataType(), getOrder());
+		return new TransposeCodec<>(datasetAttributes.getDataType(), getOrder());
 	}
 
 	@Override
@@ -75,7 +75,7 @@ public class TransposeCodecInfo implements DatasetCodecInfo {
 		final int[] missingIndexes = IntStream.range(0, order.length).filter(i -> !indexFound[i]).toArray();
 		if( missingIndexes.length > 0 )
 			throw new N5Exception("Invalid order for TransposeCodec. Missing indexes: " + Arrays.toString(missingIndexes));
-	
+
 	}
 
 	public static TransposeCodecInfo concatenate(TransposeCodecInfo[] infos) {

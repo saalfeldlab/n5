@@ -197,7 +197,7 @@ public class DatasetAttributes implements Serializable {
 		// The inner-most codec (the DataBlock codec) is at index 0.
 		final int[][] blockSizes = new int[m][];
 
-		// NestedGrid validates block sizes, so instantiate it before creating the blockCodecs  
+		// NestedGrid validates block sizes, so instantiate it before creating the blockCodecs
 		// blockCodecInfo.create below could fail unexpecedly with invalid
 		// blockSizes so validate first
 		blockSizes[m - 1] = outerBlockSize;
@@ -216,22 +216,19 @@ public class DatasetAttributes implements Serializable {
 		for (int l = m - 1; l >= 0; --l) {
 			blockCodecs[l] = currentBlockCodecInfo.create(dataType, blockSizes[l], currentDataCodecInfos);
 			if (l > 0) {
-				final ShardCodecInfo info = (ShardCodecInfo)currentBlockCodecInfo;
+				final ShardCodecInfo info = (ShardCodecInfo) currentBlockCodecInfo;
 				currentBlockCodecInfo = info.getInnerBlockCodecInfo();
 				currentDataCodecInfos = info.getInnerDataCodecInfos();
 			}
 		}
 
-		final DatasetCodec[] datasetCodecs;
 		if (datasetCodecInfos != null) {
-			datasetCodecs = new DatasetCodec[datasetCodecInfos.length];
-			for (int i = 0; i < datasetCodecInfos.length; i++)
-				datasetCodecs[i] = datasetCodecInfos[i].create(this);
+			for (final DatasetCodecInfo info : datasetCodecInfos) {
+				blockCodecs[0] = DatasetCodec.concatenate(info.create(this), (BlockCodec) blockCodecs[0]);
+			}
+		}
 
-		} else
-			datasetCodecs = new DatasetCodec[0];
-
-		return new DefaultDatasetAccess<>(grid, blockCodecs, datasetCodecs);
+		return new DefaultDatasetAccess<>(grid, blockCodecs);
 	}
 
 	private static int nestingDepth(BlockCodecInfo info) {
