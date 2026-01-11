@@ -30,6 +30,7 @@ package org.janelia.saalfeldlab.n5.shard;
 
 
 import java.util.Arrays;
+import java.util.Objects;
 
 public class Nesting {
 
@@ -124,27 +125,60 @@ public class Nesting {
 			return sb.toString();
 		}
 
+		// TODO: Consider making Comparable, equals, and hashCode assume that
+		//       everything is on the same NestedGrid. This is how we use it in
+		//       practice, and it would simplify things a little bit.
+
 		@Override
 		public int compareTo(NestedPosition o) {
 
-			final int dimensionInequality = Integer.compare(numDimensions(), o.numDimensions());
-			if (dimensionInequality != 0)
-				return dimensionInequality;
+			if (o.grid != grid)
+				throw new IllegalArgumentException("NestedPositions of different NestedGrids are not comparable");
 
 			final int levelInequality = Integer.compare(level, o.level);
 			if (levelInequality != 0)
 				return levelInequality;
 
-			for (int i = position.length - 1; i >= 0; --i) {
-				final long diff = position[i] - o.position[i];
-				if (diff != 0)
-					return (int) diff;
+			final int[] sk = grid.relativeToBase[level];
+			for (int l = grid.numLevels() - 1; l >= 0; --l) {
+				final int[] si = grid.relativeToBase[l];
+				final boolean maxLevel = l < grid.numLevels - 1;
+				final int[] rj = maxLevel ? grid.relativeToAdjacent[l + 1] : null;
+				for (int d = grid.numDimensions - 1; d >= 0; --d) {
+					long relative = position[d] * sk[d] / si[d];
+					long orelative = o.position[d] * sk[d] / si[d];
+					if (maxLevel) {
+						relative %= rj[d];
+						orelative %= rj[d];
+					}
+					final int posInequality = Long.compare(relative, orelative);
+					if (posInequality != 0)
+						return posInequality;
+				}
 			}
 
 			return 0;
 		}
 
-		// TODO: equals() and hashCode()
+		@Override
+		public boolean equals(final Object o) {
+
+			if (o == this)
+				return true;
+
+			if (!(o instanceof NestedPosition))
+				return false;
+			final NestedPosition that = (NestedPosition) o;
+
+			return level == that.level && Objects.equals(grid, that.grid) && Objects.deepEquals(position, that.position);
+		}
+
+		@Override
+		public int hashCode() {
+
+			return Objects.hash(grid, Arrays.hashCode(position), level);
+		}
+
 		// TODO: should we have prefix()? suffix()? head()? tail()?
 	}
 
