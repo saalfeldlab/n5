@@ -106,6 +106,10 @@ public class Nesting {
 			return grid.pixelPosition(position, level);
 		}
 
+		public long[] maxPixelPosition() {
+			return grid.maxPixelPosition(position, level);
+		}
+
 		@Override
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
@@ -357,6 +361,54 @@ public class Nesting {
 				final int sourceLevel) {
 			final long[] targetPos = new long[numDimensions];
 			pixelPosition(sourcePos, sourceLevel, targetPos);
+			return targetPos;
+		}
+
+		/**
+		 * Get the maximum pixel position in the shard/block at the given {@code
+		 * sourcePos} grid position at {@code sourceLevel}.
+		 * <p>
+		 * Note that this does not take into account {@link #getDatasetSize()
+		 * dataset dimensions}. That is, it is always assumed that the
+		 * shard/block has the default size.
+		 *
+		 * @param sourcePos
+		 * 		a grid position at {@code sourceLevel}
+		 * @param sourceLevel
+		 * 		nesting level of {@code sourcePos}
+		 * @param targetPos
+		 * 		the pixel position will be stored here
+		 */
+		public void maxPixelPosition(
+				final long[] sourcePos,
+				final int sourceLevel,
+				final long[] targetPos) {
+			final int[] s = blockSizes[sourceLevel];
+			for (int d = 0; d < numDimensions; ++d) {
+				targetPos[d] = (sourcePos[d] + 1) * s[d] - 1;
+			}
+		}
+
+		/**
+		 * Get the maximum pixel position in the shard/block at the given {@code
+		 * sourcePos} grid position at {@code sourceLevel}.
+		 * <p>
+		 * Note that this does not take into account {@link #getDatasetSize()
+		 * dataset dimensions}. That is, it is always assumed that the
+		 * shard/block has the default size.
+		 *
+		 * @param sourcePos
+		 * 		a grid position at {@code sourceLevel}
+		 * @param sourceLevel
+		 * 		nesting level of {@code sourcePos}
+		 *
+		 * @return the pixel position
+		 */
+		public long[] maxPixelPosition(
+				final long[] sourcePos,
+				final int sourceLevel) {
+			final long[] targetPos = new long[numDimensions];
+			maxPixelPosition(sourcePos, sourceLevel, targetPos);
 			return targetPos;
 		}
 
