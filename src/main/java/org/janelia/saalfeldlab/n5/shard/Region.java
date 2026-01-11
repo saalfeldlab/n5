@@ -125,7 +125,7 @@ class Region {
 			}
 		}
 
-		final long[] pmax = maxPixelPos(position);
+		final long[] pmax = position.maxPixelPosition();
 		for (int d = 0; d < pmax.length; d++) {
 			final long m = Math.min(pmax[d], datasetDimensions[d] - 1);
 			if (m > min[d] + size[d] - 1) {
@@ -134,14 +134,6 @@ class Region {
 		}
 
 		return true;
-	}
-
-	// TODO: Revise. Inline? Should this be method of NestedPosition?
-	private long[] maxPixelPos(final Nesting.NestedPosition position) {
-		final long[] pos = position.pixelPosition();
-		final int[] elementSize = grid.getBlockSize(position.level());
-		Arrays.setAll(pos, d -> pos[d] + elementSize[d] - 1);
-		return pos;
 	}
 
 	/**
