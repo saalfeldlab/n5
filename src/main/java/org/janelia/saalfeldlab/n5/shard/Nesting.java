@@ -114,8 +114,8 @@ public class Nesting {
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
 			sb.append('{');
-			for ( int l = level; l < grid.numLevels(); ++l ) {
-				if ( l > level ) {
+			for (int l = level; l < grid.numLevels(); ++l) {
+				if (l > level) {
 					sb.append(" / ");
 				}
 				sb.append(Arrays.toString(relative(l)));
@@ -161,54 +161,7 @@ public class Nesting {
 	 */
 	public static class NestedGrid {
 
-		/**
-		 * Create a {@code NestedPosition} at the specified nesting {@code
-		 * level} grid {@code position}.
-		 * <p>
-		 * Note that {@code position} is in units of grid elements at {@code
-		 * level}. Positions with {@code level=0} refer to the DataBlock grid,
-		 * positions with {@code level=1} refer to first-level Shard grid, and
-		 * so on.
-		 * <p>
-		 * The returned {@code NestedPosition} will have
-		 * {@link NestedPosition#level() level()==level}.
-		 *
-		 * @param position
-		 * 		position at {@code level}
-		 * @param level
-		 * 		nesting level of {@code position}
-		 *
-		 * @return a NestedPosition representation of the specified grid position and nesting level
-		 */
-		public NestedPosition nestedPosition(final long[] position, final int level) {
-			return new NestedPosition(this, position, level);
-		}
-
-		/**
-		 * Create a {@code NestedPosition} at the specified block grid {@code
-		 * position} (that is, at nesting level 0).
-		 * <p>
-		 * Note that {@code position} is in units of DataBlocks.
-		 * <p>
-		 * The returned {@code NestedPosition} will have
-		 * {@link NestedPosition#level() level()==0}.
-		 *
-		 * @param position
-		 * 		position at level 0 (block grid)
-		 *
-		 * @return a NestedPosition representation of the specified block grid position
-		 */
-		public NestedPosition nestedPosition(final long[] position) {
-			return nestedPosition(position, 0);
-		}
-
-
-
-
-
-
 		private final int numLevels;
-
 		private final int numDimensions;
 
 		/**
@@ -307,6 +260,47 @@ public class Nesting {
 
 		public NestedGrid(int[][] blockSizes) {
 			this(blockSizes, null);
+		}
+
+		/**
+		 * Create a {@code NestedPosition} at the specified nesting {@code
+		 * level} grid {@code position}.
+		 * <p>
+		 * Note that {@code position} is in units of grid elements at {@code
+		 * level}. Positions with {@code level=0} refer to the DataBlock grid,
+		 * positions with {@code level=1} refer to first-level Shard grid, and
+		 * so on.
+		 * <p>
+		 * The returned {@code NestedPosition} will have
+		 * {@link NestedPosition#level() level()==level}.
+		 *
+		 * @param position
+		 * 		position at {@code level}
+		 * @param level
+		 * 		nesting level of {@code position}
+		 *
+		 * @return a NestedPosition representation of the specified grid position and nesting level
+		 */
+		public NestedPosition nestedPosition(final long[] position, final int level) {
+			return new NestedPosition(this, position, level);
+		}
+
+		/**
+		 * Create a {@code NestedPosition} at the specified block grid {@code
+		 * position} (that is, at nesting level 0).
+		 * <p>
+		 * Note that {@code position} is in units of DataBlocks.
+		 * <p>
+		 * The returned {@code NestedPosition} will have
+		 * {@link NestedPosition#level() level()==0}.
+		 *
+		 * @param position
+		 * 		position at level 0 (block grid)
+		 *
+		 * @return a NestedPosition representation of the specified block grid position
+		 */
+		public NestedPosition nestedPosition(final long[] position) {
+			return nestedPosition(position, 0);
 		}
 
 		public int numLevels() {
@@ -450,9 +444,13 @@ public class Nesting {
 		 * grid ({@code targetLevel==1}) of the shard containing a given
 		 * datablock ({@code sourcePos} at {@code sourceLevel==0}).
 		 *
-		 * @param sourcePos the source position j
-		 * @param sourceLevel the source level
-		 * @param targetLevel the target level
+		 * @param sourcePos
+		 * 		the source position j
+		 * @param sourceLevel
+		 * 		the source level
+		 * @param targetLevel
+		 * 		the target level
+		 *
 		 * @return absolute position at the target level
 		 */
 		public long[] absolutePosition(
@@ -475,8 +473,11 @@ public class Nesting {
 		 * grid ({@code targetLevel==1}) of the shard containing a given
 		 * datablock ({@code sourcePos}.
 		 *
-		 * @param sourcePos the source position j
-		 * @param targetLevel the target level
+		 * @param sourcePos
+		 * 		the source position j
+		 * @param targetLevel
+		 * 		the target level
+		 *
 		 * @return absolute position at the target level
 		 */
 		public long[] absolutePosition(
