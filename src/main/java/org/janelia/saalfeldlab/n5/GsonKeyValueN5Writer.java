@@ -276,6 +276,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
 					e);
 		}
+
 	}
 
 	@Override
