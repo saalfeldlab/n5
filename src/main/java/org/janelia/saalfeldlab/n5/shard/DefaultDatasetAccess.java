@@ -30,9 +30,10 @@ package org.janelia.saalfeldlab.n5.shard;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
@@ -45,8 +46,6 @@ import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
-
-import static org.janelia.saalfeldlab.n5.shard.DatasetAccess.groupInnerPositions;
 
 public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
@@ -62,10 +61,17 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		return grid;
 	}
 
+	//
+	// -- readBlock -----------------------------------------------------------
+
 	@Override
 	public DataBlock<T> readBlock(final PositionValueAccess pva, final long[] gridPosition) throws N5IOException {
 		final NestedPosition position = grid.nestedPosition(gridPosition);
-		return readBlockRecursive(pva.get(position.key()), position, grid.numLevels() - 1);
+		try {
+			return readBlockRecursive(pva.get(position.key()), position, grid.numLevels() - 1);
+		} catch (N5NoSuchKeyException ignored) {
+			return null;
+		}
 	}
 
 	private DataBlock<T> readBlockRecursive(
@@ -86,90 +92,73 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		}
 	}
 
+	//
+	// -- readBlocks ----------------------------------------------------------
+
 	@Override
-	public List<DataBlock<T>> readBlocks(PositionValueAccess pva, List<long[]> positions) throws N5IOException {
+	public List<DataBlock<T>> readBlocks(final PositionValueAccess pva, final List<long[]> gridPositions) throws N5IOException {
 
+		// for non-sharded datasets, just read the blocks individually
 		if (grid.numLevels() == 1) {
-			return positions.stream().map(it -> readBlock(pva, it)).collect(Collectors.toList());
+			return gridPositions.stream().map(pos -> readBlock(pva, pos)).collect(Collectors.toList());
 		}
 
-		final List<NestedPosition> blockPositions = positions.stream().map(grid::nestedPosition).collect(Collectors.toList());
+		// Create a list of DataBlockRequests and sort it such that requests
+		// from the same (nested) shard are grouped contiguously.
+		final DataBlockRequests<T> requests = createReadRequests(gridPositions);
+		final List<DataBlockRequest<T>> duplicates = requests.removeDuplicates();
 
-		final int outermostLevel = grid.numLevels() - 1;
-		final Collection<List<NestedPosition>> blocksPerOutermostShard = groupInnerPositions(grid, blockPositions, outermostLevel);
-
-		final ArrayList<DataBlock<T>> blocks = new ArrayList<>(blockPositions.size());
-		for (List<NestedPosition> blocksInSingleShard : blocksPerOutermostShard) {
-			if (blocksInSingleShard.isEmpty())
-				continue;
-
-			final NestedPosition firstBlock = blocksInSingleShard.get(0);
-			final ReadData readData = pva.get(firstBlock.key());
-			final List<DataBlock<T>> shardBlocks;
-			try {
-				shardBlocks = readShardRecursive(readData, blocksInSingleShard, outermostLevel);
-			} catch (N5NoSuchKeyException e) {
-				continue;
-			}
-
-			blocks.addAll(shardBlocks);
+		final List<DataBlockRequests<T>> split = requests.split();
+		for (final DataBlockRequests<T> subRequests : split) {
+			final long[] key = subRequests.relativeGridPosition();
+			final ReadData readData = getExistingReadData(pva, key);
+			readBlocksRecursive(readData, subRequests);
 		}
 
-		//TODO Caleb: No guarantee of order; If we want that, we need to sort the result.
-		return blocks;
+		return requests.blocks(duplicates);
 	}
 
 	/**
-	 * Bulk Read operation on a shard. `positions` MUST all be in the same shard.
-	 * That is, for each `position` in `positions`, `position.absolute(level)` must be the same.
+	 * Bulk Read operation on a shard.
 	 *
 	 * @param readData for the corresponding shard
-	 * @param positions of blocks within the shard to be read
-	 * @param level of the shard
-	 * @return list of blocks read from a single shard
+	 * @param requests for blocks within the shard to be read
 	 */
-	private List<DataBlock<T>> readShardRecursive(
+	private void readBlocksRecursive(
 			final ReadData readData,
-			final List<NestedPosition> positions,
-			final int level
+			final DataBlockRequests<T> requests
 	) {
-		// Cannot have a shard at level 0
-		if (readData == null || level == 0) {
-			return null;
+		assert !requests.requests.isEmpty();
+		assert requests.level > 0;
+
+		if (readData == null) {
+			return;
 		}
 
-		if (positions.isEmpty()) {
-			return Collections.emptyList();
-		}
-
-		final NestedPosition firstBlock = positions.get(0);
-		final long[] shardPosition = firstBlock.absolute(level);
-
+		final int level = requests.level();
 		@SuppressWarnings("unchecked")
 		final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
-		final RawShard shard = codec.decode(readData, shardPosition).getData();
+		final RawShard shard = codec.decode(readData, requests.gridPosition()).getData();
 
-		final ArrayList<DataBlock<T>> blocks = new ArrayList<>(positions.size());
-		if (level == 1) {
-			final int innerMostLevel = 0;
+		if (level == 1 ) {
 			//Base case; read the blocks
-			for (NestedPosition blockPosition : positions) {
-				final long[] elementPos = blockPosition.relative(innerMostLevel);
+			for (final DataBlockRequest<T> request : requests) {
+				final long[] elementPos = request.position.relative(0);
 				final ReadData elementData = shard.getElementData(elementPos);
-				final DataBlock<T> block = readBlockRecursive(elementData, blockPosition, innerMostLevel);
-				blocks.add(block);
+				request.block = readBlockRecursive(elementData, request.position, 0);
 			}
-		} else {
-			// group the blocks by shard for next level, and call again for each nested shard
-			final Collection<List<NestedPosition>> nextLevelShards = groupInnerPositions(grid, positions, level - 1);
-			for (List<NestedPosition> innerPositions : nextLevelShards) {
-				final List<DataBlock<T>> innerBlocks = readShardRecursive(readData, innerPositions, level - 1);
-				blocks.addAll(innerBlocks);
+		} else { // level > 1
+			final List<DataBlockRequests<T>> split = requests.split();
+			for (final DataBlockRequests<T> subRequests : split) {
+				final long[] subShardPosition = subRequests.relativeGridPosition();
+				final ReadData elementData = shard.getElementData(subShardPosition);
+				readBlocksRecursive(elementData, subRequests);
 			}
 		}
-
-		return blocks;
 	}
+
+	//
+	// -- writeBlock ----------------------------------------------------------
 
 	@Override
 	public void writeBlock(final PositionValueAccess pva, final DataBlock<T> dataBlock) throws N5IOException {
@@ -208,6 +197,9 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		}
 	}
 
+	//
+	// -- writeBlocks ---------------------------------------------------------
+
 	@Override
 	public void writeBlocks(final PositionValueAccess pva, final List<DataBlock<T>> dataBlocks) throws N5IOException {
 
@@ -216,76 +208,68 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			return;
 		}
 
-		final List<NestedPositionDataBlock<T>> nestedPositionDataBlocks = dataBlocks.stream()
-				.map(it -> new NestedPositionDataBlock<>(grid, it))
-				.collect(Collectors.toList());
-
-		final int outermostLevel = grid.numLevels() - 1;
-		final Collection<List<NestedPositionDataBlock<T>>> dataBlocksPerShard = groupInnerPositions(grid, nestedPositionDataBlocks, outermostLevel);
-
-		for (List<NestedPositionDataBlock<T>> dataBlocksForShard : dataBlocksPerShard) {
-			if (dataBlocksForShard.isEmpty())
-				continue;
-
-			final NestedPositionDataBlock<T> firstDataBlock = dataBlocksForShard.get(0);
-			final long[] shardKey = firstDataBlock.key();
-
-			//TODO Caleb: When writing all blocks in a shard, we don't need to read existing data.
-			//	Also, could only materialize the index and skip reading if we are overwriting all existing blocks.
-			final ReadData existingReadData = getExistingReadData(pva, shardKey);
-			final ReadData writeShardReadData = writeShardRecursive(existingReadData, dataBlocksForShard, outermostLevel);
-
+		// Create a list of DataBlockRequests, sorted such that requests from
+		// the same (nested) shard are grouped contiguously.
+		final DataBlockRequests<T> requests = createWriteRequests(dataBlocks);
+		requests.removeDuplicates();
+		final List<DataBlockRequests<T>> split = requests.split();
+		for (final DataBlockRequests<T> subRequests : split) {
+			final boolean writeFully = subRequests.coversShard();
+			final long[] shardKey = subRequests.relativeGridPosition();
+			final ReadData existingReadData = writeFully ? null : getExistingReadData(pva, shardKey);
+			final ReadData writeShardReadData = writeBlocksRecursive(existingReadData, subRequests);
 			pva.put(shardKey, writeShardReadData);
 		}
 	}
 
-	private ReadData writeShardRecursive(
-			final ReadData existingShard,
-			final List<NestedPositionDataBlock<T>> dataBlocks,
-			final int level) {
+	/**
+	 * Bulk Write operation on a shard.
+	 *
+	 * @param existingReadData encoded existing shard data (to decode and partially override)
+	 * @param requests for blocks within the shard to be written
+	 */
+	private ReadData writeBlocksRecursive(
+			final ReadData existingReadData, // may be null
+			final DataBlockRequests<T> requests
+	) {
+		assert !requests.requests.isEmpty();
+		assert requests.level > 0;
 
-		// cannot have shard level 0, or nothing to write
-		if (level == 0 || dataBlocks.isEmpty()) {
-			return null;
-		}
+		final boolean writeFully = existingReadData == null;
 
-		final BlockCodec<RawShard> codec = (BlockCodec<RawShard>)codecs[level];
-		final NestedPositionDataBlock<T> firstBlock = dataBlocks.get(0);
-		final long[] shardPosition = firstBlock.absolute(level);
+		final int level = requests.level();
+		@SuppressWarnings("unchecked")
+		final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
+		final long[] gridPos = requests.gridPosition();
+		final RawShard shard = writeFully ?
+				new RawShard(grid.relativeBlockSize(level)) :
+				codec.decode(existingReadData, gridPos).getData();
 
-		final RawShard shard;
-		if (existingShard == null)
-			shard = new RawShard(grid.relativeBlockSize(level));
-		else
-			shard = codec.decode(existingShard, shardPosition).getData();
-
-		if (level == 1) {
-			final int innerMostLevel = 0;
+		if ( level == 1 ) {
 			// Base case, write the blocks
-			for (NestedPositionDataBlock<T> nestedPosDataBlock : dataBlocks) {
-				final DataBlock<T> dataBlock = nestedPosDataBlock.getDataBlock();
-
-				final long[] blockRelativePos = nestedPosDataBlock.relative(innerMostLevel);
-				final ReadData blockReadData = shard.getElementData(blockRelativePos);
-				final ReadData modifiedShardBlock = writeBlockRecursive(blockReadData, dataBlock, nestedPosDataBlock, innerMostLevel);
-				shard.setElementData(modifiedShardBlock, blockRelativePos);
+			for (final DataBlockRequest<T> request : requests) {
+				final ReadData elementData = writeBlockRecursive(null, request.block, request.position, 0);
+				final long[] elementPos = request.position.relative(0);
+				shard.setElementData(elementData, elementPos);
 			}
-		} else {
-			final Collection<List<NestedPositionDataBlock<T>>> dataBlocksForInnerShards = groupInnerPositions(grid, dataBlocks, level - 1);
-			for (List<NestedPositionDataBlock<T>> innerShardDataBlocks : dataBlocksForInnerShards) {
-				if (innerShardDataBlocks.isEmpty())
-					continue;
-
-				final ReadData innerShardReadData = writeShardRecursive(existingShard, innerShardDataBlocks, level - 1);
-
-				final NestedPositionDataBlock<T> firstInnerNestedPosBlock = innerShardDataBlocks.get(0);
-				final long[] relPosInShard = firstInnerNestedPosBlock.relative(level - 1);
-				shard.setElementData(innerShardReadData, relPosInShard);
+		} else { // level > 1
+			final List<DataBlockRequests<T>> split = requests.split();
+			for (final DataBlockRequests<T> subRequests : split) {
+				final boolean nestedWriteFully = writeFully || subRequests.coversShard();
+				final long[] elementPos = subRequests.relativeGridPosition();
+				final ReadData existingElementData = nestedWriteFully ? null : shard.getElementData(elementPos);
+				final ReadData modifiedElementData = writeBlocksRecursive(existingElementData, subRequests);
+				shard.setElementData(modifiedElementData, elementPos);
 			}
 		}
-		return codec.encode(new RawShardDataBlock(shardPosition, shard));
+
+		return codec.encode(new RawShardDataBlock(gridPos, shard));
 	}
 
+	//
+	// -- writeRegion ---------------------------------------------------------
+
+	@Override
 	public void writeRegion(
 			final PositionValueAccess pva,
 			final long[] min,
@@ -370,6 +354,9 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		}
 	}
 
+	//
+	// -- deleteBlock ---------------------------------------------------------
+
 	@Override
 	public boolean deleteBlock(final PositionValueAccess pva, final long[] gridPosition) throws N5IOException {
 		final NestedPosition position = grid.nestedPosition(gridPosition);
@@ -433,6 +420,9 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		}
 	}
 
+	//
+	// -- helpers -------------------------------------------------------------
+
 	private static ReadData getExistingReadData(final PositionValueAccess pva, final long[] key) {
 		// need to read the shard anyway, and currently (Sept 24 2025)
 		// have no way to tell if the key exists from what is in this method except to attempt
@@ -448,23 +438,248 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	}
 
 	/**
-	 * NestedPosition wrapper for a DataBlock<T>. Useful for grouping DataBlock<T> by nested shard position.
+	 * A request to read or write a (level-0) DataBlock at a given {@link #position}.
+	 * <p>
+	 * <em>Write requests</em> are constructed with {@link #position} and {@link #block}.
+	 * <p>
+	 * <em>Read requests</em> are constructed with only a {@link #position}, and
+	 * initially {@link #block block=null}. When the DataBlock is read, it will
+	 * be put into {@link #block}.
+	 * <p>
+	 * {@code DataBlockRequest} are used for reading/writing a list of blocks
+	 * with {@link #readBlocks} and {@link #writeBlocks}. The {@link #index}
+	 * field is the position in the list of positions/blocks to read/write. For
+	 * processing, requests are re-ordered such that all requests from the same
+	 * (sub-)shard are grouped together. The {@link #index} field is used to
+	 * re-establish the order of results (only important for {@link
+	 * #readBlocks}).
 	 *
-	 * @param <T> type of the datablock
+	 * @param <T>
+	 * 		type of the data contained in the DataBlock
 	 */
-	private static class NestedPositionDataBlock<T> extends NestedPosition {
+	private static final class DataBlockRequest<T> {
 
-		private final DataBlock<T> dataBlock;
+		final NestedPosition position;
+		final int index;
+		DataBlock<T> block;
 
-		private NestedPositionDataBlock(NestedGrid grid, DataBlock<T> dataBlock) {
-
-			super(grid, dataBlock.getGridPosition(), 0);
-			this.dataBlock = dataBlock;
+		// read request
+		DataBlockRequest(final NestedPosition position, final int index) {
+			this.position = position;
+			this.index = index;
+			this.block = null;
 		}
 
-		private DataBlock<T> getDataBlock() {
-
-			return dataBlock;
+		// write request
+		DataBlockRequest(final NestedPosition position, final DataBlock<T> block) {
+			this.position = position;
+			this.index = -1;
+			this.block = block;
 		}
+
+		@Override
+		public String toString() {
+			return "DataBlockRequest{position=" + position + ", index=" + index + '}';
+		}
+	}
+
+	/**
+	 * A list of {@code DataBlockRequest}, ordered by {@code NestedPosition}.
+	 * All requests lie in the same shard at the given {@code level}.
+	 * <p>
+	 * {@code DataBlockRequests} should be constructed using {@link
+	 * #createReadRequests} (for reading) or {@link #createWriteRequests} (for
+	 * writing).
+	 * <p>
+	 * When recursing into nested shard levels, {@code DataBlockRequests} should
+	 * be {@link #split} to partition into sub-{@code DataBlockRequests} that
+	 * each cover one shard.
+	 *
+	 * @param <T>
+	 * 		type of the data contained in the DataBlocks
+	 */
+	private static final class DataBlockRequests<T> implements Iterable<DataBlockRequest<T>> {
+
+		private final NestedGrid grid;
+		private final List<DataBlockRequest<T>> requests;
+		private final int level;
+
+		private DataBlockRequests(final List<DataBlockRequest<T>> requests, final int level, final NestedGrid grid) {
+			this.requests = requests;
+			this.level = level;
+			this.grid = grid;
+		}
+
+		/**
+		 * Returns a map of duplicate requests. Each pair of consecutive
+		 * elements (A,B) of the list means that request A is a duplicate of
+		 * request B. A has been removed from the {@code requests} list, and B
+		 * remains in the {@code requests} list. After the (read) requests have
+		 * been processed, elements corresponding to A can be added into the
+		 * result list by using the {@code DataBlock} of B.
+		 * <p>
+		 * If {@code n} duplicates occur in {@code requests}, the resulting list
+		 * will have {@code 2*n} elements.
+		 */
+		public List<DataBlockRequest<T>> removeDuplicates() {
+			List<DataBlockRequest<T>> duplicates = new ArrayList<>();
+			DataBlockRequest<T> previous = null;
+			final ListIterator<DataBlockRequest<T>> iter = requests.listIterator();
+			while (iter.hasNext()) {
+				final DataBlockRequest<T> current = iter.next();
+				if (previous != null) {
+					if (previous.position.equals(current.position)) {
+						iter.remove();
+						duplicates.add(current);
+						duplicates.add(previous);
+						continue;
+					}
+				}
+				previous = current;
+			}
+			return duplicates;
+		}
+
+		@Override
+		public Iterator<DataBlockRequest<T>> iterator() {
+			return requests.iterator();
+		}
+
+		/**
+		 * All blocks contained in this {@code DataBlockRequests} are in the
+		 * same shard at this nesting level.
+		 * <p>
+		 * Use {@link #split()} to partition into {@code DataBlockRequests} with
+		 * nesting level {@link #level()}{@code -1}.
+		 *
+		 * @return nesting level
+		 */
+		public int level() {
+			return level;
+		}
+
+		/**
+		 * Position on the shard grid at the level of this DataBlockRequests
+		 * (of the one shard containing all the requested blocks).
+		 */
+		public long[] gridPosition() {
+			return position().absolute(level);
+		}
+
+		/**
+		 * Relative grid position at the level of this DataBlockRequests,
+		 * that is, relative offset within containing the (level+1) element.
+		 */
+		public long[] relativeGridPosition() {
+			return position().relative(level);
+		}
+
+		private NestedPosition position() {
+			if (requests.isEmpty())
+				throw new IllegalArgumentException();
+			return requests.get(0).position;
+		}
+
+		/**
+		 * Split into sub-requests, grouping by same position at nesting level {@link #level()}{@code -1}.
+		 */
+		public List<DataBlockRequests<T>> split() {
+			final int subLevel = level - 1;
+			final List<DataBlockRequests<T>> subRequests = new ArrayList<>();
+			for (int i = 0; i < requests.size(); ) {
+				final long[] ilpos = requests.get(i).position.absolute(subLevel);
+				int j = i + 1;
+				for (; j < requests.size(); ++j) {
+					final long[] jlpos = requests.get(j).position.absolute(subLevel);
+					if (!Arrays.equals(ilpos, jlpos)) {
+						break;
+					}
+				}
+				subRequests.add(new DataBlockRequests<>(requests.subList(i, j), subLevel, grid));
+				i = j;
+			}
+			return subRequests;
+		}
+
+		/**
+		 * Returns {@code true} if this {@code DataBlockRequests} completely
+		 * fills its containing shard at nesting level {@link #level()}.
+		 * (This can be used to avoid reading a shard that will be completely
+		 * overwritten).
+		 * <p>
+		 * Note that this method only works correctly if the requests list
+		 * contains no duplicates. See {@link #removeDuplicates()}.
+		 */
+		public boolean coversShard() {
+			final long[] gridMin = grid.absolutePosition(position().absolute(level), level, 0);
+			final long[] datasetSize = grid.getDatasetSizeInBlocks(); // in units of DataBlocks
+			final int[] defaultShardSize = grid.relativeToBaseBlockSize(level); // in units of DataBlocks
+			int numElements = 1;
+			for (int d = 0; d < defaultShardSize.length; d++) {
+				numElements *= Math.min(defaultShardSize[d], (int) (datasetSize[d] - gridMin[d]));
+			}
+			return requests.size() >= numElements;// NB: It should never be (requests.size() > numElements), unless there are duplicate blocks.
+		}
+
+		/**
+		 * Extract {@link DataBlockRequest#block DataBlock}s from the requests,
+		 * in the order of {@link DataBlockRequest#index indices}.
+		 * <p>
+		 * (This is used in {@link #readBlocks} to collect DataBlocks in the
+		 * requested order.)
+ 		 */
+		public List<DataBlock<T>> blocks(final List<DataBlockRequest<T>> duplicates) {
+			final int size = requests.size() + duplicates.size() / 2;
+			final DataBlock<T>[] blocks = new DataBlock[size];
+			requests.forEach(r -> blocks[r.index] = r.block);
+			for (int i = 0; i < duplicates.size(); i += 2) {
+				final DataBlockRequest<T> a = duplicates.get(i * 2);
+				final DataBlockRequest<T> b = duplicates.get(i * 2 + 1);
+				blocks[a.index] = b.block;
+			}
+			return Arrays.asList(blocks);
+		}
+	}
+
+	/**
+	 * Construct {@code DataBlockRequests} from a list of level-0 grid positions
+	 * for reading.
+	 * <p>
+	 * The nesting level ot the returned {@code DataBlockRequests} is {@code
+	 * grid.numLevels()}, that is level of the highest-order shard + 1. This
+	 * implies that the requests are not guaranteed to be in the same shard (at
+	 * any level. {@link DataBlockRequests#split() Splitting} the {@code
+	 * DataBlockRequests} once will return a list of {@code DataBlockRequests}
+	 * that each contain blocks from one highest-order shard.
+	 */
+	private DataBlockRequests<T> createReadRequests(final List<long[]> gridPositions) {
+		final List<DataBlockRequest<T>> requests = new ArrayList<>(gridPositions.size());
+		for (int i = 0; i < gridPositions.size(); i++) {
+			final NestedPosition pos = grid.nestedPosition(gridPositions.get(i));
+			requests.add(new DataBlockRequest<>(pos, i));
+		}
+		requests.sort(Comparator.comparing(r -> r.position));
+		return new DataBlockRequests<>(requests, grid.numLevels(), grid);
+	}
+
+	/**
+	 * Construct {@code DataBlockRequests} from a list of level-0 DataBlocks for
+	 * writing.
+	 * <p>
+	 * The nesting level ot the returned {@code DataBlockRequests} is {@code
+	 * grid.numLevels()}, that is level of the highest-order shard + 1. This
+	 * implies that the requests are not guaranteed to be in the same shard (at
+	 * any level. {@link DataBlockRequests#split() Splitting} the {@code
+	 * DataBlockRequests} once will return a list of {@code DataBlockRequests}
+	 * that each contain blocks from one highest-order shard.
+	 */
+	private DataBlockRequests<T> createWriteRequests(final List<DataBlock<T>> dataBlocks) {
+		final List<DataBlockRequest<T>> requests = new ArrayList<>(dataBlocks.size());
+		for (final DataBlock<T> dataBlock : dataBlocks) {
+			final NestedPosition pos = grid.nestedPosition(dataBlock.getGridPosition());
+			requests.add(new DataBlockRequest<>(pos, dataBlock));
+		}
+		requests.sort(Comparator.comparing(r -> r.position));
+		return new DataBlockRequests<>(requests, grid.numLevels(), grid);
 	}
 }

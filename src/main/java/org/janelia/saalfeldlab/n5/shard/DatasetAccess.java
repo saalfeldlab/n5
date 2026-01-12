@@ -51,20 +51,56 @@ import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
  */
 public interface DatasetAccess<T> {
 
+	/**
+	 * Read the {@code DataBlock} at the given {@code gridPosition}.
+	 * <p>
+	 * If the requested block doesn't exist, then this method will return {@code
+	 * null}. {@code N5IOException} will be thrown if something goes wrong
+	 * reading or decoding data for an existing key.
+	 *
+	 * @param pva
+	 * 		dataset storage
+	 * @param gridPosition
+	 * 		grid position of the DataBlock to read
+	 *
+	 * @return the DataBlock or {@code null}
+	 *
+	 * @throws N5IOException
+	 * 		if any error occurs while reading or decoding the block
+	 */
 	DataBlock<T> readBlock(PositionValueAccess pva, long[] gridPosition) throws N5IOException;
+
+	/**
+	 * Read the {@code DataBlock}s at the given {@code gridPositions}.
+	 * <p>
+	 * The returned {@code List<DataBlock<T>>} is in the same order as the
+	 * requested {@code gridPositions}. That is, the {@code DataBlock} at indwex
+	 * {@code i} has grid coordinates {@code gridPositions.get(i)}.
+	 * <p>
+	 * If a requested block doesn't exist, then the corresponding element in the
+	 * result list will be {@code null}. ({@code N5IOException} will only be
+	 * thrown if something goes wrong reading or decoding data for an existing
+	 * key.)
+	 *
+	 * @param pva
+	 * 		dataset storage
+	 * @param gridPositions
+	 * 		list of grid position of the DataBlocks to read
+	 * @return list of DataBlocks
+	 *
+	 * @throws N5IOException
+	 * 		if any error occurs while reading or decoding blocks
+	 */
+	List<DataBlock<T>> readBlocks(PositionValueAccess pva, List<long[]> gridPositions) throws N5IOException;
 
 	void writeBlock(PositionValueAccess pva, DataBlock<T> dataBlock) throws N5IOException;
 
-	boolean deleteBlock(PositionValueAccess pva, long[] gridPosition) throws N5IOException;
-
-
-	List<DataBlock<T>> readBlocks(PositionValueAccess pva, List<long[]> positions) throws N5IOException;
-
 	void writeBlocks(PositionValueAccess pva, List<DataBlock<T>> blocks) throws N5IOException;
+
+	boolean deleteBlock(PositionValueAccess pva, long[] gridPosition) throws N5IOException;
 
 //	TODO:
 //	  boolean deleteBlocks(PositionValueAccess pva, List<long[]> positions) throws N5IOException;
-
 
 	/**
 	 *
@@ -116,39 +152,4 @@ public interface DatasetAccess<T> {
 	) throws N5Exception, InterruptedException, ExecutionException;
 
 	NestedGrid getGrid();
-
-	/**
-	 * Sort a list of {@link NestedPosition}s by their parent level {@link NestedPosition}.
-	 * nestedPositions are grouped at `outerLevel`.
-	 * If {@code NestedPosition.level()} level is already equivalent to {@code NestedGrid.numLevels() - 1}, nestedPositions is returned.
-	 *
-	 * @param grid to sort the blocky by
-	 * @param innerPositions to group per shard.
-	 * @param outerLevel of the outerLevel shard position to group by. must be in range {@code [1, NestedGrid.numLevels() - 1]}
-	 * @return map of outerLevel shard positions to inner level block positions
-	 */
-	// TODO: move to Nesting
-	static <T extends NestedPosition> Collection<List<T>> groupInnerPositions(final NestedGrid grid, final List<T> innerPositions, final int outerLevel)  {
-
-		if (outerLevel < 1 || outerLevel >= grid.numLevels())
-			throw new IllegalArgumentException("outerLevel must be in range [1, grid.numLevels() - 1]");
-
-		if (innerPositions.isEmpty())
-			return Collections.emptyList();
-
-		final TreeMap<NestedPosition, List<T>> blocksPerShard = new TreeMap<>();
-		for (T nestedPosition : innerPositions) {
-			final NestedPosition outerNestedPosition;
-			if (nestedPosition.level() == outerLevel)
-				outerNestedPosition = nestedPosition;
-			else
-				outerNestedPosition = grid.nestedPosition(nestedPosition.absolute(outerLevel), outerLevel);
-
-
-			final List<T> blocks = blocksPerShard.computeIfAbsent(outerNestedPosition, it -> new ArrayList<>());
-			blocks.add(nestedPosition);
-		}
-		return blocksPerShard.values();
-	}
-
 }
