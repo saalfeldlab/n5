@@ -57,6 +57,7 @@ public class WriteRegionTest {
 		int[] datablockSize = {3};
 		int[] level1ShardSize = {6};
 		int[] level2ShardSize = {24};
+		final long[] datasetDimensions = {96};
 
 		// DataBlocks are 3x3x3
 		// Level 1 shards are 6x6x6 (contain 2x2x2 DataBlocks)
@@ -80,7 +81,7 @@ public class WriteRegionTest {
 		);
 
 		TestDatasetAttributes attributes = new TestDatasetAttributes(
-				new long[] {},
+				datasetDimensions,
 				level2ShardSize,
 				DataType.INT8,
 				c2,
@@ -99,7 +100,6 @@ public class WriteRegionTest {
 //		final long[] datasetDimensions = {100, 100, 100};
 //		final long[] regionMin = {9,9,9};
 //		final long[] regionSize = {15,15,15};
-		final long[] datasetDimensions = {96};
 
 		//	#...............................#...............................#...............................#...............................#
 		//	$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$
@@ -117,7 +117,6 @@ public class WriteRegionTest {
 				regionMin,
 				regionSize,
 				blocks,
-				datasetDimensions,
 				false);
 
 		// verify that the written blocks can be read back with the correct values

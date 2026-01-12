@@ -42,9 +42,7 @@ import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
-import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.*;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 import org.junit.After;
@@ -55,6 +53,7 @@ import org.junit.runners.Parameterized;
 
 import com.google.gson.GsonBuilder;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -76,6 +75,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 @RunWith(Parameterized.class)
 public class ShardTest {
@@ -488,105 +491,194 @@ public class ShardTest {
 		System.out.println("");
 	}
 
-	/**
-	 * An N5Writer that tracks the number of materialize calls performed by 
-	 * its underlying key value access.
-	 */
-	public static class TrackingN5Writer extends N5KeyValueWriter {
-		public TrackingN5Writer(String basePath) {
+    @Test
+    public void shardExistsTest() {
 
-			super( new TrackingFileSystemKeyValueAccess(FileSystems.getDefault()),
-					basePath, new GsonBuilder(), false);
-		}
+        final N5Writer writer = tempN5Factory.createTempN5Writer();
 
-		public void resetNumMaterializeCalls() {
-			((TrackingFileSystemKeyValueAccess)super.getKeyValueAccess()).numMaterializeCalls = 0;
-		}
+        final DatasetAttributes datasetAttributes = getTestAttributes(
+                new long[]{24, 24},
+                new int[]{8, 8},
+                new int[]{2, 2}
+        );
 
-		public int getNumMaterializeCalls() {
-			return ((TrackingFileSystemKeyValueAccess)super.getKeyValueAccess()).numMaterializeCalls;
-		}
-	}
+        final String dataset = "shardExists";
+        writer.remove(dataset);
+        writer.createDataset(dataset, datasetAttributes);
 
-	private static class TrackingFileSystemKeyValueAccess extends FileSystemKeyValueAccess {
+        final int[] blockSize = datasetAttributes.getBlockSize();
+        final int numElements = blockSize[0] * blockSize[1];
 
-		private int numMaterializeCalls = 0;
+        final byte[] data = new byte[numElements];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = (byte)(i);
+        }
 
-		protected TrackingFileSystemKeyValueAccess(FileSystem fileSystem) {
-			super(fileSystem);
-		}
+        /* write blocks to shards (0,0), (1,0), and (2,2) */
+        writer.writeBlocks(
+                dataset,
+                datasetAttributes,
+                new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data),  /* shard (0, 0) */
+                new ByteArrayDataBlock(blockSize, new long[]{4, 0}, data),  /* shard (1, 0) */
+                new ByteArrayDataBlock(blockSize, new long[]{11, 11}, data) /* shard (2, 2) */
+        );
 
-		@Override
-		public ReadData createReadData(final String normalPath) {
-			return new KeyValueAccessReadData(new TrackingFileLazyRead(normalPath));
-		}
+        TrackingN5Writer trackingWriter = ((TrackingN5Writer) writer);
 
-		private class TrackingFileLazyRead implements LazyRead {
+        Function<long[], Boolean> assertShardExistsTracking = (gridPosition) -> {
+            trackingWriter.resetAllTracking();
+            final Boolean exists = writer.shardExists(dataset, datasetAttributes, gridPosition);
+            assertEquals("isFileCheck incremented", 1, trackingWriter.getNumIsFileCalls());
+            assertEquals("No Bytes Read", 0, trackingWriter.getTotalBytesRead());
+            return exists;
+        };
 
-			private final String normalKey;
 
-			TrackingFileLazyRead(String normalKey) {
-				this.normalKey = normalKey;
-			}
+        trackingWriter.resetAllTracking();
+        /* shards that should exist should only check file  */
+        Assert.assertTrue("Shard (0,0) should exist", assertShardExistsTracking.apply(new long[]{0, 0}));
+        Assert.assertTrue("Shard (1,0) should exist", assertShardExistsTracking.apply(new long[]{1, 0}));
+        Assert.assertTrue("Shard (2,2) should exist", assertShardExistsTracking.apply(new long[]{2, 2}));
 
-			@Override
-			public long size() {
-				return TrackingFileSystemKeyValueAccess.this.size(normalKey);
-			}
+        /* shards that should NOT exist */
+        Assert.assertFalse("Shard (0,1) should not exist", assertShardExistsTracking.apply(new long[]{0, 1}));
+        Assert.assertFalse("Shard (1,1) should not exist", assertShardExistsTracking.apply(new long[]{1, 1}));
+        Assert.assertFalse("Shard (2,0) should not exist", assertShardExistsTracking.apply(new long[]{2, 0}));
+        Assert.assertFalse("Shard (0,2) should not exist", assertShardExistsTracking.apply(new long[]{0, 2}));
+    }
 
-		    @Override
-		    public ReadData materialize(final long offset, final long length) {
+    /**
+     * An N5Writer that tracks the number of materialize calls performed by
+     * its underlying key value access.
+     */
+    public static class TrackingN5Writer extends N5KeyValueWriter {
 
-				numMaterializeCalls++;
+        final TrackingFileSystemKeyValueAccess tkva;
+        public TrackingN5Writer(String basePath) {
 
-				try (final TrackingLockedFileChannel lfs = new TrackingLockedFileChannel(normalKey, true);
-						final FileChannel channel = lfs.getFileChannel()) {
+            super( new TrackingFileSystemKeyValueAccess(FileSystems.getDefault()), basePath, new GsonBuilder(), false);
+            tkva = (TrackingFileSystemKeyValueAccess)getKeyValueAccess();
+        }
 
-					channel.position(offset);
-					if (length > Integer.MAX_VALUE)
-						throw new IOException("Attempt to materialize too large data");
+        public void resetNumMaterializeCalls() {
+            tkva.numMaterializeCalls = 0;
+        }
 
-					final long channelSize = channel.size();
-					if (!validBounds(channelSize, offset, length))
-						throw new IndexOutOfBoundsException();
+        public int getNumMaterializeCalls() {
+            return tkva.numMaterializeCalls;
+        }
 
-					final int sz = (int)(length < 0 ? channelSize : length);
-					final byte[] data = new byte[sz];
-					final ByteBuffer buf = ByteBuffer.wrap(data);
-					channel.read(buf);
-					return ReadData.from(data);
+        public void resetNumIsFileCalls() {
+            tkva.numIsFileCalls = 0;
+        }
 
-				} catch (final NoSuchFileException e) {
-					throw new N5NoSuchKeyException("No such file", e);
-				} catch (IOException | UncheckedIOException e) {
-					throw new N5Exception.N5IOException(e);
-				}
-			}
-		}
+        public int getNumIsFileCalls() {
+            return tkva.numIsFileCalls;
+        }
 
-		private class TrackingLockedFileChannel extends LockedFileChannel {
+        public void resetTotalBytesRead() {
+            tkva.totalBytesRead = 0;
+        }
 
-			protected TrackingLockedFileChannel(String path, boolean readOnly) throws IOException {
-				super(path, readOnly);
-			}
+        public long getTotalBytesRead() {
+            return tkva.totalBytesRead;
+        }
 
-			@Override
-			protected FileChannel getFileChannel() {
-				return channel;
-			}
-		}
+        public void resetAllTracking() {
+            tkva.numMaterializeCalls = 0;
+            tkva.numIsFileCalls = 0;
+            tkva.totalBytesRead = 0;
+        }
+    }
 
-		private static boolean validBounds(long channelSize, long offset, long length) {
+    private static class TrackingFileSystemKeyValueAccess extends FileSystemKeyValueAccess {
 
-			if (offset < 0)
-				return false;
-			else if (channelSize > 0 && offset >= channelSize) // offset == 0 and arrayLength == 0 is okay
-				return false;
-			else if (length >= 0 && offset + length > channelSize)
-				return false;
+        private int numMaterializeCalls = 0;
+        private int numIsFileCalls = 0;
+        private long totalBytesRead = 0;
 
-			return true;
-		}
-	}
+        protected TrackingFileSystemKeyValueAccess(FileSystem fileSystem) {
+            super(fileSystem);
+        }
+
+        @Override
+        public boolean isFile(String normalPath) {
+            numIsFileCalls++;
+            return super.isFile(normalPath);
+        }
+
+        @Override
+        public ReadData createReadData(final String normalPath) {
+            return new KeyValueAccessReadData(new TrackingFileLazyRead(normalPath));
+        }
+
+        private class TrackingFileLazyRead implements LazyRead {
+
+            private final String normalKey;
+
+            TrackingFileLazyRead(String normalKey) {
+                this.normalKey = normalKey;
+            }
+
+            @Override
+            public long size() {
+                return TrackingFileSystemKeyValueAccess.this.size(normalKey);
+            }
+
+            @Override
+            public ReadData materialize(final long offset, final long length) {
+
+                numMaterializeCalls++;
+
+                try (final TrackingLockedFileChannel lfs = new TrackingLockedFileChannel(normalKey, true);
+                     final FileChannel channel = lfs.getFileChannel()) {
+
+                    channel.position(offset);
+                    if (length > Integer.MAX_VALUE)
+                        throw new IOException("Attempt to materialize too large data");
+
+                    final long channelSize = channel.size();
+                    if (!validBounds(channelSize, offset, length))
+                        throw new IndexOutOfBoundsException();
+
+                    final int sz = (int)(length < 0 ? channelSize : length);
+                    totalBytesRead += sz;
+                    final byte[] data = new byte[sz];
+                    final ByteBuffer buf = ByteBuffer.wrap(data);
+                    channel.read(buf);
+                    return ReadData.from(data);
+
+                } catch (final NoSuchFileException e) {
+                    throw new N5NoSuchKeyException("No such file", e);
+                } catch (IOException | UncheckedIOException e) {
+                    throw new N5Exception.N5IOException(e);
+                }
+            }
+        }
+
+        private class TrackingLockedFileChannel extends LockedFileChannel {
+
+            protected TrackingLockedFileChannel(String path, boolean readOnly) throws IOException {
+                super(path, readOnly);
+            }
+
+            @Override
+            protected FileChannel getFileChannel() {
+                return channel;
+            }
+        }
+
+        private static boolean validBounds(long channelSize, long offset, long length) {
+
+            if (offset < 0)
+                return false;
+            else if (channelSize > 0 && offset >= channelSize) // offset == 0 and arrayLength == 0 is okay
+                return false;
+            else if (length >= 0 && offset + length > channelSize)
+                return false;
+
+            return true;
+        }
+    }
 
 }

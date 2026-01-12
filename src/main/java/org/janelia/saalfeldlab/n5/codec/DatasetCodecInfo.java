@@ -31,8 +31,8 @@ package org.janelia.saalfeldlab.n5.codec;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
-@NameConfig.Prefix("data-codec")
+@NameConfig.Prefix("data-codec") // TODO: is this Prefix correct?
 public interface DatasetCodecInfo extends CodecInfo {
 
-	<T> DatasetCodec<T> create(final DatasetAttributes attributes);
+	DatasetCodec<?, ?> create(final DatasetAttributes attributes);
 }

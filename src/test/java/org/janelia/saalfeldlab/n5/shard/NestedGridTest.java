@@ -31,6 +31,10 @@ package org.janelia.saalfeldlab.n5.shard;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThrows;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 import org.junit.Assert;
 import org.junit.Test;
@@ -112,5 +116,43 @@ public class NestedGridTest {
 		assertArrayEquals(new long[]{0, 0}, grid.absolutePosition(new long[]{0, 1}, 1));
 		assertArrayEquals(new long[]{0, 1}, grid.absolutePosition(new long[]{0, 2}, 1));
 		assertArrayEquals(new long[]{1, 1}, grid.absolutePosition(new long[]{3, 2}, 1));
+	}
+
+	@Test
+	public void testNestedPositionOrder() {
+
+		// NestedPosition should be ordered such that positions from a
+		// (sub-)shard are grouped together:
+		// For nested = {X,Y,Z} compare by Z, then Y, then X.
+		// For X = [x,y,z] compare by z, then y, then x. (flattening order)
+
+		final NestedGrid grid = new NestedGrid(new int[][]{{3,3},{6,6}});
+
+		final List<Nesting.NestedPosition> positions = new ArrayList<>();
+		positions.add(grid.nestedPosition(new long[]{3, 1})); // {[1, 1] / [1, 0]}
+		positions.add(grid.nestedPosition(new long[]{3, 5})); // {[1, 1] / [1, 2]}
+		positions.add(grid.nestedPosition(new long[]{2, 2})); // {[0, 0] / [1, 1]}
+		positions.add(grid.nestedPosition(new long[]{1, 0})); // {[1, 0] / [0, 0]}
+		positions.add(grid.nestedPosition(new long[]{6, 7})); // {[0, 1] / [3, 3]}
+		positions.add(grid.nestedPosition(new long[]{0, 1})); // {[0, 1] / [0, 0]}
+		positions.add(grid.nestedPosition(new long[]{0, 2})); // {[0, 0] / [0, 1]}
+		positions.add(grid.nestedPosition(new long[]{1, 1})); // {[1, 1] / [0, 0]}
+		positions.add(grid.nestedPosition(new long[]{5, 0})); // {[1, 0] / [2, 0]}
+		positions.add(grid.nestedPosition(new long[]{0, 0})); // {[0, 0] / [0, 0]}
+
+		final List<Nesting.NestedPosition> orderedPositions = new ArrayList<>();
+		orderedPositions.add(grid.nestedPosition(new long[]{0, 0})); // {[0, 0] / [0, 0]}
+		orderedPositions.add(grid.nestedPosition(new long[]{1, 0})); // {[1, 0] / [0, 0]}
+		orderedPositions.add(grid.nestedPosition(new long[]{0, 1})); // {[0, 1] / [0, 0]}
+		orderedPositions.add(grid.nestedPosition(new long[]{1, 1})); // {[1, 1] / [0, 0]}
+		orderedPositions.add(grid.nestedPosition(new long[]{3, 1})); // {[1, 1] / [1, 0]}
+		orderedPositions.add(grid.nestedPosition(new long[]{5, 0})); // {[1, 0] / [2, 0]}
+		orderedPositions.add(grid.nestedPosition(new long[]{0, 2})); // {[0, 0] / [0, 1]}
+		orderedPositions.add(grid.nestedPosition(new long[]{2, 2})); // {[0, 0] / [1, 1]}
+		orderedPositions.add(grid.nestedPosition(new long[]{3, 5})); // {[1, 1] / [1, 2]}
+		orderedPositions.add(grid.nestedPosition(new long[]{6, 7})); // {[0, 1] / [3, 3]}
+
+		Collections.sort(positions);
+		Assert.assertEquals(orderedPositions,positions);
 	}
 }
