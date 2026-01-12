@@ -428,7 +428,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				if (modifiedElementData == null) {
 					// The DataBlock or nested shard was removed.
 					// Check whether this shard becomes empty.
-					if (shard.index().allElementsNull()) {
+					if (shard.isEmpty()) {
 						// This shard is empty and should be removed.
 						return null;
 					}
