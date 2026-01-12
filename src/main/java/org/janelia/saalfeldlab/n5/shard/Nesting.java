@@ -583,6 +583,17 @@ public class Nesting {
 		}
 
 		/**
+		 * Get size of a block at the given {@code level} relative to level {@code
+		 * 0} (that is, in units of {@code level-0} blocks).
+		 * <p>
+		 * For example {@code relativeToBaseBlockSize(1)} returns the number of
+		 * datablocks in a (non-nested) shard.
+		 */
+		public int[] relativeToBaseBlockSize(final int level) {
+			return relativeToBase[level];
+		}
+
+		/**
 		 * Get the size of the dataset in pixels.
 		 * <p>
 		 * This might return {@code null}, if this {@code NestedGrid} was not
