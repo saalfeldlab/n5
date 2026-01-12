@@ -342,6 +342,11 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 					: codec.decode(existingReadData, gridPosition);
 			final DataBlock<T> dataBlock = blocks.get(gridPosition, existingDataBlock);
 
+			// null blocks may be provided when they contain only the fill value
+			// and only non-empty blocks should be written, for example
+			if (dataBlock == null)
+				return null;
+
 			return codec.encode(dataBlock);
 		} else {
 
@@ -358,6 +363,10 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				final ReadData modifiedElementData = writeRegionRecursive(existingElementData, region, blocks, pos);
 				shard.setElementData(modifiedElementData, elementPos);
 			}
+
+			// do not write empty shards
+			if (shard.isEmpty())
+				return null;
 
 			return codec.encode(new RawShardDataBlock(gridPos, shard));
 		}
