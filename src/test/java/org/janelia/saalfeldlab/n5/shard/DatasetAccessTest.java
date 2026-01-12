@@ -28,7 +28,9 @@
  */
 package org.janelia.saalfeldlab.n5.shard;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
@@ -39,22 +41,32 @@ import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
-public class RawShardTest {
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 
-	public static void main(String[] args) {
+public class DatasetAccessTest {
 
-		int[] datablockSize = {3, 3, 3};
-		int[] level1ShardSize = {6, 6, 6};
-		int[] level2ShardSize = {24, 24, 24};
+	// DataBlocks are 3x3x3
+	// Level 1 shards are 6x6x6 (contain 2x2x2 DataBlocks)
+	// Level 2 shards are 24x24x24 (contain 4x4x4 Level 1 shards)
+	private final int[] dataBlockSize = {3, 3, 3};
+	private final int[] level1ShardSize = {6, 6, 6};
+	private final int[] level2ShardSize = {24, 24, 24};
+	private final long[] datasetDimensions = {240, 240, 240};
 
-		// DataBlocks are 3x3x3
-		// Level 1 shards are 6x6x6 (contain 2x2x2 DataBlocks)
-		// Level 2 shards are 24x24x24 (contain 4x4x4 Level 1 shards)
+	private DatasetAccess<byte[]> datasetAccess;
+
+	@Before
+	public void setup() {
+
 		final BlockCodecInfo c0 = new N5BlockCodecInfo();
 		final ShardCodecInfo c1 = new DefaultShardCodecInfo(
-				datablockSize,
+				dataBlockSize,
 				c0,
 				new DataCodecInfo[] {new RawCompression()},
 				new RawBlockCodecInfo(),
@@ -69,26 +81,24 @@ public class RawShardTest {
 				new DataCodecInfo[] {new RawCompression()},
 				IndexLocation.START
 		);
-
-		TestDatasetAttributes attributes = new TestDatasetAttributes(
-				new long[] {},
+		final TestDatasetAttributes attributes = new TestDatasetAttributes(
+				datasetDimensions,
 				level2ShardSize,
 				DataType.INT8,
 				c2,
-				new RawCompression());
+				new RawCompression()
+		);
 
-		final DatasetAccess<byte[]> datasetAccess = attributes.datasetAccess();
+		datasetAccess = attributes.datasetAccess();
+	}
+
+
+	@Test
+	public void tesWriteReadIndividual() {
 
 		final PositionValueAccess store = new TestPositionValueAccess();
 
-
-		// ---------------------------------------------------------------
-		// Some "tests"
-		// TODO: Turn into unit tests
-		// ---------------------------------------------------------------
-
 		// write some blocks, filled with constant values
-		final int[] dataBlockSize = c1.getInnerBlockSize();
 		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {0, 0, 0}, 1));
 		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {1, 0, 0}, 2));
 		datasetAccess.writeBlock(store, createDataBlock(dataBlockSize, new long[] {0, 1, 0}, 3));
@@ -103,6 +113,50 @@ public class RawShardTest {
 		checkBlock(datasetAccess.readBlock(store, new long[] {1, 1, 0}), true, 4);
 		checkBlock(datasetAccess.readBlock(store, new long[] {3, 2, 1}), true, 5);
 		checkBlock(datasetAccess.readBlock(store, new long[] {8, 4, 1}), true, 6);
+	}
+
+	@Test
+	public void tesWriteReadBulk() {
+
+		final PositionValueAccess store = new TestPositionValueAccess();
+
+		// write some blocks, filled with constant values
+		final List<long[]> writeGridPositions = Arrays.asList(new long[][] {
+				{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0}, {3, 2, 1}, {8, 4, 1}
+		});
+		final List<DataBlock<byte[]>> writeBlocks = new ArrayList<>();
+		for (int i = 0; i < writeGridPositions.size(); i++) {
+			writeBlocks.add(createDataBlock(dataBlockSize, writeGridPositions.get(i), 1 + i));
+		}
+		datasetAccess.writeBlocks(store, writeBlocks);
+
+		// verify that the written blocks can be read back with the correct values
+		final List<long[]> readGridPositions = Arrays.asList(new long[][] {
+				{1, 0, 0}, {0, 0, 0}, {0, 1, 0}, {2, 4, 2}, {3, 2, 1}, {8, 4, 1}
+		});
+		final List<DataBlock<byte[]>> readBlocks = datasetAccess.readBlocks(store, readGridPositions);
+		checkBlock(readBlocks.get(0), true, 2);
+		checkBlock(readBlocks.get(1), true, 1);
+		checkBlock(readBlocks.get(2), true, 3);
+		checkBlock(readBlocks.get(3), false, 4);
+		checkBlock(readBlocks.get(4), true, 5);
+		checkBlock(readBlocks.get(5), true, 6);
+	}
+
+	@Test
+	public void tesDeleteBlock() {
+
+		final PositionValueAccess store = new TestPositionValueAccess();
+
+		// write some blocks, filled with constant values
+		final List<long[]> writeGridPositions = Arrays.asList(new long[][] {
+				{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0}, {3, 2, 1}, {8, 4, 1}
+		});
+		final List<DataBlock<byte[]>> writeBlocks = new ArrayList<>();
+		for (int i = 0; i < writeGridPositions.size(); i++) {
+			writeBlocks.add(createDataBlock(dataBlockSize, writeGridPositions.get(i), 1 + i));
+		}
+		datasetAccess.writeBlocks(store, writeBlocks);
 
 		// verify that deleting a block removes it from the shard (while other blocks in the same shard are still present)
 		datasetAccess.deleteBlock(store, new long[] {0, 0, 0});
@@ -110,40 +164,57 @@ public class RawShardTest {
 		checkBlock(datasetAccess.readBlock(store, new long[] {1, 0, 0}), true, 2);
 
 		// if a shard becomes empty the corresponding key should be deleted
-		if ( store.get(new long[] {1, 0, 0}) == null ) {
-			throw new IllegalStateException("expected non-null readData");
-		}
+		assertNotNull(store.get(new long[] {1, 0, 0}));
 		datasetAccess.deleteBlock(store, new long[] {8, 4, 1});
-		if ( store.get(new long[] {1, 0, 0}) != null ) {
-			throw new IllegalStateException("expected null readData");
-		}
+		assertNull(store.get(new long[] {1, 0, 0}));
 
 		// deleting a non-existent block should not fail
 		datasetAccess.deleteBlock(store, new long[] {0, 0, 8});
+	}
 
-		System.out.println("all good");
+	@Test
+	public void tesDeleteBlocks() {
+
+		final PositionValueAccess store = new TestPositionValueAccess();
+
+		// write some blocks, filled with constant values
+		final List<long[]> writeGridPositions = Arrays.asList(new long[][] {
+				{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0}, {3, 2, 1}, {8, 4, 1}
+		});
+		final List<DataBlock<byte[]>> writeBlocks = new ArrayList<>();
+		for (int i = 0; i < writeGridPositions.size(); i++) {
+			writeBlocks.add(createDataBlock(dataBlockSize, writeGridPositions.get(i), 1 + i));
+		}
+		datasetAccess.writeBlocks(store, writeBlocks);
+
+		// verify that deleting a block removes it from the shard (while other blocks in the same shard are still present)
+		datasetAccess.deleteBlocks(store, Arrays.asList(new long[][] {{0, 0, 0}, {4, 2, 2}, {3, 2, 1}}));
+		checkBlock(datasetAccess.readBlock(store, new long[] {0, 0, 0}), false, 1);
+		checkBlock(datasetAccess.readBlock(store, new long[] {1, 0, 0}), true, 2);
+
+		// if a shard becomes empty the corresponding key should be deleted
+		assertNotNull(store.get(new long[] {1, 0, 0}));
+		datasetAccess.deleteBlocks(store, Arrays.asList(new long[][] {{8, 4, 1}}));
+		assertNull(store.get(new long[] {1, 0, 0}));
+
+		// deleting a non-existent block should not fail
+		datasetAccess.deleteBlocks(store, Arrays.asList(new long[] {0, 0, 8}));
 	}
 
 	private static void checkBlock(final DataBlock<byte[]> dataBlock, final boolean expectedNonNull, final int expectedFillValue) {
 
-		if (dataBlock == null) {
-			if (expectedNonNull) {
-				throw new IllegalStateException("expected non-null dataBlock");
+		if (expectedNonNull) {
+			assertNotNull("expected non-null dataBlock", dataBlock);
+			for (byte b : dataBlock.getData()) {
+				Assert.assertTrue("expected all values to be " + expectedFillValue, b == (byte) expectedFillValue);
 			}
 		} else {
-			if (!expectedNonNull) {
-				throw new IllegalStateException("expected null dataBlock");
-			}
-			final byte[] bytes = dataBlock.getData();
-			for (byte b : bytes) {
-				if (b != (byte) expectedFillValue) {
-					throw new IllegalStateException("expected all values to be " + expectedFillValue);
-				}
-			}
+			assertNull("expected null dataBlock", dataBlock);
 		}
 	}
 
 	private static DataBlock<byte[]> createDataBlock(int[] size, long[] gridPosition, int fillValue) {
+
 		final byte[] bytes = new byte[DataBlock.getNumElements(size)];
 		Arrays.fill(bytes, (byte) fillValue);
 		return new ByteArrayDataBlock(size, gridPosition, bytes);
