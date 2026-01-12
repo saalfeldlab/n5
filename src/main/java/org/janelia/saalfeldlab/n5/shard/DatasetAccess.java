@@ -151,5 +151,45 @@ public interface DatasetAccess<T> {
 			ExecutorService exec
 	) throws N5Exception, InterruptedException, ExecutionException;
 
+	/**
+	 * Read a full shard at {@code shardGridPosition} at the given nesting
+	 * {@code level}. The shard data is rearranged and assembled into a (large)
+	 * {@code DataBlock}.
+	 * <p>
+	 * The {@code getGridPosition()} of the returned {@code DataBlock} is the
+	 * grid position with respect to {@code level}. For example, if {@code
+	 * level==1}, then this refers to the position on the shard grid.
+	 *
+	 * @param pva
+	 * 		dataset storage
+	 * @param shardGridPosition
+	 * 		position of the shard to read (on the shard grid at {@code level})
+	 * @param level
+	 * 		grid level of the shard/block to write.
+	 * @return
+	 * @throws N5IOException
+	 */
+	DataBlock<T> readShard(PositionValueAccess pva, long[] shardGridPosition, int level) throws N5IOException;
+
+	/**
+	 * Write a full shard the given nesting {@code level}. The shard data is
+	 * given as a (large) {@code DataBlock} that will be sliced, rearranged, and
+	 * written as (level-0) DataBlocks.
+	 * <p>
+	 * {@code dataBlock.getGridPosition()} is the grid position with respect to
+	 * {@code level}. For example, if {@code level==1}, then this refers to the
+	 * position on the shard grid.
+	 *
+	 * @param pva
+	 * 		dataset storage
+	 * @param dataBlock
+	 * 		shard/block to write
+	 * @param level
+	 * 		grid level of the shard/block to write.
+	 *
+	 * @throws N5IOException
+	 */
+	void writeShard(PositionValueAccess pva, DataBlock<T> dataBlock, int level) throws N5IOException;
+
 	NestedGrid getGrid();
 }
