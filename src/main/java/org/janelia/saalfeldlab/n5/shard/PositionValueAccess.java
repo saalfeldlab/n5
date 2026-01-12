@@ -57,7 +57,20 @@ public interface PositionValueAccess {
 	 */
 	ReadData get(long[] key) throws N5Exception.N5IOException;
 
-	void put(long[] key, ReadData data) throws N5Exception.N5IOException;
+	/**
+	 * Sets the {@link ReadData} for a DataBlock (or shard) at the given key
+	 * (position) in the block (or shard) grid.
+	 * <p>
+	 * Setting the value to null will remove the block or shard.
+	 *
+	 * @param key
+	 *            the key at which to store data
+	 * @param data
+	 *            the data to store at key
+	 * @throws N5Exception.N5IOException
+	 *             if an error occurs
+	 */
+	void set(long[] key, ReadData data) throws N5Exception.N5IOException;
 
 	boolean exists(long[] key) throws N5Exception.N5IOException;
 
@@ -113,10 +126,8 @@ public interface PositionValueAccess {
 		}
 
 		@Override
-		public void put(long[] key, ReadData data) throws N5IOException {
+		public void set(long[] key, ReadData data) throws N5IOException {
 
-			// TODO is this the behavior we want?
-			// if so, consider changing this method's name to 'update', say
 			if (data == null) {
 				remove(key);
 				return;
