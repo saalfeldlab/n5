@@ -34,18 +34,27 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
+import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
 import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DoubleArrayDataBlock;
+import org.janelia.saalfeldlab.n5.FloatArrayDataBlock;
+import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
+import org.janelia.saalfeldlab.n5.LongArrayDataBlock;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Writer.DataBlockSupplier;
+import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
+import org.janelia.saalfeldlab.n5.StringDataBlock;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
+import org.janelia.saalfeldlab.n5.util.SubArrayCopy;
 
 public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
@@ -421,6 +430,192 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	}
 
 	//
+	// -- readShard -----------------------------------------------------------
+
+	// NB: How to handle the dataset borders?
+	//
+	// N5 format uses truncated DataBlocks at the dataset border.
+	//
+	// For the Zarr format, when a truncated DataBlock is written, it is
+	// padded with zero values to the default DataBlock size. This will
+	// happen also when writing DataBlocks into a Shard.
+	//
+	// However, Zarr will not fill up a Shard with empty DataBlocks to pad
+	// it to the default Shard size. Instead, these blocks will be missing
+	// in the Shard index.
+	//
+	// When we write a full Shard as a "big DataBlock", what do we expect?
+	//
+	// For N5 format probably we expect the big DataBlock to be truncated at
+	// the dataset border. (N5 format doesn't have shards yet, so we are
+	// relatively free what to do here. But this would be consistent.)
+	//
+	// For Zarr format, we either expect
+	//  * a big DataBlock that is the default Shard size, or
+	//  * a big DataBlock that is truncated after the last DataBlock that is
+	//    (partially) in the dataset borders (but truncated at multiple of
+	//    default DataBlock size, so "slightly padded").
+	//
+	// I'm not sure which, so we handle both cases for now. In any case, we
+	// do not want to write DataBlocks that are completely outside the
+	// dataset (even if the "big DataBlock" covers this area.)
+	//
+	// This works for writing. For reading we'll have to decide what to return,
+	// though... Potentially, there is no valid block at the border, so we
+	// cannot determine where to put the border just from the data. We need to
+	// rely on external input or heuristics.
+	//
+	// For now, we decided to always truncate the at the dataset border when we
+	// read full shards. This will hopefully work where we need it, but it
+	// introduces inconsistencies. There is a readShardInternal() implementation
+	// which takes the expected shardSizeInPixels as an argument, so that we can
+	// easily revisit and change this heuristic.
+
+	@Override
+	public DataBlock<T> readShard(
+			final PositionValueAccess pva,
+			final long[] shardGridPosition,
+			final int level
+	) throws N5IOException {
+
+		if (level == 0) {
+			return readBlock(pva, shardGridPosition);
+		}
+
+		final long[] shardPixelPos = grid.pixelPosition(shardGridPosition, level);
+		final int[] defaultShardSize = grid.getBlockSize(level);
+		final long[] datasetSize = grid.getDatasetSize();
+
+		final int n = grid.numDimensions();
+		final int[] shardSizeInPixels = new int[n];
+		for (int d = 0; d < n; ++d) {
+			shardSizeInPixels[d] = Math.min(defaultShardSize[d], (int) (datasetSize[d] - shardPixelPos[d]));
+		}
+		return readShardInternal(pva, shardGridPosition, shardSizeInPixels, level);
+	}
+
+	private DataBlock<T> readShardInternal(
+			final PositionValueAccess pva,
+			final long[] shardGridPosition,
+			final int[] shardSizeInPixels, // expected size of this shard in pixels
+			final int level
+	) throws N5IOException {
+
+		final int n = grid.numDimensions();
+		final int[] defaultShardSize = grid.getBlockSize(level);
+		for (int d = 0; d < n; d++) {
+			if (shardSizeInPixels[d] > defaultShardSize[d]) {
+				throw new IllegalArgumentException("Requested shard size is larger than the default shard size");
+			}
+		}
+
+		// level-0 block-grid position of the min block in the shard
+		final long[] gridMin = grid.absolutePosition(shardGridPosition, level, 0);
+
+		// level-0 block-grid position of the max block in the shard that we need to read.
+		// (the shard might go beyond the dataset border, and we don't need to read anything there)
+		final long[] gridMax = new long[n];
+		final long[] datasetSizeInBlocks = grid.getDatasetSizeInBlocks();
+		final int[] blockSize = grid.getBlockSize(0);
+		for (int d = 0; d < n; ++d) {
+			final int shardSizeInBlocks = (shardSizeInPixels[d] + blockSize[d] - 1) / blockSize[d];
+			final int gridSize = Math.min(shardSizeInBlocks, (int) (datasetSizeInBlocks[d] - gridMin[d]));
+			gridMax[d] = gridMin[d] + gridSize - 1;
+		}
+
+		// read all blocks in (gridMin, gridMax) and filter out missing blocks
+		final List<long[]> blockPositions = Region.gridPositions(gridMin, gridMax);
+		final List<DataBlock<T>> blocks = readBlocks(pva, blockPositions)
+				.stream().filter(Objects::nonNull).collect(Collectors.toList());
+		if (blocks.isEmpty()) {
+			return null;
+		}
+
+		// allocate shard and copy data from blocks
+		final DataBlock<T> shard = DataBlockFactory.of(blocks.get(0).getData()).createDataBlock(shardSizeInPixels, shardGridPosition);
+		final long[] shardPixelPos = grid.pixelPosition(shardGridPosition, level);
+		final long[] blockPixelPos = new long[n];
+		final int[] srcPos = new int[n];
+		final int[] destPos = new int[n];
+		final int[] size = new int[n];
+		for (final DataBlock<T> block : blocks) {
+			// copy block data that overlaps the shard
+			grid.pixelPosition(block.getGridPosition(), 0, blockPixelPos);
+			final int[] bsize = block.getSize();
+			for (int d = 0; d < n; d++) {
+				destPos[d] = (int) (blockPixelPos[d] - shardPixelPos[d]);
+				size[d] = Math.min(bsize[d], shardSizeInPixels[d] - destPos[d]);
+			}
+			SubArrayCopy.copy(block.getData(), bsize, srcPos, shard.getData(), shardSizeInPixels, destPos, size);
+		}
+		return shard;
+	}
+
+	//
+	// -- writeShard ----------------------------------------------------------
+
+	@Override
+	public void writeShard(
+			final PositionValueAccess pva,
+			final DataBlock<T> dataBlock,
+			final int level
+	) throws N5IOException {
+
+		if (level == 0) {
+			writeBlock(pva, dataBlock);
+			return;
+		}
+
+		final T shardData = dataBlock.getData();
+		final DataBlockFactory<T> blockFactory = DataBlockFactory.of(shardData);
+
+		final int n = grid.numDimensions();
+		final int[] blockSize = grid.getBlockSize(0); // size of a standard (non-truncated) DataBlock
+		final long[] datasetBlockSize = grid.getDatasetSizeInBlocks();
+
+		final long[] shardPixelMin = grid.pixelPosition(dataBlock.getGridPosition(), level);
+		final int[] shardPixelSize = dataBlock.getSize();
+
+		// the max block + 1 in the shard, if it isn't truncated by the dataset border
+		final long[] shardBlockTo = new long[n];
+		Arrays.setAll(shardBlockTo, d -> (shardPixelMin[d] + shardPixelSize[d] + blockSize[d] - 1) / blockSize[d]);
+
+		// level 0 DataBlock positions of all DataBlocks we want to extract
+		final long[] gridMin = grid.absolutePosition(dataBlock.getGridPosition(), level, 0);
+		final long[] gridMax = new long[n];
+		Arrays.setAll(gridMax, d -> Math.min(shardBlockTo[d], datasetBlockSize[d]) - 1);
+		final List<long[]> blockPositions = Region.gridPositions(gridMin, gridMax);
+
+		// Max pixel coordinates + 1, of the region we want to copy. This should
+		// always be shardPixelMin + shardPixelSize, except at the dataset
+		// border, where we truncate to the smallest multiple of blockSize still
+		// overlapping the dataset.
+		final long[] regionBound = new long[n];
+		Arrays.setAll(regionBound, d -> Math.min(shardPixelMin[d] + shardPixelSize[d], datasetBlockSize[d] * blockSize[d]));
+
+		final List<DataBlock<T>> blocks = new ArrayList<>(blockPositions.size());
+		final int[] srcPos = new int[n];
+		final int[] destPos = new int[n];
+		final int[] destSize = new int[n];
+		for ( long[] blockPos : blockPositions) {
+			final long[] pixelMin = grid.pixelPosition(blockPos, 0);
+
+			for (int d = 0; d < n; d++) {
+				srcPos[d] = (int) (pixelMin[d] - shardPixelMin[d]);
+				destSize[d] = Math.min(blockSize[d], (int) (regionBound[d] - pixelMin[d]));
+			}
+
+			// This extracting DataBlocks will not work if num_array_elements != num_block_elements.
+			// But we'll deal with that later if it becomes a problem...
+			final DataBlock<T> block = blockFactory.createDataBlock(destSize, blockPos);
+			SubArrayCopy.copy(shardData, shardPixelSize, srcPos, block.getData(), destSize, destPos, destSize);
+			blocks.add(block);
+		}
+
+		writeBlocks(pva, blocks);
+	}
+
+	//
 	// -- helpers -------------------------------------------------------------
 
 	private static ReadData getExistingReadData(final PositionValueAccess pva, final long[] key) {
@@ -681,5 +876,39 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		}
 		requests.sort(Comparator.comparing(r -> r.position));
 		return new DataBlockRequests<>(requests, grid.numLevels(), grid);
+	}
+
+	/**
+	 * Factory for the standard {@code DataBlock<T>}, where {@code T} is an
+	 * array type and the number of elements in a block corresponds to the
+	 * {@link DataBlock#getSize()}.
+	 * <p>
+	 * This is used by {@link #readShard} and {@link #writeShard} which
+	 * internally need to allocate new DataBlocks to split or merge a shard.
+	 */
+	private interface DataBlockFactory<T> {
+
+		DataBlock<T> createDataBlock(final int[] blockSize, final long[] gridPosition);
+
+		@SuppressWarnings("unchecked")
+		static <T> DataBlockFactory<T> of(T array) {
+			if (array instanceof byte[]) {
+				return (size, pos) -> (DataBlock<T>) new ByteArrayDataBlock(size, pos, new byte[DataBlock.getNumElements(size)]);
+			} else if (array instanceof short[]) {
+				return (size, pos) -> (DataBlock<T>) new ShortArrayDataBlock(size, pos, new short[DataBlock.getNumElements(size)]);
+			} else if (array instanceof int[]) {
+				return (size, pos) -> (DataBlock<T>) new IntArrayDataBlock(size, pos, new int[DataBlock.getNumElements(size)]);
+			} else if (array instanceof long[]) {
+				return (size, pos) -> (DataBlock<T>) new LongArrayDataBlock(size, pos, new long[DataBlock.getNumElements(size)]);
+			} else if (array instanceof float[]) {
+				return (size, pos) -> (DataBlock<T>) new FloatArrayDataBlock(size, pos, new float[DataBlock.getNumElements(size)]);
+			} else if (array instanceof double[]) {
+				return (size, pos) -> (DataBlock<T>) new DoubleArrayDataBlock(size, pos, new double[DataBlock.getNumElements(size)]);
+			} else if (array instanceof String[]) {
+				return (size, pos) -> (DataBlock<T>) new StringDataBlock(size, pos, new String[DataBlock.getNumElements(size)]);
+			} else {
+				throw new IllegalArgumentException("unsupported array type: " + array.getClass().getSimpleName());
+			}
+		}
 	}
 }
