@@ -30,6 +30,7 @@ package org.janelia.saalfeldlab.n5.shard;
 
 
 import java.util.Arrays;
+import java.util.Objects;
 
 public class Nesting {
 
@@ -106,12 +107,16 @@ public class Nesting {
 			return grid.pixelPosition(position, level);
 		}
 
+		public long[] maxPixelPosition() {
+			return grid.maxPixelPosition(position, level);
+		}
+
 		@Override
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
 			sb.append('{');
-			for ( int l = level; l < grid.numLevels(); ++l ) {
-				if ( l > level ) {
+			for (int l = level; l < grid.numLevels(); ++l) {
+				if (l > level) {
 					sb.append(" / ");
 				}
 				sb.append(Arrays.toString(relative(l)));
@@ -120,27 +125,60 @@ public class Nesting {
 			return sb.toString();
 		}
 
+		// TODO: Consider making Comparable, equals, and hashCode assume that
+		//       everything is on the same NestedGrid. This is how we use it in
+		//       practice, and it would simplify things a little bit.
+
 		@Override
 		public int compareTo(NestedPosition o) {
 
-			final int dimensionInequality = Integer.compare(numDimensions(), o.numDimensions());
-			if (dimensionInequality != 0)
-				return dimensionInequality;
+			if (o.grid != grid)
+				throw new IllegalArgumentException("NestedPositions of different NestedGrids are not comparable");
 
 			final int levelInequality = Integer.compare(level, o.level);
 			if (levelInequality != 0)
 				return levelInequality;
 
-			for (int i = position.length - 1; i >= 0; --i) {
-				final long diff = position[i] - o.position[i];
-				if (diff != 0)
-					return (int) diff;
+			final int[] sk = grid.relativeToBase[level];
+			for (int l = grid.numLevels() - 1; l >= 0; --l) {
+				final int[] si = grid.relativeToBase[l];
+				final boolean maxLevel = l < grid.numLevels - 1;
+				final int[] rj = maxLevel ? grid.relativeToAdjacent[l + 1] : null;
+				for (int d = grid.numDimensions - 1; d >= 0; --d) {
+					long relative = position[d] * sk[d] / si[d];
+					long orelative = o.position[d] * sk[d] / si[d];
+					if (maxLevel) {
+						relative %= rj[d];
+						orelative %= rj[d];
+					}
+					final int posInequality = Long.compare(relative, orelative);
+					if (posInequality != 0)
+						return posInequality;
+				}
 			}
 
 			return 0;
 		}
 
-		// TODO: equals() and hashCode()
+		@Override
+		public boolean equals(final Object o) {
+
+			if (o == this)
+				return true;
+
+			if (!(o instanceof NestedPosition))
+				return false;
+			final NestedPosition that = (NestedPosition) o;
+
+			return level == that.level && Objects.equals(grid, that.grid) && Objects.deepEquals(position, that.position);
+		}
+
+		@Override
+		public int hashCode() {
+
+			return Objects.hash(grid, Arrays.hashCode(position), level);
+		}
+
 		// TODO: should we have prefix()? suffix()? head()? tail()?
 	}
 
@@ -156,6 +194,107 @@ public class Nesting {
 	 * with {@code level=1} refer to first-level Shard grid, and so on.
 	 */
 	public static class NestedGrid {
+
+		private final int numLevels;
+		private final int numDimensions;
+
+		/**
+		 * relativeToBase[i][d] is block size (in dimension d) at level i relative to level 0
+		 */
+		private final int[][] relativeToBase;
+
+		/**
+		 * relativeToAdjacent[i][d] is block size (in dimension d) at level i relative to level i-1
+		 */
+		private final int[][] relativeToAdjacent;
+
+		/**
+		 * blockSizes[l][d] is the block size in pixels at level l in dimension d
+		 */
+		private final int[][] blockSizes;
+
+		/**
+		 * dimensions of the dataset in pixels.
+		 */
+		private final long[] datasetSize;
+
+		/**
+		 * dimensions of the dataset in (level-0) blocks.
+		 */
+		private final long[] datasetSizeInBlocks;
+
+		/**
+		 * {@code blockSizes[l][d]} is the block size at level {@code l} in dimension {@code d}.
+		 * Level 0 contains the smallest blocks. blockSizes[l+1][d] must be a multiple of blockSizes[l][d].
+		 *
+		 * @param blockSizes
+		 * 		block sizes for all levels and dimensions.
+		 * @param datasetSize
+		 * 		size of the dataset.
+		 */
+		public NestedGrid(int[][] blockSizes, long[] datasetSize) {
+
+			if (blockSizes == null)
+				throw new IllegalArgumentException("blockSizes is null");
+
+			if (blockSizes[0] == null)
+				throw new IllegalArgumentException("blockSizes[0] is null");
+
+			this.blockSizes = blockSizes;
+			this.datasetSize = datasetSize;
+
+			numLevels = blockSizes.length;
+			numDimensions = blockSizes[0].length;
+			relativeToBase = new int[numLevels][numDimensions];
+			relativeToAdjacent = new int[numLevels][numDimensions];
+			for (int l = 0; l < numLevels; ++l) {
+				final int k = Math.max(0, l - 1);
+
+				if (blockSizes[l] == null)
+					throw new IllegalArgumentException("blockSizes[" + l + "] null");
+
+				if (blockSizes[l].length != numDimensions)
+					throw new IllegalArgumentException(
+							String.format("Block size at level %d has a different length (%d vs %d)", l, numDimensions, blockSizes[l].length));
+
+				for (int d = 0; d < numDimensions; ++d) {
+
+					if (blockSizes[l][d] <= 0) {
+						throw new IllegalArgumentException(
+								String.format("Block sizes at level %d (%d) is negative for dimension %d.",
+										l, blockSizes[l][d], d));
+					}
+
+					if (blockSizes[l][d] < blockSizes[k][d]) {
+						throw new IllegalArgumentException(
+								String.format("Block sizes at level %d (%d) is smaller than previous level (%d) "
+												+ " for dimension %d.",
+										l, blockSizes[l][d], blockSizes[k][d], d));
+					}
+
+					if (blockSizes[l][d] % blockSizes[k][d] != 0) {
+						throw new IllegalArgumentException(
+								String.format("Block sizes at level %d (%d) not a multiple of previous level (%d) "
+												+ " for dimension %d.",
+										l, blockSizes[l][d], blockSizes[k][d], d));
+					}
+
+					relativeToBase[l][d] = blockSizes[l][d] / blockSizes[0][d];
+					relativeToAdjacent[l][d] = blockSizes[l][d] / blockSizes[k][d];
+				}
+			}
+
+			if (datasetSize == null) {
+				datasetSizeInBlocks = null;
+			} else {
+				datasetSizeInBlocks = new long[numDimensions];
+				Arrays.setAll(datasetSizeInBlocks, d -> (datasetSize[d] + blockSizes[0][d] - 1) / blockSizes[0][d]);
+			}
+		}
+
+		public NestedGrid(int[][] blockSizes) {
+			this(blockSizes, null);
+		}
 
 		/**
 		 * Create a {@code NestedPosition} at the specified nesting {@code
@@ -196,89 +335,6 @@ public class Nesting {
 		 */
 		public NestedPosition nestedPosition(final long[] position) {
 			return nestedPosition(position, 0);
-		}
-
-
-
-
-
-
-		private final int numLevels;
-
-		private final int numDimensions;
-
-		/**
-		 * relativeToBase[i][d] is block size (in dimension d) at level i relative to level 0
-		 */
-		private final int[][] relativeToBase;
-
-		/**
-		 * relativeToAdjacent[i][d] is block size (in dimension d) at level i relative to level i-1
-		 */
-		private final int[][] relativeToAdjacent;
-
-		/**
-		 * blockSizes[l][d] is the block size in pixels at level l in dimension d
-		 */
-		private final int[][] blockSizes;
-
-		/**
-		 * {@code blockSizes[l][d]} is the block size at level {@code l} in dimension {@code d}.
-		 * Level 0 contains the smallest blocks. blockSizes[l+1][d] must be a multiple of blockSizes[l][d].
-		 *
-		 * @param blockSizes
-		 * 		block sizes for all levels and dimensions.
-		 */
-		public NestedGrid(int[][] blockSizes) {
-
-			if (blockSizes == null)
-				throw new IllegalArgumentException("blockSizes is null");
-
-			if (blockSizes[0] == null)
-				throw new IllegalArgumentException("blockSizes[0] is null");
-
-			this.blockSizes = blockSizes;
-
-			numLevels = blockSizes.length;
-			numDimensions = blockSizes[0].length;
-			relativeToBase = new int[numLevels][numDimensions];
-			relativeToAdjacent = new int[numLevels][numDimensions];
-			for (int l = 0; l < numLevels; ++l) {
-				final int k = Math.max(0, l - 1);
-
-				if (blockSizes[l] == null)
-					throw new IllegalArgumentException("blockSizes[" + l + "] null");
-
-				if (blockSizes[l].length != numDimensions)
-					throw new IllegalArgumentException(
-							String.format("Block size at level %d has a different length (%d vs %d)", l, numDimensions, blockSizes[l].length));
-
-				for (int d = 0; d < numDimensions; ++d) {
-
-					if (blockSizes[l][d] <= 0 ) {
-						throw new IllegalArgumentException(
-								String.format("Block sizes at level %d (%d) is negative for dimension %d.",
-										l, blockSizes[l][d], d));
-					}
-
-					if (blockSizes[l][d] < blockSizes[k][d]) {
-						throw new IllegalArgumentException(
-								String.format("Block sizes at level %d (%d) is smaller than previous level (%d) "
-										+ " for dimension %d.",
-										l, blockSizes[l][d], blockSizes[k][d], d));
-					}
-
-					if (blockSizes[l][d] % blockSizes[k][d] != 0) {
-						throw new IllegalArgumentException(
-								String.format("Block sizes at level %d (%d) not a multiple of previous level (%d) "
-										+ " for dimension %d.",
-										l, blockSizes[l][d], blockSizes[k][d], d));
-					}
-
-					relativeToBase[l][d] = blockSizes[l][d] / blockSizes[0][d];
-					relativeToAdjacent[l][d] = blockSizes[l][d] / blockSizes[k][d];
-				}
-			}
 		}
 
 		public int numLevels() {
@@ -337,6 +393,54 @@ public class Nesting {
 		}
 
 		/**
+		 * Get the maximum pixel position in the shard/block at the given {@code
+		 * sourcePos} grid position at {@code sourceLevel}.
+		 * <p>
+		 * Note that this does not take into account {@link #getDatasetSize()
+		 * dataset dimensions}. That is, it is always assumed that the
+		 * shard/block has the default size.
+		 *
+		 * @param sourcePos
+		 * 		a grid position at {@code sourceLevel}
+		 * @param sourceLevel
+		 * 		nesting level of {@code sourcePos}
+		 * @param targetPos
+		 * 		the pixel position will be stored here
+		 */
+		public void maxPixelPosition(
+				final long[] sourcePos,
+				final int sourceLevel,
+				final long[] targetPos) {
+			final int[] s = blockSizes[sourceLevel];
+			for (int d = 0; d < numDimensions; ++d) {
+				targetPos[d] = (sourcePos[d] + 1) * s[d] - 1;
+			}
+		}
+
+		/**
+		 * Get the maximum pixel position in the shard/block at the given {@code
+		 * sourcePos} grid position at {@code sourceLevel}.
+		 * <p>
+		 * Note that this does not take into account {@link #getDatasetSize()
+		 * dataset dimensions}. That is, it is always assumed that the
+		 * shard/block has the default size.
+		 *
+		 * @param sourcePos
+		 * 		a grid position at {@code sourceLevel}
+		 * @param sourceLevel
+		 * 		nesting level of {@code sourcePos}
+		 *
+		 * @return the pixel position
+		 */
+		public long[] maxPixelPosition(
+				final long[] sourcePos,
+				final int sourceLevel) {
+			final long[] targetPos = new long[numDimensions];
+			maxPixelPosition(sourcePos, sourceLevel, targetPos);
+			return targetPos;
+		}
+
+		/**
 		 * Computes the absolute {@code targetPos} grid position at {@code
 		 * targetLevel} for the given {@code sourcePos} grid position at {@code
 		 * sourceLevel}.
@@ -374,9 +478,13 @@ public class Nesting {
 		 * grid ({@code targetLevel==1}) of the shard containing a given
 		 * datablock ({@code sourcePos} at {@code sourceLevel==0}).
 		 *
-		 * @param sourcePos the source position j
-		 * @param sourceLevel the source level
-		 * @param targetLevel the target level
+		 * @param sourcePos
+		 * 		the source position j
+		 * @param sourceLevel
+		 * 		the source level
+		 * @param targetLevel
+		 * 		the target level
+		 *
 		 * @return absolute position at the target level
 		 */
 		public long[] absolutePosition(
@@ -399,8 +507,11 @@ public class Nesting {
 		 * grid ({@code targetLevel==1}) of the shard containing a given
 		 * datablock ({@code sourcePos}.
 		 *
-		 * @param sourcePos the source position j
-		 * @param targetLevel the target level
+		 * @param sourcePos
+		 * 		the source position j
+		 * @param targetLevel
+		 * 		the target level
+		 *
 		 * @return absolute position at the target level
 		 */
 		public long[] absolutePosition(
@@ -469,6 +580,41 @@ public class Nesting {
 		 */
 		public int[] relativeBlockSize(final int level) {
 			return relativeToAdjacent[level];
+		}
+
+		/**
+		 * Get size of a block at the given {@code level} relative to level {@code
+		 * 0} (that is, in units of {@code level-0} blocks).
+		 * <p>
+		 * For example {@code relativeToBaseBlockSize(1)} returns the number of
+		 * datablocks in a (non-nested) shard.
+		 */
+		public int[] relativeToBaseBlockSize(final int level) {
+			return relativeToBase[level];
+		}
+
+		/**
+		 * Get the size of the dataset in pixels.
+		 * <p>
+		 * This might return {@code null}, if this {@code NestedGrid} was not
+		 * constructed with dataset dimensions.
+		 *
+		 * @return size of the dataset in pixels
+		 */
+		public long[] getDatasetSize() {
+			return datasetSize;
+		}
+
+		/**
+		 * Get the size of the dataset in units of DataBlocks.
+		 * <p>
+		 * This might return {@code null}, if this {@code NestedGrid} was not
+		 * constructed with dataset dimensions.
+		 *
+		 * @return size of the dataset in pixels
+		 */
+		public long[] getDatasetSizeInBlocks() {
+			return datasetSizeInBlocks;
 		}
 	}
 }

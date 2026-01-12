@@ -59,6 +59,8 @@ public interface PositionValueAccess {
 
 	void put(long[] key, ReadData data) throws N5Exception.N5IOException;
 
+	boolean exists(long[] key) throws N5Exception.N5IOException;
+
 	boolean remove(long[] key) throws N5Exception.N5IOException;
 
 	public static PositionValueAccess fromKva(
@@ -106,7 +108,19 @@ public interface PositionValueAccess {
 		}
 
 		@Override
+		public boolean exists(long[] key) throws N5IOException {
+			return kva.isFile(absolutePath(key));
+		}
+
+		@Override
 		public void put(long[] key, ReadData data) throws N5IOException {
+
+			// TODO is this the behavior we want?
+			// if so, consider changing this method's name to 'update', say
+			if (data == null) {
+				remove(key);
+				return;
+			}
 
 			try ( final LockedChannel ch = kva.lockForWriting(absolutePath(key));
 				  final OutputStream outputStream = ch.newOutputStream();) {

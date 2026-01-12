@@ -30,6 +30,7 @@ package org.janelia.saalfeldlab.n5.shard;
 
 import java.util.Arrays;
 import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
@@ -62,13 +63,13 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 	@NameConfig.Parameter(value = "index_codecs")
 	private CodecInfo[] indexCodecs;
 
-	private transient final BlockCodecInfo innerBlockCodecInfo;
+	private transient BlockCodecInfo innerBlockCodecInfo;
 
-	private transient final DataCodecInfo[] innerDataCodecInfos;
+	private transient DataCodecInfo[] innerDataCodecInfos;
 
-	private transient final BlockCodecInfo indexBlockCodecInfo;
+	private transient BlockCodecInfo indexBlockCodecInfo;
 
-	private transient final DataCodecInfo[] indexDataCodecInfos;
+	private transient DataCodecInfo[] indexDataCodecInfos;
 
 	DefaultShardCodecInfo() {
 		// for serialization
@@ -92,6 +93,36 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 
 		codecs = concatenateCodecs(innerBlockCodecInfo, innerDataCodecInfos);
 		indexCodecs = concatenateCodecs(indexBlockCodecInfo, indexDataCodecInfos);
+	}
+
+	private void build() {
+
+		if (innerBlockCodecInfo != null)
+			return;
+
+		// sets
+		// innerBlockCodecInfo, innerDataCodecInfos
+		// indexBlockCodecInfo, indexDataCodecInfos
+		// from
+		// codecs and indexCodecs
+
+		if (codecs[0] instanceof BlockCodecInfo)
+			innerBlockCodecInfo = (BlockCodecInfo)codecs[0];
+		else
+			throw new N5Exception("Codec at index " + 0 + " must be a BlockCodec.");
+
+		innerDataCodecInfos = new DataCodecInfo[codecs.length - 1];
+		for (int i = 1; i < codecs.length; i++)
+			innerDataCodecInfos[i - 1] = (DataCodecInfo)codecs[i];
+
+		if (indexCodecs[0] instanceof BlockCodecInfo)
+			indexBlockCodecInfo = (BlockCodecInfo)indexCodecs[0];
+		else
+			throw new N5Exception("Codec at index " + 0 + " must be a BlockCodec.");
+
+		indexDataCodecInfos = new DataCodecInfo[indexCodecs.length - 1];
+		for (int i = 1; i < indexCodecs.length; i++)
+			indexDataCodecInfos[i - 1] = (DataCodecInfo)indexCodecs[i];
 	}
 
 	@Override
@@ -135,6 +166,8 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 	@Override
 	public RawShardCodec create(final int[] blockSize, final DataCodecInfo... codecs) {
 
+		build();
+
 		// Number of elements (DataBlocks, nested shards) in each dimension per shard.
 		final int[] size = new int[blockSize.length];
 		// blockSize argument is number of pixels in the shard
@@ -161,4 +194,5 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 
 		return allCodecs;
 	}
+
 }

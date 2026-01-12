@@ -31,6 +31,7 @@ package org.janelia.saalfeldlab.n5;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
@@ -52,6 +53,8 @@ import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DatasetCodec;
+import org.janelia.saalfeldlab.n5.codec.DatasetCodecInfo;
 
 
 /**
@@ -95,8 +98,11 @@ public class DatasetAttributes implements Serializable {
 
 	private final DataType dataType;
 
+	private final JsonElement defaultValue;
+
 	private final BlockCodecInfo blockCodecInfo;
 	private final DataCodecInfo[] dataCodecInfos;
+	private final DatasetCodecInfo[] datasetCodecInfos;
 
 	private transient final DatasetAccess<?> access;
 
@@ -104,14 +110,18 @@ public class DatasetAttributes implements Serializable {
 			final long[] dimensions,
 			final int[] outerBlockSize,
 			final DataType dataType,
+			final JsonElement defaultValue,
 			final BlockCodecInfo blockCodecInfo,
+			final DatasetCodecInfo[] datasetCodecInfos,
 			final DataCodecInfo... dataCodecInfos) {
 
 		this.dimensions = dimensions;
 		this.dataType = dataType;
 		this.outerBlockSize = outerBlockSize;
+		this.defaultValue = defaultValue == null ? JsonNull.INSTANCE : defaultValue;
 
 		this.blockCodecInfo = blockCodecInfo == null ? defaultBlockCodecInfo() : blockCodecInfo;
+		this.datasetCodecInfos = datasetCodecInfos;
 
 		if (dataCodecInfos == null)
 			this.dataCodecInfos = new DataCodecInfo[0];
@@ -122,6 +132,28 @@ public class DatasetAttributes implements Serializable {
 
 		access = createDatasetAccess();
 		blockSize = access.getGrid().getBlockSize(0);
+	}
+
+	public DatasetAttributes(
+			final long[] dimensions,
+			final int[] outerBlockSize,
+			final DataType dataType,
+			final BlockCodecInfo blockCodecInfo,
+			final DatasetCodecInfo[] datasetCodecInfos,
+			final DataCodecInfo... dataCodecInfos) {
+
+		this(dimensions, outerBlockSize, dataType, JsonNull.INSTANCE,
+				blockCodecInfo, datasetCodecInfos, dataCodecInfos);
+	}
+
+	public DatasetAttributes(
+			final long[] dimensions,
+			final int[] outerBlockSize,
+			final DataType dataType,
+			final BlockCodecInfo blockCodecInfo,
+			final DataCodecInfo... dataCodecInfos) {
+
+		this(dimensions, outerBlockSize, dataType, blockCodecInfo, null, dataCodecInfos);
 	}
 
 	/**
@@ -165,7 +197,7 @@ public class DatasetAttributes implements Serializable {
 		// The inner-most codec (the DataBlock codec) is at index 0.
 		final int[][] blockSizes = new int[m][];
 
-		// NestedGrid validates block sizes, so instantiate it before creating the blockCodecs  
+		// NestedGrid validates block sizes, so instantiate it before creating the blockCodecs
 		// blockCodecInfo.create below could fail unexpecedly with invalid
 		// blockSizes so validate first
 		blockSizes[m - 1] = outerBlockSize;
@@ -179,14 +211,20 @@ public class DatasetAttributes implements Serializable {
 		BlockCodecInfo currentBlockCodecInfo = blockCodecInfo;
 		DataCodecInfo[] currentDataCodecInfos = dataCodecInfos;
 
-		final NestedGrid grid = new NestedGrid(blockSizes);
+		final NestedGrid grid = new NestedGrid(blockSizes, dimensions);
 		final BlockCodec<?>[] blockCodecs = new BlockCodec[m];
 		for (int l = m - 1; l >= 0; --l) {
 			blockCodecs[l] = currentBlockCodecInfo.create(dataType, blockSizes[l], currentDataCodecInfos);
 			if (l > 0) {
-				final ShardCodecInfo info = (ShardCodecInfo)currentBlockCodecInfo;
+				final ShardCodecInfo info = (ShardCodecInfo) currentBlockCodecInfo;
 				currentBlockCodecInfo = info.getInnerBlockCodecInfo();
 				currentDataCodecInfos = info.getInnerDataCodecInfos();
+			}
+		}
+
+		if (datasetCodecInfos != null) {
+			for (final DatasetCodecInfo info : datasetCodecInfos) {
+				blockCodecs[0] = DatasetCodec.concatenate(info.create(this), (BlockCodec) blockCodecs[0]);
 			}
 		}
 
@@ -201,7 +239,6 @@ public class DatasetAttributes implements Serializable {
 			return 1;
 		}
 	}
-
 
 	protected BlockCodecInfo defaultBlockCodecInfo() {
 
@@ -221,6 +258,11 @@ public class DatasetAttributes implements Serializable {
 	public int[] getBlockSize() {
 
 		return blockSize;
+	}
+
+	public JsonElement getDefaultValue() {
+
+		return defaultValue;
 	}
 
 	public boolean isSharded() {
@@ -282,6 +324,11 @@ public class DatasetAttributes implements Serializable {
 	public DataCodecInfo[] getDataCodecInfos() {
 
 		return dataCodecInfos;
+	}
+
+	public DatasetCodecInfo[] getDatasetCodecInfos() {
+
+		return datasetCodecInfos;
 	}
 
 	public String relativeBlockPath(long... position) {

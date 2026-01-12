@@ -33,7 +33,6 @@ import com.google.gson.JsonElement;
 import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Reader;
 import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
@@ -50,8 +49,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
-
-import static org.janelia.saalfeldlab.n5.N5KeyValueReader.ATTRIBUTES_JSON;
 
 public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
@@ -263,9 +260,10 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		return writer.remove();
 	}
 
-	@Override public void createDataset(String datasetPath, DatasetAttributes datasetAttributes) throws N5Exception {
+	@Override public DatasetAttributes createDataset(String datasetPath, DatasetAttributes datasetAttributes) throws N5Exception {
 
 		writer.createDataset(datasetPath, datasetAttributes);
+		return datasetAttributes;
 	}
 
 	@Override public <T> void writeBlock(String datasetPath, DatasetAttributes datasetAttributes, DataBlock<T> dataBlock) throws N5Exception {
