@@ -275,6 +275,11 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		return writer.deleteBlock(datasetPath, gridPosition);
 	}
 
+	@Override public boolean deleteBlocks(String datasetPath, List<long[]> gridPositions) throws N5Exception {
+
+		return writer.deleteBlocks(datasetPath, gridPositions);
+	}
+
 	@Override public void writeSerializedBlock(Serializable object, String datasetPath, DatasetAttributes datasetAttributes, long... gridPosition) throws N5Exception {
 
 		writer.writeSerializedBlock(object, datasetPath, datasetAttributes, gridPosition);

@@ -301,4 +301,15 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), datasetAttributes);
 		return datasetAttributes.getDatasetAccess().deleteBlock(posKva, gridPosition);
 	}
+
+	@Override
+	default boolean deleteBlocks(
+			final String path,
+			final List<long[]> gridPositions) throws N5Exception {
+
+		final String normalPath = N5URI.normalizeGroupPath(path);
+		final DatasetAttributes datasetAttributes = getDatasetAttributes(normalPath);
+		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), datasetAttributes);
+		return datasetAttributes.getDatasetAccess().deleteBlocks(posKva, gridPositions);
+	}
 }

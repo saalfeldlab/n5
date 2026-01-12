@@ -387,7 +387,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				throw new N5Exception("The shard at " + Arrays.toString(key) + " could not be deleted.", e);
 			}
 		} else {
-			final ReadData existingData = pva.get(key);
+			final ReadData existingData = pva.get(key); // TODO: use getExistingReadData() instead !?
 			final ReadData modifiedData = deleteBlockRecursive(existingData, position, grid.numLevels() - 1);
 			if (existingData != null && modifiedData == null) {
 				return pva.remove(key);
@@ -437,6 +437,115 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			}
 		}
 	}
+
+	//
+	// -- deleteBlocks --------------------------------------------------------
+
+	@Override
+	public boolean deleteBlocks(final PositionValueAccess pva, final List<long[]> gridPositions) throws N5IOException {
+
+		boolean deleted = false;
+
+		// for non-sharded datasets, just delete the blocks individually
+		if (grid.numLevels() == 1) {
+			for (long[] pos : gridPositions) {
+				deleted |= deleteBlock(pva, pos);
+			}
+			return deleted;
+		}
+
+		// Create a list of DataBlockRequests and sort it such that requests
+		// from the same (nested) shard are grouped contiguously.
+		// Despite the name, createReadRequests() works for delete requests as well ...
+		final DataBlockRequests<T> requests = createReadRequests(gridPositions);
+		requests.removeDuplicates();
+
+		final List<DataBlockRequests<T>> split = requests.split();
+		for (final DataBlockRequests<T> subRequests : split) {
+			final boolean writeFully = subRequests.coversShard();
+			final long[] key = subRequests.relativeGridPosition();
+			final ReadData existingData = writeFully ? null : getExistingReadData(pva, key);
+			final ReadData modifiedData = deleteBlocksRecursive(existingData, subRequests);
+			if (existingData != null && modifiedData == null) {
+				deleted |= pva.remove(key);
+			} else if (modifiedData != existingData) {
+				pva.put(key, modifiedData);
+				deleted = true;
+			}
+		}
+
+		return deleted;
+	}
+
+	/**
+	 * Bulk Delete operation on a shard.
+	 *
+	 * @param existingReadData encoded existing shard data (to decode and partially override)
+	 * @param requests for blocks within the shard to be deleted
+	 */
+	private ReadData deleteBlocksRecursive(
+			final ReadData existingReadData, // may be null
+			final DataBlockRequests<T> requests
+	) {
+		assert !requests.requests.isEmpty();
+		assert requests.level > 0;
+
+		if (existingReadData == null) {
+			return null;
+		}
+
+		final int level = requests.level();
+		@SuppressWarnings("unchecked")
+		final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
+		final long[] gridPos = requests.gridPosition();
+		final RawShard shard = codec.decode(existingReadData, gridPos).getData();
+
+		boolean modified = false;
+		boolean shardElementSetToNull = false;
+		if ( level == 1 ) {
+			// Base case, delete the blocks
+			for (final DataBlockRequest<T> request : requests) {
+				final long[] elementPos = request.position.relative(0);
+				if (shard.getElementData(elementPos) != null) {
+					shard.setElementData(null, elementPos);
+					modified = true;
+					shardElementSetToNull = true;
+				}
+			}
+		} else { // level > 1
+			final List<DataBlockRequests<T>> split = requests.split();
+			for (final DataBlockRequests<T> subRequests : split) {
+				final boolean writeFully = subRequests.coversShard();
+				final long[] elementPos = subRequests.relativeGridPosition();
+				final ReadData existingElementData = writeFully ? null : shard.getElementData(elementPos);
+				final ReadData modifiedElementData = deleteBlocksRecursive(existingElementData, subRequests);
+				if (modifiedElementData != existingElementData) {
+					shard.setElementData(modifiedElementData, elementPos);
+					modified = true;
+					shardElementSetToNull |= (modifiedElementData == null);
+				}
+			}
+		}
+
+		if (!modified) {
+			// No nested shard or DataBlock was modified.
+			// This shard remains unchanged.
+			return existingReadData;
+		}
+
+		if (shardElementSetToNull) {
+			// At least one DataBlock or nested shard was removed.
+			// Check whether this shard becomes empty.
+			if (shard.index().allElementsNull()) {
+				// This shard is empty and should be removed.
+				return null;
+			}
+		}
+
+		return codec.encode(new RawShardDataBlock(gridPos, shard));
+	}
+
+
 
 	//
 	// -- readShard -----------------------------------------------------------
