@@ -118,12 +118,12 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
 	@Override public DataBlock<?> readBlock(String pathName, DatasetAttributes datasetAttributes, long... gridPosition) throws N5Exception {
 
-		return reader.readBlock(pathName, datasetAttributes, gridPosition);
+		return reader.readBlock(pathName, getConvertedDatasetAttributes(datasetAttributes), gridPosition);
 	}
 
 	@Override public <T> T readSerializedBlock(String dataset, DatasetAttributes attributes, long... gridPosition) throws N5Exception, ClassNotFoundException {
 
-		return reader.readSerializedBlock(dataset, attributes, gridPosition);
+		return reader.readSerializedBlock(dataset, getConvertedDatasetAttributes(attributes), gridPosition);
 	}
 
 	@Override public KeyValueAccess getKeyValueAccess() {
@@ -262,12 +262,13 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
 	@Override public DatasetAttributes createDataset(String datasetPath, DatasetAttributes datasetAttributes) throws N5Exception {
 
-		writer.createDataset(datasetPath, datasetAttributes);
-		return datasetAttributes;
+		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		writer.createDataset(datasetPath, convertedDatasetAttributes);
+		return convertedDatasetAttributes;
 	}
 
 	@Override public <T> void writeBlock(String datasetPath, DatasetAttributes datasetAttributes, DataBlock<T> dataBlock) throws N5Exception {
-		writer.writeBlock(datasetPath, datasetAttributes, dataBlock);
+		writer.writeBlock(datasetPath, getConvertedDatasetAttributes(datasetAttributes), dataBlock);
 	}
 
 	@Override public boolean deleteBlock(String datasetPath, long... gridPosition) throws N5Exception {
@@ -282,7 +283,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
 	@Override public void writeSerializedBlock(Serializable object, String datasetPath, DatasetAttributes datasetAttributes, long... gridPosition) throws N5Exception {
 
-		writer.writeSerializedBlock(object, datasetPath, datasetAttributes, gridPosition);
+		writer.writeSerializedBlock(object, datasetPath, getConvertedDatasetAttributes(datasetAttributes), gridPosition);
 	}
 
 	@Override public void setVersion(String path) {
@@ -307,6 +308,6 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
 	@Override public <T> void writeBlocks(String datasetPath, DatasetAttributes datasetAttributes, DataBlock<T>... dataBlocks) throws N5Exception {
 
-		writer.writeBlocks(datasetPath, datasetAttributes, dataBlocks);
+		writer.writeBlocks(datasetPath, getConvertedDatasetAttributes(datasetAttributes), dataBlocks);
 	}
 }
