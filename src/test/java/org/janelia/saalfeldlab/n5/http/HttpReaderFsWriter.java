@@ -240,6 +240,11 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
 		writer.setDatasetAttributes(datasetPath, datasetAttributes);
 	}
+	
+	@Override public DatasetAttributes getConvertedDatasetAttributes(DatasetAttributes datasetAttributes) {
+
+		return writer.getConvertedDatasetAttributes(datasetAttributes);
+	}
 
 	@Override public void setVersion() throws N5Exception {
 
