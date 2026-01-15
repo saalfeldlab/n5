@@ -28,19 +28,22 @@
  */
 package org.janelia.saalfeldlab.n5.shard;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.util.Arrays;
-import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
-import org.janelia.saalfeldlab.n5.N5Writer.DataBlockSupplier;
 import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
+import org.junit.Test;
 
 public class WriteShardTest {
 
@@ -112,6 +115,149 @@ public class WriteShardTest {
 
 
 		System.out.println("all good");
+	}
+	
+	@Test
+	public void testShardDatasetAccess() {
+
+		final int[] datablockSize = {3};
+		final int[] level1ShardSize = {6};
+		final long[] datasetDimensions = {36};
+
+		// DataBlocks are 3
+		// Level 1 shards are 6
+		final BlockCodecInfo c0 = new N5BlockCodecInfo();
+		final ShardCodecInfo c1 = new DefaultShardCodecInfo(
+				datablockSize,
+				c0,
+				new DataCodecInfo[] {new RawCompression()},
+				new RawBlockCodecInfo(),
+				new DataCodecInfo[] {new RawCompression()},
+				IndexLocation.END
+		);
+
+		TestDatasetAttributes attributes = new TestDatasetAttributes(
+				datasetDimensions,
+				level1ShardSize,
+				DataType.INT32,
+				c1,
+				new RawCompression());
+
+		final DatasetAccess<int[]> datasetAccess = attributes.datasetAccess();
+		final PositionValueAccess store = new TestPositionValueAccess();
+
+		//	0       1       2       3       4       5       6
+		//	$.......$.......$.......$.......$.......$.......$
+		//	0   1   2   3   4   5   6   7   8   9  10  11  12
+		//	|...|...|...|...|...|...|...|...|...|...|...|...|
+		//	0   3   6   9  12  15  18  21  24  27  30  33  36
+		//  .................................................
+
+		long[] p = {0};
+		assertFalse(store.exists(p));
+	}
+
+	@Test
+	public void testWriteNullBlockRemovesShard() throws Exception {
+
+		final int[] datablockSize = {3};
+		final int[] level1ShardSize = {6};
+		final long[] datasetDimensions = {36};
+
+		// Level 1 shards have size 6 (each containing two datablocks of size 3)
+		final BlockCodecInfo c0 = new N5BlockCodecInfo();
+		final ShardCodecInfo c1 = new DefaultShardCodecInfo(
+				datablockSize,
+				c0,
+				new DataCodecInfo[]{new RawCompression()},
+				new RawBlockCodecInfo(),
+				new DataCodecInfo[]{new RawCompression()},
+				IndexLocation.END);
+
+		TestDatasetAttributes attributes = new TestDatasetAttributes(
+				datasetDimensions,
+				level1ShardSize,
+				DataType.INT32,
+				c1,
+				new RawCompression());
+
+		final DatasetAccess<int[]> datasetAccess = attributes.datasetAccess();
+		final PositionValueAccess store = new TestPositionValueAccess();
+		final long[] shardKey = {1};
+
+		assertFalse("Shard should not exist at the start of the test", store.exists(shardKey));
+
+		// Write a single block at grid position [3]
+		// This block is in shard [1] (shard 0 contains blocks 0-1, shard 1
+		// contains blocks 2-3)
+		final long[] blockGridPosition = {3};
+		final DataBlock<int[]> block = createDataBlock(datablockSize, blockGridPosition, 100);
+
+		datasetAccess.writeBlock(store, block);
+
+		// Verify the shard exists
+		assertTrue("Shard should exist after writing block", store.exists(shardKey));
+
+		// Write a null block at the same location using writeRegion
+		// This should remove the block and delete the now-empty shard
+		final long[] regionMin = {9}; // pixel position of block [3]
+		final long[] regionSize = {3}; // size of one block
+
+		datasetAccess.writeRegion(
+				store,
+				regionMin,
+				regionSize,
+				(gridPosition, existingBlock) -> null, // block supplier returns
+														// null to indicate
+														// removal
+				false);
+
+		// Verify the shard has been removed
+		assertFalse("Shard should be removed after writing null block", store.exists(shardKey));
+
+		// Write two blocks into the same shard
+		// Shard [1] contains blocks [2] and [3]
+		final DataBlock<int[]> block1 = createDataBlock(datablockSize, new long[]{2}, 100);
+		final DataBlock<int[]> block2 = createDataBlock(datablockSize, new long[]{3}, 200);
+
+		datasetAccess.writeBlock(store, block1);
+		datasetAccess.writeBlock(store, block2);
+
+		// Verify the shard exists
+		assertTrue("Shard should exist after writing blocks", store.exists(shardKey));
+
+		// Write a null block at block [3]'s location
+		datasetAccess.writeRegion(
+				store,
+				regionMin,
+				regionSize,
+				(gridPosition, existingBlock) -> null,
+				false);
+
+		// Verify the shard still exists (because block [2] is still there)
+		assertTrue("Shard should still exist because it contains another block", store.exists(shardKey));
+
+		// Verify we can still read block [2]
+		final DataBlock<int[]> readBlock = datasetAccess.readBlock(store, new long[]{2});
+		assertTrue("Block [2] should still be readable", readBlock != null);
+		assertTrue("Block [2] data should match", Arrays.equals(block1.getData(), readBlock.getData()));
+
+		// Verify block [3] is gone
+		final DataBlock<int[]> readBlock2 = datasetAccess.readBlock(store, new long[]{3});
+		assertNull("Block [3] should be null after removal", readBlock2);
+
+		// Write a null block at block [2]'s location
+		final long[] regionMin2 = {6}; // pixel position of block [3]
+		final long[] regionSize2 = {3};
+
+		datasetAccess.writeRegion(
+				store,
+				regionMin2,
+				regionSize2,
+				(gridPosition, existingBlock) -> null,
+				false);
+
+		assertFalse("Shard should not exist after deleting all blocks", store.exists(shardKey));
 	}
 
 	private static DataBlock<int[]> createDataBlock(int[] size, long[] gridPosition, int startValue) {
