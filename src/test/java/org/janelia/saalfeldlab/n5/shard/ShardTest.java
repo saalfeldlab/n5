@@ -28,20 +28,8 @@
  */
 package org.janelia.saalfeldlab.n5.shard;
 
-import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
-import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
-import org.janelia.saalfeldlab.n5.KeyValueAccess;
-import org.janelia.saalfeldlab.n5.KeyValueAccessReadData;
-import org.janelia.saalfeldlab.n5.N5Exception;
-import org.janelia.saalfeldlab.n5.N5FSTest;
-import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
-import org.janelia.saalfeldlab.n5.N5Writer;
-import org.janelia.saalfeldlab.n5.RawCompression;
+import org.janelia.saalfeldlab.n5.*;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
-import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.codec.*;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
@@ -58,16 +46,19 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Reader;
 import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -627,8 +618,8 @@ public class ShardTest {
 
                 numMaterializeCalls++;
 
-                try (final TrackingLockedFileChannel lfs = new TrackingLockedFileChannel(normalKey, true);
-                     final FileChannel channel = lfs.getFileChannel()) {
+                try (final LockedFileChannel lfs = lockForReading(normalKey)) {
+                    final FileChannel channel = lfs.getFileChannel();
 
                     channel.position(offset);
                     if (length > Integer.MAX_VALUE)
@@ -655,13 +646,9 @@ public class ShardTest {
 
         private class TrackingLockedFileChannel extends LockedFileChannel {
 
-            protected TrackingLockedFileChannel(String path, boolean readOnly) throws IOException {
-                super(path, readOnly);
-            }
 
-            @Override
-            protected FileChannel getFileChannel() {
-                return channel;
+            protected TrackingLockedFileChannel(String path) throws IOException {
+				super(new KeyLockState(Paths.get(path)), FileChannel.open(fileSystem.getPath(path), StandardOpenOption.READ));
             }
         }
 
