@@ -33,32 +33,23 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Reader;
 import java.io.UncheckedIOException;
-import java.io.Writer;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.concurrent.locks.Lock;
 import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -72,122 +63,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  */
 public class FileSystemKeyValueAccess implements KeyValueAccess {
 
-	/**
-	 * A {@link FileChannel} wrapper that attempts to acquire a lock and waits
-	 * for existing locks to be lifted before returning if the
-	 * {@link FileSystem} supports that. If the {@link FileSystem} does not
-	 * support locking, it returns immediately.
-	 */
-	protected class LockedFileChannel implements LockedChannel, AutoCloseable {
-
-		protected final FileChannel channel;
-
-		protected Lock lock;
-
-		protected LockedFileChannel(final String path, final boolean readOnly) throws IOException {
-
-			this(fileSystem.getPath(path), readOnly);
-		}
-
-		protected LockedFileChannel(final Path path, final boolean readOnly) throws IOException {
-
-			final String key = path.toAbsolutePath().toString();
-			boolean haveLock = false;
-			while( !haveLock ) {
-
-				if (readOnly) {
-					lock = keyLock.tryLockForReading(key);
-				}
-				else {
-					lock = keyLock.tryLockForWriting(key);
-				}
-
-				if (lock != null) {
-					haveLock = true;
-					break;
-				}
-
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e) {
-					throw new N5Exception(e);
-				}
-			}
-
-			final OpenOption[] options;
-			if (readOnly) {
-				options = new OpenOption[]{StandardOpenOption.READ};
-				try {
-					channel = FileChannel.open(path, options);
-				} catch (final NoSuchFileException e) {
-					lock.unlock();
-					throw e;
-				}
-			} else {
-				options = new OpenOption[]{StandardOpenOption.READ, StandardOpenOption.WRITE,
-						StandardOpenOption.CREATE};
-				FileChannel tryChannel = null;
-				try {
-					tryChannel = FileChannel.open(path, options);
-				} catch (final NoSuchFileException e) {
-					createDirectories(path.getParent());
-					tryChannel = FileChannel.open(path, options);
-				} finally {
-					channel = tryChannel;
-				}
-			}
-
-		}
-
-		protected FileChannel getFileChannel() {
-			return channel;
-		}
-
-		private void truncateChannel(int size) {
-
-			try {
-				channel.truncate(size);
-			} catch (NoSuchFileException e) {
-				throw new N5NoSuchKeyException("No such file", e);
-			} catch (IOException | UncheckedIOException e ) {
-				throw new N5IOException("Failed to truncate locked file channel", e);
-			}
-		}
-
-		@Override
-		public Reader newReader() throws N5IOException {
-
-			return Channels.newReader(channel, StandardCharsets.UTF_8.name());
-		}
-
-		@Override
-		public Writer newWriter() throws N5IOException {
-
-			truncateChannel(0);
-			return Channels.newWriter(channel, StandardCharsets.UTF_8.name());
-		}
-
-		@Override
-		public InputStream newInputStream() throws N5IOException {
-
-			return Channels.newInputStream(channel);
-		}
-
-		@Override
-		public OutputStream newOutputStream() throws N5IOException {
-
-			truncateChannel(0);
-			return Channels.newOutputStream(channel);
-		}
-
-		@Override
-		public void close() throws IOException {
-			lock.unlock();
-			channel.close();
-		}
-	}
-
-	protected final KeyLock keyLock;
+	protected static final FileKeyLockManager KEY_LOCK_MANAGER = new FileKeyLockManager();
 
 	protected final FileSystem fileSystem;
 
@@ -199,12 +75,6 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public FileSystemKeyValueAccess(final FileSystem fileSystem) {
 
 		this.fileSystem = fileSystem;
-		keyLock = new KeyLock();
-	}
-
-	public KeyLock getLocks() {
-
-		return keyLock;
 	}
 
 	@Override
@@ -216,7 +86,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public LockedFileChannel lockForReading(final String normalPath) throws N5IOException {
 
 		try {
-			return new LockedFileChannel(normalPath, true);
+			return KEY_LOCK_MANAGER.lockForReading(fileSystem.getPath(normalPath));
 		} catch (final NoSuchFileException e) {
 			throw new N5NoSuchKeyException("No such file", e);
 		} catch (IOException | UncheckedIOException e) {
@@ -228,7 +98,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public LockedChannel lockForWriting(final String normalPath) throws N5IOException {
 
 		try {
-			return new LockedFileChannel(normalPath, false);
+			return KEY_LOCK_MANAGER.lockForWriting(fileSystem.getPath(normalPath));
 		} catch (final NoSuchFileException e) {
 			throw new N5NoSuchKeyException("No such file", e);
 		} catch (IOException | UncheckedIOException e) {
@@ -236,10 +106,10 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		}
 	}
 
-	public LockedChannel lockForReading(final Path path) throws N5IOException {
+	public LockedFileChannel lockForReading(final Path path) throws N5IOException {
 
 		try {
-			return new LockedFileChannel(path, true);
+			return KEY_LOCK_MANAGER.lockForReading(path);
 		} catch (final NoSuchFileException e) {
 			throw new N5NoSuchKeyException("No such file", e);
 		} catch (IOException | UncheckedIOException e) {
@@ -247,10 +117,10 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		}
 	}
 
-	public LockedChannel lockForWriting(final Path path) throws N5IOException {
+	public LockedFileChannel lockForWriting(final Path path) throws N5IOException {
 
 		try {
-			return new LockedFileChannel(path, false);
+			return KEY_LOCK_MANAGER.lockForWriting(path);
 		} catch (final NoSuchFileException e) {
 			throw new N5NoSuchKeyException("No such file", e);
 		} catch (IOException | UncheckedIOException e) {
@@ -635,7 +505,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	    @Override
 	    public ReadData materialize(final long offset, final long length) {
 
-	        try (final LockedFileChannel lfs = new LockedFileChannel(normalKey, true)) {
+	        try (final LockedFileChannel lfs = lockForReading(fileSystem.getPath(normalKey))) {
 	            final FileChannel channel = lfs.getFileChannel();
 	            channel.position(offset);
 	            if (length > Integer.MAX_VALUE)
