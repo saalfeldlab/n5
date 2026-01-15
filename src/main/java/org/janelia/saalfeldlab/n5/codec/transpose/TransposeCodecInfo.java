@@ -5,7 +5,6 @@ import java.util.stream.IntStream;
 
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Exception;
-import org.janelia.saalfeldlab.n5.codec.DatasetCodec;
 import org.janelia.saalfeldlab.n5.codec.DatasetCodecInfo;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 

@@ -29,7 +29,6 @@
 package org.janelia.saalfeldlab.n5.benchmarks;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
