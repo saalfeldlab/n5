@@ -40,6 +40,7 @@ import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.N5Writer.DataBlockSupplier;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
+import org.junit.Test;
 
 public class WriteRegionTest {
 
@@ -145,6 +146,52 @@ public class WriteRegionTest {
 //		datasetAccess.deleteBlock(store, new long[] {0, 0, 8});
 
 		System.out.println("all good");
+	}
+	
+	@Test
+	public void testWriteRegionSharded() {
+
+		int[] datablockSize = {3};
+		int[] level2ShardSize = {24};
+		final long[] datasetDimensions = {96};
+
+		// DataBlocks are 3x3x3
+		// Level 1 shards are 6x6x6 (contain 2x2x2 DataBlocks)
+		// Level 2 shards are 24x24x24 (contain 4x4x4 Level 1 shards)
+		final BlockCodecInfo c0 = new N5BlockCodecInfo();
+		final ShardCodecInfo c1 = new DefaultShardCodecInfo(
+				datablockSize,
+				c0,
+				new DataCodecInfo[] {new RawCompression()},
+				new RawBlockCodecInfo(),
+				new DataCodecInfo[] {new RawCompression()},
+				IndexLocation.END
+		);
+
+		TestDatasetAttributes attributes = new TestDatasetAttributes(
+				datasetDimensions,
+				level2ShardSize,
+				DataType.INT8,
+				c1,
+				new RawCompression());
+
+		final DatasetAccess<byte[]> datasetAccess = attributes.datasetAccess();
+		final PositionValueAccess store = new TestPositionValueAccess();
+
+		final int[] dataBlockSize = c1.getInnerBlockSize();
+		final long[] regionMin = {93};
+		final long[] regionSize = {1};
+
+		DataBlockSupplier<byte[]> blocks = (gridPos, existing) -> {
+			return createDataBlock(dataBlockSize, gridPos.clone(), (byte) gridPos[0]);
+		};
+
+		datasetAccess.writeRegion(store,
+				regionMin,
+				regionSize,
+				blocks,
+				false);
+
 	}
 
 	private static void checkBlock(final DataBlock<byte[]> dataBlock, final boolean expectedNonNull, final int expectedFillValue) {
