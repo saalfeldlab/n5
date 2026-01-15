@@ -45,9 +45,14 @@ public class TestPositionValueAccess implements PositionValueAccess {
 		return bytes == null ? null : ReadData.from(bytes);
 	}
 
-	@Override
-	public void put(final long[] key, final ReadData data) {
-		final byte[] bytes = data == null ? null : data.allBytes();
+	public void set(final long[] key, final ReadData data) {
+
+		if (data == null) {
+			map.remove(new Key(key));
+			return;
+		}
+
+		final byte[] bytes = data.allBytes();
 		map.put(new Key(key), bytes);
 	}
 

@@ -57,7 +57,7 @@ public interface PositionValueAccess {
 	 */
 	ReadData get(long[] key) throws N5Exception.N5IOException;
 
-	void put(long[] key, ReadData data) throws N5Exception.N5IOException;
+	void set(long[] key, ReadData data) throws N5Exception.N5IOException;
 
 	boolean exists(long[] key) throws N5Exception.N5IOException;
 
@@ -113,10 +113,8 @@ public interface PositionValueAccess {
 		}
 
 		@Override
-		public void put(long[] key, ReadData data) throws N5IOException {
+		public void set(long[] key, ReadData data) throws N5IOException {
 
-			// TODO is this the behavior we want?
-			// if so, consider changing this method's name to 'update', say
 			if (data == null) {
 				remove(key);
 				return;

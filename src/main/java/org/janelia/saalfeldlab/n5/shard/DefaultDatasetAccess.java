@@ -177,7 +177,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 		final ReadData existingData = getExistingReadData(pva, key);
 		final ReadData modifiedData = writeBlockRecursive(existingData, dataBlock, position, grid.numLevels() - 1);
-		pva.put(key, modifiedData);
+		pva.set(key, modifiedData);
 	}
 
 	private ReadData writeBlockRecursive(
@@ -227,7 +227,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final long[] shardKey = subRequests.relativeGridPosition();
 			final ReadData existingReadData = writeFully ? null : getExistingReadData(pva, shardKey);
 			final ReadData writeShardReadData = writeBlocksRecursive(existingReadData, subRequests);
-			pva.put(shardKey, writeShardReadData);
+			pva.set(shardKey, writeShardReadData);
 		}
 	}
 
@@ -294,7 +294,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final boolean nestedWriteFully = writeFully || region.fullyContains(pos);
 			final ReadData existingData = nestedWriteFully ? null : getExistingReadData(pva, key);
 			final ReadData modifiedData = writeRegionRecursive(existingData, region, blocks, pos);
-			pva.put(key, modifiedData);
+			pva.set(key, modifiedData);
 		}
 	}
 
@@ -315,7 +315,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				final boolean nestedWriteFully = writeFully || region.fullyContains(pos);
 				final ReadData existingData = nestedWriteFully ? null : getExistingReadData(pva, key);
 				final ReadData modifiedData = writeRegionRecursive(existingData, region, blocks, pos);
-				pva.put(key, modifiedData);
+				pva.set(key, modifiedData);
 			});
 		}
 	}
@@ -392,7 +392,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			if (existingData != null && modifiedData == null) {
 				return pva.remove(key);
 			} else if (modifiedData != existingData) {
-				pva.put(key, modifiedData);
+				pva.set(key, modifiedData);
 				return true;
 			} else {
 				return false;
@@ -469,7 +469,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			if (existingData != null && modifiedData == null) {
 				deleted |= pva.remove(key);
 			} else if (modifiedData != existingData) {
-				pva.put(key, modifiedData);
+				pva.set(key, modifiedData);
 				deleted = true;
 			}
 		}
