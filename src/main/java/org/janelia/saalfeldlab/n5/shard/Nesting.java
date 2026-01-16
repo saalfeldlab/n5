@@ -32,8 +32,43 @@ package org.janelia.saalfeldlab.n5.shard;
 import java.util.Arrays;
 import java.util.Objects;
 
+/**
+ * Container for classes that coordinate hierarchical grid structures for
+ * sharded N5 datasets.
+ * <p>
+ * This class provides classes for representing and navigating nested/sharded
+ * dataset layouts for the N5 API. In a sharded dataset, data blocks are grouped
+ * into higher-level containers called shards, which can themselves be nested
+ * within parent shards, creating a multi-level hierarchy.
+ * <p>
+ * <b>Nesting levels:</b> <ul
+ * <li><b>Level 0:</b> The finest granularity - individual data blocks
+ * containing actual pixel data
+ * <li><b>Level 1:</b> First-level shards, which contain multiple level-0 data
+ * blocks
+ * <li><b>Level 2+:</b> Higher-level shards (if they exist), which contain
+ * multiple lower-level shards
+ * <li><b>Nesting depth:</b> The total number of hierarchical levels in the
+ * structure
+ * </ul>
+ * <p>
+ * <b>Contained Classes:</b>
+ * <ul>
+ * <li>{@link NestedGrid} - Defines the hierarchical grid structure with block
+ * sizes at each nesting level. This is the grid "schema" that describes how the
+ * hierarchy is organized.
+ * <li>{@link NestedPosition} - Represents a specific position within a
+ * {@code NestedGrid} at a particular nesting level, providing coordinate
+ * transformations between levels.
+ * </ul>
+ * 
+ */
 public class Nesting {
 
+	/**
+	 * Represents the position of a block at a particular level of a nested hierarchy,
+	 * where the hierarchy is defined by a given {@link NestedGrid}.
+	 */
 	public static class NestedPosition implements Comparable<NestedPosition> {
 
 		private final NestedGrid grid;
