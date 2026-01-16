@@ -32,7 +32,7 @@ import java.io.Serializable;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 /**
- * {@code CodecInfo}s are an untyped semantic layer for {@link BlockCodec}s and {@link DataCodec}s.
+ * {@code CodecInfo}s are an untyped semantic layer for {@link BlockCodec}s, {@link DataCodec}s, and {@link DatasetCodec}s.
  * <p>
  * Modeled after <a href="https://zarr-specs.readthedocs.io/en/latest/v3/codecs/index.html">Codecs</a> in
  * Zarr.

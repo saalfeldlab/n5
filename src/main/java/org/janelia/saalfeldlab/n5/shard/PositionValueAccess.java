@@ -40,7 +40,8 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
- * Idea is to wrap a KeyValueAccess and a dataset URI to be able to get/put values (ReadData) by {@code long[]} key
+ * Wrap a KeyValueAccess and a dataset URI to be able to get/set values (ReadData) by {@code long[]} key
+ * indicating the position of a block or shard.
  */
 public interface PositionValueAccess {
 
