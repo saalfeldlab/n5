@@ -41,7 +41,8 @@ import java.util.Objects;
  * into higher-level containers called shards, which can themselves be nested
  * within parent shards, creating a multi-level hierarchy.
  * <p>
- * <b>Nesting levels:</b> <ul
+ * <b>Nesting levels:</b> 
+ * <ul>
  * <li><b>Level 0:</b> The finest granularity - individual data blocks
  * containing actual pixel data
  * <li><b>Level 1:</b> First-level shards, which contain multiple level-0 data

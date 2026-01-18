@@ -54,6 +54,9 @@ import java.util.Map.Entry;
  * T adapter, auto-discovers annotated T implementations in the classpath.
  *
  * @author Caleb Hulbert
+ * 
+ * @param <T>
+ *            the class this adapter (de)serializes
  */
 public class NameConfigAdapter<T> implements JsonDeserializer<T>, JsonSerializer<T> {
 

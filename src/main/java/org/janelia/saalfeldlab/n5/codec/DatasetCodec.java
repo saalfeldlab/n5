@@ -27,6 +27,14 @@ public interface DatasetCodec<S, T> {
 	 * datasetCodec} and then {@code blockCodec} (and does the same in reverse
 	 * order for decoding).
 	 *
+	 * @param <S>
+	 *            the source type of this codec
+	 * @param <T>
+	 *            the target type of this codec
+	 * @param datasetCodec
+	 *            the DatasetCodec to apply
+	 * @param blockCodec
+	 *            the wrapped BlockCodec
 	 * @return the concatenated BlockCodec
 	 */
 	static <S, T> BlockCodec<S> concatenate(final DatasetCodec<S, T> datasetCodec, final BlockCodec<T> blockCodec) {
