@@ -12,7 +12,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * Per-key state that tracks both thread locks and file locks.
  */
-public class KeyLockState {
+class KeyLockState {
 
     private final ReentrantReadWriteLock threadLock = new ReentrantReadWriteLock();
     private final Path path;
@@ -192,6 +192,17 @@ public class KeyLockState {
         } else {
             threadLock.readLock().unlock();
         }
+    }
+
+    /**
+     * Release file lock only, for cleanup when the LockedFileChannel was GC'd
+     * without being closed. Does not release thread locks since those can only
+     * be released by the owning thread.
+     */
+    synchronized void releaseFileLockForCleanup() {
+        writeLockHeld = false;
+        readLockHolders = 0;
+        releaseFileLock();
     }
 
 }

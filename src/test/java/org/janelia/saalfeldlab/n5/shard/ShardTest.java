@@ -28,9 +28,12 @@
  */
 package org.janelia.saalfeldlab.n5.shard;
 
+import com.google.gson.GsonBuilder;
 import org.janelia.saalfeldlab.n5.*;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
-import org.janelia.saalfeldlab.n5.codec.*;
+import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 import org.junit.After;
@@ -39,34 +42,23 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import com.google.gson.GsonBuilder;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Reader;
 import java.io.UncheckedIOException;
-import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.util.*;
 import java.util.function.Function;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class ShardTest {
@@ -643,15 +635,6 @@ public class ShardTest {
                 }
             }
         }
-
-        private class TrackingLockedFileChannel extends LockedFileChannel {
-
-
-            protected TrackingLockedFileChannel(String path) throws IOException {
-				super(new KeyLockState(Paths.get(path)), FileChannel.open(fileSystem.getPath(path), StandardOpenOption.READ));
-            }
-        }
-
         private static boolean validBounds(long channelSize, long offset, long length) {
 
             if (offset < 0)
