@@ -54,6 +54,8 @@ import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
+import static org.janelia.saalfeldlab.n5.FileKeyLockManager.FILE_LOCK_MANAGER;
+
 /**
  * Filesystem {@link KeyValueAccess}.
  *
@@ -62,8 +64,6 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
  * @author Philipp Hanslovsky
  */
 public class FileSystemKeyValueAccess implements KeyValueAccess {
-
-	protected static final FileKeyLockManager KEY_LOCK_MANAGER = new FileKeyLockManager();
 
 	protected final FileSystem fileSystem;
 
@@ -86,7 +86,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public LockedFileChannel lockForReading(final String normalPath) throws N5IOException {
 
 		try {
-			return KEY_LOCK_MANAGER.lockForReading(fileSystem.getPath(normalPath));
+			return FILE_LOCK_MANAGER.lockForReading(fileSystem.getPath(normalPath));
 		} catch (final NoSuchFileException e) {
 			throw new N5NoSuchKeyException("No such file", e);
 		} catch (IOException | UncheckedIOException e) {
@@ -98,7 +98,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public LockedChannel lockForWriting(final String normalPath) throws N5IOException {
 
 		try {
-			return KEY_LOCK_MANAGER.lockForWriting(fileSystem.getPath(normalPath));
+			return FILE_LOCK_MANAGER.lockForWriting(fileSystem.getPath(normalPath));
 		} catch (final NoSuchFileException e) {
 			throw new N5NoSuchKeyException("No such file", e);
 		} catch (IOException | UncheckedIOException e) {
@@ -109,7 +109,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public LockedFileChannel lockForReading(final Path path) throws N5IOException {
 
 		try {
-			return KEY_LOCK_MANAGER.lockForReading(path);
+			return FILE_LOCK_MANAGER.lockForReading(path);
 		} catch (final NoSuchFileException e) {
 			throw new N5NoSuchKeyException("No such file", e);
 		} catch (IOException | UncheckedIOException e) {
@@ -120,7 +120,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public LockedFileChannel lockForWriting(final Path path) throws N5IOException {
 
 		try {
-			return KEY_LOCK_MANAGER.lockForWriting(path);
+			return FILE_LOCK_MANAGER.lockForWriting(path);
 		} catch (final NoSuchFileException e) {
 			throw new N5NoSuchKeyException("No such file", e);
 		} catch (IOException | UncheckedIOException e) {

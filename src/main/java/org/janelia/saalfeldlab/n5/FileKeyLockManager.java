@@ -29,47 +29,87 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import java.lang.ref.PhantomReference;
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * A lock manager that provides both thread-safe and process-safe read/write
- * locking for filesystem keys.
- * <p>
- * This class coordinates two levels of locking:
- * <ul>
- *   <li><b>Thread-level:</b> Uses {@link ReentrantReadWriteLock} to coordinate
- *       access among threads within the same JVM.</li>
- *   <li><b>Process-level:</b> Uses {@link FileLock} to coordinate access among
- *       different processes/JVMs.</li>
- * </ul>
- * <p>
- * For reading:
- * <ul>
- *   <li>The first thread to acquire a read lock also acquires a shared file lock.</li>
- *   <li>Subsequent threads acquire only the internal read lock (no duplicate file lock).</li>
- *   <li>When the last reader releases, the file lock is also released.</li>
- * </ul>
- * <p>
- * For writing:
- * <ul>
- *   <li>The writer acquires an exclusive file lock (after all readers have released).</li>
- *   <li>When the write lock is released, the file lock is also released.</li>
- * </ul>
+ * Provides thread-safe and process-safe read/write locking for filesystem paths.
+ * Uses thread locks for JVM coordination and file locks for inter-process coordination.
  */
-public class FileKeyLockManager {
+class FileKeyLockManager {
 
-	private final ConcurrentHashMap<String, KeyLockState> locks = new ConcurrentHashMap<>();
+	static final FileKeyLockManager FILE_LOCK_MANAGER = new FileKeyLockManager();
+
+	private static final ReferenceQueue<LockedFileChannel> queue = new ReferenceQueue<>();
+	private static final Set<LockedChannelReference> phantomRefs = ConcurrentHashMap.newKeySet();
+	private static final ConcurrentHashMap<String, KeyLockState> locks = new ConcurrentHashMap<>();
 
 	/**
-	 * Creates a new FileSystemKeyLockManager.
+	 * PhantomReference for LockedFileChannel that releases the lock if the
+	 * channel is garbage collected without being closed.
 	 */
-	public FileKeyLockManager() {
+	private static class LockedChannelReference extends PhantomReference<LockedFileChannel> {
 
+		private final String key;
+		private final KeyLockState state;
+
+		LockedChannelReference(final LockedFileChannel referent, final String key, final KeyLockState state) {
+			super(referent, queue);
+			this.key = key;
+			this.state = state;
+		}
+
+		void cleanup() {
+			state.releaseFileLockForCleanup();
+			phantomRefs.remove(this);
+			/* always remove from map - if the LockedFileChannel was GC'd, the entry is stale */
+			locks.remove(key, state);
+		}
+	}
+
+	private void clearQueue() {
+		Reference<? extends LockedFileChannel> ref;
+		while ((ref = queue.poll()) != null) {
+			((LockedChannelReference)ref).cleanup();
+		}
+	}
+
+	private class ManagedLockedFileChannel extends LockedFileChannel {
+
+		private final String key;
+		private final KeyLockState state;
+
+		ManagedLockedFileChannel(final KeyLockState state, final FileChannel channel, final String key) {
+			super(state, channel);
+			this.key = key;
+			this.state = state;
+		}
+
+		@Override
+		public void close() throws IOException {
+			super.close();
+			synchronized (state) {
+				if (!state.isLocked()) {
+					locks.remove(key, state);
+				}
+			}
+			clearQueue();
+		}
+	}
+
+	private FileKeyLockManager() {
+	}
+
+	private LockedFileChannel registerLockedFileChannel(final FileChannel channel, final String key, final KeyLockState state) {
+		final LockedFileChannel lockedChannel = new ManagedLockedFileChannel(state, channel, key);
+		phantomRefs.add(new LockedChannelReference(lockedChannel, key, state));
+		return lockedChannel;
 	}
 
 	/**
@@ -86,6 +126,8 @@ public class FileKeyLockManager {
 	 *             if acquiring the file lock fails
 	 */
 	public LockedFileChannel lockForReading(final Path path) throws IOException {
+		/* if there are stale entries in the queue, clean them before we try to lock */
+		clearQueue();
 
 		final String key = path.toAbsolutePath().toString();
 		final KeyLockState state = locks.computeIfAbsent(key, k -> new KeyLockState(path));
@@ -99,8 +141,7 @@ public class FileKeyLockManager {
 			state.releaseLock();
 			throw e;
 		}
-
-		return new LockedFileChannel(state, channel);
+		return registerLockedFileChannel(channel, key, state);
 	}
 
 	/**
@@ -114,6 +155,8 @@ public class FileKeyLockManager {
 	 *             if acquiring the file lock fails
 	 */
 	public LockedFileChannel lockForWriting(final Path path) throws IOException {
+		/* if there are stale entries in the queue, clean them before we try to lock */
+		clearQueue();
 
 		final String key = path.toAbsolutePath().toString();
 		final KeyLockState state = locks.computeIfAbsent(key, k -> new KeyLockState(path));
@@ -128,7 +171,7 @@ public class FileKeyLockManager {
 			throw e;
 		}
 
-		return new LockedFileChannel(state, channel);
+		return registerLockedFileChannel(channel, key, state);
 	}
 
 	/**
@@ -139,6 +182,8 @@ public class FileKeyLockManager {
 	 * @return a {@link LockedChannel} if the lock was acquired, null otherwise
 	 */
 	public LockedFileChannel tryLockForReading(final Path path) {
+		/* if there are stale entries in the queue, clean them before we try to lock */
+		clearQueue();
 
 		final String key = path.toAbsolutePath().toString();
 		final KeyLockState state = locks.computeIfAbsent(key, k -> new KeyLockState(path));
@@ -154,7 +199,7 @@ public class FileKeyLockManager {
 			return null;
 		}
 
-		return new LockedFileChannel(state, channel);
+		return registerLockedFileChannel(channel, key, state);
 	}
 
 	/**
@@ -165,13 +210,14 @@ public class FileKeyLockManager {
 	 * @return a {@link LockedChannel} if the lock was acquired, null otherwise
 	 */
 	public LockedFileChannel tryLockForWriting(final Path path) {
+		/* if there are stale entries in the queue, clean them before we try to lock */
+		clearQueue();
 
 		final String key = path.toAbsolutePath().toString();
 		final KeyLockState state = locks.computeIfAbsent(key, k -> new KeyLockState(path));
 
 		if (!state.tryLockForWriting())
 			return null;
-
 
 		final FileChannel channel;
 		try {
@@ -181,7 +227,7 @@ public class FileKeyLockManager {
 			return null;
 		}
 
-		return new LockedFileChannel(state, channel);
+		return registerLockedFileChannel(channel, key, state);
 	}
 
 	/**
@@ -195,18 +241,16 @@ public class FileKeyLockManager {
 	}
 
 	/**
-	 * Removes the lock for a key if it is not currently held.
+	 * Removes the lock state for a key if no locks are held.
 	 *
-	 * @param key
-	 *            the key whose lock should be removed
-	 * @return true if the lock was removed, false if it's currently in use
+	 * @param key the key whose lock state should be removed
+	 * @return true if removed, false if currently in use or not found
 	 */
 	public boolean removeLockIfUnused(final String key) {
 
 		final KeyLockState state = locks.get(key);
-		if (state == null) {
+		if (state == null)
 			return false;
-		}
 
 		synchronized (state) {
 			if (!state.isLocked())
@@ -214,21 +258,4 @@ public class FileKeyLockManager {
 		}
 		return false;
 	}
-
-	/**
-	 * Clears all unused locks from the lock map.
-	 *
-	 * @return the number of locks that were removed
-	 */
-	public int clearUnusedLocks() {
-
-		int removed = 0;
-		for (final String key : locks.keySet()) {
-			if (removeLockIfUnused(key)) {
-				removed++;
-			}
-		}
-		return removed;
-	}
-
 }
