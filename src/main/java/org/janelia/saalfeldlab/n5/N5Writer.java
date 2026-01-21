@@ -365,11 +365,12 @@ public interface N5Writer extends N5Reader {
 	 * @throws N5Exception if any of the block exists but could not be deleted
 	 */
 	default boolean deleteBlocks(
-			final String datasetPath,
-			final List<long[]> gridPositions) throws N5Exception {
+			String datasetPath,
+			DatasetAttributes datasetAttributes,
+			List<long[]> gridPositions) throws N5Exception {
 		boolean deleted = false;
 		for (long[] pos : gridPositions) {
-			deleted |= deleteBlock(datasetPath, pos);
+			deleted |= deleteBlock(datasetPath, datasetAttributes, pos);
 		}
 		return deleted;
 	}
