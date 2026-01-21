@@ -39,7 +39,7 @@ import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
  * Provides methods to find which blocks and shards are contained in the
  * region, iterate sub-NestedPositions, etc.
  */
-class Region {
+public class Region {
 
 	/**
 	 * The dimensions of the full dataset.
@@ -72,7 +72,7 @@ class Region {
 	 */
 	private final Nesting.NestedPosition maxPos;
 
-	Region(final long[] min, final long[] size, final NestedGrid grid) {
+	public Region(final long[] min, final long[] size, final NestedGrid grid) {
 		this.min = min;
 		this.size = size;
 		this.grid = grid;
@@ -93,14 +93,14 @@ class Region {
 	/**
 	 * Get the {@code NestedPosition} of the minimum DataBlock touched by the region.
 	 */
-	Nesting.NestedPosition minPos() {
+	public Nesting.NestedPosition minPos() {
 		return minPos;
 	}
 
 	/**
 	 * Get the {@code NestedPosition} of the maximum DataBlock touched by the region.
 	 */
-	Nesting.NestedPosition maxPos() {
+	public Nesting.NestedPosition maxPos() {
 		return maxPos;
 	}
 
@@ -116,7 +116,7 @@ class Region {
 	 *
 	 * @return true, if the given position is fully contained in this region
 	 */
-	boolean fullyContains(final Nesting.NestedPosition position) {
+	public boolean fullyContains(final Nesting.NestedPosition position) {
 
 		final long[] pmin = position.pixelPosition();
 		for (int d = 0; d < pmin.length; d++) {
@@ -165,7 +165,7 @@ class Region {
 	}
 
 	// TODO: Revise to accept Consumer<long[]> for handling each position
-	static List<long[]> gridPositions(final long[] min, final long[] max) {
+	public static List<long[]> gridPositions(final long[] min, final long[] max) {
 		final int n = min.length;
 		final long[] pos = min.clone();
 		int numElements = 1;
