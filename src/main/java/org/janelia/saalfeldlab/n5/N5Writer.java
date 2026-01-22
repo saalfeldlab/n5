@@ -39,6 +39,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
+import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
+import org.janelia.saalfeldlab.n5.shard.Region;
 
 /**
  * A simple structured container API for hierarchies of chunked
@@ -298,13 +301,33 @@ public interface N5Writer extends N5Reader {
 	 * @param writeFully if false, merge existing data in shards/blocks that overlap the region boundary. if true, override everything.
 	 * @throws N5Exception the exception
 	 */
-	<T> void writeRegion(
+	default <T> void writeRegion(
 			String datasetPath,
 			DatasetAttributes datasetAttributes,
 			long[] min,
 			long[] size,
 			DataBlockSupplier<T> dataBlocks,
-			boolean writeFully) throws N5Exception;
+			boolean writeFully) throws N5Exception {
+
+		final NestedGrid grid = datasetAttributes.getNestedBlockGrid();
+		final Region region = new Region(min, size, grid);
+		for (long[] key : Region.gridPositions(region.minPos().key(), region.maxPos().key())) {
+			final NestedPosition pos = grid.nestedPosition(key, grid.numLevels() - 1);
+			final long[] gridPosition = pos.absolute(0);
+			final DataBlock<T> existingDataBlock = writeFully || region.fullyContains(pos)
+					? null
+					: readBlock(datasetPath, datasetAttributes, gridPosition);
+			final DataBlock<T> dataBlock = dataBlocks.get(gridPosition, existingDataBlock);
+			// null blocks may be provided when they contain only the fill value
+			// and only non-empty blocks should be written, for example
+			if (dataBlock == null) {
+				deleteBlock(datasetPath, datasetAttributes, gridPosition);
+			} else {
+				writeBlock(datasetPath, datasetAttributes, dataBlock);
+			}
+		}
+
+	}
 
 	/**
 	 * @param datasetPath the dataset path
@@ -316,14 +339,35 @@ public interface N5Writer extends N5Reader {
 	 * @param exec used to parallelize over blocks and shards
 	 * @throws N5Exception the exception
 	 */
-	<T> void writeRegion(
+	default <T> void writeRegion(
 			String datasetPath,
 			DatasetAttributes datasetAttributes,
 			long[] min,
 			long[] size,
 			DataBlockSupplier<T> dataBlocks,
 			boolean writeFully,
-			ExecutorService exec) throws N5Exception, InterruptedException, ExecutionException;
+			ExecutorService exec) throws N5Exception, InterruptedException, ExecutionException {
+
+		final NestedGrid grid = datasetAttributes.getNestedBlockGrid();
+		final Region region = new Region(min, size, grid);
+		for (long[] key : Region.gridPositions(region.minPos().key(), region.maxPos().key())) {
+			exec.submit(() -> {
+				final NestedPosition pos = grid.nestedPosition(key, grid.numLevels() - 1);
+				final long[] gridPosition = pos.absolute(0);
+				final DataBlock<T> existingDataBlock = writeFully || region.fullyContains(pos)
+						? null
+						: readBlock(datasetPath, datasetAttributes, gridPosition);
+				final DataBlock<T> dataBlock = dataBlocks.get(gridPosition, existingDataBlock);
+				// null blocks may be provided when they contain only the fill value
+				// and only non-empty blocks should be written, for example
+				if (dataBlock == null) {
+					deleteBlock(datasetPath, datasetAttributes, gridPosition);
+				} else {
+					writeBlock(datasetPath, datasetAttributes, dataBlock);
+				}
+			});
+		}
+	}
 
 	/**
 	 * Deletes the block at {@code gridPosition}.
@@ -334,9 +378,27 @@ public interface N5Writer extends N5Reader {
 	 *
 	 * @return {@code true} if the block at {@code gridPosition} existed and was deleted.
 	 */
-	boolean deleteBlock(
+	default boolean deleteBlock(
 			final String datasetPath,
-			final long... gridPosition) throws N5Exception;
+			final long... gridPosition) throws N5Exception {
+		final DatasetAttributes datasetAttributes = getDatasetAttributes(datasetPath);
+		return deleteBlock(datasetPath, datasetAttributes, gridPosition);
+	}
+
+	/**
+	 * Deletes the block at {@code gridPosition}.
+	 *
+	 * @param datasetPath the dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param gridPosition position of block to be deleted
+	 * @throws N5Exception if the block exists but could not be deleted
+	 *
+	 * @return {@code true} if the block at {@code gridPosition} existed and was deleted.
+	 */
+	boolean deleteBlock(
+			String datasetPath,
+			DatasetAttributes datasetAttributes,
+			long... gridPosition) throws N5Exception;
 
 	/**
 	 * Deletes the blocks at the given {@code gridPositions}.
@@ -347,11 +409,12 @@ public interface N5Writer extends N5Reader {
 	 * @throws N5Exception if any of the block exists but could not be deleted
 	 */
 	default boolean deleteBlocks(
-			final String datasetPath,
-			final List<long[]> gridPositions) throws N5Exception {
+			String datasetPath,
+			DatasetAttributes datasetAttributes,
+			List<long[]> gridPositions) throws N5Exception {
 		boolean deleted = false;
 		for (long[] pos : gridPositions) {
-			deleted |= deleteBlock(datasetPath, pos);
+			deleted |= deleteBlock(datasetPath, datasetAttributes, pos);
 		}
 		return deleted;
 	}
