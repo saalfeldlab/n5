@@ -8,18 +8,25 @@ import java.nio.charset.StandardCharsets;
 /**
  * LockedFileChannel implementation for both read and write operations.
  */
+// TODO: This only has to be public because of a test in another package. Fix that
 public class LockedFileChannel implements LockedChannel {
 
-    private final KeyLockState state;
     private final FileChannel channel;
+	private ReleaseLock releaseLock;
 
-    public LockedFileChannel(final KeyLockState state, final FileChannel channel) {
+	@FunctionalInterface
+	public interface ReleaseLock {
 
-        this.state = state;
-        this.channel = channel;
-    }
+		void release() throws IOException;
+	}
 
-    @Override
+	LockedFileChannel(final FileChannel channel, final ReleaseLock releaseLock) {
+
+		this.channel = channel;
+		this.releaseLock = releaseLock;
+	}
+
+	@Override
     public Reader newReader() throws N5Exception.N5IOException {
 
         return Channels.newReader(channel, StandardCharsets.UTF_8.name());
@@ -45,6 +52,7 @@ public class LockedFileChannel implements LockedChannel {
         return Channels.newOutputStream(channel);
     }
 
+	// TODO: This only has to be public because of a test in another package. Fix that
     public FileChannel getFileChannel() {
 
         return channel;
@@ -62,7 +70,13 @@ public class LockedFileChannel implements LockedChannel {
     @Override
     public void close() throws IOException {
 
-        channel.close();
-        state.releaseLock();
-    }
+		channel.close();
+		if (releaseLock != null) {
+			releaseLock.release();
+			releaseLock = null;
+			// Mote that setting releaseLock=null here drops the (method)
+			// reference to LockKeyState, which potentially allows clearing the
+			// WeakReference<LockKeyState> that FileLockManager holds.
+		}
+	}
 }
