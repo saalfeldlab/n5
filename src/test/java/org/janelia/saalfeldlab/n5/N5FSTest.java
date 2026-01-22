@@ -86,7 +86,8 @@ public class N5FSTest extends AbstractN5Test {
 		return new URI("file", null, basePath, null).toString();
 	}
 
-	@Override protected N5Writer createN5Writer() throws IOException, URISyntaxException {
+	@Override
+	protected N5Writer createN5Writer() throws IOException, URISyntaxException {
 
 		return createN5Writer(tempN5Location(), new GsonBuilder());
 	}
@@ -108,7 +109,6 @@ public class N5FSTest extends AbstractN5Test {
 	}
 
 	@Test
-	@Ignore("currently working on this")
 	public void testReadLock() throws IOException {
 
 		final Path path = Paths.get(tempN5PathName(), "lock");
@@ -142,7 +142,6 @@ public class N5FSTest extends AbstractN5Test {
 	}
 
 	@Test
-	@Ignore("currently working on this")
 	public void testWriteLock() throws IOException {
 
 		final Path path = Paths.get(tempN5PathName(), "lock");

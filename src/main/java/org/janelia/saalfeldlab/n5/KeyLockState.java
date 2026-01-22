@@ -2,207 +2,237 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.Semaphore;
 
 /**
  * Per-key state that tracks both thread locks and file locks.
  */
 class KeyLockState {
 
-    private final ReentrantReadWriteLock threadLock = new ReentrantReadWriteLock();
-    private final Path path;
+	private final Path path;
 
-    private FileChannel fileChannel;
-    private FileLock fileLock;
-    private int readLockHolders = 0;
-    private boolean writeLockHeld = false;
+	public KeyLockState(final Path path) {
+		this.path = path;
+	}
 
-    public KeyLockState(final Path path) {
-        this.path = path;
-    }
+	/**
+	 * The current system-level file lock (shared for writing, non-shared for
+	 * reading). Is {@link ChannelLock#close closed} when the last {@link
+	 * #releaseRead() Reader is released}, or the (one and only) {@link
+	 * #releaseWrite() Writer is released}.
+	 */
+	private volatile ChannelLock channelLock;
 
-    synchronized boolean isLocked() {
-        return threadLock.isWriteLocked() || threadLock.getReadLockCount() != 0 || readLockHolders != 0 || writeLockHeld;
-    }
+	/**
+	 * Multiple Readers coordinate via this mutex. {@code numReaders} may only
+	 * be modified when {@code readerMutex} is held.
+	 */
+	private final Semaphore readerMutex = new Semaphore(1);
+	private int numReaders = 0;
 
-    void lockForReading() throws IOException {
-        threadLock.readLock().lock();
-        fileReadLock();
-    }
+	/**
+	 * This coordinates mutual exclusion between one writer and (the first of)
+	 * multiple readers. {@code channelLock} may only be created or closed when
+	 * {@code channelLockMutex} is held.
+	 */
+	private final Semaphore channelLockMutex = new Semaphore(1);
 
-    private synchronized void fileReadLock() throws IOException {
-        try {
-            if (readLockHolders == 0 && !writeLockHeld) {
-                acquireFileLock(true);
-            }
-            readLockHolders++;
-        } catch (final IOException e) {
-            threadLock.readLock().unlock();
-            throw e;
-        }
-    }
+	LockedFileChannel acquireRead() throws IOException {
 
-    void lockForWriting() throws IOException {
-        threadLock.writeLock().lock();
-        fileWriteLock();
-    }
+		try {
+			readerMutex.acquire();
+			try {
+				if (numReaders == 0) {
+					// We are the first Reader, and are responsible for creating the channelLock
+					// (Other concurrent Readers will still be blocked in readerMutex.)
 
-    private synchronized void fileWriteLock() throws IOException {
-        try {
-            acquireFileLock(false);
-            writeLockHeld = true;
-        } catch (final IOException e) {
-            threadLock.writeLock().unlock();
-            throw e;
-        }
-    }
+					// If a Writer is still open, this will block us until the Writer is closed.
+					channelLockMutex.acquire();
 
-    boolean tryLockForReading() {
-        return threadLock.readLock().tryLock() && tryFileReadLock();
-    }
+					try {
+						channelLock = ChannelLock.lock(path, false);
+					} catch (IOException e) {
+						// Something went wrong. Back off.
+						channelLockMutex.release();
+						throw e;
+					}
+				}
 
-    private synchronized boolean tryFileReadLock() {
+				// We have a READ ChannelLock.
+				// Try to open a FileChannel.
+				final FileChannel channel;
+				try {
+					channel = FileChannel.open(path, StandardOpenOption.READ);
+				} catch (final IOException e) {
+					// Something went wrong. Back off.
+					if (numReaders == 0) {
+						releaseChannelLock();
+					}
+					throw e;
+				}
 
-        if (readLockHolders == 0 && !writeLockHeld) {
-            if (!tryAcquireFileLock(true)) {
-                threadLock.readLock().unlock();
-                return false;
-            }
-        }
-        readLockHolders++;
-        return true;
-    }
+				// We have a FileChannel.
+				// Create a LockedFileChannel that will releaseRead() when it is closed.
+				++numReaders;
+				return new LockedFileChannel(channel, this::releaseRead);
+			} finally {
+				readerMutex.release();
+			}
+		} catch (InterruptedException e) {
+			throw new IOException(e);
+		}
+	}
 
-    private boolean tryAcquireFileLock(final boolean shared) {
+	LockedFileChannel tryAcquireRead() {
 
-        try {
-            openFileChannel(shared);
-            fileLock = fileChannel.tryLock(0, Long.MAX_VALUE, shared);
-            if (fileLock == null) {
-                closeLockChannelQuietly();
-                return false;
-            }
-            return true;
-        } catch (final OverlappingFileLockException | IOException e) {
-            closeLockChannelQuietly();
-            return false;
-        }
-    }
+		if(!readerMutex.tryAcquire()) {
+			return null;
+		}
 
-    boolean tryLockForWriting() {
-        return threadLock.writeLock().tryLock() && tryFileWriteLock();
-    }
+		try {
+			if (numReaders == 0) {
+				// We are the first Reader, and are responsible for creating the channelLock
+				// (Other concurrent Readers are still blocked in readerMutex.)
 
-    private synchronized boolean tryFileWriteLock() {
-        if (!tryAcquireFileLock(false)) {
-            threadLock.writeLock().unlock();
-            return false;
-        }
-        writeLockHeld = true;
-        return true;
-    }
+				// If a Writer is still open, this will fail
+				if(!channelLockMutex.tryAcquire()) {
+					return null;
+				}
 
-    private void closeLockChannelQuietly() {
+				try {
+					channelLock = ChannelLock.tryLock(path, false);
+				} catch (IOException e) {
+					// Something went wrong. Back off.
+					channelLockMutex.release();
+					return null;
+				}
+			}
 
-        if (fileChannel != null) {
-            try {
-                fileChannel.close();
-            } catch (final IOException e) {
-                /* ignore */
-            }
-            fileChannel = null;
-        }
-    }
+			// We have a READ ChannelLock.
+			// Try to open a FileChannel.
+			final FileChannel channel;
+			try {
+				channel = FileChannel.open(path, StandardOpenOption.READ);
+			} catch (final IOException e) {
+				// Something went wrong. Back off.
+				if (numReaders == 0) {
+					try {
+						releaseChannelLock();
+					} catch (IOException ignored) {
+					}
+				}
+				return null;
+			}
 
-    private void acquireFileLock(final boolean shared) throws IOException {
+			// We have a FileChannel.
+			// Create a LockedFileChannel that will releaseRead() when it is closed.
+			++numReaders;
+			return new LockedFileChannel(channel, this::releaseRead);
+		} finally {
+			readerMutex.release();
+		}
+	}
 
-        openFileChannel(shared);
+	void releaseRead() throws IOException {
 
-        while (true) {
-            try {
-                fileLock = fileChannel.lock(0, Long.MAX_VALUE, shared);
-                return;
-            } catch (final OverlappingFileLockException e) {
-                try {
-                    wait(100);
-                } catch (final InterruptedException ie) {
-                    closeLockChannelQuietly();
-                    Thread.currentThread().interrupt();
-                    throw new IOException("Interrupted while waiting for file lock", ie);
-                }
-            }
-        }
-    }
+		try {
+			readerMutex.acquire();
+			try {
+				--numReaders;
+				if (numReaders == 0) {
+					// We were the last Reader, and are responsible for releasing the channelLock
+					releaseChannelLock();
+				}
+			} finally {
+				readerMutex.release();
+			}
+		} catch (InterruptedException e) {
+			throw new IOException(e);
+		}
+	}
 
-    /**
-     * Opens a file channel; if not shared, then this may create the file and the parent directories as needed.
-     *
-     * @throws IOException if the channel cannot be opened
-     */
-    private void openFileChannel(final boolean shared) throws IOException {
+	private void releaseChannelLock() throws IOException {
 
-        if (shared) {
-            fileChannel = FileChannel.open(path, StandardOpenOption.READ);
-        } else {
-            final Path parent = path.getParent();
-            if (parent != null) {
-                Files.createDirectories(parent);
-            }
-            fileChannel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-        }
-    }
+		try {
+			channelLock.close();
+		} finally {
+			channelLockMutex.release();
+		}
+	}
 
-    private void releaseFileLock() {
+	LockedFileChannel acquireWrite() throws IOException {
 
-        if (fileLock != null) {
-            try {
-                fileLock.release();
-            } catch (final IOException e) {
-                /* ignore */
-            }
-            fileLock = null;
-        }
-        closeLockChannelQuietly();
-        notifyAll();
-    }
+		try {
+			// If another Writer or Reader is still open, this will block until it is closed.
+			channelLockMutex.acquire();
 
-    void releaseLock() {
+			try {
+				channelLock = ChannelLock.lock(path, true);
+			} catch (IOException e) {
+				// Something went wrong. Back off.
+				channelLockMutex.release();
+				throw e;
+			}
 
-        final boolean isWrite = threadLock.isWriteLockedByCurrentThread();
+			// We have a WRITE ChannelLock.
+			// Try to open a FileChannel.
+			final FileChannel channel;
+			try {
+				channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+			} catch (IOException e) {
+				// Something went wrong. Back off.
+				try {
+					channelLock.close();
+				} finally {
+					channelLockMutex.release();
+				}
+				throw e;
+			}
 
-        synchronized (this) {
-            if (isWrite) {
-                writeLockHeld = false;
-                releaseFileLock();
-            } else {
-                readLockHolders--;
-                if (readLockHolders == 0) {
-                    releaseFileLock();
-                }
-            }
-        }
+			// We have a FileChannel.
+			// Create a LockedFileChannel that will releaseWrite() when it is closed.
+			return new LockedFileChannel(channel, this::releaseWrite);
+		} catch (InterruptedException e) {
+			throw new IOException(e);
+		}
+	}
 
-        if (isWrite) {
-            threadLock.writeLock().unlock();
-        } else {
-            threadLock.readLock().unlock();
-        }
-    }
+	LockedFileChannel tryAcquireWrite() {
 
-    /**
-     * Release file lock only, for cleanup when the LockedFileChannel was GC'd
-     * without being closed. Does not release thread locks since those can only
-     * be released by the owning thread.
-     */
-    synchronized void releaseFileLockForCleanup() {
-        writeLockHeld = false;
-        readLockHolders = 0;
-        releaseFileLock();
-    }
+		if (!channelLockMutex.tryAcquire()) {
+			return null;
+		}
 
+		try {
+			channelLock = ChannelLock.tryLock(path, true);
+		} catch (IOException e) {
+			// Something went wrong. Back off.
+			channelLockMutex.release();
+			return null;
+		}
+
+		// We have a WRITE ChannelLock.
+		// Try to open a FileChannel.
+		final FileChannel channel;
+		try {
+			channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+		} catch (IOException e) {
+			// Something went wrong. Back off.
+			try {
+				releaseChannelLock();
+			} catch (IOException ignored) {
+			}
+			return null;
+		}
+
+		// We have a FileChannel.
+		// Create a LockedFileChannel that will releaseWrite() when it is closed.
+		return new LockedFileChannel(channel, this::releaseWrite);
+	}
+
+	void releaseWrite() throws IOException {
+		releaseChannelLock();
+	}
 }

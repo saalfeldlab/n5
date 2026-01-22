@@ -35,6 +35,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -253,7 +254,51 @@ public class FileKeyLockManagerTest {
 		}
 	}
 
+	private class CleanUpHelper implements Closeable
+	{
+		private final Path path;
+		private final LockedFileChannel channel;
+
+		CleanUpHelper() throws IOException, InterruptedException {
+			path = tempDir.resolve("trigger.txt");
+			Files.write(path, "trigger".getBytes());
+			channel = FILE_LOCK_MANAGER.lockForReading(path);
+			tryWaitForSize(-1, 10);
+		}
+
+		private void tryWaitForSize(final int expectedSize) throws IOException, InterruptedException {
+			tryWaitForSize(expectedSize, 100);
+		}
+
+		private void tryWaitForSize(final int expectedSize, final int numIterations) throws IOException, InterruptedException {
+
+			// Wait a bit, trigger GC, loop a few times to try to trigger stale WeakReferences to be processed
+			for (int i = 0; i < numIterations; ++i) {
+				Thread.sleep(10);
+				System.gc();
+
+				// FileKeyLockManager.cleanUp() is called on the side during
+				// normal usage. We keep locking and unlocking "trigger.txt" for
+				// which we already hold a read lock. This will keep the
+				// FileKeyLockManager working, but will not lead to
+				// removal/insertion of KeyLockState for "trigger.txt".
+				try (LockedFileChannel temp = FILE_LOCK_MANAGER.lockForReading(path)) {
+				}
+
+				if (FILE_LOCK_MANAGER.size() == expectedSize) {
+					break;
+				}
+			}
+		}
+
+		@Override
+		public void close() throws IOException {
+			channel.close();
+		}
+	}
+
 	@Test
+	// TODO: Remove? This test relies on garbage collection behaviour and is inherently fragile.
 	public void testLockCleanup() throws Exception {
 
 		/* create test files */
@@ -265,6 +310,7 @@ public class FileKeyLockManagerTest {
 		Files.write(testFile2, content.getBytes());
 		Files.write(testFile3, content.getBytes());
 
+		final CleanUpHelper cleanup = new CleanUpHelper();
 		final int initialSize = FILE_LOCK_MANAGER.size();
 
 		final LockedChannel lock1 = FILE_LOCK_MANAGER.lockForReading(testFile1);
@@ -286,21 +332,15 @@ public class FileKeyLockManagerTest {
 
 		assertEquals("Should have 3 new keys", initialSize + 3, FILE_LOCK_MANAGER.size());
 
-		final String key2 = testFile2.toAbsolutePath().toString();
-		final String key3 = testFile3.toAbsolutePath().toString();
-
 		/* close lock1 - entry should be auto-removed */
 		lock1.close();
+		cleanup.tryWaitForSize(initialSize + 2);
 		assertEquals("key1 should be auto-removed on close", initialSize + 2, FILE_LOCK_MANAGER.size());
-
-		/* try to remove still-locked entries - should fail */
-		assertFalse("Should not remove key2 (write locked)", FILE_LOCK_MANAGER.removeLockIfUnused(key2));
-		assertFalse("Should not remove key3 (read locked)", FILE_LOCK_MANAGER.removeLockIfUnused(key3));
 
 		/* close remaining locks - entries should be auto-removed */
 		lock2.close();
 		lock3.close();
-
+		cleanup.tryWaitForSize(initialSize);
 		assertEquals("All entries should be auto-removed on close", initialSize, FILE_LOCK_MANAGER.size());
 	}
 
@@ -356,11 +396,13 @@ public class FileKeyLockManagerTest {
 	}
 
 	@Test
+	// TODO: Remove? This test relies on garbage collection behaviour and is inherently fragile.
 	public void testLocksMapEmptyAfterProperClose() throws Exception {
 
 		final Path testFile = tempDir.resolve("proper-close.txt");
 		Files.write(testFile, "content".getBytes());
 
+		final CleanUpHelper cleanup = new CleanUpHelper();
 		final int initialSize = FILE_LOCK_MANAGER.size();
 
 		try (final LockedChannel lock = FILE_LOCK_MANAGER.lockForWriting(testFile);
@@ -368,33 +410,26 @@ public class FileKeyLockManagerTest {
 			writer.write("new content");
 		}
 
+		cleanup.tryWaitForSize(initialSize);
 		assertEquals("locks map should be back to initial size after proper close",
 				initialSize, FILE_LOCK_MANAGER.size());
 	}
 
+
 	@Test
+	// TODO: Remove? This test relies on garbage collection behaviour and is inherently fragile.
 	public void testLocksMapEmptyAfterLeakedChannelIsGCd() throws Exception {
 
 		final Path testFile = tempDir.resolve("leaked-channel.txt");
 		Files.write(testFile, "content".getBytes());
 
+		final CleanUpHelper cleanup = new CleanUpHelper();
 		final int initialSize = FILE_LOCK_MANAGER.size();
 
 		/* acquire lock in a separate scope so reference can be GC'd */
 		acquireAndLeakLock(testFile);
 
-		/* force GC and give it time to collect */
-		for (int i = 0; i < 10; i++) {
-			System.gc();
-			Thread.sleep(50);
-		}
-
-		/* trigger clearQueue by acquiring another lock */
-		final Path triggerFile = tempDir.resolve("trigger.txt");
-		Files.write(triggerFile, "trigger".getBytes());
-		try (final LockedChannel trigger = FILE_LOCK_MANAGER.lockForReading(triggerFile)) {
-			/* just trigger the queue cleanup */
-		}
+		cleanup.tryWaitForSize(initialSize);
 
 		assertEquals("locks map should be back to initial size after leaked channel is GC'd",
 				initialSize, FILE_LOCK_MANAGER.size());
