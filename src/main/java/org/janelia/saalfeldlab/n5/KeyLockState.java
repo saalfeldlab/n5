@@ -177,23 +177,8 @@ class KeyLockState {
 			}
 
 			// We have a WRITE ChannelLock.
-			// Try to open a FileChannel.
-			final FileChannel channel;
-			try {
-				channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-			} catch (IOException e) {
-				// Something went wrong. Back off.
-				try {
-					channelLock.close();
-				} finally {
-					channelLockMutex.release();
-				}
-				throw e;
-			}
-
-			// We have a FileChannel.
 			// Create a LockedFileChannel that will releaseWrite() when it is closed.
-			return new LockedFileChannel(channel, this::releaseWrite);
+			return new LockedFileChannel(channelLock.getChannel(), this::releaseWrite);
 		} catch (InterruptedException e) {
 			throw new IOException(e);
 		}
@@ -214,22 +199,8 @@ class KeyLockState {
 		}
 
 		// We have a WRITE ChannelLock.
-		// Try to open a FileChannel.
-		final FileChannel channel;
-		try {
-			channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-		} catch (IOException e) {
-			// Something went wrong. Back off.
-			try {
-				releaseChannelLock();
-			} catch (IOException ignored) {
-			}
-			return null;
-		}
-
-		// We have a FileChannel.
 		// Create a LockedFileChannel that will releaseWrite() when it is closed.
-		return new LockedFileChannel(channel, this::releaseWrite);
+		return new LockedFileChannel(channelLock.getChannel(), this::releaseWrite);
 	}
 
 	void releaseWrite() throws IOException {
