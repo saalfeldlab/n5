@@ -25,8 +25,17 @@ class ChannelLock implements Closeable {
 	}
 
 	public void close() throws IOException {
-		lock.release();
+
+		// NB: We do not call lock.release() here, because it may throw an
+		// exception if the channel is already closed. Instead, we just close
+		// the channel. This will automatically release the lock. (And it is ok
+		// to close an already closed channel.)
+
 		channel.close();
+	}
+
+	FileChannel getChannel() {
+		return channel;
 	}
 
 	/**
