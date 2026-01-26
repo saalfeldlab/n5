@@ -1,6 +1,10 @@
 package org.janelia.saalfeldlab.n5;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.io.Writer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -11,7 +15,7 @@ import java.nio.charset.StandardCharsets;
 // TODO: This only has to be public because of a test in another package. Fix that
 public class LockedFileChannel implements LockedChannel {
 
-    private final FileChannel channel;
+	private final FileChannel channel;
 	private ReleaseLock releaseLock;
 
 	@FunctionalInterface
@@ -27,48 +31,48 @@ public class LockedFileChannel implements LockedChannel {
 	}
 
 	@Override
-    public Reader newReader() throws N5Exception.N5IOException {
+	public Reader newReader() throws N5Exception.N5IOException {
 
-        return Channels.newReader(channel, StandardCharsets.UTF_8.name());
-    }
+		return Channels.newReader(channel, StandardCharsets.UTF_8.name());
+	}
 
-    @Override
-    public InputStream newInputStream() throws N5Exception.N5IOException {
+	@Override
+	public InputStream newInputStream() throws N5Exception.N5IOException {
 
-        return Channels.newInputStream(channel);
-    }
+		return Channels.newInputStream(channel);
+	}
 
-    @Override
-    public Writer newWriter() throws N5Exception.N5IOException {
+	@Override
+	public Writer newWriter() throws N5Exception.N5IOException {
 
-        truncateChannel();
-        return Channels.newWriter(channel, StandardCharsets.UTF_8.name());
-    }
+		truncateChannel();
+		return Channels.newWriter(channel, StandardCharsets.UTF_8.name());
+	}
 
-    @Override
-    public OutputStream newOutputStream() throws N5Exception.N5IOException {
+	@Override
+	public OutputStream newOutputStream() throws N5Exception.N5IOException {
 
-        truncateChannel();
-        return Channels.newOutputStream(channel);
-    }
+		truncateChannel();
+		return Channels.newOutputStream(channel);
+	}
 
 	// TODO: This only has to be public because of a test in another package. Fix that
-    public FileChannel getFileChannel() {
+	public FileChannel getFileChannel() {
 
-        return channel;
-    }
+		return channel;
+	}
 
-    private void truncateChannel() throws N5Exception.N5IOException {
+	private void truncateChannel() throws N5Exception.N5IOException {
 
-        try {
-            channel.truncate(0);
-        } catch (final IOException e) {
-            throw new N5Exception.N5IOException("Failed to truncate channel", e);
-        }
-    }
+		try {
+			channel.truncate(0);
+		} catch (final IOException e) {
+			throw new N5Exception.N5IOException("Failed to truncate channel", e);
+		}
+	}
 
-    @Override
-    public void close() throws IOException {
+	@Override
+	public void close() throws IOException {
 
 		channel.close();
 		if (releaseLock != null) {
