@@ -28,21 +28,12 @@
  */
 package org.janelia.saalfeldlab.n5.shard;
 
-import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
-import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
-import org.janelia.saalfeldlab.n5.KeyValueAccess;
-import org.janelia.saalfeldlab.n5.KeyValueAccessReadData;
-import org.janelia.saalfeldlab.n5.N5Exception;
-import org.janelia.saalfeldlab.n5.N5FSTest;
-import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
-import org.janelia.saalfeldlab.n5.N5Writer;
-import org.janelia.saalfeldlab.n5.RawCompression;
+import com.google.gson.GsonBuilder;
+import org.janelia.saalfeldlab.n5.*;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
-import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
-import org.janelia.saalfeldlab.n5.codec.*;
+import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 import org.junit.After;
@@ -50,11 +41,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import com.google.gson.GsonBuilder;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -68,14 +54,11 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class ShardTest {
@@ -627,8 +610,8 @@ public class ShardTest {
 
                 numMaterializeCalls++;
 
-                try (final TrackingLockedFileChannel lfs = new TrackingLockedFileChannel(normalKey, true);
-                     final FileChannel channel = lfs.getFileChannel()) {
+                try (final LockedFileChannel lfs = lockForReading(normalKey)) {
+                    final FileChannel channel = lfs.getFileChannel();
 
                     channel.position(offset);
                     if (length > Integer.MAX_VALUE)
@@ -652,19 +635,6 @@ public class ShardTest {
                 }
             }
         }
-
-        private class TrackingLockedFileChannel extends LockedFileChannel {
-
-            protected TrackingLockedFileChannel(String path, boolean readOnly) throws IOException {
-                super(path, readOnly);
-            }
-
-            @Override
-            protected FileChannel getFileChannel() {
-                return channel;
-            }
-        }
-
         private static boolean validBounds(long channelSize, long offset, long length) {
 
             if (offset < 0)
