@@ -475,6 +475,33 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
+	public void testWriteReadShard() {
+
+		// test that writeShard behaves the same as writeBlock
+		// for unsharded datasets
+
+		for (final Compression compression : getCompressions()) {
+			try (final N5Writer n5 = createTempN5Writer()) {
+
+				n5.createDataset(datasetName, dimensions, blockSize, DataType.INT16, compression);
+				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+				final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(blockSize, new long[]{0, 0, 0}, shortBlock);
+
+				n5.writeShard(datasetName, attributes, dataBlock);
+
+				// read with readShard
+				final DataBlock<?> loadedShard = n5.readShard(datasetName, attributes, 0, 0, 0);
+				assertArrayEquals(shortBlock, (short[])loadedShard.getData());
+
+				// read with readBlock
+				final DataBlock<?> loadedDataBlock = n5.readShard(datasetName, attributes, 0, 0, 0);
+				assertArrayEquals(shortBlock, (short[])loadedDataBlock.getData());
+			}
+		}
+	}
+
+
+	@Test
 	public void testMode1WriteReadByteBlock() {
 
 		final int[] differentBlockSize = new int[]{5, 10, 15};

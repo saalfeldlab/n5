@@ -349,6 +349,31 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
+	 * Reads a shard as a {@link DataBlock}.
+	 * <p>
+	 * A "shard" is the largest level of the datasets {@link NestedGrid}
+	 * This method's behavior is identical to readBlock for un-sharded datasets.
+	 *
+	 * @param <T>
+	 *            the DataBlock data type
+	 * @param pathName
+	 *            dataset path
+	 * @param datasetAttributes
+	 *            the dataset attributes
+	 * @param gridPosition
+	 *            the position in the shard grid
+	 * @return the data block
+	 * @throws N5Exception
+	 *             the exception
+	 *
+	 * @see DatasetAttributes#getNestedBlockGrid()
+	 */
+	<T> DataBlock<T> readShard(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final long... gridPosition) throws N5Exception;
+
+	/**
 	 * Checks if a shard (or block for non-sharded datasets) exists at the
 	 * given grid position without reading the data.
 	 * <p>
