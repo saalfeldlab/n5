@@ -56,7 +56,9 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -128,6 +130,11 @@ public class ShardTest {
 
 	private DatasetAttributes getTestAttributes(long[] dimensions, int[] shardSize, int[] blockSize) {
 
+		return getTestAttributes(DataType.UINT8, dimensions, shardSize, blockSize);
+	}
+
+	private DatasetAttributes getTestAttributes(DataType dataType, long[] dimensions, int[] shardSize, int[] blockSize) {
+
 		DefaultShardCodecInfo blockCodec = new DefaultShardCodecInfo(
 				blockSize,
 				new N5BlockCodecInfo(),
@@ -139,7 +146,7 @@ public class ShardTest {
 		return new DatasetAttributes(
 				dimensions,
 				shardSize,
-				DataType.UINT8,
+				dataType,
 				blockCodec);
 	}
 
@@ -412,6 +419,51 @@ public class ShardTest {
 		}
 	}
 
+	@Test
+	public void writeReadShardTest() {
+
+		try ( final N5Writer n5 = tempN5Factory.createTempN5Writer() ) {
+
+			final int[] shardSize = new int[] {4,4};
+			final int shardN = 16;
+
+			final int[] blockSize = new int[] {2,2};
+			final int blockN = 4;
+
+			final String dataset = "writeReadShard";
+			DatasetAttributes attrs = getTestAttributes(DataType.INT32, new long[]{8, 8}, shardSize, blockSize);
+
+			final int[] shardData = range(shardN);
+			IntArrayDataBlock shard = new IntArrayDataBlock(shardSize, new long[]{0, 0}, shardData);
+
+			n5.writeShard(dataset, attrs, shard);
+			DataBlock<int[]> readShard = n5.readShard(dataset, attrs, 0, 0);
+			assertArrayEquals(shardData, readShard.getData());
+
+
+			/**
+			 * The 4x4 shard at (0,0)
+			 * and the 2x2 blocks it contains
+			 *
+			 *
+			 * 	0   1  |  2   3
+			 *  4   5  |  6	  7
+			 *  ----------------
+			 *  8	9  | 10	 11
+			 * 12  13  | 14  15
+			 */
+
+			assertArrayEquals(new int[]{0, 1, 4, 5}, (int[])n5.readBlock(dataset, attrs, 0, 0).getData());
+			assertArrayEquals(new int[]{2, 3, 6, 7}, (int[])n5.readBlock(dataset, attrs, 1, 0).getData());
+			assertArrayEquals(new int[]{8, 9, 12, 13}, (int[])n5.readBlock(dataset, attrs, 0, 1).getData());
+			assertArrayEquals(new int[]{10, 11, 14, 15}, (int[])n5.readBlock(dataset, attrs, 1, 1).getData());
+		}
+	}
+
+	private int[] range(int N) {
+		return IntStream.range(0, N).toArray();
+	}
+
 	/**
 	 * Checks how many read calls to the backend are performed for a particular readBlocks
 	 * call. At this time (Nov 4 2025), one read for the index, and one read per block are performed.
@@ -484,7 +536,7 @@ public class ShardTest {
 
         final String dataset = "shardExists";
         writer.remove(dataset);
-        writer.createDataset(dataset, datasetAttributes);
+        DatasetAttributes attrs = writer.createDataset(dataset, datasetAttributes);
 
         final int[] blockSize = datasetAttributes.getBlockSize();
         final int numElements = blockSize[0] * blockSize[1];
@@ -497,7 +549,7 @@ public class ShardTest {
         /* write blocks to shards (0,0), (1,0), and (2,2) */
         writer.writeBlocks(
                 dataset,
-                datasetAttributes,
+                attrs,
                 new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data),  /* shard (0, 0) */
                 new ByteArrayDataBlock(blockSize, new long[]{4, 0}, data),  /* shard (1, 0) */
                 new ByteArrayDataBlock(blockSize, new long[]{11, 11}, data) /* shard (2, 2) */
@@ -507,7 +559,7 @@ public class ShardTest {
 
         Function<long[], Boolean> assertShardExistsTracking = (gridPosition) -> {
             trackingWriter.resetAllTracking();
-            final Boolean exists = writer.shardExists(dataset, datasetAttributes, gridPosition);
+            final Boolean exists = writer.shardExists(dataset, attrs, gridPosition);
             assertEquals("isFileCheck incremented", 1, trackingWriter.getNumIsFileCalls());
             assertEquals("No Bytes Read", 0, trackingWriter.getTotalBytesRead());
             return exists;

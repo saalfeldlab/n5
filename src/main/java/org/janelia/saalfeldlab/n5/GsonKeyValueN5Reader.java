@@ -120,6 +120,24 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	@Override
+	default <T> DataBlock<T> readShard(
+			final String pathName,
+			final DatasetAttributes datasetAttributes,
+			final long... gridPosition) throws N5Exception {
+
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		final int shardLevel = convertedDatasetAttributes.getNestedBlockGrid().numLevels() - 1;
+		try {
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName),
+					convertedDatasetAttributes);
+			return convertedDatasetAttributes.<T> getDatasetAccess().readShard(posKva, gridPosition, shardLevel);
+
+		} catch (N5Exception.N5NoSuchKeyException e) {
+			return null;
+		}
+	}
+
+	@Override
 	default String[] list(final String pathName) throws N5Exception {
 
 		return getKeyValueAccess().listDirectories(absoluteGroupPath(pathName));
