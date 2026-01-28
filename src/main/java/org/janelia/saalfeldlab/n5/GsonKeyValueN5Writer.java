@@ -280,7 +280,24 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
 					e);
 		}
+	}
 
+	@Override
+	default <T> void writeShard(
+			final String path,
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T> shard) throws N5Exception {
+
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		final int shardLevel = convertedDatasetAttributes.getNestedBlockGrid().numLevels() - 1;
+		try {
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), convertedDatasetAttributes);
+			convertedDatasetAttributes.<T> getDatasetAccess().writeShard(posKva, shard, shardLevel);
+		} catch (final UncheckedIOException e) {
+			throw new N5IOException(
+					"Failed to write block " + Arrays.toString(shard.getGridPosition()) + " into dataset " + path,
+					e);
+		}
 	}
 
 	@Override
