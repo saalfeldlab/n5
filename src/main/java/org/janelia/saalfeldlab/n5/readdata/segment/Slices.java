@@ -12,22 +12,27 @@ class Slices {
 	}
 
 	/**
+	 * In an ordered list of {@code slices}, find a slice that completely contains the given range.
+	 * <p>
 	 * Pre-conditions:
 	 * <ol>
 	 * <li>Slices are ordered by offset.</li>
-	 * <li>If two slices overlap, no slice is fully contained within the other. (Therefore, if {@code a.offset < b.offset} then {@code a.end < b.end}.)</li>
+	 * <li>If two slices overlap, no slice is fully contained within the other.
+	 *     (Therefore, if {@code a.offset < b.offset} then {@code a.end < b.end}.)</li>
 	 * </ol>
 	 *
 	 * @param slices
 	 * 		ordered list of slices
 	 * @param offset
+	 * 		start of the range to cover
 	 * @param length
+	 * 		length of the range to cover
 	 *
-	 * @return
+	 * @return a slice that completely contains the requested range, or {@code null} if no such slice exists
 	 */
 	static <T extends Range> T findContainingSlice(final List<T> slices, final long offset, final long length) {
-		// Find the slice s with largest s.offset <= offset.
 
+		// Find the slice with the largest slice.offset <= offset.
 		final int i = Collections.binarySearch(slices, Range.at(offset, 0), Comparator.comparingLong(Range::offset));
 
 		// Largest index of a slice with slice.offset <= offset.
@@ -46,14 +51,48 @@ class Slices {
 		return slice;
 	}
 
+	/**
+	 * In an ordered list of {@code slices}, find a slice that completely contains the given range.
+	 * <p>
+	 * Pre-conditions:
+	 * <ol>
+	 * <li>Slices are ordered by offset.</li>
+	 * <li>If two slices overlap, no slice is fully contained within the other.
+	 *     (Therefore, if {@code a.offset < b.offset} then {@code a.end < b.end}.)</li>
+	 * </ol>
+	 *
+	 * @param slices
+	 * 		ordered list of slices
+	 * @param range
+	 * 		range to cover
+	 *
+	 * @return a slice that completely contains the requested range, or {@code null} if no such slice exists
+	 */
 	static <T extends Range> T findContainingSlice(final List<T> slices, final Range range) {
 		return findContainingSlice(slices, range.offset(), range.length());
 	}
 
 	/**
 	 * Add a new {@code slice} to the {@code slice} list.
-	 * Note, that the new {@code slice} is expected to not be fully contained in an existing slice!
-	 * This will insert {@code slice} into the list at the correct position ({@code slices} is ordered by slice offset), and remove all existing slices that are fully contained in the new {@code slice}.
+	 * <p>
+	 * Note, that the new {@code slice} is expected to not be fully contained in
+	 * an existing slice!
+	 * <p>
+	 * Pre/post-conditions:
+	 * <ol>
+	 * <li>Slices are ordered by offset.</li>
+	 * <li>If two slices overlap, no slice is fully contained within the other.
+	 *     (Therefore, if {@code a.offset < b.offset} then {@code a.end < b.end}.)</li>
+	 * </ol>
+	 * <p>
+	 * The new {@code slice} will be inserted into the list at the correct position
+	 * (such that {@code slices} remains ordered by slice offset), and all existing
+	 * slices that are fully contained in the new {@code slice} will be removed.
+	 *
+	 * @param slices
+	 * 		ordered list of slices
+	 * @param slice
+	 * 		slice to be inserted
 	 */
 	static <T extends Range> void addSlice(final List<T> slices, final T slice) {
 
