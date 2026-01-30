@@ -282,7 +282,7 @@ public class ShardTest {
 			Assert.assertFalse("Shard at" + shard + " exists but should not.", kva.exists(shard));
 		}
 	}
-	
+
 	@Test
 	public void writeShardDataSizeTest() {
 
@@ -412,6 +412,10 @@ public class ShardTest {
 		}
 	}
 
+	public static void main(String[] args) {
+		new ShardTest().numReadsTest();
+	}
+
 	/**
 	 * Checks how many read calls to the backend are performed for a particular readBlocks
 	 * call. At this time (Nov 4 2025), one read for the index, and one read per block are performed.
@@ -429,6 +433,8 @@ public class ShardTest {
 		final String dataset = "writeReadBlocks";
 		writer.remove(dataset);
 		writer.createDataset(dataset, datasetAttributes);
+
+		Colored.cyan.println("dataset created\n");
 
 		final int[] blockSize = datasetAttributes.getBlockSize();
 		final int numElements = blockSize[0] * blockSize[1];
@@ -455,20 +461,24 @@ public class ShardTest {
 				new ByteArrayDataBlock(blockSize, new long[]{11, 11}, data)
 		);
 
+		Colored.cyan.println("writer.getNumMaterializeCalls() = " + writer.getNumMaterializeCalls());
+		Colored.cyan.println("blocks written\n");
+
 		writer.resetNumMaterializeCalls();
 		writer.readBlocks(dataset, datasetAttributes, Collections.singletonList(new long[] {0,0}));
-		System.out.println(writer.getNumMaterializeCalls());
+		Colored.cyan.println("writer.getNumMaterializeCalls() = " + writer.getNumMaterializeCalls());
+		Colored.cyan.println("readBlocks: {0,0}\n");
 
-		ArrayList ptList = new ArrayList<>();
-		ptList.add(new long[] {0,0});
-		ptList.add(new long[] {0,1});
-		ptList.add(new long[] {1,0});
-		ptList.add(new long[] {1,1});
+		ArrayList<long[]> ptList = new ArrayList<>();
+		ptList.add(new long[] {0, 0});
+		ptList.add(new long[] {0, 1});
+		ptList.add(new long[] {1, 0});
+		ptList.add(new long[] {1, 1});
 
 		writer.resetNumMaterializeCalls();
 		writer.readBlocks(dataset, datasetAttributes, ptList);
-		System.out.println(writer.getNumMaterializeCalls());
-		System.out.println("");
+		Colored.cyan.println("writer.getNumMaterializeCalls() = " + writer.getNumMaterializeCalls());
+		Colored.cyan.println("readBlocks: {0,0}, {0,1}, {1,0}, {1,1}\n");
 	}
 
     @Test
@@ -608,7 +618,8 @@ public class ShardTest {
             @Override
             public ReadData materialize(final long offset, final long length) {
 
-                numMaterializeCalls++;
+				DebugHelpers.printStackTrace(10);
+				numMaterializeCalls++;
 
                 try (final LockedFileChannel lfs = lockForReading(normalKey)) {
                     final FileChannel channel = lfs.getFileChannel();
@@ -635,6 +646,7 @@ public class ShardTest {
                 }
             }
         }
+
         private static boolean validBounds(long channelSize, long offset, long length) {
 
             if (offset < 0)

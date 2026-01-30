@@ -49,7 +49,7 @@ public class KeyValueAccessReadData implements ReadData {
         this(lazyRead, 0, -1);
     }
 
-    KeyValueAccessReadData(final LazyRead lazyRead, final long offset, final long length) {
+    private KeyValueAccessReadData(final LazyRead lazyRead, final long offset, final long length) {
         this.lazyRead = lazyRead;
         this.offset = offset;
         this.length = length;
