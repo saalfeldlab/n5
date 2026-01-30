@@ -1,4 +1,4 @@
-package org.janelia.saalfeldlab.n5.readdata.segment;
+package org.janelia.saalfeldlab.n5.readdata.kva;
 
 import java.util.Collections;
 import java.util.Comparator;
