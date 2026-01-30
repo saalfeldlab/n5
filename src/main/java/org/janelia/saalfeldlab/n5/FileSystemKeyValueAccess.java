@@ -53,6 +53,7 @@ import java.util.Iterator;
 import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.kva.LazyRead;
 
 import static org.janelia.saalfeldlab.n5.FileKeyLockManager.FILE_LOCK_MANAGER;
 

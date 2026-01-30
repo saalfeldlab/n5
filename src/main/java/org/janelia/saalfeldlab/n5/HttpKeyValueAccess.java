@@ -50,6 +50,7 @@ import java.net.URL;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import org.janelia.saalfeldlab.n5.readdata.kva.LazyRead;
 
 /**
  * A read-only {@link KeyValueAccess} implementation using HTTP. As a result, calling <code>lockForWriting</code>, <code>createDirectories</code>, or <code>delete</code> will throw an {@link N5Exception}.
