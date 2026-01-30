@@ -60,6 +60,7 @@ import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
+import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedFileChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
@@ -343,6 +344,19 @@ public class ShardTest {
 			data[i] = (byte)((100) + (10) + i);
 		}
 
+		/*
+		 * No blocks or shards exist.
+		 * Calling readBlocks should return a list that is the same length as the requested grid positions,
+		 * and every entry should be null.
+		 */
+		final long[][] newBlockIndices = new long[][]{{0, 0}, {1, 1}, {0, 4}, {0, 5}, {10, 10}};
+		final List<DataBlock<Object>> readBlocks = writer.readBlocks(dataset, datasetAttributes, Arrays.asList(newBlockIndices));
+		assertEquals(newBlockIndices.length, readBlocks.size());
+		assertTrue("readBlocks for empty shard: all blocks null", readBlocks.stream().allMatch(blk -> blk == null));
+
+		/*
+		 * Now write blocks
+		 */
 		writer.writeBlocks(
 				dataset,
 				datasetAttributes,
@@ -386,20 +400,6 @@ public class ShardTest {
 			Assert.assertEquals("shard at " + shardPath + " was the wrong size", shardSizes[i++], kva.size(shardPath));
 		}
 
-	}
-
-	@Test
-	public void readBlocksTest() {
-
-		final N5Writer n5 = tempN5Factory.createTempN5Writer();
-		final DatasetAttributes datasetAttributes = getTestAttributes(
-				new long[]{24, 24},
-				new int[]{8, 8},
-				new int[]{2, 2});
-
-		final String dataset = "writeReadBlocks";
-		final long[][] newBlockIndices = new long[][]{{0, 0}, {1, 1}, {0, 4}, {0, 5}, {10, 10}};
-		final List<DataBlock<Object>> readBlocks = n5.readBlocks(dataset, datasetAttributes, Arrays.asList(newBlockIndices));
 	}
 
 	@Test
@@ -495,18 +495,14 @@ public class ShardTest {
 			 */
 			final DataBlock<int[]> partlyEmptyShard = n5.readShard(dataset, attrs, 0, 0);
 			assertArrayEquals(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 12, 13, 0, 0}, partlyEmptyShard.getData());
-			
-			
+
+
 			// Delete the rest of the blocks
-			n5.deleteBlocks(dataset, attrs, 
+			n5.deleteBlocks(dataset, attrs,
 					Stream.of( new long[] {0,0}, new long[] {1,0}, new long[] {0,1}).collect(Collectors.toList()));
 
 			assertNull(n5.readShard(dataset, attrs, 0, 0));
 		}
-	}
-
-	private int[] range(int N) {
-		return IntStream.range(0, N).toArray();
 	}
 
 	/**
@@ -623,6 +619,68 @@ public class ShardTest {
         Assert.assertFalse("Shard (2,0) should not exist", assertShardExistsTracking.apply(new long[]{2, 0}));
         Assert.assertFalse("Shard (0,2) should not exist", assertShardExistsTracking.apply(new long[]{0, 2}));
     }
+
+	/**
+	 * Checks how many read calls to the backend are performed for a particular readBlocks
+	 * call. At this time (Jan 4 2026), one read for the index, and one read per block are performed.
+	 */
+	@Test
+	public void testPartialReadAggregationBehavior() {
+
+        final DatasetAttributes datasetAttributes = getTestAttributes(
+                new long[]{24, 24},
+                new int[]{8, 8},
+                new int[]{2, 2}
+        );
+
+		try (TrackingN5Writer writer = (TrackingN5Writer)tempN5Factory.createTempN5Writer()) {
+
+	        final String dataset = "shardExists";
+	        writer.remove(dataset);
+	        DatasetAttributes attrs = writer.createDataset(dataset, datasetAttributes);
+
+	        final int[] blockSize = attrs.getBlockSize();
+	        final int numElements = blockSize[0] * blockSize[1];
+
+	        final byte[] data = new byte[numElements];
+	        for (int i = 0; i < data.length; i++) {
+	            data[i] = (byte)(i);
+	        }
+
+			// four blocks in shard (0,0)
+			ArrayList<long[]> ptList = new ArrayList<>();
+			ptList.add(new long[] {0,0});
+			ptList.add(new long[] {0,1});
+			ptList.add(new long[] {1,0});
+			ptList.add(new long[] {1,1});
+
+	        /* write blocks to shard (0,0) */
+			writer.writeBlocks(
+					dataset,
+					datasetAttributes,
+					new ByteArrayDataBlock(blockSize, ptList.get(0), data),
+					new ByteArrayDataBlock(blockSize, ptList.get(1), data),
+					new ByteArrayDataBlock(blockSize, ptList.get(2), data),
+					new ByteArrayDataBlock(blockSize, ptList.get(3), data)
+			);
+
+			writer.resetNumMaterializeCalls();
+			writer.readBlocks(dataset, datasetAttributes, ptList);
+
+			// TODO change this if and when we implement aggregation of read calls
+			// one for the index, one for each of the four blocks
+			assertEquals(5, writer.getNumMaterializeCalls());
+
+			writer.resetNumMaterializeCalls();
+			writer.readShard(dataset, datasetAttributes, new long[] {0,0});
+			// one for the index, one for each of the four blocks
+			assertEquals(5, writer.getNumMaterializeCalls());
+		}
+	}
+
+	private int[] range(int N) {
+		return IntStream.range(0, N).toArray();
+	}
 
     /**
      * An N5Writer that tracks the number of materialize calls performed by
