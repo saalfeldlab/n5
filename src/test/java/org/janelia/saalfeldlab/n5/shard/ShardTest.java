@@ -51,7 +51,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
@@ -478,6 +480,14 @@ public class ShardTest {
 			assertArrayEquals(new int[]{2, 3, 6, 7}, (int[])n5.readBlock(dataset, attrs, 1, 0).getData());
 			assertArrayEquals(new int[]{8, 9, 12, 13}, (int[])n5.readBlock(dataset, attrs, 0, 1).getData());
 			assertArrayEquals(new int[]{10, 11, 14, 15}, (int[])n5.readBlock(dataset, attrs, 1, 1).getData());
+
+			System.out.println("delete");
+			n5.deleteBlock(dataset, attrs, new long[]{1, 1});
+
+			System.out.println("read");
+			final DataBlock<int[]> partlyEmptyShard = n5.readShard(dataset, attrs, 0, 0);
+			System.out.println(Arrays.toString(partlyEmptyShard.getData()));
+			System.out.println("done");
 		}
 	}
 
