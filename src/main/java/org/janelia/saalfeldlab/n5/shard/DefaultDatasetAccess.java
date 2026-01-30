@@ -151,6 +151,10 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 		if (level == 1 ) {
 			//Base case; read the blocks
+
+			// TODO: collect all the elementPos that we will need and prefetch
+			//       Probably best to add a prefetch method to RawShard?
+
 			for (final DataBlockRequest<T> request : requests) {
 				final long[] elementPos = request.position.relative(0);
 				final ReadData elementData = shard.getElementData(elementPos);
