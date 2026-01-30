@@ -8,7 +8,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
-class SliceTrackingLazyRead implements LazyRead {
+public class SliceTrackingLazyRead implements LazyRead {
 
 	private static class Slice implements Range {
 
@@ -48,7 +48,7 @@ class SliceTrackingLazyRead implements LazyRead {
 	 */
 	private final LazyRead delegate;
 
-	SliceTrackingLazyRead(final LazyRead delegate) {
+	public SliceTrackingLazyRead(final LazyRead delegate) {
 		this.delegate = delegate;
 	}
 

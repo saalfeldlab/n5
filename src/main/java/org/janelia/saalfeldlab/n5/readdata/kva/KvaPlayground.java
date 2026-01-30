@@ -12,8 +12,6 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 public class KvaPlayground {
 
 
-	public interface VolatileReadData extends ReadData, AutoCloseable {}
-
 	static class DelegatingReadData implements ReadData {
 
 		protected final ReadData delegate;
