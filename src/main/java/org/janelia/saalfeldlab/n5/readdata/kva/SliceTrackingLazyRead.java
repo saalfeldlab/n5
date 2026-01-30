@@ -89,7 +89,7 @@ public class SliceTrackingLazyRead implements LazyRead {
 	 * @throws N5IOException
 	 * 		if any I/O error occurs
 	 */
-//	@Override // TODO: add this to the LazyRead interface? We don't know which slices have already been loaded anywhere else...
+	@Override
 	public void prefetch(final Collection<? extends Range> ranges) throws N5IOException {
 
 		long fromIndex = Long.MAX_VALUE;

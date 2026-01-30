@@ -30,7 +30,9 @@ package org.janelia.saalfeldlab.n5.readdata.kva;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collection;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
@@ -116,6 +118,11 @@ public class LazyReadData implements VolatileReadData {
 			length = lazyRead.size() - offset;
 		}
 		return length;
+	}
+
+	@Override
+	public void prefetch(final Collection<? extends Range> ranges) throws N5IOException {
+		lazyRead.prefetch(ranges);
 	}
 
 	@Override

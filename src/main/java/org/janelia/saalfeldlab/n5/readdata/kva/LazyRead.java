@@ -1,7 +1,9 @@
 package org.janelia.saalfeldlab.n5.readdata.kva;
 
 import java.io.Closeable;
+import java.util.Collection;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
@@ -46,4 +48,17 @@ public interface LazyRead extends Closeable {
 	 */
 	long size() throws N5IOException;
 
+	/**
+	 * Indicates that the given slices will be subsequently read.
+	 * {@code LazyRead} implementations (optionally) may take steps to prepare
+	 * for these subsequent slices.
+	 *
+	 * @param ranges
+	 * 		slice ranges to prefetch
+	 *
+	 * @throws N5IOException
+	 * 		if any I/O error occurs
+	 */
+	default void prefetch(final Collection<? extends Range> ranges) throws N5IOException {
+	}
 }
