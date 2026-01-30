@@ -28,10 +28,11 @@
  */
 package org.janelia.saalfeldlab.n5.readdata;
 
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 /**
  * A {@link VolatileReadData} that is backed by a {@link LazyRead}.
