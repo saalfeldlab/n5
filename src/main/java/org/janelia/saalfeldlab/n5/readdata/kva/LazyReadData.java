@@ -28,6 +28,7 @@
  */
 package org.janelia.saalfeldlab.n5.readdata.kva;
 
+import java.io.IOException;
 import java.io.InputStream;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -35,7 +36,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 /**
  * A {@link ReadData} implementation that is backed by {@link LazyRead} object.
  */
-public class LazyReadData implements ReadData {
+public class LazyReadData implements VolatileReadData {
 
     private final LazyRead lazyRead;
     private ReadData materialized;
@@ -117,4 +118,12 @@ public class LazyReadData implements ReadData {
 		return length;
 	}
 
+	@Override
+	public void close() throws N5IOException {
+		try {
+			lazyRead.close();
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
+	}
 }

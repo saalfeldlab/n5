@@ -55,6 +55,8 @@ import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.kva.LazyRead;
+import org.janelia.saalfeldlab.n5.readdata.kva.LazyReadData;
+import org.janelia.saalfeldlab.n5.readdata.kva.VolatileReadData;
 
 import static org.janelia.saalfeldlab.n5.FileKeyLockManager.FILE_LOCK_MANAGER;
 
@@ -80,8 +82,8 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public ReadData createReadData(final String normalPath) {
-		return new KeyValueAccessReadData(new FileLazyRead(fileSystem.getPath(normalPath)));
+	public VolatileReadData createReadData(final String normalPath) {
+		return new LazyReadData(new FileLazyRead(fileSystem.getPath(normalPath)));
 	}
 
 	@Override

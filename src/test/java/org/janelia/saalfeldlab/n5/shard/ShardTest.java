@@ -58,7 +58,6 @@ import org.janelia.saalfeldlab.n5.DebugHelpers;
 import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
-import org.janelia.saalfeldlab.n5.KeyValueAccessReadData;
 import org.janelia.saalfeldlab.n5.LockedFileChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
@@ -71,6 +70,8 @@ import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.kva.LazyRead;
+import org.janelia.saalfeldlab.n5.readdata.kva.LazyReadData;
+import org.janelia.saalfeldlab.n5.readdata.kva.VolatileReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 import org.junit.After;
 import org.junit.Assert;
@@ -619,8 +620,8 @@ public class ShardTest {
         }
 
         @Override
-        public ReadData createReadData(final String normalPath) {
-            return new KeyValueAccessReadData(new TrackingFileLazyRead(normalPath));
+        public VolatileReadData createReadData(final String normalPath) {
+            return new LazyReadData(new TrackingFileLazyRead(normalPath));
         }
 
         private class TrackingFileLazyRead implements LazyRead {

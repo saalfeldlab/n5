@@ -28,7 +28,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.Closeable;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 import java.net.URI;
@@ -38,6 +37,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.kva.VolatileReadData;
 
 /**
  * Key value read primitives used by {@link N5KeyValueReader}
@@ -252,7 +252,7 @@ public interface KeyValueAccess {
 	 * @return a materialized Read data
 	 * @throws N5IOException if an error occurs
 	 */
-	ReadData createReadData( final String normalPath ) throws N5IOException;
+	VolatileReadData createReadData( final String normalPath ) throws N5IOException;
 
 	/**
 	 * Create a lock on a path for reading. This isn't meant to be kept

@@ -51,6 +51,8 @@ import java.nio.channels.NonWritableChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import org.janelia.saalfeldlab.n5.readdata.kva.LazyRead;
+import org.janelia.saalfeldlab.n5.readdata.kva.LazyReadData;
+import org.janelia.saalfeldlab.n5.readdata.kva.VolatileReadData;
 
 /**
  * A read-only {@link KeyValueAccess} implementation using HTTP. As a result, calling <code>lockForWriting</code>, <code>createDirectories</code>, or <code>delete</code> will throw an {@link N5Exception}.
@@ -233,8 +235,8 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public ReadData createReadData(final String normalPath) {
-		return new KeyValueAccessReadData(new HttpLazyRead(normalPath));
+	public VolatileReadData createReadData(final String normalPath) {
+		return new LazyReadData(new HttpLazyRead(normalPath));
 	}
 
 	public LockedChannel lockForReading(final String normalPath) throws N5IOException {
