@@ -528,6 +528,12 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	        }
 	    }
 
+		@Override
+		public void close() throws IOException {
+			// TODO: implement FileLazyRead.close()
+			throw new UnsupportedOperationException("TODO: implement FileLazyRead.close()");
+
+		}
 	}
 
 	private static boolean validBounds(long channelSize, long offset, long length) {

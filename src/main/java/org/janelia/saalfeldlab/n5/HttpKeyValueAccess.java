@@ -459,6 +459,12 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 				throw new N5Exception(e);
 			}
 		}
+
+		@Override
+		public void close() throws IOException {
+			// TODO: implement HttpLazyRead.close()
+			throw new UnsupportedOperationException("TODO: implement HttpLazyRead.close()");
+		}
 	}
 
 }

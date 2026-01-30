@@ -28,6 +28,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.Closeable;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 import java.net.URI;
@@ -348,7 +349,8 @@ public interface KeyValueAccess {
 	 * @see ReadData
 	 * @see KeyValueAccessReadData
 	 */
-	interface LazyRead {
+	// TODO: Why is this in KeyValueAccess? Move it to separate class in org.janelia.saalfeldlab.n5.readdata.kva ?
+	interface LazyRead extends Closeable {
 
 		/**
 		 * Materializes a portion of the data into a concrete {@link ReadData}

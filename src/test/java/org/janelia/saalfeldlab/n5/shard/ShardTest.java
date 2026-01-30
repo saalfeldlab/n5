@@ -29,19 +29,6 @@
 package org.janelia.saalfeldlab.n5.shard;
 
 import com.google.gson.GsonBuilder;
-import org.janelia.saalfeldlab.n5.*;
-import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
-import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
-import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -54,8 +41,41 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
+import org.janelia.saalfeldlab.n5.Colored;
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.DebugHelpers;
+import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
+import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
+import org.janelia.saalfeldlab.n5.KeyValueAccess;
+import org.janelia.saalfeldlab.n5.KeyValueAccessReadData;
+import org.janelia.saalfeldlab.n5.LockedFileChannel;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
+import org.janelia.saalfeldlab.n5.N5FSTest;
+import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
+import org.janelia.saalfeldlab.n5.N5Writer;
+import org.janelia.saalfeldlab.n5.RawCompression;
+import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -645,7 +665,13 @@ public class ShardTest {
                     throw new N5Exception.N5IOException(e);
                 }
             }
-        }
+
+			@Override
+			public void close() throws IOException {
+				// TODO: implement TrackingFileLazyRead.close()
+				throw new UnsupportedOperationException("TODO: implement TrackingFileLazyRead.close()");
+			}
+		}
 
         private static boolean validBounds(long channelSize, long offset, long length) {
 
