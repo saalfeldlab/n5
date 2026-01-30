@@ -179,11 +179,12 @@ public class KvaPlayground {
 	// (But for testing we can put everything there as well.)
 
 	// TODO:
-	//   [ ] Move LazyRead out of KeyValueAccess
-	//   [ ] Revise SliceTrackingReadData to be a LazyRead instead
+	//   [+] Move LazyRead out of KeyValueAccess
+	//   [+] Revise SliceTrackingReadData to be a LazyRead instead
 	//   [ ] Implement the following behaviour for FileLazyRead:
 	//         Create a LockedChannel on construction and releases it on close()
 	//         Actual read requests create their own channels.
 	//         New read requests should fail when the LazyRead is already closed.
 	//   [ ] DefaultSegmentedReadData should extend DelegatingReadData (if we add that as a general utility)
+	//   [ ] propagate prefetch() through delegates and eventually to the LazyRead. (Also, add prefetch() to LazyRead interface).
 }
