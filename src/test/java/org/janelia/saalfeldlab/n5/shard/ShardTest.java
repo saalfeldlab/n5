@@ -83,6 +83,7 @@ import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
@@ -481,13 +482,26 @@ public class ShardTest {
 			assertArrayEquals(new int[]{8, 9, 12, 13}, (int[])n5.readBlock(dataset, attrs, 0, 1).getData());
 			assertArrayEquals(new int[]{10, 11, 14, 15}, (int[])n5.readBlock(dataset, attrs, 1, 1).getData());
 
-			System.out.println("delete");
 			n5.deleteBlock(dataset, attrs, new long[]{1, 1});
 
-			System.out.println("read");
+			/**
+			 * After deleting block (1,1)
+			 *
+			 * 	0   1  |  2   3
+			 *  4   5  |  6	  7
+			 *  ----------------
+			 *  8	9  |  0	  0
+			 * 12  13  |  0   0
+			 */
 			final DataBlock<int[]> partlyEmptyShard = n5.readShard(dataset, attrs, 0, 0);
-			System.out.println(Arrays.toString(partlyEmptyShard.getData()));
-			System.out.println("done");
+			assertArrayEquals(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 12, 13, 0, 0}, partlyEmptyShard.getData());
+			
+			
+			// Delete the rest of the blocks
+			n5.deleteBlocks(dataset, attrs, 
+					Stream.of( new long[] {0,0}, new long[] {1,0}, new long[] {0,1}).collect(Collectors.toList()));
+
+			assertNull(n5.readShard(dataset, attrs, 0, 0));
 		}
 	}
 
