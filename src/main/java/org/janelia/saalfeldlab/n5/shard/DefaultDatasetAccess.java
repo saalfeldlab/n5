@@ -146,24 +146,29 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 		final int level = requests.level();
 		@SuppressWarnings("unchecked")
-		final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
-		final RawShard shard = codec.decode(readData, requests.gridPosition()).getData();
+		final BlockCodec<RawShard> codec = (BlockCodec<RawShard>)codecs[level];
+		try {
 
-		if (level == 1 ) {
-			//Base case; read the blocks
-			for (final DataBlockRequest<T> request : requests) {
-				final long[] elementPos = request.position.relative(0);
-				final ReadData elementData = shard.getElementData(elementPos);
-				request.block = readBlockRecursive(elementData, request.position, 0);
+			final RawShard shard = codec.decode(readData, requests.gridPosition()).getData();
+			if (level == 1) {
+				// Base case; read the blocks
+				for (final DataBlockRequest<T> request : requests) {
+					final long[] elementPos = request.position.relative(0);
+					final ReadData elementData = shard.getElementData(elementPos);
+					request.block = readBlockRecursive(elementData, request.position, 0);
+				}
+			} else { // level > 1
+				final List<DataBlockRequests<T>> split = requests.split();
+				for (final DataBlockRequests<T> subRequests : split) {
+					final long[] subShardPosition = subRequests.relativeGridPosition();
+					final ReadData elementData = shard.getElementData(subShardPosition);
+					readBlocksRecursive(elementData, subRequests);
+				}
 			}
-		} else { // level > 1
-			final List<DataBlockRequests<T>> split = requests.split();
-			for (final DataBlockRequests<T> subRequests : split) {
-				final long[] subShardPosition = subRequests.relativeGridPosition();
-				final ReadData elementData = shard.getElementData(subShardPosition);
-				readBlocksRecursive(elementData, subRequests);
-			}
+		} catch (N5NoSuchKeyException e) {
+			// the shard does not exist
 		}
+
 	}
 
 	//
