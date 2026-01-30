@@ -351,7 +351,7 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Reads a shard as a {@link DataBlock}.
 	 * <p>
-	 * A "shard" is the largest level of the datasets {@link NestedGrid}
+	 * A "shard" is the largest level of the datasets {@link org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid}
 	 * This method's behavior is identical to readBlock for un-sharded datasets.
 	 *
 	 * @param <T>
