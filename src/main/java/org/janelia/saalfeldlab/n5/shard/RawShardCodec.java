@@ -76,7 +76,7 @@ public class RawShardCodec implements BlockCodec<RawShard> {
 		}
 		final SegmentedReadData data = SegmentedReadData.concatenate(readDatas);
 
-		final ReadData.OutputStreamWriter writer;
+		final ReadData.Generator writer;
 		if (indexLocation == START) {
 			data.materialize();
 			final NDArray<Range> locations = ShardIndex.locations(index, data);
