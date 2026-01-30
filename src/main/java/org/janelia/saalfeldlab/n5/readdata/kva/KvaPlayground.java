@@ -5,7 +5,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 
-import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -107,6 +106,23 @@ public class KvaPlayground {
 		}
 	}
 
+	/**
+	 * A {@code ReadData} whose slice methods produce also {@code LazySlicingReadData}.
+	 * <p>
+	 * Only when materializing methods are called, a slice is obtained from
+	 * the delegate and the operation carried out on that.
+	 */
+	static class LazySlicingReadData extends DelegatingReadData {
+
+		LazySlicingReadData(final ReadData delegate) {
+			super(delegate);
+		}
+
+		@Override
+		public ReadData slice(final long offset, final long length) throws N5IOException {
+			return super.slice(offset, length);
+		}
+	}
 
 	// Playground for prototyping the ReadData that we get from a KeyValueAccess.
 	//
@@ -148,13 +164,26 @@ public class KvaPlayground {
 	//
 	// TODO:
 	//   [+] Let LazyRead extends Closable
+	//   [+] Implement KvaReadData (mostly copy from KeyValueAccessReadData) --> LazyReadData
+	//   [+] Implement ClosableReadData
+
+
+	// Revised plan:
+	// KvaReadData/KeyValueAccessReadData was renamed to LazyReadData.
+	// It behaves exactly as the LazySlicingReadData above, so we don't need that.
+	// SliceTrackingReadData should become SliceTrackingLazyRead.
+	// The chain then looks like this:
+	//   LazyRead -> SliceTrackingLazyRead -> LazyReadData -> ClosableReadData
+	// and for FileKeyValueAccess:
+	//   LazyRead -> LazyReadData -> ClosableReadData
+	// (But for testing we can put everything there as well.)
+
+	// TODO:
+	//   [ ] Move LazyRead out of KeyValueAccess
+	//   [ ] Revise SliceTrackingReadData to be a LazyRead instead
 	//   [ ] Implement the following behaviour for FileLazyRead:
 	//         Create a LockedChannel on construction and releases it on close()
 	//         Actual read requests create their own channels.
 	//         New read requests should fail when the LazyRead is already closed.
-	//   [ ] Implement KvaReadData (mostly copy from KeyValueAccessReadData)
-	//   [ ] Implement ClosableReadData
-	//   [ ] Implement LacySlicingReadData
-	//   [ ] Move and revise SliceTrackingReadData
-
+	//   [ ] DefaultSegmentedReadData should extend DelegatingReadData (if we add that as a general utility)
 }
