@@ -392,6 +392,9 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			if (existingData != null && modifiedData == null) {
 				return pva.remove(key);
 			} else if (modifiedData != existingData) {
+				// Here, we are about to write the shard data, but without the block to be deleted.
+				// Need to make sure that the read operations happen now before pva.set acquires a write lock
+				modifiedData.materialize();
 				pva.set(key, modifiedData);
 				return true;
 			} else {
