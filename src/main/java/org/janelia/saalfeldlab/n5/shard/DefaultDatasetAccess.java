@@ -120,7 +120,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		final List<DataBlockRequests<T>> split = requests.split();
 		for (final DataBlockRequests<T> subRequests : split) {
 			final long[] key = subRequests.relativeGridPosition();
-			final ReadData readData = getExistingReadData(pva, key);
+			final ReadData readData = pva.get(key);
 			readBlocksRecursive(readData, subRequests);
 		}
 
