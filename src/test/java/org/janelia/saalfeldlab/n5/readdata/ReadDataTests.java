@@ -45,6 +45,7 @@ import java.util.function.IntUnaryOperator;
 import org.apache.commons.compress.utils.IOUtils;
 import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
 import org.janelia.saalfeldlab.n5.readdata.ReadData.OutputStreamOperator;
+import org.janelia.saalfeldlab.n5.readdata.kva.VolatileReadData;
 import org.junit.Test;
 
 public class ReadDataTests {
@@ -113,12 +114,13 @@ public class ReadDataTests {
 			os.write(data);
 		}
 
-		final ReadData readData = new FileSystemKeyValueAccess(FileSystems.getDefault())
-				.createReadData(tmpF.getAbsolutePath());
+		try( final VolatileReadData readData = new FileSystemKeyValueAccess(FileSystems.getDefault())
+				.createReadData(tmpF.getAbsolutePath())) {
 
-		assertEquals("file read data length", -1, readData.length());
-		assertEquals("file read data length", 128, readData.requireLength());
-		sliceTestHelper(readData, N);
+			assertEquals("file read data length", -1, readData.length());
+			assertEquals("file read data length", 128, readData.requireLength());
+			sliceTestHelper(readData, N);
+		}
 	}
 
 	private void readDataTestHelper( ReadData readData, int N, int materializedN ) throws IOException {

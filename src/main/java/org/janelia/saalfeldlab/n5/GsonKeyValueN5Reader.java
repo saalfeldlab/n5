@@ -35,6 +35,7 @@ import java.io.UncheckedIOException;
 import java.util.List;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.kva.VolatileReadData;
 import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 
 import com.google.gson.Gson;
@@ -82,7 +83,10 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final String groupPath = N5URI.normalizeGroupPath(pathName);
 		final String attributesPath = absoluteAttributesPath(groupPath);
 
-		try ( final InputStream in = getKeyValueAccess().createReadData(attributesPath).inputStream() ) {
+		try (
+				final VolatileReadData readData = getKeyValueAccess().createReadData(attributesPath);
+				final InputStream in = readData.inputStream()
+		) {
 			return GsonUtils.readAttributes(new InputStreamReader(in), getGson());
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
