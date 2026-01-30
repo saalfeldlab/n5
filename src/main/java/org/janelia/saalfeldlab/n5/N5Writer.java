@@ -281,10 +281,10 @@ public interface N5Writer extends N5Reader {
 	/**
 	 * Writes a shard stored as a {@link DataBlock}.
 	 * <p>
-	 * A "shard" is the largest level of the datasets {@link NestedGrid}.
+	 * A "shard" is the largest level of the datasets {@link org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid}.
 	 * This method's behavior is identical to writeBlock for un-sharded datasets.
 	 *
-	 * @param datasetPath dataset path
+	 * @param pathName dataset path
 	 * @param datasetAttributes the dataset attributes
 	 * @param dataBlock the data block
 	 * @param <T> the data block data type
