@@ -14,8 +14,11 @@ class SliceTrackingReadData implements ReadData {
 
 	private static class Slice implements Range {
 
+		// Offset and length in the source data
 		private final long offset;
 		private final long length;
+
+		// Data of this slice
 		private final ReadData data;
 
 		Slice(final long offset, final long length, final ReadData data) {
