@@ -106,23 +106,6 @@ public class KvaPlayground {
 		}
 	}
 
-	/**
-	 * A {@code ReadData} whose slice methods produce also {@code LazySlicingReadData}.
-	 * <p>
-	 * Only when materializing methods are called, a slice is obtained from
-	 * the delegate and the operation carried out on that.
-	 */
-	static class LazySlicingReadData extends DelegatingReadData {
-
-		LazySlicingReadData(final ReadData delegate) {
-			super(delegate);
-		}
-
-		@Override
-		public ReadData slice(final long offset, final long length) throws N5IOException {
-			return super.slice(offset, length);
-		}
-	}
 
 	// Playground for prototyping the ReadData that we get from a KeyValueAccess.
 	//
