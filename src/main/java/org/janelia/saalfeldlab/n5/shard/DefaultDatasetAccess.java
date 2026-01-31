@@ -197,14 +197,6 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				// Need to make sure that the read operations happen now before pva.set acquires a write lock
 				modifiedData.materialize();
 			}
-
-			// TODO: more to be done here ...
-			//   [ ] Currently, pva.get(key) for FS already throws the N5NoSuchKeyException
-			//       because the non-existing file cannot be locked. This needs to be caught and null returned instead
-			//       (in FileSystemKeyValueAccess)
-			//   [ ] We cannot simply bubble the N5NoSuchKeyException up from writeBlockRecursive() !!!
-			//       Instead, we need to catch it and create an empty RawShard
-
 			pva.set(key, modifiedData);
 		}
 	}
@@ -222,9 +214,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			@SuppressWarnings("unchecked")
 			final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
 			final long[] gridPos = position.absolute(level);
-			final RawShard shard = existingReadData == null ?
-					new RawShard(grid.relativeBlockSize(level)) :
-					codec.decode(existingReadData, gridPos).getData();
+			final RawShard shard = getRawShard(existingReadData, codec, gridPos, level);
 			final long[] elementPos = position.relative(level - 1);
 			final ReadData existingElementData = (level == 1)
 					? null // if level == 1, we don't need to extract the nested (DataBlock<T>) ReadData because it will be overridden anyway
@@ -444,7 +434,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	private ReadData deleteBlockRecursive(
 			final ReadData existingReadData,
 			final NestedPosition position,
-			final int level) {
+			final int level) throws N5NoSuchKeyException {
 		if (level == 0 || existingReadData == null) {
 			return null;
 		} else {
@@ -776,6 +766,31 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 	//
 	// -- helpers -------------------------------------------------------------
+
+	/**
+	 * If {@code existingReadData != null} try to decode it into a RawShard.
+	 * Otherwise, of if this fails because we find that {@code existingReadData}
+	 * lazily points to non-existent data, return a new empty RawShard.
+	 *
+	 * @param existingReadData data to decode or null
+	 * @param codec shard codec
+	 * @param gridPos position of the shard on the shard grid of the given level
+	 * @param level level of the shard
+	 * @return the decode shard (or a new empty shard)
+	 */
+	private RawShard getRawShard(
+			final ReadData existingReadData,
+			final BlockCodec<RawShard> codec,
+			final long[] gridPos,
+			final int level) {
+		if (existingReadData != null) {
+			try {
+				return codec.decode(existingReadData, gridPos).getData();
+			} catch (N5NoSuchKeyException ignored) {
+			}
+		}
+		return new RawShard(grid.relativeBlockSize(level));
+	}
 
 	private static ReadData getExistingReadData(final PositionValueAccess pva, final long[] key) {
 		// need to read the shard anyway, and currently (Sept 24 2025)
