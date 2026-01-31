@@ -626,9 +626,27 @@ public class ShardTest {
 			try {
 				return new LazyReadData(new TrackingFileLazyRead(fileSystem.getPath(normalPath)));
 			} catch (N5NoSuchKeyException e) {
+//				return new LazyReadData(new NoSuchKeyLazyRead());
 				return null;
 			}
         }
+
+		private class NoSuchKeyLazyRead implements LazyRead {
+
+			@Override
+			public ReadData materialize(final long offset, final long length) throws N5Exception.N5IOException {
+				throw new N5NoSuchKeyException("NoSuchKeyLazyRead");
+			}
+
+			@Override
+			public long size() throws N5Exception.N5IOException {
+				throw new N5NoSuchKeyException("NoSuchKeyLazyRead");
+			}
+
+			@Override
+			public void close() {
+			}
+		}
 
 		private class TrackingFileLazyRead implements LazyRead {
 
