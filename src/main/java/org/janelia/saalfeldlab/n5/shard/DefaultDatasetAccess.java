@@ -392,19 +392,23 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				throw new N5Exception("The shard at " + Arrays.toString(key) + " could not be deleted.", e);
 			}
 		} else {
+			final ReadData modifiedData;
 			try (final VolatileReadData existingData = pva.get(key)) {
-				final ReadData modifiedData = deleteBlockRecursive(existingData, position, grid.numLevels() - 1);
-				if (existingData != null && modifiedData == null) {
-					return pva.remove(key);
-				} else if (modifiedData != existingData) {
-				// Here, we are about to write the shard data, but without the block to be deleted.
-				// Need to make sure that the read operations happen now before pva.set acquires a write lock
-				modifiedData.materialize();
-					pva.set(key, modifiedData);
-					return true;
-				} else {
+				modifiedData = deleteBlockRecursive(existingData, position, grid.numLevels() - 1);
+				if (modifiedData == existingData) {
+					// nothing changed, the blocks we wanted to delete didn't exist anyway
 					return false;
+				} else if (modifiedData != null) {
+					// Here, we are about to write the shard data, but without the block to be deleted.
+					// Need to make sure that the read operations happen now before pva.set acquires a write lock
+					modifiedData.materialize();
 				}
+			}
+			if (modifiedData == null) {
+				return pva.remove(key);
+			} else {
+				pva.set(key, modifiedData);
+				return true;
 			}
 		}
 	}
