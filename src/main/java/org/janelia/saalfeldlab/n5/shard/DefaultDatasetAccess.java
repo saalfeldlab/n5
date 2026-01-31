@@ -197,6 +197,14 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				// Need to make sure that the read operations happen now before pva.set acquires a write lock
 				modifiedData.materialize();
 			}
+
+			// TODO: more to be done here ...
+			//   [ ] Currently, pva.get(key) for FS already throws the N5NoSuchKeyException
+			//       because the non-existing file cannot be locked. This needs to be caught and null returned instead
+			//       (in FileSystemKeyValueAccess)
+			//   [ ] We cannot simply bubble the N5NoSuchKeyException up from writeBlockRecursive() !!!
+			//       Instead, we need to catch it and create an empty RawShard
+
 			pva.set(key, modifiedData);
 		}
 	}
