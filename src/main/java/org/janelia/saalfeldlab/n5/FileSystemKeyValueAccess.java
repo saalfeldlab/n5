@@ -83,7 +83,11 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 	@Override
 	public VolatileReadData createReadData(final String normalPath) {
-		return new LazyReadData(new FileLazyRead(fileSystem.getPath(normalPath)));
+		try {
+			return new LazyReadData(new FileLazyRead(fileSystem.getPath(normalPath)));
+		} catch (N5NoSuchKeyException e) {
+			return null;
+		}
 	}
 
 	@Override

@@ -83,14 +83,14 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final String groupPath = N5URI.normalizeGroupPath(pathName);
 		final String attributesPath = absoluteAttributesPath(groupPath);
 
-		try (
-				final VolatileReadData readData = getKeyValueAccess().createReadData(attributesPath);
-				final InputStream in = readData.inputStream()
-		) {
-			return GsonUtils.readAttributes(new InputStreamReader(in), getGson());
+		try (final VolatileReadData readData = getKeyValueAccess().createReadData(attributesPath);) {
+			if (readData == null) {
+				return null;
+			}
+			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), getGson());
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
-		} catch (final IOException | UncheckedIOException | N5IOException e) {
+		} catch (final UncheckedIOException | N5IOException e) {
 			throw new N5IOException("Failed to read attributes from dataset " + pathName, e);
 		}
 	}

@@ -623,7 +623,11 @@ public class ShardTest {
 
         @Override
         public VolatileReadData createReadData(final String normalPath) {
-            return new LazyReadData(new TrackingFileLazyRead(fileSystem.getPath(normalPath)));
+			try {
+				return new LazyReadData(new TrackingFileLazyRead(fileSystem.getPath(normalPath)));
+			} catch (N5NoSuchKeyException e) {
+				return null;
+			}
         }
 
 		private class TrackingFileLazyRead implements LazyRead {
