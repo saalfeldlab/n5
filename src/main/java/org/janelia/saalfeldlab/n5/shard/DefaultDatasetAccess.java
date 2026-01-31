@@ -185,9 +185,20 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		final NestedPosition position = grid.nestedPosition(dataBlock.getGridPosition());
 		final long[] key = position.key();
 
-		final ReadData existingData = getExistingReadData(pva, key);
-		final ReadData modifiedData = writeBlockRecursive(existingData, dataBlock, position, grid.numLevels() - 1);
-		pva.set(key, modifiedData);
+		if (grid.numLevels() == 1) {
+			// for non-sharded dataset, don't bother getting the value, just write the new data
+			final ReadData modifiedData = writeBlockRecursive(null, dataBlock, position, 0);
+			pva.set(key, modifiedData);
+		} else {
+			final ReadData modifiedData;
+			try (final VolatileReadData existingData = pva.get(key)) {
+				modifiedData = writeBlockRecursive(existingData, dataBlock, position, grid.numLevels() - 1);
+				// Here, we are about to write the shard data, but with the new block modified.
+				// Need to make sure that the read operations happen now before pva.set acquires a write lock
+				modifiedData.materialize();
+			}
+			pva.set(key, modifiedData);
+		}
 	}
 
 	private ReadData writeBlockRecursive(
