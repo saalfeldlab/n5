@@ -94,7 +94,7 @@ public class DatasetAccessTest {
 
 
 	@Test
-	public void tesWriteReadIndividual() {
+	public void testWriteReadIndividual() {
 
 		final PositionValueAccess store = new TestPositionValueAccess();
 
@@ -116,7 +116,7 @@ public class DatasetAccessTest {
 	}
 
 	@Test
-	public void tesWriteReadBulk() {
+	public void testWriteReadBulk() {
 
 		final PositionValueAccess store = new TestPositionValueAccess();
 
@@ -144,7 +144,7 @@ public class DatasetAccessTest {
 	}
 
 	@Test
-	public void tesDeleteBlock() {
+	public void testDeleteBlock() {
 
 		final PositionValueAccess store = new TestPositionValueAccess();
 
@@ -173,7 +173,7 @@ public class DatasetAccessTest {
 	}
 
 	@Test
-	public void tesDeleteBlocks() {
+	public void testDeleteBlocks() {
 
 		final PositionValueAccess store = new TestPositionValueAccess();
 
