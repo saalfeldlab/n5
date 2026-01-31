@@ -241,16 +241,26 @@ public interface KeyValueAccess {
 	boolean isFile( String normalPath ); // TODO: Looks un-used. Remove?
 
 	/**
-	 * Create a {@link ReadData} through which data at the normal key can be read.
+	 * Create a {@link VolatileReadData} through which data at the normal key
+	 * can be read.
 	 * <p>
-	 * Implementations should read lazily if possible. Consumers may call {@link ReadData#materialize()} to force
-	 * a read operation if needed.
+	 * Implementations should read lazily if possible. Consumers may call {@link
+	 * ReadData#materialize()} to force a read operation if needed.
 	 * <p>
-	 * If supported by this KeyValueAccess implementation, partial reads are possible by calling slice on the output {@link ReadData}.
+	 * If supported by this KeyValueAccess implementation, partial reads are
+	 * possible by {@link ReadData#slice slicing} the returned {@code ReadData}.
+	 * <p>
+	 * If the requested key does not exist, either {@code null} is returned or a
+	 * lazy {@code VolatileReadData} that will throw {@code N5NoSuchKeyException}
+	 * when trying to materialize.
 	 *
-	 * @param normalPath is expected to be in normalized form, no further efforts are made to normalize it
-	 * @return a materialized Read data
-	 * @throws N5IOException if an error occurs
+	 * @param normalPath
+	 * 		is expected to be in normalized form, no further efforts are made to normalize it
+	 *
+	 * @return a ReadData or null
+	 *
+	 * @throws N5IOException
+	 * 		if an error occurs
 	 */
 	VolatileReadData createReadData( final String normalPath ) throws N5IOException;
 
@@ -273,10 +283,9 @@ public interface KeyValueAccess {
 	LockedChannel lockForReading( final String normalPath ) throws N5IOException;
 
 	/**
-	 * Create an exclusive lock on a path for writing. If the file doesn't
-	 * exist yet, it will be created, including all directories leading up to
-	 * it. This lock isn't meant to be kept around. Create, use, [auto]close,
-	 * e.g.
+	 * Create an exclusive lock on a path for writing. If the file doesn't exist
+	 * yet, it will be created, including all directories leading up to it. This
+	 * lock isn't meant to be kept around. Create, use, [auto]close, e.g.
 	 * <code>
 	 * try (final lock = store.lockForWriting()) {
 	 *   ...

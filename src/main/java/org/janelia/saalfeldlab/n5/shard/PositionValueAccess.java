@@ -47,8 +47,12 @@ import org.janelia.saalfeldlab.n5.readdata.kva.VolatileReadData;
 public interface PositionValueAccess {
 
 	/**
-	 * Gets the {@link ReadData} for the DataBlock (or shard) at the given
-	 * position in the block (or shard) grid.
+	 * Gets the {@link VolatileReadData} for the DataBlock (or shard) at the
+	 * given position in the block (or shard) grid.
+	 * <p>
+	 * If the requested key does not exist, either {@code null} is returned or a
+	 * lazy {@code VolatileReadData} that will throw {@code N5NoSuchKeyException}
+	 * when trying to materialize.
 	 *
 	 * @param key
 	 *            The position of the data block or shard
