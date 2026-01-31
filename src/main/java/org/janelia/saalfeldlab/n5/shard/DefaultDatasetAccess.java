@@ -121,8 +121,13 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		final List<DataBlockRequests<T>> split = requests.split();
 		for (final DataBlockRequests<T> subRequests : split) {
 			final long[] key = subRequests.relativeGridPosition();
-			final ReadData readData = getExistingReadData(pva, key);
-			readBlocksRecursive(readData, subRequests);
+			try (final VolatileReadData readData = pva.get(key)) {
+				readBlocksRecursive(readData, subRequests);
+			} catch (N5NoSuchKeyException ignored) {
+				// the key didn't exist (as we found out when lazy-reading the index).
+				// we don't have to do anything: all subRequest blocks remain null.
+				// on to the next shard.
+			}
 		}
 
 		return requests.blocks(duplicates);
