@@ -403,6 +403,10 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 					// Need to make sure that the read operations happen now before pva.set acquires a write lock
 					modifiedData.materialize();
 				}
+			} catch (final N5NoSuchKeyException e) {
+				// the key didn't exist (as we found out when lazy-reading the index)
+				// so nothing changed, the blocks we wanted to delete didn't exist anyway
+				return false;
 			}
 			if (modifiedData == null) {
 				return pva.remove(key);
