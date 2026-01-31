@@ -98,7 +98,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		return lockForWriting(fileSystem.getPath(normalPath));
 	}
 
-	static LockedFileChannel lockForReading(final Path path) throws N5IOException {
+	protected static LockedFileChannel lockForReading(final Path path) throws N5IOException {
 
 		try {
 			return FILE_LOCK_MANAGER.lockForReading(path);
@@ -147,7 +147,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		return size(fileSystem.getPath(normalPath));
 	}
 
-	private static long size(final Path path) {
+	protected static long size(final Path path) {
 
 		try {
 			return Files.size(path);

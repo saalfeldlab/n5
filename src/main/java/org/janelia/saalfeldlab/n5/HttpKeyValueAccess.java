@@ -464,9 +464,7 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		}
 
 		@Override
-		public void close() throws IOException {
-			// TODO: implement HttpLazyRead.close()
-			throw new UnsupportedOperationException("TODO: implement HttpLazyRead.close()");
+		public void close() {
 		}
 	}
 

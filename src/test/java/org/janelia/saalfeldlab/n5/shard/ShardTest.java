@@ -41,6 +41,8 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -621,61 +623,74 @@ public class ShardTest {
 
         @Override
         public VolatileReadData createReadData(final String normalPath) {
-            return new LazyReadData(new TrackingFileLazyRead(normalPath));
+            return new LazyReadData(new TrackingFileLazyRead(fileSystem.getPath(normalPath)));
         }
 
-        private class TrackingFileLazyRead implements LazyRead {
+		private class TrackingFileLazyRead implements LazyRead {
 
-            private final String normalKey;
+			private final Path path;
+			private LockedFileChannel lock;
 
-            TrackingFileLazyRead(String normalKey) {
-                this.normalKey = normalKey;
-            }
+			TrackingFileLazyRead(final Path path) {
+				this.path = path;
+				lock = FileSystemKeyValueAccess.lockForReading(path);
+			}
 
-            @Override
-            public long size() {
-                return TrackingFileSystemKeyValueAccess.this.size(normalKey);
-            }
+			@Override
+			public long size() throws N5Exception.N5IOException {
 
-            @Override
-            public ReadData materialize(final long offset, final long length) {
+				if (lock == null) {
+					throw new N5Exception.N5IOException("FileLazyRead is already closed.");
+				}
+				return FileSystemKeyValueAccess.size(path);
+			}
 
-				DebugHelpers.printStackTrace(10);
+			@Override
+			public ReadData materialize(final long offset, final long length) {
+
+				if (lock == null) {
+					throw new N5Exception.N5IOException("FileLazyRead is already closed.");
+				}
+
 				numMaterializeCalls++;
+				try (final FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
 
-                try (final LockedFileChannel lfs = lockForReading(normalKey)) {
-                    final FileChannel channel = lfs.getFileChannel();
+					channel.position(offset);
 
-                    channel.position(offset);
-                    if (length > Integer.MAX_VALUE)
-                        throw new IOException("Attempt to materialize too large data");
+					final long channelSize = channel.size();
+					if (!validBounds(channelSize, offset, length)) {
+						throw new IndexOutOfBoundsException();
+					}
 
-                    final long channelSize = channel.size();
-                    if (!validBounds(channelSize, offset, length))
-                        throw new IndexOutOfBoundsException();
+					final long size = length < 0 ? (channelSize - offset) : length;
+					if (size > Integer.MAX_VALUE) {
+						throw new IndexOutOfBoundsException("Attempt to materialize too large data");
+					}
 
-                    final int sz = (int)(length < 0 ? channelSize : length);
-                    totalBytesRead += sz;
-                    final byte[] data = new byte[sz];
-                    final ByteBuffer buf = ByteBuffer.wrap(data);
-                    channel.read(buf);
-                    return ReadData.from(data);
+					final byte[] data = new byte[(int) size];
+					totalBytesRead += size;
+					final ByteBuffer buf = ByteBuffer.wrap(data);
+					channel.read(buf);
+					return ReadData.from(data);
 
-                } catch (final NoSuchFileException e) {
-                    throw new N5NoSuchKeyException("No such file", e);
-                } catch (IOException | UncheckedIOException e) {
-                    throw new N5Exception.N5IOException(e);
-                }
-            }
+				} catch (final NoSuchFileException e) {
+					throw new N5NoSuchKeyException("No such file", e);
+				} catch (IOException | UncheckedIOException e) {
+					throw new N5Exception.N5IOException(e);
+				}
+			}
 
 			@Override
 			public void close() throws IOException {
-				// TODO: implement TrackingFileLazyRead.close()
-				throw new UnsupportedOperationException("TODO: implement TrackingFileLazyRead.close()");
+
+				if (lock != null) {
+					lock.close();
+					lock = null;
+				}
 			}
 		}
 
-        private static boolean validBounds(long channelSize, long offset, long length) {
+		private static boolean validBounds(long channelSize, long offset, long length) {
 
             if (offset < 0)
                 return false;

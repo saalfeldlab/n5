@@ -35,18 +35,22 @@ import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
+import org.janelia.saalfeldlab.n5.readdata.kva.VolatileReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 
 public class DatasetAccessTest {
@@ -164,12 +168,23 @@ public class DatasetAccessTest {
 		checkBlock(datasetAccess.readBlock(store, new long[] {1, 0, 0}), true, 2);
 
 		// if a shard becomes empty the corresponding key should be deleted
-		assertNotNull(store.get(new long[] {1, 0, 0}));
+		assertTrue(keyExists(store, new long[] {1, 0, 0}));
 		datasetAccess.deleteBlock(store, new long[] {8, 4, 1});
-		assertNull(store.get(new long[] {1, 0, 0}));
+		assertFalse(keyExists(store, new long[] {1, 0, 0}));
 
 		// deleting a non-existent block should not fail
 		datasetAccess.deleteBlock(store, new long[] {0, 0, 8});
+	}
+
+	private boolean keyExists(final PositionValueAccess store, final long[] key) {
+		try (final VolatileReadData data = store.get(key)) {
+			if (data != null) {
+				data.requireLength();
+				return true;
+			}
+		} catch (N5Exception.N5IOException ignored) {
+		}
+		return false;
 	}
 
 	@Test
@@ -193,9 +208,9 @@ public class DatasetAccessTest {
 		checkBlock(datasetAccess.readBlock(store, new long[] {1, 0, 0}), true, 2);
 
 		// if a shard becomes empty the corresponding key should be deleted
-		assertNotNull(store.get(new long[] {1, 0, 0}));
+		assertTrue(keyExists(store, new long[] {1, 0, 0}));
 		datasetAccess.deleteBlocks(store, Arrays.asList(new long[][] {{8, 4, 1}}));
-		assertNull(store.get(new long[] {1, 0, 0}));
+		assertFalse(keyExists(store, new long[] {1, 0, 0}));
 
 		// deleting a non-existent block should not fail
 		datasetAccess.deleteBlocks(store, Arrays.asList(new long[] {0, 0, 8}));

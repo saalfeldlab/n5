@@ -52,6 +52,7 @@ import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.StringDataBlock;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.kva.VolatileReadData;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
 import org.janelia.saalfeldlab.n5.util.SubArrayCopy;
@@ -76,8 +77,8 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	@Override
 	public DataBlock<T> readBlock(final PositionValueAccess pva, final long[] gridPosition) throws N5IOException {
 		final NestedPosition position = grid.nestedPosition(gridPosition);
-		try {
-			return readBlockRecursive(pva.get(position.key()), position, grid.numLevels() - 1);
+		try (final VolatileReadData readData = pva.get(position.key())) {
+			return readBlockRecursive(readData, position, grid.numLevels() - 1);
 		} catch (N5NoSuchKeyException ignored) {
 			return null;
 		}
@@ -391,15 +392,16 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				throw new N5Exception("The shard at " + Arrays.toString(key) + " could not be deleted.", e);
 			}
 		} else {
-			final ReadData existingData = pva.get(key); // TODO: use getExistingReadData() instead !?
-			final ReadData modifiedData = deleteBlockRecursive(existingData, position, grid.numLevels() - 1);
-			if (existingData != null && modifiedData == null) {
-				return pva.remove(key);
-			} else if (modifiedData != existingData) {
-				pva.set(key, modifiedData);
-				return true;
-			} else {
-				return false;
+			try (final VolatileReadData existingData = pva.get(key)) {
+				final ReadData modifiedData = deleteBlockRecursive(existingData, position, grid.numLevels() - 1);
+				if (existingData != null && modifiedData == null) {
+					return pva.remove(key);
+				} else if (modifiedData != existingData) {
+					pva.set(key, modifiedData);
+					return true;
+				} else {
+					return false;
+				}
 			}
 		}
 	}
@@ -744,11 +746,8 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		// need to read the shard anyway, and currently (Sept 24 2025)
 		// have no way to tell if the key exists from what is in this method except to attempt
 		// to materialize and catch the N5NoSuchKeyException
-		try {
-			ReadData existingData = pva.get(key);
-			if (existingData != null)
-				existingData.materialize();
-			return existingData;
+		try (final VolatileReadData existingData = pva.get(key)) {
+			return existingData == null ? null : existingData.materialize();
 		} catch (N5NoSuchKeyException e) {
 			return null;
 		}
