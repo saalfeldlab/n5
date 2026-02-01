@@ -182,14 +182,13 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	@Override
 	public void writeBlock(final PositionValueAccess pva, final DataBlock<T> dataBlock) throws N5IOException {
 
-		final NestedPosition position = grid.nestedPosition(dataBlock.getGridPosition());
-		final long[] key = position.key();
-
 		if (grid.numLevels() == 1) {
-			// for non-sharded dataset, don't bother getting the value, just write the new data
-			final ReadData modifiedData = writeBlockRecursive(null, dataBlock, position, 0);
-			pva.set(key, modifiedData);
+			@SuppressWarnings("unchecked")
+			final BlockCodec<T> codec = (BlockCodec<T>) codecs[0];
+			pva.set(dataBlock.getGridPosition(), codec.encode(dataBlock));
 		} else {
+			final NestedPosition position = grid.nestedPosition(dataBlock.getGridPosition());
+			final long[] key = position.key();
 			final ReadData modifiedData;
 			try (final VolatileReadData existingData = pva.get(key)) {
 				modifiedData = writeBlockRecursive(existingData, dataBlock, position, grid.numLevels() - 1);
@@ -232,21 +231,27 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	public void writeBlocks(final PositionValueAccess pva, final List<DataBlock<T>> dataBlocks) throws N5IOException {
 
 		if (grid.numLevels() == 1) {
-			dataBlocks.forEach(it -> writeBlock(pva, it));
-			return;
-		}
-
-		// Create a list of DataBlockRequests, sorted such that requests from
-		// the same (nested) shard are grouped contiguously.
-		final DataBlockRequests<T> requests = createWriteRequests(dataBlocks);
-		requests.removeDuplicates();
-		final List<DataBlockRequests<T>> split = requests.split();
-		for (final DataBlockRequests<T> subRequests : split) {
-			final boolean writeFully = subRequests.coversShard();
-			final long[] shardKey = subRequests.relativeGridPosition();
-			final ReadData existingReadData = writeFully ? null : getExistingReadData(pva, shardKey);
-			final ReadData writeShardReadData = writeBlocksRecursive(existingReadData, subRequests);
-			pva.set(shardKey, writeShardReadData);
+			@SuppressWarnings("unchecked")
+			final BlockCodec<T> codec = (BlockCodec<T>) codecs[0];
+			dataBlocks.forEach(dataBlock -> pva.set(dataBlock.getGridPosition(), codec.encode(dataBlock)));
+		} else {
+			// Create a list of DataBlockRequests, sorted such that requests from
+			// the same (nested) shard are grouped contiguously.
+			final DataBlockRequests<T> requests = createWriteRequests(dataBlocks);
+			requests.removeDuplicates();
+			final List<DataBlockRequests<T>> split = requests.split();
+			for (final DataBlockRequests<T> subRequests : split) {
+				final boolean writeFully = subRequests.coversShard();
+				final long[] shardKey = subRequests.relativeGridPosition();
+				final ReadData modifiedData;
+				try (final VolatileReadData existingData = writeFully ? null : pva.get(shardKey)) {
+					modifiedData = writeBlocksRecursive(existingData, subRequests);
+					// Here, we are about to write the shard data, but with the new blocks modified.
+					// Need to make sure that the read operations happen now before pva.set acquires a write lock
+					modifiedData.materialize();
+				}
+				pva.set(shardKey, modifiedData);
+			}
 		}
 	}
 
@@ -269,9 +274,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		@SuppressWarnings("unchecked")
 		final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
 		final long[] gridPos = requests.gridPosition();
-		final RawShard shard = writeFully ?
-				new RawShard(grid.relativeBlockSize(level)) :
-				codec.decode(existingReadData, gridPos).getData();
+		final RawShard shard = getRawShard(existingReadData, codec, gridPos, level);
 
 		if ( level == 1 ) {
 			// Base case, write the blocks
@@ -769,7 +772,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 	/**
 	 * If {@code existingReadData != null} try to decode it into a RawShard.
-	 * Otherwise, of if this fails because we find that {@code existingReadData}
+	 * Otherwise, or if this fails because we find that {@code existingReadData}
 	 * lazily points to non-existent data, return a new empty RawShard.
 	 *
 	 * @param existingReadData data to decode or null
