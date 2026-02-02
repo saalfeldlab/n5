@@ -50,7 +50,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -598,9 +598,9 @@ public class ShardTest {
 
         TrackingN5Writer trackingWriter = ((TrackingN5Writer) writer);
 
-        Function<long[], Boolean> assertShardExistsTracking = (gridPosition) -> {
+        Predicate<long[]> assertShardExistsTracking = (gridPosition) -> {
             trackingWriter.resetAllTracking();
-            final Boolean exists = writer.shardExists(dataset, attrs, gridPosition);
+            final boolean exists = writer.shardExists(dataset, attrs, gridPosition);
             assertEquals("isFileCheck incremented", 1, trackingWriter.getNumIsFileCalls());
             assertEquals("No Bytes Read", 0, trackingWriter.getTotalBytesRead());
             return exists;
@@ -609,15 +609,15 @@ public class ShardTest {
 
         trackingWriter.resetAllTracking();
         /* shards that should exist should only check file  */
-        Assert.assertTrue("Shard (0,0) should exist", assertShardExistsTracking.apply(new long[]{0, 0}));
-        Assert.assertTrue("Shard (1,0) should exist", assertShardExistsTracking.apply(new long[]{1, 0}));
-        Assert.assertTrue("Shard (2,2) should exist", assertShardExistsTracking.apply(new long[]{2, 2}));
+        Assert.assertTrue("Shard (0,0) should exist", assertShardExistsTracking.test(new long[]{0, 0}));
+        Assert.assertTrue("Shard (1,0) should exist", assertShardExistsTracking.test(new long[]{1, 0}));
+        Assert.assertTrue("Shard (2,2) should exist", assertShardExistsTracking.test(new long[]{2, 2}));
 
         /* shards that should NOT exist */
-        Assert.assertFalse("Shard (0,1) should not exist", assertShardExistsTracking.apply(new long[]{0, 1}));
-        Assert.assertFalse("Shard (1,1) should not exist", assertShardExistsTracking.apply(new long[]{1, 1}));
-        Assert.assertFalse("Shard (2,0) should not exist", assertShardExistsTracking.apply(new long[]{2, 0}));
-        Assert.assertFalse("Shard (0,2) should not exist", assertShardExistsTracking.apply(new long[]{0, 2}));
+        Assert.assertFalse("Shard (0,1) should not exist", assertShardExistsTracking.test(new long[]{0, 1}));
+        Assert.assertFalse("Shard (1,1) should not exist", assertShardExistsTracking.test(new long[]{1, 1}));
+        Assert.assertFalse("Shard (2,0) should not exist", assertShardExistsTracking.test(new long[]{2, 0}));
+        Assert.assertFalse("Shard (0,2) should not exist", assertShardExistsTracking.test(new long[]{0, 2}));
     }
 
 	/**
