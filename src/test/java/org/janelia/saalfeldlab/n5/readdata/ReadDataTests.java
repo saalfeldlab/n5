@@ -60,7 +60,7 @@ public class ReadDataTests {
 		final ReadData readData = ReadData.from(out -> {
 			out.write(data);
 		});
-		assertTrue(readData instanceof LazyReadData);
+		assertTrue(readData instanceof LazyGeneratedReadData);
 
 		readDataTestHelper(readData, -1, N);
 		sliceTestHelper(readData, N);
