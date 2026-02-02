@@ -823,17 +823,6 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		return new RawShard(grid.relativeBlockSize(level));
 	}
 
-	private static ReadData getExistingReadData(final PositionValueAccess pva, final long[] key) {
-		// need to read the shard anyway, and currently (Sept 24 2025)
-		// have no way to tell if the key exists from what is in this method except to attempt
-		// to materialize and catch the N5NoSuchKeyException
-		try (final VolatileReadData existingData = pva.get(key)) {
-			return existingData == null ? null : existingData.materialize();
-		} catch (N5NoSuchKeyException e) {
-			return null;
-		}
-	}
-
 	/**
 	 * A request to read or write a (level-0) DataBlock at a given {@link #position}.
 	 * <p>
