@@ -52,11 +52,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
-import org.janelia.saalfeldlab.n5.Colored;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.DebugHelpers;
 import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
@@ -436,10 +434,6 @@ public class ShardTest {
 		}
 	}
 
-	public static void main(String[] args) {
-		new ShardTest().numReadsTest();
-	}
-
 	/**
 	 * Checks how many read calls to the backend are performed for a particular readBlocks
 	 * call. At this time (Nov 4 2025), one read for the index, and one read per block are performed.
@@ -457,8 +451,6 @@ public class ShardTest {
 		final String dataset = "writeReadBlocks";
 		writer.remove(dataset);
 		writer.createDataset(dataset, datasetAttributes);
-
-		Colored.cyan.println("dataset created\n");
 
 		final int[] blockSize = datasetAttributes.getBlockSize();
 		final int numElements = blockSize[0] * blockSize[1];
@@ -485,13 +477,9 @@ public class ShardTest {
 				new ByteArrayDataBlock(blockSize, new long[]{11, 11}, data)
 		);
 
-		Colored.cyan.println("writer.getNumMaterializeCalls() = " + writer.getNumMaterializeCalls());
-		Colored.cyan.println("blocks written\n");
-
 		writer.resetNumMaterializeCalls();
 		writer.readBlocks(dataset, datasetAttributes, Collections.singletonList(new long[] {0,0}));
-		Colored.cyan.println("writer.getNumMaterializeCalls() = " + writer.getNumMaterializeCalls());
-		Colored.cyan.println("readBlocks: {0,0}\n");
+		System.out.println(writer.getNumMaterializeCalls());
 
 		ArrayList<long[]> ptList = new ArrayList<>();
 		ptList.add(new long[] {0, 0});
@@ -501,8 +489,8 @@ public class ShardTest {
 
 		writer.resetNumMaterializeCalls();
 		writer.readBlocks(dataset, datasetAttributes, ptList);
-		Colored.cyan.println("writer.getNumMaterializeCalls() = " + writer.getNumMaterializeCalls());
-		Colored.cyan.println("readBlocks: {0,0}, {0,1}, {1,0}, {1,1}\n");
+		System.out.println(writer.getNumMaterializeCalls());
+		System.out.println("");
 	}
 
     @Test
