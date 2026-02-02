@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -26,30 +26,30 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * #L%
  */
-package org.janelia.saalfeldlab.n5;
+package org.janelia.saalfeldlab.n5.readdata;
 
+import java.io.IOException;
 import java.io.InputStream;
-
-import org.janelia.saalfeldlab.n5.KeyValueAccess.LazyRead;
+import java.util.Collection;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
- * A {@link ReadData} implementation that reads from a {@link KeyValueAccess}
- * backend through a {@link LazyRead} object.
+ * A {@link VolatileReadData} that is backed by a {@link LazyRead}.
+ * <p>
+ * The {@code LazyRead} is closed when this {@code LazyReadData} is closed.
  */
-public class KeyValueAccessReadData implements ReadData {
+class LazyReadData implements VolatileReadData {
 
     private final LazyRead lazyRead;
     private ReadData materialized;
     private final long offset;
     private long length;
 
-	public KeyValueAccessReadData(final LazyRead lazyRead) {
-        this(lazyRead, 0, -1);
-    }
+	LazyReadData(final LazyRead lazyRead) {
+		this(lazyRead, 0, -1);
+	}
 
-    KeyValueAccessReadData(final LazyRead lazyRead, final long offset, final long length) {
+    private LazyReadData(final LazyRead lazyRead, final long offset, final long length) {
         this.lazyRead = lazyRead;
         this.offset = offset;
         this.length = length;
@@ -77,7 +77,7 @@ public class KeyValueAccessReadData implements ReadData {
 	 *             if an I/O error occurs while trying to get the length
 	 */
     @Override
-    public ReadData slice(final long offset, final long length) throws N5IOException {
+    public ReadData slice(final long offset, final long length) {
         if (offset < 0)
             throw new IndexOutOfBoundsException("Negative offset: " + offset);
 
@@ -92,7 +92,7 @@ public class KeyValueAccessReadData implements ReadData {
         else
             lengthArg = length;
 
-        return new KeyValueAccessReadData(lazyRead, this.offset + offset, lengthArg);
+        return new LazyReadData(lazyRead, this.offset + offset, lengthArg);
     }
 
     @Override
@@ -120,4 +120,17 @@ public class KeyValueAccessReadData implements ReadData {
 		return length;
 	}
 
+	@Override
+	public void prefetch(final Collection<? extends Range> ranges) throws N5IOException {
+		lazyRead.prefetch(ranges);
+	}
+
+	@Override
+	public void close() throws N5IOException {
+		try {
+			lazyRead.close();
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
+	}
 }

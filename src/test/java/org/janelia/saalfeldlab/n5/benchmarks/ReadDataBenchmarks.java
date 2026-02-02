@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -90,10 +90,12 @@ public class ReadDataBenchmarks {
 	@Benchmark
 	public void run(Blackhole hole) throws IOException {
 
-		hole.consume(read().materialize());
+		try (final VolatileReadData read = read()) {
+			hole.consume(read.materialize());
+		}
 	}
 
-	public ReadData read() throws IOException {
+	public VolatileReadData read() throws IOException {
 
 		return kva.createReadData(getPath().toString());
 	}

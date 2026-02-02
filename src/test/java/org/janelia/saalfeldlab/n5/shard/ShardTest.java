@@ -29,19 +29,6 @@
 package org.janelia.saalfeldlab.n5.shard;
 
 import com.google.gson.GsonBuilder;
-import org.janelia.saalfeldlab.n5.*;
-import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
-import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
-import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
-import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -54,8 +41,42 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.util.*;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
+import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
+import org.janelia.saalfeldlab.n5.KeyValueAccess;
+import org.janelia.saalfeldlab.n5.LockedFileChannel;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
+import org.janelia.saalfeldlab.n5.N5FSTest;
+import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
+import org.janelia.saalfeldlab.n5.N5Writer;
+import org.janelia.saalfeldlab.n5.RawCompression;
+import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.LazyRead;
+import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
+import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -282,7 +303,7 @@ public class ShardTest {
 			Assert.assertFalse("Shard at" + shard + " exists but should not.", kva.exists(shard));
 		}
 	}
-	
+
 	@Test
 	public void writeShardDataSizeTest() {
 
@@ -459,11 +480,11 @@ public class ShardTest {
 		writer.readBlocks(dataset, datasetAttributes, Collections.singletonList(new long[] {0,0}));
 		System.out.println(writer.getNumMaterializeCalls());
 
-		ArrayList ptList = new ArrayList<>();
-		ptList.add(new long[] {0,0});
-		ptList.add(new long[] {0,1});
-		ptList.add(new long[] {1,0});
-		ptList.add(new long[] {1,1});
+		ArrayList<long[]> ptList = new ArrayList<>();
+		ptList.add(new long[] {0, 0});
+		ptList.add(new long[] {0, 1});
+		ptList.add(new long[] {1, 0});
+		ptList.add(new long[] {1, 1});
 
 		writer.resetNumMaterializeCalls();
 		writer.readBlocks(dataset, datasetAttributes, ptList);
@@ -588,54 +609,100 @@ public class ShardTest {
         }
 
         @Override
-        public ReadData createReadData(final String normalPath) {
-            return new KeyValueAccessReadData(new TrackingFileLazyRead(normalPath));
+        public VolatileReadData createReadData(final String normalPath) {
+			try {
+				return VolatileReadData.from(new TrackingFileLazyRead(fileSystem.getPath(normalPath)));
+			} catch (N5NoSuchKeyException e) {
+//				return VolatileReadData.from(new NoSuchKeyLazyRead());
+				return null;
+			}
         }
 
-        private class TrackingFileLazyRead implements LazyRead {
+		// This can be used in createReadData() above, to also simulate the case that we will have for
+		// cloud storage KVAs, where the returned VolatileReadData is non-null but will fail on the first
+		// operation that queries the cloud backend.
+		private class NoSuchKeyLazyRead implements LazyRead {
 
-            private final String normalKey;
+			@Override
+			public ReadData materialize(final long offset, final long length) throws N5Exception.N5IOException {
+				throw new N5NoSuchKeyException("NoSuchKeyLazyRead");
+			}
 
-            TrackingFileLazyRead(String normalKey) {
-                this.normalKey = normalKey;
-            }
+			@Override
+			public long size() throws N5Exception.N5IOException {
+				throw new N5NoSuchKeyException("NoSuchKeyLazyRead");
+			}
 
-            @Override
-            public long size() {
-                return TrackingFileSystemKeyValueAccess.this.size(normalKey);
-            }
+			@Override
+			public void close() {
+			}
+		}
 
-            @Override
-            public ReadData materialize(final long offset, final long length) {
+		private class TrackingFileLazyRead implements LazyRead {
 
-                numMaterializeCalls++;
+			private final Path path;
+			private LockedFileChannel lock;
 
-                try (final LockedFileChannel lfs = lockForReading(normalKey)) {
-                    final FileChannel channel = lfs.getFileChannel();
+			TrackingFileLazyRead(final Path path) {
+				this.path = path;
+				lock = FileSystemKeyValueAccess.lockForReading(path);
+			}
 
-                    channel.position(offset);
-                    if (length > Integer.MAX_VALUE)
-                        throw new IOException("Attempt to materialize too large data");
+			@Override
+			public long size() throws N5Exception.N5IOException {
 
-                    final long channelSize = channel.size();
-                    if (!validBounds(channelSize, offset, length))
-                        throw new IndexOutOfBoundsException();
+				if (lock == null) {
+					throw new N5Exception.N5IOException("FileLazyRead is already closed.");
+				}
+				return FileSystemKeyValueAccess.size(path);
+			}
 
-                    final int sz = (int)(length < 0 ? channelSize : length);
-                    totalBytesRead += sz;
-                    final byte[] data = new byte[sz];
-                    final ByteBuffer buf = ByteBuffer.wrap(data);
-                    channel.read(buf);
-                    return ReadData.from(data);
+			@Override
+			public ReadData materialize(final long offset, final long length) {
 
-                } catch (final NoSuchFileException e) {
-                    throw new N5NoSuchKeyException("No such file", e);
-                } catch (IOException | UncheckedIOException e) {
-                    throw new N5Exception.N5IOException(e);
-                }
-            }
-        }
-        private static boolean validBounds(long channelSize, long offset, long length) {
+				if (lock == null) {
+					throw new N5Exception.N5IOException("FileLazyRead is already closed.");
+				}
+
+				numMaterializeCalls++;
+				try (final FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
+
+					channel.position(offset);
+
+					final long channelSize = channel.size();
+					if (!validBounds(channelSize, offset, length)) {
+						throw new IndexOutOfBoundsException();
+					}
+
+					final long size = length < 0 ? (channelSize - offset) : length;
+					if (size > Integer.MAX_VALUE) {
+						throw new IndexOutOfBoundsException("Attempt to materialize too large data");
+					}
+
+					final byte[] data = new byte[(int) size];
+					totalBytesRead += size;
+					final ByteBuffer buf = ByteBuffer.wrap(data);
+					channel.read(buf);
+					return ReadData.from(data);
+
+				} catch (final NoSuchFileException e) {
+					throw new N5NoSuchKeyException("No such file", e);
+				} catch (IOException | UncheckedIOException e) {
+					throw new N5Exception.N5IOException(e);
+				}
+			}
+
+			@Override
+			public void close() throws IOException {
+
+				if (lock != null) {
+					lock.close();
+					lock = null;
+				}
+			}
+		}
+
+		private static boolean validBounds(long channelSize, long offset, long length) {
 
             if (offset < 0)
                 return false;

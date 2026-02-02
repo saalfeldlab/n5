@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 /**
  * Key value read primitives used by {@link N5KeyValueReader}
@@ -240,18 +241,28 @@ public interface KeyValueAccess {
 	boolean isFile( String normalPath ); // TODO: Looks un-used. Remove?
 
 	/**
-	 * Create a {@link ReadData} through which data at the normal key can be read.
+	 * Create a {@link VolatileReadData} through which data at the normal key
+	 * can be read.
 	 * <p>
-	 * Implementations should read lazily if possible. Consumers may call {@link ReadData#materialize()} to force
-	 * a read operation if needed.
+	 * Implementations should read lazily if possible. Consumers may call {@link
+	 * ReadData#materialize()} to force a read operation if needed.
 	 * <p>
-	 * If supported by this KeyValueAccess implementation, partial reads are possible by calling slice on the output {@link ReadData}.
+	 * If supported by this KeyValueAccess implementation, partial reads are
+	 * possible by {@link ReadData#slice slicing} the returned {@code ReadData}.
+	 * <p>
+	 * If the requested key does not exist, either {@code null} is returned or a
+	 * lazy {@code VolatileReadData} that will throw {@code N5NoSuchKeyException}
+	 * when trying to materialize.
 	 *
-	 * @param normalPath is expected to be in normalized form, no further efforts are made to normalize it
-	 * @return a materialized Read data
-	 * @throws N5IOException if an error occurs
+	 * @param normalPath
+	 * 		is expected to be in normalized form, no further efforts are made to normalize it
+	 *
+	 * @return a ReadData or null
+	 *
+	 * @throws N5IOException
+	 * 		if an error occurs
 	 */
-	ReadData createReadData( final String normalPath ) throws N5IOException;
+	VolatileReadData createReadData( final String normalPath ) throws N5IOException;
 
 	/**
 	 * Create a lock on a path for reading. This isn't meant to be kept
@@ -272,10 +283,9 @@ public interface KeyValueAccess {
 	LockedChannel lockForReading( final String normalPath ) throws N5IOException;
 
 	/**
-	 * Create an exclusive lock on a path for writing. If the file doesn't
-	 * exist yet, it will be created, including all directories leading up to
-	 * it. This lock isn't meant to be kept around. Create, use, [auto]close,
-	 * e.g.
+	 * Create an exclusive lock on a path for writing. If the file doesn't exist
+	 * yet, it will be created, including all directories leading up to it. This
+	 * lock isn't meant to be kept around. Create, use, [auto]close, e.g.
 	 * <code>
 	 * try (final lock = store.lockForWriting()) {
 	 *   ...
@@ -338,47 +348,5 @@ public interface KeyValueAccess {
 	 *            if an error occurs during deletion
 	 */
 	void delete( final String normalPath ) throws N5IOException;
-
-	/**
-	 * A lazy reading strategy for lazy, partial reading of data from some source.
-	 * <p>
-	 * Implementations of this interface handle the specifics of accessing data from
-	 * their respective sources.
-	 * 
-	 * @see ReadData
-	 * @see KeyValueAccessReadData
-	 */
-	interface LazyRead {
-
-		/**
-		 * Materializes a portion of the data into a concrete {@link ReadData}
-		 * instance.
-		 * <p>
-		 * This method performs the actual read operation from the underlying
-		 * source, loading only the requested portion of data. The implementation
-		 * should handle bounds checking and throw appropriate exceptions for
-		 * invalid ranges.
-		 *
-		 * @param offset
-		 *            the starting position in the data source
-		 * @param length
-		 *            the number of bytes to read, or -1 to read from offset to end
-		 * @return a materialized {@link ReadData} instance containing the requested
-		 *         data
-		 * @throws N5IOException
-		 *             if any I/O error occurs
-		 */
-		ReadData materialize(long offset, long length) throws N5IOException;
-
-		/**
-		 * Returns the total size of the data source in bytes.
-		 * 
-		 * @return the size of the data source in bytes
-		 * @throws N5IOException
-		 * 		if an I/O error occurs while trying to get the length
-		 */
-		long size() throws N5IOException;
-
-	}
 
 }
