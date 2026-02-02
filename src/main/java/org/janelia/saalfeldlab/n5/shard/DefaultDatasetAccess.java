@@ -417,16 +417,12 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 	@Override
 	public boolean deleteBlock(final PositionValueAccess pva, final long[] gridPosition) throws N5IOException {
-		final NestedPosition position = grid.nestedPosition(gridPosition);
-		final long[] key = position.key();
 		if (grid.numLevels() == 1) {
 			// for non-sharded dataset, don't bother getting the value, just remove the key.
-			try {
-				return pva.remove(key);
-			} catch (final Exception e) {
-				throw new N5Exception("The shard at " + Arrays.toString(key) + " could not be deleted.", e);
-			}
+			return pva.remove(gridPosition);
 		} else {
+			final NestedPosition position = grid.nestedPosition(gridPosition);
+			final long[] key = position.key();
 			final ReadData modifiedData;
 			try (final VolatileReadData existingData = pva.get(key)) {
 				modifiedData = deleteBlockRecursive(existingData, position, grid.numLevels() - 1);
@@ -496,37 +492,51 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	@Override
 	public boolean deleteBlocks(final PositionValueAccess pva, final List<long[]> gridPositions) throws N5IOException {
 
-		boolean deleted = false;
-
 		// for non-sharded datasets, just delete the blocks individually
 		if (grid.numLevels() == 1) {
+			boolean deleted = false;
 			for (long[] pos : gridPositions) {
-				deleted |= deleteBlock(pva, pos);
+				deleted |= pva.remove(pos);
+			}
+			return deleted;
+		} else {
+
+			// Create a list of DataBlockRequests and sort it such that requests
+			// from the same (nested) shard are grouped contiguously.
+			// Despite the name, createReadRequests() works for delete requests as well ...
+			final DataBlockRequests<T> requests = createReadRequests(gridPositions);
+			requests.removeDuplicates();
+
+			boolean deleted = false;
+			final List<DataBlockRequests<T>> split = requests.split();
+			for (final DataBlockRequests<T> subRequests : split) {
+				final boolean writeFully = subRequests.coversShard();
+				final long[] key = subRequests.relativeGridPosition();
+				final ReadData modifiedData;
+				try (final VolatileReadData existingData = writeFully ? null : pva.get(key)) {
+					modifiedData = deleteBlocksRecursive(existingData, subRequests);;
+					if (modifiedData == existingData) {
+						// nothing changed, the blocks we wanted to delete didn't exist anyway
+						continue;
+					} else if (existingData != null && modifiedData != null) {
+						// Here, we are about to write the shard data, but without the block to be deleted.
+						// Need to make sure that the read operations happen now before pva.set acquires a write lock
+						modifiedData.materialize();
+					}
+				} catch (final N5NoSuchKeyException e) {
+					// the key didn't exist (as we found out when lazy-reading the index)
+					// so nothing changed, the blocks we wanted to delete didn't exist anyway
+					continue;
+				}
+				if (modifiedData == null) {
+					deleted |= pva.remove(key);
+				} else {
+					pva.set(key, modifiedData);
+					deleted = true;
+				}
 			}
 			return deleted;
 		}
-
-		// Create a list of DataBlockRequests and sort it such that requests
-		// from the same (nested) shard are grouped contiguously.
-		// Despite the name, createReadRequests() works for delete requests as well ...
-		final DataBlockRequests<T> requests = createReadRequests(gridPositions);
-		requests.removeDuplicates();
-
-		final List<DataBlockRequests<T>> split = requests.split();
-		for (final DataBlockRequests<T> subRequests : split) {
-			final boolean writeFully = subRequests.coversShard();
-			final long[] key = subRequests.relativeGridPosition();
-			final ReadData existingData = writeFully ? null : getExistingReadData(pva, key);
-			final ReadData modifiedData = deleteBlocksRecursive(existingData, subRequests);
-			if (existingData != null && modifiedData == null) {
-				deleted |= pva.remove(key);
-			} else if (modifiedData != existingData) {
-				pva.set(key, modifiedData);
-				deleted = true;
-			}
-		}
-
-		return deleted;
 	}
 
 	/**
