@@ -36,10 +36,10 @@ import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.io.output.ProxyOutputStream;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
-class LazyReadData implements ReadData {
+class LazyGeneratedReadData implements ReadData {
 
-	LazyReadData(final OutputStreamWriter writer) {
-		this.writer = writer;
+	LazyGeneratedReadData(final ReadData.Generator generator) {
+		this.generator = generator;
 	}
 
 	/**
@@ -51,7 +51,7 @@ class LazyReadData implements ReadData {
 	 * @param encoder
 	 * 		OutputStreamOperator to use for encoding
 	 */
-	LazyReadData(final ReadData data, final OutputStreamOperator encoder) {
+	LazyGeneratedReadData(final ReadData data, final OutputStreamOperator encoder) {
 		this(outputStream -> {
 			try (final OutputStream deflater = encoder.apply(interceptClose.apply(outputStream))) {
 				data.writeTo(deflater);
@@ -59,7 +59,7 @@ class LazyReadData implements ReadData {
 		});
 	}
 
-	private final OutputStreamWriter writer;
+	private final ReadData.Generator generator;
 
 	private ByteArrayReadData bytes;
 
@@ -70,7 +70,7 @@ class LazyReadData implements ReadData {
 		if (bytes == null) {
 			try {
 				final ByteArrayOutputStream baos = new ByteArrayOutputStream(8192);
-				writer.writeTo(baos);
+				generator.writeTo(baos);
 				bytes = new ByteArrayReadData(baos.toByteArray());
 			} catch (IOException e) {
 				throw new N5IOException(e);
@@ -119,7 +119,7 @@ class LazyReadData implements ReadData {
 				outputStream.write(bytes.allBytes());
 			} else {
 				final CountingOutputStream cos = new CountingOutputStream(outputStream);
-				writer.writeTo(cos);
+				generator.writeTo(cos);
 				length = cos.getByteCount();
 			}
 		} catch (IOException e) {
