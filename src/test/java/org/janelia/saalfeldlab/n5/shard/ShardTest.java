@@ -497,8 +497,6 @@ public class ShardTest {
 		writer.remove(dataset);
 		writer.createDataset(dataset, datasetAttributes);
 
-		Colored.cyan.println("dataset created\n");
-
 		final int[] blockSize = datasetAttributes.getBlockSize();
 		final int numElements = blockSize[0] * blockSize[1];
 
@@ -524,13 +522,9 @@ public class ShardTest {
 				new ByteArrayDataBlock(blockSize, new long[]{11, 11}, data)
 		);
 
-		Colored.cyan.println("writer.getNumMaterializeCalls() = " + writer.getNumMaterializeCalls());
-		Colored.cyan.println("blocks written\n");
-
 		writer.resetNumMaterializeCalls();
 		writer.readBlocks(dataset, datasetAttributes, Collections.singletonList(new long[] {0,0}));
-		Colored.cyan.println("writer.getNumMaterializeCalls() = " + writer.getNumMaterializeCalls());
-		Colored.cyan.println("readBlocks: {0,0}\n");
+		System.out.println(writer.getNumMaterializeCalls());
 
 		ArrayList<long[]> ptList = new ArrayList<>();
 		ptList.add(new long[] {0, 0});
@@ -540,8 +534,8 @@ public class ShardTest {
 
 		writer.resetNumMaterializeCalls();
 		writer.readBlocks(dataset, datasetAttributes, ptList);
-		Colored.cyan.println("writer.getNumMaterializeCalls() = " + writer.getNumMaterializeCalls());
-		Colored.cyan.println("readBlocks: {0,0}, {0,1}, {1,0}, {1,1}\n");
+		System.out.println(writer.getNumMaterializeCalls());
+		System.out.println("");
 	}
 
     @Test
