@@ -200,7 +200,7 @@ public class ShardIndex {
 	}
 
 	/**
-	 * Strips first element (should be {@code LONGS_PER_BLOCK} from the {@code blockSize} array.
+	 * Strips first element (should be {@code LONGS_PER_BLOCK}) from the {@code blockSize} array.
 	 */
 	static int[] indexSizeFromBlockSize(final int[] blockSize) {
 		assert blockSize[ 0 ] == LONGS_PER_BLOCK;

@@ -64,7 +64,7 @@ class DefaultSegmentedReadData implements SegmentedReadData {
 	private final ReadData segmentSource;
 
 	/**
-	 * The offset of {@code delegate} withr espect to {@code segmentSource}.
+	 * The offset of {@code delegate} with respect to {@code segmentSource}.
 	 */
 	private final long offset;
 
