@@ -314,8 +314,15 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		for (long[] key : Region.gridPositions(region.minPos().key(), region.maxPos().key())) {
 			final NestedPosition pos = grid.nestedPosition(key, grid.numLevels() - 1);
 			final boolean nestedWriteFully = writeFully || region.fullyContains(pos);
-			final ReadData existingData = nestedWriteFully ? null : getExistingReadData(pva, key);
-			final ReadData modifiedData = writeRegionRecursive(existingData, region, blocks, pos);
+			final ReadData modifiedData;
+			try (final VolatileReadData existingData = nestedWriteFully ? null : pva.get(key)) {
+				modifiedData = writeRegionRecursive(existingData, region, blocks, pos);
+				// Here, we are about to write the shard data, but with the new block modified.
+				// Need to make sure that the read operations happen now before pva.set acquires a write lock
+				if (existingData != null && modifiedData != null) {
+					modifiedData.materialize();
+				}
+			}
 			pva.set(key, modifiedData);
 		}
 	}
@@ -335,8 +342,15 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			exec.submit(() -> {
 				final NestedPosition pos = grid.nestedPosition(key, grid.numLevels() - 1);
 				final boolean nestedWriteFully = writeFully || region.fullyContains(pos);
-				final ReadData existingData = nestedWriteFully ? null : getExistingReadData(pva, key);
-				final ReadData modifiedData = writeRegionRecursive(existingData, region, blocks, pos);
+				final ReadData modifiedData;
+				try (final VolatileReadData existingData = nestedWriteFully ? null : pva.get(key)) {
+					modifiedData = writeRegionRecursive(existingData, region, blocks, pos);
+					// Here, we are about to write the shard data, but with the new block modified.
+					// Need to make sure that the read operations happen now before pva.set acquires a write lock
+					if (existingData != null && modifiedData != null) {
+						modifiedData.materialize();
+					}
+				}
 				pva.set(key, modifiedData);
 			});
 		}
@@ -357,11 +371,17 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final long[] gridPosition = position.absolute(0);
 
 			// If the DataBlock is not fully contained in the region, we will
-			// get existingReadData != null. In that case, we decode the
+			// get existingReadData != null. In that case, we try to decode the
 			// existing DataBlock and pass it to the BlockSupplier for modification.
-			final DataBlock<T> existingDataBlock = (existingReadData == null)
-					? null
-					: codec.decode(existingReadData, gridPosition);
+			// (This might fail with N5NoSuchKeyException if existingReadData
+			// lazily points to non-existent data.)
+			DataBlock<T> existingDataBlock = null;
+			if (existingReadData != null) {
+				try {
+					existingDataBlock = codec.decode(existingReadData, gridPosition);
+				} catch (N5NoSuchKeyException ignored) {
+				}
+			}
 			final DataBlock<T> dataBlock = blocks.get(gridPosition, existingDataBlock);
 
 			// null blocks may be provided when they contain only the fill value
@@ -375,9 +395,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			@SuppressWarnings("unchecked")
 			final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
 			final long[] gridPos = position.absolute(level);
-			final RawShard shard = existingReadData == null ?
-					new RawShard(grid.relativeBlockSize(level)) :
-					codec.decode(existingReadData, gridPos).getData();
+			final RawShard shard = getRawShard(existingReadData, codec, gridPos, level);
 			for (NestedPosition pos : region.containedNestedPositions(position)) {
 				final boolean nestedWriteFully = writeFully || region.fullyContains(pos);
 				final long[] elementPos = pos.relative();
