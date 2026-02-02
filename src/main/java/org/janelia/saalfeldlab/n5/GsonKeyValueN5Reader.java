@@ -28,13 +28,12 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.util.List;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 
 import com.google.gson.Gson;
@@ -82,11 +81,14 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final String groupPath = N5URI.normalizeGroupPath(pathName);
 		final String attributesPath = absoluteAttributesPath(groupPath);
 
-		try ( final InputStream in = getKeyValueAccess().createReadData(attributesPath).inputStream() ) {
-			return GsonUtils.readAttributes(new InputStreamReader(in), getGson());
+		try (final VolatileReadData readData = getKeyValueAccess().createReadData(attributesPath);) {
+			if (readData == null) {
+				return null;
+			}
+			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), getGson());
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
-		} catch (final IOException | UncheckedIOException | N5IOException e) {
+		} catch (final UncheckedIOException | N5IOException e) {
 			throw new N5IOException("Failed to read attributes from dataset " + pathName, e);
 		}
 	}

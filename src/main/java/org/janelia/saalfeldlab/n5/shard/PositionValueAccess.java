@@ -38,6 +38,7 @@ import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 /**
  * Wrap a KeyValueAccess and a dataset URI to be able to get/set values (ReadData) by {@code long[]} key
@@ -46,9 +47,13 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 public interface PositionValueAccess {
 
 	/**
-	 * Gets the {@link ReadData} for the DataBlock (or shard) at the given
-	 * position in the block (or shard) grid.
-	 * 
+	 * Gets the {@link VolatileReadData} for the DataBlock (or shard) at the
+	 * given position in the block (or shard) grid.
+	 * <p>
+	 * If the requested key does not exist, either {@code null} is returned or a
+	 * lazy {@code VolatileReadData} that will throw {@code N5NoSuchKeyException}
+	 * when trying to materialize.
+	 *
 	 * @param key
 	 *            The position of the data block or shard
 	 * @return ReadData for the given key or {@code null} if the key doesn't
@@ -56,7 +61,7 @@ public interface PositionValueAccess {
 	 * @throws N5Exception.N5IOException
 	 *             if an error occurs while reading
 	 */
-	ReadData get(long[] key) throws N5Exception.N5IOException;
+	VolatileReadData get(long[] key) throws N5Exception.N5IOException;
 
 	void set(long[] key, ReadData data) throws N5Exception.N5IOException;
 
@@ -64,7 +69,7 @@ public interface PositionValueAccess {
 
 	boolean remove(long[] key) throws N5Exception.N5IOException;
 
-	public static PositionValueAccess fromKva(
+	static PositionValueAccess fromKva(
 			final KeyValueAccess kva,
 			final URI uri,
 			final String normalPath,
@@ -104,7 +109,7 @@ public interface PositionValueAccess {
 		}
 
 		@Override
-		public ReadData get(long[] key) throws N5IOException {
+		public VolatileReadData get(long[] key) throws N5IOException {
 			return kva.createReadData(absolutePath(key));
 		}
 

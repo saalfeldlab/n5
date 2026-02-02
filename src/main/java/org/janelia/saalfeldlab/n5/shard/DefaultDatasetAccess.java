@@ -52,6 +52,7 @@ import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.StringDataBlock;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
 import org.janelia.saalfeldlab.n5.util.SubArrayCopy;
@@ -76,8 +77,8 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	@Override
 	public DataBlock<T> readBlock(final PositionValueAccess pva, final long[] gridPosition) throws N5IOException {
 		final NestedPosition position = grid.nestedPosition(gridPosition);
-		try {
-			return readBlockRecursive(pva.get(position.key()), position, grid.numLevels() - 1);
+		try (final VolatileReadData readData = pva.get(position.key())) {
+			return readBlockRecursive(readData, position, grid.numLevels() - 1);
 		} catch (N5NoSuchKeyException ignored) {
 			return null;
 		}
@@ -120,8 +121,13 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		final List<DataBlockRequests<T>> split = requests.split();
 		for (final DataBlockRequests<T> subRequests : split) {
 			final long[] key = subRequests.relativeGridPosition();
-			final ReadData readData = getExistingReadData(pva, key);
-			readBlocksRecursive(readData, subRequests);
+			try (final VolatileReadData readData = pva.get(key)) {
+				readBlocksRecursive(readData, subRequests);
+			} catch (N5NoSuchKeyException ignored) {
+				// the key didn't exist (as we found out when lazy-reading the index).
+				// we don't have to do anything: all subRequest blocks remain null.
+				// on to the next shard.
+			}
 		}
 
 		return requests.blocks(duplicates);
@@ -151,6 +157,10 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 		if (level == 1 ) {
 			//Base case; read the blocks
+
+			// TODO: collect all the elementPos that we will need and prefetch
+			//       Probably best to add a prefetch method to RawShard?
+
 			for (final DataBlockRequest<T> request : requests) {
 				final long[] elementPos = request.position.relative(0);
 				final ReadData elementData = shard.getElementData(elementPos);
@@ -172,12 +182,22 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	@Override
 	public void writeBlock(final PositionValueAccess pva, final DataBlock<T> dataBlock) throws N5IOException {
 
-		final NestedPosition position = grid.nestedPosition(dataBlock.getGridPosition());
-		final long[] key = position.key();
-
-		final ReadData existingData = getExistingReadData(pva, key);
-		final ReadData modifiedData = writeBlockRecursive(existingData, dataBlock, position, grid.numLevels() - 1);
-		pva.set(key, modifiedData);
+		if (grid.numLevels() == 1) {
+			@SuppressWarnings("unchecked")
+			final BlockCodec<T> codec = (BlockCodec<T>) codecs[0];
+			pva.set(dataBlock.getGridPosition(), codec.encode(dataBlock));
+		} else {
+			final NestedPosition position = grid.nestedPosition(dataBlock.getGridPosition());
+			final long[] key = position.key();
+			final ReadData modifiedData;
+			try (final VolatileReadData existingData = pva.get(key)) {
+				modifiedData = writeBlockRecursive(existingData, dataBlock, position, grid.numLevels() - 1);
+				// Here, we are about to write the shard data, but with the new block modified.
+				// Need to make sure that the read operations happen now before pva.set acquires a write lock
+				modifiedData.materialize();
+			}
+			pva.set(key, modifiedData);
+		}
 	}
 
 	private ReadData writeBlockRecursive(
@@ -193,9 +213,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			@SuppressWarnings("unchecked")
 			final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
 			final long[] gridPos = position.absolute(level);
-			final RawShard shard = existingReadData == null ?
-					new RawShard(grid.relativeBlockSize(level)) :
-					codec.decode(existingReadData, gridPos).getData();
+			final RawShard shard = getRawShard(existingReadData, codec, gridPos, level);
 			final long[] elementPos = position.relative(level - 1);
 			final ReadData existingElementData = (level == 1)
 					? null // if level == 1, we don't need to extract the nested (DataBlock<T>) ReadData because it will be overridden anyway
@@ -213,21 +231,27 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	public void writeBlocks(final PositionValueAccess pva, final List<DataBlock<T>> dataBlocks) throws N5IOException {
 
 		if (grid.numLevels() == 1) {
-			dataBlocks.forEach(it -> writeBlock(pva, it));
-			return;
-		}
-
-		// Create a list of DataBlockRequests, sorted such that requests from
-		// the same (nested) shard are grouped contiguously.
-		final DataBlockRequests<T> requests = createWriteRequests(dataBlocks);
-		requests.removeDuplicates();
-		final List<DataBlockRequests<T>> split = requests.split();
-		for (final DataBlockRequests<T> subRequests : split) {
-			final boolean writeFully = subRequests.coversShard();
-			final long[] shardKey = subRequests.relativeGridPosition();
-			final ReadData existingReadData = writeFully ? null : getExistingReadData(pva, shardKey);
-			final ReadData writeShardReadData = writeBlocksRecursive(existingReadData, subRequests);
-			pva.set(shardKey, writeShardReadData);
+			@SuppressWarnings("unchecked")
+			final BlockCodec<T> codec = (BlockCodec<T>) codecs[0];
+			dataBlocks.forEach(dataBlock -> pva.set(dataBlock.getGridPosition(), codec.encode(dataBlock)));
+		} else {
+			// Create a list of DataBlockRequests, sorted such that requests from
+			// the same (nested) shard are grouped contiguously.
+			final DataBlockRequests<T> requests = createWriteRequests(dataBlocks);
+			requests.removeDuplicates();
+			final List<DataBlockRequests<T>> split = requests.split();
+			for (final DataBlockRequests<T> subRequests : split) {
+				final boolean writeFully = subRequests.coversShard();
+				final long[] shardKey = subRequests.relativeGridPosition();
+				final ReadData modifiedData;
+				try (final VolatileReadData existingData = writeFully ? null : pva.get(shardKey)) {
+					modifiedData = writeBlocksRecursive(existingData, subRequests);
+					// Here, we are about to write the shard data, but with the new blocks modified.
+					// Need to make sure that the read operations happen now before pva.set acquires a write lock
+					modifiedData.materialize();
+				}
+				pva.set(shardKey, modifiedData);
+			}
 		}
 	}
 
@@ -250,9 +274,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		@SuppressWarnings("unchecked")
 		final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
 		final long[] gridPos = requests.gridPosition();
-		final RawShard shard = writeFully ?
-				new RawShard(grid.relativeBlockSize(level)) :
-				codec.decode(existingReadData, gridPos).getData();
+		final RawShard shard = getRawShard(existingReadData, codec, gridPos, level);
 
 		if ( level == 1 ) {
 			// Base case, write the blocks
@@ -292,8 +314,15 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		for (long[] key : Region.gridPositions(region.minPos().key(), region.maxPos().key())) {
 			final NestedPosition pos = grid.nestedPosition(key, grid.numLevels() - 1);
 			final boolean nestedWriteFully = writeFully || region.fullyContains(pos);
-			final ReadData existingData = nestedWriteFully ? null : getExistingReadData(pva, key);
-			final ReadData modifiedData = writeRegionRecursive(existingData, region, blocks, pos);
+			final ReadData modifiedData;
+			try (final VolatileReadData existingData = nestedWriteFully ? null : pva.get(key)) {
+				modifiedData = writeRegionRecursive(existingData, region, blocks, pos);
+				// Here, we are about to write the shard data, but with the new block modified.
+				// Need to make sure that the read operations happen now before pva.set acquires a write lock
+				if (existingData != null && modifiedData != null) {
+					modifiedData.materialize();
+				}
+			}
 			pva.set(key, modifiedData);
 		}
 	}
@@ -313,8 +342,15 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			exec.submit(() -> {
 				final NestedPosition pos = grid.nestedPosition(key, grid.numLevels() - 1);
 				final boolean nestedWriteFully = writeFully || region.fullyContains(pos);
-				final ReadData existingData = nestedWriteFully ? null : getExistingReadData(pva, key);
-				final ReadData modifiedData = writeRegionRecursive(existingData, region, blocks, pos);
+				final ReadData modifiedData;
+				try (final VolatileReadData existingData = nestedWriteFully ? null : pva.get(key)) {
+					modifiedData = writeRegionRecursive(existingData, region, blocks, pos);
+					// Here, we are about to write the shard data, but with the new block modified.
+					// Need to make sure that the read operations happen now before pva.set acquires a write lock
+					if (existingData != null && modifiedData != null) {
+						modifiedData.materialize();
+					}
+				}
 				pva.set(key, modifiedData);
 			});
 		}
@@ -335,11 +371,17 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final long[] gridPosition = position.absolute(0);
 
 			// If the DataBlock is not fully contained in the region, we will
-			// get existingReadData != null. In that case, we decode the
+			// get existingReadData != null. In that case, we try to decode the
 			// existing DataBlock and pass it to the BlockSupplier for modification.
-			final DataBlock<T> existingDataBlock = (existingReadData == null)
-					? null
-					: codec.decode(existingReadData, gridPosition);
+			// (This might fail with N5NoSuchKeyException if existingReadData
+			// lazily points to non-existent data.)
+			DataBlock<T> existingDataBlock = null;
+			if (existingReadData != null) {
+				try {
+					existingDataBlock = codec.decode(existingReadData, gridPosition);
+				} catch (N5NoSuchKeyException ignored) {
+				}
+			}
 			final DataBlock<T> dataBlock = blocks.get(gridPosition, existingDataBlock);
 
 			// null blocks may be provided when they contain only the fill value
@@ -353,9 +395,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			@SuppressWarnings("unchecked")
 			final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
 			final long[] gridPos = position.absolute(level);
-			final RawShard shard = existingReadData == null ?
-					new RawShard(grid.relativeBlockSize(level)) :
-					codec.decode(existingReadData, gridPos).getData();
+			final RawShard shard = getRawShard(existingReadData, codec, gridPos, level);
 			for (NestedPosition pos : region.containedNestedPositions(position)) {
 				final boolean nestedWriteFully = writeFully || region.fullyContains(pos);
 				final long[] elementPos = pos.relative();
@@ -377,25 +417,33 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 	@Override
 	public boolean deleteBlock(final PositionValueAccess pva, final long[] gridPosition) throws N5IOException {
-		final NestedPosition position = grid.nestedPosition(gridPosition);
-		final long[] key = position.key();
 		if (grid.numLevels() == 1) {
 			// for non-sharded dataset, don't bother getting the value, just remove the key.
-			try {
-				return pva.remove(key);
-			} catch (final Exception e) {
-				throw new N5Exception("The shard at " + Arrays.toString(key) + " could not be deleted.", e);
-			}
+			return pva.remove(gridPosition);
 		} else {
-			final ReadData existingData = pva.get(key); // TODO: use getExistingReadData() instead !?
-			final ReadData modifiedData = deleteBlockRecursive(existingData, position, grid.numLevels() - 1);
-			if (existingData != null && modifiedData == null) {
+			final NestedPosition position = grid.nestedPosition(gridPosition);
+			final long[] key = position.key();
+			final ReadData modifiedData;
+			try (final VolatileReadData existingData = pva.get(key)) {
+				modifiedData = deleteBlockRecursive(existingData, position, grid.numLevels() - 1);
+				if (modifiedData == existingData) {
+					// nothing changed, the blocks we wanted to delete didn't exist anyway
+					return false;
+				} else if (modifiedData != null) {
+					// Here, we are about to write the shard data, but without the block to be deleted.
+					// Need to make sure that the read operations happen now before pva.set acquires a write lock
+					modifiedData.materialize();
+				}
+			} catch (final N5NoSuchKeyException e) {
+				// the key didn't exist (as we found out when lazy-reading the index)
+				// so nothing changed, the blocks we wanted to delete didn't exist anyway
+				return false;
+			}
+			if (modifiedData == null) {
 				return pva.remove(key);
-			} else if (modifiedData != existingData) {
+			} else {
 				pva.set(key, modifiedData);
 				return true;
-			} else {
-				return false;
 			}
 		}
 	}
@@ -403,7 +451,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	private ReadData deleteBlockRecursive(
 			final ReadData existingReadData,
 			final NestedPosition position,
-			final int level) {
+			final int level) throws N5NoSuchKeyException {
 		if (level == 0 || existingReadData == null) {
 			return null;
 		} else {
@@ -444,37 +492,51 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	@Override
 	public boolean deleteBlocks(final PositionValueAccess pva, final List<long[]> gridPositions) throws N5IOException {
 
-		boolean deleted = false;
-
 		// for non-sharded datasets, just delete the blocks individually
 		if (grid.numLevels() == 1) {
+			boolean deleted = false;
 			for (long[] pos : gridPositions) {
-				deleted |= deleteBlock(pva, pos);
+				deleted |= pva.remove(pos);
+			}
+			return deleted;
+		} else {
+
+			// Create a list of DataBlockRequests and sort it such that requests
+			// from the same (nested) shard are grouped contiguously.
+			// Despite the name, createReadRequests() works for delete requests as well ...
+			final DataBlockRequests<T> requests = createReadRequests(gridPositions);
+			requests.removeDuplicates();
+
+			boolean deleted = false;
+			final List<DataBlockRequests<T>> split = requests.split();
+			for (final DataBlockRequests<T> subRequests : split) {
+				final boolean writeFully = subRequests.coversShard();
+				final long[] key = subRequests.relativeGridPosition();
+				final ReadData modifiedData;
+				try (final VolatileReadData existingData = writeFully ? null : pva.get(key)) {
+					modifiedData = deleteBlocksRecursive(existingData, subRequests);;
+					if (modifiedData == existingData) {
+						// nothing changed, the blocks we wanted to delete didn't exist anyway
+						continue;
+					} else if (existingData != null && modifiedData != null) {
+						// Here, we are about to write the shard data, but without the block to be deleted.
+						// Need to make sure that the read operations happen now before pva.set acquires a write lock
+						modifiedData.materialize();
+					}
+				} catch (final N5NoSuchKeyException e) {
+					// the key didn't exist (as we found out when lazy-reading the index)
+					// so nothing changed, the blocks we wanted to delete didn't exist anyway
+					continue;
+				}
+				if (modifiedData == null) {
+					deleted |= pva.remove(key);
+				} else {
+					pva.set(key, modifiedData);
+					deleted = true;
+				}
 			}
 			return deleted;
 		}
-
-		// Create a list of DataBlockRequests and sort it such that requests
-		// from the same (nested) shard are grouped contiguously.
-		// Despite the name, createReadRequests() works for delete requests as well ...
-		final DataBlockRequests<T> requests = createReadRequests(gridPositions);
-		requests.removeDuplicates();
-
-		final List<DataBlockRequests<T>> split = requests.split();
-		for (final DataBlockRequests<T> subRequests : split) {
-			final boolean writeFully = subRequests.coversShard();
-			final long[] key = subRequests.relativeGridPosition();
-			final ReadData existingData = writeFully ? null : getExistingReadData(pva, key);
-			final ReadData modifiedData = deleteBlocksRecursive(existingData, subRequests);
-			if (existingData != null && modifiedData == null) {
-				deleted |= pva.remove(key);
-			} else if (modifiedData != existingData) {
-				pva.set(key, modifiedData);
-				deleted = true;
-			}
-		}
-
-		return deleted;
 	}
 
 	/**
@@ -736,18 +798,29 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	//
 	// -- helpers -------------------------------------------------------------
 
-	private static ReadData getExistingReadData(final PositionValueAccess pva, final long[] key) {
-		// need to read the shard anyway, and currently (Sept 24 2025)
-		// have no way to tell if the key exists from what is in this method except to attempt
-		// to materialize and catch the N5NoSuchKeyException
-		try {
-			ReadData existingData = pva.get(key);
-			if (existingData != null)
-				existingData.materialize();
-			return existingData;
-		} catch (N5NoSuchKeyException e) {
-			return null;
+	/**
+	 * If {@code existingReadData != null} try to decode it into a RawShard.
+	 * Otherwise, or if this fails because we find that {@code existingReadData}
+	 * lazily points to non-existent data, return a new empty RawShard.
+	 *
+	 * @param existingReadData data to decode or null
+	 * @param codec shard codec
+	 * @param gridPos position of the shard on the shard grid of the given level
+	 * @param level level of the shard
+	 * @return the decode shard (or a new empty shard)
+	 */
+	private RawShard getRawShard(
+			final ReadData existingReadData,
+			final BlockCodec<RawShard> codec,
+			final long[] gridPos,
+			final int level) {
+		if (existingReadData != null) {
+			try {
+				return codec.decode(existingReadData, gridPos).getData();
+			} catch (N5NoSuchKeyException ignored) {
+			}
 		}
+		return new RawShard(grid.relativeBlockSize(level));
 	}
 
 	/**
