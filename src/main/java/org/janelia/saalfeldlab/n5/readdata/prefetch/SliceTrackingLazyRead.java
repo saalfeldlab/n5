@@ -9,9 +9,9 @@ import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
-public class SliceTrackingLazyRead implements LazyRead {
+public abstract class SliceTrackingLazyRead implements LazyRead {
 
-	private static class Slice implements Range {
+	protected static class Slice implements Range {
 
 		// Offset and length in the delegate
 		private final long offset;
@@ -42,7 +42,7 @@ public class SliceTrackingLazyRead implements LazyRead {
 		}
 	}
 
-	private final List<Slice> slices = new ArrayList<>();
+	protected final List<Slice> slices = new ArrayList<>();
 
 	/**
 	 * The {@code LazyRead} providing our data.
