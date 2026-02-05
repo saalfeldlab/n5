@@ -28,6 +28,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.Closeable;
 import java.nio.file.StandardOpenOption;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
@@ -81,12 +82,20 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public VolatileReadData createReadData(final String normalPath) {
+	public VolatileReadData createReadData(final String normalPath) throws N5IOException {
+		Path path = fileSystem.getPath(normalPath);
+		FileLazyRead fileLazyRead = null;
 		try {
-			return VolatileReadData.from(new FileLazyRead(fileSystem.getPath(normalPath)));
-		} catch (N5NoSuchKeyException e) {
-			return null;
+            fileLazyRead = new FileLazyRead(path);
+        }  catch (N5NoSuchKeyException e) {
+			throw e;
+		} catch (N5IOException e) {
+			/* Try to create without locking, and immediately materialize */
+			fileLazyRead = new FileLazyRead(path, false);
+			fileLazyRead.materialize(0, 0);
 		}
+
+		return VolatileReadData.from(fileLazyRead);
 	}
 
 	@Override
@@ -501,12 +510,25 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 	private static class FileLazyRead implements LazyRead {
 
+		private static final Closeable NO_OP = () -> { };
+
 		private final Path path;
-		private LockedFileChannel lock;
+		private Closeable lock;
 
 		FileLazyRead(final Path path) {
+			this(path, true);
+		}
+
+		FileLazyRead(final Path path, final Boolean requireLock ) {
 	        this.path = path;
-			lock = lockForReading(path);
+			try {
+				lock = lockForReading(path);
+			} catch (Exception e) {
+				if (requireLock) {
+					throw e;
+				}
+				lock = NO_OP;
+			}
 	    }
 
 		@Override
