@@ -43,8 +43,7 @@ import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
  * Key value read primitives used by {@link N5KeyValueReader}
  * implementations. This interface implements a subset of access primitives
  * provided by {@link FileSystem} to reduce the implementation burden for
- * backends
- * lacking a {@link FileSystem} implementation (such as AWS-S3).
+ * backends lacking a {@link FileSystem} implementation (such as AWS-S3).
  *
  * @author Stephan Saalfeld
  */
@@ -262,7 +261,22 @@ public interface KeyValueAccess {
 	 * @throws N5IOException
 	 * 		if an error occurs
 	 */
-	VolatileReadData createReadData( final String normalPath ) throws N5IOException;
+	VolatileReadData createReadData(final String normalPath) throws N5IOException;
+
+	/**
+	 * Write {@code data} to the given {@code normalPath}.
+	 * <p>
+	 * Existing data at {@code normalPath} will be overridden.
+	 *
+	 * @param normalPath
+	 * 		is expected to be in normalized form, no further efforts are made to normalize it
+	 * @param data
+	 * 		the data to write
+	 *
+	 * @throws N5IOException
+	 * 		if an error occurs
+	 */
+	void write(String normalPath, ReadData data) throws N5IOException;
 
 	/**
 	 * Create a lock on a path for reading. This isn't meant to be kept
@@ -348,5 +362,4 @@ public interface KeyValueAccess {
 	 *            if an error occurs during deletion
 	 */
 	void delete( final String normalPath ) throws N5IOException;
-
 }

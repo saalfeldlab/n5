@@ -90,6 +90,16 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
+	public void write(final String normalPath, final ReadData data) throws N5IOException {
+		final Path path = fileSystem.getPath(normalPath);
+		try (final LockedFileChannel channel = lockForWriting(path)) {
+			data.writeTo(channel.newOutputStream());
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
+	}
+
+	@Override
 	public LockedFileChannel lockForReading(final String normalPath) throws N5IOException {
 
 		return lockForReading(fileSystem.getPath(normalPath));
@@ -490,7 +500,6 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	private static class FileLazyRead implements LazyRead {
-
 
 		private final Path path;
 		private LockedFileChannel lock;
