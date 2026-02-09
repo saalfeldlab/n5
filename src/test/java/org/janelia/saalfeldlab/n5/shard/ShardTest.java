@@ -73,6 +73,7 @@ import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.kva.AggregatingSliceTrackingLazyRead;
 import org.janelia.saalfeldlab.n5.readdata.kva.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.kva.LazyReadData;
 import org.janelia.saalfeldlab.n5.readdata.kva.VolatileReadData;
@@ -676,6 +677,22 @@ public class ShardTest {
 			writer.readShard(dataset, datasetAttributes, new long[] {0,0});
 			// one for the index, one for each of the four blocks
 			assertEquals(5, writer.getNumMaterializeCalls());
+
+
+			/**
+			 *  Aggregate read calls
+			 */
+			writer.tkva.aggregate = true;
+			writer.resetNumMaterializeCalls();
+			writer.readBlocks(dataset, datasetAttributes, ptList);
+
+			// one for the index, one that covers ALL the blocks)
+			assertEquals(2, writer.getNumMaterializeCalls());
+
+			writer.resetNumMaterializeCalls();
+			writer.readShard(dataset, datasetAttributes, new long[] {0,0});
+			// one for the index, one that covers ALL the blocks
+			assertEquals(2, writer.getNumMaterializeCalls());
 		}
 	}
 
@@ -732,10 +749,12 @@ public class ShardTest {
         private int numMaterializeCalls = 0;
         private int numIsFileCalls = 0;
         private long totalBytesRead = 0;
-
+        public boolean aggregate = false;
+        
         protected TrackingFileSystemKeyValueAccess(FileSystem fileSystem) {
             super(fileSystem);
         }
+
 
         @Override
         public boolean isFile(String normalPath) {
@@ -746,7 +765,15 @@ public class ShardTest {
         @Override
         public VolatileReadData createReadData(final String normalPath) {
 			try {
-				return new LazyReadData(new TrackingFileLazyRead(fileSystem.getPath(normalPath)));
+				if(aggregate) {
+					return new LazyReadData(
+						new AggregatingSliceTrackingLazyRead(
+								new TrackingFileLazyRead(fileSystem.getPath(normalPath))));
+				} else {
+					return new LazyReadData(
+							new TrackingFileLazyRead(fileSystem.getPath(normalPath)));
+				}
+
 			} catch (N5NoSuchKeyException e) {
 //				return new LazyReadData(new NoSuchKeyLazyRead());
 				return null;
