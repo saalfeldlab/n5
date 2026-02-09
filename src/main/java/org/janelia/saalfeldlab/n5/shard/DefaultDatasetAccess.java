@@ -30,6 +30,7 @@ package org.janelia.saalfeldlab.n5.shard;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -51,8 +52,10 @@ import org.janelia.saalfeldlab.n5.N5Writer.DataBlockSupplier;
 import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.StringDataBlock;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
+import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.kva.VolatileReadData;
+import org.janelia.saalfeldlab.n5.readdata.segment.Segment;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedPosition;
 import org.janelia.saalfeldlab.n5.util.SubArrayCopy;
@@ -160,6 +163,15 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 			// TODO: collect all the elementPos that we will need and prefetch
 			//       Probably best to add a prefetch method to RawShard?
+
+			// Here's an attempt at that.
+			// Don't love that we have to build a list of positions 
+			// Consider making DataBlockRequest package private and passing them directly
+			final ArrayList<long[]> positions = new ArrayList<>();
+			for (final DataBlockRequest<T> request : requests) {
+				positions.add(request.position.relative(0));
+			}
+			shard.prefetch(positions);
 
 			for (final DataBlockRequest<T> request : requests) {
 				final long[] elementPos = request.position.relative(0);
@@ -1031,7 +1043,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	 * Construct {@code DataBlockRequests} from a list of level-0 grid positions
 	 * for reading.
 	 * <p>
-	 * The nesting level ot the returned {@code DataBlockRequests} is {@code
+	 * The nesting level of the returned {@code DataBlockRequests} is {@code
 	 * grid.numLevels()}, that is level of the highest-order shard + 1. This
 	 * implies that the requests are not guaranteed to be in the same shard (at
 	 * any level. {@link DataBlockRequests#split() Splitting} the {@code
