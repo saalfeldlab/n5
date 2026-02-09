@@ -28,6 +28,11 @@
  */
 package org.janelia.saalfeldlab.n5.shard;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.segment.Segment;
 import org.janelia.saalfeldlab.n5.readdata.segment.SegmentedReadData;
@@ -86,4 +91,16 @@ public class RawShard {
 		final Segment segment = data == null ? null : SegmentedReadData.wrap(data).segments().get(0);
 		index.set(segment, pos);
 	}
+
+	public void prefetch(List<long[]> positions) {
+
+		final List<Range> ranges = new ArrayList<>(positions.size());
+		for (long[] pos : positions) {
+			final Segment seg = index.get(pos);
+			if (seg != null)
+				ranges.add(sourceData.location(seg));
+		}
+		sourceData.prefetch(ranges);
+	}
+
 }
