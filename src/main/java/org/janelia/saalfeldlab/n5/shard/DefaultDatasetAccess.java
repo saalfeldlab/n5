@@ -148,6 +148,15 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			// TODO: collect all the elementPos that we will need and prefetch
 			//       Probably best to add a prefetch method to RawShard?
 
+			// Here's an attempt at that.
+			// Don't love that we have to build a list of positions
+			// Consider making DataBlockRequest package private and passing them directly
+			final ArrayList<long[]> positions = new ArrayList<>();
+			for (final DataBlockRequest<T> request : requests) {
+				positions.add(request.position.relative(0));
+			}
+			shard.prefetch(positions);
+
 			for (final DataBlockRequest<T> request : requests) {
 				final long[] elementPos = request.position.relative(0);
 				final ReadData elementData = shard.getElementData(elementPos);
@@ -1026,7 +1035,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	 * Construct {@code DataBlockRequests} from a list of level-0 grid positions
 	 * for reading.
 	 * <p>
-	 * The nesting level ot the returned {@code DataBlockRequests} is {@code
+	 * The nesting level of the returned {@code DataBlockRequests} is {@code
 	 * grid.numLevels()}, that is level of the highest-order shard + 1. This
 	 * implies that the requests are not guaranteed to be in the same shard (at
 	 * any level. {@link DataBlockRequests#split() Splitting} the {@code
