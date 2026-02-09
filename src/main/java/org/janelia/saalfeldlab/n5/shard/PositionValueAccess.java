@@ -28,13 +28,10 @@
  */
 package org.janelia.saalfeldlab.n5.shard;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URI;
 
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
-import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -63,6 +60,18 @@ public interface PositionValueAccess {
 	 */
 	VolatileReadData get(long[] key) throws N5Exception.N5IOException;
 
+	/**
+	 * Write the {@code data} for a DataBlock (or shard) to the given position
+	 * in the block grid.
+	 *
+	 * @param key
+	 * 		The grid position of the DataBlock (or shard) to write
+	 * @param data
+	 * 		The data to write
+	 *
+	 * @throws N5Exception.N5IOException
+	 * 		if an error occurs while writing
+	 */
 	void set(long[] key, ReadData data) throws N5Exception.N5IOException;
 
 	boolean exists(long[] key) throws N5Exception.N5IOException;
@@ -104,38 +113,31 @@ public interface PositionValueAccess {
 		 *            to the target data block
 		 * @return the absolute path to the data block ad gridPosition
 		 */
-		protected String absolutePath( final long... gridPosition) {
+		protected String absolutePath(final long... gridPosition) {
 			return kva.compose(uri, normalPath, attributes.relativeBlockPath(gridPosition));
 		}
 
 		@Override
-		public VolatileReadData get(long[] key) throws N5IOException {
+		public VolatileReadData get(final long[] key) throws N5IOException {
 			return kva.createReadData(absolutePath(key));
 		}
 
 		@Override
-		public boolean exists(long[] key) throws N5IOException {
+		public boolean exists(final long[] key) throws N5IOException {
 			return kva.isFile(absolutePath(key));
 		}
 
 		@Override
-		public void set(long[] key, ReadData data) throws N5IOException {
-
+		public void set(final long[] key, final ReadData data) throws N5IOException {
 			if (data == null) {
 				remove(key);
-				return;
-			}
-
-			try ( final LockedChannel ch = kva.lockForWriting(absolutePath(key));
-				  final OutputStream outputStream = ch.newOutputStream();) {
-				data.writeTo(outputStream);
-			} catch (IOException e) {
-				throw new N5IOException(e);
+			} else {
+				kva.write(absolutePath(key), data);
 			}
 		}
 
 		@Override
-		public boolean remove(long[] gridPosition) throws N5IOException {
+		public boolean remove(final long[] gridPosition) throws N5IOException {
 
 			final String key = absolutePath(gridPosition);
 			if (!kva.isFile(key))

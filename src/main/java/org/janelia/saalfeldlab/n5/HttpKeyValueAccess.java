@@ -255,6 +255,12 @@ public class HttpKeyValueAccess implements KeyValueAccess {
 		throw new N5Exception("HttpKeyValueAccess is read-only");
 	}
 
+	@Override
+	public void write(final String normalPath, final ReadData data) throws N5IOException {
+
+		throw new N5Exception("HttpKeyValueAccess is read-only");
+	}
+
 	/**
 	 * List all 'directory'-like children of a path.
 	 * <p>
