@@ -119,7 +119,11 @@ public interface PositionValueAccess {
 
 		@Override
 		public VolatileReadData get(final long[] key) throws N5IOException {
-			return kva.createReadData(absolutePath(key));
+			try {
+				return kva.createReadData(absolutePath(key));
+			} catch (N5Exception.N5NoSuchKeyException e) {
+				return null;
+			}
 		}
 
 		@Override
