@@ -294,7 +294,9 @@ public interface KeyValueAccess {
 	 * @return the locked channel
 	 * @throws N5IOException
 	 *             if a locked channel could not be created
+	 * @deprecated migrate to {@link KeyValueAccess#createReadData(String)}
 	 */
+	@Deprecated
 	LockedChannel lockForReading( final String normalPath ) throws N5IOException;
 
 	/**
@@ -313,7 +315,9 @@ public interface KeyValueAccess {
 	 * @return the locked channel
 	 * @throws N5IOException
 	 *             if a locked channel could not be created
+	 * @deprecated migrate to {@link KeyValueAccess#write(String, ReadData)}
 	 */
+	@Deprecated
 	LockedChannel lockForWriting( final String normalPath ) throws N5IOException;
 
 	/**
