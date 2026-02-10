@@ -69,6 +69,24 @@ import static org.janelia.saalfeldlab.n5.FileKeyLockManager.FILE_LOCK_MANAGER;
  */
 public class FileSystemKeyValueAccess implements KeyValueAccess {
 
+	private static final IoPolicy ioPolicy = getIoPolicy();
+
+	private static IoPolicy getIoPolicy() {
+		String property = System.getProperty("n5.ioPolicy");
+		if (property == null)
+			return FsIoPolicy.atomicWithFallback;
+
+		switch (property) {
+			case "atomic":
+				return new FsIoPolicy.Atomic();
+			case "unsafe":
+				return new FsIoPolicy.Unsafe();
+			case "atomicFallbackUnsafe":
+			default:
+				return FsIoPolicy.atomicWithFallback;
+		}
+	}
+
 	protected final FileSystem fileSystem;
 
 	/**
@@ -83,19 +101,14 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 	@Override
 	public VolatileReadData createReadData(final String normalPath) throws N5IOException {
-		Path path = fileSystem.getPath(normalPath);
-		FileLazyRead fileLazyRead = null;
-		try {
-            fileLazyRead = new FileLazyRead(path);
-        }  catch (N5NoSuchKeyException e) {
-			throw e;
-		} catch (N5IOException e) {
-			/* Try to create without locking, and immediately materialize */
-			fileLazyRead = new FileLazyRead(path, false);
-			fileLazyRead.materialize(0, 0);
-		}
 
-		return VolatileReadData.from(fileLazyRead);
+		try {
+			return ioPolicy.read(normalPath);
+		} catch (final NoSuchFileException e) {
+			throw new N5NoSuchKeyException("No such file", e);
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5IOException("Failed to lock file for reading: " + normalPath, e);
+		}
 	}
 
 	@Override
@@ -105,6 +118,12 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			data.writeTo(channel.newOutputStream());
 		} catch (IOException e) {
 			throw new N5IOException(e);
+		try {
+			ioPolicy.write(normalPath, data);
+		} catch (final NoSuchFileException e) {
+			throw new N5NoSuchKeyException("No such file", e);
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5IOException("Failed to lock file for writing: " + normalPath, e);
 		}
 	}
 
@@ -174,9 +193,9 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		try {
 			return Files.size(path);
 		} catch (NoSuchFileException e) {
-			throw new N5Exception.N5NoSuchKeyException("No such file", e);
+			throw new N5NoSuchKeyException("No such file", e);
 		} catch (IOException | UncheckedIOException e) {
-			throw new N5Exception.N5IOException(e);
+			throw new N5IOException(e);
 		}
 	}
 
@@ -331,17 +350,13 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			final Path path = fileSystem.getPath(normalPath);
 
 			if (Files.isRegularFile(path))
-				try (final LockedChannel channel = lockForWriting(path)) {
-					Files.delete(path);
-				}
+				ioPolicy.delete(normalPath);
 			else {
 				try (final Stream<Path> pathStream = Files.walk(path)) {
 					for (final Iterator<Path> i = pathStream.sorted(Comparator.reverseOrder()).iterator(); i.hasNext();) {
 						final Path childPath = i.next();
 						if (Files.isRegularFile(childPath))
-							try (final LockedChannel channel = lockForWriting(childPath)) {
-								Files.delete(childPath);
-							}
+							ioPolicy.delete(childPath.toString());
 						else
 							tryDelete(childPath);
 					}
@@ -355,7 +370,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	protected static void tryDelete(final Path path) throws IOException {
 
 		try {
-			Files.delete(path);
+			ioPolicy.delete(path.toString());
 		} catch (final DirectoryNotEmptyException e) {
 			/*
 			 * Even though path is expected to be an empty directory, sometimes
@@ -365,7 +380,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			try {
 				/* wait and reattempt */
 				Thread.sleep(100);
-				Files.delete(path);
+				ioPolicy.delete(path.toString());
 			} catch (final InterruptedException ex) {
 				e.printStackTrace();
 				Thread.currentThread().interrupt();
@@ -508,27 +523,23 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		}
 	}
 
-	private static class FileLazyRead implements LazyRead {
+	static class FileLazyRead implements LazyRead {
 
 		private static final Closeable NO_OP = () -> { };
 
 		private final Path path;
 		private Closeable lock;
 
-		FileLazyRead(final Path path) {
+		FileLazyRead(final Path path) throws IOException {
 			this(path, true);
 		}
 
-		FileLazyRead(final Path path, final Boolean requireLock ) {
+		FileLazyRead(final Path path, final boolean requireLock ) throws IOException {
 	        this.path = path;
-			try {
-				lock = lockForReading(path);
-			} catch (Exception e) {
-				if (requireLock) {
-					throw e;
-				}
+			if (requireLock)
+				lock = FILE_LOCK_MANAGER.lockForReading(path);
+			else
 				lock = NO_OP;
-			}
 	    }
 
 		@Override
