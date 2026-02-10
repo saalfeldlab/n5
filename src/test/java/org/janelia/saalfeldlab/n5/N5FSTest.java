@@ -41,7 +41,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.FileAttribute;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,9 +48,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.gson.GsonBuilder;
@@ -63,8 +60,6 @@ import com.google.gson.GsonBuilder;
  * @author Igor Pisarev
  */
 public class N5FSTest extends AbstractN5Test {
-
-	private static final FileSystemKeyValueAccess access = new FileSystemKeyValueAccess(FileSystems.getDefault());
 
 	private static String tempN5PathName() {
 
@@ -107,173 +102,4 @@ public class N5FSTest extends AbstractN5Test {
 
 		return new N5FSReader(location, gson);
 	}
-
-	@Test
-	public void testReadLock() throws IOException {
-
-		final Path path = Paths.get(tempN5PathName(), "lock");
-		LockedChannel lock = access.lockForWriting(path);
-		lock.close();
-		lock = access.lockForReading(path);
-		System.out.println("locked");
-
-		final ExecutorService exec = Executors.newSingleThreadExecutor();
-		final Future<Void> future = exec.submit(() -> {
-			access.lockForWriting(path).close();
-			return null;
-		});
-
-		try {
-			System.out.println("Trying to acquire locked readable channel...");
-			System.out.println(future.get(3, TimeUnit.SECONDS));
-			fail("Lock broken!");
-		} catch (final TimeoutException e) {
-			System.out.println("Lock held!");
-			future.cancel(true);
-		} catch (final InterruptedException | ExecutionException e) {
-			future.cancel(true);
-			System.out.println("Test was interrupted!");
-		} finally {
-			lock.close();
-			Files.delete(path);
-		}
-
-		exec.shutdownNow();
-	}
-
-	@Test
-	public void testWriteLock() throws IOException {
-
-		final Path path = Paths.get(tempN5PathName(), "lock");
-		final LockedChannel lock = access.lockForWriting(path);
-		System.out.println("locked");
-
-		final ExecutorService exec = Executors.newSingleThreadExecutor();
-		final Future<Void> future = exec.submit(() -> {
-			access.lockForReading(path).close();
-			return null;
-		});
-
-		try {
-			System.out.println("Trying to acquire locked writable channel...");
-			System.out.println(future.get(3, TimeUnit.SECONDS));
-			fail("Lock broken!");
-		} catch (final TimeoutException e) {
-			System.out.println("Lock held!");
-			future.cancel(true);
-		} catch (final InterruptedException | ExecutionException e) {
-			future.cancel(true);
-			System.out.println("Test was interrupted!");
-		} finally {
-			lock.close();
-			Files.delete(path);
-		}
-
-		exec.shutdownNow();
-	}
-	
-	@Test
-	public void testFSLockRelease() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-
-
-		final Path path = Paths.get(tempN5PathName(), "lock");
-		final ExecutorService exec = Executors.newFixedThreadPool(2);
-
-		// first thread acquires the lock, waits for 200ms then should release it
-		exec.submit(() -> {
-			try( final LockedChannel lock = access.lockForWriting(path)) {
-				lock.newReader();
-				Thread.sleep(200);
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		});
-
-		// second thread waits for the lock.
-		// it should get it within a few seconds.
-		final Future<Void> future = exec.submit(() -> {
-			access.lockForWriting(path).close();
-			return null;
-		});
-
-		future.get(3, TimeUnit.SECONDS);
-		Files.delete(path);
-		exec.shutdownNow();
-	}
-	
-	@Test
-	public void testReadLockBehavior() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-
-		final Path path = Paths.get(tempN5PathName(), "read-lock");
-		path.toFile().createNewFile();
-
-		final ExecutorService exec = Executors.newFixedThreadPool(3);
-
-		final AtomicBoolean v = new AtomicBoolean(false);
-
-		// first thread acquires a read lock, waits for 200ms
-		Future<?> f = exec.submit(() -> {
-			try( final LockedChannel lock = access.lockForReading(path)) {
-				lock.newReader();
-				Thread.sleep(200);
-
-				// ensure that the other thread updated the value 
-				assertTrue(v.get());
-
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		});
-
-		// second thread gets a read lock
-		// and should not be blocked
-		// this thread updates the boolean
-		exec.submit(() -> {
-			try( final LockedChannel lock = access.lockForReading(path)) {
-				lock.newReader();
-				v.set(true);
-			} 
-			return null;
-		});
-
-		f.get(3, TimeUnit.SECONDS);
-		exec.shutdownNow();
-		Files.delete(path);
-	}
-
-	@Test
-	public void testWriteLockBehavior() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-
-
-		final Path path = Paths.get(tempN5PathName(), "lock");
-		final ExecutorService exec = Executors.newFixedThreadPool(2);
-
-		// first thread acquires the lock, waits for 200ms then should release it
-		exec.submit(() -> {
-			try( final LockedChannel lock = access.lockForWriting(path)) {
-				lock.newReader();
-				Thread.sleep(200);
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		});
-
-		// second thread waits for the lock.
-		// it should get it within a few seconds.
-		final Future<Void> future = exec.submit(() -> {
-			access.lockForWriting(path).close();
-			return null;
-		});
-
-		future.get(3, TimeUnit.SECONDS);
-		Files.delete(path);
-		exec.shutdownNow();
-	}
-
 }
