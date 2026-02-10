@@ -28,26 +28,16 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.Closeable;
-import java.nio.file.StandardOpenOption;
+import java.io.*;
+import java.nio.file.*;
+
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.DirectoryNotEmptyException;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystemException;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -113,11 +103,6 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 	@Override
 	public void write(final String normalPath, final ReadData data) throws N5IOException {
-		final Path path = fileSystem.getPath(normalPath);
-		try (final LockedFileChannel channel = lockForWriting(path)) {
-			data.writeTo(channel.newOutputStream());
-		} catch (IOException e) {
-			throw new N5IOException(e);
 		try {
 			ioPolicy.write(normalPath, data);
 		} catch (final NoSuchFileException e) {

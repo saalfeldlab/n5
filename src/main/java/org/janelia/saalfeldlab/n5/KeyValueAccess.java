@@ -249,14 +249,15 @@ public interface KeyValueAccess {
 	 * If supported by this KeyValueAccess implementation, partial reads are
 	 * possible by {@link ReadData#slice slicing} the returned {@code ReadData}.
 	 * <p>
-	 * If the requested key does not exist, either {@code null} is returned or a
-	 * lazy {@code VolatileReadData} that will throw {@code N5NoSuchKeyException}
-	 * when trying to materialize.
+	 * The resulting {@code VolatileReadData} is potentially lazy. If the requested
+	 * key does not exist, it will throw {@code N5NoSuchKeyException}. Whether
+	 * the exception is thrown when {@link KeyValueAccess#createReadData(String)}] is called,
+	 * or when trying to materialize the {@code VolatileReadData} is implementation dependent.
 	 *
 	 * @param normalPath
 	 * 		is expected to be in normalized form, no further efforts are made to normalize it
 	 *
-	 * @return a ReadData or null
+	 * @return a ReadData
 	 *
 	 * @throws N5IOException
 	 * 		if an error occurs
