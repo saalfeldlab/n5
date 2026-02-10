@@ -69,7 +69,7 @@ public class N5FSReader extends N5KeyValueReader {
 			throws N5Exception {
 
 		super(
-				new FileSystemKeyValueAccess(FileSystems.getDefault()),
+				new FileSystemKeyValueAccess(),
 				basePath,
 				gsonBuilder,
 				cacheMeta);
