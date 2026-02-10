@@ -77,18 +77,6 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		}
 	}
 
-	protected final FileSystem fileSystem;
-
-	/**
-	 * Opens a {@link FileSystemKeyValueAccess} with a {@link FileSystem}.
-	 *
-	 * @param fileSystem the file system
-	 */
-	public FileSystemKeyValueAccess(final FileSystem fileSystem) {
-
-		this.fileSystem = fileSystem;
-	}
-
 	@Override
 	public VolatileReadData createReadData(final String normalPath) throws N5IOException {
 
@@ -116,14 +104,14 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	@Deprecated
 	public LockedFileChannel lockForReading(final String normalPath) throws N5IOException {
 
-		return lockForReading(fileSystem.getPath(normalPath));
+		return lockForReading(Paths.get(normalPath));
 	}
 
 	@Override
 	@Deprecated
 	public LockedChannel lockForWriting(final String normalPath) throws N5IOException {
 
-		return lockForWriting(fileSystem.getPath(normalPath));
+		return lockForWriting(Paths.get(normalPath));
 	}
 
 	@Deprecated
@@ -153,28 +141,28 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	@Override
 	public boolean isDirectory(final String normalPath) {
 
-		final Path path = fileSystem.getPath(normalPath);
+		final Path path = Paths.get(normalPath);
 		return Files.isDirectory(path);
 	}
 
 	@Override
 	public boolean isFile(final String normalPath) {
 
-		final Path path = fileSystem.getPath(normalPath);
+		final Path path = Paths.get(normalPath);
 		return Files.isRegularFile(path);
 	}
 
 	@Override
 	public boolean exists(final String normalPath) {
 
-		final Path path = fileSystem.getPath(normalPath);
+		final Path path = Paths.get(normalPath);
 		return Files.exists(path);
 	}
 
 	@Override
 	public long size(final String normalPath) {
 
-		return size(fileSystem.getPath(normalPath));
+		return size(Paths.get(normalPath));
 	}
 
 	protected static long size(final Path path) {
@@ -191,7 +179,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	@Override
 	public String[] listDirectories(final String normalPath) throws N5IOException {
 
-		final Path path = fileSystem.getPath(normalPath);
+		final Path path = Paths.get(normalPath);
 		try (final Stream<Path> pathStream = Files.list(path)) {
 			return pathStream
 					.filter(Files::isDirectory)
@@ -207,7 +195,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	@Override
 	public String[] list(final String normalPath) throws N5IOException {
 
-		final Path path = fileSystem.getPath(normalPath);
+		final Path path = Paths.get(normalPath);
 		try (final Stream<Path> pathStream = Files.list(path)) {
 			return pathStream
 					.map(a -> path.relativize(a).toString())
@@ -222,8 +210,9 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	@Override
 	public String[] components(final String path) {
 
-		final Path fsPath = fileSystem.getPath(path);
+		final Path fsPath = Paths.get(path);
 		final Path root = fsPath.getRoot();
+		String separator = root.getFileSystem().getSeparator();
 		final String[] components;
 		int o;
 		if (root == null) {
@@ -239,7 +228,6 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			String name = fsPath.getName(i - o).toString();
 			/* Preserve trailing slash on final component if present*/
 			if (i == components.length - 1) {
-				final String separator = fileSystem.getSeparator();
 				final String trailingSeparator = path.endsWith(separator) ? separator : path.endsWith("/") ? "/" : "";
 				name += trailingSeparator;
 			}
@@ -251,7 +239,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	@Override
 	public String parent(final String path) {
 
-		final Path parent = fileSystem.getPath(path).getParent();
+		final Path parent = Paths.get(path).getParent();
 		if (parent == null)
 			return null;
 		else
@@ -261,8 +249,8 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	@Override
 	public String relativize(final String path, final String base) {
 
-		final Path basePath = fileSystem.getPath(base);
-		return basePath.relativize(fileSystem.getPath(path)).toString();
+		final Path basePath = Paths.get(base);
+		return basePath.relativize(Paths.get(path)).toString();
 	}
 
 	/**
@@ -277,7 +265,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	@Override
 	public String normalize(final String path) {
 
-		return fileSystem.getPath(path).normalize().toString();
+		return Paths.get(path).normalize().toString();
 	}
 
 	@Override
@@ -300,8 +288,8 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		if (components == null || components.length == 0)
 			return null;
 		if (components.length == 1)
-			return fileSystem.getPath(components[0]).toString();
-		return fileSystem.getPath(components[0], Arrays.copyOfRange(components, 1, components.length)).normalize().toString();
+			return Paths.get(components[0]).toString();
+		return Paths.get(components[0], Arrays.copyOfRange(components, 1, components.length)).normalize().toString();
 	}
 
 	@Override public String compose(URI uri, String... components) {
@@ -324,7 +312,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public void createDirectories(final String normalPath) throws N5IOException {
 
 		try {
-			createDirectories(fileSystem.getPath(normalPath));
+			createDirectories(Paths.get(normalPath));
 		} catch (NoSuchFileException e) {
 			throw new N5NoSuchKeyException("No such file", e);
 		} catch (IOException | UncheckedIOException e) {
@@ -336,13 +324,13 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public void delete(final String normalPath) throws N5IOException {
 
 		try {
-			final Path path = fileSystem.getPath(normalPath);
+			final Path path = Paths.get(normalPath);
 
 			if (Files.isRegularFile(path))
 				ioPolicy.delete(normalPath);
 			else {
 				try (final Stream<Path> pathStream = Files.walk(path)) {
-					for (final Iterator<Path> i = pathStream.sorted(Comparator.reverseOrder()).iterator(); i.hasNext();) {
+					for (final Iterator<Path> i = pathStream.sorted(Comparator.reverseOrder()).iterator(); i.hasNext(); ) {
 						final Path childPath = i.next();
 						if (Files.isRegularFile(childPath))
 							ioPolicy.delete(childPath.toString());
