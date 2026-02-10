@@ -37,12 +37,7 @@ import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -691,7 +686,7 @@ public class ShardTest {
         final TrackingFileSystemKeyValueAccess tkva;
         public TrackingN5Writer(String basePath) {
 
-            super( new TrackingFileSystemKeyValueAccess(FileSystems.getDefault()), basePath, new GsonBuilder(), false);
+            super( new TrackingFileSystemKeyValueAccess(), basePath, new GsonBuilder(), false);
             tkva = (TrackingFileSystemKeyValueAccess)getKeyValueAccess();
         }
 
@@ -732,8 +727,8 @@ public class ShardTest {
         private int numIsFileCalls = 0;
         private long totalBytesRead = 0;
 
-        protected TrackingFileSystemKeyValueAccess(FileSystem fileSystem) {
-            super(fileSystem);
+        protected TrackingFileSystemKeyValueAccess() {
+            super();
         }
 
         @Override
@@ -745,7 +740,7 @@ public class ShardTest {
         @Override
         public VolatileReadData createReadData(final String normalPath) {
 			try {
-				return VolatileReadData.from(new TrackingFileLazyRead(fileSystem.getPath(normalPath)));
+				return VolatileReadData.from(new TrackingFileLazyRead(Paths.get(normalPath)));
 			} catch (N5NoSuchKeyException e) {
 //				return VolatileReadData.from(new NoSuchKeyLazyRead());
 				return null;

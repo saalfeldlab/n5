@@ -57,7 +57,7 @@ public class FileSystemKeyValueAccessTest extends AbstractKeyValueAccessTest {
 
 	private static String separator = FileSystems.getDefault().getSeparator();
 
-	private static final FileSystemKeyValueAccess fileSystemKva = new FileSystemKeyValueAccess(FileSystems.getDefault());
+	private static final FileSystemKeyValueAccess fileSystemKva = new FileSystemKeyValueAccess();
 	@Override
 	protected KeyValueAccess newKeyValueAccess(URI root) {
 

@@ -109,7 +109,7 @@ public class ReadDataBenchmarks {
 	public void setup() throws IOException {
 
 		random = new Random();
-		kva = new FileSystemKeyValueAccess(FileSystems.getDefault());
+		kva = new FileSystemKeyValueAccess();
 
 		basePath = Files.createTempDirectory("ReadDataBenchmark-");
 		tmpPaths = new ArrayList<>();

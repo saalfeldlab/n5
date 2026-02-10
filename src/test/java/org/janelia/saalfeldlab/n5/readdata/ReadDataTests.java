@@ -113,7 +113,7 @@ public class ReadDataTests {
 			os.write(data);
 		}
 
-		try( final VolatileReadData readData = new FileSystemKeyValueAccess(FileSystems.getDefault())
+		try( final VolatileReadData readData = new FileSystemKeyValueAccess()
 				.createReadData(tmpF.getAbsolutePath())) {
 
 			assertEquals("file read data length", -1, readData.length());
