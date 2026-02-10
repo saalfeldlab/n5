@@ -212,7 +212,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 		final Path fsPath = Paths.get(path);
 		final Path root = fsPath.getRoot();
-		String separator = root.getFileSystem().getSeparator();
+		final String separator = fsPath.getFileSystem().getSeparator();
 		final String[] components;
 		int o;
 		if (root == null) {
