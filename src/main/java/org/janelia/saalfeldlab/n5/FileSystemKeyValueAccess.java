@@ -113,17 +113,20 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
+	@Deprecated
 	public LockedFileChannel lockForReading(final String normalPath) throws N5IOException {
 
 		return lockForReading(fileSystem.getPath(normalPath));
 	}
 
 	@Override
+	@Deprecated
 	public LockedChannel lockForWriting(final String normalPath) throws N5IOException {
 
 		return lockForWriting(fileSystem.getPath(normalPath));
 	}
 
+	@Deprecated
 	protected static LockedFileChannel lockForReading(final Path path) throws N5IOException {
 
 		try {
@@ -135,6 +138,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		}
 	}
 
+	@Deprecated
 	static LockedFileChannel lockForWriting(final Path path) throws N5IOException {
 
 		try {
