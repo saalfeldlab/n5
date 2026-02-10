@@ -351,6 +351,8 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 					}
 				}
 			}
+		} catch (NoSuchFileException ignore) {
+			/* It doesn't exist; that's sufficient for us to not complain on a `delete` call */
 		} catch (IOException | UncheckedIOException e) {
 			throw new N5IOException("Failed to delete file at " + normalPath, e);
 		}
