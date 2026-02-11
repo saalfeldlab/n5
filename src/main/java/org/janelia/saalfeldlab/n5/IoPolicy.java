@@ -5,7 +5,7 @@ import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 import java.io.IOException;
 
-interface IoPolicy {
+public interface IoPolicy {
 
     void write(String key, ReadData readData) throws IOException;
 
