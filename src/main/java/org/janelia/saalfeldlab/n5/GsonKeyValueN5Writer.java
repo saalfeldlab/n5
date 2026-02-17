@@ -28,8 +28,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ import com.google.gson.JsonSyntaxException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 
 import com.google.gson.Gson;
@@ -97,9 +99,14 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final String normalGroupPath,
 			final JsonElement attributes) throws N5Exception {
 
-		try (final LockedChannel lock = getKeyValueAccess().lockForWriting(absoluteAttributesPath(normalGroupPath))) {
-			GsonUtils.writeAttributes(lock.newWriter(), attributes, getGson());
-		} catch (final IOException | UncheckedIOException | N5IOException e) {
+		final ReadData newAttributesReadData = ReadData.from(os -> {
+			final OutputStreamWriter writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
+			GsonUtils.writeAttributes(writer, attributes, getGson());
+		});
+
+		try {
+			getKeyValueAccess().write(absoluteAttributesPath(normalGroupPath), newAttributesReadData);
+		} catch (UncheckedIOException | N5IOException e) {
 			throw new N5Exception.N5IOException("Failed to write attributes into " + normalGroupPath, e);
 		}
 	}
