@@ -28,6 +28,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+
 public class N5Exception extends RuntimeException {
 
 	public N5Exception() {
@@ -59,7 +62,7 @@ public class N5Exception extends RuntimeException {
 		super(message, cause, enableSuppression, writableStackTrace);
 	}
 
-	public static class N5IOException extends N5Exception {
+	public static class N5IOException extends N5Exception{
 
 		public N5IOException(final String message) {
 
@@ -170,6 +173,34 @@ public class N5Exception extends RuntimeException {
 		}
 
 		protected N5JsonParseException(
+				final String message,
+				final Throwable cause,
+				final boolean enableSuppression,
+				final boolean writableStackTrace) {
+
+			super(message, cause, enableSuppression, writableStackTrace);
+		}
+	}
+
+
+	public static class N5ConcurrentModificationException extends N5IOException {
+
+		public N5ConcurrentModificationException(final String message) {
+
+			super(message);
+		}
+
+		public N5ConcurrentModificationException(final String message, final Throwable cause) {
+
+			super(message, cause);
+		}
+
+		public N5ConcurrentModificationException(final Throwable cause) {
+
+			super(cause);
+		}
+
+		protected N5ConcurrentModificationException(
 				final String message,
 				final Throwable cause,
 				final boolean enableSuppression,
