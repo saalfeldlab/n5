@@ -32,12 +32,15 @@ import org.apache.commons.io.IOUtils;
 import org.janelia.saalfeldlab.n5.HttpKeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.util.function.Function;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
@@ -58,16 +61,9 @@ public class HttpKeyValueAccessTest {
 		final String absolutePath = kva.compose(baseUrl, key);
 		assumeTrue(kva.exists(absolutePath));
 
-		try (LockedChannel ch = kva.lockForReading(absolutePath)) {
-
-			final InputStream is = ch.newInputStream();
-
-			final String attributes = IOUtils.toString(is, Charset.defaultCharset());
-			assertEquals(expectedAttributes, attributes);
-
-			is.close();
-
-		} catch (IOException e) {
+        try (VolatileReadData data = kva.createReadData(absolutePath)) {
+			IOUtils.toString(data.inputStream(), Charset.defaultCharset());
+        } catch (IOException e) {
 			// not correct to fail for an IO exception
 			e.printStackTrace();
 		}
@@ -78,7 +74,7 @@ public class HttpKeyValueAccessTest {
 
 		final HttpKeyValueAccess kva = new HttpKeyValueAccess();
 		assertThrows(N5Exception.class, () -> kva.delete("foo"));
-		assertThrows(N5Exception.class, () -> kva.lockForWriting("bar"));
+		assertThrows(N5Exception.class, () -> kva.write("bar", ReadData.from(os -> {})));
 	}
 
 }

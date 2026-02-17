@@ -40,14 +40,8 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.util.Arrays;
 
-import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
-import org.janelia.saalfeldlab.n5.KeyValueAccess;
-import org.janelia.saalfeldlab.n5.LockedChannel;
-import org.janelia.saalfeldlab.n5.N5FSReader;
-import org.janelia.saalfeldlab.n5.N5FSWriter;
-import org.janelia.saalfeldlab.n5.RawCompression;
+import org.janelia.saalfeldlab.n5.*;
+import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.junit.Test;
 
 import com.google.gson.JsonElement;
@@ -148,13 +142,10 @@ public class CompatibilityTest {
 
 	private byte[] read(KeyValueAccess kva, String path) {
 
-		int N = (int)kva.size(path);
-		byte[] data = new byte[N];
-		try (LockedChannel ch = kva.lockForReading(path);
-				InputStream is = ch.newInputStream();) {
-
-			is.read(data);
-		} catch (IOException e) {
+		byte[] data;
+		try (VolatileReadData readData = kva.createReadData(path)) {
+			data = readData.allBytes();
+		} catch (N5Exception.N5IOException e) {
 			return null;
 		}
 		return data;
