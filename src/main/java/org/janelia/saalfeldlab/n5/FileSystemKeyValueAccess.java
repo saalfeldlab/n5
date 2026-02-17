@@ -34,8 +34,6 @@ import java.nio.file.*;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.attribute.FileAttribute;
@@ -45,10 +43,7 @@ import java.util.Iterator;
 import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
-import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
-
-import static org.janelia.saalfeldlab.n5.FileKeyLockManager.FILE_LOCK_MANAGER;
 
 /**
  * Filesystem {@link KeyValueAccess}.
@@ -101,44 +96,6 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	@Deprecated
-	public LockedFileChannel lockForReading(final String normalPath) throws N5IOException {
-
-		return lockForReading(Paths.get(normalPath));
-	}
-
-	@Override
-	@Deprecated
-	public LockedChannel lockForWriting(final String normalPath) throws N5IOException {
-
-		return lockForWriting(Paths.get(normalPath));
-	}
-
-	@Deprecated
-	protected static LockedFileChannel lockForReading(final Path path) throws N5IOException {
-
-		try {
-			return FILE_LOCK_MANAGER.lockForReading(path);
-		} catch (final NoSuchFileException e) {
-			throw new N5NoSuchKeyException("No such file", e);
-		} catch (IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to lock file for reading: " + path, e);
-		}
-	}
-
-	@Deprecated
-	static LockedFileChannel lockForWriting(final Path path) throws N5IOException {
-
-		try {
-			return FILE_LOCK_MANAGER.lockForWriting(path);
-		} catch (final NoSuchFileException e) {
-			throw new N5NoSuchKeyException("No such file", e);
-		} catch (IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to lock file for writing: " + path, e);
-		}
-	}
-
-	@Override
 	public boolean isDirectory(final String normalPath) {
 
 		final Path path = Paths.get(normalPath);
@@ -163,17 +120,6 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	public long size(final String normalPath) {
 
 		return size(Paths.get(normalPath));
-	}
-
-	protected static long size(final Path path) {
-
-		try {
-			return Files.size(path);
-		} catch (NoSuchFileException e) {
-			throw new N5NoSuchKeyException("No such file", e);
-		} catch (IOException | UncheckedIOException e) {
-			throw new N5IOException(e);
-		}
 	}
 
 	@Override
@@ -346,6 +292,17 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		}
 	}
 
+	protected static long size(final Path path) {
+
+		try {
+			return Files.size(path);
+		} catch (NoSuchFileException e) {
+			throw new N5NoSuchKeyException("No such file", e);
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5IOException(e);
+		}
+	}
+
 	protected static void tryDelete(final Path path) throws IOException {
 
 		try {
@@ -501,88 +458,4 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 				throw x;
 		}
 	}
-
-	static class FileLazyRead implements LazyRead {
-
-		private static final Closeable NO_OP = () -> { };
-
-		private final Path path;
-		private Closeable lock;
-
-		FileLazyRead(final Path path) throws IOException {
-			this(path, true);
-		}
-
-		FileLazyRead(final Path path, final boolean requireLock ) throws IOException {
-	        this.path = path;
-			if (requireLock)
-				lock = FILE_LOCK_MANAGER.lockForReading(path);
-			else
-				lock = NO_OP;
-	    }
-
-		@Override
-		public long size() throws N5IOException {
-
-			if (lock == null) {
-				throw new N5IOException("FileLazyRead is already closed.");
-			}
-			return FileSystemKeyValueAccess.size(path);
-		}
-
-		@Override
-	    public ReadData materialize(final long offset, final long length) {
-
-			if (lock == null) {
-				throw new N5IOException("FileLazyRead is already closed.");
-			}
-
-			try (final FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
-
-				channel.position(offset);
-
-	            final long channelSize = channel.size();
-	            if (!validBounds(channelSize, offset, length)) {
-					throw new IndexOutOfBoundsException();
-				}
-
-				final long size = length < 0 ? (channelSize - offset) : length;
-				if (size > Integer.MAX_VALUE) {
-					throw new IndexOutOfBoundsException("Attempt to materialize too large data");
-				}
-
-				final byte[] data = new byte[(int) size];
-				final ByteBuffer buf = ByteBuffer.wrap(data);
-				channel.read(buf);
-				return ReadData.from(data);
-
-			} catch (final NoSuchFileException e) {
-	            throw new N5NoSuchKeyException("No such file", e);
-	        } catch (IOException | UncheckedIOException e) {
-	            throw new N5IOException(e);
-	        }
-	    }
-
-		@Override
-		public void close() throws IOException {
-
-			if (lock != null) {
-				lock.close();
-				lock = null;
-			}
-		}
-	}
-
-	private static boolean validBounds(long channelSize, long offset, long length) {
-
-		if (offset < 0)
-			return false;
-		else if (channelSize > 0 && offset >= channelSize) // offset == 0 and channelSize == 0 is okay
-			return false;
-		else if (length >= 0 && offset + length > channelSize)
-			return false;
-
-		return true;
-	}
-
 }
