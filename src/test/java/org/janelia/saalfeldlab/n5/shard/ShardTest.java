@@ -28,15 +28,10 @@
  */
 package org.janelia.saalfeldlab.n5.shard;
 
-import com.google.gson.GsonBuilder;
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.FileChannel;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,27 +44,11 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
-import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DataType;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
-import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
-import org.janelia.saalfeldlab.n5.IntArrayDataBlock;
-import org.janelia.saalfeldlab.n5.KeyValueAccess;
-import org.janelia.saalfeldlab.n5.LockedFileChannel;
-import org.janelia.saalfeldlab.n5.N5Exception;
-import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
-import org.janelia.saalfeldlab.n5.N5FSTest;
-import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
-import org.janelia.saalfeldlab.n5.N5Writer;
-import org.janelia.saalfeldlab.n5.RawCompression;
+
+import org.janelia.saalfeldlab.n5.*;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
-import org.janelia.saalfeldlab.n5.readdata.LazyRead;
-import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 import org.junit.After;
 import org.junit.Assert;
@@ -92,7 +71,7 @@ public class ShardTest {
 		@Override public N5Writer createTempN5Writer() {
 
 			if (LOCAL_DEBUG) {
-				final N5Writer writer = new TrackingN5Writer("src/test/resources/test.n5");
+				final N5Writer writer = new TrackingN5Writer("src/test/resources/test.n5", new FileSystemKeyValueAccess());
 				writer.remove(""); // Clear old when starting new test
 				return writer;
 			}
@@ -100,7 +79,7 @@ public class ShardTest {
 			final String basePath = new File(tempN5PathName()).toURI().normalize().getPath();
 			try {
 				String uri = new URI("file", null, basePath, null).toString();
-				return new TrackingN5Writer(uri);
+				return new TrackingN5Writer(uri, new FileSystemKeyValueAccess());
 			} catch (URISyntaxException e) {
 				e.printStackTrace();
 			}
@@ -676,172 +655,5 @@ public class ShardTest {
 	private int[] range(int N) {
 		return IntStream.range(0, N).toArray();
 	}
-
-    /**
-     * An N5Writer that tracks the number of materialize calls performed by
-     * its underlying key value access.
-     */
-    public static class TrackingN5Writer extends N5KeyValueWriter {
-
-        final TrackingFileSystemKeyValueAccess tkva;
-        public TrackingN5Writer(String basePath) {
-
-            super( new TrackingFileSystemKeyValueAccess(), basePath, new GsonBuilder(), false);
-            tkva = (TrackingFileSystemKeyValueAccess)getKeyValueAccess();
-        }
-
-        public void resetNumMaterializeCalls() {
-            tkva.numMaterializeCalls = 0;
-        }
-
-        public int getNumMaterializeCalls() {
-            return tkva.numMaterializeCalls;
-        }
-
-        public void resetNumIsFileCalls() {
-            tkva.numIsFileCalls = 0;
-        }
-
-        public int getNumIsFileCalls() {
-            return tkva.numIsFileCalls;
-        }
-
-        public void resetTotalBytesRead() {
-            tkva.totalBytesRead = 0;
-        }
-
-        public long getTotalBytesRead() {
-            return tkva.totalBytesRead;
-        }
-
-        public void resetAllTracking() {
-            tkva.numMaterializeCalls = 0;
-            tkva.numIsFileCalls = 0;
-            tkva.totalBytesRead = 0;
-        }
-    }
-
-    private static class TrackingFileSystemKeyValueAccess extends FileSystemKeyValueAccess {
-
-        private int numMaterializeCalls = 0;
-        private int numIsFileCalls = 0;
-        private long totalBytesRead = 0;
-
-        protected TrackingFileSystemKeyValueAccess() {
-            super();
-        }
-
-        @Override
-        public boolean isFile(String normalPath) {
-            numIsFileCalls++;
-            return super.isFile(normalPath);
-        }
-
-        @Override
-        public VolatileReadData createReadData(final String normalPath) {
-			try {
-				return VolatileReadData.from(new TrackingFileLazyRead(Paths.get(normalPath)));
-			} catch (N5NoSuchKeyException e) {
-//				return VolatileReadData.from(new NoSuchKeyLazyRead());
-				return null;
-			}
-        }
-
-		// This can be used in createReadData() above, to also simulate the case that we will have for
-		// cloud storage KVAs, where the returned VolatileReadData is non-null but will fail on the first
-		// operation that queries the cloud backend.
-		private class NoSuchKeyLazyRead implements LazyRead {
-
-			@Override
-			public ReadData materialize(final long offset, final long length) throws N5Exception.N5IOException {
-				throw new N5NoSuchKeyException("NoSuchKeyLazyRead");
-			}
-
-			@Override
-			public long size() throws N5Exception.N5IOException {
-				throw new N5NoSuchKeyException("NoSuchKeyLazyRead");
-			}
-
-			@Override
-			public void close() {
-			}
-		}
-
-		private class TrackingFileLazyRead implements LazyRead {
-
-			private final Path path;
-			private LockedFileChannel lock;
-
-			TrackingFileLazyRead(final Path path) {
-				this.path = path;
-				lock = FileSystemKeyValueAccess.lockForReading(path);
-			}
-
-			@Override
-			public long size() throws N5Exception.N5IOException {
-
-				if (lock == null) {
-					throw new N5Exception.N5IOException("FileLazyRead is already closed.");
-				}
-				return FileSystemKeyValueAccess.size(path);
-			}
-
-			@Override
-			public ReadData materialize(final long offset, final long length) {
-
-				if (lock == null) {
-					throw new N5Exception.N5IOException("FileLazyRead is already closed.");
-				}
-
-				numMaterializeCalls++;
-				try (final FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
-
-					channel.position(offset);
-
-					final long channelSize = channel.size();
-					if (!validBounds(channelSize, offset, length)) {
-						throw new IndexOutOfBoundsException();
-					}
-
-					final long size = length < 0 ? (channelSize - offset) : length;
-					if (size > Integer.MAX_VALUE) {
-						throw new IndexOutOfBoundsException("Attempt to materialize too large data");
-					}
-
-					final byte[] data = new byte[(int) size];
-					totalBytesRead += size;
-					final ByteBuffer buf = ByteBuffer.wrap(data);
-					channel.read(buf);
-					return ReadData.from(data);
-
-				} catch (final NoSuchFileException e) {
-					throw new N5NoSuchKeyException("No such file", e);
-				} catch (IOException | UncheckedIOException e) {
-					throw new N5Exception.N5IOException(e);
-				}
-			}
-
-			@Override
-			public void close() throws IOException {
-
-				if (lock != null) {
-					lock.close();
-					lock = null;
-				}
-			}
-		}
-
-		private static boolean validBounds(long channelSize, long offset, long length) {
-
-            if (offset < 0)
-                return false;
-            else if (channelSize > 0 && offset >= channelSize) // offset == 0 and arrayLength == 0 is okay
-                return false;
-            else if (length >= 0 && offset + length > channelSize)
-                return false;
-
-            return true;
-        }
-    }
 
 }

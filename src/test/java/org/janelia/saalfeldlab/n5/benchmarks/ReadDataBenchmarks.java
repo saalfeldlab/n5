@@ -41,6 +41,8 @@ import java.util.concurrent.TimeUnit;
 import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.LockedChannel;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -125,14 +127,16 @@ public class ReadDataBenchmarks {
 		final byte[] data = new byte[numBytes];
 		random.nextBytes(data);
 
-		System.out.println(path.toAbsolutePath().toString());
+		System.out.println(path.toAbsolutePath());
 		System.out.println(numBytes);
-		try (final LockedChannel ch = kva.lockForWriting(path.toAbsolutePath().toString())) {
-			final OutputStream os = ch.newOutputStream();
+
+		ReadData readData = ReadData.from(os -> {
 			os.write(data);
-			os.flush();
-			os.close();
-		} catch (final IOException e) {
+		}).materialize();
+
+		try {
+			kva.write(path.toAbsolutePath().toString(), readData);
+		} catch (N5Exception.N5IOException e) {
 			e.printStackTrace();
 		}
 	}

@@ -297,7 +297,9 @@ public interface KeyValueAccess {
 	 * @deprecated migrate to {@link KeyValueAccess#createReadData(String)}
 	 */
 	@Deprecated
-	LockedChannel lockForReading( final String normalPath ) throws N5IOException;
+	default LockedChannel lockForReading( final String normalPath ) throws N5IOException {
+		return new BufferedKvaLockedChannel(this, normalPath);
+	}
 
 	/**
 	 * Create an exclusive lock on a path for writing. If the file doesn't exist
@@ -318,7 +320,9 @@ public interface KeyValueAccess {
 	 * @deprecated migrate to {@link KeyValueAccess#write(String, ReadData)}
 	 */
 	@Deprecated
-	LockedChannel lockForWriting( final String normalPath ) throws N5IOException;
+	default LockedChannel lockForWriting( final String normalPath ) throws N5IOException {
+		return new BufferedKvaLockedChannel(this, normalPath);
+	}
 
 	/**
 	 * List all 'directory'-like children of a path.
