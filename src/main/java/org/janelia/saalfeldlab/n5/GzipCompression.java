@@ -92,7 +92,10 @@ public class GzipCompression implements Compression {
 		if (useZlib) {
 			return new InflaterInputStream(in);
 		} else {
-			return new GzipCompressorInputStream(in, true);
+			return GzipCompressorInputStream.builder()
+				.setInputStream(in)
+				.setDecompressConcatenated(true)
+				.get();
 		}
 	}
 
