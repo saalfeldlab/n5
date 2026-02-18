@@ -31,6 +31,7 @@ package org.janelia.saalfeldlab.n5.codec;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.janelia.saalfeldlab.n5.ByteArrayDataBlock;
@@ -144,17 +145,16 @@ public class N5BlockCodecs {
 			});
 		}
 
-		abstract BlockHeader decodeBlockHeader(final ReadData readData) throws N5IOException;
+		abstract BlockHeader decodeBlockHeader(final InputStream inputStream) throws N5IOException;
 
 		@Override
 		public DataBlock<T> decode(final ReadData readData, final long[] gridPosition) throws N5IOException {
 
-			final ReadData materializedData = readData.materialize();
-			final BlockHeader header = decodeBlockHeader(materializedData);
-
+			final BlockHeader header = decodeBlockHeader(readData.inputStream());
 			final int numElements = header.numElements();
-			final long bodyLength = materializedData.length() - header.getSize();
-			final ReadData bodyReadData = bodyLength > 0 ? materializedData.slice(header.getSize(), bodyLength) : ReadData.empty();
+			final long bodyLength = readData.length() - header.getSize();
+
+			final ReadData bodyReadData = bodyLength > 0 ? readData.slice(header.getSize(), bodyLength) : ReadData.empty();
 			final ReadData decodeData = codec.decode(bodyReadData);
 
 			// the dataCodec knows the number of bytes per element
@@ -184,7 +184,7 @@ public class N5BlockCodecs {
 		}
 
 		@Override
-		protected BlockHeader decodeBlockHeader(final ReadData readData) throws N5IOException {
+		protected BlockHeader decodeBlockHeader(final InputStream readData) throws N5IOException {
 
 			return BlockHeader.readFrom(readData, MODE_DEFAULT, MODE_VARLENGTH);
 		}
@@ -219,9 +219,9 @@ public class N5BlockCodecs {
 		}
 
 		@Override
-		protected BlockHeader decodeBlockHeader(final ReadData readData) throws N5IOException {
+		protected BlockHeader decodeBlockHeader(final InputStream inputStream) throws N5IOException {
 
-			return BlockHeader.readFrom(readData, MODE_DEFAULT, MODE_VARLENGTH);
+			return BlockHeader.readFrom(inputStream, MODE_DEFAULT, MODE_VARLENGTH);
 		}
 	}
 
@@ -242,9 +242,9 @@ public class N5BlockCodecs {
 		}
 
 		@Override
-		protected BlockHeader decodeBlockHeader(final ReadData readData) throws N5IOException {
+		protected BlockHeader decodeBlockHeader(final InputStream inputStream) throws N5IOException {
 
-			return BlockHeader.readFrom(readData, MODE_OBJECT);
+			return BlockHeader.readFrom(inputStream, MODE_OBJECT);
 		}
 	}
 
@@ -362,10 +362,10 @@ public class N5BlockCodecs {
 
 		}
 
-		static BlockHeader readFrom(final ReadData readData, short... allowedModes) throws N5IOException, N5Exception {
+		static BlockHeader readFrom(final InputStream inputStream, short... allowedModes) throws N5IOException, N5Exception {
 
 			try {
-				final DataInputStream dis = new DataInputStream(readData.inputStream());
+				final DataInputStream dis = new DataInputStream(inputStream);
 				final short mode = dis.readShort();
 				final int[] blockSize;
 				final int numElements;
