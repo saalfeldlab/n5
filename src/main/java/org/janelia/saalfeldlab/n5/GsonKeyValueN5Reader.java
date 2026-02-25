@@ -30,6 +30,7 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.nio.charset.Charset;
 import java.util.List;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
@@ -85,7 +86,8 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			if (readData == null) {
 				return null;
 			}
-			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), getGson());
+			final String jsonString = new String(readData.allBytes(), Charset.defaultCharset());
+			return getGson().fromJson(jsonString, JsonElement.class);
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
 		} catch (final UncheckedIOException | N5IOException e) {
