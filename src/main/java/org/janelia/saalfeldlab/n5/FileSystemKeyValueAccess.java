@@ -62,11 +62,11 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 			return FsIoPolicy.atomicWithFallback;
 
 		switch (property) {
-			case "atomic":
+			case "strict":
 				return new FsIoPolicy.Atomic();
 			case "unsafe":
 				return new FsIoPolicy.Unsafe();
-			case "atomicFallbackUnsafe":
+			case "permissive":
 			default:
 				return FsIoPolicy.atomicWithFallback;
 		}
