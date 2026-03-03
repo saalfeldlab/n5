@@ -15,11 +15,14 @@ import java.nio.file.Path;
 class ChannelLock implements Closeable {
 
 	private final FileChannel channel;
-	private final FileLock lock;
+
+	//Used to ensure a hard reference exists until we close
+	@SuppressWarnings({"unused", "FieldCanBeLocal"})
+    private final FileLock unusedHardRef;
 
 	private ChannelLock(final FileChannel channel, final FileLock lock) {
 		this.channel = channel;
-		this.lock = lock;
+		this.unusedHardRef = lock;
 	}
 
 	public void close() throws IOException {
