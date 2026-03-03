@@ -45,14 +45,12 @@ public class LockedFileChannel implements LockedChannel {
 	@Override
 	public Writer newWriter() throws N5Exception.N5IOException {
 
-		truncateChannel();
 		return Channels.newWriter(channel, StandardCharsets.UTF_8.name());
 	}
 
 	@Override
 	public OutputStream newOutputStream() throws N5Exception.N5IOException {
 
-		truncateChannel();
 		return Channels.newOutputStream(channel);
 	}
 
@@ -60,15 +58,6 @@ public class LockedFileChannel implements LockedChannel {
 	public FileChannel getFileChannel() {
 
 		return channel;
-	}
-
-	private void truncateChannel() throws N5Exception.N5IOException {
-
-		try {
-			channel.truncate(0);
-		} catch (final IOException e) {
-			throw new N5Exception.N5IOException("Failed to truncate channel", e);
-		}
 	}
 
 	@Override
