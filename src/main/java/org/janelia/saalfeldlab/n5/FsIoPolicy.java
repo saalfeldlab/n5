@@ -42,7 +42,8 @@ public class FsIoPolicy {
 
         if (forWriting) {
             final Path parent = path.getParent();
-            if (parent != null) {
+            /* if not null and not directory, it will call `createDirectories` but we expect it to throw an IOException */
+            if (parent != null && !parent.toFile().isDirectory()) {
                 Files.createDirectories(parent);
             }
             return FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
