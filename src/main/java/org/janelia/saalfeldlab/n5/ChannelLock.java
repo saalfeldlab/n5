@@ -5,9 +5,7 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 
 /**
  * Holds a channel and system-level file lock (shared for writing, non-shared
@@ -55,7 +53,7 @@ class ChannelLock implements Closeable {
 	 */
 	static ChannelLock lock(final Path path, final boolean forWriting) throws IOException {
 
-		final FileChannel channel = openFileChannel(path, forWriting);
+		final FileChannel channel = FsIoPolicy.openFileChannel(path, forWriting);
 		try {
 			while (true) {
 				try {
@@ -93,32 +91,12 @@ class ChannelLock implements Closeable {
 
 		FileChannel channel = null;
 		try {
-			channel = openFileChannel(path, forWriting);
+			channel = FsIoPolicy.openFileChannel(path, forWriting);
 			final FileLock lock = channel.tryLock(0, Long.MAX_VALUE, !forWriting);
 			return lock == null ? null : new ChannelLock(channel, lock);
 		} catch (Exception e) {
 			closeQuietly(channel);
 			throw e;
-		}
-	}
-
-	/**
-	 * Opens a file channel. If the channel is opened {@code forWriting},
-	 * then this may create the file and the parent directories as needed.
-	 *
-	 * @throws IOException
-	 * 		if the channel cannot be opened
-	 */
-	private static FileChannel openFileChannel(final Path path, final boolean forWriting) throws IOException {
-
-		if (forWriting) {
-			final Path parent = path.getParent();
-			if (parent != null) {
-				Files.createDirectories(parent);
-			}
-			return FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-		} else {
-			return FileChannel.open(path, StandardOpenOption.READ);
 		}
 	}
 
