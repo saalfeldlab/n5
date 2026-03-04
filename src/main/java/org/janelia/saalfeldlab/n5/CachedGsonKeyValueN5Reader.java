@@ -81,6 +81,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 		return createDatasetAttributes(attributes);
 	}
 
+	// TODO: Inline! This is only used in 1 place.
 	default DatasetAttributes normalGetDatasetAttributes(final String pathName) throws N5IOException {
 
 		final String normalPath = N5URI.normalizeGroupPath(pathName);
