@@ -436,4 +436,44 @@ public class DatasetAttributes implements Serializable {
 			return null;
 		}
 	}
+
+	@Override
+	public String toString() {
+		final StringBuffer sb = new StringBuffer("DatasetAttributes{");
+		sb.append("dimensions=");
+		if (dimensions == null)
+			sb.append("null");
+		else {
+			sb.append('[');
+			for (int i = 0; i < dimensions.length; ++i)
+				sb.append(i == 0 ? "" : ", ").append(dimensions[i]);
+			sb.append(']');
+		}
+		sb.append(", blockSize=");
+		if (blockSize == null)
+			sb.append("null");
+		else {
+			sb.append('[');
+			for (int i = 0; i < blockSize.length; ++i)
+				sb.append(i == 0 ? "" : ", ").append(blockSize[i]);
+			sb.append(']');
+		}
+		sb.append(", outerBlockSize=");
+		if (outerBlockSize == null)
+			sb.append("null");
+		else {
+			sb.append('[');
+			for (int i = 0; i < outerBlockSize.length; ++i)
+				sb.append(i == 0 ? "" : ", ").append(outerBlockSize[i]);
+			sb.append(']');
+		}
+		sb.append(", dataType=").append(dataType);
+		sb.append(", defaultValue=").append(defaultValue);
+		sb.append(", blockCodecInfo=").append(blockCodecInfo);
+		sb.append(", dataCodecInfos=").append(dataCodecInfos == null ? "null" : Arrays.asList(dataCodecInfos).toString());
+		sb.append(", datasetCodecInfos=").append(datasetCodecInfos == null ? "null" : Arrays.asList(datasetCodecInfos).toString());
+		sb.append(", access=").append(access);
+		sb.append('}');
+		return sb.toString();
+	}
 }
