@@ -55,7 +55,7 @@ import java.util.regex.Pattern;
  */
 public interface N5Reader extends AutoCloseable {
 
-	public static class Version {
+	class Version {
 
 		private final int major;
 		private final int minor;
@@ -192,17 +192,17 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * SemVer version of this N5 spec.
 	 */
-	public static final Version NO_VERSION = new Version(0, 0, 0);
+	Version NO_VERSION = new Version(0, 0, 0);
 
 	/**
 	 * SemVer version of this N5 spec.
 	 */
-	public static final Version VERSION = new Version(4, 0, 0);
+	Version VERSION = new Version(4, 0, 0);
 
 	/**
 	 * Version attribute key.
 	 */
-	public static final String VERSION_KEY = "n5";
+	String VERSION_KEY = "n5";
 
 	/**
 	 * Get the SemVer version of this container as specified in the 'version'
