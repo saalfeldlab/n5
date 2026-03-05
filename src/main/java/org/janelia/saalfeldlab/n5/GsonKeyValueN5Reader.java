@@ -72,6 +72,19 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	/**
+	 * Constructs the relative path for the attributes file of a group or dataset.
+	 *
+	 * @param normalPath
+	 *            normalized group path without leading slash
+	 * @return the absolute path to the attributes
+	 */
+	private String relativeAttributesPath(final String normalPath) {
+
+		final String key = getAttributesKey();
+		return normalPath.isEmpty() ? key : normalPath + "/" + key;
+	}
+
+	/**
 	 * Reads or creates the attributes map of a group or dataset.
 	 *
 	 * @param pathName
@@ -83,9 +96,8 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	default JsonElement getAttributes(final String pathName) throws N5Exception {
 
 		final String groupPath = N5URI.normalizeGroupPath(pathName);
-		final String attributesPath = absoluteAttributesPath(groupPath);
-
-		try (final VolatileReadData readData = getKeyValueAccess().createReadData(attributesPath);) {
+		final String attributesPath = relativeAttributesPath(groupPath);
+		try (final VolatileReadData readData = getRootedKeyValueAccess().createReadData(attributesPath);) {
 			if (readData == null) {
 				return null;
 			}

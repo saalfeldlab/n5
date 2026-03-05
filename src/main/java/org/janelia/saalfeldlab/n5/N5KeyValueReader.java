@@ -50,7 +50,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	public static final String ATTRIBUTES_JSON = "attributes.json";
 
 	protected final KeyValueAccess keyValueAccess;
-
+	protected final RootedKeyValueAccess rootedKeyValueAccess;
 	protected final Gson gson;
 	protected final boolean cacheMeta;
 	protected URI uri;
@@ -87,7 +87,18 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			final boolean cacheMeta)
 			throws N5Exception {
 
-		this(true, keyValueAccess, basePath, gsonBuilder, cacheMeta, true);
+		this(true, keyValueAccess, null, basePath, gsonBuilder, cacheMeta, true);
+	}
+
+	public N5KeyValueReader(
+			final KeyValueAccess keyValueAccess,
+			final RootedKeyValueAccess rootedKeyValueAccess,
+			final String basePath,
+			final GsonBuilder gsonBuilder,
+			final boolean cacheMeta)
+			throws N5Exception {
+
+		this(true, keyValueAccess, rootedKeyValueAccess, basePath, gsonBuilder, cacheMeta, true);
 	}
 
 	/**
@@ -120,6 +131,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	protected N5KeyValueReader(
 			final boolean checkVersion,
 			final KeyValueAccess keyValueAccess,
+			final RootedKeyValueAccess rootedKeyValueAccess,
 			final String basePath,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheMeta,
@@ -127,6 +139,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			throws N5Exception {
 
 		this.keyValueAccess = keyValueAccess;
+		this.rootedKeyValueAccess = rootedKeyValueAccess;
 		this.gson = registerGson(gsonBuilder).create();
 		this.cacheMeta = cacheMeta;
 
@@ -187,7 +200,15 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	@Override
 	public KeyValueAccess getKeyValueAccess() {
 
+		DebugHelpers.printStackTrace();
 		return keyValueAccess;
+	}
+
+	@Override
+	public RootedKeyValueAccess getRootedKeyValueAccess() {
+
+		DebugHelpers.printStackTrace(2);
+		return rootedKeyValueAccess;
 	}
 
 	@Override
