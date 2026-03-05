@@ -672,7 +672,7 @@ public interface N5Reader extends AutoCloseable {
 				results.add(result.substring(normalPathName.length() + groupSeparator.length()));
 		}
 
-		return results.stream().toArray(String[]::new);
+		return results.toArray(String[]::new);
 	}
 
 	/**
@@ -759,7 +759,7 @@ public interface N5Reader extends AutoCloseable {
 				results.add(result.substring(normalPathName.length() + groupSeparator.length()));
 		}
 
-		return results.stream().toArray(String[]::new);
+		return results.toArray(String[]::new);
 	}
 
 	/**
