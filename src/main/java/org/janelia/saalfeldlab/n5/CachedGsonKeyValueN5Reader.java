@@ -146,11 +146,11 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	@Override
 	default boolean existsFromContainer(final String normalPathName, final String normalCacheKey) {
 
-		final KeyValueAccess kva = getKeyValueAccess();
+		final RootedKeyValueAccess kva = getRootedKeyValueAccess();
 		if (normalCacheKey == null)
-			return kva.isDirectory(kva.compose(getURI(), normalPathName));
+			return kva.isDirectory(normalPathName);
 		else
-			return kva.isFile(kva.compose(getURI(), normalPathName, normalCacheKey));
+			return kva.isFile(RootedKeyValueAccess.compose(normalPathName, normalCacheKey));
 	}
 
 	@Override

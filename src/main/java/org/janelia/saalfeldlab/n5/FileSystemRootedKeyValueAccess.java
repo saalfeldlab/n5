@@ -3,7 +3,8 @@ package org.janelia.saalfeldlab.n5;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
@@ -30,8 +31,19 @@ public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
 		}
 	}
 
+	@Override
+	public boolean isDirectory(final URI normalPath) {
 
+		final Path path = Path.of(root.resolve(normalPath));
+		return Files.isDirectory(path);
+	}
 
+	@Override
+	public boolean isFile(final URI normalPath) {
+
+		final Path path = Path.of(root.resolve(normalPath));
+		return Files.isRegularFile(path);
+	}
 
 
 	// -- forward to existing IoPolicy interface --

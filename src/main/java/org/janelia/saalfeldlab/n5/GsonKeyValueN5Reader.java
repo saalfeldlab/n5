@@ -80,8 +80,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 */
 	private String relativeAttributesPath(final String normalPath) {
 
-		final String key = getAttributesKey();
-		return normalPath.isEmpty() ? key : normalPath + "/" + key;
+		return RootedKeyValueAccess.compose(normalPath, getAttributesKey());
 	}
 
 	/**
