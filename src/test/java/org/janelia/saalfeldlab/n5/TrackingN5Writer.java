@@ -11,9 +11,10 @@ public class TrackingN5Writer extends N5KeyValueWriter {
 
     public final TrackingKeyValueAccess tkva;
 
-    public TrackingN5Writer(String basePath, KeyValueAccess kva) {
+    public TrackingN5Writer(String basePath, KeyValueAccess kva, RootedKeyValueAccess rkva) {
 
-        super(new TrackingKeyValueAccess(kva), basePath, new GsonBuilder(), false);
+        super(new TrackingKeyValueAccess(kva), rkva, basePath, new GsonBuilder(), false);
+		// TODO: create TrackingRootedKeyValueAccess
         this.tkva = (TrackingKeyValueAccess) getKeyValueAccess();
     }
 

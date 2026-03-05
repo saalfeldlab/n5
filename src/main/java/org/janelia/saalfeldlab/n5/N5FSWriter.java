@@ -71,6 +71,7 @@ public class N5FSWriter extends N5KeyValueWriter {
 
 		super(
 				new FileSystemKeyValueAccess(),
+				new FileSystemRootedKeyValueAccess(basePath),
 				basePath,
 				gsonBuilder,
 				cacheAttributes);

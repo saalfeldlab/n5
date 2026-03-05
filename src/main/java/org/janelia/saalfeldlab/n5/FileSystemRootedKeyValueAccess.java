@@ -17,7 +17,8 @@ public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
 
 	public FileSystemRootedKeyValueAccess(final String basePath) throws N5IOException {
 		this.basePath = basePath;
-		this.root = new File(basePath).toURI();
+		this.root = URI.create(basePath);
+//		this.root = new File(basePath).toURI();
 	}
 
 

@@ -171,7 +171,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 		final String loc = tempN5Location();
 		// make an uncached n5 writer
-		try (final N5TrackingStorage n5 = new N5TrackingStorage(new FileSystemKeyValueAccess(), loc,
+		try (final N5TrackingStorage n5 = new N5TrackingStorage(new FileSystemKeyValueAccess(), new FileSystemRootedKeyValueAccess(loc), loc,
 				new GsonBuilder(), true)) {
 
 			cacheBehaviorHelper(n5);
@@ -503,10 +503,10 @@ public class N5CachedFSTest extends N5FSTest {
 		public int listCallCount = 0;
 		public int writeAttrCallCount = 0;
 
-		public N5TrackingStorage(final KeyValueAccess keyValueAccess, final String basePath,
+		public N5TrackingStorage(final KeyValueAccess keyValueAccess, final RootedKeyValueAccess rootedKeyValueAccess, final String basePath,
 				final GsonBuilder gsonBuilder, final boolean cacheAttributes) throws IOException {
 
-			super(keyValueAccess, basePath, gsonBuilder, cacheAttributes);
+			super(keyValueAccess, rootedKeyValueAccess, basePath, gsonBuilder, cacheAttributes);
 		}
 
 		@Override

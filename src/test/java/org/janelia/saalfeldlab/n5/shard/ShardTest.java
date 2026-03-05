@@ -71,7 +71,8 @@ public class ShardTest {
 		@Override public N5Writer createTempN5Writer() {
 
 			if (LOCAL_DEBUG) {
-				final N5Writer writer = new TrackingN5Writer("src/test/resources/test.n5", new FileSystemKeyValueAccess());
+				final String basePath = "src/test/resources/test.n5";
+				final N5Writer writer = new TrackingN5Writer(basePath, new FileSystemKeyValueAccess(), new FileSystemRootedKeyValueAccess(basePath));
 				writer.remove(""); // Clear old when starting new test
 				return writer;
 			}
@@ -79,7 +80,7 @@ public class ShardTest {
 			final String basePath = new File(tempN5PathName()).toURI().normalize().getPath();
 			try {
 				String uri = new URI("file", null, basePath, null).toString();
-				return new TrackingN5Writer(uri, new FileSystemKeyValueAccess());
+				return new TrackingN5Writer(uri, new FileSystemKeyValueAccess(), new FileSystemRootedKeyValueAccess(uri));
 			} catch (URISyntaxException e) {
 				e.printStackTrace();
 			}
