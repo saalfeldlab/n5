@@ -1,23 +1,15 @@
 package org.janelia.saalfeldlab.n5;
 
-import java.io.OutputStreamWriter;
+import com.google.gson.Gson;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import com.google.gson.JsonSyntaxException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
 
 /**
  * Default implementation of {@link N5Writer} with JSON attributes parsed with
@@ -25,170 +17,42 @@ import com.google.gson.JsonObject;
  */
 public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader {
 
-	/**
-	 * TODO This overrides the version even if incompatible, check
-	 * if this is the desired behavior or if it is always overridden, e.g. as by
-	 * the caching version. If this is true, delete this implementation.
-	 *
-	 * @param path to the group to write the version into
-	 */
-	default void setVersion(final String path) {
-
-		if (!VERSION.equals(getVersion()))
-			setAttribute("/", VERSION_KEY, VERSION.toString());
-	}
-
-	static String initializeContainer(
-			final KeyValueAccess keyValueAccess,
-			final String basePath) throws N5IOException {
-
-		final String normBasePath = keyValueAccess.normalize(basePath);
-		keyValueAccess.createDirectories(normBasePath);
-		return normBasePath;
-	}
-
 	@Override
 	default void createGroup(final String path) throws N5Exception {
 
-		final String normalPath = N5URI.normalizeGroupPath(path);
-		getKeyValueAccess().createDirectories(absoluteGroupPath(normalPath));
-	}
-
-	/**
-	 * Helper method that writes an attributes tree into the store
-	 * <p>
-	 * TODO This method is not part of the public API and should be protected
-	 * in Java versions greater than 8
-	 *
-	 * @param normalGroupPath
-	 *            to write the attributes to
-	 * @param attributes
-	 *            to write
-	 * @throws N5Exception
-	 *             if unable to write the attributes at {@code normalGroupPath}
-	 */
-	default void writeAttributes(
-			final String normalGroupPath,
-			final JsonElement attributes) throws N5Exception {
-
-		final ReadData newAttributesReadData = ReadData.from(os -> {
-			final OutputStreamWriter writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
-			GsonUtils.writeAttributes(writer, attributes, getGson());
-		});
-
-		try {
-			getKeyValueAccess().write(absoluteAttributesPath(normalGroupPath), newAttributesReadData);
-		} catch (UncheckedIOException | N5IOException e) {
-			throw new N5Exception.N5IOException("Failed to write attributes into " + normalGroupPath, e);
-		}
+		getContainerDialect().createGroup(N5DirectoryPath.of(path));
 	}
 
 	@Override
-	default void setAttributes(
-			final String path,
-			final JsonElement attributes) throws N5Exception {
+	default DatasetAttributes createDataset(final String datasetPath, final DatasetAttributes datasetAttributes) throws N5Exception {
 
-		final String normalPath = N5URI.normalizeGroupPath(path);
-		if (!exists(normalPath))
-			throw new N5IOException("" + normalPath + " is not a group or dataset.");
-
-		writeAttributes(normalPath, attributes);
-	}
-
-	/**
-	 * Helper method that reads the existing map of attributes, JSON encodes,
-	 * inserts and overrides the provided attributes, and writes them back into
-	 * the attributes store.
-	 *
-	 * TODO This method is not part of the public API and should be protected
-	 * in Java greater than 8
-	 *
-	 * @param normalGroupPath
-	 *            to write the attributes to
-	 * @param attributes
-	 *            to write
-	 * @throws N5Exception
-	 *             if unable to read or write the attributes at
-	 *             {@code normalGroupPath}
-	 */
-	default void writeAttributes(
-			final String normalGroupPath,
-			final Map<String, ?> attributes) throws N5Exception {
-
-		if (attributes != null && !attributes.isEmpty()) {
-			JsonElement root = getAttributes(normalGroupPath);
-			root = root != null && root.isJsonObject()
-					? root.getAsJsonObject()
-					: new JsonObject();
-			root = GsonUtils.insertAttributes(root, attributes, getGson());
-			writeAttributes(normalGroupPath, root);
-		}
+		final DatasetAttributes attributes = getConvertedDatasetAttributes(datasetAttributes);
+		getContainerDialect().createDataset(N5DirectoryPath.of(datasetPath), attributes);
+		return attributes;
 	}
 
 	@Override
-	default void setAttributes(
-			final String path,
-			final Map<String, ?> attributes) throws N5Exception {
+	default void setAttributes(final String path, final Map<String, ?> attributes) throws N5Exception {
 
-		final String normalPath = N5URI.normalizeGroupPath(path);
-		if (!exists(normalPath))
-			throw new N5IOException("" + normalPath + " is not a group or dataset.");
-
-		writeAttributes(normalPath, attributes);
+		getContainerDialect().setAttributes(N5DirectoryPath.of(path), attributes);
 	}
 
 	@Override
-	default boolean removeAttribute(final String groupPath, final String attributePath) throws N5Exception {
+	default boolean removeAttribute(final String path, final String attributePath) throws N5Exception {
 
-		final String normalPath = N5URI.normalizeGroupPath(groupPath);
-		final String absoluteNormalPath = getKeyValueAccess().compose(getURI(), normalPath);
-		final String normalKey = N5URI.normalizeAttributePath(attributePath);
-
-		if (!getKeyValueAccess().isDirectory(absoluteNormalPath))
-			return false;
-
-		if (attributePath.equals("/")) {
-			setAttributes(normalPath, JsonNull.INSTANCE);
-			return true;
-		}
-
-		final JsonElement attributes = getAttributes(normalPath);
-		if (GsonUtils.removeAttribute(attributes, normalKey) != null) {
-			setAttributes(normalPath, attributes);
-			return true;
-		}
-		return false;
+		return getContainerDialect().removeAttribute(N5DirectoryPath.of(path), attributePath);
 	}
 
 	@Override
-	default <T> T removeAttribute(final String pathName, final String key, final Class<T> cls) throws N5Exception {
+	default <T> T removeAttribute(final String path, final String attributePath, final Class<T> clazz) throws N5Exception {
 
-		final String normalPath = N5URI.normalizeGroupPath(pathName);
-		final String normalKey = N5URI.normalizeAttributePath(key);
-
-		final JsonElement attributes = getAttributes(normalPath);
-		final T obj;
-		try {
-			obj = GsonUtils.removeAttribute(attributes, normalKey, cls, getGson());
-		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
-			throw new N5Exception.N5ClassCastException(e);
-		}
-		if (obj != null) {
-			setAttributes(normalPath, attributes);
-		}
-		return obj;
+		return getContainerDialect().removeAttribute(N5DirectoryPath.of(path), attributePath, clazz);
 	}
 
 	@Override
-	default boolean removeAttributes(final String pathName, final List<String> attributes) throws N5Exception {
+	default boolean remove(final String path) throws N5Exception {
 
-		final String normalPath = N5URI.normalizeGroupPath(pathName);
-		boolean removed = false;
-		for (final String attribute : attributes) {
-			final String normalKey = N5URI.normalizeAttributePath(attribute);
-			removed |= removeAttribute(normalPath, normalKey);
-		}
-		return removed;
+		return getContainerDialect().remove(N5DirectoryPath.of(path));
 	}
 
 	@Override
@@ -199,10 +63,11 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final long[] size,
 			final DataBlockSupplier<T> chunkSupplier,
 			final boolean writeFully) throws N5Exception {
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(datasetPath), convertedDatasetAttributes);
-			convertedDatasetAttributes.<T>getDatasetAccess().writeRegion(posKva, min, size, chunkSupplier, writeFully);
+			final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(datasetPath), convertedDatasetAttributes);
+			convertedDatasetAttributes.<T>getDatasetAccess().writeRegion(pva, min, size, chunkSupplier, writeFully);
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write blocks into dataset " + datasetPath, e);
@@ -218,10 +83,11 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DataBlockSupplier<T> chunkSupplier,
 			final boolean writeFully,
 			final ExecutorService exec) throws N5Exception, InterruptedException, ExecutionException {
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(datasetPath), convertedDatasetAttributes);
-			convertedDatasetAttributes.<T>getDatasetAccess().writeRegion(posKva, min, size, chunkSupplier, writeFully, exec);
+			final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(datasetPath), convertedDatasetAttributes);
+			convertedDatasetAttributes.<T>getDatasetAccess().writeRegion(pva, min, size, chunkSupplier, writeFully, exec);
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write blocks into dataset " + datasetPath, e);
@@ -234,10 +100,10 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T>... chunks) throws N5Exception {
 
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(datasetPath), convertedDatasetAttributes);
-			convertedDatasetAttributes.<T>getDatasetAccess().writeChunks(posKva, Arrays.asList(chunks));
+			final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(datasetPath), convertedDatasetAttributes);
+			convertedDatasetAttributes.<T>getDatasetAccess().writeChunks(pva, Arrays.asList(chunks));
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write chunks into dataset " + datasetPath, e);
@@ -250,10 +116,10 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> chunk) throws N5Exception {
 
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), convertedDatasetAttributes);
-			convertedDatasetAttributes.<T> getDatasetAccess().writeChunk(posKva, chunk);
+			final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(path), convertedDatasetAttributes);
+			convertedDatasetAttributes.<T> getDatasetAccess().writeChunk(pva, chunk);
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write chunk " + Arrays.toString(chunk.getGridPosition()) + " into dataset " + path,
@@ -270,8 +136,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		final int shardLevel = convertedDatasetAttributes.getNestedBlockGrid().numLevels() - 1;
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), convertedDatasetAttributes);
-			convertedDatasetAttributes.<T> getDatasetAccess().writeBlock(posKva, dataBlock, shardLevel);
+			final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(path), convertedDatasetAttributes);
+			convertedDatasetAttributes.<T> getDatasetAccess().writeBlock(pva, dataBlock, shardLevel);
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
@@ -280,25 +146,13 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	}
 
 	@Override
-	default boolean remove(final String path) throws N5Exception {
-
-		final String normalPath = N5URI.normalizeGroupPath(path);
-		final String groupPath = absoluteGroupPath(normalPath);
-		if (getKeyValueAccess().isDirectory(groupPath))
-			getKeyValueAccess().delete(groupPath);
-
-		/* an IOException should have occurred if anything had failed midway */
-		return true;
-	}
-
-	@Override
 	default boolean deleteBlock(
 			final String path,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), datasetAttributes);
-		return posKva.remove(gridPosition);
+		final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(path), datasetAttributes);
+		return pva.remove(gridPosition);
 	}
 
 	@Override
@@ -307,8 +161,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), datasetAttributes);
-		return datasetAttributes.getDatasetAccess().deleteChunk(posKva, gridPosition);
+		final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(path), datasetAttributes);
+		return datasetAttributes.getDatasetAccess().deleteChunk(pva, gridPosition);
 	}
 
 	@Override
@@ -317,7 +171,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> gridPositions) throws N5Exception {
 
-		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), datasetAttributes);
-		return datasetAttributes.getDatasetAccess().deleteChunks(posKva, gridPositions);
+		final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(path), datasetAttributes);
+		return datasetAttributes.getDatasetAccess().deleteChunks(pva, gridPositions);
 	}
 }

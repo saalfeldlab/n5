@@ -1,15 +1,8 @@
 package org.janelia.saalfeldlab.n5;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-
+import com.google.gson.GsonBuilder;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -17,11 +10,19 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
+import org.janelia.saalfeldlab.n5.cache.HierarchyCache;
 import org.junit.Test;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
+import static org.janelia.saalfeldlab.n5.HierarchyStoreCounters.assertEqualCounters;
+import static org.janelia.saalfeldlab.n5.N5KeyValueReader.ATTRIBUTES_JSON;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 public class N5CachedFSTest extends N5FSTest {
 
@@ -63,14 +64,16 @@ public class N5CachedFSTest extends N5FSTest {
 		};
 	}
 
+
 	@Test
 	public void cacheTest() throws IOException, URISyntaxException {
 		/* Test the cache by setting many attributes, then manually deleting the underlying file.
 		* The only possible way for the test to succeed is if it never again attempts to read the file, and relies on the cache. */
 		try (N5KeyValueWriter n5 = (N5KeyValueWriter) createN5Writer()) {
 			final String cachedGroup = "cachedGroup";
-			final String attributesPath = n5.absoluteAttributesPath(cachedGroup);
 
+			final String relativeAttributesPath = N5DirectoryPath.of(cachedGroup).resolve(ATTRIBUTES_JSON).normalPath();
+			final String attributesPath = n5.getKeyValueRoot().uri().resolve(relativeAttributesPath).getPath();
 
 			final ArrayList<TestData<?>> tests = new ArrayList<>();
 			n5.createGroup(cachedGroup);
@@ -84,7 +87,9 @@ public class N5CachedFSTest extends N5FSTest {
 
 		try (N5KeyValueWriter n5 = (N5KeyValueWriter)createN5Writer(tempN5Location(), false)) {
 			final String cachedGroup = "cachedGroup";
-			final String attributesPath = n5.absoluteAttributesPath(cachedGroup);
+
+			final String relativeAttributesPath = N5DirectoryPath.of(cachedGroup).resolve(ATTRIBUTES_JSON).normalPath();
+			final String attributesPath = n5.getKeyValueRoot().uri().resolve(relativeAttributesPath).getPath();
 
 			final ArrayList<TestData<?>> tests = new ArrayList<>();
 			n5.createGroup(cachedGroup);
@@ -141,12 +146,30 @@ public class N5CachedFSTest extends N5FSTest {
 	@Test
 	public void cacheBehaviorTest() throws IOException, URISyntaxException {
 
-		final String loc = tempN5Location();
 		// make an uncached n5 writer
-		try (final N5TrackingStorage n5 = new N5TrackingStorage(new FileSystemKeyValueAccess(), loc,
+		try (final N5TrackingStorage n5 = new N5TrackingStorage(new FileSystemKeyValueRoot(tempN5Location()),
 				new GsonBuilder(), true)) {
 
 			cacheBehaviorHelper(n5);
+			n5.remove();
+		}
+	}
+
+	@Test
+	public void cacheListTest() throws IOException, URISyntaxException {
+
+		try (final N5TrackingStorage n5 = new N5TrackingStorage(new FileSystemKeyValueRoot(tempN5Location()),
+				new GsonBuilder(), true)) {
+
+			final String groupA = "groupA";
+			n5.createGroup(groupA);
+			assertEquals(0, n5.counters().listCallCount());
+			assertArrayEquals(new String[] {groupA}, n5.list("/"));
+			assertEquals(1, n5.counters().listCallCount());
+			n5.remove(groupA);
+			assertArrayEquals(new String[] {}, n5.list("/"));
+			assertEquals(1, n5.counters().listCallCount());
+
 			n5.remove();
 		}
 	}
@@ -158,12 +181,8 @@ public class N5CachedFSTest extends N5FSTest {
 		final String groupB = "groupB";
 
 		// expected backend method call counts
-		int expectedExistCount = 0;
-		final int expectedGroupCount = 0;
-		final int expectedDatasetCount = 0;
-		int expectedAttributeCount = 0;
-		int expectedListCount = 0;
-		int expectedWriteAttributeCount = 0;
+		final HierarchyStoreCounters expected = new HierarchyStoreCounters();
+		n5.counters().reset();
 
 		boolean exists = n5.exists(groupA);
 		boolean groupExists = n5.groupExists(groupA);
@@ -171,15 +190,12 @@ public class N5CachedFSTest extends N5FSTest {
 		assertFalse(exists); // group does not exist
 		assertFalse(groupExists); // group does not exist
 		assertFalse(datasetExists); // dataset does not exist
-		assertEquals(++expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incIsDir();
+		assertEqualCounters(expected, n5.counters());
 
 		n5.createGroup(groupA);
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incMkDir();
+		assertEqualCounters(expected, n5.counters());
 
 		// group B
 		exists = n5.exists(groupB);
@@ -188,11 +204,8 @@ public class N5CachedFSTest extends N5FSTest {
 		assertFalse(exists); // group now exists
 		assertFalse(groupExists); // group now exists
 		assertFalse(datasetExists); // dataset does not exist
-		assertEquals(++expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incIsDir();
+		assertEqualCounters(expected, n5.counters());
 
 		exists = n5.exists(groupA);
 		groupExists = n5.groupExists(groupA);
@@ -200,372 +213,213 @@ public class N5CachedFSTest extends N5FSTest {
 		assertTrue(exists); // group now exists
 		assertTrue(groupExists); // group now exists
 		assertFalse(datasetExists); // dataset does not exist
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		assertEqualCounters(expected, n5.counters());
 
 		final String cachedGroup = "cachedGroup";
 		// should not check existence when creating a group
 		n5.createGroup(cachedGroup);
+		expected.incMkDir();
 		n5.createGroup(cachedGroup); // be annoying
-		assertEquals(++expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		assertEqualCounters(expected, n5.counters());
 
 		// should not check existence when this instance created a group
+		// should read attributes.json to check whether it is a dataset
 		n5.exists(cachedGroup);
 		n5.groupExists(cachedGroup);
 		n5.datasetExists(cachedGroup);
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incReadAttr();
+		assertEqualCounters(expected, n5.counters());
 
 		// should not read attributes from container when setting them
 		n5.setAttribute(cachedGroup, "one", 1);
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(++expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incWriteAttr();
+		assertEqualCounters(expected, n5.counters());
+
+		final DatasetAttributes i = n5.getDatasetAttributes(cachedGroup);
+		System.out.println("i = " + i);
 
 		n5.setAttribute(cachedGroup, "two", 2);
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(++expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incWriteAttr();
+		assertEqualCounters(expected, n5.counters());
 
 		n5.removeAttribute(cachedGroup, "one");
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(++expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incWriteAttr();
+		assertEqualCounters(expected, n5.counters());
 
+		// should not write attributes to container when removing a non-existent attribute
 		n5.removeAttribute(cachedGroup, "one");
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		assertEqualCounters(expected, n5.counters());
 
 		n5.removeAttribute(cachedGroup, "cow");
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		assertEqualCounters(expected, n5.counters());
 
 		n5.removeAttribute(cachedGroup, "two", Integer.class);
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(++expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incWriteAttr();
+		assertEqualCounters(expected, n5.counters());
 
 		n5.list("");
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(++expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incList();
+		assertEqualCounters(expected, n5.counters());
 
 		n5.list(cachedGroup);
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(++expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incList();
+		assertEqualCounters(expected, n5.counters());
 
-		/*
-		 * Check existence for groups that have not been made by this reader but isGroup
-		 * and isDatatset must be false if it does not exists so then should not be
-		 * called.
-		 *
-		 * Similarly, attributes can not exist for a non-existent group, so should not
-		 * attempt to get attributes from the container.
-		 *
-		 * Finally,listing on a non-existent group is pointless, so don't call the
-		 * backend storage
-		 */
+		// Check existence for groups that have not been made by this reader but isGroup
+		// and isDatatset must be false if it does not exists so then should not be
+		// called.
+		//
+		// Similarly, attributes can not exist for a non-existent group, so should not
+		// attempt to get attributes from the container.
+		//
+		// Finally,listing on a non-existent group is pointless, so don't call the
+		// backend storage
+
 		final String nonExistentGroup = "doesNotExist";
 		n5.exists(nonExistentGroup);
-		assertEquals(++expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incIsDir();
+		assertEqualCounters(expected, n5.counters());
 
 		n5.groupExists(nonExistentGroup);
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		assertEqualCounters(expected, n5.counters());
 
 		n5.datasetExists(nonExistentGroup);
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		assertEqualCounters(expected, n5.counters());
 
 		n5.getAttributes(nonExistentGroup);
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		assertEqualCounters(expected, n5.counters());
 
 		assertThrows(N5Exception.class, () -> n5.list(nonExistentGroup));
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		assertEqualCounters(expected, n5.counters());
 
 		final String a = "a";
 		final String ab = "a/b";
 		final String abc = "a/b/c";
 		// create "a/b/c"
 		n5.createGroup(abc);
+		expected.incMkDir();
+		assertEqualCounters(expected, n5.counters());
+
 		assertTrue(n5.exists(abc));
 		assertTrue(n5.groupExists(abc));
 		assertFalse(n5.datasetExists(abc));
-		assertEquals(++expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incReadAttr();
+		assertEqualCounters(expected, n5.counters());
 
-		// ensure that backend need not be checked when testing existence of "a/b"
-		// TODO how does this work
+		// ensure that backend need not be checked when testing existence of "a/b".
 		assertTrue(n5.exists(ab));
 		assertTrue(n5.groupExists(ab));
+		assertEqualCounters(expected, n5.counters());
+
+		// "a/b/attributes.json" needs to be checked to determine whether "a/b" is a dataset.
 		assertFalse(n5.datasetExists(ab));
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incReadAttr();
+		assertEqualCounters(expected, n5.counters());
 
 		// remove a nested group
-		// checks for all children should not require a backend check
 		n5.remove(a);
+		expected.incRmDir();
+		assertEqualCounters(expected, n5.counters());
+
+		// checks for all children should not require a backend check
 		assertFalse(n5.exists(a));
 		assertFalse(n5.groupExists(a));
 		assertFalse(n5.datasetExists(a));
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		assertEqualCounters(expected, n5.counters());
 
 		assertFalse(n5.exists(ab));
 		assertFalse(n5.groupExists(ab));
 		assertFalse(n5.datasetExists(ab));
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		assertEqualCounters(expected, n5.counters());
 
 		assertFalse(n5.exists(abc));
 		assertFalse(n5.groupExists(abc));
 		assertFalse(n5.datasetExists(abc));
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		assertEqualCounters(expected, n5.counters());
 
 		n5.createGroup("a");
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incMkDir();
+		assertEqualCounters(expected, n5.counters());
 		n5.createGroup("a/a");
-		assertEquals(++expectedExistCount, n5.getExistCallCount());
-		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incMkDir();
+		assertEqualCounters(expected, n5.counters());
 		n5.createGroup("a/b");
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incMkDir();
+		assertEqualCounters(expected, n5.counters());
 		n5.createGroup("a/c");
-		assertEquals(++expectedExistCount, n5.getExistCallCount());
-		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incMkDir();
+		assertEqualCounters(expected, n5.counters());
 
 		final Set<String> abcListSet = Arrays.stream(n5.list("a")).collect(Collectors.toSet());
 		assertEquals(Stream.of("a", "b", "c").collect(Collectors.toSet()), abcListSet);
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(++expectedListCount, n5.getListCallCount()); // list incremented
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incList();
+		assertEqualCounters(expected, n5.counters());
 
-		// remove a
+		// remove a/a
 		n5.remove("a/a");
 		final Set<String> bc = Arrays.stream(n5.list("a")).collect(Collectors.toSet());
 		assertEquals(Stream.of("b", "c").collect(Collectors.toSet()), bc);
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
-		assertEquals(expectedListCount, n5.getListCallCount()); // list NOT incremented
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
+		expected.incRmDir();
+		assertEqualCounters(expected, n5.counters());
 
-		/*Check exists should only increment exists if attributes do no exist. Create a new writer and inject
-		* a new group with attributes unbeknownst to this writer */
+		// Create a new writer and inject a new group with attributes unbeknownst to this writer
 		try (N5Writer writer = new N5FSWriter(n5.getURI().toString(), false)) {
 			writer.createGroup("sneaky_group");
 			writer.setAttribute("sneaky_group", "sneaky_attribute", "BOO!");
 		}
 		n5.exists("sneaky_group");
-		assertEquals(expectedExistCount, n5.getExistCallCount());
-		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
+		expected.incIsDir();
+		assertEqualCounters(expected, n5.counters());
+		// every directory is a group, so this shouldn't require any backend calls
+		n5.groupExists("sneaky_group");
+		assertEqualCounters(expected, n5.counters());
+		// however, to find out whether sneaky_group/ is a dataset, we need to read attributes
+		n5.datasetExists("sneaky_group");
+		expected.incReadAttr();
+		assertEqualCounters(expected, n5.counters());
 
-		// TODO repeat the above exercise when creating dataset
+
+
+		// Create a new writer and inject a new dataset with attributes unbeknownst to this writer
+		try (N5Writer writer = new N5FSWriter(n5.getURI().toString(), false)) {
+			writer.createDataset("sneaky_dataset", new long[] {10}, new int[] {10}, DataType.UINT8, new RawCompression() );
+		}
+		n5.datasetExists("sneaky_dataset");
+		expected.incReadAttr();
+		assertEqualCounters(expected, n5.counters());
+		// we already checked for existence of sneaky_dataset/attributes.json
+		// we shouldn't need to check whether directory sneaky_dataset/ exists
+		n5.exists("sneaky_dataset");
+		assertEqualCounters(expected, n5.counters());
 	}
 
-	public static interface TrackingStorage extends CachedGsonKeyValueN5Writer {
+	public interface TrackingStorage extends CachedGsonKeyValueN5Writer {
 
-		public int getAttrCallCount();
-		public int getExistCallCount();
-		public int getGroupCallCount();
-		public int getGroupAttrCallCount();
-		public int getDatasetCallCount();
-		public int getDatasetAttrCallCount();
-		public int getListCallCount();
-		public int getWriteAttrCallCount();
+		HierarchyStoreCounters counters();
 	}
 
 	public static class N5TrackingStorage extends N5KeyValueWriter implements TrackingStorage {
 
-		public int attrCallCount = 0;
-		public int existsCallCount = 0;
-		public int groupCallCount = 0;
-		public int groupAttrCallCount = 0;
-		public int datasetCallCount = 0;
-		public int datasetAttrCallCount = 0;
-		public int listCallCount = 0;
-		public int writeAttrCallCount = 0;
+		private TrackingHierarchyStore trackingStore;
 
-		public N5TrackingStorage(final KeyValueAccess keyValueAccess, final String basePath,
+		public N5TrackingStorage(final KeyValueRoot keyValueRoot,
 				final GsonBuilder gsonBuilder, final boolean cacheAttributes) throws IOException {
 
-			super(keyValueAccess, basePath, gsonBuilder, cacheAttributes);
+			super(keyValueRoot, gsonBuilder, cacheAttributes);
 		}
 
 		@Override
-		public JsonElement getAttributesFromContainer(final String key, final String cacheKey) {
-			attrCallCount++;
-			return super.getAttributesFromContainer(key, cacheKey);
+		public HierarchyStore createHierarchyStore(
+				final KeyValueRoot keyValueRoot,
+				final boolean cacheMeta) {
+
+			trackingStore = new TrackingHierarchyStore(new KeyValueRootHierarchyStore(keyValueRoot));
+			return cacheMeta ? new HierarchyCache(trackingStore) : trackingStore;
 		}
 
 		@Override
-		public boolean existsFromContainer(final String path, final String cacheKey) {
-			existsCallCount++;
-			return super.existsFromContainer(path, cacheKey);
-		}
-
-		@Override
-		public boolean isGroupFromContainer(final String key) {
-			groupCallCount++;
-			return super.isGroupFromContainer(key);
-		}
-
-		@Override
-		public boolean isGroupFromAttributes(final String normalCacheKey, final JsonElement attributes) {
-			groupAttrCallCount++;
-			return super.isGroupFromAttributes(normalCacheKey, attributes);
-		}
-
-		@Override
-		public boolean isDatasetFromContainer(final String key) {
-			datasetCallCount++;
-			return super.isDatasetFromContainer(key);
-		}
-
-		@Override
-		public boolean isDatasetFromAttributes(final String normalCacheKey, final JsonElement attributes) {
-			datasetAttrCallCount++;
-			return super.isDatasetFromAttributes(normalCacheKey, attributes);
-		}
-
-		@Override
-		public String[] listFromContainer(final String key) {
-			listCallCount++;
-			return super.listFromContainer(key);
-		}
-
-		@Override public void writeAttributes(String normalGroupPath, JsonElement attributes) throws N5Exception {
-			writeAttrCallCount++;
-			super.writeAttributes(normalGroupPath, attributes);
-		}
-
-		@Override
-		public int getAttrCallCount() {
-			return attrCallCount;
-		}
-
-		@Override
-		public int getExistCallCount() {
-			return existsCallCount;
-		}
-
-		@Override
-		public int getGroupCallCount() {
-			return groupCallCount;
-		}
-
-		@Override
-		public int getGroupAttrCallCount() {
-			return groupAttrCallCount;
-		}
-
-		@Override
-		public int getDatasetCallCount() {
-			return datasetCallCount;
-		}
-
-		@Override
-		public int getDatasetAttrCallCount() {
-			return datasetAttrCallCount;
-		}
-
-		@Override
-		public int getListCallCount() {
-			return listCallCount;
-		}
-
-		@Override public int getWriteAttrCallCount() {
-			return writeAttrCallCount;
+		public HierarchyStoreCounters counters() {
+			return trackingStore.counters();
 		}
 	}
-
 }

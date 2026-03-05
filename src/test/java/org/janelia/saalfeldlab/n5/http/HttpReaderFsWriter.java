@@ -1,26 +1,20 @@
 package org.janelia.saalfeldlab.n5.http;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Reader;
-import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Writer;
-import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
-import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
-import org.janelia.saalfeldlab.n5.KeyValueAccess;
-import org.janelia.saalfeldlab.n5.N5Exception;
-import org.janelia.saalfeldlab.n5.N5KeyValueReader;
-
 import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
+import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
+import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.ContainerDialect;
+import org.janelia.saalfeldlab.n5.KeyValueRoot;
 
 public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
@@ -31,31 +25,6 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
 		this.writer = writer;
 		this.reader = reader;
-
-		if (reader instanceof CachedGsonKeyValueN5Reader && writer instanceof CachedGsonKeyValueN5Writer) {
-			final CachedGsonKeyValueN5Reader cachedReader = (CachedGsonKeyValueN5Reader)reader;
-			final CachedGsonKeyValueN5Writer cachedWriter = (CachedGsonKeyValueN5Writer)writer;
-			if (cachedReader.cacheMeta()) {
-				/* Hack necessary to test HTTP reader caching without creating the data entirely first */
-				try {
-					// Access the private 'cache' field in the reader (or the N5KeyValueReader as a fallback)
-					Field cacheField;
-					try {
-						cacheField = reader.getClass().getDeclaredField("cache");
-					} catch (NoSuchFieldException e) {
-						cacheField = N5KeyValueReader.class.getDeclaredField("cache");
-					}
-					cacheField.setAccessible(true);
-
-					// Set the value of 'cache' to the one from writer.getCache()
-					cacheField.set(reader, cachedWriter.getCache());
-				} catch (NoSuchFieldException | IllegalAccessException e) {
-					throw new RuntimeException("Failed to set reader cache reflectively", e);
-				}
-			}
-		}
-
-
 	}
 
 	@Override public String getAttributesKey() {
@@ -66,11 +35,6 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	@Override public Version getVersion() throws N5Exception {
 
 		return reader.getVersion();
-	}
-
-	@Override public URI getURI() {
-
-		return reader.getURI();
 	}
 
 	@Override public <T> T getAttribute(String pathName, String key, Class<T> clazz) throws N5Exception {
@@ -88,7 +52,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		return reader.getDatasetAttributes(pathName);
 	}
 
-	@Override public DataBlock<?> readChunk(String pathName, DatasetAttributes datasetAttributes, long... gridPosition) throws N5Exception {
+	@Override public <T> DataBlock<T> readChunk(String pathName, DatasetAttributes datasetAttributes, long... gridPosition) throws N5Exception {
 
 		return reader.readChunk(pathName, getConvertedDatasetAttributes(datasetAttributes), gridPosition);
 	}
@@ -98,9 +62,15 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		return reader.readSerializedBlock(dataset, getConvertedDatasetAttributes(attributes), gridPosition);
 	}
 
-	@Override public KeyValueAccess getKeyValueAccess() {
+	@Override public KeyValueRoot getKeyValueRoot() {
 
-		return reader.getKeyValueAccess();
+		return reader.getKeyValueRoot();
+	}
+
+	@Override
+	public ContainerDialect getContainerDialect() {
+
+		return reader.getContainerDialect();
 	}
 
 	@Override public boolean exists(String pathName) {
@@ -265,26 +235,6 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	@Override public void writeSerializedBlock(Serializable object, String datasetPath, DatasetAttributes datasetAttributes, long... gridPosition) throws N5Exception {
 
 		writer.writeSerializedBlock(object, datasetPath, getConvertedDatasetAttributes(datasetAttributes), gridPosition);
-	}
-
-	@Override public void setVersion(String path) {
-
-		writer.setVersion(path);
-	}
-
-	@Override public void writeAttributes(String normalGroupPath, JsonElement attributes) throws N5Exception {
-
-		writer.writeAttributes(normalGroupPath, attributes);
-	}
-
-	@Override public void setAttributes(String path, JsonElement attributes) throws N5Exception {
-
-		writer.setAttributes(path, attributes);
-	}
-
-	@Override public void writeAttributes(String normalGroupPath, Map<String, ?> attributes) throws N5Exception {
-
-		writer.writeAttributes(normalGroupPath, attributes);
 	}
 
 	@Override public <T> void writeChunks(String datasetPath, DatasetAttributes datasetAttributes, DataBlock<T>... chunks) throws N5Exception {

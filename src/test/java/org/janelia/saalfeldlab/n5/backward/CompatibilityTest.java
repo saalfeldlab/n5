@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.util.Arrays;
 
 import org.janelia.saalfeldlab.n5.*;
+import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.junit.Test;
 
@@ -95,14 +96,15 @@ public class CompatibilityTest {
 		URI uriMy = n5My.getURI();
 
 		// check attributes
-		final JsonElement attrsLegacy = ((GsonKeyValueN5Reader)n5Legacy).getAttributes(writeDataset);
-		final JsonElement attrsMy = ((GsonKeyValueN5Reader)n5My).getAttributes(writeDataset);
+		final JsonElement attrsLegacy = n5Legacy.getAttributes(writeDataset);
+		final JsonElement attrsMy = n5My.getAttributes(writeDataset);
 		assertEquals(attrsLegacy, attrsMy);
 
-		final KeyValueAccess kva = n5My.getKeyValueAccess();
+		final KeyValueRoot kvrLegacy = n5Legacy.getKeyValueRoot();
+		final KeyValueRoot kvrMy = n5My.getKeyValueRoot();
 		for (final String path : writePathsToTest) {
-			final byte[] dataMy = read(kva, kva.compose(uriMy, writeDataset, path));
-			final byte[] dataLegacy = read(kva, kva.compose(uriLegacy, writeDataset, path));
+			final byte[] dataMy = read(kvrMy, N5FilePath.of(writeDataset + "/" + path));
+			final byte[] dataLegacy = read(kvrLegacy, N5FilePath.of(writeDataset + "/" + path));
 			assertArrayEquals(dataLegacy, dataMy);
 		}
 
@@ -111,10 +113,10 @@ public class CompatibilityTest {
 		n5Legacy.close();
 	}
 
-	private byte[] read(KeyValueAccess kva, String path) {
+	private byte[] read(final KeyValueRoot kvr, final N5FilePath path) {
 
-		byte[] data;
-		try (VolatileReadData readData = kva.createReadData(path)) {
+		final byte[] data;
+		try (VolatileReadData readData = kvr.createReadData(path)) {
 			data = readData.allBytes();
 		} catch (N5Exception.N5IOException e) {
 			return null;
@@ -122,8 +124,8 @@ public class CompatibilityTest {
 		return data;
 	}
 
-	private static byte[] expectedData(int size, byte value ) {
-		byte[] data = new byte[size];
+	private static byte[] expectedData(final int size, final byte value ) {
+		final byte[] data = new byte[size];
 		Arrays.fill(data, value);
 		return data;
 	}
