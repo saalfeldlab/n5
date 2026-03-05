@@ -237,7 +237,7 @@ public interface KeyValueAccess {
 	 *            efforts are made to normalize it.
 	 * @return true if the path is a file
 	 */
-	boolean isFile( String normalPath ); // TODO: Looks un-used. Remove?
+	boolean isFile( String normalPath );
 
 	/**
 	 * Create a {@link VolatileReadData} through which data at the normal key
