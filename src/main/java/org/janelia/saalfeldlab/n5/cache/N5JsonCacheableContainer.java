@@ -64,7 +64,7 @@ public interface N5JsonCacheableContainer {
 	 *            the normalized path name
 	 * @param normalCacheKey
 	 *            the normalized resource name (may be null).
-	 * @return true if the resouce exists
+	 * @return true if the resource exists
 	 */
 	boolean existsFromContainer(final String normalPathName, final String normalCacheKey);
 
@@ -88,8 +88,8 @@ public interface N5JsonCacheableContainer {
 	boolean isDatasetFromContainer(final String normalPathName);
 
 	/**
-	 * 
-	 * Returns true if a path is a group, given that the the given attributes exist
+	 *
+	 * Returns true if a path is a group, given that the given attributes exist
 	 * for the given cache key.
 	 * <p>
 	 * Should not call the backing storage.
