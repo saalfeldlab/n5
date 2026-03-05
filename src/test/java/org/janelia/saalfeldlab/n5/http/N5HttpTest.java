@@ -2,11 +2,16 @@ package org.janelia.saalfeldlab.n5.http;
 
 import com.google.gson.GsonBuilder;
 import org.janelia.saalfeldlab.n5.AbstractN5Test;
-import org.janelia.saalfeldlab.n5.HttpKeyValueAccess;
+import org.janelia.saalfeldlab.n5.KeyValueRootHierarchyStore;
 import org.janelia.saalfeldlab.n5.N5FSWriter;
 import org.janelia.saalfeldlab.n5.N5KeyValueReader;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
+import org.janelia.saalfeldlab.n5.FileSystemKeyValueRoot;
+import org.janelia.saalfeldlab.n5.HttpKeyValueRoot;
+import org.janelia.saalfeldlab.n5.KeyValueRoot;
+import org.janelia.saalfeldlab.n5.HierarchyStore;
+import org.janelia.saalfeldlab.n5.cache.HierarchyCache;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Ignore;
@@ -77,9 +82,30 @@ public class N5HttpTest extends AbstractN5Test {
 			final String location,
 			final GsonBuilder gson) throws IOException {
 
+
+		final URI root = httpServerURI.resolve(location);
+		final HierarchyStore readStore = new KeyValueRootHierarchyStore(new HttpKeyValueRoot(root));
+
 		final String writerFsPath = httpServerDirectory.resolve(location).toFile().getCanonicalPath();
-		final N5FSWriter writer = new N5FSWriter(writerFsPath, gson, cacheMeta);
-		final N5KeyValueReader reader = (N5KeyValueReader)createN5Reader(location, gson);
+		final HierarchyStore writeStore = new KeyValueRootHierarchyStore(new FileSystemKeyValueRoot(writerFsPath));
+
+		final HierarchyStore readWriteStore = new ReadWriteHierarchyStore(readStore, writeStore);
+		final HierarchyStore store = cacheMeta ? new HierarchyCache(readWriteStore) : readWriteStore;
+
+		final N5FSWriter writer = new N5FSWriter(writerFsPath, gson, cacheMeta) {
+
+			@Override
+			public HierarchyStore createHierarchyStore(final KeyValueRoot keyValueRoot, final boolean cacheMeta) {
+				return store;
+			}
+		};
+		final N5KeyValueReader reader = new N5KeyValueReader(new HttpKeyValueRoot(root), gson, cacheMeta) {
+
+			@Override
+			public HierarchyStore createHierarchyStore(final KeyValueRoot keyValueRoot, final boolean cacheMeta) {
+				return store;
+			}
+		};
 		return new HttpReaderFsWriter(writer, reader);
 	}
 
@@ -88,8 +114,8 @@ public class N5HttpTest extends AbstractN5Test {
 			final String location,
 			final GsonBuilder gson) {
 
-		final String readerHttpPath = httpServerURI.resolve(location).toString();
-		return new N5KeyValueReader(new HttpKeyValueAccess(), readerHttpPath, gson, cacheMeta);
+		final URI root = httpServerURI.resolve(location);
+		return new N5KeyValueReader(new HttpKeyValueRoot(root), gson, cacheMeta);
 	}
 
 	@Test

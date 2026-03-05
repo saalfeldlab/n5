@@ -1,7 +1,5 @@
 package org.janelia.saalfeldlab.n5;
 
-import java.nio.file.FileSystems;
-
 import com.google.gson.GsonBuilder;
 
 /**
@@ -42,8 +40,7 @@ public class N5FSWriter extends N5KeyValueWriter {
 			throws N5Exception {
 
 		super(
-				new FileSystemKeyValueAccess(),
-				basePath,
+				new FileSystemKeyValueRoot(basePath),
 				gsonBuilder,
 				cacheAttributes);
 	}

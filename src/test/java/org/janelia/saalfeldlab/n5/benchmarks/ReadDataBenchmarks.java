@@ -7,10 +7,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
-import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
-import org.janelia.saalfeldlab.n5.KeyValueAccess;
+import org.janelia.saalfeldlab.n5.FileSystemKeyValueRoot;
+import org.janelia.saalfeldlab.n5.KeyValueRoot;
 import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -45,7 +45,7 @@ public class ReadDataBenchmarks {
 
 	protected Path basePath;
 	protected ArrayList<Path> tmpPaths;
-	protected KeyValueAccess kva;
+	protected KeyValueRoot kvr;
 	protected Random random;
 
 	public ReadDataBenchmarks() {}
@@ -68,43 +68,42 @@ public class ReadDataBenchmarks {
 
 	public VolatileReadData read() throws IOException {
 
-		return kva.createReadData(getPath().toString());
+		return kvr.createReadData(getPath());
 	}
 
-	protected Path getPath() {
+	protected N5FilePath getPath() {
 
-		return basePath.resolve("tmp-" + objectSizeBytes);
+		return N5FilePath.of("tmp-" + objectSizeBytes);
 	}
 
 	@Setup(Level.Trial)
 	public void setup() throws IOException {
 
 		random = new Random();
-		kva = new FileSystemKeyValueAccess();
 
 		basePath = Files.createTempDirectory("ReadDataBenchmark-");
+		kvr = new FileSystemKeyValueRoot(basePath.toString());
+
 		tmpPaths = new ArrayList<>();
 		for (final int sz : sizes()) {
-			Path p = basePath.resolve("tmp-"+sz);
+			final N5FilePath p = N5FilePath.of("tmp-"+sz);
 			write(p, sz);
-			tmpPaths.add(p);
+			tmpPaths.add(basePath.resolve(p.path()));
 		}
 	}
 
-	protected void write(Path path, int numBytes) {
+	protected void write(N5FilePath path, int numBytes) {
 
 		final byte[] data = new byte[numBytes];
 		random.nextBytes(data);
 
-		System.out.println(path.toAbsolutePath());
+		System.out.println(path);
 		System.out.println(numBytes);
 
-		ReadData readData = ReadData.from(os -> {
-			os.write(data);
-		}).materialize();
+		final ReadData readData = ReadData.from(data);
 
 		try {
-			kva.write(path.toAbsolutePath().toString(), readData);
+			kvr.write(path, readData);
 		} catch (N5Exception.N5IOException e) {
 			e.printStackTrace();
 		}
