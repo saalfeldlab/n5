@@ -7,14 +7,14 @@ import java.net.URISyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
-class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
+public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
 
 
 	private final URI root;
 
 	private final String basePath;
 
-	FileSystemRootedKeyValueAccess(final String basePath) throws N5IOException {
+	public FileSystemRootedKeyValueAccess(final String basePath) throws N5IOException {
 		this.basePath = basePath;
 		this.root = new File(basePath).toURI();
 	}
