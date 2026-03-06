@@ -34,6 +34,9 @@ class BufferedKvaLockedChannel implements LockedChannel {
 
     @Override
     public InputStream newInputStream() throws N5IOException {
+
+		// TODO: This does not close the VolatileReadData returned by kva.createReadData.
+		//       Easiest fix is probably to materialize the VolatileReadData and close it, then use the materialized readData.
         return kva.createReadData(key).inputStream();
     }
 
