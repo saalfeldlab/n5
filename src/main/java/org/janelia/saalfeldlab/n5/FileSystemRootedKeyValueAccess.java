@@ -9,6 +9,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
@@ -52,13 +53,29 @@ public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
 		return Files.isRegularFile(path);
 	}
 
+	@Override
+	public void write(final URI normalPath, final ReadData data) throws N5IOException {
 
-	// -- forward to existing IoPolicy interface --
+		try {
+			_write(root.resolve(normalPath), data);
+		} catch (final NoSuchFileException e) {
+			throw new N5NoSuchKeyException("No such file", e);
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5IOException("Failed to lock file for writing: " + normalPath, e);
+		}
+	}
+
+// -- forward to existing IoPolicy interface --
 	//    (absolute paths, as strings. maybe revise later...)
 
 	private VolatileReadData _read(final URI uri) throws IOException {
 
 		return ioPolicy.read(new File(uri).getAbsolutePath());
+	}
+
+	private void _write(final URI uri, final ReadData data) throws IOException {
+
+		ioPolicy.write(new File(uri).getAbsolutePath(), data);
 	}
 
 	private final IoPolicy ioPolicy = new FsIoPolicy.Atomic();;

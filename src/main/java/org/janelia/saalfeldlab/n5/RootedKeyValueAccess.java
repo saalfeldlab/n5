@@ -61,6 +61,22 @@ public interface RootedKeyValueAccess {
 	 */
 	boolean isFile(URI normalPath);
 
+	/**
+	 * Write {@code data} to the given {@code normalPath}.
+	 * <p>
+	 * Existing data at {@code normalPath} will be overridden.
+	 *
+	 * @param normalPath
+	 * 		(relative to container root)
+	 * 		is expected to be in normalized form, no further efforts are made to normalize it
+	 * @param data
+	 * 		the data to write
+	 *
+	 * @throws N5IOException
+	 * 		if an error occurs
+	 */
+	void write(URI normalPath, ReadData data) throws N5IOException;
+
 
 	// ----------------------------------------------------------------
 	// TODO: Where should these go? Maybe we don't need them if we rely on URI?
@@ -87,6 +103,10 @@ public interface RootedKeyValueAccess {
 
 	default boolean isFile(final String normalPath) {
 		return isFile(URI.create(normalPath));
+	}
+
+	default void write(final String normalPath, final ReadData data) throws N5IOException {
+		write(URI.create(normalPath), data);
 	}
 
 }

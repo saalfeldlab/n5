@@ -105,7 +105,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		});
 
 		try {
-			getKeyValueAccess().write(absoluteAttributesPath(normalGroupPath), newAttributesReadData);
+			getRootedKeyValueAccess().write(relativeAttributesPath(normalGroupPath), newAttributesReadData);
 		} catch (UncheckedIOException | N5IOException e) {
 			throw new N5Exception.N5IOException("Failed to write attributes into " + normalGroupPath, e);
 		}

@@ -54,7 +54,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	default boolean groupExists(final String normalPath) {
 
-		return getKeyValueAccess().isDirectory(absoluteGroupPath(normalPath));
+		return getRootedKeyValueAccess().isDirectory(normalPath);
 	}
 
 	@Override
@@ -78,7 +78,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 *            normalized group path without leading slash
 	 * @return the absolute path to the attributes
 	 */
-	private String relativeAttributesPath(final String normalPath) {
+	default String relativeAttributesPath(final String normalPath) {
 
 		return RootedKeyValueAccess.compose(normalPath, getAttributesKey());
 	}
