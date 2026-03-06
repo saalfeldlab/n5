@@ -31,6 +31,7 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.nio.channels.FileLock;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -79,7 +80,7 @@ class FileKeyLockManager {
 		}
 	}
 
-	private KeyLockState keyLockState(final Path path) {
+	private KeyLockState keyLockState(final Path path, final IoPolicy policy) throws IOException {
 
 		final String key = path.toAbsolutePath().toString();
 
@@ -87,17 +88,18 @@ class FileKeyLockManager {
 
 		final WeakValue existingRef = locks.get(key);
 		KeyLockState state = existingRef == null ? null : existingRef.get();
-		if (state != null) {
-			return state;
+		if (state == null) {
+			final KeyLockState newState = new KeyLockState(path, policy);
+			while (state == null) {
+				final WeakValue ref = locks.compute(key,
+						(k, v) -> (v != null && v.get() != null)
+								? v
+								: new WeakValue(k, newState, refQueue));
+				state = ref.get();
+			}
 		}
-
-		final KeyLockState newState = new KeyLockState(path);
-		while (state == null) {
-			final WeakValue ref = locks.compute(key,
-					(k, v) -> (v != null && v.get() != null)
-							? v
-							: new WeakValue(k, newState, refQueue));
-			state = ref.get();
+		if (state.policy() != policy) {
+			throw new IOException("Trying to lock \"" + path + "\" with policy " + policy + ", but it is already used with " + state.policy());
 		}
 		return state;
 	}
@@ -108,31 +110,73 @@ class FileKeyLockManager {
 	 * <p>
 	 * The first reader will acquire a shared file lock. Subsequent readers
 	 * only acquire the thread-level lock.
+	 * <p>
+	 * The given locking {@link IoPolicy policy} applies to OS-level locking.
+	 * For both the {@code STRICT} and {@code PERMISSIVE} policy, a {@link
+	 * FileLock} is obtained. If this fails, {@code STRICT} will throw an {@code
+	 * IOException}. {@code PERMISSIVE} will proceed without locking. {@code
+	 * UNSAFE} will not attempt OS-level locking, however will still manage
+	 * mutual exclusion of readers and writers in the same JVM. Trying to lock
+	 * the same path with different locking policies will throw an {@code
+	 * IOException}.
 	 *
 	 * @param path
-	 *            the key (file path) to lock for reading
+	 * 		the key (file path) to lock for reading
+	 * @param policy
+	 * 		the locking policy
+	 *
 	 * @return a {@link LockedChannel} that must be closed when done
+	 *
 	 * @throws IOException
-	 *             if acquiring the file lock fails
+	 * 		if acquiring the file lock fails
+	 */
+	public LockedFileChannel lockForReading(final Path path, final IoPolicy policy) throws IOException {
+
+		return keyLockState(path, policy).acquireRead();
+	}
+
+	/**
+	 * Acquires a read lock for the specified key with the {@link IoPolicy#STRICT} locking policy.
 	 */
 	public LockedFileChannel lockForReading(final Path path) throws IOException {
 
-		return keyLockState(path).acquireRead();
+		return lockForReading(path, IoPolicy.STRICT);
 	}
 
 	/**
 	 * Acquires a write lock for the specified key. Only one thread can hold a
 	 * write lock for a key at a time, and no readers can hold locks.
+	 * <p>
+	 * The given locking {@link IoPolicy policy} applies to OS-level locking.
+	 * For both the {@code STRICT} and {@code PERMISSIVE} policy, a {@link
+	 * FileLock} is obtained. If this fails, {@code STRICT} will throw an {@code
+	 * IOException}. {@code PERMISSIVE} will proceed without locking. {@code
+	 * UNSAFE} will not attempt OS-level locking, however will still manage
+	 * mutual exclusion of readers and writers in the same JVM. Trying to lock
+	 * the same path with different locking policies will throw an {@code
+	 * IOException}.
 	 *
 	 * @param path
-	 *            the file path to lock for writing
+	 * 		the file path to lock for writing
+	 * @param policy
+	 * 		the locking policy
+	 *
 	 * @return a {@link LockedChannel} that must be closed when done
+	 *
 	 * @throws IOException
-	 *             if acquiring the file lock fails
+	 * 		if acquiring the file lock fails
+	 */
+	public LockedFileChannel lockForWriting(final Path path, final IoPolicy policy) throws IOException {
+
+		return keyLockState(path, policy).acquireWrite();
+	}
+
+	/**
+	 * Acquires a write lock for the specified key with the {@link IoPolicy#STRICT} locking policy.
 	 */
 	public LockedFileChannel lockForWriting(final Path path) throws IOException {
 
-		return keyLockState(path).acquireWrite();
+		return lockForWriting(path, IoPolicy.STRICT);
 	}
 
 	/**
@@ -143,15 +187,5 @@ class FileKeyLockManager {
 	int size() {
 
 		return locks.size();
-	}
-
-	/**
-	 * Removes the lock state for a key if no locks are held.
-	 *
-	 * @param key the key whose lock state should be removed
-	 * @return true if removed, false if currently in use or not found
-	 */
-	public boolean removeLockIfUnused(final String key) {
-		throw new UnsupportedOperationException("TODO. REMOVE");
 	}
 }
