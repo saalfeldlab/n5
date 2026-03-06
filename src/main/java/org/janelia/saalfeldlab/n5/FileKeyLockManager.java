@@ -136,30 +136,6 @@ class FileKeyLockManager {
 	}
 
 	/**
-	 * Attempts to acquire a read lock for the specified key without blocking.
-	 *
-	 * @param path
-	 *            the file path to lock for reading
-	 * @return a {@link LockedChannel} if the lock was acquired, null otherwise
-	 */
-	public LockedFileChannel tryLockForReading(final Path path) {
-
-		return keyLockState(path).tryAcquireRead();
-	}
-
-	/**
-	 * Attempts to acquire a write lock for the specified key without blocking.
-	 *
-	 * @param path
-	 *            the file path to lock for writing
-	 * @return a {@link LockedChannel} if the lock was acquired, null otherwise
-	 */
-	public LockedFileChannel tryLockForWriting(final Path path) {
-
-		return keyLockState(path).tryAcquireWrite();
-	}
-
-	/**
 	 * Returns the number of keys currently being tracked.
 	 *
 	 * @return the number of keys with associated locks
