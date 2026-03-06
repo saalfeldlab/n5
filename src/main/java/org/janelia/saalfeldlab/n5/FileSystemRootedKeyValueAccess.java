@@ -2,10 +2,13 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
@@ -27,9 +30,12 @@ public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
 
 		try {
 			return _read(root.resolve(normalPath));
-		} catch (IOException e) {
-			throw new N5IOException(e);
+		} catch (final NoSuchFileException e) {
+			throw new N5NoSuchKeyException("No such file", e);
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5IOException("Failed to lock file for reading: " + normalPath, e);
 		}
+
 	}
 
 	@Override
