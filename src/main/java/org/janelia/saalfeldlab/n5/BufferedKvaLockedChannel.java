@@ -12,6 +12,9 @@ import java.io.Writer;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
+/**
+ * Supports default implementation of the deprecated {@link KeyValueAccess#lockForReading(String)} and {@link KeyValueAccess#lockForWriting(String)} methods.
+ */
 class BufferedKvaLockedChannel implements LockedChannel {
 
     private final KeyValueAccess kva;
