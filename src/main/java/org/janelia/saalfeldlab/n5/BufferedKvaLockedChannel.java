@@ -1,8 +1,16 @@
 package org.janelia.saalfeldlab.n5;
 
+import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
-
-import java.io.*;
 
 class BufferedKvaLockedChannel implements LockedChannel {
 
@@ -16,24 +24,24 @@ class BufferedKvaLockedChannel implements LockedChannel {
     }
 
     @Override
-    public Reader newReader() throws N5Exception.N5IOException {
+    public Reader newReader() throws N5IOException {
 
         return new InputStreamReader(newInputStream());
     }
 
     @Override
-    public InputStream newInputStream() throws N5Exception.N5IOException {
+    public InputStream newInputStream() throws N5IOException {
         return kva.createReadData(key).inputStream();
     }
 
     @Override
-    public Writer newWriter() throws N5Exception.N5IOException {
+    public Writer newWriter() throws N5IOException {
 
         return new BufferedWriter(new OutputStreamWriter(newOutputStream()));
     }
 
     @Override
-    public OutputStream newOutputStream() throws N5Exception.N5IOException {
+    public OutputStream newOutputStream() throws N5IOException {
         if (baos == null)
             baos = new ByteArrayOutputStream();
         return baos;
