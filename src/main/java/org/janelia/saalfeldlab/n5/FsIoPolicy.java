@@ -69,6 +69,8 @@ public class FsIoPolicy {
         @Override
         public void delete(final String key) throws IOException {
             final Path path = Paths.get(key);
+            if (!Files.isRegularFile(path))
+                Files.delete(path);
             try (LockedFileChannel ignore = FILE_LOCK_MANAGER.lockForWriting(path)) {
                 Files.delete(path);
             }
