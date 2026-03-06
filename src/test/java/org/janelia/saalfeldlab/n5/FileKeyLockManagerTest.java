@@ -33,6 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.io.Closeable;
@@ -40,6 +41,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -194,66 +196,6 @@ public class FileKeyLockManagerTest {
 		assertEquals("Reader should see written content", writtenContent, readContent.get());
 	}
 
-	@Test
-	public void testTryLock() throws Exception {
-
-		/* create a test file */
-		final Path testFile = tempDir.resolve("test3.txt");
-		final String testContent = "test content";
-		Files.write(testFile, testContent.getBytes());
-
-		/* try acquiring read lock and read */
-		LockedChannel readLock1 = FILE_LOCK_MANAGER.tryLockForReading(testFile);
-		assertNotNull("Should acquire read lock", readLock1);
-		try (final Reader reader = readLock1.newReader()) {
-			final char[] buf = new char[testContent.length()];
-			assertEquals("Should read correct number of chars", testContent.length(), reader.read(buf));
-		}
-
-		/* try acquiring another read lock and read */
-		LockedChannel readLock2 = FILE_LOCK_MANAGER.tryLockForReading(testFile);
-		assertNotNull("Should acquire second read lock", readLock2);
-		try (final Reader reader = readLock2.newReader()) {
-			final char[] buf = new char[testContent.length()];
-			assertEquals("Should read correct number of chars", testContent.length(), reader.read(buf));
-		}
-
-		/* try acquiring write lock while reads are held - should fail */
-		LockedChannel writeLock = FILE_LOCK_MANAGER.tryLockForWriting(testFile);
-		assertNull("Should not acquire write lock while reads are held", writeLock);
-
-		readLock1.close();
-		readLock2.close();
-
-		/* now try write lock and write */
-		writeLock = FILE_LOCK_MANAGER.tryLockForWriting(testFile);
-		assertNotNull("Should acquire write lock after reads are released", writeLock);
-		final String newContent = "new content";
-		try (final Writer writer = writeLock.newWriter()) {
-			writer.write(newContent);
-		}
-
-		/* try acquiring read lock from another thread while write is held */
-		final AtomicReference<LockedChannel> readLock3 = new AtomicReference<>();
-		final Thread readerThread = new Thread(() -> {
-			readLock3.set(FILE_LOCK_MANAGER.tryLockForReading(testFile));
-		});
-		readerThread.start();
-		readerThread.join();
-
-		assertNull("Should not acquire read lock while write is held", readLock3.get());
-
-		writeLock.close();
-
-		/* verify written content */
-		try (final LockedChannel verifyLock = FILE_LOCK_MANAGER.lockForReading(testFile);
-			 final Reader reader = verifyLock.newReader()) {
-			final char[] buf = new char[newContent.length()];
-			reader.read(buf);
-			assertEquals("Content should match what was written", newContent, new String(buf));
-		}
-	}
-
 	private class CleanUpHelper implements Closeable
 	{
 		private final Path path;
@@ -391,8 +333,7 @@ public class FileKeyLockManagerTest {
 	@Test
 	public void testReadLockRequiresExistingFile() throws Exception {
 		final Path testFile = tempDir.resolve("nonexistent.txt");
-		assertNull("Should not acquire read lock for non-existent file",
-				FILE_LOCK_MANAGER.tryLockForReading(testFile));
+		assertThrows("Should not acquire read lock for non-existent file", NoSuchFileException.class, () -> FILE_LOCK_MANAGER.lockForReading(testFile));
 	}
 
 	@Test

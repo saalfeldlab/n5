@@ -85,56 +85,6 @@ class KeyLockState {
 		}
 	}
 
-	LockedFileChannel tryAcquireRead() {
-
-		if(!readerMutex.tryAcquire()) {
-			return null;
-		}
-
-		try {
-			if (numReaders == 0) {
-				// We are the first Reader, and are responsible for creating the channelLock
-				// (Other concurrent Readers are still blocked in readerMutex.)
-
-				// If a Writer is still open, this will fail
-				if(!channelLockMutex.tryAcquire()) {
-					return null;
-				}
-
-				try {
-					channelLock = ChannelLock.tryLock(path, false);
-				} catch (IOException e) {
-					// Something went wrong. Back off.
-					channelLockMutex.release();
-					return null;
-				}
-			}
-
-			// We have a READ ChannelLock.
-			// Try to open a FileChannel.
-			final FileChannel channel;
-			try {
-				channel = FileChannel.open(path, StandardOpenOption.READ);
-			} catch (final IOException e) {
-				// Something went wrong. Back off.
-				if (numReaders == 0) {
-					try {
-						releaseChannelLock();
-					} catch (IOException ignored) {
-					}
-				}
-				return null;
-			}
-
-			// We have a FileChannel.
-			// Create a LockedFileChannel that will releaseRead() when it is closed.
-			++numReaders;
-			return new LockedFileChannel(channel, this::releaseRead);
-		} finally {
-			readerMutex.release();
-		}
-	}
-
 	void releaseRead() throws IOException {
 
 		try {
@@ -182,25 +132,6 @@ class KeyLockState {
 		} catch (InterruptedException e) {
 			throw new IOException(e);
 		}
-	}
-
-	LockedFileChannel tryAcquireWrite() {
-
-		if (!channelLockMutex.tryAcquire()) {
-			return null;
-		}
-
-		try {
-			channelLock = ChannelLock.tryLock(path, true);
-		} catch (IOException e) {
-			// Something went wrong. Back off.
-			channelLockMutex.release();
-			return null;
-		}
-
-		// We have a WRITE ChannelLock.
-		// Create a LockedFileChannel that will releaseWrite() when it is closed.
-		return new LockedFileChannel(channelLock.getChannel(), this::releaseWrite);
 	}
 
 	void releaseWrite() throws IOException {
