@@ -47,7 +47,7 @@ import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.StringDataBlock;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
-import static org.janelia.saalfeldlab.n5.N5Exception.*;
+import static org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import static org.janelia.saalfeldlab.n5.codec.N5BlockCodecs.BlockHeader.MODE_DEFAULT;
 import static org.janelia.saalfeldlab.n5.codec.N5BlockCodecs.BlockHeader.MODE_OBJECT;
 import static org.janelia.saalfeldlab.n5.codec.N5BlockCodecs.BlockHeader.MODE_VARLENGTH;
