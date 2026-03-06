@@ -77,6 +77,20 @@ public interface RootedKeyValueAccess {
 	 */
 	void write(URI normalPath, ReadData data) throws N5IOException;
 
+	/**
+	 * Create a directory and all parent paths along the way. The directory
+	 * and parent paths are discoverable. On a filesystem, this usually means
+	 * that the directories exist, on a key value store that is unaware of
+	 * directories, this may be implemented as creating an object for each path.
+	 *
+	 * @param normalPath
+	 * 		(relative to container root)
+	 * 		is expected to be in normalized form, no further efforts are made to normalize it.
+	 *
+	 * @throws N5IOException
+	 * 		if an error occurs during creation
+	 */
+	void createDirectories(URI normalPath) throws N5IOException;
 
 	// ----------------------------------------------------------------
 	// TODO: Where should these go? Maybe we don't need them if we rely on URI?
@@ -108,5 +122,10 @@ public interface RootedKeyValueAccess {
 	default void write(final String normalPath, final ReadData data) throws N5IOException {
 		write(URI.create(normalPath), data);
 	}
+
+	default void createDirectories( final String normalPath ) throws N5IOException {
+		createDirectories(URI.create(normalPath));
+	}
+
 
 }

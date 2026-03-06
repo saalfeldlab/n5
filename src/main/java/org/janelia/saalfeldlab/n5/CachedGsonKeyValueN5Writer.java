@@ -62,7 +62,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		else if (datasetExists(normalPath))
 			throw new N5Exception("Can't make a group on existing dataset.");
 
-		getKeyValueAccess().createDirectories(absoluteGroupPath(normalPath));
+		getRootedKeyValueAccess().createDirectories(normalPath);
 
 		if (cacheMeta()) {
 			// check all nodes that are parents of the added node, if they have

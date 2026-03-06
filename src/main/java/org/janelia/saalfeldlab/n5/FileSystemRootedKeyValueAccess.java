@@ -4,9 +4,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -65,8 +68,27 @@ public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
 		}
 	}
 
-// -- forward to existing IoPolicy interface --
+	@Override
+	public void createDirectories(final URI normalPath) throws N5IOException {
+
+		try {
+			createDirectories(Path.of(root.resolve(normalPath)));
+		} catch (NoSuchFileException e) {
+			throw new N5NoSuchKeyException("No such file", e);
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5IOException("Failed to create directories", e);
+		}
+	}
+
+
+
+
+	//
+ 	// ------------------------------------------------------------------------
+ 	//
+	// -- forward to existing IoPolicy interface --
 	//    (absolute paths, as strings. maybe revise later...)
+
 
 	private VolatileReadData _read(final URI uri) throws IOException {
 
@@ -79,5 +101,150 @@ public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	private final IoPolicy ioPolicy = new FsIoPolicy.Atomic();;
+
+
+
+
+	//
+	// ------------------------------------------------------------------------
+	//
+	// -- helper methods copied from FileSystemKeyValueAccess --
+	//
+
+
+	/**
+	 * This is a copy of {@link Files#createDirectories(Path, FileAttribute...)}
+	 * that follows symlinks.
+	 *
+	 * Workaround for https://bugs.openjdk.java.net/browse/JDK-8130464
+	 *
+	 * Creates a directory by creating all nonexistent parent directories first.
+	 * Unlike the {@link Files#createDirectories} method, an exception
+	 * is not thrown if the directory could not be created because it already
+	 * exists.
+	 *
+	 * <p>
+	 * The {@code attrs} parameter is optional {@link FileAttribute
+	 * file-attributes} to set atomically when creating the nonexistent
+	 * directories. Each file attribute is identified by its {@link
+	 * FileAttribute#name name}. If more than one attribute of the same name is
+	 * included in the array then all but the last occurrence is ignored.
+	 *
+	 * <p>
+	 * If this method fails, then it may do so after creating some, but not
+	 * all, of the parent directories.
+	 *
+	 * @param dir
+	 *            the directory to create
+	 *
+	 * @param attrs
+	 *            an optional list of file attributes to set atomically when
+	 *            creating the directory
+	 *
+	 * @return the directory
+	 *
+	 * @throws UnsupportedOperationException
+	 *             if the array contains an attribute that cannot be set
+	 *             atomically
+	 *             when creating the directory
+	 * @throws FileAlreadyExistsException
+	 *             if {@code dir} exists but is not a directory <i>(optional
+	 *             specific
+	 *             exception)</i>
+	 * @throws IOException
+	 *             if an I/O error occurs
+	 * @throws SecurityException
+	 *             in the case of the default provider, and a security manager
+	 *             is
+	 *             installed, the {@link SecurityManager#checkWrite(String)
+	 *             checkWrite}
+	 *             method is invoked prior to attempting to create a directory
+	 *             and
+	 *             its {@link SecurityManager#checkRead(String) checkRead} is
+	 *             invoked for each parent directory that is checked. If {@code
+	 *          dir} is not an absolute path then its {@link Path#toAbsolutePath
+	 *             toAbsolutePath} may need to be invoked to get its absolute
+	 *             path.
+	 *             This may invoke the security manager's {@link
+	 *             SecurityManager#checkPropertyAccess(String)
+	 *             checkPropertyAccess}
+	 *             method to check access to the system property
+	 *             {@code user.dir}
+	 */
+	protected static Path createDirectories(Path dir, final FileAttribute<?>... attrs) throws IOException {
+
+		// attempt to create the directory
+		try {
+			createAndCheckIsDirectory(dir, attrs);
+			return dir;
+		} catch (final FileAlreadyExistsException x) {
+			// file exists and is not a directory
+			throw x;
+		} catch (final IOException x) {
+			// parent may not exist or other reason
+		}
+		SecurityException se = null;
+		try {
+			dir = dir.toAbsolutePath();
+		} catch (final SecurityException x) {
+			// don't have permission to get absolute path
+			se = x;
+		}
+		// find a descendant that exists
+		Path parent = dir.getParent();
+		while (parent != null) {
+			try {
+				parent.getFileSystem().provider().checkAccess(parent);
+				break;
+			} catch (final NoSuchFileException x) {
+				// does not exist
+			}
+			parent = parent.getParent();
+		}
+		if (parent == null) {
+			// unable to find existing parent
+			if (se == null) {
+				throw new FileSystemException(
+						dir.toString(),
+						null,
+						"Unable to determine if root directory exists");
+			} else {
+				throw se;
+			}
+		}
+
+		// create directories
+		Path child = parent;
+		for (final Path name : parent.relativize(dir)) {
+			child = child.resolve(name);
+			createAndCheckIsDirectory(child, attrs);
+		}
+		return dir;
+	}
+
+	/**
+	 * This is a copy of a previous Files#createAndCheckIsDirectory(Path,
+	 * FileAttribute...) method that follows symlinks.
+	 *
+	 * Workaround for https://bugs.openjdk.java.net/browse/JDK-8130464
+	 *
+	 * Used by createDirectories to attempt to create a directory. A no-op if the
+	 * directory already exists.
+	 *
+	 * @param dir directory path
+	 * @param attrs file attributes
+	 * @throws IOException the exception
+	 */
+	protected static void createAndCheckIsDirectory(
+			final Path dir,
+			final FileAttribute<?>... attrs) throws IOException {
+
+		try {
+			Files.createDirectory(dir, attrs);
+		} catch (final FileAlreadyExistsException x) {
+			if (!Files.isDirectory(dir))
+				throw x;
+		}
+	}
 
 }
