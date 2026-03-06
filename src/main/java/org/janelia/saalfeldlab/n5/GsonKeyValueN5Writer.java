@@ -280,7 +280,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), convertedDatasetAttributes);
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(getRootedKeyValueAccess(), N5URI.normalizeGroupPath(path), convertedDatasetAttributes);
 			convertedDatasetAttributes.<T> getDatasetAccess().writeBlock(posKva, dataBlock);
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
