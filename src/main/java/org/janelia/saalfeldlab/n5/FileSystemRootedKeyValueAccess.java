@@ -4,12 +4,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.stream.Stream;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -17,15 +21,10 @@ import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
 
-
 	private final URI root;
 
-	private final String basePath;
-
 	public FileSystemRootedKeyValueAccess(final String basePath) throws N5IOException {
-		this.basePath = basePath;
 		this.root = URI.create(basePath);
-//		this.root = new File(basePath).toURI();
 	}
 
 
@@ -80,6 +79,32 @@ public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
 		}
 	}
 
+	@Override
+	public void delete(final URI normalPath) throws N5IOException {
+
+		try {
+			final Path path = Path.of(root.resolve(normalPath));
+
+			if (Files.isRegularFile(path))
+				ioPolicy.delete(path.toString());
+			else {
+				try (final Stream<Path> pathStream = Files.walk(path)) {
+					for (final Iterator<Path> i = pathStream.sorted(Comparator.reverseOrder()).iterator(); i.hasNext(); ) {
+						final Path childPath = i.next();
+						if (Files.isRegularFile(childPath))
+							ioPolicy.delete(childPath.toString());
+						else
+							tryDelete(childPath);
+					}
+				}
+			}
+		} catch (NoSuchFileException ignore) {
+			/* It doesn't exist; that's sufficient for us to not complain on a `delete` call */
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5IOException("Failed to delete file at " + normalPath, e);
+		}
+	}
+
 
 
 
@@ -111,6 +136,27 @@ public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
 	// -- helper methods copied from FileSystemKeyValueAccess --
 	//
 
+	// TODO: is protected static in KVA, but we don't have static ioPolicy field here
+	private void tryDelete(final Path path) throws IOException {
+
+		try {
+			ioPolicy.delete(path.toString());
+		} catch (final DirectoryNotEmptyException e) {
+			/*
+			 * Even though path is expected to be an empty directory, sometimes
+			 * deletion fails on network filesystems when lock files are not
+			 * cleared immediately after the leaves have been removed.
+			 */
+			try {
+				/* wait and reattempt */
+				Thread.sleep(100);
+				ioPolicy.delete(path.toString());
+			} catch (final InterruptedException ex) {
+				e.printStackTrace();
+				Thread.currentThread().interrupt();
+			}
+		}
+	}
 
 	/**
 	 * This is a copy of {@link Files#createDirectories(Path, FileAttribute...)}

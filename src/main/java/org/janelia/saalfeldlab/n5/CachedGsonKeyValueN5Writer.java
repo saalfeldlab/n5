@@ -131,10 +131,9 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		 * normalizeGroupPath again the below duplicates code, but avoids extra work
 		 */
 		final String normalPath = N5URI.normalizeGroupPath(path);
-		final String groupPath = absoluteGroupPath(normalPath);
 
-		if (getKeyValueAccess().isDirectory(groupPath))
-			getKeyValueAccess().delete(groupPath);
+		if (getRootedKeyValueAccess().isDirectory(normalPath))
+			getRootedKeyValueAccess().delete(normalPath);
 
 		if (cacheMeta()) {
 			final String parentPath = getKeyValueAccess().parent(normalPath);

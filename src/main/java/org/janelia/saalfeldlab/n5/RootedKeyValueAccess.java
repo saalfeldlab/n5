@@ -92,6 +92,19 @@ public interface RootedKeyValueAccess {
 	 */
 	void createDirectories(URI normalPath) throws N5IOException;
 
+	/**
+	 * Delete a path. If the path is a directory, delete it recursively.
+	 *
+	 * @param normalPath
+	 * 		(relative to container root)
+	 * 		is expected to be in normalized form, no further efforts are made to normalize it.
+	 *
+	 * @throws N5IOException
+	 * 		if an error occurs during deletion
+	 */
+	void delete(URI normalPath) throws N5IOException;
+
+
 	// ----------------------------------------------------------------
 	// TODO: Where should these go? Maybe we don't need them if we rely on URI?
 
@@ -127,5 +140,8 @@ public interface RootedKeyValueAccess {
 		createDirectories(URI.create(normalPath));
 	}
 
+	default void delete(final String normalPath) throws N5IOException {
+		delete(URI.create(normalPath));
+	}
 
 }
