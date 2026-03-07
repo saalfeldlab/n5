@@ -68,6 +68,22 @@ public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
+	public String[] listDirectories(URI normalPath) throws N5IOException {
+
+		final Path path = Path.of(root.resolve(normalPath));
+		try (final Stream<Path> pathStream = Files.list(path)) {
+			return pathStream
+					.filter(Files::isDirectory)
+					.map(a -> path.relativize(a).toString())
+					.toArray(String[]::new);
+		} catch (NoSuchFileException e) {
+			throw new N5NoSuchKeyException("No such file", e);
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5IOException("Failed to list directories", e);
+		}
+	}
+
+	@Override
 	public void createDirectories(final URI normalPath) throws N5IOException {
 
 		try {

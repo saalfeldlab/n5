@@ -157,7 +157,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	@Override
 	default String[] list(final String pathName) throws N5Exception {
 
-		return getKeyValueAccess().listDirectories(absoluteGroupPath(pathName));
+		return getRootedKeyValueAccess().listDirectories(pathName);
 	}
 
 	/**

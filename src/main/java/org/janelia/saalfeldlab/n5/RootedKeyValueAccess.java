@@ -78,6 +78,21 @@ public interface RootedKeyValueAccess {
 	void write(URI normalPath, ReadData data) throws N5IOException;
 
 	/**
+	 * List all 'directory'-like children of a path.
+	 *
+	 * @param normalPath
+	 * 		(relative to container root)
+	 * 		is expected to be in normalized form, no further efforts are made to normalize it.
+	 *
+	 * @return the directories (relative to {@code normalPath})
+	 *
+	 * @throws N5IOException
+	 * 		if an error occurs during listing
+	 */
+	// TODO should this return URI[]
+	String[] listDirectories(URI normalPath) throws N5IOException;
+
+	/**
 	 * Create a directory and all parent paths along the way. The directory
 	 * and parent paths are discoverable. On a filesystem, this usually means
 	 * that the directories exist, on a key value store that is unaware of
@@ -136,6 +151,10 @@ public interface RootedKeyValueAccess {
 		write(URI.create(normalPath), data);
 	}
 
+	default String[] listDirectories(final String normalPath) throws N5IOException {
+		return listDirectories(URI.create(normalPath));
+	}
+
 	default void createDirectories( final String normalPath ) throws N5IOException {
 		createDirectories(URI.create(normalPath));
 	}
@@ -143,5 +162,6 @@ public interface RootedKeyValueAccess {
 	default void delete(final String normalPath) throws N5IOException {
 		delete(URI.create(normalPath));
 	}
+
 
 }
