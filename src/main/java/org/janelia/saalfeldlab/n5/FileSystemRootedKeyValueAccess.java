@@ -24,6 +24,8 @@ public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
 
 	private final URI root;
 
+	// TODO: Turning basePath String into root URI here is fragile. It might already be a URI ("file:/...") or just a path, it might be relative or absolute, etc...
+	//       Maybe it would be better to take a URI here and handle the String higher up (where we might have more information)?
 	public FileSystemRootedKeyValueAccess(final String basePath) throws N5IOException {
 
 		// NB: We want to make sure that the root URI is a directory, that is,
@@ -32,7 +34,7 @@ public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
 
 		// First we turn basePath into a URI. This takes care of OS specific
 		// separators and escaping of special characters:
-		final URI uri = Path.of(basePath).toUri();
+		final URI uri = URI.create(basePath);
 
 		// However, the resulting URI may not end in a slash in which case we
 		// append one.

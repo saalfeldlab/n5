@@ -2,6 +2,8 @@ package org.janelia.saalfeldlab.n5;
 
 
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
@@ -136,32 +138,38 @@ public interface RootedKeyValueAccess {
 	// TODO: Do we want these, or should we just rely on URI everywhere?
 
 	default VolatileReadData createReadData(final String normalPath) throws N5IOException {
-		return createReadData(URI.create(normalPath));
+		return createReadData(createURI(normalPath));
 	}
 
 	default boolean isDirectory(final String normalPath) {
-		return isDirectory(URI.create(normalPath));
+		return isDirectory(createURI(normalPath));
 	}
 
 	default boolean isFile(final String normalPath) {
-		return isFile(URI.create(normalPath));
+		return isFile(createURI(normalPath));
 	}
 
 	default void write(final String normalPath, final ReadData data) throws N5IOException {
-		write(URI.create(normalPath), data);
+		write(createURI(normalPath), data);
 	}
 
 	default String[] listDirectories(final String normalPath) throws N5IOException {
-		return listDirectories(URI.create(normalPath));
+		return listDirectories(createURI(normalPath));
 	}
 
 	default void createDirectories( final String normalPath ) throws N5IOException {
-		createDirectories(URI.create(normalPath));
+		createDirectories(createURI(normalPath));
 	}
 
 	default void delete(final String normalPath) throws N5IOException {
-		delete(URI.create(normalPath));
+		delete(createURI(normalPath));
 	}
 
-
+	private static URI createURI(final String normalPath) throws N5IOException {
+		try {
+			return new URI(null, null, normalPath, null);
+		} catch (URISyntaxException e) {
+			throw new N5IOException(e);
+		}
+	}
 }
