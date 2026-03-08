@@ -10,6 +10,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -24,7 +25,19 @@ public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
 	private final URI root;
 
 	public FileSystemRootedKeyValueAccess(final String basePath) throws N5IOException {
-		this.root = URI.create(basePath);
+
+		// NB: We want to make sure that the root URI is a directory, that is,
+		// it ends with a slash. (Otherwise, relativizing and resolution against
+		// the root URI will not work correctly.)
+
+		// First we turn basePath into a URI. This takes care of OS specific
+		// separators and escaping of special characters:
+		final URI uri = Path.of(basePath).toUri();
+
+		// However, the resulting URI may not end in a slash in which case we
+		// append one.
+		final String uriStr = uri.toString();
+		this.root = uriStr.endsWith("/") ? uri : URI.create(uriStr + "/");
 	}
 
 
