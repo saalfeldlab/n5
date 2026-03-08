@@ -139,14 +139,12 @@ public interface PositionValueAccess {
 
 		@Override
 		public boolean remove(final long[] gridPosition) throws N5IOException {
+			final String key = relativePath(gridPosition);
+			if (!kva.isFile(key))
+				return false;
 
-			throw new UnsupportedOperationException("TODO. not implemented yet.");
-//			final String key = absolutePath(gridPosition);
-//			if (!kva.isFile(key))
-//				return false;
-//
-//			kva.delete(key);
-//			return true;
+			kva.delete(key);
+			return true;
 		}
 	}
 
