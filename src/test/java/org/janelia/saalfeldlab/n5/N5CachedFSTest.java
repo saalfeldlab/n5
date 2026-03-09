@@ -28,6 +28,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -174,6 +175,26 @@ public class N5CachedFSTest extends N5FSTest {
 				new GsonBuilder(), true)) {
 
 			cacheBehaviorHelper(n5);
+			n5.remove();
+		}
+	}
+
+	@Test
+	public void cacheListTest() throws IOException, URISyntaxException {
+
+		final String loc = tempN5Location();
+		try (final N5TrackingStorage n5 = new N5TrackingStorage(new FileSystemKeyValueAccess(), new RootedFileSystemKeyValueAccess(loc), loc,
+				new GsonBuilder(), true)) {
+
+			final String groupA = "groupA";
+			n5.createGroup(groupA);
+			assertEquals(0, n5.getListCallCount());
+			assertArrayEquals(new String[] {groupA}, n5.list("/"));
+			assertEquals(1, n5.getListCallCount());
+			n5.remove(groupA);
+			assertArrayEquals(new String[] {}, n5.list("/"));
+			assertEquals(1, n5.getListCallCount());
+
 			n5.remove();
 		}
 	}
