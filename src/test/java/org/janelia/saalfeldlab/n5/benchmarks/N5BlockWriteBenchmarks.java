@@ -30,7 +30,6 @@ package org.janelia.saalfeldlab.n5.benchmarks;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
