@@ -67,7 +67,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		if (cacheMeta()) {
 			// check all nodes that are parents of the added node, if they have
 			// a children set, add the new child to it
-			getKeyValueAccess().parent(normalPath);
+			getKeyValueAccess().parent(normalPath); // TODO: Remove? Why is this done here?
 			String[] pathParts = getKeyValueAccess().components(normalPath);
 			String parent = N5URI.normalizeGroupPath("/");
 			if (pathParts.length == 0) {
