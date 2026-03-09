@@ -1,6 +1,8 @@
 package org.janelia.saalfeldlab.n5;
 
+import org.apache.commons.io.input.ProxyInputStream;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 import java.io.*;
 
@@ -23,7 +25,15 @@ class BufferedKvaLockedChannel implements LockedChannel {
 
     @Override
     public InputStream newInputStream() throws N5Exception.N5IOException {
-        return kva.createReadData(key).inputStream();
+
+        VolatileReadData volatileReadData = kva.createReadData(key);
+        return new ProxyInputStream(volatileReadData.inputStream()) {
+            @Override
+            public void close() throws IOException {
+                volatileReadData.close();
+                super.close();
+            }
+        };
     }
 
     @Override
