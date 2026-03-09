@@ -28,8 +28,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.nio.file.FileSystems;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
