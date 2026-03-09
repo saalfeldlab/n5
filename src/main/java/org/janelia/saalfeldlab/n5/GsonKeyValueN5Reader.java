@@ -57,6 +57,11 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		return getRootedKeyValueAccess().isDirectory(normalPath);
 	}
 
+	default boolean groupExists(final RootedURI.N5GroupPath group) {
+
+		return getRootedKeyValueAccess().isDirectory(group.uri());
+	}
+
 	@Override
 	default boolean exists(final String pathName) {
 

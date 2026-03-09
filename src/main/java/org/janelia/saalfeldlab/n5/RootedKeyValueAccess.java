@@ -169,6 +169,8 @@ public interface RootedKeyValueAccess {
 		try {
 			return new URI(null, null, normalPath, null);
 		} catch (URISyntaxException e) {
+			// This should be unreachable: Scheme/authority/fragment are null
+			// and the path component accepts virtually anything
 			throw new N5IOException(e);
 		}
 	}

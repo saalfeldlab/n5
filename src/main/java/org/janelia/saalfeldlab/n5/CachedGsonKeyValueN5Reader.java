@@ -164,10 +164,24 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 		}
 	}
 
+	default boolean groupExists(final RootedURI.N5GroupPath group) {
+
+		if (cacheMeta())
+			return getCache().isGroup(group.normalPath(), null);
+		else {
+			return isGroupFromContainer(group);
+		}
+	}
+
 	@Override
 	default boolean isGroupFromContainer(final String normalPathName) {
 
 		return GsonKeyValueN5Reader.super.groupExists(normalPathName);
+	}
+
+	default boolean isGroupFromContainer(final RootedURI.N5GroupPath group) {
+
+		return GsonKeyValueN5Reader.super.groupExists(group);
 	}
 
 	@Override
