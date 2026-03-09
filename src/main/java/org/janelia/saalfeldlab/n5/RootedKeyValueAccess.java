@@ -42,7 +42,7 @@ public interface RootedKeyValueAccess {
 	VolatileReadData createReadData(URI normalPath) throws N5IOException;
 
 	/**
-	 * Test whether the path is a directory.
+	 * Test whether the path exists and is a directory.
 	 *
 	 * @param normalPath
 	 * 		(relative to container root)
@@ -53,7 +53,7 @@ public interface RootedKeyValueAccess {
 	boolean isDirectory(URI normalPath);
 
 	/**
-	 * Test whether the path is a file.
+	 * Test whether the path exists and is a file.
 	 *
 	 * @param normalPath
 	 * 		(relative to container root)
