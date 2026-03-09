@@ -34,6 +34,7 @@ import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Reader;
 import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.DebugHelpers;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
@@ -128,6 +129,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
 	@Override public KeyValueAccess getKeyValueAccess() {
 
+		DebugHelpers.printStackTrace();
 		return reader.getKeyValueAccess();
 	}
 
