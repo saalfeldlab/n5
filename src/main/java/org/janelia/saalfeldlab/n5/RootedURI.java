@@ -54,6 +54,14 @@ public class RootedURI {
 		boolean isGroup();
 
 		/**
+		 * Returns the parent path, or {@code null} if this path is empty (i.e.,
+		 * the parent would be {@code ".."}.
+		 *
+		 * @return the parent path, or {@code null} if this path is empty
+		 */
+		N5GroupPath parent();
+
+		/**
 		 * Split this path into components separated by {@code "/"}.
 		 * <p>
 		 * Note, that the components are derived from the string representation,
@@ -123,6 +131,12 @@ public class RootedURI {
 		}
 
 		@Override
+		public N5GroupPath parent() {
+			final URI parent = uri.resolve("..");
+			return "..".equals(parent.getPath()) ? null : new GroupPath(parent);
+		}
+
+		@Override
 		public String toString() {
 			return "{group \"" + uri + "\"}";
 		}
@@ -145,20 +159,38 @@ public class RootedURI {
 //		split("");
 //		split("/"); // this will not happen
 
-		group("");
-		group("./");
-		group("/");
-		group("/./");
-		group("././/");
-		group("/////");
-		group("/a/b/c/");
-		group("/a/b/c");
-		group("a/b/c/");
-		group("a/b/c");
+//		group("");
+//		group("./");
+//		group("/");
+//		group("/./");
+//		group("././/");
+//		group("/////");
+//		group("/a/b/c/");
+//		group("/a/b/c");
+//		group("a/b/c/");
+//		group("a/b/c");
+
+		parent("");
+		parent("./");
+		parent("/");
+		parent("/./");
+		parent("././/");
+		parent("/////");
+		parent("/a/b/c/");
+		parent("/a/b/c");
+		parent("a/b/c/");
+		parent("a/b/c");
+		parent("a/");
+		parent("a");
 	}
 
 	private static void group(String str) {
 		System.out.println("\"" + str + "\" --> " + N5GroupPath.of(str));
+	}
+
+	private static void parent(String str) {
+		final N5GroupPath group = N5GroupPath.of(str);
+		System.out.println("\"" + str + "\" --> " + group + " --> " + group.parent());
 	}
 
 	private static void uri(String str) {
