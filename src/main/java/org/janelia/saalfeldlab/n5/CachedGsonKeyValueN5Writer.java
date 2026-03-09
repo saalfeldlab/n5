@@ -57,7 +57,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		if (groupExists(group))
 			return;
 
-		getRootedKeyValueAccess().createDirectories(group.uri()); // TODO: Add RootedKeyValueAccess.createDirectories(N5GroupPath)
+		getRootedKeyValueAccess().createDirectories(group.uri()); // TODO (N5Path): Add RootedKeyValueAccess.createDirectories(N5GroupPath)
 
 		if (cacheMeta()) {
 			// check all nodes that are parents of the added node, if they have
@@ -117,19 +117,20 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 	@Override
 	default boolean remove(final String path) throws N5Exception {
 
+		final RootedURI.N5GroupPath group = RootedURI.N5GroupPath.of(path);
+
 		// GsonKeyValueN5Writer.super.remove(path)
 		/*
 		 * the lines below duplicate the single line above but would have to call
 		 * normalizeGroupPath again the below duplicates code, but avoids extra work
 		 */
-		final String normalPath = N5URI.normalizeGroupPath(path);
-
-		if (getRootedKeyValueAccess().isDirectory(normalPath))
-			getRootedKeyValueAccess().delete(normalPath);
+		if (getRootedKeyValueAccess().isDirectory(group.uri())) // TODO (N5Path): Add RootedKeyValueAccess.isDirectory(N5GroupPath)
+			getRootedKeyValueAccess().delete(group.uri()); // TODO (N5Path): Add RootedKeyValueAccess.delete(N5GroupPath)
 
 		if (cacheMeta()) {
-			final String parentPath = getKeyValueAccess().parent(normalPath);
-			getCache().removeCache(parentPath, normalPath);
+			final RootedURI.N5GroupPath parent = group.parent();
+			final String parentPath = parent == null ? null : parent.normalPath();
+			getCache().removeCache(parentPath, group.normalPath());
 		}
 
 		/* an IOException should have occurred if anything had failed midway */
