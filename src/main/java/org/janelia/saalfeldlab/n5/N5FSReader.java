@@ -68,7 +68,7 @@ public class N5FSReader extends N5KeyValueReader {
 
 		super(
 				new FileSystemKeyValueAccess(),
-				new FileSystemRootedKeyValueAccess(basePath),
+				new RootedFileSystemKeyValueAccess(basePath),
 				basePath,
 				gsonBuilder,
 				cacheMeta);

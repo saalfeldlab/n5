@@ -40,7 +40,7 @@ import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
-import org.janelia.saalfeldlab.n5.FileSystemRootedKeyValueAccess;
+import org.janelia.saalfeldlab.n5.RootedFileSystemKeyValueAccess;
 import org.janelia.saalfeldlab.n5.GzipCompression;
 import org.janelia.saalfeldlab.n5.N5KeyValueWriter;
 import org.janelia.saalfeldlab.n5.N5Writer;
@@ -115,7 +115,7 @@ public class N5BlockWriteBenchmarks {
 		try {
 			tmpDir = Files.createTempDirectory("n5-blockWriteBenchmark-").toFile();
 			FileSystemKeyValueAccess kva = new FileSystemKeyValueAccess();
-			RootedKeyValueAccess rkva = new FileSystemRootedKeyValueAccess(tmpDir.getAbsolutePath());
+			RootedKeyValueAccess rkva = new RootedFileSystemKeyValueAccess(tmpDir.getAbsolutePath());
 			n5 = new N5KeyValueWriter(kva, rkva, tmpDir.getAbsolutePath(), new GsonBuilder(), true);
 
 			int[] blockSize = new int[numDimensions];

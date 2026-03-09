@@ -10,7 +10,6 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -20,13 +19,13 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
-public class FileSystemRootedKeyValueAccess implements RootedKeyValueAccess {
+public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 
 	private final URI root;
 
 	// TODO: Turning basePath String into root URI here is fragile. It might already be a URI ("file:/...") or just a path, it might be relative or absolute, etc...
 	//       Maybe it would be better to take a URI here and handle the String higher up (where we might have more information)?
-	public FileSystemRootedKeyValueAccess(final String basePath) throws N5IOException {
+	public RootedFileSystemKeyValueAccess(final String basePath) throws N5IOException {
 
 		// NB: We want to make sure that the root URI is a directory, that is,
 		// it ends with a slash. (Otherwise, relativizing and resolution against
