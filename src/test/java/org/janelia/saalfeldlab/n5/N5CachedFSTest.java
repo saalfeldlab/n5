@@ -97,8 +97,7 @@ public class N5CachedFSTest extends N5FSTest {
 		* The only possible way for the test to succeed is if it never again attempts to read the file, and relies on the cache. */
 		try (N5KeyValueWriter n5 = (N5KeyValueWriter) createN5Writer()) {
 			final String cachedGroup = "cachedGroup";
-			final String attributesPath = n5.absoluteAttributesPath(cachedGroup);
-
+			final String attributesPath = n5.getRootedKeyValueAccess().root().resolve(n5.relativeAttributesPath(cachedGroup)).getPath();
 
 			final ArrayList<TestData<?>> tests = new ArrayList<>();
 			n5.createGroup(cachedGroup);
@@ -112,7 +111,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 		try (N5KeyValueWriter n5 = (N5KeyValueWriter)createN5Writer(tempN5Location(), false)) {
 			final String cachedGroup = "cachedGroup";
-			final String attributesPath = n5.absoluteAttributesPath(cachedGroup);
+			final String attributesPath = n5.getRootedKeyValueAccess().root().resolve(n5.relativeAttributesPath(cachedGroup)).getPath();
 
 			final ArrayList<TestData<?>> tests = new ArrayList<>();
 			n5.createGroup(cachedGroup);

@@ -41,6 +41,10 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 		this.root = uriStr.endsWith("/") ? uri : URI.create(uriStr + "/");
 	}
 
+	@Override
+	public URI root() {
+		return root;
+	}
 
 	@Override
 	public VolatileReadData createReadData(final URI normalPath) throws N5IOException {

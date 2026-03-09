@@ -15,6 +15,8 @@ import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
  */
 public interface RootedKeyValueAccess {
 
+	URI root();
+
 	/**
 	 * Create a {@link VolatileReadData} through which data at the normal key
 	 * can be read.
