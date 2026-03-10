@@ -33,12 +33,23 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 
 		// First we turn basePath into a URI. This takes care of OS specific
 		// separators and escaping of special characters:
-		final URI uri = URI.create(basePath);
+		final URI uri = uriForNormalPath(basePath);
 
 		// However, the resulting URI may not end in a slash in which case we
 		// append one.
 		final String uriStr = uri.toString();
 		this.root = uriStr.endsWith("/") ? uri : URI.create(uriStr + "/");
+	}
+
+	private static URI uriForNormalPath(final String normalPath) {
+		// normalize make absolute the scheme specific part only
+		try {
+			final URI normalUri = URI.create(normalPath);
+			if (normalUri.isAbsolute()) return normalUri.normalize();
+		} catch (final IllegalArgumentException e) {
+			return new File(normalPath).toURI().normalize();
+		}
+		return new File(normalPath).toURI().normalize();
 	}
 
 	@Override
