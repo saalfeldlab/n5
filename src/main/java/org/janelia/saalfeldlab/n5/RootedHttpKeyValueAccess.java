@@ -179,15 +179,6 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 		return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
 	}
 
-	private HttpURLConnection httpRequest(URI uri, String method) throws IOException {
-
-		final HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
-		connection.setReadTimeout(readTimeoutMilliseconds);
-		connection.setConnectTimeout(connectionTimeoutMilliseconds);
-		connection.setRequestMethod(method);
-		return connection;
-	}
-
 	private static N5Exception validExistsResponse(int code, String responseMsg, String message, boolean allowRedirect) {
 		if (code >= 200 && code < (allowRedirect ? 400 : 300))
 			return null;
@@ -199,22 +190,33 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 			return new N5IOException(cause);
 	}
 
-	private HttpURLConnection requireValidHttpResponse(URI uri, String method, String message, boolean allowRedirect) throws N5Exception {
+	private HttpURLConnection requireValidHttpResponse(
+			final URI uri,
+			final String method,
+			final String message,
+			final boolean allowRedirect) throws N5Exception {
+
 		return requireValidHttpResponse(uri, method, (code, msg, http) -> validExistsResponse(code, msg, message, allowRedirect));
 	}
 
-	private HttpURLConnection requireValidHttpResponse(URI uri, String method, TriFunction<Integer, String, HttpURLConnection, N5Exception> filterCode) throws N5Exception {
+	private HttpURLConnection requireValidHttpResponse(
+			final URI uri,
+			final String method,
+			final FilterCode filterCode) throws N5Exception {
 		return requireValidHttpResponse(uri, method, true, filterCode);
 	}
 
-	private HttpURLConnection requireValidHttpResponse(URI uri, String method, boolean followRedirects, TriFunction<Integer, String, HttpURLConnection, N5Exception> filterCode) throws N5Exception {
+	private HttpURLConnection requireValidHttpResponse(
+			final URI uri,
+			final String method,
+			final boolean followRedirects,
+			final FilterCode filterCode) throws N5Exception {
 
 		final int code;
 		final HttpURLConnection http;
 		final String responseMsg;
 		try {
-			http = httpRequest(uri, method);
-			http.setInstanceFollowRedirects(followRedirects);
+			http = httpRequest(uri, method, followRedirects);
 			code = http.getResponseCode();
 			responseMsg = http.getResponseMessage();
 		} catch (IOException e) {
@@ -227,6 +229,28 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 		final N5Exception cause = filterCode.apply(code, responseMsg, http);
 		if (cause != null) throw cause;
 		return http;
+	}
+
+	@FunctionalInterface
+	private interface FilterCode {
+		N5Exception apply(
+				final int responseCode,
+				final String responseMessage,
+				final HttpURLConnection connection
+		);
+	}
+
+	private HttpURLConnection httpRequest(
+			final URI uri,
+			final String method,
+			final boolean followRedirects) throws IOException {
+
+		final HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
+		connection.setReadTimeout(readTimeoutMilliseconds);
+		connection.setConnectTimeout(connectionTimeoutMilliseconds);
+		connection.setRequestMethod(method);
+		connection.setInstanceFollowRedirects(followRedirects);
+		return connection;
 	}
 
 	private static final String HEAD = "HEAD";
@@ -329,7 +353,7 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 		@Override
 		public long size() {
 
-			final HttpURLConnection head = requireValidHttpResponse(uri, "HEAD", "Error checking existence: " + uri, true);
+			final HttpURLConnection head = requireValidHttpResponse(uri, HEAD, "Error checking existence: " + uri, true);
 			return head.getContentLengthLong();
 		}
 
