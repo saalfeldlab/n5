@@ -2,9 +2,7 @@ package org.janelia.saalfeldlab.n5;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 /**
@@ -43,7 +41,9 @@ public class RootedURI {
 		 * TODO: Note that in contrast to the URI representation, special characters are not escaped.
 		 * TODO: Decide what this should return. That is, should path for groups end with a slash?
 		 */
-		String path();
+		default String path() {
+			throw new UnsupportedOperationException("TODO: decide what this should do...");
+		}
 
 		/**
 		 * Return this {@code N5Path} as a relative path without leading or trailing slashes.
@@ -59,7 +59,14 @@ public class RootedURI {
 		 *
 		 * @return the parent path, or {@code null} if this path is empty
 		 */
-		N5GroupPath parent();
+		default N5GroupPath parent() {
+			final URI parent = uri().resolve("..");
+			return "..".equals(parent.getPath()) ? null : new GroupPath(parent);
+		}
+
+		N5GroupPath asGroup();
+
+		N5FilePath asFile();
 
 		/**
 		 * Split this path into components separated by {@code "/"}.
@@ -77,12 +84,6 @@ public class RootedURI {
 		default String[] components() {
 			return uri().getPath().split("/");
 		}
-
-		// recursively enumerate parents of this URI
-		default List<N5Path> prefixes() {
-			final List<N5Path> prefixes = new ArrayList<N5Path>();
-			return prefixes;
-		}
 	}
 
 	public interface N5GroupPath extends N5Path {
@@ -94,10 +95,6 @@ public class RootedURI {
 			if (!p.isEmpty() && !p.endsWith("/"))
 				p = p + "/";
 			return new GroupPath(createURI(p));
-		}
-
-		default boolean isGroup() {
-			return true;
 		}
 	}
 
@@ -112,13 +109,23 @@ public class RootedURI {
 		}
 
 		@Override
-		public URI uri() {
-			return uri;
+		public boolean isGroup() {
+			return true;
 		}
 
 		@Override
-		public String path() {
-			throw new UnsupportedOperationException("TODO: decide what this should do...");
+		public N5GroupPath asGroup() {
+			return this;
+		}
+
+		@Override
+		public N5FilePath asFile() {
+			return new FilePath(createURI(normalPath()));
+		}
+
+		@Override
+		public URI uri() {
+			return uri;
 		}
 
 		@Override
@@ -143,10 +150,56 @@ public class RootedURI {
 	}
 
 	//
-	public interface DatasetURI extends N5Path {
+	public interface N5FilePath extends N5Path {
 
-		default boolean isGroup() {
+		static N5FilePath of(final String path) {
+			String p = createURI(path).normalize().getPath();
+			if (p.startsWith("/"))
+				p = p.substring(1);
+			if (p.endsWith("/"))
+				p = p.substring(0, p.length() - 1);
+			return new FilePath(createURI(p));
+		}
+	}
+
+	private static class FilePath implements N5FilePath {
+
+		private final URI uri;
+
+		public FilePath(final URI uri) {
+			if (uri.getPath().isEmpty())
+				throw new IllegalArgumentException("invalid empty file URI");
+			this.uri = uri;
+		}
+
+		@Override
+		public boolean isGroup() {
 			return false;
+		}
+
+		@Override
+		public N5GroupPath asGroup() {
+			return new GroupPath(createURI(normalPath() + "/"));
+		}
+
+		@Override
+		public N5FilePath asFile() {
+			return this;
+		}
+
+		@Override
+		public URI uri() {
+			return uri;
+		}
+
+		@Override
+		public String normalPath() {
+			return uri.getPath();
+		}
+
+		@Override
+		public String toString() {
+			return "{file \"" + uri + "\"}";
 		}
 	}
 

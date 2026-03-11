@@ -30,9 +30,12 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.util.List;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.RootedURI.N5FilePath;
+import org.janelia.saalfeldlab.n5.RootedURI.N5GroupPath;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 
@@ -57,7 +60,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		return getRootedKeyValueAccess().isDirectory(normalPath);
 	}
 
-	default boolean groupExists(final RootedURI.N5GroupPath group) {
+	default boolean groupExists(final N5GroupPath group) {
 
 		return getRootedKeyValueAccess().isDirectory(group.uri());
 	}
@@ -197,9 +200,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		final String normalPath = N5URI.normalizeGroupPath(pathName);
-		final String blockPath = getKeyValueAccess().compose(getURI(), normalPath,
-				datasetAttributes.relativeBlockPath(gridPosition));
-		return getKeyValueAccess().isFile(blockPath);
+		final URI uri = N5GroupPath.of(pathName).uri().resolve(datasetAttributes.relativeBlockPath(gridPosition));
+		return getRootedKeyValueAccess().isFile(uri); // TODO (N5Path): Add RootedKeyValueAccess.isFile(N5FilePath)
 	}
 }
