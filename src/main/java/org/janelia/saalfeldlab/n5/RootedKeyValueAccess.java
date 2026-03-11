@@ -3,7 +3,6 @@ package org.janelia.saalfeldlab.n5;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
@@ -66,6 +65,31 @@ public interface RootedKeyValueAccess {
 	boolean isFile(URI normalPath);
 
 	/**
+	 * Test whether the path exists.
+	 *
+	 * @param normalPath
+	 * 		(relative to container root)
+	 * 		is expected to be in normalized form, no further efforts are made to normalize it.
+	 *
+	 * @return true if the path exists
+	 */
+	boolean exists(URI normalPath); // TODO (N5Path): If we would take a N5Path here, it would be easier to check for file + directory existence
+
+	/**
+	 * Returns the size in bytes of the object at the given normalPath if it exists.
+	 *
+	 * @param normalPath
+	 * 		(relative to container root)
+	 * 		is expected to be in normalized form, no further efforts are made to normalize it.
+	 *
+	 * @return the size of the object in bytes.
+	 *
+	 * @throws N5IOException
+	 * 		if an error occurs
+	 */
+	long size(URI normalPath) throws N5IOException;
+
+	/**
 	 * Write {@code data} to the given {@code normalPath}.
 	 * <p>
 	 * Existing data at {@code normalPath} will be overridden.
@@ -93,7 +117,7 @@ public interface RootedKeyValueAccess {
 	 * @throws N5IOException
 	 * 		if an error occurs during listing
 	 */
-	// TODO should this return URI[]
+	// TODO should this return URI[] ?
 	String[] listDirectories(URI normalPath) throws N5IOException;
 
 	/**
@@ -149,6 +173,14 @@ public interface RootedKeyValueAccess {
 
 	default boolean isFile(final String normalPath) {
 		return isFile(createURI(normalPath));
+	}
+
+	default boolean exists(final String normalPath) {
+		return exists(createURI(normalPath));
+	}
+
+	default long size(final String normalPath) throws N5IOException {
+		return size(createURI(normalPath));
 	}
 
 	default void write(final String normalPath, final ReadData data) throws N5IOException {

@@ -85,6 +85,24 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
+	public boolean exists(final URI normalPath) {
+
+		final Path path = Path.of(root.resolve(normalPath));
+		return Files.exists(path);
+	}
+
+	@Override
+	public long size(final URI normalPath) throws N5IOException {
+
+		final Path path = Path.of(root.resolve(normalPath));
+		try {
+			return Files.size(path);
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
+	}
+
+	@Override
 	public void write(final URI normalPath, final ReadData data) throws N5IOException {
 
 		try {

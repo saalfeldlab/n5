@@ -85,6 +85,45 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 		throw new UnsupportedOperationException("TODO. not implemented yet");
 	}
 
+	@Override
+	public boolean exists(final URI normalPath) {
+
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+
+		throw new UnsupportedOperationException("TODO. not implemented yet");
+	}
+
+	@Override
+	public long size(final URI normalPath) throws N5IOException {
+
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+
+		throw new UnsupportedOperationException("TODO. not implemented yet");
+	}
+
+
 	/**
 	 * List all 'directory'-like children of a path.
 	 * <p>

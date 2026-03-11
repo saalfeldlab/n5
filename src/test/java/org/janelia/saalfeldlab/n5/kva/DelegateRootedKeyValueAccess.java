@@ -1,7 +1,7 @@
 package org.janelia.saalfeldlab.n5.kva;
 
 import java.net.URI;
-import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
@@ -20,7 +20,7 @@ public class DelegateRootedKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public VolatileReadData createReadData(final URI normalPath) throws N5Exception.N5IOException {
+	public VolatileReadData createReadData(final URI normalPath) throws N5IOException {
 		return kva.createReadData(normalPath);
 	}
 
@@ -35,22 +35,32 @@ public class DelegateRootedKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public void write(final URI normalPath, final ReadData data) throws N5Exception.N5IOException {
+	public boolean exists(final URI normalPath) {
+		return kva.exists(normalPath);
+	}
+
+	@Override
+	public long size(final URI normalPath) throws N5IOException {
+		return kva.size(normalPath);
+	}
+
+	@Override
+	public void write(final URI normalPath, final ReadData data) throws N5IOException {
 		kva.write(normalPath, data);
 	}
 
 	@Override
-	public String[] listDirectories(final URI normalPath) throws N5Exception.N5IOException {
+	public String[] listDirectories(final URI normalPath) throws N5IOException {
 		return kva.listDirectories(normalPath);
 	}
 
 	@Override
-	public void createDirectories(final URI normalPath) throws N5Exception.N5IOException {
+	public void createDirectories(final URI normalPath) throws N5IOException {
 		kva.createDirectories(normalPath);
 	}
 
 	@Override
-	public void delete(final URI normalPath) throws N5Exception.N5IOException {
+	public void delete(final URI normalPath) throws N5IOException {
 		kva.delete(normalPath);
 	}
 }

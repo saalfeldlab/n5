@@ -51,9 +51,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	KeyValueAccess getKeyValueAccess();
 
-	default RootedKeyValueAccess getRootedKeyValueAccess() {
-		throw new UnsupportedOperationException("TODO");
-	}
+	RootedKeyValueAccess getRootedKeyValueAccess();
 
 	default boolean groupExists(final String normalPath) {
 
