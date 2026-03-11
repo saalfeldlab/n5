@@ -103,9 +103,6 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final String groupPath = N5URI.normalizeGroupPath(pathName);
 		final String attributesPath = relativeAttributesPath(groupPath);
 		try (final VolatileReadData readData = getRootedKeyValueAccess().createReadData(attributesPath);) {
-			if (readData == null) {
-				return null;
-			}
 			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), getGson());
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
