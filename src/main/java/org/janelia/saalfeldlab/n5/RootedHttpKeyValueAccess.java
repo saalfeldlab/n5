@@ -69,60 +69,41 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	@Override
 	public boolean isFile(final URI normalPath) {
 
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-
-		throw new UnsupportedOperationException("TODO. not implemented yet");
+		/* Files must not end in `/` And Don't accept a redirect to a location ending in `/` */
+		try {
+			final URI uri = root.resolve(RootedURI.N5FilePath.of(normalPath.getPath()).uri()); // TODO (N5Path): if we had isFile(N5FilePath), we wouldn't have to do this
+			requireValidHttpResponse(uri, HEAD, false, (code, msg, http) -> {
+				final N5Exception cause = validExistsResponse(code, "Error accessing file: " + normalPath, msg, true);
+				if (code >= 300 && code < 400) {
+					final String redirectLocation = http.getHeaderField("Location");
+					if (redirectLocation.endsWith("/") || redirectLocation.endsWith("index.html"))
+						return new N5NoSuchKeyException("Found key at " + normalPath + " but was directory");
+				}
+				return cause;
+			});
+			return true;
+		} catch (N5Exception e) {
+			return false;
+		}
 	}
 
 	@Override
 	public boolean exists(final URI normalPath) {
 
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-
-		throw new UnsupportedOperationException("TODO. not implemented yet");
+		try {
+			requireValidHttpResponse(normalPath, HEAD, "Error checking existence: " + normalPath, true);
+			return true;
+		} catch (N5NoSuchKeyException e) {
+			return false;
+		}
 	}
 
 	@Override
 	public long size(final URI normalPath) throws N5IOException {
 
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-
-		throw new UnsupportedOperationException("TODO. not implemented yet");
+		final HttpURLConnection head = requireValidHttpResponse(normalPath, HEAD, "Error checking existence: " + normalPath, true);
+		return head.getContentLengthLong();
 	}
-
 
 	/**
 	 * List all 'directory'-like children of a path.
