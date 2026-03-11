@@ -7,18 +7,17 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
-import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URL;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.function.TriFunction;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
+import org.janelia.saalfeldlab.n5.http.ListResponseParser;
 import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
@@ -69,27 +68,54 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 
 	@Override
 	public boolean isFile(final URI normalPath) {
+
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+
 		throw new UnsupportedOperationException("TODO. not implemented yet");
+	}
+
+	/**
+	 * List all 'directory'-like children of a path.
+	 * <p>
+	 * Will throw an N5IOException both if a connection to the server can not be established, or the server does not allow listing.
+	 *
+	 * @param normalPath
+	 *            is expected to be in normalized form, no further
+	 *            efforts are made to normalize it.
+	 * @return the directories
+	 * @throws N5IOException
+	 *             if an error occurs during listing
+	 */
+	@Override
+	public String[] listDirectories(final URI normalPath) throws N5IOException {
+
+		return queryListEntries(root.resolve(normalPath), listDirectoryResponseParser, true);
 	}
 
 	@Override
 	public void write(final URI normalPath, final ReadData data) throws N5IOException {
-		throw new UnsupportedOperationException("TODO. not implemented yet");
-	}
-
-	@Override
-	public String[] listDirectories(final URI normalPath) throws N5IOException {
-		throw new UnsupportedOperationException("TODO. not implemented yet");
+		throw new N5IOException("HttpKeyValueAccess is read-only");
 	}
 
 	@Override
 	public void createDirectories(final URI normalPath) throws N5IOException {
-		throw new UnsupportedOperationException("TODO. not implemented yet");
+		throw new N5IOException("HttpKeyValueAccess is read-only");
 	}
 
 	@Override
 	public void delete(final URI normalPath) throws N5IOException {
-		throw new UnsupportedOperationException("TODO. not implemented yet");
+		throw new N5IOException("HttpKeyValueAccess is read-only");
 	}
 
 
@@ -99,13 +125,45 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	// --- copy & paste from HttpKeyValueAccess ---
 	//
 
-	private int readTimeoutMilliseconds;
-	private int connectionTimeoutMilliseconds;
+	private int readTimeoutMilliseconds = 5000;
+	private int connectionTimeoutMilliseconds = 5000;
+
+	private ListResponseParser listDirectoryResponseParser = ListResponseParser.defaultDirectoryListParser();
+
+	public void setReadTimeout(int readTimeoutMilliseconds) {
+
+		this.readTimeoutMilliseconds = readTimeoutMilliseconds;
+	}
+
+	public void setConnectionTimeout(int connectionTimeoutMilliseconds) {
+
+		this.connectionTimeoutMilliseconds = connectionTimeoutMilliseconds;
+	}
+
+	public void setListDirectoryParser(final ListResponseParser parser) {
+
+		listDirectoryResponseParser = parser;
+	}
+
+	private String[] queryListEntries(final URI uri, final ListResponseParser parser, final boolean allowRedirect) throws N5IOException{
+
+		final HttpURLConnection http = requireValidHttpResponse(uri, GET, "Error listing directory at " + uri, allowRedirect);
+		try {
+			final String listResponse = responseToString(http.getInputStream());
+			return parser.parseListResponse(listResponse);
+		} catch (IOException e) {
+			throw new N5IOException("Error listing directory at " + uri, e);
+		}
+	}
+
+	private String responseToString(InputStream inputStream) throws IOException {
+
+		return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+	}
 
 	private HttpURLConnection httpRequest(URI uri, String method) throws IOException {
 
-		final URL url = uri.toURL();
-		final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+		final HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
 		connection.setReadTimeout(readTimeoutMilliseconds);
 		connection.setConnectTimeout(connectionTimeoutMilliseconds);
 		connection.setRequestMethod(method);
@@ -160,6 +218,7 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	private static final String ACCEPT_RANGE = "Accept-Range";
 	private static final String BYTES = "bytes";
 
+	// TODO: Simplify! This doesn't have to implement LockedChannel or even Closeable. We only use the newInputStream() method.
 	private class HttpObjectChannel implements LockedChannel {
 
 		protected final URI uri;

@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
+import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
 
 public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
@@ -131,6 +132,12 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
 		DebugHelpers.printStackTrace();
 		return reader.getKeyValueAccess();
+	}
+
+	@Override
+	public RootedKeyValueAccess getRootedKeyValueAccess() {
+
+		return reader.getRootedKeyValueAccess();
 	}
 
 	@Override public boolean exists(String pathName) {
