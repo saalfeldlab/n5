@@ -35,6 +35,8 @@ import org.janelia.saalfeldlab.n5.N5FSWriter;
 import org.janelia.saalfeldlab.n5.N5KeyValueReader;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
+import org.janelia.saalfeldlab.n5.RootedHttpKeyValueAccess;
+import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Ignore;
@@ -116,8 +118,10 @@ public class N5HttpTest extends AbstractN5Test {
 			final String location,
 			final GsonBuilder gson) {
 
-		final String readerHttpPath = httpServerURI.resolve(location).toString();
-		return new N5KeyValueReader(new HttpKeyValueAccess(), readerHttpPath, gson, cacheMeta);
+		final URI root = httpServerURI.resolve(location);
+		final HttpKeyValueAccess kva = new HttpKeyValueAccess();
+		RootedKeyValueAccess rkva = new RootedHttpKeyValueAccess(root);
+		return new N5KeyValueReader(kva, rkva, root.toString(), gson, cacheMeta);
 	}
 
 	@Test
