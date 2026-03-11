@@ -32,10 +32,6 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 		this.root = uriStr.endsWith("/") ? root : URI.create(uriStr + "/");
 	}
 
-	public RootedHttpKeyValueAccess(final String root) {
-		this(URI.create(root));
-	}
-
 	@Override
 	public URI root() {
 		return root;
