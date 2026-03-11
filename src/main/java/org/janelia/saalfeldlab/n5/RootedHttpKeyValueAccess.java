@@ -108,14 +108,16 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	/**
 	 * List all 'directory'-like children of a path.
 	 * <p>
-	 * Will throw an N5IOException both if a connection to the server can not be established, or the server does not allow listing.
+	 * Will throw an N5IOException both if a connection to the server can not be
+	 * established, or the server does not allow listing.
 	 *
 	 * @param normalPath
-	 *            is expected to be in normalized form, no further
-	 *            efforts are made to normalize it.
+	 * 		is expected to be in normalized form, no further efforts are made to normalize it.
+	 *
 	 * @return the directories
+	 *
 	 * @throws N5IOException
-	 *             if an error occurs during listing
+	 * 		if an error occurs during listing
 	 */
 	@Override
 	public String[] listDirectories(final URI normalPath) throws N5IOException {
