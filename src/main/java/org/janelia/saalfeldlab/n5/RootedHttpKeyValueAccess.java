@@ -31,6 +31,12 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 		this.root = uriStr.endsWith("/") ? root : URI.create(uriStr + "/");
 	}
 
+	@Deprecated
+	@Override
+	public KeyValueAccess createKVA() {
+		return new HttpKeyValueAccess();
+	}
+
 	@Override
 	public URI root() {
 		return root;

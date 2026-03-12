@@ -52,6 +52,12 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 		return new File(normalPath).toURI().normalize();
 	}
 
+	@Deprecated
+	@Override
+	public KeyValueAccess createKVA() {
+		return new FileSystemKeyValueAccess();
+	}
+
 	@Override
 	public URI root() {
 		return root;

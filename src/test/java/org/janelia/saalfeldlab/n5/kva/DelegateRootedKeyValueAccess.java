@@ -1,6 +1,7 @@
 package org.janelia.saalfeldlab.n5.kva;
 
 import java.net.URI;
+import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -12,6 +13,12 @@ public class DelegateRootedKeyValueAccess implements RootedKeyValueAccess {
 
 	public DelegateRootedKeyValueAccess(RootedKeyValueAccess kva) {
 		this.kva = kva;
+	}
+
+	@Deprecated
+	@Override
+	public KeyValueAccess createKVA() {
+		return kva.createKVA();
 	}
 
 	@Override

@@ -138,7 +138,8 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			final boolean checkExists)
 			throws N5Exception {
 
-		this.keyValueAccess = keyValueAccess;
+		this.keyValueAccess = rootedKeyValueAccess.createKVA();
+		System.out.println("keyValueAccess = " + keyValueAccess + " | rootedKeyValueAccess.createKVA() = " + this.keyValueAccess);
 		this.rootedKeyValueAccess = rootedKeyValueAccess;
 		this.gson = registerGson(gsonBuilder).create();
 		this.cacheMeta = cacheMeta;
@@ -149,7 +150,10 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			this.cache = null;
 
 		try {
-			uri = keyValueAccess.uri(basePath);
+			System.out.println("basePath = " + basePath);
+			System.out.println("  keyValueAccess.uri(basePath) = " + keyValueAccess.uri(basePath));
+			System.out.println("   rootedKeyValueAccess.root() = " + rootedKeyValueAccess.root());
+			uri = rootedKeyValueAccess.root();
 		} catch (final URISyntaxException e) {
 			throw new N5Exception(e);
 		}
@@ -167,7 +171,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 		// if a version was found, the container exists - don't need to check again
 		if (checkExists && (!versionFound && !inferExistence("/")))
-			throw new N5Exception.N5IOException("No container exists at " + basePath);
+			throw new N5Exception.N5IOException("No container exists at " + rootedKeyValueAccess.root());
 	}
 
 	private boolean inferExistence(String path) {

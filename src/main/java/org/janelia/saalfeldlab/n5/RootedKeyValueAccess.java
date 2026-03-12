@@ -14,6 +14,9 @@ import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
  */
 public interface RootedKeyValueAccess {
 
+	@Deprecated
+	KeyValueAccess createKVA();
+
 	URI root();
 
 	/**
