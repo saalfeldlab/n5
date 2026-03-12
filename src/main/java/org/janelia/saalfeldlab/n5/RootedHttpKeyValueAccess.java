@@ -1,19 +1,11 @@
 package org.janelia.saalfeldlab.n5;
 
-import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.Reader;
-import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.nio.channels.NonWritableChannelException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.NoSuchFileException;
-import java.util.ArrayList;
 import org.apache.commons.io.IOUtils;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
@@ -23,6 +15,13 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
+
+	private static final String HEAD = "HEAD";
+	private static final String GET = "GET";
+
+	private int readTimeoutMilliseconds = 5000;
+	private int connectionTimeoutMilliseconds = 5000;
+	private ListResponseParser listDirectoryResponseParser = ListResponseParser.defaultDirectoryListParser();
 
 	private final URI root;
 
@@ -80,75 +79,11 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 		return redirectLocation.endsWith("/") || redirectLocation.endsWith("index.html");
 	}
 
-	private HttpURLConnection requireValidHttpResponse(
-			final URI uri,
-			final String method,
-			final boolean followRedirects) throws IOException {
-
-		final HttpURLConnection http = httpRequest(uri, method, followRedirects);
-
-		final int code = http.getResponseCode();
-		if (code < 200 || code >= 400) {
-			final String cause = http.getResponseMessage() + " (" + code + ")";
-			if (code == 404 || code == 410)
-				throw new NoSuchFileException(cause);
-			else
-				throw new IOException(cause);
-		}
-
-		return http;
-	}
-
-	@FunctionalInterface
-	private interface Validate {
-		void accept(WrappedHttpURLConnection connection) throws N5IOException;
-	}
-
-	private WrappedHttpURLConnection wrap(final HttpURLConnection http) {
-		return new WrappedHttpURLConnection(http);
-	}
-
-	// TODO: rename HttpResponse?
-	private static class WrappedHttpURLConnection {
-
-		private final HttpURLConnection http;
-
-		WrappedHttpURLConnection(final HttpURLConnection http) {
-			this.http = http;
-		}
-
-		int getResponseCode() throws N5IOException {
-			try {
-				return http.getResponseCode();
-			} catch (IOException e) {
-				throw new N5IOException(e);
-			}
-		}
-
-		String getResponseMessage() throws N5IOException {
-			try {
-				return http.getResponseMessage();
-			} catch (IOException e) {
-				throw new N5IOException(e);
-			}
-		}
-
-		String getHeaderField(final String name) {
-			return http.getHeaderField(name);
-		}
-
-	}
-
-
-
-
-
-
 	@Override
 	public boolean exists(final URI normalPath) {
 
 		try {
-			requireValidHttpResponse(normalPath, HEAD, true);
+			requireValidHttpResponse(root.resolve(normalPath), HEAD, true);
 			return true;
 		} catch (IOException e) {
 			return false;
@@ -159,9 +94,9 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	public long size(final URI normalPath) throws N5IOException {
 
 		try {
-			final HttpURLConnection head = requireValidHttpResponse(normalPath, HEAD, true);
+			final HttpURLConnection head = requireValidHttpResponse(root.resolve(normalPath), HEAD, true);
 			return head.getContentLengthLong();
-		} catch (NoSuchFileException e) {
+		} catch (FileNotFoundException e) {
 			throw new N5NoSuchKeyException("Error getting size: " + normalPath, e);
 		} catch (IOException e) {
 			throw new N5IOException("Error getting size: " + normalPath, e);
@@ -184,8 +119,19 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	 */
 	@Override
 	public String[] listDirectories(final URI normalPath) throws N5IOException {
+		try {
+			final HttpURLConnection http = requireValidHttpResponse(root.resolve(normalPath), GET, true);
+			final String listResponse = responseToString(http.getInputStream());
+			return listDirectoryResponseParser.parseListResponse(listResponse);
+		} catch (FileNotFoundException e) {
+			throw new N5NoSuchKeyException("Error listing directory at " + normalPath, e);
+		} catch (IOException e) {
+			throw new N5IOException("Error listing directory at " + normalPath, e);
+		}
+	}
 
-		return queryListEntries(root.resolve(normalPath), listDirectoryResponseParser);
+	private String responseToString(InputStream inputStream) throws IOException {
+		return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
 	}
 
 	@Override
@@ -203,229 +149,94 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 		throw new N5IOException("HttpKeyValueAccess is read-only");
 	}
 
-
-
-	// ------------------------------------------------------------------------
-	//
-	// --- copy & paste from HttpKeyValueAccess ---
-	//
-
-	private int readTimeoutMilliseconds = 5000;
-	private int connectionTimeoutMilliseconds = 5000;
-
-	private ListResponseParser listDirectoryResponseParser = ListResponseParser.defaultDirectoryListParser();
-
 	public void setReadTimeout(int readTimeoutMilliseconds) {
-
 		this.readTimeoutMilliseconds = readTimeoutMilliseconds;
 	}
 
 	public void setConnectionTimeout(int connectionTimeoutMilliseconds) {
-
 		this.connectionTimeoutMilliseconds = connectionTimeoutMilliseconds;
 	}
 
 	public void setListDirectoryParser(final ListResponseParser parser) {
-
 		listDirectoryResponseParser = parser;
 	}
 
-	private String[] queryListEntries(final URI uri, final ListResponseParser parser) throws N5IOException{
-
-		try {
-			final HttpURLConnection http = requireValidHttpResponse(uri, GET, true);
-			final String listResponse = responseToString(http.getInputStream());
-			return parser.parseListResponse(listResponse);
-		} catch (NoSuchFileException e) {
-			throw new N5NoSuchKeyException("Error listing directory at " + uri, e);
-		} catch (IOException e) {
-			throw new N5IOException("Error listing directory at " + uri, e);
-		}
-	}
-
-	private String responseToString(InputStream inputStream) throws IOException {
-
-		return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-	}
-
-	private static N5Exception validExistsResponse(int code, String responseMsg, String message) {
-		if (code >= 200 && code < 400)
-			return null;
-
-		final String cause = message + "( " + responseMsg + ")(" + code + ")";
-		if (code == 404 || code == 410)
-			return new N5NoSuchKeyException(cause);
-		else
-			return new N5IOException(cause);
-	}
-
 	private HttpURLConnection requireValidHttpResponse(
-			final URI uri,
-			final String method,
-			final String message) throws N5Exception {
-
-		return requireValidHttpResponse(uri, method, true,
-				(code, msg, http) -> validExistsResponse(code, msg, message));
-	}
-
-	private HttpURLConnection requireValidHttpResponse(
-			final URI uri,
-			final String method,
-			final boolean followRedirects,
-			final FilterCode filterCode) throws N5Exception {
-
-		final int code;
-		final HttpURLConnection http;
-		final String responseMsg;
-		try {
-			http = httpRequest(uri, method, followRedirects);
-			code = http.getResponseCode();
-			responseMsg = http.getResponseMessage();
-		} catch (IOException e) {
-			throw new N5IOException("Could not validate HTTP Response", e);
-		}
-
-		// filterCode: (Integer, String, HttpURLConnection) -> N5Exception
-		//             (http.getResponseCode(), http.getResponseMessage(), http) -> ?
-
-		final N5Exception cause = filterCode.apply(code, responseMsg, http);
-		if (cause != null) throw cause;
-		return http;
-	}
-
-	@FunctionalInterface
-	private interface FilterCode {
-		N5Exception apply(
-				final int responseCode,
-				final String responseMessage,
-				final HttpURLConnection connection
-		);
-	}
-
-	private HttpURLConnection httpRequest(
 			final URI uri,
 			final String method,
 			final boolean followRedirects) throws IOException {
 
-		final HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
-		connection.setReadTimeout(readTimeoutMilliseconds);
-		connection.setConnectTimeout(connectionTimeoutMilliseconds);
-		connection.setRequestMethod(method);
-		connection.setInstanceFollowRedirects(followRedirects);
-		return connection;
-	}
+		final HttpURLConnection http = (HttpURLConnection) uri.toURL().openConnection();
+		http.setReadTimeout(readTimeoutMilliseconds);
+		http.setConnectTimeout(connectionTimeoutMilliseconds);
+		http.setRequestMethod(method);
+		http.setInstanceFollowRedirects(followRedirects);
 
-	private static final String HEAD = "HEAD";
-	private static final String GET = "GET";
-
-	private static final String RANGE = "Range";
-	private static final String ACCEPT_RANGE = "Accept-Range";
-	private static final String BYTES = "bytes";
-
-	// TODO: Simplify! This doesn't have to implement LockedChannel or even Closeable. We only use the newInputStream() method.
-	private class HttpObjectChannel implements LockedChannel {
-
-		protected final URI uri;
-		private final long startByte;
-		private final long size;
-		private final ArrayList<Closeable> resources = new ArrayList<>();
-
-		protected HttpObjectChannel(final URI uri, long startByte, long size) {
-
-			this.uri = uri;
-			this.startByte = startByte;
-			this.size = size;
+		final int code = http.getResponseCode();
+		if (code < 200 || code >= 400) {
+			final String cause = http.getResponseMessage() + " (" + code + ")";
+			if (code == 404 || code == 410)
+				// NB: We throw FileNotFoundException instead of
+				// NoSuchFileException, to be consistent with
+				// HttpURLConnection.inputStream(), which also throws
+				// FileNotFoundException on 404 or 410.
+				throw new FileNotFoundException(cause);
+			else
+				throw new IOException(cause);
 		}
 
-		private boolean isPartialRead() {
-			return startByte > 0 || (size >= 0 && size != Long.MAX_VALUE);
+		return http;
+	}
+
+	private class HttpLazyRead implements LazyRead {
+
+		private static final String RANGE = "Range";
+		private static final String ACCEPT_RANGE = "Accept-Range";
+		private static final String BYTES = "bytes";
+
+		private final URI normalPath;
+
+		HttpLazyRead(final URI normalPath) {
+			this.normalPath = normalPath;
 		}
 
 		@Override
-		public InputStream newInputStream() throws N5IOException {
+		public long size() {
+			return RootedHttpKeyValueAccess.this.size(normalPath);
+		}
 
+		@Override
+		public ReadData materialize(long offset, long length) {
+
+			final URI uri = root.resolve(normalPath);
 			try {
-				HttpURLConnection conn = (HttpURLConnection)uri.toURL().openConnection();
-				if (isPartialRead()) {
-					conn.setRequestProperty(RANGE, rangeString());
+				HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
+				final boolean isPartialRead = offset > 0 || (length >= 0 && length != Long.MAX_VALUE);
+				if (isPartialRead) {
+					conn.setRequestProperty(RANGE, rangeString(offset, length));
 					final String acceptRanges = conn.getHeaderField(ACCEPT_RANGE);
 					if (acceptRanges == null || !acceptRanges.equals(BYTES)) {
 						conn.disconnect();
-						conn = (HttpURLConnection)uri.toURL().openConnection();
-						return ReadData.from(conn.getInputStream()).materialize().slice(startByte, size).inputStream();
+						conn = (HttpURLConnection) uri.toURL().openConnection();
+						try(final InputStream in = conn.getInputStream()) {
+							return ReadData.from(in).materialize().slice(offset, length);
+						}
 					}
 				}
-				return conn.getInputStream();
+				try(final InputStream in = conn.getInputStream()) {
+					return ReadData.from(in).materialize();
+				}
 			} catch (FileNotFoundException e) {
-				/*default HttpURLConnection throws FileNotFoundException on 404 or 410 */
 				throw new N5NoSuchKeyException("Could not open stream for " + uri, e);
 			} catch (IOException e) {
 				throw new N5IOException("Could not open stream for " + uri, e);
 			}
 		}
 
-		private String rangeString() {
+		private String rangeString(final long startByte, final long size) {
 
 			final String lastByte = (size > 0) ? Long.toString(startByte + size - 1) : "";
 			return String.format("%s=%d-%s", BYTES, startByte, lastByte);
-		}
-
-		@Override
-		public Reader newReader() {
-
-			final InputStreamReader reader = new InputStreamReader(newInputStream(), StandardCharsets.UTF_8);
-			synchronized (resources) {
-				resources.add(reader);
-			}
-			return reader;
-		}
-
-		@Override
-		public OutputStream newOutputStream() {
-
-			throw new NonWritableChannelException();
-		}
-
-		@Override
-		public Writer newWriter() {
-
-			throw new NonWritableChannelException();
-		}
-
-		@Override
-		public void close() throws IOException {
-
-			synchronized (resources) {
-				for (final Closeable resource : resources) {
-					resource.close();
-				}
-				resources.clear();
-			}
-		}
-	}
-
-	private class HttpLazyRead implements LazyRead {
-
-		private final URI uri;
-
-		HttpLazyRead(final URI uri) {
-			this.uri = uri;
-		}
-
-		@Override
-		public long size() {
-
-			final HttpURLConnection head = requireValidHttpResponse(uri, HEAD, "Error checking existence: " + uri);
-			return head.getContentLengthLong();
-		}
-
-		@Override
-		public ReadData materialize(long offset, long length) {
-			try (final HttpObjectChannel ch = new HttpObjectChannel(uri, offset, length)) {
-				return ReadData.from(ch.newInputStream()).materialize();
-			} catch (IOException e) {
-				throw new N5IOException(e);
-			}
 		}
 
 		@Override
