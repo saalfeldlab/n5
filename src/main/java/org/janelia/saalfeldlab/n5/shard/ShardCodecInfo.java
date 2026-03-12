@@ -31,6 +31,7 @@ package org.janelia.saalfeldlab.n5.shard;
 import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DatasetCodecInfo;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 
 public interface ShardCodecInfo extends BlockCodecInfo {
@@ -41,6 +42,12 @@ public interface ShardCodecInfo extends BlockCodecInfo {
 	 * @return the size of each shard element
 	 */
 	int[] getInnerBlockSize();
+
+	/**
+	 *
+	 * @return the collection of DatasetCodecInfo applied to data blocks for this shard
+	 */
+	DatasetCodecInfo[] getInnerDatasetCodecInfos();
 
 	/**
 	 * BlockCodecInfo for shard elements (either nested shard or DataBlock)

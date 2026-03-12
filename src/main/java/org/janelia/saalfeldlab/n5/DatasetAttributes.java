@@ -210,6 +210,8 @@ public class DatasetAttributes implements Serializable {
 
 		BlockCodecInfo currentBlockCodecInfo = blockCodecInfo;
 		DataCodecInfo[] currentDataCodecInfos = dataCodecInfos;
+		
+		DatasetCodecInfo[] datasetCodecInfos = this.datasetCodecInfos;
 
 		final NestedGrid grid = new NestedGrid(blockSizes, dimensions);
 		final BlockCodec<?>[] blockCodecs = new BlockCodec[m];
@@ -219,16 +221,33 @@ public class DatasetAttributes implements Serializable {
 				final ShardCodecInfo info = (ShardCodecInfo) currentBlockCodecInfo;
 				currentBlockCodecInfo = info.getInnerBlockCodecInfo();
 				currentDataCodecInfos = info.getInnerDataCodecInfos();
+				if (info.getInnerDataCodecInfos() != null) {
+					if (datasetCodecInfos != null && datasetCodecInfos.length > 0) {
+						throw new N5Exception.N5JsonParseException("Found DatasetCodecs both inside and outside of shards. Not handled");
+					}
+					else
+						datasetCodecInfos = info.getInnerDatasetCodecInfos();
+				}
 			}
 		}
 
-		if (datasetCodecInfos != null) {
-			for (final DatasetCodecInfo info : datasetCodecInfos) {
-				blockCodecs[0] = DatasetCodec.concatenate(info.create(this), (BlockCodec) blockCodecs[0]);
-			}
-		}
+		// add dataset codecs
+		blockCodecs[0] = blockCodecWithDatasetCodecs(this, blockCodecs[0], datasetCodecInfos);
 
 		return new DefaultDatasetAccess<>(grid, blockCodecs);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static BlockCodec<?> blockCodecWithDatasetCodecs(final DatasetAttributes attributes, final BlockCodec<?> blockCodec,
+			final DatasetCodecInfo[] datasetCodecInfos) {
+
+		BlockCodec<?> result = blockCodec;
+		if (datasetCodecInfos != null) {
+			for (final DatasetCodecInfo info : datasetCodecInfos) {
+				result = DatasetCodec.concatenate(info.create(attributes), (BlockCodec)result);
+			}
+		}
+		return result;
 	}
 
 	private static int nestingDepth(BlockCodecInfo info) {

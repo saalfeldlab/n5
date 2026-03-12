@@ -65,7 +65,7 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 	@NameConfig.Parameter(value = "index_codecs")
 	private CodecInfo[] indexCodecs;
 
-	private transient DatasetCodecInfo[] innerDatasetCodecInfo;
+	private transient DatasetCodecInfo[] innerDatasetCodecInfos;
 
 	private transient BlockCodecInfo innerBlockCodecInfo;
 
@@ -82,6 +82,7 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 
 	public DefaultShardCodecInfo(
 			final int[] innerBlockSize,
+			final DatasetCodecInfo[] innerDatasetCodecInfos,
 			final BlockCodecInfo innerBlockCodecInfo,
 			final DataCodecInfo[] innerDataCodecInfos,
 			final BlockCodecInfo indexBlockCodecInfo,
@@ -89,6 +90,7 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 			final IndexLocation indexLocation) {
 
 		this.innerBlockSize = innerBlockSize;
+		this.innerDatasetCodecInfos = innerDatasetCodecInfos;
 		this.innerBlockCodecInfo = innerBlockCodecInfo;
 		this.innerDataCodecInfos = innerDataCodecInfos;
 		this.indexBlockCodecInfo = indexBlockCodecInfo;
@@ -97,6 +99,23 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 
 		codecs = concatenateCodecs(innerBlockCodecInfo, innerDataCodecInfos);
 		indexCodecs = concatenateCodecs(indexBlockCodecInfo, indexDataCodecInfos);
+	}
+	
+	public DefaultShardCodecInfo(
+			final int[] innerBlockSize,
+			final BlockCodecInfo innerBlockCodecInfo,
+			final DataCodecInfo[] innerDataCodecInfos,
+			final BlockCodecInfo indexBlockCodecInfo,
+			final DataCodecInfo[] indexDataCodecInfos,
+			final IndexLocation indexLocation) {
+
+		this(innerBlockSize,
+				null,
+				innerBlockCodecInfo,
+				innerDataCodecInfos,
+				indexBlockCodecInfo,
+				indexDataCodecInfos,
+				indexLocation);
 	}
 
 	private void build() {
@@ -111,7 +130,7 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 		// codecs and indexCodecs
 
 		final CodecParser parser = new CodecParser(codecs);
-		innerDatasetCodecInfo = parser.datasetCodecInfos;
+		innerDatasetCodecInfos = parser.datasetCodecInfos;
 		innerBlockCodecInfo = parser.blockCodecInfo;
 		innerDataCodecInfos = parser.dataCodecInfos;
 
@@ -128,6 +147,11 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 	@Override
 	public int[] getInnerBlockSize() {
 		return innerBlockSize;
+	}
+
+	@Override
+	public DatasetCodecInfo[] getInnerDatasetCodecInfos() {
+		return innerDatasetCodecInfos;
 	}
 
 	@Override
