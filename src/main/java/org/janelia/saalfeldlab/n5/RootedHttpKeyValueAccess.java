@@ -12,9 +12,9 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.function.TriFunction;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.http.ListResponseParser;
@@ -44,20 +44,17 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 
 	@Override
 	public boolean isDirectory(final URI normalPath) {
+
 		try {
 			final URI uri = root.resolve(RootedURI.N5GroupPath.of(normalPath.getPath()).uri()); // TODO (N5Path): if we had isDirectory(N5GroupPath), we wouldn't have to do this
-			requireValidHttpResponse(uri, HEAD, false, (code,  msg,http) -> {
-				final N5Exception cause = validExistsResponse(code, "Error checking directory: " + normalPath, msg, true);
-				if (code >= 300 && code < 400) {
-					final String redirectLocation = http.getHeaderField("Location");
-					if (!(redirectLocation.endsWith("/") || redirectLocation.endsWith("index.html")))
-						return new N5NoSuchKeyException("Found File at " + normalPath + " but was not directory");
-					return null;
-				}
-				return cause;
-			});
+			final HttpURLConnection http = requireValidHttpResponse(uri, HEAD, false);
+			final int code = http.getResponseCode();
+			if (code >= 300) {
+				final String redirectLocation = http.getHeaderField("Location");
+				return locationIsDirectory(redirectLocation);
+			}
 			return true;
-		} catch (N5Exception e) {
+		} catch (IOException e) {
 			return false;
 		}
 	}
@@ -65,31 +62,95 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	@Override
 	public boolean isFile(final URI normalPath) {
 
-		/* Files must not end in `/` And Don't accept a redirect to a location ending in `/` */
 		try {
 			final URI uri = root.resolve(RootedURI.N5FilePath.of(normalPath.getPath()).uri()); // TODO (N5Path): if we had isFile(N5FilePath), we wouldn't have to do this
-			requireValidHttpResponse(uri, HEAD, false, (code, msg, http) -> {
-				final N5Exception cause = validExistsResponse(code, "Error accessing file: " + normalPath, msg, true);
-				if (code >= 300 && code < 400) {
-					final String redirectLocation = http.getHeaderField("Location");
-					if (redirectLocation.endsWith("/") || redirectLocation.endsWith("index.html"))
-						return new N5NoSuchKeyException("Found key at " + normalPath + " but was directory");
-				}
-				return cause;
-			});
+			final HttpURLConnection http = requireValidHttpResponse(uri, HEAD, false);
+			final int code = http.getResponseCode();
+			if (code >= 300) {
+				final String redirectLocation = http.getHeaderField("Location");
+				return !locationIsDirectory(redirectLocation);
+			}
 			return true;
-		} catch (N5Exception e) {
+		} catch (IOException e) {
 			return false;
 		}
 	}
+
+	private static boolean locationIsDirectory(final String redirectLocation) {
+		return redirectLocation.endsWith("/") || redirectLocation.endsWith("index.html");
+	}
+
+	private HttpURLConnection requireValidHttpResponse(
+			final URI uri,
+			final String method,
+			final boolean followRedirects) throws IOException {
+
+		final HttpURLConnection http = httpRequest(uri, method, followRedirects);
+
+		final int code = http.getResponseCode();
+		if (code < 200 || code >= 400) {
+			final String cause = http.getResponseMessage() + " (" + code + ")";
+			if (code == 404 || code == 410)
+				throw new NoSuchFileException(cause);
+			else
+				throw new IOException(cause);
+		}
+
+		return http;
+	}
+
+	@FunctionalInterface
+	private interface Validate {
+		void accept(WrappedHttpURLConnection connection) throws N5IOException;
+	}
+
+	private WrappedHttpURLConnection wrap(final HttpURLConnection http) {
+		return new WrappedHttpURLConnection(http);
+	}
+
+	// TODO: rename HttpResponse?
+	private static class WrappedHttpURLConnection {
+
+		private final HttpURLConnection http;
+
+		WrappedHttpURLConnection(final HttpURLConnection http) {
+			this.http = http;
+		}
+
+		int getResponseCode() throws N5IOException {
+			try {
+				return http.getResponseCode();
+			} catch (IOException e) {
+				throw new N5IOException(e);
+			}
+		}
+
+		String getResponseMessage() throws N5IOException {
+			try {
+				return http.getResponseMessage();
+			} catch (IOException e) {
+				throw new N5IOException(e);
+			}
+		}
+
+		String getHeaderField(final String name) {
+			return http.getHeaderField(name);
+		}
+
+	}
+
+
+
+
+
 
 	@Override
 	public boolean exists(final URI normalPath) {
 
 		try {
-			requireValidHttpResponse(normalPath, HEAD, "Error checking existence: " + normalPath, true);
+			requireValidHttpResponse(normalPath, HEAD, true);
 			return true;
-		} catch (N5NoSuchKeyException e) {
+		} catch (IOException e) {
 			return false;
 		}
 	}
@@ -97,8 +158,14 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	@Override
 	public long size(final URI normalPath) throws N5IOException {
 
-		final HttpURLConnection head = requireValidHttpResponse(normalPath, HEAD, "Error checking existence: " + normalPath, true);
-		return head.getContentLengthLong();
+		try {
+			final HttpURLConnection head = requireValidHttpResponse(normalPath, HEAD, true);
+			return head.getContentLengthLong();
+		} catch (NoSuchFileException e) {
+			throw new N5NoSuchKeyException("Error getting size: " + normalPath, e);
+		} catch (IOException e) {
+			throw new N5IOException("Error getting size: " + normalPath, e);
+		}
 	}
 
 	/**
@@ -118,7 +185,7 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	@Override
 	public String[] listDirectories(final URI normalPath) throws N5IOException {
 
-		return queryListEntries(root.resolve(normalPath), listDirectoryResponseParser, true);
+		return queryListEntries(root.resolve(normalPath), listDirectoryResponseParser);
 	}
 
 	@Override
@@ -163,12 +230,14 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 		listDirectoryResponseParser = parser;
 	}
 
-	private String[] queryListEntries(final URI uri, final ListResponseParser parser, final boolean allowRedirect) throws N5IOException{
+	private String[] queryListEntries(final URI uri, final ListResponseParser parser) throws N5IOException{
 
-		final HttpURLConnection http = requireValidHttpResponse(uri, GET, "Error listing directory at " + uri, allowRedirect);
 		try {
+			final HttpURLConnection http = requireValidHttpResponse(uri, GET, true);
 			final String listResponse = responseToString(http.getInputStream());
 			return parser.parseListResponse(listResponse);
+		} catch (NoSuchFileException e) {
+			throw new N5NoSuchKeyException("Error listing directory at " + uri, e);
 		} catch (IOException e) {
 			throw new N5IOException("Error listing directory at " + uri, e);
 		}
@@ -179,8 +248,8 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 		return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
 	}
 
-	private static N5Exception validExistsResponse(int code, String responseMsg, String message, boolean allowRedirect) {
-		if (code >= 200 && code < (allowRedirect ? 400 : 300))
+	private static N5Exception validExistsResponse(int code, String responseMsg, String message) {
+		if (code >= 200 && code < 400)
 			return null;
 
 		final String cause = message + "( " + responseMsg + ")(" + code + ")";
@@ -193,17 +262,10 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	private HttpURLConnection requireValidHttpResponse(
 			final URI uri,
 			final String method,
-			final String message,
-			final boolean allowRedirect) throws N5Exception {
+			final String message) throws N5Exception {
 
-		return requireValidHttpResponse(uri, method, (code, msg, http) -> validExistsResponse(code, msg, message, allowRedirect));
-	}
-
-	private HttpURLConnection requireValidHttpResponse(
-			final URI uri,
-			final String method,
-			final FilterCode filterCode) throws N5Exception {
-		return requireValidHttpResponse(uri, method, true, filterCode);
+		return requireValidHttpResponse(uri, method, true,
+				(code, msg, http) -> validExistsResponse(code, msg, message));
 	}
 
 	private HttpURLConnection requireValidHttpResponse(
@@ -353,7 +415,7 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 		@Override
 		public long size() {
 
-			final HttpURLConnection head = requireValidHttpResponse(uri, HEAD, "Error checking existence: " + uri, true);
+			final HttpURLConnection head = requireValidHttpResponse(uri, HEAD, "Error checking existence: " + uri);
 			return head.getContentLengthLong();
 		}
 
