@@ -34,7 +34,9 @@ import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
+import org.janelia.saalfeldlab.n5.codec.CodecParser;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DatasetCodecInfo;
 import org.janelia.saalfeldlab.n5.serialization.N5Annotations;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
@@ -62,6 +64,8 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 
 	@NameConfig.Parameter(value = "index_codecs")
 	private CodecInfo[] indexCodecs;
+
+	private transient DatasetCodecInfo[] innerDatasetCodecInfo;
 
 	private transient BlockCodecInfo innerBlockCodecInfo;
 
@@ -106,14 +110,10 @@ public class DefaultShardCodecInfo implements ShardCodecInfo {
 		// from
 		// codecs and indexCodecs
 
-		if (codecs[0] instanceof BlockCodecInfo)
-			innerBlockCodecInfo = (BlockCodecInfo)codecs[0];
-		else
-			throw new N5Exception("Codec at index " + 0 + " must be a BlockCodec.");
-
-		innerDataCodecInfos = new DataCodecInfo[codecs.length - 1];
-		for (int i = 1; i < codecs.length; i++)
-			innerDataCodecInfos[i - 1] = (DataCodecInfo)codecs[i];
+		final CodecParser parser = new CodecParser(codecs);
+		innerDatasetCodecInfo = parser.datasetCodecInfos;
+		innerBlockCodecInfo = parser.blockCodecInfo;
+		innerDataCodecInfos = parser.dataCodecInfos;
 
 		if (indexCodecs[0] instanceof BlockCodecInfo)
 			indexBlockCodecInfo = (BlockCodecInfo)indexCodecs[0];
