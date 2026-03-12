@@ -54,9 +54,10 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 
 	@Deprecated
 	@Override
-	public KeyValueAccess createKVA() {
-		return new FileSystemKeyValueAccess();
+	public KeyValueAccess getKVA() {
+		return kva;
 	}
+	private final KeyValueAccess kva = new FileSystemKeyValueAccess();
 
 	@Override
 	public URI root() {

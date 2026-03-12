@@ -34,7 +34,6 @@ import java.net.URI;
 import java.util.List;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.RootedURI.N5FilePath;
 import org.janelia.saalfeldlab.n5.RootedURI.N5GroupPath;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
@@ -49,7 +48,10 @@ import com.google.gson.JsonElement;
  */
 public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
-	KeyValueAccess getKeyValueAccess();
+	@Deprecated
+	default KeyValueAccess getKeyValueAccess() {
+		return getRootedKeyValueAccess().getKVA();
+	}
 
 	RootedKeyValueAccess getRootedKeyValueAccess();
 
@@ -109,6 +111,12 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		} catch (final UncheckedIOException | N5IOException e) {
 			throw new N5IOException("Failed to read attributes from dataset " + pathName, e);
 		}
+	}
+
+	@Override
+	default URI getURI() {
+
+		return getRootedKeyValueAccess().root();
 	}
 
 	@Override

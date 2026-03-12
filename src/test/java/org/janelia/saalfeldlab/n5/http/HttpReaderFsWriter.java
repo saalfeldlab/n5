@@ -58,7 +58,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	private final GsonKeyValueN5Reader reader;
 
 	public <W extends GsonKeyValueN5Writer, R extends GsonKeyValueN5Reader> HttpReaderFsWriter(final W writer, final R reader) {
-	
+
 		this.writer = writer;
 		this.reader = reader;
 
@@ -84,8 +84,6 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 				}
 			}
 		}
-
-
 	}
 
 	@Override public String getAttributesKey() {
@@ -96,11 +94,6 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	@Override public Version getVersion() throws N5Exception {
 
 		return reader.getVersion();
-	}
-
-	@Override public URI getURI() {
-
-		return reader.getURI();
 	}
 
 	@Override public <T> T getAttribute(String pathName, String key, Class<T> clazz) throws N5Exception {
@@ -118,7 +111,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		return reader.getDatasetAttributes(pathName);
 	}
 
-	@Override public DataBlock<?> readBlock(String pathName, DatasetAttributes datasetAttributes, long... gridPosition) throws N5Exception {
+	@Override public <T> DataBlock<T> readBlock(String pathName, DatasetAttributes datasetAttributes, long... gridPosition) throws N5Exception {
 
 		return reader.readBlock(pathName, getConvertedDatasetAttributes(datasetAttributes), gridPosition);
 	}
@@ -128,14 +121,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		return reader.readSerializedBlock(dataset, getConvertedDatasetAttributes(attributes), gridPosition);
 	}
 
-	@Override public KeyValueAccess getKeyValueAccess() {
-
-		DebugHelpers.printStackTrace();
-		return reader.getKeyValueAccess();
-	}
-
-	@Override
-	public RootedKeyValueAccess getRootedKeyValueAccess() {
+	@Override public RootedKeyValueAccess getRootedKeyValueAccess() {
 
 		return reader.getRootedKeyValueAccess();
 	}
@@ -249,7 +235,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
 		writer.setDatasetAttributes(datasetPath, datasetAttributes);
 	}
-	
+
 	@Override public DatasetAttributes getConvertedDatasetAttributes(DatasetAttributes datasetAttributes) {
 
 		return writer.getConvertedDatasetAttributes(datasetAttributes);

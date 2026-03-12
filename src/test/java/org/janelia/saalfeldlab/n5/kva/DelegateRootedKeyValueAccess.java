@@ -17,8 +17,8 @@ public class DelegateRootedKeyValueAccess implements RootedKeyValueAccess {
 
 	@Deprecated
 	@Override
-	public KeyValueAccess createKVA() {
-		return kva.createKVA();
+	public KeyValueAccess getKVA() {
+		return kva.getKVA();
 	}
 
 	@Override

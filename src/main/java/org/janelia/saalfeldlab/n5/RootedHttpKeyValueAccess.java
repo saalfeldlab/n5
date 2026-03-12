@@ -33,9 +33,10 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 
 	@Deprecated
 	@Override
-	public KeyValueAccess createKVA() {
-		return new HttpKeyValueAccess();
+	public KeyValueAccess getKVA() {
+		return kva;
 	}
+	private final KeyValueAccess kva = new HttpKeyValueAccess();
 
 	@Override
 	public URI root() {

@@ -28,9 +28,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
 import com.google.gson.JsonElement;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 
@@ -53,7 +50,6 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	protected final RootedKeyValueAccess rootedKeyValueAccess;
 	protected final Gson gson;
 	protected final boolean cacheMeta;
-	protected URI uri;
 
 	private final N5JsonCache cache;
 
@@ -138,8 +134,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			final boolean checkExists)
 			throws N5Exception {
 
-		this.keyValueAccess = rootedKeyValueAccess.createKVA();
-		System.out.println("keyValueAccess = " + keyValueAccess + " | rootedKeyValueAccess.createKVA() = " + this.keyValueAccess);
+		this.keyValueAccess = rootedKeyValueAccess.getKVA();
 		this.rootedKeyValueAccess = rootedKeyValueAccess;
 		this.gson = registerGson(gsonBuilder).create();
 		this.cacheMeta = cacheMeta;
@@ -148,15 +143,6 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			this.cache = newCache();
 		else
 			this.cache = null;
-
-		try {
-			System.out.println("basePath = " + basePath);
-			System.out.println("  keyValueAccess.uri(basePath) = " + keyValueAccess.uri(basePath));
-			System.out.println("   rootedKeyValueAccess.root() = " + rootedKeyValueAccess.root());
-			uri = rootedKeyValueAccess.root();
-		} catch (final URISyntaxException e) {
-			throw new N5Exception(e);
-		}
 
 		boolean versionFound = false;
 		if (checkVersion) {
@@ -202,23 +188,9 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	}
 
 	@Override
-	public KeyValueAccess getKeyValueAccess() {
-
-		DebugHelpers.printStackTrace();
-		return keyValueAccess;
-	}
-
-	@Override
 	public RootedKeyValueAccess getRootedKeyValueAccess() {
 
-//		DebugHelpers.printStackTrace(2);
 		return rootedKeyValueAccess;
-	}
-
-	@Override
-	public URI getURI() {
-
-		return uri;
 	}
 
 	@Override
