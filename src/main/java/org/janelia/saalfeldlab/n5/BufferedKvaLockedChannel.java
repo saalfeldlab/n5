@@ -30,8 +30,8 @@ class BufferedKvaLockedChannel implements LockedChannel {
         return new ProxyInputStream(volatileReadData.inputStream()) {
             @Override
             public void close() throws IOException {
-                volatileReadData.close();
                 super.close();
+                volatileReadData.close();
             }
         };
     }
