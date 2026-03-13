@@ -2,6 +2,7 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
@@ -126,8 +127,8 @@ class ChannelLock implements Closeable {
 		if (fileChannel != null) {
 			try {
 				fileChannel.close();
-			} catch (final IOException ignored) {
+			} catch (final IOException | UncheckedIOException ignored) {
 			}
-		}
+        }
 	}
 }
