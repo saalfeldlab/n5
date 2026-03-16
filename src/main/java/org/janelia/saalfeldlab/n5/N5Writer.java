@@ -301,7 +301,7 @@ public interface N5Writer extends N5Reader {
 		 *
 		 * @param gridPos
 		 * @param existingDataBlock
-		 * 		existing data to be merged into the new data block (maybe {@code null})
+		 * 		existing data to be merged into the new data block (may be {@code null})
 		 *
 		 * @return data block at the given gridPos
 		 */
@@ -313,7 +313,7 @@ public interface N5Writer extends N5Reader {
 	 * @param datasetAttributes the dataset attributes
 	 * @param min min pixel coordinate of region to write
 	 * @param size size in pixels of region to write
-	 * @param dataBlocks is asked to create blocks within the given region
+	 * @param dataBlocks is asked to create chunks within the given region
 	 * @param writeFully if false, merge existing data in shards/blocks that overlap the region boundary. if true, override everything.
 	 * @throws N5Exception the exception
 	 */
@@ -332,7 +332,7 @@ public interface N5Writer extends N5Reader {
 	 * @param size size in pixels of region to write
 	 * @param dataBlocks is asked to create blocks within the given region
 	 * @param writeFully if false, merge existing data in shards/blocks that overlap the region boundary. if true, override everything.
-	 * @param exec used to parallelize over blocks and shards
+	 * @param exec used to parallelize over blocks (chunks and shards)
 	 * @throws N5Exception the exception
 	 */
 	<T> void writeRegion(
