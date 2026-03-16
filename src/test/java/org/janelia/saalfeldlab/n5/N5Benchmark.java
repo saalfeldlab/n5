@@ -141,7 +141,7 @@ public class N5Benchmark {
 				n5.createDataset(compressedDatasetName, new long[]{1, 2, 3}, new int[]{1, 2, 3}, DataType.UINT16, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(compressedDatasetName);
 				final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(new int[]{1, 2, 3}, new long[]{0, 0, 0}, dataBlockData);
-				n5.writeBlock(compressedDatasetName, attributes, dataBlock);
+				n5.writeChunk(compressedDatasetName, attributes, dataBlock);
 			} catch (final N5Exception e) {
 				fail(e.getMessage());
 			}
@@ -165,7 +165,7 @@ public class N5Benchmark {
 						for (int y = 0; y < nBlocks; ++y)
 							for (int x = 0; x < nBlocks; ++x) {
 								final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(new int[]{64, 64, 64}, new long[]{x, y, z}, data);
-								n5.writeBlock(compressedDatasetName, attributes, dataBlock);
+								n5.writeChunk(compressedDatasetName, attributes, dataBlock);
 							}
 				} catch (final N5Exception e) {
 					fail(e.getMessage());
@@ -255,7 +255,7 @@ public class N5Benchmark {
 										exec.submit(
 												() -> {
 													final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(new int[]{64, 64, 64}, new long[]{fx, fy, fz}, data);
-													n5.writeBlock(compressedDatasetName, attributes, dataBlock);
+													n5.writeChunk(compressedDatasetName, attributes, dataBlock);
 													return true;
 												}));
 							}

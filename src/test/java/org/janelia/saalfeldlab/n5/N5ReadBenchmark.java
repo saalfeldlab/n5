@@ -114,7 +114,7 @@ public class N5ReadBenchmark {
 			n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT64, compression);
 			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 			final DoubleArrayDataBlock dataBlock = new DoubleArrayDataBlock(blockSize, new long[] {0, 0, 0}, doubleBlock);
-			n5.writeBlock(datasetName, attributes, dataBlock);
+			n5.writeChunk(datasetName, attributes, dataBlock);
 		}
 
 		n5 = new N5FSReader(basePath, new GsonBuilder());
@@ -129,7 +129,7 @@ public class N5ReadBenchmark {
 	@BenchmarkMode( Mode.AverageTime )
 	@OutputTimeUnit( TimeUnit.MILLISECONDS )
 	public void bench() {
-		n5.readBlock(datasetName, attributes, 0, 0, 0);
+		n5.readChunk(datasetName, attributes, 0, 0, 0);
 	}
 
 	public static void main( final String... args ) throws RunnerException, IOException

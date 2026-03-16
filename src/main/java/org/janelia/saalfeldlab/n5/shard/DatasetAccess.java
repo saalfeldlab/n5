@@ -38,7 +38,7 @@ import org.janelia.saalfeldlab.n5.N5Writer.DataBlockSupplier;
 import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 
 /**
- * Wrap an instantiated DataBlock/shard codec hierarchy to implement (single and
+ * Wrap an instantiated DataBlock/block codec hierarchy to implement (single and
  * batch) DataBlock read/write methods.
  *
  * @param <T>
@@ -63,13 +63,13 @@ public interface DatasetAccess<T> {
 	 * @throws N5IOException
 	 * 		if any error occurs while reading or decoding the block
 	 */
-	DataBlock<T> readBlock(PositionValueAccess pva, long[] gridPosition) throws N5IOException;
+	DataBlock<T> readChunk(PositionValueAccess pva, long[] gridPosition) throws N5IOException;
 
 	/**
 	 * Read the {@code DataBlock}s at the given {@code gridPositions}.
 	 * <p>
 	 * The returned {@code List<DataBlock<T>>} is in the same order as the
-	 * requested {@code gridPositions}. That is, the {@code DataBlock} at indwex
+	 * requested {@code gridPositions}. That is, the {@code DataBlock} at index
 	 * {@code i} has grid coordinates {@code gridPositions.get(i)}.
 	 * <p>
 	 * If a requested block doesn't exist, then the corresponding element in the
@@ -80,21 +80,36 @@ public interface DatasetAccess<T> {
 	 * @param pva
 	 * 		dataset storage
 	 * @param gridPositions
-	 * 		list of grid position of the DataBlocks to read
+	 * 		list of grid positions of the DataBlocks to read
 	 * @return list of DataBlocks
 	 *
 	 * @throws N5IOException
 	 * 		if any error occurs while reading or decoding blocks
 	 */
-	List<DataBlock<T>> readBlocks(PositionValueAccess pva, List<long[]> gridPositions) throws N5IOException;
+	List<DataBlock<T>> readChunks(PositionValueAccess pva, List<long[]> gridPositions) throws N5IOException;
 
-	void writeBlock(PositionValueAccess pva, DataBlock<T> dataBlock) throws N5IOException;
+	/**
+	 * Writes a chunk to the given storage position.
+	 *
+	 */
+	void writeChunk(PositionValueAccess pva, DataBlock<T> dataBlock) throws N5IOException;
 
-	void writeBlocks(PositionValueAccess pva, List<DataBlock<T>> blocks) throws N5IOException;
+	/**
+	 * Writes multiple chunks to the given storage positions.
+	 */
+	void writeChunks(PositionValueAccess pva, List<DataBlock<T>> blocks) throws N5IOException;
 
-	boolean deleteBlock(PositionValueAccess pva, long[] gridPosition) throws N5IOException;
+	/**
+	 * Deletes the chunk at {@code gridPosition}. @return true if it existed and
+	 * was deleted.
+	 */
+	boolean deleteChunk(PositionValueAccess pva, long[] gridPosition) throws N5IOException;
 
-	boolean deleteBlocks(PositionValueAccess pva, List<long[]> positions) throws N5IOException;
+	/**
+	 * Deletes the chunks at the given {@code positions}. @return true if any
+	 * existed and were deleted.
+	 */
+	boolean deleteChunks(PositionValueAccess pva, List<long[]> positions) throws N5IOException;
 
 	/**
 	 *
@@ -106,7 +121,7 @@ public interface DatasetAccess<T> {
 	 * @param blocks
 	 * 		is asked to create blocks within the given region
 	 * @param writeFully
-	 * 		if false, merge existing data in shards/blocks that overlap the region boundary. if true, override everything.
+	 * 		if false, merge existing data in blocks/chunks that overlap the region boundary. if true, override everything.
 	 *
 	 * @throws N5IOException
 	 */
@@ -128,9 +143,9 @@ public interface DatasetAccess<T> {
 	 * @param blocks
 	 * 		is asked to create blocks within the given region. must be thread-safe.
 	 * @param writeFully
-	 * 		if false, merge existing data in shards/blocks that overlap the region boundary. if true, override everything.
+	 * 		if false, merge existing data in blocks/chunks that overlap the region boundary. if true, override everything.
 	 * @param exec
-	 * 		used to parallelize over blocks and shards
+	 * 		used to parallelize over chunks and blocks
 	 *
 	 * @throws N5Exception
 	 * @throws InterruptedException
@@ -146,7 +161,7 @@ public interface DatasetAccess<T> {
 	) throws N5Exception, InterruptedException, ExecutionException;
 
 	/**
-	 * Read a full shard at {@code shardGridPosition} at the given nesting
+	 * Read a block at {@code shardGridPosition} at the given nesting
 	 * {@code level}. The shard data is rearranged and assembled into a (large)
 	 * {@code DataBlock}.
 	 * <p>
@@ -163,27 +178,27 @@ public interface DatasetAccess<T> {
 	 * @return
 	 * @throws N5IOException
 	 */
-	DataBlock<T> readShard(PositionValueAccess pva, long[] shardGridPosition, int level) throws N5IOException;
+	DataBlock<T> readBlock(PositionValueAccess pva, long[] shardGridPosition, int level) throws N5IOException;
 
 	/**
-	 * Write a full shard the given nesting {@code level}. The shard data is
+	 * Write a full block at the given nesting {@code level}. The block data is
 	 * given as a (large) {@code DataBlock} that will be sliced, rearranged, and
 	 * written as (level-0) DataBlocks.
 	 * <p>
 	 * {@code dataBlock.getGridPosition()} is the grid position with respect to
 	 * {@code level}. For example, if {@code level==1}, then this refers to the
-	 * position on the shard grid.
+	 * position on the block grid.
 	 *
 	 * @param pva
 	 * 		dataset storage
 	 * @param dataBlock
-	 * 		shard/block to write
+	 * 		block to write
 	 * @param level
-	 * 		grid level of the shard/block to write.
+	 * 		grid level of the block to write.
 	 *
 	 * @throws N5IOException
 	 */
-	void writeShard(PositionValueAccess pva, DataBlock<T> dataBlock, int level) throws N5IOException;
+	void writeBlock(PositionValueAccess pva, DataBlock<T> dataBlock, int level) throws N5IOException;
 
 	NestedGrid getGrid();
 }

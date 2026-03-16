@@ -244,29 +244,29 @@ public interface N5Writer extends N5Reader {
 	}
 
 	/**
-	 * Writes a {@link DataBlock}.
+	 * Writes a chunk represented by a {@link DataBlock}.
 	 *
 	 * @param datasetPath dataset path
 	 * @param datasetAttributes the dataset attributes
-	 * @param dataBlock the data block
+	 * @param dataBlock the chunk as a DataBlock
 	 * @param <T> the data block data type
 	 * @throws N5Exception the exception
 	 */
-	<T> void writeBlock(
+	<T> void writeChunk(
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception;
 
 	/**
-	 * Write multiple data blocks, useful for request aggregation.
+	 * Write multiple chunks represented by {@link DataBlock}s, useful for aggregation.
 	 *
 	 * @param datasetPath dataset path
 	 * @param datasetAttributes the dataset attributes
-	 * @param dataBlocks the data block
+	 * @param dataBlocks the chunks 
 	 * @param <T> the data block data type
 	 * @throws N5Exception the exception
 	 */
-	default <T> void writeBlocks(
+	default <T> void writeChunks(
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T>... dataBlocks) throws N5Exception {
@@ -274,15 +274,15 @@ public interface N5Writer extends N5Reader {
 		// default method is naive
 		DatasetAttributes convertedAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		for (DataBlock<T> block : dataBlocks) {
-			writeBlock(datasetPath, convertedAttributes, block);
+			writeChunk(datasetPath, convertedAttributes, block);
 		}
 	}
 
 	/**
-	 * Writes a shard stored as a {@link DataBlock}.
+	 * Writes a block stored as a {@link DataBlock}.
 	 * <p>
-	 * A "shard" is the largest level of the datasets {@link org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid}.
-	 * This method's behavior is identical to writeBlock for un-sharded datasets.
+	 * A block is the highest (coarsest) level of the dataset's {@link org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid}.
+	 * This method's behavior is identical to {@link #writeChunk} for un-sharded datasets.
 	 *
 	 * @param pathName dataset path
 	 * @param datasetAttributes the dataset attributes
@@ -292,7 +292,7 @@ public interface N5Writer extends N5Reader {
 	 *
 	 * @see DatasetAttributes#getNestedBlockGrid()
 	 */
-	<T> void writeShard(
+	<T> void writeBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception;
@@ -335,14 +335,14 @@ public interface N5Writer extends N5Reader {
 			final long[] gridPosition = pos.absolute(0);
 			final DataBlock<T> existingDataBlock = writeFully || region.fullyContains(pos)
 					? null
-					: readBlock(datasetPath, datasetAttributes, gridPosition);
+					: readChunk(datasetPath, datasetAttributes, gridPosition);
 			final DataBlock<T> dataBlock = dataBlocks.get(gridPosition, existingDataBlock);
 			// null blocks may be provided when they contain only the fill value
 			// and only non-empty blocks should be written, for example
 			if (dataBlock == null) {
-				deleteBlock(datasetPath, datasetAttributes, gridPosition);
+				deleteChunk(datasetPath, datasetAttributes, gridPosition);
 			} else {
-				writeBlock(datasetPath, datasetAttributes, dataBlock);
+				writeChunk(datasetPath, datasetAttributes, dataBlock);
 			}
 		}
 
@@ -375,65 +375,65 @@ public interface N5Writer extends N5Reader {
 				final long[] gridPosition = pos.absolute(0);
 				final DataBlock<T> existingDataBlock = writeFully || region.fullyContains(pos)
 						? null
-						: readBlock(datasetPath, datasetAttributes, gridPosition);
+						: readChunk(datasetPath, datasetAttributes, gridPosition);
 				final DataBlock<T> dataBlock = dataBlocks.get(gridPosition, existingDataBlock);
 				// null blocks may be provided when they contain only the fill value
 				// and only non-empty blocks should be written, for example
 				if (dataBlock == null) {
-					deleteBlock(datasetPath, datasetAttributes, gridPosition);
+					deleteChunk(datasetPath, datasetAttributes, gridPosition);
 				} else {
-					writeBlock(datasetPath, datasetAttributes, dataBlock);
+					writeChunk(datasetPath, datasetAttributes, dataBlock);
 				}
 			});
 		}
 	}
 
 	/**
-	 * Deletes the block at {@code gridPosition}.
+	 * Deletes the chunk at {@code gridPosition}.
 	 *
 	 * @param datasetPath dataset path
-	 * @param gridPosition position of block to be deleted
-	 * @throws N5Exception if the block exists but could not be deleted
+	 * @param gridPosition position of chunk to be deleted
+	 * @throws N5Exception if the chunk exists but could not be deleted
 	 *
-	 * @return {@code true} if the block at {@code gridPosition} existed and was deleted.
+	 * @return {@code true} if the chunk at {@code gridPosition} existed and was deleted.
 	 */
-	default boolean deleteBlock(
+	default boolean deleteChunk(
 			final String datasetPath,
 			final long... gridPosition) throws N5Exception {
 		final DatasetAttributes datasetAttributes = getDatasetAttributes(datasetPath);
-		return deleteBlock(datasetPath, datasetAttributes, gridPosition);
+		return deleteChunk(datasetPath, datasetAttributes, gridPosition);
 	}
 
 	/**
-	 * Deletes the block at {@code gridPosition}.
+	 * Deletes the chunk at {@code gridPosition}.
 	 *
 	 * @param datasetPath the dataset path
 	 * @param datasetAttributes the dataset attributes
-	 * @param gridPosition position of block to be deleted
-	 * @throws N5Exception if the block exists but could not be deleted
+	 * @param gridPosition position of chunk to be deleted
+	 * @throws N5Exception if the chunk exists but could not be deleted
 	 *
-	 * @return {@code true} if the block at {@code gridPosition} existed and was deleted.
+	 * @return {@code true} if the chunk at {@code gridPosition} existed and was deleted.
 	 */
-	boolean deleteBlock(
+	boolean deleteChunk(
 			String datasetPath,
 			DatasetAttributes datasetAttributes,
 			long... gridPosition) throws N5Exception;
 
 	/**
-	 * Deletes the blocks at the given {@code gridPositions}.
+	 * Deletes the chunks at the given {@code gridPositions}.
 	 *
 	 * @param datasetPath dataset path
 	 * @param gridPositions a list of grid positions
-	 * @return {@code true} if any of the specified blocks existed and was deleted
-	 * @throws N5Exception if any of the block exists but could not be deleted
+	 * @return {@code true} if any of the specified chunks existed and was deleted
+	 * @throws N5Exception if any of the chunks did exist but could not be deleted
 	 */
-	default boolean deleteBlocks(
+	default boolean deleteChunks(
 			String datasetPath,
 			DatasetAttributes datasetAttributes,
 			List<long[]> gridPositions) throws N5Exception {
 		boolean deleted = false;
 		for (long[] pos : gridPositions) {
-			deleted |= deleteBlock(datasetPath, datasetAttributes, pos);
+			deleted |= deleteChunk(datasetPath, datasetAttributes, pos);
 		}
 		return deleted;
 	}
@@ -463,6 +463,6 @@ public interface N5Writer extends N5Reader {
 		}
 		final byte[] bytes = byteOutputStream.toByteArray();
 		final DataBlock<?> dataBlock = new ByteArrayDataBlock(null, gridPosition, bytes);
-		writeBlock(datasetPath, datasetAttributes, dataBlock);
+		writeChunk(datasetPath, datasetAttributes, dataBlock);
 	}
 }
