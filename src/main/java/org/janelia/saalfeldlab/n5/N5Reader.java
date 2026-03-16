@@ -298,7 +298,7 @@ public interface N5Reader extends AutoCloseable {
 
 
 	/**
-	 * Reads a {@link DataBlock}.
+	 * Reads a chunk as a {@link DataBlock}.
 	 *
 	 * @param <T>
 	 *            the DataBlock data type
@@ -312,13 +312,13 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws N5Exception
 	 *             the exception
 	 */
-	<T> DataBlock<T> readBlock(
+	<T> DataBlock<T> readChunk(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception;
 
 	/**
-	 * Reads multiple {@link DataBlock}s.
+	 * Reads multiple chunks as {@link DataBlock}s.
 	 * <p>
 	 * Implementations may optimize / batch read operations when possible, e.g.
 	 * in the case that the datasets are sharded.
@@ -335,7 +335,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws N5Exception
 	 *             the exception
 	 */
-	default <T> List<DataBlock<T>> readBlocks(
+	default <T> List<DataBlock<T>> readChunks(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> gridPositions) throws N5Exception {
@@ -343,16 +343,16 @@ public interface N5Reader extends AutoCloseable {
 		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
 		for( final long[] p : gridPositions )
-			blocks.add(readBlock(pathName, convertedDatasetAttributes, p));
+			blocks.add(readChunk(pathName, convertedDatasetAttributes, p));
 
 		return blocks;
 	}
 
 	/**
-	 * Reads a shard as a {@link DataBlock}.
+	 * Reads a block, returning a {@link DataBlock}. Will be a chunk or shard (if the dataset is sharded).
 	 * <p>
-	 * A "shard" is the largest level of the datasets {@link org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid}
-	 * This method's behavior is identical to readBlock for un-sharded datasets.
+	 * A block is the highest (coarsest) level of the dataset's {@link org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid}
+	 * This method's behavior is identical to {@link #readChunk} for un-sharded datasets.
 	 *
 	 * @param <T>
 	 *            the DataBlock data type
@@ -361,39 +361,40 @@ public interface N5Reader extends AutoCloseable {
 	 * @param datasetAttributes
 	 *            the dataset attributes
 	 * @param gridPosition
-	 *            the position in the shard grid
+	 *            the position in the block grid
 	 * @return the data block
 	 * @throws N5Exception
 	 *             the exception
 	 *
 	 * @see DatasetAttributes#getNestedBlockGrid()
 	 */
-	<T> DataBlock<T> readShard(
+	<T> DataBlock<T> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception;
 
 	/**
-	 * Checks if a shard (or block for non-sharded datasets) exists at the
-	 * given grid position without reading the data.
+	 * Checks if a block exists at the given grid position without reading the data.
 	 * <p>
 	 * This method only checks for the presence of the key value for the gridPosition, it does not
-	 * read or validate the contents.
+	 * read or validate the contents. As a result, this method refers to chunks in un-sharded datasets
+	 * or shards in sharded datasets.
 	 *
 	 * @param pathName
 	 *            dataset path
 	 * @param datasetAttributes
 	 *            the dataset attributes
 	 * @param gridPosition
-	 *            the shard grid position (or block position for non-sharded datasets)
-	 * @return true if the shard (or block) file exists
+	 *            the block grid position
+	 * @return true if the block file exists
 	 * @throws N5Exception
 	 *             the exception
 	 */
-	boolean shardExists(
+	boolean blockExists(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception;
+
 	/**
 	 * Load a {@link DataBlock} as a {@link Serializable}. The offset is given
 	 * in
@@ -419,7 +420,7 @@ public interface N5Reader extends AutoCloseable {
 			final long... gridPosition) throws N5Exception, ClassNotFoundException {
 
 		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(attributes);
-		final DataBlock<byte[]> block = readBlock(dataset, convertedDatasetAttributes, gridPosition);
+		final DataBlock<byte[]> block = readChunk(dataset, convertedDatasetAttributes, gridPosition);
 		if (block == null)
 			return null;
 

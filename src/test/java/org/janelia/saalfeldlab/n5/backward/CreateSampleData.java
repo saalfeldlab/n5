@@ -62,28 +62,28 @@ public class CreateSampleData {
 
 		byte val = 0;
 		long[] pos = new long[]{0, 0};
-		n5.writeBlock(dsetPath, attrs, createDataBlock(blkSize, pos, val));
+		n5.writeChunk(dsetPath, attrs, createDataBlock(blkSize, pos, val));
 
 		pos[0] = 1;
 		pos[1] = 0;
 		blkSize[0] = 2;
 		blkSize[1] = 4;
 		val++;
-		n5.writeBlock(dsetPath, attrs, createDataBlock(blkSize, pos, val));
+		n5.writeChunk(dsetPath, attrs, createDataBlock(blkSize, pos, val));
 
 		pos[0] = 0;
 		pos[1] = 1;
 		blkSize[0] = 5;
 		blkSize[1] = 1;
 		val++;
-		n5.writeBlock(dsetPath, attrs, createDataBlock(blkSize, pos, val));
+		n5.writeChunk(dsetPath, attrs, createDataBlock(blkSize, pos, val));
 
 		pos[0] = 1;
 		pos[1] = 1;
 		blkSize[0] = 2;
 		blkSize[1] = 1;
 		val++;
-		n5.writeBlock(dsetPath, attrs, createDataBlock( blkSize, pos, val ));
+		n5.writeChunk(dsetPath, attrs, createDataBlock( blkSize, pos, val ));
 
 		return n5;
 	}
