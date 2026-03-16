@@ -159,8 +159,8 @@ public class BlockCodecTests {
 		// Test encode/decode
 		final ByteArrayDataBlock emptyBlock = new ByteArrayDataBlock(blockSize, gridPosition, new byte[0]);
 
-		access.writeBlock(store, emptyBlock);
-		final DataBlock<?> decoded = access.readBlock(store, gridPosition);
+		access.writeChunk(store, emptyBlock);
+		final DataBlock<?> decoded = access.readChunk(store, gridPosition);
 
 		assertEquals("Empty block should have 0 elements", 0, decoded.getNumElements());
 	}
