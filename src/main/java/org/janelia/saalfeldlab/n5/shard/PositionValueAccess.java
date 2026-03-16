@@ -34,6 +34,7 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
@@ -77,6 +78,75 @@ public interface PositionValueAccess {
 	boolean exists(long[] key) throws N5Exception.N5IOException;
 
 	boolean remove(long[] key) throws N5Exception.N5IOException;
+
+	static PositionValueAccess fromKva(
+			final RootedKeyValueAccess kva,
+			final String normalPath,
+			final DatasetAttributes attributes) {
+
+		return new RootedKvaPositionValueAccess(kva, normalPath, attributes);
+	}
+
+	class RootedKvaPositionValueAccess implements PositionValueAccess {
+
+		private final RootedKeyValueAccess kva;
+		private final String normalPath;
+		private final DatasetAttributes attributes;
+
+		RootedKvaPositionValueAccess(final RootedKeyValueAccess kva,
+				final String normalPath,
+				final DatasetAttributes attributes) {
+
+			this.kva = kva;
+			this.normalPath = normalPath;
+			this.attributes = attributes;
+		}
+
+		/**
+		 * Constructs the absolute path for a data block (or shard) at a given grid
+		 * position.
+		 *
+		 * @param gridPosition
+		 *            to the target data block
+		 * @return the absolute path to the data block ad gridPosition
+		 */
+		private String relativePath(final long... gridPosition) {
+			return RootedKeyValueAccess.compose(normalPath, attributes.relativeBlockPath(gridPosition));
+		}
+
+		@Override
+		public VolatileReadData get(final long[] key) throws N5IOException {
+			try {
+				return kva.createReadData(relativePath(key));
+			} catch (N5Exception.N5NoSuchKeyException e) {
+				return null;
+			}
+		}
+
+		@Override
+		public boolean exists(final long[] key) throws N5IOException {
+			return kva.isFile(relativePath(key));
+		}
+
+		@Override
+		public void set(final long[] key, final ReadData data) throws N5IOException {
+			if (data == null) {
+				remove(key);
+			} else {
+				kva.write(relativePath(key), data);
+			}
+		}
+
+		@Override
+		public boolean remove(final long[] gridPosition) throws N5IOException {
+			final String key = relativePath(gridPosition);
+			if (!kva.isFile(key))
+				return false;
+
+			kva.delete(key);
+			return true;
+		}
+	}
 
 	static PositionValueAccess fromKva(
 			final KeyValueAccess kva,

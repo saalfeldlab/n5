@@ -97,8 +97,7 @@ public class N5CachedFSTest extends N5FSTest {
 		* The only possible way for the test to succeed is if it never again attempts to read the file, and relies on the cache. */
 		try (N5KeyValueWriter n5 = (N5KeyValueWriter) createN5Writer()) {
 			final String cachedGroup = "cachedGroup";
-			final String attributesPath = n5.absoluteAttributesPath(cachedGroup);
-
+			final String attributesPath = n5.getRootedKeyValueAccess().root().resolve(n5.relativeAttributesPath(cachedGroup)).getPath();
 
 			final ArrayList<TestData<?>> tests = new ArrayList<>();
 			n5.createGroup(cachedGroup);
@@ -112,7 +111,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 		try (N5KeyValueWriter n5 = (N5KeyValueWriter)createN5Writer(tempN5Location(), false)) {
 			final String cachedGroup = "cachedGroup";
-			final String attributesPath = n5.absoluteAttributesPath(cachedGroup);
+			final String attributesPath = n5.getRootedKeyValueAccess().root().resolve(n5.relativeAttributesPath(cachedGroup)).getPath();
 
 			final ArrayList<TestData<?>> tests = new ArrayList<>();
 			n5.createGroup(cachedGroup);
@@ -169,9 +168,8 @@ public class N5CachedFSTest extends N5FSTest {
 	@Test
 	public void cacheBehaviorTest() throws IOException, URISyntaxException {
 
-		final String loc = tempN5Location();
 		// make an uncached n5 writer
-		try (final N5TrackingStorage n5 = new N5TrackingStorage(new FileSystemKeyValueAccess(), loc,
+		try (final N5TrackingStorage n5 = new N5TrackingStorage(new RootedFileSystemKeyValueAccess(tempN5Location()),
 				new GsonBuilder(), true)) {
 
 			cacheBehaviorHelper(n5);
@@ -182,8 +180,7 @@ public class N5CachedFSTest extends N5FSTest {
 	@Test
 	public void cacheListTest() throws IOException, URISyntaxException {
 
-		final String loc = tempN5Location();
-		try (final N5TrackingStorage n5 = new N5TrackingStorage(new FileSystemKeyValueAccess(), loc,
+		try (final N5TrackingStorage n5 = new N5TrackingStorage(new RootedFileSystemKeyValueAccess(tempN5Location()),
 				new GsonBuilder(), true)) {
 
 			final String groupA = "groupA";
@@ -523,10 +520,10 @@ public class N5CachedFSTest extends N5FSTest {
 		public int listCallCount = 0;
 		public int writeAttrCallCount = 0;
 
-		public N5TrackingStorage(final KeyValueAccess keyValueAccess, final String basePath,
+		public N5TrackingStorage(final RootedKeyValueAccess keyValueAccess,
 				final GsonBuilder gsonBuilder, final boolean cacheAttributes) throws IOException {
 
-			super(keyValueAccess, basePath, gsonBuilder, cacheAttributes);
+			super(keyValueAccess, gsonBuilder, cacheAttributes);
 		}
 
 		@Override

@@ -28,9 +28,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
 import com.google.gson.JsonElement;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 
@@ -50,10 +47,9 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	public static final String ATTRIBUTES_JSON = "attributes.json";
 
 	protected final KeyValueAccess keyValueAccess;
-
+	protected final RootedKeyValueAccess rootedKeyValueAccess;
 	protected final Gson gson;
 	protected final boolean cacheMeta;
-	protected URI uri;
 
 	private final N5JsonCache cache;
 
@@ -63,8 +59,6 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 *
 	 * @param keyValueAccess
 	 * 			  the KeyValueAccess backend used
-	 * @param basePath
-	 *            N5 base path
 	 * @param gsonBuilder
 	 * 			  the GsonBuilder
 	 * @param cacheMeta
@@ -81,13 +75,12 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 *             implementation.
 	 */
 	public N5KeyValueReader(
-			final KeyValueAccess keyValueAccess,
-			final String basePath,
+			final RootedKeyValueAccess keyValueAccess,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheMeta)
 			throws N5Exception {
 
-		this(true, keyValueAccess, basePath, gsonBuilder, cacheMeta, true);
+		this(true, keyValueAccess, gsonBuilder, cacheMeta, true);
 	}
 
 	/**
@@ -95,7 +88,8 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
 	 * @param checkVersion
-	 *            the version check
+	 *            if true, an N5IOException will be thrown if the container
+	 *            (exists and) has an incompatible version
 	 * @param keyValueAccess
 	 *            the backend KeyValueAccess used
 	 * @param basePath
@@ -119,14 +113,14 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 */
 	protected N5KeyValueReader(
 			final boolean checkVersion,
-			final KeyValueAccess keyValueAccess,
-			final String basePath,
+			final RootedKeyValueAccess rootedKeyValueAccess,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheMeta,
 			final boolean checkExists)
 			throws N5Exception {
 
-		this.keyValueAccess = keyValueAccess;
+		this.keyValueAccess = rootedKeyValueAccess.getKVA();
+		this.rootedKeyValueAccess = rootedKeyValueAccess;
 		this.gson = registerGson(gsonBuilder).create();
 		this.cacheMeta = cacheMeta;
 
@@ -134,12 +128,6 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			this.cache = newCache();
 		else
 			this.cache = null;
-
-		try {
-			uri = keyValueAccess.uri(basePath);
-		} catch (final URISyntaxException e) {
-			throw new N5Exception(e);
-		}
 
 		boolean versionFound = false;
 		if (checkVersion) {
@@ -154,7 +142,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 		// if a version was found, the container exists - don't need to check again
 		if (checkExists && (!versionFound && !inferExistence("/")))
-			throw new N5Exception.N5IOException("No container exists at " + basePath);
+			throw new N5Exception.N5IOException("No container exists at " + rootedKeyValueAccess.root());
 	}
 
 	private boolean inferExistence(String path) {
@@ -185,15 +173,9 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	}
 
 	@Override
-	public KeyValueAccess getKeyValueAccess() {
+	public RootedKeyValueAccess getRootedKeyValueAccess() {
 
-		return keyValueAccess;
-	}
-
-	@Override
-	public URI getURI() {
-
-		return uri;
+		return rootedKeyValueAccess;
 	}
 
 	@Override

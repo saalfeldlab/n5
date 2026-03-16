@@ -71,7 +71,8 @@ public class ShardTest {
 		@Override public N5Writer createTempN5Writer() {
 
 			if (LOCAL_DEBUG) {
-				final N5Writer writer = new TrackingN5Writer("src/test/resources/test.n5", new FileSystemKeyValueAccess());
+				final String basePath = "src/test/resources/test.n5";
+				final N5Writer writer = new TrackingN5Writer(new RootedFileSystemKeyValueAccess(basePath));
 				writer.remove(""); // Clear old when starting new test
 				return writer;
 			}
@@ -79,7 +80,7 @@ public class ShardTest {
 			final String basePath = new File(tempN5PathName()).toURI().normalize().getPath();
 			try {
 				String uri = new URI("file", null, basePath, null).toString();
-				return new TrackingN5Writer(uri, new FileSystemKeyValueAccess());
+				return new TrackingN5Writer(new RootedFileSystemKeyValueAccess(uri));
 			} catch (URISyntaxException e) {
 				e.printStackTrace();
 			}
@@ -194,7 +195,7 @@ public class ShardTest {
 				new ByteArrayDataBlock(blockSize, new long[]{11, 11}, data)
 		);
 
-		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
+		final RootedKeyValueAccess kva = ((N5KeyValueWriter)writer).getRootedKeyValueAccess();
 
 		long[][] keys = new long[][]{
 				{0, 0},
@@ -209,8 +210,8 @@ public class ShardTest {
 				{2, 1}
 		};
 
-		ensureKeysExist(kva, writer.getURI(), dataset, datasetAttributes, keys);
-		ensureKeysDoNotExist(kva, writer.getURI(), dataset, datasetAttributes, someUnusedKeys);
+		ensureKeysExist(kva, dataset, datasetAttributes, keys);
+		ensureKeysDoNotExist(kva, dataset, datasetAttributes, someUnusedKeys);
 
 		final long[][] blockIndices = new long[][]{{0, 0}, {0, 1}, {1, 0}, {1, 1}, {4, 0}, {5, 0}, {11, 11}};
 		for (long[] blockIndex : blockIndices) {
@@ -250,8 +251,8 @@ public class ShardTest {
 				{2, 1}
 		};
 
-		ensureKeysExist(kva, writer.getURI(), dataset, datasetAttributes, keys2);
-		ensureKeysDoNotExist(kva, writer.getURI(), dataset, datasetAttributes, someUnusedKeys2);
+		ensureKeysExist(kva, dataset, datasetAttributes, keys2);
+		ensureKeysDoNotExist(kva, dataset, datasetAttributes, someUnusedKeys2);
 
 		final long[][] oldBlockIndices = new long[][]{{0, 1}, {1, 0}, {4, 0}, {5, 0}, {11, 11}};
 		for (long[] blockIndex : oldBlockIndices) {
@@ -271,20 +272,20 @@ public class ShardTest {
 		}
 	}
 
-	private void ensureKeysExist(KeyValueAccess kva, URI uri, String dataset,
+	private void ensureKeysExist(RootedKeyValueAccess kva, String dataset,
 			DatasetAttributes datasetAttributes, long[][] keys) {
 
 		for (long[] key : keys) {
-			final String shard = kva.compose(uri, dataset, datasetAttributes.relativeBlockPath(key));
+			final String shard = dataset + "/" + datasetAttributes.relativeBlockPath(key);
 			Assert.assertTrue("Shard at" + shard + "Does not exist", kva.exists(shard));
 		}
 	}
 
-	private void ensureKeysDoNotExist(KeyValueAccess kva, URI uri, String dataset,
+	private void ensureKeysDoNotExist(RootedKeyValueAccess kva, String dataset,
 			DatasetAttributes datasetAttributes, long[][] keys) {
 
 		for (long[] key : keys) {
-			final String shard = kva.compose(uri, dataset, datasetAttributes.relativeBlockPath(key));
+			final String shard = dataset + "/" + datasetAttributes.relativeBlockPath(key);
 			Assert.assertFalse("Shard at" + shard + " exists but should not.", kva.exists(shard));
 		}
 	}
@@ -308,7 +309,7 @@ public class ShardTest {
 		final DatasetAttributes datasetAttributes = writer.createDataset(dataset, attrs);
 		assertTrue(datasetAttributes.isSharded());
 
-		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
+		final RootedKeyValueAccess rkva = ((N5KeyValueWriter)writer).getRootedKeyValueAccess();
 
 		final int[] blockSize = datasetAttributes.getBlockSize();
 		final int numElements = blockSize[0] * blockSize[1];
@@ -370,8 +371,8 @@ public class ShardTest {
 
 		int i = 0;
 		for (String[] key : keys) {
-			final String shardPath = kva.compose(writer.getURI(), key);
-			Assert.assertEquals("shard at " + shardPath + " was the wrong size", shardSizes[i++], kva.size(shardPath));
+			final String shardPath = String.join("/", key);
+			Assert.assertEquals("shard at " + shardPath + " was the wrong size", shardSizes[i++], rkva.size(shardPath));
 		}
 
 	}

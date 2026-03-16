@@ -35,7 +35,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -124,14 +123,14 @@ public class CompatibilityTest {
 		URI uriMy = n5My.getURI();
 
 		// check attributes
-		final JsonElement attrsLegacy = ((GsonKeyValueN5Reader)n5Legacy).getAttributes(writeDataset);
-		final JsonElement attrsMy = ((GsonKeyValueN5Reader)n5My).getAttributes(writeDataset);
+		final JsonElement attrsLegacy = n5Legacy.getAttributes(writeDataset);
+		final JsonElement attrsMy = n5My.getAttributes(writeDataset);
 		assertEquals(attrsLegacy, attrsMy);
 
-		final KeyValueAccess kva = n5My.getKeyValueAccess();
+		final RootedKeyValueAccess rkva = n5My.getRootedKeyValueAccess();
 		for (final String path : writePathsToTest) {
-			final byte[] dataMy = read(kva, kva.compose(uriMy, writeDataset, path));
-			final byte[] dataLegacy = read(kva, kva.compose(uriLegacy, writeDataset, path));
+			final byte[] dataMy = read(rkva, writeDataset + "/" + path);
+			final byte[] dataLegacy = read(rkva, writeDataset + "/" + path);
 			assertArrayEquals(dataLegacy, dataMy);
 		}
 
@@ -140,7 +139,7 @@ public class CompatibilityTest {
 		n5Legacy.close();
 	}
 
-	private byte[] read(KeyValueAccess kva, String path) {
+	private byte[] read(RootedKeyValueAccess kva, String path) {
 
 		byte[] data;
 		try (VolatileReadData readData = kva.createReadData(path)) {

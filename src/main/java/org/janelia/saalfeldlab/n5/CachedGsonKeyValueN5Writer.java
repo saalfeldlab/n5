@@ -53,34 +53,26 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 	@Override
 	default void createGroup(final String path) throws N5Exception {
 
-		final String normalPath = N5URI.normalizeGroupPath(path);
-		// avoid hitting the backend if this path is already a group according to the cache
-		// else if exists is true (then a dataset is present) so throw an exception to avoid
-		// overwriting / invalidating existing data
-		if (groupExists(normalPath))
+		final RootedURI.N5GroupPath group = RootedURI.N5GroupPath.of(path);
+		if (groupExists(group))
 			return;
-		else if (datasetExists(normalPath))
-			throw new N5Exception("Can't make a group on existing dataset.");
 
-		getKeyValueAccess().createDirectories(absoluteGroupPath(normalPath));
+		getRootedKeyValueAccess().createDirectories(group.uri()); // TODO (N5Path): Add RootedKeyValueAccess.createDirectories(N5GroupPath)
 
 		if (cacheMeta()) {
 			// check all nodes that are parents of the added node, if they have
 			// a children set, add the new child to it
-			getKeyValueAccess().parent(normalPath); // TODO: Remove? Why is this done here?
-			String[] pathParts = getKeyValueAccess().components(normalPath);
-			String parent = N5URI.normalizeGroupPath("/");
-			if (pathParts.length == 0) {
-				pathParts = new String[]{""};
-			}
+			String[] pathParts = group.components();
+			String parent = "";
 			for (final String child : pathParts) {
 
 				final String childPath = parent.isEmpty() ? child : parent + "/" + child;
 				getCache().initializeNonemptyCache(childPath, getAttributesKey());
 				getCache().updateCacheInfo(childPath, getAttributesKey());
 
-				// only add if the parent exists and has children cached already
-				if (parent != null && !child.isEmpty())
+				// Only add if the parent exists and has children cached already.
+				// Note that the only reason to have child.isEmpty() is if the group is "".
+				if (!child.isEmpty())
 					getCache().addChildIfPresent(parent, child);
 
 				parent = childPath;
@@ -125,20 +117,20 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 	@Override
 	default boolean remove(final String path) throws N5Exception {
 
+		final RootedURI.N5GroupPath group = RootedURI.N5GroupPath.of(path);
+
 		// GsonKeyValueN5Writer.super.remove(path)
 		/*
 		 * the lines below duplicate the single line above but would have to call
 		 * normalizeGroupPath again the below duplicates code, but avoids extra work
 		 */
-		final String normalPath = N5URI.normalizeGroupPath(path);
-		final String groupPath = absoluteGroupPath(normalPath);
-
-		if (getKeyValueAccess().isDirectory(groupPath))
-			getKeyValueAccess().delete(groupPath);
+		if (getRootedKeyValueAccess().isDirectory(group.uri())) // TODO (N5Path): Add RootedKeyValueAccess.isDirectory(N5GroupPath)
+			getRootedKeyValueAccess().delete(group.uri()); // TODO (N5Path): Add RootedKeyValueAccess.delete(N5GroupPath)
 
 		if (cacheMeta()) {
-			final String parentPath = getKeyValueAccess().parent(normalPath);
-			getCache().removeCache(parentPath, normalPath);
+			final RootedURI.N5GroupPath parent = group.parent();
+			final String parentPath = parent == null ? null : parent.normalPath();
+			getCache().removeCache(parentPath, group.normalPath());
 		}
 
 		/* an IOException should have occurred if anything had failed midway */

@@ -68,8 +68,7 @@ public class N5FSWriter extends N5KeyValueWriter {
 			throws N5Exception {
 
 		super(
-				new FileSystemKeyValueAccess(),
-				basePath,
+				new RootedFileSystemKeyValueAccess(basePath),
 				gsonBuilder,
 				cacheAttributes);
 	}

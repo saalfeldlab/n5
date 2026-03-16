@@ -36,19 +36,18 @@ import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
-import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5KeyValueReader;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
+import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
 
 public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
@@ -56,7 +55,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	private final GsonKeyValueN5Reader reader;
 
 	public <W extends GsonKeyValueN5Writer, R extends GsonKeyValueN5Reader> HttpReaderFsWriter(final W writer, final R reader) {
-	
+
 		this.writer = writer;
 		this.reader = reader;
 
@@ -82,8 +81,6 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 				}
 			}
 		}
-
-
 	}
 
 	@Override public String getAttributesKey() {
@@ -94,11 +91,6 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	@Override public Version getVersion() throws N5Exception {
 
 		return reader.getVersion();
-	}
-
-	@Override public URI getURI() {
-
-		return reader.getURI();
 	}
 
 	@Override public <T> T getAttribute(String pathName, String key, Class<T> clazz) throws N5Exception {
@@ -116,7 +108,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		return reader.getDatasetAttributes(pathName);
 	}
 
-	@Override public DataBlock<?> readBlock(String pathName, DatasetAttributes datasetAttributes, long... gridPosition) throws N5Exception {
+	@Override public <T> DataBlock<T> readBlock(String pathName, DatasetAttributes datasetAttributes, long... gridPosition) throws N5Exception {
 
 		return reader.readBlock(pathName, getConvertedDatasetAttributes(datasetAttributes), gridPosition);
 	}
@@ -126,9 +118,9 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		return reader.readSerializedBlock(dataset, getConvertedDatasetAttributes(attributes), gridPosition);
 	}
 
-	@Override public KeyValueAccess getKeyValueAccess() {
+	@Override public RootedKeyValueAccess getRootedKeyValueAccess() {
 
-		return reader.getKeyValueAccess();
+		return reader.getRootedKeyValueAccess();
 	}
 
 	@Override public boolean exists(String pathName) {
@@ -240,7 +232,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
 		writer.setDatasetAttributes(datasetPath, datasetAttributes);
 	}
-	
+
 	@Override public DatasetAttributes getConvertedDatasetAttributes(DatasetAttributes datasetAttributes) {
 
 		return writer.getConvertedDatasetAttributes(datasetAttributes);
