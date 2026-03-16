@@ -71,20 +71,17 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		return grid;
 	}
 
-	//
-	// -- readBlock -----------------------------------------------------------
-
 	@Override
-	public DataBlock<T> readBlock(final PositionValueAccess pva, final long[] gridPosition) throws N5IOException {
+	public DataBlock<T> readChunk(final PositionValueAccess pva, final long[] gridPosition) throws N5IOException {
 		final NestedPosition position = grid.nestedPosition(gridPosition);
 		try (final VolatileReadData readData = pva.get(position.key())) {
-			return readBlockRecursive(readData, position, grid.numLevels() - 1);
+			return readChunkRecursive(readData, position, grid.numLevels() - 1);
 		} catch (N5NoSuchKeyException ignored) {
 			return null;
 		}
 	}
 
-	private DataBlock<T> readBlockRecursive(
+	private DataBlock<T> readChunkRecursive(
 			final ReadData readData,
 			final NestedPosition position,
 			final int level) {
@@ -98,19 +95,16 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			@SuppressWarnings("unchecked")
 			final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
 			final RawShard shard = codec.decode(readData, position.absolute(level)).getData();
-			return readBlockRecursive(shard.getElementData(position.relative(level - 1)), position, level - 1);
+			return readChunkRecursive(shard.getElementData(position.relative(level - 1)), position, level - 1);
 		}
 	}
 
-	//
-	// -- readBlocks ----------------------------------------------------------
-
 	@Override
-	public List<DataBlock<T>> readBlocks(final PositionValueAccess pva, final List<long[]> gridPositions) throws N5IOException {
+	public List<DataBlock<T>> readChunks(final PositionValueAccess pva, final List<long[]> gridPositions) throws N5IOException {
 
 		// for non-sharded datasets, just read the blocks individually
 		if (grid.numLevels() == 1) {
-			return gridPositions.stream().map(pos -> readBlock(pva, pos)).collect(Collectors.toList());
+			return gridPositions.stream().map(pos -> readChunk(pva, pos)).collect(Collectors.toList());
 		}
 
 		// Create a list of DataBlockRequests and sort it such that requests
@@ -122,7 +116,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		for (final DataBlockRequests<T> subRequests : split) {
 			final long[] key = subRequests.relativeGridPosition();
 			try (final VolatileReadData readData = pva.get(key)) {
-				readBlocksRecursive(readData, subRequests);
+				readChunksRecursive(readData, subRequests);
 			} catch (N5NoSuchKeyException ignored) {
 				// the key didn't exist (as we found out when lazy-reading the index).
 				// we don't have to do anything: all subRequest blocks remain null.
@@ -139,7 +133,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	 * @param readData for the corresponding shard
 	 * @param requests for blocks within the shard to be read
 	 */
-	private void readBlocksRecursive(
+	private void readChunksRecursive(
 			final ReadData readData,
 			final DataBlockRequests<T> requests
 	) {
@@ -164,23 +158,20 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			for (final DataBlockRequest<T> request : requests) {
 				final long[] elementPos = request.position.relative(0);
 				final ReadData elementData = shard.getElementData(elementPos);
-				request.block = readBlockRecursive(elementData, request.position, 0);
+				request.block = readChunkRecursive(elementData, request.position, 0);
 			}
 		} else { // level > 1
 			final List<DataBlockRequests<T>> split = requests.split();
 			for (final DataBlockRequests<T> subRequests : split) {
 				final long[] subShardPosition = subRequests.relativeGridPosition();
 				final ReadData elementData = shard.getElementData(subShardPosition);
-				readBlocksRecursive(elementData, subRequests);
+				readChunksRecursive(elementData, subRequests);
 			}
 		}
 	}
 
-	//
-	// -- writeBlock ----------------------------------------------------------
-
 	@Override
-	public void writeBlock(final PositionValueAccess pva, final DataBlock<T> dataBlock) throws N5IOException {
+	public void writeChunk(final PositionValueAccess pva, final DataBlock<T> dataBlock) throws N5IOException {
 
 		if (grid.numLevels() == 1) {
 			@SuppressWarnings("unchecked")
@@ -224,11 +215,8 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		}
 	}
 
-	//
-	// -- writeBlocks ---------------------------------------------------------
-
 	@Override
-	public void writeBlocks(final PositionValueAccess pva, final List<DataBlock<T>> dataBlocks) throws N5IOException {
+	public void writeChunks(final PositionValueAccess pva, final List<DataBlock<T>> dataBlocks) throws N5IOException {
 
 		if (grid.numLevels() == 1) {
 			@SuppressWarnings("unchecked")
@@ -245,7 +233,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				final long[] shardKey = subRequests.relativeGridPosition();
 				final ReadData modifiedData;
 				try (final VolatileReadData existingData = writeFully ? null : pva.get(shardKey)) {
-					modifiedData = writeBlocksRecursive(existingData, subRequests);
+					modifiedData = writeChunksRecursive(existingData, subRequests);
 					// Here, we are about to write the shard data, but with the new blocks modified.
 					// Need to make sure that the read operations happen now before pva.set acquires a write lock
 					modifiedData.materialize();
@@ -261,7 +249,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	 * @param existingReadData encoded existing shard data (to decode and partially override)
 	 * @param requests for blocks within the shard to be written
 	 */
-	private ReadData writeBlocksRecursive(
+	private ReadData writeChunksRecursive(
 			final ReadData existingReadData, // may be null
 			final DataBlockRequests<T> requests
 	) {
@@ -289,16 +277,13 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				final boolean nestedWriteFully = writeFully || subRequests.coversShard();
 				final long[] elementPos = subRequests.relativeGridPosition();
 				final ReadData existingElementData = nestedWriteFully ? null : shard.getElementData(elementPos);
-				final ReadData modifiedElementData = writeBlocksRecursive(existingElementData, subRequests);
+				final ReadData modifiedElementData = writeChunksRecursive(existingElementData, subRequests);
 				shard.setElementData(modifiedElementData, elementPos);
 			}
 		}
 
 		return codec.encode(new RawShardDataBlock(gridPos, shard));
 	}
-
-	//
-	// -- writeRegion ---------------------------------------------------------
 
 	@Override
 	public void writeRegion(
@@ -416,7 +401,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	// -- deleteBlock ---------------------------------------------------------
 
 	@Override
-	public boolean deleteBlock(final PositionValueAccess pva, final long[] gridPosition) throws N5IOException {
+	public boolean deleteChunk(final PositionValueAccess pva, final long[] gridPosition) throws N5IOException {
 		if (grid.numLevels() == 1) {
 			// for non-sharded dataset, don't bother getting the value, just remove the key.
 			return pva.remove(gridPosition);
@@ -425,7 +410,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final long[] key = position.key();
 			final ReadData modifiedData;
 			try (final VolatileReadData existingData = pva.get(key)) {
-				modifiedData = deleteBlockRecursive(existingData, position, grid.numLevels() - 1);
+				modifiedData = deleteChunkRecursive(existingData, position, grid.numLevels() - 1);
 				if (modifiedData == existingData) {
 					// nothing changed, the blocks we wanted to delete didn't exist anyway
 					return false;
@@ -448,7 +433,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		}
 	}
 
-	private ReadData deleteBlockRecursive(
+	private ReadData deleteChunkRecursive(
 			final ReadData existingReadData,
 			final NestedPosition position,
 			final int level) throws N5NoSuchKeyException {
@@ -466,7 +451,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				// This shard remains unchanged.
 				return existingReadData;
 			} else {
-				final ReadData modifiedElementData = deleteBlockRecursive(existingElementData, position, level - 1);
+				final ReadData modifiedElementData = deleteChunkRecursive(existingElementData, position, level - 1);
 				if (modifiedElementData == existingElementData) {
 					// The nested shard was not modified.
 					// This shard remains unchanged.
@@ -490,7 +475,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	// -- deleteBlocks --------------------------------------------------------
 
 	@Override
-	public boolean deleteBlocks(final PositionValueAccess pva, final List<long[]> gridPositions) throws N5IOException {
+	public boolean deleteChunks(final PositionValueAccess pva, final List<long[]> gridPositions) throws N5IOException {
 
 		// for non-sharded datasets, just delete the blocks individually
 		if (grid.numLevels() == 1) {
@@ -652,14 +637,14 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	// easily revisit and change this heuristic.
 
 	@Override
-	public DataBlock<T> readShard(
+	public DataBlock<T> readBlock(
 			final PositionValueAccess pva,
 			final long[] shardGridPosition,
 			final int level
 	) throws N5IOException {
 
 		if (level == 0) {
-			return readBlock(pva, shardGridPosition);
+			return readChunk(pva, shardGridPosition);
 		}
 
 		final long[] shardPixelPos = grid.pixelPosition(shardGridPosition, level);
@@ -671,10 +656,10 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		for (int d = 0; d < n; ++d) {
 			shardSizeInPixels[d] = Math.min(defaultShardSize[d], (int) (datasetSize[d] - shardPixelPos[d]));
 		}
-		return readShardInternal(pva, shardGridPosition, shardSizeInPixels, level);
+		return readBlockInternal(pva, shardGridPosition, shardSizeInPixels, level);
 	}
 
-	private DataBlock<T> readShardInternal(
+	private DataBlock<T> readBlockInternal(
 			final PositionValueAccess pva,
 			final long[] shardGridPosition,
 			final int[] shardSizeInPixels, // expected size of this shard in pixels
@@ -705,7 +690,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 		// read all blocks in (gridMin, gridMax) and filter out missing blocks
 		final List<long[]> blockPositions = Region.gridPositions(gridMin, gridMax);
-		final List<DataBlock<T>> blocks = readBlocks(pva, blockPositions)
+		final List<DataBlock<T>> blocks = readChunks(pva, blockPositions)
 				.stream().filter(Objects::nonNull).collect(Collectors.toList());
 		if (blocks.isEmpty()) {
 			return null;
@@ -735,14 +720,14 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	// -- writeShard ----------------------------------------------------------
 
 	@Override
-	public void writeShard(
+	public void writeBlock(
 			final PositionValueAccess pva,
 			final DataBlock<T> dataBlock,
 			final int level
 	) throws N5IOException {
 
 		if (level == 0) {
-			writeBlock(pva, dataBlock);
+			writeChunk(pva, dataBlock);
 			return;
 		}
 
@@ -792,7 +777,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			blocks.add(block);
 		}
 
-		writeBlocks(pva, blocks);
+		writeChunks(pva, blocks);
 	}
 
 	//
