@@ -54,41 +54,45 @@ public class DatasetAttributesTest {
 		// Test case 1: shard size equals block size
 		long[] dimensions = new long[]{100, 200, 300};
 		int[] shardSize = new int[]{64, 64, 64};
-		int[] blockSize = new int[]{64, 64, 64};
+		int[] chunkSize = new int[]{64, 64, 64};
 		DataType dataType = DataType.UINT8;
 
 		// This should not throw any exception
-		DatasetAttributes attrs = shardDatasetAttributes(dimensions, shardSize, blockSize, dataType);
-		assertEquals(blockSize, attrs.getBlockSize());
+		DatasetAttributes attrs = shardDatasetAttributes(dimensions, shardSize, chunkSize, dataType);
+		assertEquals(chunkSize, attrs.getChunkSize());
+		assertEquals(shardSize, attrs.getBlockSize());
 		NestedGrid grid = attrs.getNestedBlockGrid();
-		assertEquals(blockSize, grid.getBlockSize(0));
+		assertEquals(chunkSize, grid.getBlockSize(0));
 		assertEquals(shardSize, grid.getBlockSize(1));
 
 		// Test case 2: shard size is a multiple of block size
 		shardSize = new int[]{128};
-		blockSize = new int[]{64};
-		attrs = shardDatasetAttributes(new long[]{128}, shardSize, blockSize, dataType);
-		assertEquals(blockSize, attrs.getBlockSize());
+		chunkSize = new int[]{64};
+		attrs = shardDatasetAttributes(new long[]{128}, shardSize, chunkSize, dataType);
+		assertEquals(chunkSize, attrs.getChunkSize());
+		assertEquals(shardSize, attrs.getBlockSize());
 		grid = attrs.getNestedBlockGrid();
-		assertEquals(blockSize, grid.getBlockSize(0));
+		assertEquals(chunkSize, grid.getBlockSize(0));
 		assertEquals(shardSize, grid.getBlockSize(1));
 
 		// Test case 3: different multiples per dimension
 		shardSize = new int[]{128, 256, 32, 2};
-		blockSize = new int[]{32, 64, 32, 1};
-		attrs = shardDatasetAttributes(new long[]{128, 128, 128, 128}, shardSize, blockSize, dataType );
-		assertEquals(blockSize, attrs.getBlockSize());
+		chunkSize = new int[]{32, 64, 32, 1};
+		attrs = shardDatasetAttributes(new long[]{128, 128, 128, 128}, shardSize, chunkSize, dataType );
+		assertEquals(chunkSize, attrs.getChunkSize());
+		assertEquals(shardSize, attrs.getBlockSize());
 		grid = attrs.getNestedBlockGrid();
-		assertEquals(blockSize, grid.getBlockSize(0));
+		assertEquals(chunkSize, grid.getBlockSize(0));
 		assertEquals(shardSize, grid.getBlockSize(1));
 
 		// Test case 4: large multiples
 		shardSize = new int[]{1024, 2048, 512};
-		blockSize = new int[]{32, 64, 16};
-		attrs = shardDatasetAttributes(dimensions, shardSize, blockSize, dataType);
-		assertEquals(blockSize, attrs.getBlockSize());
+		chunkSize = new int[]{32, 64, 16};
+		attrs = shardDatasetAttributes(dimensions, shardSize, chunkSize, dataType);
+		assertEquals(chunkSize, attrs.getChunkSize());
+		assertEquals(shardSize, attrs.getBlockSize());
 		grid = attrs.getNestedBlockGrid();
-		assertEquals(blockSize, grid.getBlockSize(0));
+		assertEquals(chunkSize, grid.getBlockSize(0));
 		assertEquals(shardSize, grid.getBlockSize(1));
 	}
 
