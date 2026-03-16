@@ -89,12 +89,12 @@ public class DatasetAttributes implements Serializable {
 
 	private final long[] dimensions;
 
-	// number of samples per block per dimension
-	private final int[] blockSize;
+	// number of samples per chunk per dimension
+	private final int[] chunkSize;
 
-	// TODO add a getter?
-	// the shard size
-	private final int[] outerBlockSize;
+	// number of samples per block per dimension
+	// identical to chunkSize for non-sharded datasets
+	private final int[] blockSize;
 
 	private final DataType dataType;
 
@@ -108,7 +108,7 @@ public class DatasetAttributes implements Serializable {
 
 	public DatasetAttributes(
 			final long[] dimensions,
-			final int[] outerBlockSize,
+			final int[] blockSize,
 			final DataType dataType,
 			final JsonElement defaultValue,
 			final BlockCodecInfo blockCodecInfo,
@@ -117,7 +117,7 @@ public class DatasetAttributes implements Serializable {
 
 		this.dimensions = dimensions;
 		this.dataType = dataType;
-		this.outerBlockSize = outerBlockSize;
+		this.blockSize = blockSize;
 		this.defaultValue = defaultValue == null ? JsonNull.INSTANCE : defaultValue;
 
 		this.blockCodecInfo = blockCodecInfo == null ? defaultBlockCodecInfo() : blockCodecInfo;
@@ -131,7 +131,7 @@ public class DatasetAttributes implements Serializable {
 					.toArray(DataCodecInfo[]::new);
 
 		access = createDatasetAccess();
-		blockSize = access.getGrid().getBlockSize(0);
+		chunkSize = access.getGrid().getBlockSize(0);
 	}
 
 	public DatasetAttributes(
@@ -200,7 +200,7 @@ public class DatasetAttributes implements Serializable {
 		// NestedGrid validates block sizes, so instantiate it before creating the blockCodecs
 		// blockCodecInfo.create below could fail unexpecedly with invalid
 		// blockSizes so validate first
-		blockSizes[m - 1] = outerBlockSize;
+		blockSizes[m - 1] = blockSize;
 		BlockCodecInfo tmpInfo = blockCodecInfo;
 		for (int l = m - 1; l > 0; --l) {
 			final ShardCodecInfo info = (ShardCodecInfo)tmpInfo;
@@ -274,6 +274,11 @@ public class DatasetAttributes implements Serializable {
 		return dimensions.length;
 	}
 
+	public int[] getChunkSize() {
+
+		return chunkSize;
+	}
+
 	public int[] getBlockSize() {
 
 		return blockSize;
@@ -334,7 +339,6 @@ public class DatasetAttributes implements Serializable {
 		return getDatasetAccess().getGrid();
 	}
 
-
 	public BlockCodecInfo getBlockCodecInfo() {
 
 		return blockCodecInfo;
@@ -359,7 +363,7 @@ public class DatasetAttributes implements Serializable {
 
 		final HashMap<String, Object> map = new HashMap<>();
 		map.put(DIMENSIONS_KEY, dimensions);
-		map.put(BLOCK_SIZE_KEY, blockSize);
+		map.put(BLOCK_SIZE_KEY, chunkSize);
 		map.put(DATA_TYPE_KEY, dataType);
 		map.put(COMPRESSION_KEY, getCompression());
 		return map;
@@ -425,7 +429,7 @@ public class DatasetAttributes implements Serializable {
 
 			final JsonObject obj = new JsonObject();
 			obj.add(DIMENSIONS_KEY, context.serialize(src.dimensions));
-			obj.add(BLOCK_SIZE_KEY, context.serialize(src.blockSize));
+			obj.add(BLOCK_SIZE_KEY, context.serialize(src.chunkSize));
 			obj.add(DATA_TYPE_KEY, context.serialize(src.dataType));
 
 			final DataCodecInfo[] codecs = src.dataCodecInfos;
