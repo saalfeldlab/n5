@@ -257,7 +257,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	}
 
 	@Override
-	default <T> void writeBlocks(
+	default <T> void writeChunks(
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T>... dataBlocks) throws N5Exception {
@@ -265,10 +265,27 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		try {
 			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(datasetPath), convertedDatasetAttributes);
-			convertedDatasetAttributes.<T>getDatasetAccess().writeBlocks(posKva, Arrays.asList(dataBlocks));
+			convertedDatasetAttributes.<T>getDatasetAccess().writeChunks(posKva, Arrays.asList(dataBlocks));
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
-					"Failed to write blocks into dataset " + datasetPath, e);
+					"Failed to write chunks into dataset " + datasetPath, e);
+		}
+	}
+
+	@Override
+	default <T> void writeChunk(
+			final String path,
+			final DatasetAttributes datasetAttributes,
+			final DataBlock<T> dataBlock) throws N5Exception {
+
+		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		try {
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), convertedDatasetAttributes);
+			convertedDatasetAttributes.<T> getDatasetAccess().writeChunk(posKva, dataBlock);
+		} catch (final UncheckedIOException e) {
+			throw new N5IOException(
+					"Failed to write chunk " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
+					e);
 		}
 	}
 
@@ -278,31 +295,14 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final DataBlock<T> dataBlock) throws N5Exception {
 
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
-		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), convertedDatasetAttributes);
-			convertedDatasetAttributes.<T> getDatasetAccess().writeBlock(posKva, dataBlock);
-		} catch (final UncheckedIOException e) {
-			throw new N5IOException(
-					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
-					e);
-		}
-	}
-
-	@Override
-	default <T> void writeShard(
-			final String path,
-			final DatasetAttributes datasetAttributes,
-			final DataBlock<T> shard) throws N5Exception {
-
 		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		final int shardLevel = convertedDatasetAttributes.getNestedBlockGrid().numLevels() - 1;
 		try {
 			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), convertedDatasetAttributes);
-			convertedDatasetAttributes.<T> getDatasetAccess().writeShard(posKva, shard, shardLevel);
+			convertedDatasetAttributes.<T> getDatasetAccess().writeBlock(posKva, dataBlock, shardLevel);
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
-					"Failed to write block " + Arrays.toString(shard.getGridPosition()) + " into dataset " + path,
+					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
 					e);
 		}
 	}
@@ -320,22 +320,22 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	}
 
 	@Override
-	default boolean deleteBlock(
+	default boolean deleteChunk(
 			final String path,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
 		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), datasetAttributes);
-		return datasetAttributes.getDatasetAccess().deleteBlock(posKva, gridPosition);
+		return datasetAttributes.getDatasetAccess().deleteChunk(posKva, gridPosition);
 	}
 
 	@Override
-	default boolean deleteBlocks(
+	default boolean deleteChunks(
 			final String path,
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> gridPositions) throws N5Exception {
 
 		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), datasetAttributes);
-		return datasetAttributes.getDatasetAccess().deleteBlocks(posKva, gridPositions);
+		return datasetAttributes.getDatasetAccess().deleteChunks(posKva, gridPositions);
 	}
 }

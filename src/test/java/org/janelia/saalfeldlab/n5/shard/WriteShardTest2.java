@@ -90,7 +90,7 @@ public class WriteShardTest2 {
 		System.out.println("shard.getGridPosition() = " + Arrays.toString(shard.getGridPosition()));
 		System.out.println("shard.getSize() = " + Arrays.toString(shard.getSize()));
 		System.out.println("shard.getData() = " + Arrays.toString(shard.getData()));
-		datasetAccess.writeShard(store, shard, 1);
+		datasetAccess.writeBlock(store, shard, 1);
 
 		// we should get these DataBlock values
 
@@ -103,15 +103,15 @@ public class WriteShardTest2 {
 		// 31, 32, 33, | 34, 35, 36
 
 		System.out.println("{4, 2}.data = " + Arrays.toString(
-				datasetAccess.readBlock(store, new long[] {4, 2}).getData()));
+				datasetAccess.readChunk(store, new long[] {4, 2}).getData()));
 		System.out.println("{5, 2}.data = " + Arrays.toString(
-				datasetAccess.readBlock(store, new long[] {5, 2}).getData()));
+				datasetAccess.readChunk(store, new long[] {5, 2}).getData()));
 		System.out.println("{4, 3}.data = " + Arrays.toString(
-				datasetAccess.readBlock(store, new long[] {4, 3}).getData()));
+				datasetAccess.readChunk(store, new long[] {4, 3}).getData()));
 		System.out.println("{5, 3}.data = " + Arrays.toString(
-				datasetAccess.readBlock(store, new long[] {5, 3}).getData()));
+				datasetAccess.readChunk(store, new long[] {5, 3}).getData()));
 
-		final DataBlock<int[]> readShard = datasetAccess.readShard(store, new long[] {2, 1}, 1);
+		final DataBlock<int[]> readShard = datasetAccess.readBlock(store, new long[] {2, 1}, 1);
 		System.out.println("readShard.getData() = " + Arrays.toString(readShard.getData()));
 	}
 
