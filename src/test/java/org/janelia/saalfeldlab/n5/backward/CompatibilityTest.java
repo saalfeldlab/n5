@@ -76,7 +76,7 @@ public class CompatibilityTest {
 		byte value = 0;
 		long[] p = new long[2];
 
-		DataBlock<byte[]> b00 = n5.readBlock(dsetPath, attrs, p);
+		DataBlock<byte[]> b00 = n5.readChunk(dsetPath, attrs, p);
 		assertNotNull(b00);
 		assertArrayEquals(new int[]{5,4}, b00.getSize());
 		assertArrayEquals(expectedData(20, value), b00.getData());
@@ -84,7 +84,7 @@ public class CompatibilityTest {
 		p[0] = 1;
 		p[1] = 0;
 		value++;
-		DataBlock<byte[]> b10 = n5.readBlock(dsetPath, attrs, p);
+		DataBlock<byte[]> b10 = n5.readChunk(dsetPath, attrs, p);
 		assertNotNull(b10);
 		assertArrayEquals(new int[]{2,4}, b10.getSize());
 		assertArrayEquals(expectedData(8, value), b10.getData());
@@ -92,7 +92,7 @@ public class CompatibilityTest {
 		p[0] = 0;
 		p[1] = 1;
 		value++;
-		DataBlock<byte[]> b01 = n5.readBlock(dsetPath, attrs, p);
+		DataBlock<byte[]> b01 = n5.readChunk(dsetPath, attrs, p);
 		assertNotNull(b01);
 		assertArrayEquals(new int[]{5,1}, b01.getSize());
 		assertArrayEquals(expectedData(5, value), b01.getData());
@@ -100,7 +100,7 @@ public class CompatibilityTest {
 		p[0] = 1;
 		p[1] = 1;
 		value++;
-		DataBlock<byte[]> b11 = n5.readBlock(dsetPath, attrs, p);
+		DataBlock<byte[]> b11 = n5.readChunk(dsetPath, attrs, p);
 		assertNotNull(b11);
 		assertArrayEquals(new int[]{2,1}, b11.getSize());
 		assertArrayEquals(expectedData(2, value), b11.getData());

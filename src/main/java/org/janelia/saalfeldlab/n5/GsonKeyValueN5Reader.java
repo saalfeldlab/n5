@@ -94,7 +94,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	@Override
-	default <T> DataBlock<T> readBlock(
+	default <T> DataBlock<T> readChunk(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
@@ -103,7 +103,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		try {
 			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName),
 					convertedDatasetAttributes);
-			return convertedDatasetAttributes.<T> getDatasetAccess().readBlock(posKva, gridPosition);
+			return convertedDatasetAttributes.<T> getDatasetAccess().readChunk(posKva, gridPosition);
 
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
@@ -111,18 +111,18 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	@Override
-	default <T> List<DataBlock<T>> readBlocks(
+	default <T> List<DataBlock<T>> readChunks(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> blockPositions) throws N5Exception {
 
 		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName), convertedDatasetAttributes);
-		return convertedDatasetAttributes.<T> getDatasetAccess().readBlocks(posKva, blockPositions);
+		return convertedDatasetAttributes.<T> getDatasetAccess().readChunks(posKva, blockPositions);
 	}
 
 	@Override
-	default <T> DataBlock<T> readShard(
+	default <T> DataBlock<T> readBlock(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
@@ -132,7 +132,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		try {
 			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName),
 					convertedDatasetAttributes);
-			return convertedDatasetAttributes.<T> getDatasetAccess().readShard(posKva, gridPosition, shardLevel);
+			return convertedDatasetAttributes.<T> getDatasetAccess().readBlock(posKva, gridPosition, shardLevel);
 
 		} catch (N5Exception.N5NoSuchKeyException e) {
 			return null;
@@ -172,7 +172,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	@Override
-	default boolean shardExists(
+	default boolean blockExists(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
