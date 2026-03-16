@@ -386,7 +386,7 @@ public class ShardTest {
 		writer.remove(dataset);
 		writer.createDataset(dataset, datasetAttributes);
 
-		final int[] blockSize = datasetAttributes.getBlockSize();
+		final int[] chunkSize = datasetAttributes.getChunkSize();
 		final DataType dataType = datasetAttributes.getDataType();
 		final int numElements = 2 * 2;
 
@@ -395,7 +395,7 @@ public class ShardTest {
 		for (int idx1 = 1; idx1 >= 0; idx1--) {
 			for (int idx2 = 1; idx2 >= 0; idx2--) {
 				final long[] gridPosition = {idx1, idx2};
-				final DataBlock<byte[]> dataBlock = (DataBlock<byte[]>)dataType.createDataBlock(blockSize, gridPosition, numElements);
+				final DataBlock<byte[]> dataBlock = (DataBlock<byte[]>)dataType.createDataBlock(chunkSize, gridPosition, numElements);
 				byte[] data = dataBlock.getData();
 				for (int i = 0; i < data.length; i++) {
 					data[i] = (byte)((idx1 * 100) + (idx2 * 10) + i);
