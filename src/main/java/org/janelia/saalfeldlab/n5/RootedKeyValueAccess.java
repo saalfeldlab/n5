@@ -2,8 +2,9 @@ package org.janelia.saalfeldlab.n5;
 
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
+import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
@@ -43,7 +44,7 @@ public interface RootedKeyValueAccess {
 	 * @throws N5IOException
 	 * 		if an error occurs
 	 */
-	VolatileReadData createReadData(URI normalPath) throws N5IOException;
+	VolatileReadData createReadData(N5FilePath normalPath) throws N5IOException;
 
 	/**
 	 * Test whether the path exists and is a directory.
@@ -54,7 +55,7 @@ public interface RootedKeyValueAccess {
 	 *
 	 * @return true if the path is a directory
 	 */
-	boolean isDirectory(URI normalPath);
+	boolean isDirectory(N5Path normalPath);
 
 	/**
 	 * Test whether the path exists and is a file.
@@ -65,7 +66,7 @@ public interface RootedKeyValueAccess {
 	 *
 	 * @return true if the path is a file
 	 */
-	boolean isFile(URI normalPath);
+	boolean isFile(N5Path normalPath);
 
 	/**
 	 * Test whether the path exists.
@@ -76,7 +77,7 @@ public interface RootedKeyValueAccess {
 	 *
 	 * @return true if the path exists
 	 */
-	boolean exists(URI normalPath); // TODO (N5Path): If we would take a N5Path here, it would be easier to check for file + directory existence
+	boolean exists(N5Path normalPath); // TODO (N5Path): If we would take a N5Path here, it would be easier to check for file + directory existence
 
 	/**
 	 * Returns the size in bytes of the object at the given normalPath if it exists.
@@ -90,7 +91,7 @@ public interface RootedKeyValueAccess {
 	 * @throws N5IOException
 	 * 		if an error occurs
 	 */
-	long size(URI normalPath) throws N5IOException;
+	long size(N5FilePath normalPath) throws N5IOException;
 
 	/**
 	 * Write {@code data} to the given {@code normalPath}.
@@ -106,7 +107,7 @@ public interface RootedKeyValueAccess {
 	 * @throws N5IOException
 	 * 		if an error occurs
 	 */
-	void write(URI normalPath, ReadData data) throws N5IOException;
+	void write(N5FilePath normalPath, ReadData data) throws N5IOException;
 
 	/**
 	 * List all 'directory'-like children of a path.
@@ -121,7 +122,7 @@ public interface RootedKeyValueAccess {
 	 * 		if an error occurs during listing
 	 */
 	// TODO should this return URI[] ?
-	String[] listDirectories(URI normalPath) throws N5IOException;
+	String[] listDirectories(N5GroupPath normalPath) throws N5IOException;
 
 	/**
 	 * Create a directory and all parent paths along the way. The directory
@@ -136,7 +137,7 @@ public interface RootedKeyValueAccess {
 	 * @throws N5IOException
 	 * 		if an error occurs during creation
 	 */
-	void createDirectories(URI normalPath) throws N5IOException;
+	void createDirectories(N5GroupPath normalPath) throws N5IOException;
 
 	/**
 	 * Delete a path. If the path is a directory, delete it recursively.
@@ -148,7 +149,7 @@ public interface RootedKeyValueAccess {
 	 * @throws N5IOException
 	 * 		if an error occurs during deletion
 	 */
-	void delete(URI normalPath) throws N5IOException;
+	void delete(N5Path normalPath) throws N5IOException;
 
 
 	// ----------------------------------------------------------------
@@ -167,48 +168,38 @@ public interface RootedKeyValueAccess {
 	// TODO: Do we want these, or should we just rely on URI everywhere?
 
 	default VolatileReadData createReadData(final String normalPath) throws N5IOException {
-		return createReadData(createURI(normalPath));
+		return createReadData(N5FilePath.of(normalPath));
 	}
 
 	default boolean isDirectory(final String normalPath) {
-		return isDirectory(createURI(normalPath));
+		return isDirectory(N5Path.of(normalPath));
 	}
 
 	default boolean isFile(final String normalPath) {
-		return isFile(createURI(normalPath));
+		return isFile(N5Path.of(normalPath));
 	}
 
 	default boolean exists(final String normalPath) {
-		return exists(createURI(normalPath));
+		return exists(N5Path.of(normalPath));
 	}
 
 	default long size(final String normalPath) throws N5IOException {
-		return size(createURI(normalPath));
+		return size(N5FilePath.of(normalPath));
 	}
 
 	default void write(final String normalPath, final ReadData data) throws N5IOException {
-		write(createURI(normalPath), data);
+		write(N5FilePath.of(normalPath), data);
 	}
 
 	default String[] listDirectories(final String normalPath) throws N5IOException {
-		return listDirectories(createURI(normalPath));
+		return listDirectories(N5GroupPath.of(normalPath));
 	}
 
 	default void createDirectories( final String normalPath ) throws N5IOException {
-		createDirectories(createURI(normalPath));
+		createDirectories(N5GroupPath.of(normalPath));
 	}
 
 	default void delete(final String normalPath) throws N5IOException {
-		delete(createURI(normalPath));
-	}
-
-	private static URI createURI(final String normalPath) throws N5IOException {
-		try {
-			return new URI(null, null, normalPath, null);
-		} catch (URISyntaxException e) {
-			// This should be unreachable: Scheme/authority/fragment are null
-			// and the path component accepts virtually anything
-			throw new N5IOException(e);
-		}
+		delete(N5Path.of(normalPath));
 	}
 }

@@ -32,6 +32,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 
 /**
  * Cached default implementation of {@link N5Writer} with JSON attributes parsed
@@ -53,11 +54,11 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 	@Override
 	default void createGroup(final String path) throws N5Exception {
 
-		final N5Path.N5GroupPath group = N5Path.N5GroupPath.of(path);
+		final N5GroupPath group = N5GroupPath.of(path);
 		if (groupExists(group))
 			return;
 
-		getRootedKeyValueAccess().createDirectories(group.uri()); // TODO (N5Path): Add RootedKeyValueAccess.createDirectories(N5GroupPath)
+		getRootedKeyValueAccess().createDirectories(group);
 
 		if (cacheMeta()) {
 			// check all nodes that are parents of the added node, if they have
@@ -117,18 +118,18 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 	@Override
 	default boolean remove(final String path) throws N5Exception {
 
-		final N5Path.N5GroupPath group = N5Path.N5GroupPath.of(path);
+		final N5GroupPath group = N5GroupPath.of(path);
 
 		// GsonKeyValueN5Writer.super.remove(path)
 		/*
 		 * the lines below duplicate the single line above but would have to call
 		 * normalizeGroupPath again the below duplicates code, but avoids extra work
 		 */
-		if (getRootedKeyValueAccess().isDirectory(group.uri())) // TODO (N5Path): Add RootedKeyValueAccess.isDirectory(N5GroupPath)
-			getRootedKeyValueAccess().delete(group.uri()); // TODO (N5Path): Add RootedKeyValueAccess.delete(N5GroupPath)
+		if (getRootedKeyValueAccess().isDirectory(group))
+			getRootedKeyValueAccess().delete(group);
 
 		if (cacheMeta()) {
-			final N5Path.N5GroupPath parent = group.parent();
+			final N5GroupPath parent = group.parent();
 			final String parentPath = parent == null ? null : parent.normalPath();
 			getCache().removeCache(parentPath, group.normalPath());
 		}

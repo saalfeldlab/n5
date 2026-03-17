@@ -2,6 +2,8 @@ package org.janelia.saalfeldlab.n5.kva;
 
 import java.net.URI;
 import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.N5Path;
+import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
 import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -18,13 +20,13 @@ public class TrackingRootedKeyValueAccess extends DelegateRootedKeyValueAccess {
 	}
 
 	@Override
-	public boolean isFile(final URI normalPath) {
+	public boolean isFile(final N5Path normalPath) {
 		numIsFileCalls++;
 		return kva.isFile(normalPath);
 	}
 
 	@Override
-	public VolatileReadData createReadData(final String normalPath) {
+	public VolatileReadData createReadData(final N5FilePath normalPath) {
 		return VolatileReadData.from(new TrackingVolatileReadData(kva.createReadData(normalPath)));
 	}
 

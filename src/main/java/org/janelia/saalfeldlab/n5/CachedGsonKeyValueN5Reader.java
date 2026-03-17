@@ -32,6 +32,7 @@ import java.lang.reflect.Type;
 
 import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCacheableContainer;
 
@@ -164,7 +165,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 		}
 	}
 
-	default boolean groupExists(final N5Path.N5GroupPath group) {
+	default boolean groupExists(final N5GroupPath group) {
 
 		if (cacheMeta())
 			return getCache().isGroup(group.normalPath(), null);
@@ -179,7 +180,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 		return GsonKeyValueN5Reader.super.groupExists(normalPathName);
 	}
 
-	default boolean isGroupFromContainer(final N5Path.N5GroupPath group) {
+	default boolean isGroupFromContainer(final N5GroupPath group) {
 
 		return GsonKeyValueN5Reader.super.groupExists(group);
 	}

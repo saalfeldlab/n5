@@ -9,6 +9,8 @@ import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.IOUtils;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
+import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
+import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.janelia.saalfeldlab.n5.http.ListResponseParser;
 import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -44,15 +46,15 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public VolatileReadData createReadData(final URI normalPath) throws N5IOException {
-		return VolatileReadData.from(new HttpLazyRead(root.resolve(normalPath)));
+	public VolatileReadData createReadData(final N5FilePath normalPath) throws N5IOException {
+		return VolatileReadData.from(new HttpLazyRead(normalPath));
 	}
 
 	@Override
-	public boolean isDirectory(final URI normalPath) {
+	public boolean isDirectory(final N5Path normalPath) {
 
 		try {
-			final URI uri = root.resolve(N5Path.N5GroupPath.of(normalPath.getPath()).uri()); // TODO (N5Path): if we had isDirectory(N5GroupPath), we wouldn't have to do this
+			final URI uri = root.resolve(normalPath.asGroup().uri());
 			final HttpURLConnection http = requireValidHttpResponse(uri, HEAD, false);
 			final int code = http.getResponseCode();
 			if (code >= 300) {
@@ -66,10 +68,10 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public boolean isFile(final URI normalPath) {
+	public boolean isFile(final N5Path normalPath) {
 
 		try {
-			final URI uri = root.resolve(N5Path.N5FilePath.of(normalPath.getPath()).uri()); // TODO (N5Path): if we had isFile(N5FilePath), we wouldn't have to do this
+			final URI uri = root.resolve(normalPath.asFile().uri());
 			final HttpURLConnection http = requireValidHttpResponse(uri, HEAD, false);
 			final int code = http.getResponseCode();
 			if (code >= 300) {
@@ -87,10 +89,10 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public boolean exists(final URI normalPath) {
+	public boolean exists(final N5Path normalPath) {
 
 		try {
-			requireValidHttpResponse(root.resolve(normalPath), HEAD, true);
+			requireValidHttpResponse(root.resolve(normalPath.uri()), HEAD, true);
 			return true;
 		} catch (IOException e) {
 			return false;
@@ -98,10 +100,10 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public long size(final URI normalPath) throws N5IOException {
+	public long size(final N5FilePath normalPath) throws N5IOException {
 
 		try {
-			final HttpURLConnection head = requireValidHttpResponse(root.resolve(normalPath), HEAD, true);
+			final HttpURLConnection head = requireValidHttpResponse(root.resolve(normalPath.uri()), HEAD, true);
 			return head.getContentLengthLong();
 		} catch (FileNotFoundException e) {
 			throw new N5NoSuchKeyException("Error getting size: " + normalPath, e);
@@ -125,9 +127,9 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	 * 		if an error occurs during listing
 	 */
 	@Override
-	public String[] listDirectories(final URI normalPath) throws N5IOException {
+	public String[] listDirectories(final N5GroupPath normalPath) throws N5IOException {
 		try {
-			final HttpURLConnection http = requireValidHttpResponse(root.resolve(normalPath), GET, true);
+			final HttpURLConnection http = requireValidHttpResponse(root.resolve(normalPath.uri()), GET, true);
 			final String listResponse = responseToString(http.getInputStream());
 			return listDirectoryResponseParser.parseListResponse(listResponse);
 		} catch (FileNotFoundException e) {
@@ -142,17 +144,17 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public void write(final URI normalPath, final ReadData data) throws N5IOException {
+	public void write(final N5FilePath normalPath, final ReadData data) throws N5IOException {
 		throw new N5IOException("HttpKeyValueAccess is read-only");
 	}
 
 	@Override
-	public void createDirectories(final URI normalPath) throws N5IOException {
+	public void createDirectories(final N5GroupPath normalPath) throws N5IOException {
 		throw new N5IOException("HttpKeyValueAccess is read-only");
 	}
 
 	@Override
-	public void delete(final URI normalPath) throws N5IOException {
+	public void delete(final N5Path normalPath) throws N5IOException {
 		throw new N5IOException("HttpKeyValueAccess is read-only");
 	}
 
@@ -201,9 +203,9 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 		private static final String ACCEPT_RANGE = "Accept-Range";
 		private static final String BYTES = "bytes";
 
-		private final URI normalPath;
+		private final N5FilePath normalPath;
 
-		HttpLazyRead(final URI normalPath) {
+		HttpLazyRead(final N5FilePath normalPath) {
 			this.normalPath = normalPath;
 		}
 
@@ -215,7 +217,7 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 		@Override
 		public ReadData materialize(long offset, long length) {
 
-			final URI uri = root.resolve(normalPath);
+			final URI uri = root.resolve(normalPath.uri());
 			try {
 				HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
 				final boolean isPartialRead = offset > 0 || (length >= 0 && length != Long.MAX_VALUE);

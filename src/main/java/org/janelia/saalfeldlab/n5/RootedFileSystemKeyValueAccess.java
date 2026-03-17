@@ -16,6 +16,8 @@ import java.util.Iterator;
 import java.util.stream.Stream;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
+import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
+import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
@@ -65,10 +67,10 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public VolatileReadData createReadData(final URI normalPath) throws N5IOException {
+	public VolatileReadData createReadData(final N5FilePath normalPath) throws N5IOException {
 
 		try {
-			return _read(root.resolve(normalPath));
+			return _read(root.resolve(normalPath.uri()));
 		} catch (final NoSuchFileException e) {
 			throw new N5NoSuchKeyException("No such file", e);
 		} catch (IOException | UncheckedIOException e) {
@@ -78,30 +80,33 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public boolean isDirectory(final URI normalPath) {
+	public boolean isDirectory(final N5Path normalPath) {
 
-		final Path path = Path.of(root.resolve(normalPath));
+		final Path path = Path.of(root.resolve(normalPath.uri()));
 		return Files.isDirectory(path);
 	}
 
 	@Override
-	public boolean isFile(final URI normalPath) {
+	public boolean isFile(final N5Path normalPath) {
 
-		final Path path = Path.of(root.resolve(normalPath));
+		final Path path = Path.of(root.resolve(normalPath.uri()));
 		return Files.isRegularFile(path);
 	}
 
-	@Override
-	public boolean exists(final URI normalPath) {
+	// TODO: helper method for this:
+	//	final Path path = Path.of(root.resolve(normalPath.uri())); // TODO
 
-		final Path path = Path.of(root.resolve(normalPath));
+	@Override
+	public boolean exists(final N5Path normalPath) {
+
+		final Path path = Path.of(root.resolve(normalPath.uri()));
 		return Files.exists(path);
 	}
 
 	@Override
-	public long size(final URI normalPath) throws N5IOException {
+	public long size(final N5FilePath normalPath) throws N5IOException {
 
-		final Path path = Path.of(root.resolve(normalPath));
+		final Path path = Path.of(root.resolve(normalPath.uri()));
 		try {
 			return Files.size(path);
 		} catch (IOException e) {
@@ -110,10 +115,10 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public void write(final URI normalPath, final ReadData data) throws N5IOException {
+	public void write(final N5FilePath normalPath, final ReadData data) throws N5IOException {
 
 		try {
-			_write(root.resolve(normalPath), data);
+			_write(root.resolve(normalPath.uri()), data);
 		} catch (final NoSuchFileException e) {
 			throw new N5NoSuchKeyException("No such file", e);
 		} catch (IOException | UncheckedIOException e) {
@@ -122,9 +127,9 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public String[] listDirectories(URI normalPath) throws N5IOException {
+	public String[] listDirectories(N5GroupPath normalPath) throws N5IOException {
 
-		final Path path = Path.of(root.resolve(normalPath));
+		final Path path = Path.of(root.resolve(normalPath.uri()));
 		try (final Stream<Path> pathStream = Files.list(path)) {
 			return pathStream
 					.filter(Files::isDirectory)
@@ -138,10 +143,10 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public void createDirectories(final URI normalPath) throws N5IOException {
+	public void createDirectories(final N5GroupPath normalPath) throws N5IOException {
 
 		try {
-			createDirectories(Path.of(root.resolve(normalPath)));
+			createDirectories(Path.of(root.resolve(normalPath.uri())));
 		} catch (NoSuchFileException e) {
 			throw new N5NoSuchKeyException("No such file", e);
 		} catch (IOException | UncheckedIOException e) {
@@ -150,10 +155,10 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public void delete(final URI normalPath) throws N5IOException {
+	public void delete(final N5Path normalPath) throws N5IOException {
 
 		try {
-			final Path path = Path.of(root.resolve(normalPath));
+			final Path path = Path.of(root.resolve(normalPath.uri()));
 
 			if (Files.isRegularFile(path))
 				ioPolicy.delete(path.toString());
