@@ -52,7 +52,7 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	public boolean isDirectory(final URI normalPath) {
 
 		try {
-			final URI uri = root.resolve(RootedURI.N5GroupPath.of(normalPath.getPath()).uri()); // TODO (N5Path): if we had isDirectory(N5GroupPath), we wouldn't have to do this
+			final URI uri = root.resolve(N5Path.N5GroupPath.of(normalPath.getPath()).uri()); // TODO (N5Path): if we had isDirectory(N5GroupPath), we wouldn't have to do this
 			final HttpURLConnection http = requireValidHttpResponse(uri, HEAD, false);
 			final int code = http.getResponseCode();
 			if (code >= 300) {
@@ -69,7 +69,7 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	public boolean isFile(final URI normalPath) {
 
 		try {
-			final URI uri = root.resolve(RootedURI.N5FilePath.of(normalPath.getPath()).uri()); // TODO (N5Path): if we had isFile(N5FilePath), we wouldn't have to do this
+			final URI uri = root.resolve(N5Path.N5FilePath.of(normalPath.getPath()).uri()); // TODO (N5Path): if we had isFile(N5FilePath), we wouldn't have to do this
 			final HttpURLConnection http = requireValidHttpResponse(uri, HEAD, false);
 			final int code = http.getResponseCode();
 			if (code >= 300) {

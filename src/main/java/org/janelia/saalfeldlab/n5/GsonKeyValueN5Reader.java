@@ -34,7 +34,7 @@ import java.net.URI;
 import java.util.List;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.RootedURI.N5GroupPath;
+import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 
@@ -203,7 +203,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		final URI uri = N5GroupPath.of(pathName).uri().resolve(datasetAttributes.relativeBlockPath(gridPosition));
+		final URI uri = N5Path.N5GroupPath.of(pathName).uri().resolve(datasetAttributes.relativeBlockPath(gridPosition));
 		return getRootedKeyValueAccess().isFile(uri); // TODO (N5Path): Add RootedKeyValueAccess.isFile(N5FilePath)
 	}
 }

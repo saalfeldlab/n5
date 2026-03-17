@@ -53,7 +53,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 	@Override
 	default void createGroup(final String path) throws N5Exception {
 
-		final RootedURI.N5GroupPath group = RootedURI.N5GroupPath.of(path);
+		final N5Path.N5GroupPath group = N5Path.N5GroupPath.of(path);
 		if (groupExists(group))
 			return;
 
@@ -117,7 +117,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 	@Override
 	default boolean remove(final String path) throws N5Exception {
 
-		final RootedURI.N5GroupPath group = RootedURI.N5GroupPath.of(path);
+		final N5Path.N5GroupPath group = N5Path.N5GroupPath.of(path);
 
 		// GsonKeyValueN5Writer.super.remove(path)
 		/*
@@ -128,7 +128,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 			getRootedKeyValueAccess().delete(group.uri()); // TODO (N5Path): Add RootedKeyValueAccess.delete(N5GroupPath)
 
 		if (cacheMeta()) {
-			final RootedURI.N5GroupPath parent = group.parent();
+			final N5Path.N5GroupPath parent = group.parent();
 			final String parentPath = parent == null ? null : parent.normalPath();
 			getCache().removeCache(parentPath, group.normalPath());
 		}
