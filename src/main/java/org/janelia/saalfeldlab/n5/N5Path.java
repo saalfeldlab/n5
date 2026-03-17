@@ -1,12 +1,48 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.net.URI;
+import org.janelia.saalfeldlab.n5.N5PathImpl.GroupPath;
+
+import static org.janelia.saalfeldlab.n5.N5PathImpl.filePathOf;
+import static org.janelia.saalfeldlab.n5.N5PathImpl.groupPathOf;
+import static org.janelia.saalfeldlab.n5.N5PathImpl.pathOf;
 
 /**
  * A relative path (typically, the path of a dataset or group relative to
  * the container root).
+ *
+ *
  */
+//TODO: Currently, {@code N5Path} is allowed to point outside the root (e.g.,
+// {@code "../a/"}), though this is not used internally and should probably be
+// explicitly forbidden.
 public interface N5Path {
+
+	static N5Path of(final String path) {
+		return pathOf(path);
+	}
+
+	/**
+	 * Return this path as a {@code N5GroupPath}. If this path is not a already
+	 * {@link #isGroup() group}, appends a "/".
+	 *
+	 * @return this path as a group (appending "/" if necessary).
+	 */
+	N5GroupPath asGroup();
+
+	/**
+	 * Return this path as a {@code N5FilePath}. If this path is a already
+	 * {@link #isGroup() group}, remove the trailing "/".
+	 * <p>
+	 * If this path is the root group ({@code ""}) then it cannot be treated as
+	 * a file path.
+	 *
+	 * @return this path as a file (removing trailing "/" if necessary).
+	 *
+	 * @throws IllegalArgumentException
+	 * 		if this path represents the root group {@code ""}
+	 */
+	N5FilePath asFile() throws IllegalArgumentException;
 
 	/**
 	 * Return this {@code N5Path} as a relative URI with a relative path.
@@ -46,19 +82,12 @@ public interface N5Path {
 	boolean isGroup();
 
 	/**
-	 * Returns the parent path, or {@code null} if this path is empty (i.e.,
-	 * the parent would be {@code ".."}.
+	 * Returns the parent path, or {@code null} if this path is the root group
+	 * (i.e., the parent would be {@code ".."}.
 	 *
 	 * @return the parent path, or {@code null} if this path is empty
 	 */
-	default N5GroupPath parent() {
-		final URI parent = uri().resolve("..");
-		return "..".equals(parent.getPath()) ? null : new N5PathImpl.GroupPath(parent);
-	}
-
-	N5GroupPath asGroup();
-
-	N5FilePath asFile();
+	N5GroupPath parent();
 
 	/**
 	 * Split this path into components separated by {@code "/"}.
@@ -85,7 +114,7 @@ public interface N5Path {
 		}
 
 		static N5GroupPath of(final String path) {
-			return N5PathImpl.GroupPath.of(path);
+			return groupPathOf(path);
 		}
 	}
 
@@ -97,7 +126,7 @@ public interface N5Path {
 		}
 
 		static N5FilePath of(final String path) {
-			return N5PathImpl.FilePath.of(path);
+			return filePathOf(path);
 		}
 
 	}

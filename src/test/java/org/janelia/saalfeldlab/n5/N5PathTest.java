@@ -28,12 +28,22 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.util.Arrays;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.junit.Test;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+
+
+//TODO: Currently, {@code N5Path} is allowed to point outside the root (e.g.,
+// {@code "../a/"}), though this is not used internally and should probably be
+// explicitly forbidden.
 
 public class N5PathTest {
 
@@ -98,56 +108,128 @@ public class N5PathTest {
 
 	@Test
 	public void testCreate() {
-		// TODO
-		throw new UnsupportedOperationException();
+
+		N5Path p;
+
+		p = N5Path.of("/");
+		assertEquals("", p.path());
+		assertTrue(p.isGroup());
+
+		p = N5Path.of("");
+		assertEquals("", p.path());
+		assertTrue(p.isGroup());
+
+		p = N5Path.of("a/..");
+		assertEquals("", p.path());
+		assertTrue(p.isGroup());
+
+		p = N5Path.of("a/../..");
+		assertEquals("../", p.path());
+		assertTrue(p.isGroup());
+
+		p = N5Path.of("a/b/c");
+		assertEquals("a/b/c", p.path());
+		assertFalse(p.isGroup());
+
+		p = N5Path.of("a/b/c/");
+		assertEquals("a/b/c/", p.path());
+		assertTrue(p.isGroup());
+
+		p = N5Path.of("//a/b");
+		assertEquals("a/b", p.path());
+		assertFalse(p.isGroup());
+
+		p = N5Path.of("a/../b");
+		assertEquals("b", p.path());
+		assertFalse(p.isGroup());
 	}
 
 	@Test
 	public void testUri() {
-		// TODO
-		throw new UnsupportedOperationException();
+
+		assertEquals("", N5Path.of("/").uri().toString());
+		assertEquals("a", N5Path.of("a").uri().toString());
+		assertEquals("a/", N5Path.of("a/").uri().toString());
+		assertEquals("a/b", N5Path.of("//a/b").uri().toString());
+		assertEquals("my%20%5Cfile/$a/%25b", N5Path.of("my \\file/$a/%b").uri().toString());
+	}
+
+	@Test
+	public void testNormalPath() {
+
+		assertEquals("", N5Path.of("/").normalPath());
+		assertEquals("a", N5Path.of("a").normalPath());
+		assertEquals("a", N5Path.of("a/").normalPath());
 	}
 
 	@Test
 	public void testParent() {
-		// TODO
-		throw new UnsupportedOperationException();
+
+		assertNull(N5Path.of("").parent());
+		assertNull(N5Path.of("a/..").parent());
+
+		assertEquals("a/b/", N5Path.of("a/b/c").parent().path());
+		assertEquals("a/b/", N5Path.of("a/b/c/").parent().path());
+		assertEquals("", N5Path.of("a/b/..").parent().path());
+		assertNull(N5Path.of("a/..").parent());
+		assertNull(N5Path.of("a/b/../..").parent());
+		assertEquals("", N5Path.of("a/../b").parent().path());
+		assertEquals("../../", N5Path.of("../../b").parent().path());
+		assertEquals("my \file/$a/", N5Path.of("my \file/$a/%b").parent().path());
 	}
 
 	@Test
 	public void testComponents() {
-		// TODO
-		throw new UnsupportedOperationException();
+
+		assertArrayEquals(new String[] {""}, N5Path.of("").components());
+		assertArrayEquals(new String[] {"a"}, N5Path.of("a").components());
+		assertArrayEquals(new String[] {"a", "b", "c"}, N5Path.of("a/b/c").components());
+		assertArrayEquals(new String[] {"a", "b", "c"}, N5Path.of("a/b/c/").components());
 	}
 
-	private static void group(String path) {
-		final String p = N5GroupPath.of(path).path();
-		System.out.println("assertEquals(\"" + p + "\", N5GroupPath.of(\"" + path + "\").path());");
+	private static void path(String path) {
+		final String p = N5Path.of(path).path();
+		System.out.println("assertEquals(\"" + p + "\", N5Path.of(\"" + path + "\").path());");
 	}
 
-	private static void file(String path) {
-		final String p = N5FilePath.of(path).path();
-		System.out.println("assertEquals(\"" + p + "\", N5FilePath.of(\"" + path + "\").path());");
+	private static void uri(String path) {
+		final String p = N5Path.of(path).uri().toString();
+		System.out.println("assertEquals(\"" + p + "\", N5Path.of(\"" + path + "\").uri().toString());");
+	}
+
+	private static void parent(String path) {
+		final N5GroupPath parent = N5Path.of(path).parent();
+//		System.out.println("\"" + path + "\" --> " + N5Path.of(path) + " --> " + parent);
+		if( parent == null ) {
+			System.out.println("assertNull(N5Path.of(\"" + path + "\").parent());");
+		} else {
+			final String p = parent.path();
+			System.out.println("assertEquals(\"" + p + "\", N5Path.of(\"" + path + "\").parent().path());");
+		}
 	}
 
 	public static void main(String[] args) {
-//		file("/");
-		file("");
-//		file("a/..");
-		file("a/b/c");
-		file("a/b/c/");
 
-		file("//a/b");
+//		final N5Path path = N5Path.of("my \\file/$a/%b");
+//		System.out.println("path = " + path);
+//		final String[] components = path.components();
+//		System.out.println("components = " + Arrays.toString(components));
 
-		file("a/b/../c");
-		file("a/b/../c/");
-		file("a/b/..");
-//		file("a/..");
-//		file("a/b/../..");
-		file("a/../b");
-		file("../../b");
-
-		file("my \\file/$a/%b");
-
+//		parent("/");
+//		parent("");
+//		parent("a/..");
+//		parent("a/b/c");
+//		parent("a/b/c/");
+//		parent("a/b/c/..");
+//		parent("a/b/c/../");
+//		parent("//a/b");
+//		parent("a/b/../c");
+//		parent("a/b/../c/");
+//		parent("a/b/..");
+//		parent("a/..");
+//		parent("a/b/../..");
+//		parent("a/../b");
+//		parent("../../b");
+//		parent("my \\file/$a/%b");
 	}
 }

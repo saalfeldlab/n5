@@ -16,24 +16,46 @@ import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 // TODO rename
 class N5PathImpl {
 
+	static N5Path pathOf(final String path) {
 
+		final String p = normalize(path);
+		if (p.isEmpty() || p.endsWith("/"))
+			return new GroupPath(createURI(p));
+		else if (p.equals("..") || p.endsWith("/.."))
+			return new GroupPath(createURI(p + "/"));
+		else
+			return new FilePath(createURI(p));
+	}
+
+	static FilePath filePathOf(final String path) {
+
+		String p = normalize(path);
+		if (p.endsWith("/"))
+			p = p.substring(0, p.length() - 1);
+
+		final URI uri = createURI(p);
+		if (uri.getPath().isEmpty())
+			throw new IllegalArgumentException("invalid path \"" + path + "\" resolves to empty file path");
+
+		return new FilePath(uri);
+	}
+
+	static GroupPath groupPathOf(final String path) {
+
+		String p = normalize(path);
+		if (!p.isEmpty() && !p.endsWith("/"))
+			p = p + "/";
+
+		return new GroupPath(createURI(p));
+	}
 
 	static class GroupPath implements N5GroupPath {
-
-		static GroupPath of(final String path) {
-
-			String p = normalize(path);
-			if (!p.isEmpty() && !p.endsWith("/"))
-				p = p + "/";
-
-			return new GroupPath(createURI(p));
-		}
 
 		private final URI uri;
 
 		private transient String normalPath;
 
-		public GroupPath(final URI uri) {
+		private GroupPath(final URI uri) {
 			this.uri = uri;
 		}
 
@@ -64,7 +86,13 @@ class N5PathImpl {
 		@Override
 		public N5GroupPath parent() {
 			final URI parent = uri.resolve("..");
-			return "..".equals(parent.getPath()) ? null : new GroupPath(parent);
+			final String path = parent.getPath();
+			if ("..".equals(path))
+				return null;
+			if (!path.isEmpty() && !path.endsWith("/"))
+				return new GroupPath(createURI(path + "/"));
+			else
+				return new GroupPath(parent);
 		}
 
 		@Override
@@ -73,26 +101,13 @@ class N5PathImpl {
 		}
 	}
 
-
-
 	static class FilePath implements N5FilePath {
-
-		static FilePath of(final String path) {
-
-			String p = normalize(path);
-			if (p.endsWith("/"))
-				p = p.substring(0, p.length() - 1);
-
-			final URI uri = createURI(p);
-			if (uri.getPath().isEmpty())
-				throw new IllegalArgumentException("invalid path \"" + path + "\" resolves to empty file path");
-
-			return new FilePath(uri);
-		}
 
 		private final URI uri;
 
 		private FilePath(final URI uri) {
+			if (uri.getPath().isEmpty())
+				throw new IllegalArgumentException("invalid empty file path");
 			this.uri = uri;
 		}
 
@@ -117,12 +132,16 @@ class N5PathImpl {
 		}
 
 		@Override
+		public N5GroupPath parent() {
+			final URI parent = uri.resolve(".");
+			return "..".equals(parent.getPath()) ? null : new GroupPath(parent);
+		}
+
+		@Override
 		public String toString() {
 			return "{file \"" + uri + "\"}";
 		}
 	}
-
-
 
 	private static URI createURI(final String normalPath) throws N5IOException {
 
