@@ -31,8 +31,11 @@ package org.janelia.saalfeldlab.n5;
 import java.io.IOException;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.nio.channels.FileLock;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static org.janelia.saalfeldlab.n5.LockingPolicy.STRICT;
 
 /**
  * Provides thread-safe and process-safe read/write locking for filesystem paths.
@@ -40,12 +43,32 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 class FileKeyLockManager {
 
-	static final FileKeyLockManager FILE_LOCK_MANAGER = new FileKeyLockManager();
+	/**
+	 * @deprecated use {@link FileKeyLockManager} instance per KVA instead of global one.
+	 */
+	@Deprecated
+	static final FileKeyLockManager FILE_LOCK_MANAGER = new FileKeyLockManager(STRICT);
 
-	private FileKeyLockManager() {
-		// singleton
+	private final LockingPolicy policy;
+
+	/**
+	 * Create a new {@link FileKeyLockManager} with the specified locking policy.
+	 * <p>
+	 * The given locking {@link LockingPolicy policy} applies to OS-level locking.
+	 * For both the {@code STRICT} and {@code PERMISSIVE} policy, a {@link
+	 * FileLock} is obtained. If this fails, {@code STRICT} will throw an {@code
+	 * IOException}. {@code PERMISSIVE} will proceed without locking. {@code
+	 * UNSAFE} will not attempt OS-level locking, however will still manage
+	 * mutual exclusion of readers and writers in the same JVM. Trying to lock
+	 * the same path with different locking policies will throw an {@code
+	 * IOException}.
+	 *
+	 * @param policy
+	 * 		the locking policy
+	 */
+	FileKeyLockManager(final LockingPolicy policy) {
+		this.policy = policy;
 	}
-
 
 	private final ConcurrentHashMap<String, WeakValue> locks = new ConcurrentHashMap<>();
 
@@ -79,7 +102,7 @@ class FileKeyLockManager {
 		}
 	}
 
-	private KeyLockState keyLockState(final Path path) {
+	private KeyLockState keyLockState(final Path path, final LockingPolicy policy) throws IOException {
 
 		final String key = path.toAbsolutePath().toString();
 
@@ -87,17 +110,18 @@ class FileKeyLockManager {
 
 		final WeakValue existingRef = locks.get(key);
 		KeyLockState state = existingRef == null ? null : existingRef.get();
-		if (state != null) {
-			return state;
+		if (state == null) {
+			final KeyLockState newState = new KeyLockState(path, policy);
+			while (state == null) {
+				final WeakValue ref = locks.compute(key,
+						(k, v) -> (v != null && v.get() != null)
+								? v
+								: new WeakValue(k, newState, refQueue));
+				state = ref.get();
+			}
 		}
-
-		final KeyLockState newState = new KeyLockState(path);
-		while (state == null) {
-			final WeakValue ref = locks.compute(key,
-					(k, v) -> (v != null && v.get() != null)
-							? v
-							: new WeakValue(k, newState, refQueue));
-			state = ref.get();
+		if (state.policy() != policy) {
+			throw new IOException("Trying to lock \"" + path + "\" with policy " + policy + ", but it is already used with " + state.policy());
 		}
 		return state;
 	}
@@ -110,14 +134,16 @@ class FileKeyLockManager {
 	 * only acquire the thread-level lock.
 	 *
 	 * @param path
-	 *            the key (file path) to lock for reading
+	 * 		the key (file path) to lock for reading
+	 *
 	 * @return a {@link LockedChannel} that must be closed when done
+	 *
 	 * @throws IOException
-	 *             if acquiring the file lock fails
+	 * 		if acquiring the file lock fails
 	 */
 	public LockedFileChannel lockForReading(final Path path) throws IOException {
 
-		return keyLockState(path).acquireRead();
+		return keyLockState(path, policy).acquireRead();
 	}
 
 	/**
@@ -125,14 +151,16 @@ class FileKeyLockManager {
 	 * write lock for a key at a time, and no readers can hold locks.
 	 *
 	 * @param path
-	 *            the file path to lock for writing
+	 * 		the file path to lock for writing
+	 *
 	 * @return a {@link LockedChannel} that must be closed when done
+	 *
 	 * @throws IOException
-	 *             if acquiring the file lock fails
+	 * 		if acquiring the file lock fails
 	 */
 	public LockedFileChannel lockForWriting(final Path path) throws IOException {
 
-		return keyLockState(path).acquireWrite();
+		return keyLockState(path, policy).acquireWrite();
 	}
 
 	/**
@@ -143,15 +171,5 @@ class FileKeyLockManager {
 	int size() {
 
 		return locks.size();
-	}
-
-	/**
-	 * Removes the lock state for a key if no locks are held.
-	 *
-	 * @param key the key whose lock state should be removed
-	 * @return true if removed, false if currently in use or not found
-	 */
-	public boolean removeLockIfUnused(final String key) {
-		throw new UnsupportedOperationException("TODO. REMOVE");
 	}
 }

@@ -13,8 +13,11 @@ class KeyLockState {
 
 	private final Path path;
 
-	public KeyLockState(final Path path) {
+	private final LockingPolicy policy;
+
+	public KeyLockState(final Path path, LockingPolicy policy) {
 		this.path = path;
+		this.policy = policy;
 	}
 
 	/**
@@ -52,7 +55,7 @@ class KeyLockState {
 					channelLockMutex.acquire();
 
 					try {
-						channelLock = ChannelLock.lock(path, false);
+						channelLock = ChannelLock.lock(path, false, policy);
 					} catch (IOException e) {
 						// Something went wrong. Back off.
 						channelLockMutex.release();
@@ -119,7 +122,7 @@ class KeyLockState {
 			channelLockMutex.acquire();
 
 			try {
-				channelLock = ChannelLock.lock(path, true);
+				channelLock = ChannelLock.lock(path, true, policy);
 			} catch (IOException e) {
 				// Something went wrong. Back off.
 				channelLockMutex.release();
@@ -136,5 +139,9 @@ class KeyLockState {
 
 	void releaseWrite() throws IOException {
 		releaseChannelLock();
+	}
+
+	LockingPolicy policy() {
+		return policy;
 	}
 }
