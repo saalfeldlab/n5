@@ -28,17 +28,16 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.util.Arrays;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 
 //TODO: Currently, {@code N5Path} is allowed to point outside the root (e.g.,
@@ -185,51 +184,5 @@ public class N5PathTest {
 		assertArrayEquals(new String[] {"a"}, N5Path.of("a").components());
 		assertArrayEquals(new String[] {"a", "b", "c"}, N5Path.of("a/b/c").components());
 		assertArrayEquals(new String[] {"a", "b", "c"}, N5Path.of("a/b/c/").components());
-	}
-
-	private static void path(String path) {
-		final String p = N5Path.of(path).path();
-		System.out.println("assertEquals(\"" + p + "\", N5Path.of(\"" + path + "\").path());");
-	}
-
-	private static void uri(String path) {
-		final String p = N5Path.of(path).uri().toString();
-		System.out.println("assertEquals(\"" + p + "\", N5Path.of(\"" + path + "\").uri().toString());");
-	}
-
-	private static void parent(String path) {
-		final N5GroupPath parent = N5Path.of(path).parent();
-//		System.out.println("\"" + path + "\" --> " + N5Path.of(path) + " --> " + parent);
-		if( parent == null ) {
-			System.out.println("assertNull(N5Path.of(\"" + path + "\").parent());");
-		} else {
-			final String p = parent.path();
-			System.out.println("assertEquals(\"" + p + "\", N5Path.of(\"" + path + "\").parent().path());");
-		}
-	}
-
-	public static void main(String[] args) {
-
-//		final N5Path path = N5Path.of("my \\file/$a/%b");
-//		System.out.println("path = " + path);
-//		final String[] components = path.components();
-//		System.out.println("components = " + Arrays.toString(components));
-
-//		parent("/");
-//		parent("");
-//		parent("a/..");
-//		parent("a/b/c");
-//		parent("a/b/c/");
-//		parent("a/b/c/..");
-//		parent("a/b/c/../");
-//		parent("//a/b");
-//		parent("a/b/../c");
-//		parent("a/b/../c/");
-//		parent("a/b/..");
-//		parent("a/..");
-//		parent("a/b/../..");
-//		parent("a/../b");
-//		parent("../../b");
-//		parent("my \\file/$a/%b");
 	}
 }
