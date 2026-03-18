@@ -29,8 +29,6 @@
 package org.janelia.saalfeldlab.n5.benchmarks;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -38,10 +36,9 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
-import org.janelia.saalfeldlab.n5.KeyValueAccess;
-import org.janelia.saalfeldlab.n5.LockedChannel;
 import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.RootedFileSystemKeyValueAccess;
+import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -76,7 +73,7 @@ public class ReadDataBenchmarks {
 
 	protected Path basePath;
 	protected ArrayList<Path> tmpPaths;
-	protected KeyValueAccess kva;
+	protected RootedKeyValueAccess kva;
 	protected Random random;
 
 	public ReadDataBenchmarks() {}
@@ -104,21 +101,22 @@ public class ReadDataBenchmarks {
 
 	protected Path getPath() {
 
-		return basePath.resolve("tmp-" + objectSizeBytes);
+		return Path.of("tmp-" + objectSizeBytes);
 	}
 
 	@Setup(Level.Trial)
 	public void setup() throws IOException {
 
 		random = new Random();
-		kva = new FileSystemKeyValueAccess();
 
 		basePath = Files.createTempDirectory("ReadDataBenchmark-");
+		kva = new RootedFileSystemKeyValueAccess(basePath.toString());
+
 		tmpPaths = new ArrayList<>();
 		for (final int sz : sizes()) {
-			Path p = basePath.resolve("tmp-"+sz);
+			final Path p = Path.of("tmp-"+sz);
 			write(p, sz);
-			tmpPaths.add(p);
+			tmpPaths.add(basePath.resolve(p));
 		}
 	}
 
@@ -135,7 +133,7 @@ public class ReadDataBenchmarks {
 		}).materialize();
 
 		try {
-			kva.write(path.toAbsolutePath().toString(), readData);
+			kva.write(path.toString(), readData);
 		} catch (N5Exception.N5IOException e) {
 			e.printStackTrace();
 		}
