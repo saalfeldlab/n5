@@ -4,12 +4,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -18,12 +21,14 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
+import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 
 	private final URI root;
+	private final FileKeyLockManager fileKeyLockManager;
 
 	// TODO: Turning basePath String into root URI here is fragile. It might already be a URI ("file:/...") or just a path, it might be relative or absolute, etc...
 	//       Maybe it would be better to take a URI here and handle the String higher up (where we might have more information)?
@@ -41,6 +46,9 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 		// append one.
 		final String uriStr = uri.toString();
 		this.root = uriStr.endsWith("/") ? uri : URI.create(uriStr + "/");
+
+		final LockingPolicy policy = LockingPolicy.fromString(System.getProperty("n5.ioPolicy", "permissive"));
+		this.fileKeyLockManager = new FileKeyLockManager(policy);
 	}
 
 	private static URI uriForNormalPath(final String normalPath) {
@@ -68,15 +76,7 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 
 	@Override
 	public VolatileReadData createReadData(final N5FilePath normalPath) throws N5IOException {
-
-		try {
-			return _read(root.resolve(normalPath.uri()));
-		} catch (final NoSuchFileException e) {
-			throw new N5NoSuchKeyException("No such file", e);
-		} catch (IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to lock file for reading: " + normalPath, e);
-		}
-
+		return VolatileReadData.from(new FileLazyRead(normalPath));
 	}
 
 	@Override
@@ -117,12 +117,11 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 	@Override
 	public void write(final N5FilePath normalPath, final ReadData data) throws N5IOException {
 
-		try {
-			_write(root.resolve(normalPath.uri()), data);
-		} catch (final NoSuchFileException e) {
-			throw new N5NoSuchKeyException("No such file", e);
+		final Path path = Path.of(root.resolve(normalPath.uri()));
+		try (final LockedFileChannel channel = lockForWriting(path)) {
+			data.writeTo(channel.newOutputStream());
 		} catch (IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to lock file for writing: " + normalPath, e);
+			throw new N5IOException(e);
 		}
 	}
 
@@ -161,13 +160,17 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 			final Path path = Path.of(root.resolve(normalPath.uri()));
 
 			if (Files.isRegularFile(path))
-				ioPolicy.delete(path.toString());
+				try (final LockedChannel channel = lockForWriting(path)) {
+					Files.delete(path);
+				}
 			else {
 				try (final Stream<Path> pathStream = Files.walk(path)) {
 					for (final Iterator<Path> i = pathStream.sorted(Comparator.reverseOrder()).iterator(); i.hasNext(); ) {
 						final Path childPath = i.next();
 						if (Files.isRegularFile(childPath))
-							ioPolicy.delete(childPath.toString());
+							try (final LockedChannel channel = lockForWriting(childPath)) {
+								Files.delete(childPath);
+							}
 						else
 							tryDelete(childPath);
 					}
@@ -180,42 +183,37 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 		}
 	}
 
-
-
-
-	//
  	// ------------------------------------------------------------------------
  	//
-	// -- forward to existing IoPolicy interface --
-	//    (absolute paths, as strings. maybe revise later...)
-
-
-	private VolatileReadData _read(final URI uri) throws IOException {
-
-		return ioPolicy.read(new File(uri).getAbsolutePath());
-	}
-
-	private void _write(final URI uri, final ReadData data) throws IOException {
-
-		ioPolicy.write(new File(uri).getAbsolutePath(), data);
-	}
-
-	private final IoPolicy ioPolicy = new FsIoPolicy.Atomic();;
-
-
-
-
-	//
-	// ------------------------------------------------------------------------
-	//
-	// -- helper methods copied from FileSystemKeyValueAccess --
+	// -- helper methods --
 	//
 
-	// TODO: is protected static in KVA, but we don't have static ioPolicy field here
-	private void tryDelete(final Path path) throws IOException {
+	private LockedFileChannel lockForReading(final Path path) throws N5IOException {
 
 		try {
-			ioPolicy.delete(path.toString());
+			return fileKeyLockManager.lockForReading(path);
+		} catch (final NoSuchFileException e) {
+			throw new N5NoSuchKeyException("No such file", e);
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5IOException("Failed to lock file for reading: " + path, e);
+		}
+	}
+
+	private LockedFileChannel lockForWriting(final Path path) throws N5IOException {
+
+		try {
+			return fileKeyLockManager.lockForWriting(path);
+		} catch (final NoSuchFileException e) {
+			throw new N5NoSuchKeyException("No such file", e);
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5IOException("Failed to lock file for writing: " + path, e);
+		}
+	}
+
+	private static void tryDelete(final Path path) throws IOException {
+
+		try {
+			Files.delete(path);
 		} catch (final DirectoryNotEmptyException e) {
 			/*
 			 * Even though path is expected to be an empty directory, sometimes
@@ -225,7 +223,7 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 			try {
 				/* wait and reattempt */
 				Thread.sleep(100);
-				ioPolicy.delete(path.toString());
+				Files.delete(path);
 			} catch (final InterruptedException ex) {
 				e.printStackTrace();
 				Thread.currentThread().interrupt();
@@ -292,7 +290,7 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 	 *             method to check access to the system property
 	 *             {@code user.dir}
 	 */
-	protected static Path createDirectories(Path dir, final FileAttribute<?>... attrs) throws IOException {
+	private static Path createDirectories(Path dir, final FileAttribute<?>... attrs) throws IOException {
 
 		// attempt to create the directory
 		try {
@@ -356,7 +354,7 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 	 * @param attrs file attributes
 	 * @throws IOException the exception
 	 */
-	protected static void createAndCheckIsDirectory(
+	private static void createAndCheckIsDirectory(
 			final Path dir,
 			final FileAttribute<?>... attrs) throws IOException {
 
@@ -368,4 +366,79 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 		}
 	}
 
+	private static boolean validBounds(long channelSize, long offset, long length) {
+
+		if (offset < 0)
+			return false;
+		else if (channelSize > 0 && offset >= channelSize) // offset == 0 and channelSize == 0 is okay
+			return false;
+		else if (length >= 0 && offset + length > channelSize)
+			return false;
+
+		return true;
+	}
+
+	private class FileLazyRead implements LazyRead {
+
+		private final N5FilePath n5Path;
+		private final Path absolutePath;
+		private LockedFileChannel lock;
+
+		FileLazyRead(final N5FilePath n5Path) {
+			this.n5Path = n5Path;
+			absolutePath = Path.of(root.resolve(n5Path.uri()));
+			lock = lockForReading(absolutePath);
+		}
+
+		@Override
+		public long size() throws N5IOException {
+
+			if (lock == null) {
+				throw new N5IOException("FileLazyRead is already closed.");
+			}
+			return RootedFileSystemKeyValueAccess.this.size(n5Path);
+		}
+
+		@Override
+		public ReadData materialize(final long offset, final long length) {
+
+			if (lock == null) {
+				throw new N5IOException("FileLazyRead is already closed.");
+			}
+
+			try (final FileChannel channel = FileChannel.open(absolutePath, StandardOpenOption.READ)) {
+
+				channel.position(offset);
+
+				final long channelSize = channel.size();
+				if (!validBounds(channelSize, offset, length)) {
+					throw new IndexOutOfBoundsException();
+				}
+
+				final long size = length < 0 ? (channelSize - offset) : length;
+				if (size > Integer.MAX_VALUE) {
+					throw new IndexOutOfBoundsException("Attempt to materialize too large data");
+				}
+
+				final byte[] data = new byte[(int) size];
+				final ByteBuffer buf = ByteBuffer.wrap(data);
+				channel.read(buf);
+				return ReadData.from(data);
+
+			} catch (final NoSuchFileException e) {
+				throw new N5NoSuchKeyException("No such file", e);
+			} catch (IOException | UncheckedIOException e) {
+				throw new N5IOException(e);
+			}
+		}
+
+		@Override
+		public void close() throws IOException {
+
+			if (lock != null) {
+				lock.close();
+				lock = null;
+			}
+		}
+	}
 }
