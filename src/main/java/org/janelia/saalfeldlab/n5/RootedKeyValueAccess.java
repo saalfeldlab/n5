@@ -18,6 +18,11 @@ public interface RootedKeyValueAccess {
 	@Deprecated
 	KeyValueAccess getKVA();
 
+	/**
+	 * Returns the absolute URI of the root.
+	 *
+	 * @return the base path URI
+	 */
 	URI root();
 
 	/**
@@ -32,7 +37,7 @@ public interface RootedKeyValueAccess {
 	 * <p>
 	 * The resulting {@code VolatileReadData} is potentially lazy. If the requested
 	 * key does not exist, it will throw {@code N5NoSuchKeyException}. Whether
-	 * the exception is thrown when {@link KeyValueAccess#createReadData(String)}] is called,
+	 * the exception is thrown when {@link #createReadData} is called,
 	 * or when trying to materialize the {@code VolatileReadData} is implementation dependent.
 	 *
 	 * @param normalPath
