@@ -79,8 +79,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	@Override
 	default void createGroup(final String path) throws N5Exception {
 
-		final String normalPath = N5URI.normalizeGroupPath(path);
-		getKeyValueAccess().createDirectories(absoluteGroupPath(normalPath));
+		getRootedKeyValueAccess().createDirectories(N5GroupPath.of(path));
 	}
 
 	/**
@@ -310,10 +309,9 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	@Override
 	default boolean remove(final String path) throws N5Exception {
 
-		final String normalPath = N5URI.normalizeGroupPath(path);
-		final String groupPath = absoluteGroupPath(normalPath);
-		if (getKeyValueAccess().isDirectory(groupPath))
-			getKeyValueAccess().delete(groupPath);
+		final N5GroupPath group = N5GroupPath.of(path);
+		if (getRootedKeyValueAccess().isDirectory(group))
+			getRootedKeyValueAccess().delete(group);
 
 		/* an IOException should have occurred if anything had failed midway */
 		return true;
