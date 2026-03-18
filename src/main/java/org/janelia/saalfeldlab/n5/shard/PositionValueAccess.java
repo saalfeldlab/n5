@@ -34,6 +34,8 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
+import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
@@ -90,7 +92,7 @@ public interface PositionValueAccess {
 	class RootedKvaPositionValueAccess implements PositionValueAccess {
 
 		private final RootedKeyValueAccess kva;
-		private final String normalPath;
+		private final String normalPath; // TODO: make N5GroupPath
 		private final DatasetAttributes attributes;
 
 		RootedKvaPositionValueAccess(final RootedKeyValueAccess kva,
@@ -103,15 +105,16 @@ public interface PositionValueAccess {
 		}
 
 		/**
-		 * Constructs the absolute path for a data block (or shard) at a given grid
-		 * position.
+		 * Constructs the relative path for a data block (or shard) at a given
+		 * grid position.
 		 *
 		 * @param gridPosition
-		 *            to the target data block
-		 * @return the absolute path to the data block ad gridPosition
+		 * 		grid coordinates of the data block
+		 *
+		 * @return the path (relative to container root) of the data block at gridPosition
 		 */
-		private String relativePath(final long... gridPosition) {
-			return RootedKeyValueAccess.compose(normalPath, attributes.relativeBlockPath(gridPosition));
+		private N5FilePath relativePath(final long... gridPosition) {
+			return N5GroupPath.of(normalPath).resolve(attributes.relativeBlockPath(gridPosition)).asFile();
 		}
 
 		@Override
@@ -139,7 +142,7 @@ public interface PositionValueAccess {
 
 		@Override
 		public boolean remove(final long[] gridPosition) throws N5IOException {
-			final String key = relativePath(gridPosition);
+			final N5FilePath key = relativePath(gridPosition);
 			if (!kva.isFile(key))
 				return false;
 

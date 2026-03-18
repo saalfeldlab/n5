@@ -73,7 +73,7 @@ public interface RootedKeyValueAccess {
 	 *
 	 * @return true if the path exists
 	 */
-	boolean exists(N5Path normalPath); // TODO (N5Path): If we would take a N5Path here, it would be easier to check for file + directory existence
+	boolean exists(N5Path normalPath);
 
 	/**
 	 * Returns the size in bytes of the object at the given normalPath if it exists.
@@ -141,21 +141,7 @@ public interface RootedKeyValueAccess {
 	 */
 	void delete(N5Path normalPath) throws N5IOException;
 
-
 	// ----------------------------------------------------------------
-	// TODO: Where should these go? Maybe we don't need them if we rely on URI?
-
-	static String compose(final String normalPath, final String key) {
-		return normalPath.isEmpty() ? key : normalPath + "/" + key;
-	}
-
-
-
-
-
-
-	// ----------------------------------------------------------------
-	// TODO: Do we want these, or should we just rely on URI everywhere?
 
 	default VolatileReadData createReadData(final String normalPath) throws N5IOException {
 		return createReadData(N5FilePath.of(normalPath));

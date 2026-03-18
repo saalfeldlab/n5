@@ -113,6 +113,10 @@ public interface N5Path {
 			return true;
 		}
 
+		default N5Path resolve(final String path) {
+			return N5Path.of(uri().resolve(path).getPath());
+		}
+
 		static N5GroupPath of(final String path) {
 			return groupPathOf(path);
 		}

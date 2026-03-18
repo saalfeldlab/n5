@@ -87,9 +87,9 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 *            normalized group path without leading slash
 	 * @return the absolute path to the attributes
 	 */
-	default String relativeAttributesPath(final String normalPath) {
+	default N5FilePath relativeAttributesPath(final String normalPath) {
 
-		return RootedKeyValueAccess.compose(normalPath, getAttributesKey());
+		return N5GroupPath.of(normalPath).resolve(getAttributesKey()).asFile();
 	}
 
 	/**
@@ -104,7 +104,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	default JsonElement getAttributes(final String pathName) throws N5Exception {
 
 		final String groupPath = N5URI.normalizeGroupPath(pathName);
-		final String attributesPath = relativeAttributesPath(groupPath);
+		final N5FilePath attributesPath = relativeAttributesPath(groupPath);
 		try (final VolatileReadData readData = getRootedKeyValueAccess().createReadData(attributesPath);) {
 			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), getGson());
 		} catch (final N5Exception.N5NoSuchKeyException e) {
