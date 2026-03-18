@@ -36,8 +36,7 @@ public interface RootedKeyValueAccess {
 	 * or when trying to materialize the {@code VolatileReadData} is implementation dependent.
 	 *
 	 * @param normalPath
-	 * 		(relative to container root)
-	 * 		is expected to be in normalized form, no further efforts are made to normalize it
+	 * 		path to read, relative to container root
 	 *
 	 * @return a ReadData
 	 *
@@ -50,8 +49,7 @@ public interface RootedKeyValueAccess {
 	 * Test whether the path exists and is a directory.
 	 *
 	 * @param normalPath
-	 * 		(relative to container root)
-	 * 		is expected to be in normalized form, no further efforts are made to normalize it.
+	 * 		path to test, relative to container root
 	 *
 	 * @return true if the path is a directory
 	 */
@@ -61,8 +59,7 @@ public interface RootedKeyValueAccess {
 	 * Test whether the path exists and is a file.
 	 *
 	 * @param normalPath
-	 * 		(relative to container root)
-	 * 		is expected to be in normalized form, no further efforts are made to normalize it.
+	 * 		path to test, relative to container root
 	 *
 	 * @return true if the path is a file
 	 */
@@ -72,8 +69,7 @@ public interface RootedKeyValueAccess {
 	 * Test whether the path exists.
 	 *
 	 * @param normalPath
-	 * 		(relative to container root)
-	 * 		is expected to be in normalized form, no further efforts are made to normalize it.
+	 * 		path to test, relative to container root
 	 *
 	 * @return true if the path exists
 	 */
@@ -83,8 +79,7 @@ public interface RootedKeyValueAccess {
 	 * Returns the size in bytes of the object at the given normalPath if it exists.
 	 *
 	 * @param normalPath
-	 * 		(relative to container root)
-	 * 		is expected to be in normalized form, no further efforts are made to normalize it.
+	 * 		path to query, relative to container root
 	 *
 	 * @return the size of the object in bytes.
 	 *
@@ -99,8 +94,7 @@ public interface RootedKeyValueAccess {
 	 * Existing data at {@code normalPath} will be overridden.
 	 *
 	 * @param normalPath
-	 * 		(relative to container root)
-	 * 		is expected to be in normalized form, no further efforts are made to normalize it
+	 * 		path to write, relative to container root
 	 * @param data
 	 * 		the data to write
 	 *
@@ -113,15 +107,13 @@ public interface RootedKeyValueAccess {
 	 * List all 'directory'-like children of a path.
 	 *
 	 * @param normalPath
-	 * 		(relative to container root)
-	 * 		is expected to be in normalized form, no further efforts are made to normalize it.
+	 * 		path to list, relative to container root
 	 *
 	 * @return the directories (relative to {@code normalPath})
 	 *
 	 * @throws N5IOException
 	 * 		if an error occurs during listing
 	 */
-	// TODO should this return URI[] ?
 	String[] listDirectories(N5GroupPath normalPath) throws N5IOException;
 
 	/**
@@ -131,8 +123,7 @@ public interface RootedKeyValueAccess {
 	 * directories, this may be implemented as creating an object for each path.
 	 *
 	 * @param normalPath
-	 * 		(relative to container root)
-	 * 		is expected to be in normalized form, no further efforts are made to normalize it.
+	 * 		directory path to create, relative to container root
 	 *
 	 * @throws N5IOException
 	 * 		if an error occurs during creation
@@ -143,8 +134,7 @@ public interface RootedKeyValueAccess {
 	 * Delete a path. If the path is a directory, delete it recursively.
 	 *
 	 * @param normalPath
-	 * 		(relative to container root)
-	 * 		is expected to be in normalized form, no further efforts are made to normalize it.
+	 * 		path to delete, relative to container root
 	 *
 	 * @throws N5IOException
 	 * 		if an error occurs during deletion

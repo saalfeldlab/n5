@@ -76,39 +76,29 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 
 	@Override
 	public VolatileReadData createReadData(final N5FilePath normalPath) throws N5IOException {
-		return VolatileReadData.from(new FileLazyRead(normalPath));
+		return VolatileReadData.from(new FileLazyRead(resolve(normalPath)));
 	}
 
 	@Override
 	public boolean isDirectory(final N5Path normalPath) {
-
-		final Path path = Path.of(root.resolve(normalPath.uri()));
-		return Files.isDirectory(path);
+		return Files.isDirectory(resolve(normalPath));
 	}
 
 	@Override
 	public boolean isFile(final N5Path normalPath) {
-
-		final Path path = Path.of(root.resolve(normalPath.uri()));
-		return Files.isRegularFile(path);
+		return Files.isRegularFile(resolve(normalPath));
 	}
-
-	// TODO: helper method for this:
-	//	final Path path = Path.of(root.resolve(normalPath.uri())); // TODO
 
 	@Override
 	public boolean exists(final N5Path normalPath) {
-
-		final Path path = Path.of(root.resolve(normalPath.uri()));
-		return Files.exists(path);
+		return Files.exists(resolve(normalPath));
 	}
 
 	@Override
 	public long size(final N5FilePath normalPath) throws N5IOException {
 
-		final Path path = Path.of(root.resolve(normalPath.uri()));
 		try {
-			return Files.size(path);
+			return Files.size(resolve(normalPath));
 		} catch (IOException e) {
 			throw new N5IOException(e);
 		}
@@ -117,8 +107,7 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 	@Override
 	public void write(final N5FilePath normalPath, final ReadData data) throws N5IOException {
 
-		final Path path = Path.of(root.resolve(normalPath.uri()));
-		try (final LockedFileChannel channel = lockForWriting(path)) {
+		try (final LockedFileChannel channel = lockForWriting(resolve(normalPath))) {
 			data.writeTo(channel.newOutputStream());
 		} catch (IOException | UncheckedIOException e) {
 			throw new N5IOException(e);
@@ -126,9 +115,9 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public String[] listDirectories(N5GroupPath normalPath) throws N5IOException {
+	public String[] listDirectories(final N5GroupPath normalPath) throws N5IOException {
 
-		final Path path = Path.of(root.resolve(normalPath.uri()));
+		final Path path = resolve(normalPath);
 		try (final Stream<Path> pathStream = Files.list(path)) {
 			return pathStream
 					.filter(Files::isDirectory)
@@ -145,7 +134,7 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 	public void createDirectories(final N5GroupPath normalPath) throws N5IOException {
 
 		try {
-			createDirectories(Path.of(root.resolve(normalPath.uri())));
+			createDirectories(resolve(normalPath));
 		} catch (NoSuchFileException e) {
 			throw new N5NoSuchKeyException("No such file", e);
 		} catch (IOException | UncheckedIOException e) {
@@ -157,7 +146,7 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 	public void delete(final N5Path normalPath) throws N5IOException {
 
 		try {
-			final Path path = Path.of(root.resolve(normalPath.uri()));
+			final Path path = resolve(normalPath);
 
 			if (Files.isRegularFile(path))
 				try (final LockedChannel channel = lockForWriting(path)) {
@@ -187,6 +176,17 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
  	//
 	// -- helper methods --
 	//
+
+	/**
+	 * Resolve a relative {@code path} (relative with respect to the container
+	 * {@link #root}) to an absolute {@link Path}.
+	 *
+	 * @param normalPath path to resolve relative to container root
+	 * @return resolved absolute path
+	 */
+	private Path resolve(final N5Path normalPath) {
+		return Path.of(root.resolve(normalPath.uri()));
+	}
 
 	private LockedFileChannel lockForReading(final Path path) throws N5IOException {
 
@@ -380,14 +380,12 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 
 	private class FileLazyRead implements LazyRead {
 
-		private final N5FilePath n5Path;
-		private final Path absolutePath;
+		private final Path path;
 		private LockedFileChannel lock;
 
-		FileLazyRead(final N5FilePath n5Path) {
-			this.n5Path = n5Path;
-			absolutePath = Path.of(root.resolve(n5Path.uri()));
-			lock = lockForReading(absolutePath);
+		FileLazyRead(final Path path) {
+			this.path = path;
+			lock = lockForReading(path);
 		}
 
 		@Override
@@ -396,7 +394,12 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 			if (lock == null) {
 				throw new N5IOException("FileLazyRead is already closed.");
 			}
-			return RootedFileSystemKeyValueAccess.this.size(n5Path);
+
+			try {
+				return Files.size(path);
+			} catch (IOException e) {
+				throw new N5IOException(e);
+			}
 		}
 
 		@Override
@@ -406,7 +409,7 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 				throw new N5IOException("FileLazyRead is already closed.");
 			}
 
-			try (final FileChannel channel = FileChannel.open(absolutePath, StandardOpenOption.READ)) {
+			try (final FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
 
 				channel.position(offset);
 
