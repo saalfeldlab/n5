@@ -83,7 +83,7 @@ public interface PositionValueAccess {
 
 	static PositionValueAccess fromKva(
 			final RootedKeyValueAccess kva,
-			final String normalPath,
+			final N5GroupPath normalPath,
 			final DatasetAttributes attributes) {
 
 		return new RootedKvaPositionValueAccess(kva, normalPath, attributes);
@@ -92,11 +92,11 @@ public interface PositionValueAccess {
 	class RootedKvaPositionValueAccess implements PositionValueAccess {
 
 		private final RootedKeyValueAccess kva;
-		private final String normalPath; // TODO: make N5GroupPath
+		private final N5GroupPath normalPath;
 		private final DatasetAttributes attributes;
 
 		RootedKvaPositionValueAccess(final RootedKeyValueAccess kva,
-				final String normalPath,
+				final N5GroupPath normalPath,
 				final DatasetAttributes attributes) {
 
 			this.kva = kva;
@@ -114,7 +114,7 @@ public interface PositionValueAccess {
 		 * @return the path (relative to container root) of the data block at gridPosition
 		 */
 		private N5FilePath relativePath(final long... gridPosition) {
-			return N5GroupPath.of(normalPath).resolve(attributes.relativeBlockPath(gridPosition)).asFile();
+			return normalPath.resolve(attributes.relativeBlockPath(gridPosition)).asFile();
 		}
 
 		@Override

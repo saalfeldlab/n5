@@ -128,7 +128,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getRootedKeyValueAccess(), N5URI.normalizeGroupPath(pathName),
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(getRootedKeyValueAccess(), N5GroupPath.of(pathName),
 					convertedDatasetAttributes);
 			return convertedDatasetAttributes.<T> getDatasetAccess().readBlock(posKva, gridPosition);
 
@@ -144,7 +144,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final List<long[]> blockPositions) throws N5Exception {
 
 		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
-		final PositionValueAccess posKva = PositionValueAccess.fromKva(getRootedKeyValueAccess(), N5URI.normalizeGroupPath(pathName), convertedDatasetAttributes);
+		final PositionValueAccess posKva = PositionValueAccess.fromKva(getRootedKeyValueAccess(), N5GroupPath.of(pathName), convertedDatasetAttributes);
 		return convertedDatasetAttributes.<T> getDatasetAccess().readBlocks(posKva, blockPositions);
 	}
 
@@ -157,7 +157,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		final int shardLevel = convertedDatasetAttributes.getNestedBlockGrid().numLevels() - 1;
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getRootedKeyValueAccess(), N5URI.normalizeGroupPath(pathName),
+			final PositionValueAccess posKva = PositionValueAccess.fromKva(getRootedKeyValueAccess(), N5GroupPath.of(pathName),
 					convertedDatasetAttributes);
 			return convertedDatasetAttributes.<T> getDatasetAccess().readShard(posKva, gridPosition, shardLevel);
 
@@ -204,8 +204,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		final N5Path uri = N5FilePath.of(N5GroupPath.of(pathName).uri().resolve(datasetAttributes.relativeBlockPath(gridPosition)).getPath());
-//		final N5Path n5p = N5GroupPath.of(pathName).resolve(datasetAttributes.relativeBlockPath(gridPosition)); // TODO (N5Path): should be this (add N5GroupPath.resolve(String))
-		return getRootedKeyValueAccess().isFile(uri);
+		final N5Path path = N5GroupPath.of(pathName).resolve(datasetAttributes.relativeBlockPath(gridPosition));
+		return getRootedKeyValueAccess().isFile(path);
 	}
 }
