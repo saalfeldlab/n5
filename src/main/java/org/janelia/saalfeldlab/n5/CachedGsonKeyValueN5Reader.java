@@ -41,7 +41,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 /**
- * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
+ * {@link N5Reader} implementation through {@link RootedKeyValueAccess} with JSON
  * attributes parsed with {@link Gson}.
  *
  */
@@ -59,57 +59,26 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	@Override
 	default JsonElement getAttributesFromContainer(final String normalPathName, final String normalCacheKey) {
 
-		// this implementation doesn't use cache key, but rather depends on
-		// attributesPath being implemented
+		// This implementation doesn't use normalCacheKey, but rather depends on
+		// getAttributesKey() being implemented.
 		return GsonKeyValueN5Reader.super.getAttributes(normalPathName);
 	}
 
 	@Override
 	default DatasetAttributes getDatasetAttributes(final String pathName) {
 
-		final String normalPath = N5URI.normalizeGroupPath(pathName);
-		final JsonElement attributes;
-
 		if (!datasetExists(pathName))
 			return null;
 
-		if (cacheMeta()) {
-			attributes = getCache().getAttributes(normalPath, getAttributesKey());
-		} else {
-			attributes = GsonKeyValueN5Reader.super.getAttributes(normalPath);
-		}
-
-		return createDatasetAttributes(attributes);
-	}
-
-	// TODO: Inline! This is only used in 1 place.
-	default DatasetAttributes normalGetDatasetAttributes(final String pathName) throws N5IOException {
-
-		final String normalPath = N5URI.normalizeGroupPath(pathName);
-		final JsonElement attributes = GsonKeyValueN5Reader.super.getAttributes(normalPath);
-		return createDatasetAttributes(attributes);
-	}
-
-	@Override
-	default <T> T getAttribute(
-			final String pathName,
-			final String key,
-			final Class<T> clazz) throws N5Exception {
-
-		final String normalPathName = N5URI.normalizeGroupPath(pathName);
-		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
-
 		final JsonElement attributes;
 		if (cacheMeta()) {
-			attributes = getCache().getAttributes(normalPathName, getAttributesKey());
+			final String normalPath = N5GroupPath.of(pathName).normalPath();
+			attributes = getCache().getAttributes(normalPath, getAttributesKey());
 		} else {
-			attributes = GsonKeyValueN5Reader.super.getAttributes(normalPathName);
+			attributes = GsonKeyValueN5Reader.super.getAttributes(pathName);
 		}
-		try {
-			return GsonUtils.readAttribute(attributes, normalizedAttributePath, clazz, getGson());
-		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
-			throw new N5Exception.N5ClassCastException(e);
-		}
+
+		return createDatasetAttributes(attributes);
 	}
 
 	@Override
@@ -118,14 +87,16 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 			final String key,
 			final Type type) throws N5Exception {
 
-		final String normalPathName = N5URI.normalizeGroupPath(pathName);
 		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
-		JsonElement attributes;
+
+		final JsonElement attributes;
 		if (cacheMeta()) {
+			final String normalPathName = N5GroupPath.of(pathName).normalPath();
 			attributes = getCache().getAttributes(normalPathName, getAttributesKey());
 		} else {
-			attributes = GsonKeyValueN5Reader.super.getAttributes(normalPathName);
+			attributes = GsonKeyValueN5Reader.super.getAttributes(pathName);
 		}
+
 		try {
 			return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, getGson());
 		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
@@ -136,11 +107,11 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	@Override
 	default boolean exists(final String pathName) {
 
-		final String normalPathName = N5URI.normalizeGroupPath(pathName);
-		if (cacheMeta())
+		if (cacheMeta()) {
+			final String normalPathName = N5GroupPath.of(pathName).normalPath();
 			return getCache().isGroup(normalPathName, getAttributesKey());
-		else {
-			return existsFromContainer(normalPathName, null);
+		} else {
+			return existsFromContainer(pathName, null);
 		}
 	}
 
@@ -158,7 +129,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	@Override
 	default boolean groupExists(final String pathName) {
 
-		final String normalPathName = N5URI.normalizeGroupPath(pathName);
+		final String normalPathName = N5GroupPath.of(pathName).normalPath();
 		if (cacheMeta())
 			return getCache().isGroup(normalPathName, null);
 		else {
@@ -166,24 +137,10 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 		}
 	}
 
-	default boolean groupExists(final N5GroupPath group) {
-
-		if (cacheMeta())
-			return getCache().isGroup(group.normalPath(), null);
-		else {
-			return isGroupFromContainer(group);
-		}
-	}
-
 	@Override
 	default boolean isGroupFromContainer(final String normalPathName) {
 
 		return GsonKeyValueN5Reader.super.groupExists(normalPathName);
-	}
-
-	default boolean isGroupFromContainer(final N5GroupPath group) {
-
-		return GsonKeyValueN5Reader.super.groupExists(group);
 	}
 
 	@Override
@@ -195,7 +152,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	@Override
 	default boolean datasetExists(final String pathName) throws N5IOException {
 
-		final String normalPathName = N5URI.normalizeGroupPath(pathName);
+		final String normalPathName = N5GroupPath.of(pathName).normalPath();
 		if (cacheMeta()) {
 			return getCache().isDataset(normalPathName, getAttributesKey());
 		}
@@ -205,7 +162,8 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	@Override
 	default boolean isDatasetFromContainer(final String normalPathName) throws N5IOException {
 
-		return normalGetDatasetAttributes(normalPathName) != null;
+		final JsonElement attributes = GsonKeyValueN5Reader.super.getAttributes(normalPathName);
+		return createDatasetAttributes(attributes) != null;
 	}
 
 	@Override
@@ -225,31 +183,28 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	@Override
 	default JsonElement getAttributes(final String pathName) throws N5IOException {
 
-		final String groupPath = N5URI.normalizeGroupPath(pathName);
-
-		/* If cached, return the cache */
+		final String normalPathName = N5GroupPath.of(pathName).normalPath();
 		if (cacheMeta()) {
-			return getCache().getAttributes(groupPath, getAttributesKey());
+			return getCache().getAttributes(normalPathName, getAttributesKey());
 		} else {
-			return GsonKeyValueN5Reader.super.getAttributes(groupPath);
+			return GsonKeyValueN5Reader.super.getAttributes(normalPathName);
 		}
 	}
 
 	@Override
 	default String[] list(final String pathName) throws N5IOException {
 
-		final String normalPath = N5URI.normalizeGroupPath(pathName);
+		final String normalPathName = N5GroupPath.of(pathName).normalPath();
 		if (cacheMeta()) {
-			return getCache().list(normalPath);
+			return getCache().list(normalPathName);
 		} else {
-			return GsonKeyValueN5Reader.super.list(normalPath);
+			return GsonKeyValueN5Reader.super.list(normalPathName);
 		}
 	}
 
 	@Override
 	default String[] listFromContainer(final String normalPathName) {
 
-		// this implementation doesn't use cache key, but rather depends on
 		return GsonKeyValueN5Reader.super.list(normalPathName);
 	}
 

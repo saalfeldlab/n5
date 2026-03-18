@@ -28,6 +28,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import com.google.gson.reflect.TypeToken;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -244,10 +245,12 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws N5Exception
 	 *             the exception
 	 */
-	<T> T getAttribute(
+	default <T> T getAttribute(
 			final String pathName,
 			final String key,
-			final Class<T> clazz) throws N5Exception;
+			final Class<T> clazz) throws N5Exception {
+		return getAttribute(pathName, key, TypeToken.get(clazz).getType());
+	}
 
 	/**
 	 * Reads an attribute.
@@ -340,7 +343,7 @@ public interface N5Reader extends AutoCloseable {
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> gridPositions) throws N5Exception {
 
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
 		for( final long[] p : gridPositions )
 			blocks.add(readBlock(pathName, convertedDatasetAttributes, p));
@@ -396,8 +399,7 @@ public interface N5Reader extends AutoCloseable {
 			final long... gridPosition) throws N5Exception;
 	/**
 	 * Load a {@link DataBlock} as a {@link Serializable}. The offset is given
-	 * in
-	 * {@link DataBlock} grid coordinates.
+	 * in {@link DataBlock} grid coordinates.
 	 *
 	 * @param dataset
 	 *            the dataset path
@@ -418,7 +420,7 @@ public interface N5Reader extends AutoCloseable {
 			final DatasetAttributes attributes,
 			final long... gridPosition) throws N5Exception, ClassNotFoundException {
 
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(attributes);
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(attributes);
 		final DataBlock<byte[]> block = readBlock(dataset, convertedDatasetAttributes, gridPosition);
 		if (block == null)
 			return null;

@@ -54,10 +54,10 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 	@Override
 	default void createGroup(final String path) throws N5Exception {
 
-		final N5GroupPath group = N5GroupPath.of(path);
-		if (groupExists(group))
+		if (groupExists(path))
 			return;
 
+		final N5GroupPath group = N5GroupPath.of(path);
 		getRootedKeyValueAccess().createDirectories(group);
 
 		if (cacheMeta()) {
@@ -111,7 +111,8 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 				nullRespectingAttributes = getGson().toJsonTree(attributes);
 			}
 			/* Update the cache, and write to the writer */
-			getCache().updateCacheInfo(normalGroupPath, getAttributesKey(), nullRespectingAttributes);
+			final String normalPathKey = N5GroupPath.of(normalGroupPath).normalPath();
+			getCache().updateCacheInfo(normalPathKey, getAttributesKey(), nullRespectingAttributes);
 		}
 	}
 

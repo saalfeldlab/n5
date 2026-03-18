@@ -28,6 +28,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.Map;
 
@@ -47,8 +48,8 @@ public interface GsonN5Reader extends N5Reader {
 	Gson getGson();
 
 	/**
-	 * Get the key for the {@link KeyValueAccess}, that is used for storing attributes.
-	 * The N5 format uses "attributes.json".
+	 * Get the key for the that is used for storing attributes. The N5 format
+	 * uses "attributes.json".
 	 *
 	 * @return the attributes key
 	 */
@@ -63,9 +64,7 @@ public interface GsonN5Reader extends N5Reader {
 	@Override
 	default DatasetAttributes getDatasetAttributes(final String pathName) throws N5Exception {
 
-		final String normalPath = N5URI.normalizeGroupPath(pathName);
-		final JsonElement attributes = getAttributes(normalPath);
-		return createDatasetAttributes(attributes);
+		return createDatasetAttributes(getAttributes(pathName));
 	}
 
 	default DatasetAttributes createDatasetAttributes(final JsonElement attributes) {
@@ -82,25 +81,10 @@ public interface GsonN5Reader extends N5Reader {
 	}
 
 	@Override
-	default <T> T getAttribute(final String pathName, final String key, final Class<T> clazz) throws N5Exception {
-
-		final String normalPathName = N5URI.normalizeGroupPath(pathName);
-		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
-
-		final JsonElement attributes = getAttributes(normalPathName);
-		try {
-			return GsonUtils.readAttribute(attributes, normalizedAttributePath, clazz, getGson());
-		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
-			throw new N5Exception.N5ClassCastException(e);
-		}
-	}
-
-	@Override
 	default <T> T getAttribute(final String pathName, final String key, final Type type) throws N5Exception {
 
-		final String normalPathName = N5URI.normalizeGroupPath(pathName);
 		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
-		final JsonElement attributes = getAttributes(normalPathName);
+		final JsonElement attributes = getAttributes(pathName);
 		try {
 			return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, getGson());
 		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {

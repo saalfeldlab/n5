@@ -61,22 +61,18 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		return getRootedKeyValueAccess().isDirectory(normalPath);
 	}
 
-	default boolean groupExists(final N5GroupPath group) {
-
-		return getRootedKeyValueAccess().isDirectory(group);
-	}
-
 	@Override
 	default boolean exists(final String pathName) {
 
-		final String normalPath = N5URI.normalizeGroupPath(pathName);
-		return groupExists(normalPath) || datasetExists(normalPath);
+		// NB: This method checks for existence of a group or dataset.
+		//     For n5, every dataset must be a group, so checking for existence
+		//     of a group is sufficient.
+		return groupExists(pathName);
 	}
 
 	@Override
 	default boolean datasetExists(final String pathName) throws N5Exception {
 
-		// for n5, every dataset must be a group
 		return getDatasetAttributes(pathName) != null;
 	}
 
@@ -103,8 +99,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	@Override
 	default JsonElement getAttributes(final String pathName) throws N5Exception {
 
-		final String groupPath = N5URI.normalizeGroupPath(pathName);
-		final N5FilePath attributesPath = relativeAttributesPath(groupPath);
+		final N5FilePath attributesPath = relativeAttributesPath(pathName);
 		try (final VolatileReadData readData = getRootedKeyValueAccess().createReadData(attributesPath);) {
 			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), getGson());
 		} catch (final N5Exception.N5NoSuchKeyException e) {
@@ -126,7 +121,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		try {
 			final PositionValueAccess posKva = PositionValueAccess.fromKva(getRootedKeyValueAccess(), N5GroupPath.of(pathName),
 					convertedDatasetAttributes);
@@ -143,7 +138,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> blockPositions) throws N5Exception {
 
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		final PositionValueAccess posKva = PositionValueAccess.fromKva(getRootedKeyValueAccess(), N5GroupPath.of(pathName), convertedDatasetAttributes);
 		return convertedDatasetAttributes.<T> getDatasetAccess().readBlocks(posKva, blockPositions);
 	}

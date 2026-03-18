@@ -111,8 +111,7 @@ public class N5JsonCache {
 
 		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
-			addNewCacheInfo(normalPathKey, normalCacheKey, null);
-			cacheInfo = getCacheInfo(normalPathKey);
+			cacheInfo = addNewCacheInfo(normalPathKey, normalCacheKey, null);
 		}
 		if (cacheInfo == emptyCacheInfo || cacheInfo.getCache(normalCacheKey) == emptyJson) {
 			return null;
@@ -131,8 +130,7 @@ public class N5JsonCache {
 
 		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
-			addNewCacheInfo(normalPathKey, normalCacheKey, null);
-			cacheInfo = getCacheInfo(normalPathKey);
+			cacheInfo = addNewCacheInfo(normalPathKey, normalCacheKey, null);
 		}
 		return cacheInfo.isDataset;
 	}
@@ -141,8 +139,7 @@ public class N5JsonCache {
 
 		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
-			addNewCacheInfo(normalPathKey, cacheKey, null);
-			cacheInfo = getCacheInfo(normalPathKey);
+			cacheInfo = addNewCacheInfo(normalPathKey, cacheKey, null);
 		}
 		return cacheInfo.isGroup;
 	}
@@ -160,8 +157,7 @@ public class N5JsonCache {
 
 		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
-			addNewCacheInfo(normalPathKey, normalCacheKey, null);
-			cacheInfo = getCacheInfo(normalPathKey);
+			cacheInfo = addNewCacheInfo(normalPathKey, normalCacheKey, null);
 		}
 		return cacheInfo != emptyCacheInfo;
 	}
@@ -170,8 +166,7 @@ public class N5JsonCache {
 
 		N5CacheInfo cacheInfo = getCacheInfo(normalPathKey);
 		if (cacheInfo == null) {
-			addNewCacheInfo(normalPathKey);
-			cacheInfo = getCacheInfo(normalPathKey);
+			cacheInfo = addNewCacheInfo(normalPathKey);
 		}
 		if (cacheInfo == emptyCacheInfo)
 			throw new N5Exception.N5IOException(normalPathKey + " is not a valid group");

@@ -213,10 +213,9 @@ public interface N5Writer extends N5Reader {
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes) throws N5Exception {
 
-		final String normalPath = N5URI.normalizeGroupPath(datasetPath);
-		createGroup(normalPath);
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
-		setDatasetAttributes(normalPath, convertedDatasetAttributes);
+		createGroup(datasetPath);
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		setDatasetAttributes(datasetPath, convertedDatasetAttributes);
 		return convertedDatasetAttributes;
 	}
 
@@ -272,7 +271,7 @@ public interface N5Writer extends N5Reader {
 			final DataBlock<T>... dataBlocks) throws N5Exception {
 
 		// default method is naive
-		DatasetAttributes convertedAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		final DatasetAttributes convertedAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		for (DataBlock<T> block : dataBlocks) {
 			writeBlock(datasetPath, convertedAttributes, block);
 		}
@@ -400,6 +399,7 @@ public interface N5Writer extends N5Reader {
 	default boolean deleteBlock(
 			final String datasetPath,
 			final long... gridPosition) throws N5Exception {
+
 		final DatasetAttributes datasetAttributes = getDatasetAttributes(datasetPath);
 		return deleteBlock(datasetPath, datasetAttributes, gridPosition);
 	}
@@ -431,6 +431,7 @@ public interface N5Writer extends N5Reader {
 			String datasetPath,
 			DatasetAttributes datasetAttributes,
 			List<long[]> gridPositions) throws N5Exception {
+
 		boolean deleted = false;
 		for (long[] pos : gridPositions) {
 			deleted |= deleteBlock(datasetPath, datasetAttributes, pos);
@@ -440,8 +441,7 @@ public interface N5Writer extends N5Reader {
 
 	/**
 	 * Save a {@link Serializable} as an N5 {@link DataBlock} at a given offset.
-	 * The
-	 * offset is given in {@link DataBlock} grid coordinates.
+	 * The offset is given in {@link DataBlock} grid coordinates.
 	 *
 	 * @param object the object to serialize
 	 * @param datasetPath the dataset path
@@ -455,6 +455,7 @@ public interface N5Writer extends N5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
 		try (ObjectOutputStream out = new ObjectOutputStream(byteOutputStream)) {
 			out.writeObject(object);
@@ -463,6 +464,6 @@ public interface N5Writer extends N5Reader {
 		}
 		final byte[] bytes = byteOutputStream.toByteArray();
 		final DataBlock<?> dataBlock = new ByteArrayDataBlock(null, gridPosition, bytes);
-		writeBlock(datasetPath, datasetAttributes, dataBlock);
+		writeBlock(datasetPath, convertedDatasetAttributes, dataBlock);
 	}
 }
