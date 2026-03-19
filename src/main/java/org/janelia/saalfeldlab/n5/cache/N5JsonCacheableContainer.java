@@ -47,23 +47,38 @@ public interface N5JsonCacheableContainer {
 	/**
 	 * Returns a {@link JsonElement} containing attributes at a given path,
 	 * for a given cache key.
+	 * <p>
+	 * The cache key is the name of an attributes file. (That is,
+	 * <em>attributes.json</em> for N5, <em>.zarray</em>, <em>.zattrs</em>, or
+	 * <em>.zgroup</em> for Zarr.)
 	 *
 	 * @param normalPathName
-	 *            the normalized path name
+	 * 		the normalized path name
 	 * @param normalCacheKey
-	 *            the cache key
+	 * 		the cache key
+	 *
 	 * @return the attributes as a json element.
+	 *
 	 * @see GsonKeyValueN5Reader#getAttributes
 	 */
 	JsonElement getAttributesFromContainer(final String normalPathName, final String normalCacheKey);
 
 	/**
 	 * Query whether a resource exists in this container.
+	 * <p>
+	 * If {@code normalCacheKey} is {@code null}, the existence of a group at
+	 * the given {@code normalPathName} is checked. Otherwise, the existence of
+	 * {@code normalCacheKey} at the given {@code normalPathName} is checked.
+	 * <p>
+	 * The cache key is the name of an attributes file.
+	 * (That is, <em>attributes.json</em> for N5, and
+	 * <em>.zarray</em>, <em>.zattrs</em>, or <em>.zgroup</em> for Zarr.)
 	 *
 	 * @param normalPathName
-	 *            the normalized path name
+	 * 		the normalized path name
 	 * @param normalCacheKey
-	 *            the normalized resource name (may be null).
+	 * 		the cache key (may be null).
+	 *
 	 * @return true if the resource exists
 	 */
 	boolean existsFromContainer(final String normalPathName, final String normalCacheKey);
@@ -88,7 +103,6 @@ public interface N5JsonCacheableContainer {
 	boolean isDatasetFromContainer(final String normalPathName);
 
 	/**
-	 *
 	 * Returns true if a path is a group, given that the given attributes exist
 	 * for the given cache key.
 	 * <p>
