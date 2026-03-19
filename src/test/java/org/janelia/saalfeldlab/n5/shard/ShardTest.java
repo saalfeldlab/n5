@@ -58,6 +58,7 @@ import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -425,10 +426,10 @@ public class ShardTest {
 			final int[] shardSize = new int[] {4,4};
 			final int shardN = 16;
 
-			final int[] blockSize = new int[] {2,2};
+			final int[] chunkSize = new int[] {2,2};
 
 			final String dataset = "writeReadShard";
-			DatasetAttributes attrs = getTestAttributes(DataType.INT32, new long[]{8, 8}, shardSize, blockSize);
+			DatasetAttributes attrs = getTestAttributes(DataType.INT32, new long[]{8, 8}, shardSize, chunkSize);
 
 			final int[] shardData = range(shardN);
 			IntArrayDataBlock shard = new IntArrayDataBlock(shardSize, new long[]{0, 0}, shardData);
@@ -475,6 +476,20 @@ public class ShardTest {
 					Stream.of( new long[] {0,0}, new long[] {1,0}, new long[] {0,1}).collect(Collectors.toList()));
 
 			assertNull(n5.readBlock(dataset, attrs, 0, 0));
+
+
+			// write the shard again
+			n5.writeBlock(dataset, attrs, shard);
+
+			// delete the block
+			// ensure it returns true because the block exists
+			assertTrue(n5.deleteBlock(dataset, attrs, shard.getGridPosition()));
+
+			// ensure it returns false when the block does not exist
+			assertFalse(n5.deleteBlock(dataset, attrs, shard.getGridPosition()));
+
+			// readBlock must return null for the deleted block
+			assertNull(n5.readBlock(dataset, attrs, shard.getGridPosition()));
 		}
 	}
 

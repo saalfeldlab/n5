@@ -1307,9 +1307,16 @@ public abstract class AbstractN5Test {
 			assertTrue(readBlock instanceof ByteArrayDataBlock);
 			assertArrayEquals(byteBlock, ((ByteArrayDataBlock)readBlock).getData());
 
-			assertTrue("deleting existing block should return true", n5.deleteChunk(datasetName, position1));
-			assertFalse("deleting non-existing block should return false", n5.deleteChunk(datasetName, position1));
-			assertFalse("deleting non-existing block should return false", n5.deleteChunk(datasetName, position2));
+			assertTrue("deleting existing chunk should return true", n5.deleteChunk(datasetName, position1));
+			assertFalse("deleting non-existing chunk should return false", n5.deleteChunk(datasetName, position1));
+			assertFalse("deleting non-existing chunk should return false", n5.deleteChunk(datasetName, position2));
+
+			// for an unsharded dataset, deleteChunk and deleteBlock behave identically
+			assertFalse("deleting non-existing block should return false", n5.deleteBlock(datasetName, position1));
+			assertFalse("deleting non-existing block should return false", n5.deleteBlock(datasetName, position2));
+
+			n5.writeChunk(datasetName, attributes, dataBlock);
+			assertTrue("deleting existing block should return true", n5.deleteBlock(datasetName, position1));
 
 			// no block should exist anymore
 			assertNull(n5.readChunk(datasetName, attributes, position1));
