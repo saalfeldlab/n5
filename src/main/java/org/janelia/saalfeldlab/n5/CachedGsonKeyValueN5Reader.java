@@ -38,7 +38,6 @@ import org.janelia.saalfeldlab.n5.cache.N5JsonCacheableContainer;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 /**
  * {@link N5Reader} implementation through {@link RootedKeyValueAccess} with JSON
@@ -206,24 +205,5 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	default String[] listFromContainer(final String normalPathName) {
 
 		return GsonKeyValueN5Reader.super.list(normalPathName);
-	}
-
-	/**
-	 * Check for attributes that are required for a group to be a dataset.
-	 *
-	 * @param attributes
-	 *            to check for dataset attributes
-	 * @return if {@link DatasetAttributes#DIMENSIONS_KEY} and
-	 *         {@link DatasetAttributes#DATA_TYPE_KEY} are present
-	 */
-	static boolean hasDatasetAttributes(final JsonElement attributes) {
-
-		if (attributes == null || !attributes.isJsonObject()) {
-			return false;
-		}
-
-		final JsonObject metadataCache = attributes.getAsJsonObject();
-		return metadataCache.has(DatasetAttributes.DIMENSIONS_KEY)
-				&& metadataCache.has(DatasetAttributes.DATA_TYPE_KEY);
 	}
 }
