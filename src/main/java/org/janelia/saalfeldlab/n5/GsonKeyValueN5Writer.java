@@ -320,6 +320,16 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	}
 
 	@Override
+	default boolean deleteBlock(
+			final String path,
+			final DatasetAttributes datasetAttributes,
+			final long... gridPosition) throws N5Exception {
+
+		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(path), datasetAttributes);
+		return posKva.remove(gridPosition);
+	}
+
+	@Override
 	default boolean deleteChunk(
 			final String path,
 			final DatasetAttributes datasetAttributes,

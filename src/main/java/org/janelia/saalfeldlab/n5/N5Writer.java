@@ -384,6 +384,37 @@ public interface N5Writer extends N5Reader {
 			});
 		}
 	}
+	
+	/**
+	 * Deletes the block at {@code gridPosition}.
+	 *
+	 * @param datasetPath dataset path
+	 * @param gridPosition position of block to be deleted
+	 * @throws N5Exception if the block exists but could not be deleted
+	 *
+	 * @return {@code true} if the block at {@code gridPosition} existed and was deleted.
+	 */
+	default boolean deleteBlock(
+			final String datasetPath,
+			final long... gridPosition) throws N5Exception {
+		final DatasetAttributes datasetAttributes = getDatasetAttributes(datasetPath);
+		return deleteBlock(datasetPath, datasetAttributes, gridPosition);
+	}
+
+	/**
+	 * Deletes the block at {@code gridPosition}.
+	 *
+	 * @param datasetPath the dataset path
+	 * @param datasetAttributes the dataset attributes
+	 * @param gridPosition position of block to be deleted
+	 * @throws N5Exception if the block exists but could not be deleted
+	 *
+	 * @return {@code true} if the block at {@code gridPosition} existed and was deleted.
+	 */
+	boolean deleteBlock(
+			String datasetPath,
+			DatasetAttributes datasetAttributes,
+			long... gridPosition) throws N5Exception;
 
 	/**
 	 * Deletes the chunk at {@code gridPosition}.
