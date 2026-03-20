@@ -49,12 +49,13 @@ import com.google.gson.JsonElement;
  */
 public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
-	@Deprecated
-	default KeyValueAccess getKeyValueAccess() {
-		return getRootedKeyValueAccess().getKVA();
-	}
-
 	RootedKeyValueAccess getRootedKeyValueAccess();
+
+	@Override
+	default URI getURI() {
+
+		return getRootedKeyValueAccess().root();
+	}
 
 	default boolean groupExists(final String normalPath) {
 
@@ -110,10 +111,11 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	@Override
-	default URI getURI() {
+	default String[] list(final String pathName) throws N5Exception {
 
-		return getRootedKeyValueAccess().root();
+		return getRootedKeyValueAccess().listDirectories(pathName);
 	}
+
 
 	@Override
 	default <T> DataBlock<T> readBlock(
@@ -162,38 +164,6 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	}
 
 	@Override
-	default String[] list(final String pathName) throws N5Exception {
-
-		return getRootedKeyValueAccess().listDirectories(pathName);
-	}
-
-	/**
-	 * Constructs the absolute path (in terms of this store) for the group or
-	 * dataset.
-	 *
-	 * @param normalGroupPath
-	 *            normalized group path without leading slash
-	 * @return the absolute path to the group
-	 */
-	default String absoluteGroupPath(final String normalGroupPath) {
-
-		return getKeyValueAccess().compose(getURI(), normalGroupPath);
-	}
-
-	/**
-	 * Constructs the absolute path (in terms of this store) for the attributes
-	 * file of a group or dataset.
-	 *
-	 * @param normalPath
-	 *            normalized group path without leading slash
-	 * @return the absolute path to the attributes
-	 */
-	default String absoluteAttributesPath(final String normalPath) {
-
-		return getKeyValueAccess().compose(getURI(), normalPath, getAttributesKey());
-	}
-
-	@Override
 	default boolean shardExists(
 			final String pathName,
 			final DatasetAttributes datasetAttributes,
@@ -201,5 +171,17 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		final N5Path path = N5GroupPath.of(pathName).resolve(datasetAttributes.relativeBlockPath(gridPosition));
 		return getRootedKeyValueAccess().isFile(path);
+	}
+
+
+
+	// ------------------------------------------------------------------------
+	//
+	// -- deprecated / semi-obsolete --
+	//
+
+	@Deprecated
+	default KeyValueAccess getKeyValueAccess() {
+		return getRootedKeyValueAccess().getKVA();
 	}
 }

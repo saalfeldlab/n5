@@ -67,15 +67,6 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			setAttribute("/", VERSION_KEY, VERSION.toString());
 	}
 
-	static String initializeContainer(
-			final KeyValueAccess keyValueAccess,
-			final String basePath) throws N5IOException {
-
-		final String normBasePath = keyValueAccess.normalize(basePath);
-		keyValueAccess.createDirectories(normBasePath);
-		return normBasePath;
-	}
-
 	@Override
 	default void createGroup(final String path) throws N5Exception {
 

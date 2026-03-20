@@ -46,11 +46,6 @@ import com.google.gson.JsonElement;
  */
 public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5JsonCacheableContainer {
 
-	default N5JsonCache newCache() {
-
-		return new N5JsonCache(this);
-	}
-
 	boolean cacheMeta();
 
 	N5JsonCache getCache();

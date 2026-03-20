@@ -46,8 +46,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 	public static final String ATTRIBUTES_JSON = "attributes.json";
 
-	protected final KeyValueAccess keyValueAccess;
-	protected final RootedKeyValueAccess rootedKeyValueAccess;
+	protected final RootedKeyValueAccess keyValueAccess;
 	protected final Gson gson;
 	protected final boolean cacheMeta;
 
@@ -92,8 +91,6 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 *            (exists and) has an incompatible version
 	 * @param keyValueAccess
 	 *            the backend KeyValueAccess used
-	 * @param basePath
-	 *            base path
 	 * @param gsonBuilder
 	 *            the GsonBuilder
 	 * @param cacheMeta
@@ -113,21 +110,17 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 */
 	protected N5KeyValueReader(
 			final boolean checkVersion,
-			final RootedKeyValueAccess rootedKeyValueAccess,
+			final RootedKeyValueAccess keyValueAccess,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheMeta,
 			final boolean checkExists)
 			throws N5Exception {
 
-		this.keyValueAccess = rootedKeyValueAccess.getKVA();
-		this.rootedKeyValueAccess = rootedKeyValueAccess;
+		this.keyValueAccess = keyValueAccess;
 		this.gson = registerGson(gsonBuilder).create();
-		this.cacheMeta = cacheMeta;
 
-		if (this.cacheMeta)
-			this.cache = newCache();
-		else
-			this.cache = null;
+		this.cacheMeta = cacheMeta;
+		this.cache = cacheMeta ? new N5JsonCache(this) : null;
 
 		boolean versionFound = false;
 		if (checkVersion) {
@@ -142,7 +135,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 		// if a version was found, the container exists - don't need to check again
 		if (checkExists && (!versionFound && !inferExistence("/")))
-			throw new N5Exception.N5IOException("No container exists at " + rootedKeyValueAccess.root());
+			throw new N5Exception.N5IOException("No container exists at " + keyValueAccess.root());
 	}
 
 	private boolean inferExistence(String path) {
@@ -175,7 +168,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	@Override
 	public RootedKeyValueAccess getRootedKeyValueAccess() {
 
-		return rootedKeyValueAccess;
+		return keyValueAccess;
 	}
 
 	@Override
@@ -187,7 +180,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	@Override
 	public N5JsonCache getCache() {
 
-		return this.cache;
+		return cache;
 	}
 
 }
