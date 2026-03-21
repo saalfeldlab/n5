@@ -74,6 +74,9 @@ import com.google.gson.reflect.TypeToken;
 /**
  * Abstract base class for testing N5 functionality.
  * Subclasses are expected to provide a specific N5 implementation to be tested by defining the {@link #createN5Writer()} method.
+ * <p>
+ * This class does not create sharded datasets. Its tests generally call read/writeChunk, not read/writeBlock despite
+ * test methods using the generic term "block".
  *
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
@@ -162,7 +165,7 @@ public abstract class AbstractN5Test {
 		return createN5Writer(location, new GsonBuilder());
 	}
 
-	/* Tests that overide this should enusre that the `N5Writer` created will remove its container on close() */
+	/* Tests that override this should ensure that the `N5Writer` created will remove its container on close() */
 	protected abstract N5Writer createN5Writer(String location, GsonBuilder gson) throws IOException, URISyntaxException;
 
 	protected N5Reader createN5Reader(final String location) throws IOException, URISyntaxException {
@@ -243,6 +246,7 @@ public abstract class AbstractN5Test {
 			}
 			assertArrayEquals(dimensions, info.getDimensions());
 			assertArrayEquals(blockSize, info.getBlockSize());
+			assertArrayEquals("blockSize == chunkSize when not sharded", blockSize, info.getChunkSize());
 			assertEquals(DataType.UINT64, info.getDataType());
 	}
 
@@ -254,8 +258,8 @@ public abstract class AbstractN5Test {
 		final int[] largeBlockSize = new int[]{5, 7, 10};
 
 		try (final N5Writer n5 = createTempN5Writer()) {
-			n5.createDataset(datasetName, smallDimensions, largeBlockSize, DataType.UINT8, new RawCompression());
-			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+			final DatasetAttributes attributes = n5.createDataset(
+					datasetName, smallDimensions, largeBlockSize, DataType.UINT8, new RawCompression());
 
 			// Create a block that is larger than the dataset dimensions
 			final int numElements = largeBlockSize[0] * largeBlockSize[1] * largeBlockSize[2];
@@ -475,11 +479,9 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testWriteReadShard() {
+	public void testReadChunkVsBlock() {
 
-		// test that writeShard behaves the same as writeBlock
-		// for unsharded datasets
-
+		// test that readBlock behaves the same as readChunk for unsharded datasets
 		for (final Compression compression : getCompressions()) {
 			try (final N5Writer n5 = createTempN5Writer()) {
 
@@ -489,17 +491,16 @@ public abstract class AbstractN5Test {
 
 				n5.writeChunk(datasetName, attributes, dataBlock);
 
-				// read with readShard
+				// read with readBlock
 				final DataBlock<?> loadedShard = n5.readBlock(datasetName, attributes, 0, 0, 0);
 				assertArrayEquals(shortBlock, (short[])loadedShard.getData());
 
-				// read with readBlock
-				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
+				// read with readChunk
+				final DataBlock<?> loadedDataBlock = n5.readChunk(datasetName, attributes, 0, 0, 0);
 				assertArrayEquals(shortBlock, (short[])loadedDataBlock.getData());
 			}
 		}
 	}
-
 
 	@Test
 	public void testMode1WriteReadByteBlock() {
