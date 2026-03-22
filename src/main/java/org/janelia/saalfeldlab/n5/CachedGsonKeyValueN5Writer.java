@@ -113,6 +113,9 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 			/* Update the cache, and write to the writer */
 			final String normalPathKey = N5GroupPath.of(normalGroupPath).normalPath();
 			getCache().updateCacheInfo(normalPathKey, getAttributesKey(), nullRespectingAttributes);
+
+			final N5GroupPath group = N5GroupPath.of(normalGroupPath);
+			getMyCache().updateCachedAttributes(group, getAttributesKey(), nullRespectingAttributes);
 		}
 	}
 

@@ -28,27 +28,36 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 
 import com.google.gson.JsonSyntaxException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
+import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
+import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
+import org.janelia.saalfeldlab.n5.cache.MyJsonCacheableContainer;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCacheableContainer;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 /**
  * {@link N5Reader} implementation through {@link RootedKeyValueAccess} with JSON
  * attributes parsed with {@link Gson}.
  *
  */
-public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5JsonCacheableContainer {
+public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5JsonCacheableContainer, MyJsonCacheableContainer {
 
 	boolean cacheMeta();
 
 	N5JsonCache getCache();
+
+	MyJsonCache getMyCache();
 
 	@Override
 	default JsonElement getAttributesFromContainer(final String normalPathName, final String normalCacheKey) {
@@ -58,21 +67,11 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 		return GsonKeyValueN5Reader.super.getAttributes(normalPathName);
 	}
 
+	// TODO: remove (overrides identical default implementation)
 	@Override
 	default DatasetAttributes getDatasetAttributes(final String pathName) {
 
-		if (!datasetExists(pathName))
-			return null;
-
-		final JsonElement attributes;
-		if (cacheMeta()) {
-			final String normalPath = N5GroupPath.of(pathName).normalPath();
-			attributes = getCache().getAttributes(normalPath, getAttributesKey());
-		} else {
-			attributes = GsonKeyValueN5Reader.super.getAttributes(pathName);
-		}
-
-		return createDatasetAttributes(attributes);
+		return createDatasetAttributes(getAttributes(pathName));
 	}
 
 	@Override
@@ -177,13 +176,46 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	@Override
 	default JsonElement getAttributes(final String pathName) throws N5IOException {
 
-		final String normalPathName = N5GroupPath.of(pathName).normalPath();
+		final JsonElement result = my_getAttributes(pathName);
+		{
+			// run old code as well to not mess with N5JsonCache
+			final String normalPathName = N5GroupPath.of(pathName).normalPath();
+			if (cacheMeta()) {
+				getCache().getAttributes(normalPathName, getAttributesKey());
+			} else {
+				GsonKeyValueN5Reader.super.getAttributes(normalPathName);
+			}
+		}
+		return result;
+	}
+
+	// REVISED
+	default JsonElement my_getAttributes(final String pathName) {
+
+		System.out.println("CachedGsonKeyValueN5Reader.my_getAttributes");
+		final N5GroupPath group = N5GroupPath.of(pathName);
 		if (cacheMeta()) {
-			return getCache().getAttributes(normalPathName, getAttributesKey());
+			return getMyCache().getAttributes(group, getAttributesKey());
 		} else {
-			return GsonKeyValueN5Reader.super.getAttributes(normalPathName);
+			return my_getAttributesFromContainer(group, getAttributesKey());
 		}
 	}
+
+	// REVISED
+	@Override
+	default JsonElement my_getAttributesFromContainer(final N5GroupPath group, final String attributesKey) throws N5IOException {
+
+		final N5FilePath path = group.resolve(getAttributesKey()).asFile();
+		try (final VolatileReadData readData = getRootedKeyValueAccess().createReadData(path);) {
+			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), getGson());
+		} catch (final N5NoSuchKeyException e) {
+			return null;
+		} catch (final UncheckedIOException | N5IOException e) {
+			throw new N5IOException("Failed to read attributes from " + group, e);
+		}
+	}
+
+
 
 	@Override
 	default String[] list(final String pathName) throws N5IOException {

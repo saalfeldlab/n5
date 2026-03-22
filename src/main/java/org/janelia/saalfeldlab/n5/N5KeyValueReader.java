@@ -29,6 +29,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.JsonElement;
+import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 
 import com.google.gson.Gson;
@@ -51,6 +52,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	protected final boolean cacheMeta;
 
 	private final N5JsonCache cache;
+	private final MyJsonCache myCache;
 
 	/**
 	 * Opens an {@link N5KeyValueReader} at a given base path with a custom
@@ -121,6 +123,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 		this.cacheMeta = cacheMeta;
 		this.cache = cacheMeta ? new N5JsonCache(this) : null;
+		this.myCache = cacheMeta ? new MyJsonCache(this) : null;
 
 		boolean versionFound = false;
 		if (checkVersion) {
@@ -181,6 +184,12 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	public N5JsonCache getCache() {
 
 		return cache;
+	}
+
+	@Override
+	public MyJsonCache getMyCache() {
+
+		return myCache;
 	}
 
 }
