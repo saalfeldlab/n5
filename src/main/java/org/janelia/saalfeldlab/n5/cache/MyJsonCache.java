@@ -4,7 +4,9 @@ import com.google.gson.JsonElement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
@@ -206,5 +208,62 @@ public class MyJsonCache {
 			}
 		}
 	}
+
+	/**
+	 * List all directory-like children (groups and datasets) in the given
+	 * {@code group}.
+	 * <p>
+	 * The returned child paths are normal paths relative to the given {@code
+	 * group} (no leading or trailing slashes). To obtain the path of a child
+	 * relative to the container root {@link N5GroupPath#resolve group.resolve}
+	 * the child path.
+	 *
+	 * @param group
+	 *            group path
+	 * @return list of children
+	 * @throws N5NoSuchKeyException
+	 * 		if the given path does not exist
+	 * @throws N5IOException
+	 * 		if an error occurs during listing
+	 */
+	public String[] list(final N5GroupPath group) throws N5IOException {
+
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO CONTINUE HERE
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		// TODO
+		throw new UnsupportedOperationException("TODO. not implemented");
+	}
+
+
 
 }

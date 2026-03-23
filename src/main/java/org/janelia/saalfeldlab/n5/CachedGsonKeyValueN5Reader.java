@@ -176,6 +176,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	@Override
 	default JsonElement getAttributes(final String pathName) throws N5IOException {
 
+		// TODO: REPLACES OLD CACHE
 		final JsonElement result = my_getAttributes(pathName);
 		{
 			// run old code as well to not mess with N5JsonCache
@@ -188,11 +189,9 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 		}
 		return result;
 	}
+	// TODO: REVISED N5Reader
+	default JsonElement my_getAttributes(final String pathName) throws N5IOException {
 
-	// REVISED
-	default JsonElement my_getAttributes(final String pathName) {
-
-		System.out.println("CachedGsonKeyValueN5Reader.my_getAttributes");
 		final N5GroupPath group = N5GroupPath.of(pathName);
 		if (cacheMeta()) {
 			return getMyCache().getAttributes(group, getAttributesKey());
@@ -201,7 +200,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 		}
 	}
 
-	// REVISED
+	// TODO: REVISED CacheableContainer
 	@Override
 	default JsonElement my_getAttributesFromContainer(final N5GroupPath group, final String attributesKey) throws N5IOException {
 
@@ -220,12 +219,34 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	@Override
 	default String[] list(final String pathName) throws N5IOException {
 
-		final String normalPathName = N5GroupPath.of(pathName).normalPath();
-		if (cacheMeta()) {
-			return getCache().list(normalPathName);
-		} else {
-			return GsonKeyValueN5Reader.super.list(normalPathName);
+		// TODO: REPLACES OLD CACHE
+		final String[] result = my_list(pathName);
+		{
+			// run old code as well to not mess with N5JsonCache
+			final String normalPathName = N5GroupPath.of(pathName).normalPath();
+			if (cacheMeta()) {
+				getCache().list(normalPathName);
+			} else {
+				GsonKeyValueN5Reader.super.list(normalPathName);
+			}
 		}
+		return result;
+	}
+	// TODO: REVISED N5Reader
+	default String[] my_list(final String pathName) throws N5IOException {
+		final N5GroupPath group = N5GroupPath.of(pathName);
+		if (cacheMeta()) {
+			return getMyCache().list(group);
+		} else {
+			return my_listFromContainer(group);
+		}
+	}
+
+	// TODO: REVISED CacheableContainer
+	@Override
+	default String[] my_listFromContainer(final N5GroupPath group) throws N5IOException {
+
+		return getRootedKeyValueAccess().listDirectories(group);
 	}
 
 	@Override

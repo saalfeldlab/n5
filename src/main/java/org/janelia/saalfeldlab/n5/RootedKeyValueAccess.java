@@ -3,6 +3,7 @@ package org.janelia.saalfeldlab.n5;
 
 import java.net.URI;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -116,6 +117,8 @@ public interface RootedKeyValueAccess {
 	 *
 	 * @return the directories (relative to {@code normalPath})
 	 *
+	 * @throws N5NoSuchKeyException
+	 * 		if the given path does not exist
 	 * @throws N5IOException
 	 * 		if an error occurs during listing
 	 */

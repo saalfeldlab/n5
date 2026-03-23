@@ -114,6 +114,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 			final String normalPathKey = N5GroupPath.of(normalGroupPath).normalPath();
 			getCache().updateCacheInfo(normalPathKey, getAttributesKey(), nullRespectingAttributes);
 
+			// TODO: REPLACES OLD CACHE
 			final N5GroupPath group = N5GroupPath.of(normalGroupPath);
 			getMyCache().setAttributes(group, getAttributesKey(), nullRespectingAttributes);
 		}
@@ -137,6 +138,7 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 			final String parentPath = parent == null ? null : parent.normalPath();
 			getCache().removeCache(parentPath, group.normalPath());
 
+			// TODO: REPLACES OLD CACHE
 			getMyCache().remove(group);
 		}
 
