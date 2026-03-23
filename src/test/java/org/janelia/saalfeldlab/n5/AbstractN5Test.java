@@ -75,8 +75,8 @@ import com.google.gson.reflect.TypeToken;
  * Abstract base class for testing N5 functionality.
  * Subclasses are expected to provide a specific N5 implementation to be tested by defining the {@link #createN5Writer()} method.
  * <p>
- * This class does not create sharded datasets. Its tests generally call read/writeChunk, not read/writeBlock despite
- * test methods using the generic term "block".
+ * This class does not create sharded datasets. Its tests generally call read/writeBlock which are equivalent to read/writeChunk
+ * for the cases being tested here. The test {@link #testReadChunkVsBlock} checks that the equivalence between these methods holds.
  *
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
@@ -269,10 +269,10 @@ public abstract class AbstractN5Test {
 			}
 
 			final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(largeBlockSize, new long[]{0, 0, 0}, data);
-			n5.writeChunk(datasetName, attributes, dataBlock);
+			n5.writeBlock(datasetName, attributes, dataBlock);
 
 			// Read the block back
-			final DataBlock<?> loadedDataBlock = n5.readChunk(datasetName, attributes, 0, 0, 0);
+			final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 			assertNotNull("Block should be readable", loadedDataBlock);
 			assertArrayEquals("Block size should match", largeBlockSize, loadedDataBlock.getSize());
 			assertArrayEquals("Block data should match", data, (byte[])loadedDataBlock.getData());
@@ -298,9 +298,9 @@ public abstract class AbstractN5Test {
 				data0[i] = i + 1000;
 			}
 			final IntArrayDataBlock dataBlock0 = new IntArrayDataBlock(truncatedBlockSize0, new long[]{1, 0, 0}, data0);
-			n5.writeChunk(datasetName, attributes, dataBlock0);
+			n5.writeBlock(datasetName, attributes, dataBlock0);
 
-			final DataBlock<?> loadedBlock0 = n5.readChunk(datasetName, attributes, 1, 0, 0);
+			final DataBlock<?> loadedBlock0 = n5.readBlock(datasetName, attributes, 1, 0, 0);
 			assertNotNull("Truncated block should be readable", loadedBlock0);
 			assertArrayEquals("Truncated block data should match", data0, (int[])loadedBlock0.getData());
 
@@ -312,9 +312,9 @@ public abstract class AbstractN5Test {
 				data1[i] = i + 2000;
 			}
 			final IntArrayDataBlock dataBlock1 = new IntArrayDataBlock(truncatedBlockSize1, new long[]{0, 2, 0}, data1);
-			n5.writeChunk(datasetName, attributes, dataBlock1);
+			n5.writeBlock(datasetName, attributes, dataBlock1);
 
-			final DataBlock<?> loadedBlock1 = n5.readChunk(datasetName, attributes, 0, 2, 0);
+			final DataBlock<?> loadedBlock1 = n5.readBlock(datasetName, attributes, 0, 2, 0);
 			assertNotNull("Truncated block should be readable", loadedBlock1);
 			assertArrayEquals("Truncated block data should match", data1, (int[])loadedBlock1.getData());
 
@@ -326,15 +326,13 @@ public abstract class AbstractN5Test {
 				data2[i] = i + 3000;
 			}
 			final IntArrayDataBlock dataBlock2 = new IntArrayDataBlock(truncatedBlockSize2, new long[]{0, 0, 4}, data2);
-			n5.writeChunk(datasetName, attributes, dataBlock2);
+			n5.writeBlock(datasetName, attributes, dataBlock2);
 
-			final DataBlock<?> loadedBlock2 = n5.readChunk(datasetName, attributes, 0, 0, 4);
+			final DataBlock<?> loadedBlock2 = n5.readBlock(datasetName, attributes, 0, 0, 4);
 			assertNotNull("Truncated block should be readable", loadedBlock2);
 			assertArrayEquals("Truncated block data should match", data2, (int[])loadedBlock2.getData());
 		}
 	}
-
-
 
 	@Test
 	public void testWriteReadByteBlock() {
@@ -347,9 +345,9 @@ public abstract class AbstractN5Test {
 					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 					final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, new long[]{0, 0, 0}, byteBlock);
-					n5.writeChunk(datasetName, attributes, dataBlock);
+					n5.writeBlock(datasetName, attributes, dataBlock);
 
-					final DataBlock<?> loadedDataBlock = n5.readChunk(datasetName, attributes, 0, 0, 0);
+					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 					assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
 				}
 			}
@@ -369,9 +367,9 @@ public abstract class AbstractN5Test {
 				n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 				final StringDataBlock dataBlock = new StringDataBlock(blockSize, new long[]{0L, 0L, 0L}, stringBlock);
-				n5.writeChunk(datasetName, attributes, dataBlock);
+				n5.writeBlock(datasetName, attributes, dataBlock);
 
-				final DataBlock<?> loadedDataBlock = n5.readChunk(datasetName, attributes, 0L, 0L, 0L);
+				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0L, 0L, 0L);
 
 				assertArrayEquals(stringBlock, (String[])loadedDataBlock.getData());
 			}
@@ -390,9 +388,9 @@ public abstract class AbstractN5Test {
 					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 					final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(blockSize, new long[]{0, 0, 0}, shortBlock);
-					n5.writeChunk(datasetName, attributes, dataBlock);
+					n5.writeBlock(datasetName, attributes, dataBlock);
 
-					final DataBlock<?> loadedDataBlock = n5.readChunk(datasetName, attributes, 0, 0, 0);
+					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 					assertArrayEquals(shortBlock, (short[])loadedDataBlock.getData());
 				}
@@ -412,9 +410,9 @@ public abstract class AbstractN5Test {
 					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 					final IntArrayDataBlock dataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
-					n5.writeChunk(datasetName, attributes, dataBlock);
+					n5.writeBlock(datasetName, attributes, dataBlock);
 
-					final DataBlock<?> loadedDataBlock = n5.readChunk(datasetName, attributes, 0, 0, 0);
+					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 					assertArrayEquals(intBlock, (int[])loadedDataBlock.getData());
 				}
@@ -434,9 +432,9 @@ public abstract class AbstractN5Test {
 					n5.createDataset(datasetName, dimensions, blockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 					final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, longBlock);
-					n5.writeChunk(datasetName, attributes, dataBlock);
+					n5.writeBlock(datasetName, attributes, dataBlock);
 
-					final DataBlock<?> loadedDataBlock = n5.readChunk(datasetName, attributes, 0, 0, 0);
+					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 					assertArrayEquals(longBlock, (long[])loadedDataBlock.getData());
 				}
@@ -452,9 +450,9 @@ public abstract class AbstractN5Test {
 				n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT32, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 				final FloatArrayDataBlock dataBlock = new FloatArrayDataBlock(blockSize, new long[]{0, 0, 0}, floatBlock);
-				n5.writeChunk(datasetName, attributes, dataBlock);
+				n5.writeBlock(datasetName, attributes, dataBlock);
 
-				final DataBlock<?> loadedDataBlock = n5.readChunk(datasetName, attributes, 0, 0, 0);
+				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 				assertArrayEquals(floatBlock, (float[])loadedDataBlock.getData(), 0.001f);
 			}
@@ -469,9 +467,9 @@ public abstract class AbstractN5Test {
 				n5.createDataset(datasetName, dimensions, blockSize, DataType.FLOAT64, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 				final DoubleArrayDataBlock dataBlock = new DoubleArrayDataBlock(blockSize, new long[]{0, 0, 0}, doubleBlock);
-				n5.writeChunk(datasetName, attributes, dataBlock);
+				n5.writeBlock(datasetName, attributes, dataBlock);
 
-				final DataBlock<?> loadedDataBlock = n5.readChunk(datasetName, attributes, 0, 0, 0);
+				final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 				assertArrayEquals(doubleBlock, (double[])loadedDataBlock.getData(), 0.001);
 			}
@@ -485,19 +483,25 @@ public abstract class AbstractN5Test {
 		for (final Compression compression : getCompressions()) {
 			try (final N5Writer n5 = createTempN5Writer()) {
 
+				final short[] shortData1 = new short[shortBlock.length];
+				for( int i = 0; i < shortBlock.length; i++)
+					shortData1[i] = (short)(2 * shortBlock[i] + 3);
+
 				n5.createDataset(datasetName, dimensions, blockSize, DataType.INT16, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
-				final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(blockSize, new long[]{0, 0, 0}, shortBlock);
+				final ShortArrayDataBlock dataBlock0 = new ShortArrayDataBlock(blockSize, new long[]{0, 0, 0}, shortBlock);
+				final ShortArrayDataBlock dataBlock1 = new ShortArrayDataBlock(blockSize, new long[]{1, 0, 0}, shortData1);
 
-				n5.writeChunk(datasetName, attributes, dataBlock);
+				n5.writeChunk(datasetName, attributes, dataBlock0);
+				n5.writeBlock(datasetName, attributes, dataBlock1);
 
 				// read with readBlock
-				final DataBlock<?> loadedShard = n5.readBlock(datasetName, attributes, 0, 0, 0);
-				assertArrayEquals(shortBlock, (short[])loadedShard.getData());
+				assertArrayEquals(shortBlock, (short[])n5.readBlock(datasetName, attributes, 0, 0, 0).getData());
+				assertArrayEquals(shortData1, (short[])n5.readBlock(datasetName, attributes, 1, 0, 0).getData());
 
 				// read with readChunk
-				final DataBlock<?> loadedDataBlock = n5.readChunk(datasetName, attributes, 0, 0, 0);
-				assertArrayEquals(shortBlock, (short[])loadedDataBlock.getData());
+				assertArrayEquals(shortBlock, (short[])n5.readChunk(datasetName, attributes, 0, 0, 0).getData());
+				assertArrayEquals(shortData1, (short[])n5.readChunk(datasetName, attributes, 1, 0, 0).getData());
 			}
 		}
 	}
@@ -516,9 +520,9 @@ public abstract class AbstractN5Test {
 					n5.createDataset(datasetName, dimensions, differentBlockSize, dataType, compression);
 					final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 					final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(differentBlockSize, new long[]{0, 0, 0}, byteBlock);
-					n5.writeChunk(datasetName, attributes, dataBlock);
+					n5.writeBlock(datasetName, attributes, dataBlock);
 
-					final DataBlock<?> loadedDataBlock = n5.readChunk(datasetName, attributes, 0, 0, 0);
+					final DataBlock<?> loadedDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 
 					assertArrayEquals(byteBlock, (byte[])loadedDataBlock.getData());
 				}
@@ -582,22 +586,22 @@ public abstract class AbstractN5Test {
 
 			// write a block that is too large
 			final ByteArrayDataBlock bigDataBlock = new ByteArrayDataBlock(biggerBlockSize, new long[]{0, 0, 0}, biggerData);
-			n5.writeChunk(datasetName, attributes, bigDataBlock);
+			n5.writeBlock(datasetName, attributes, bigDataBlock);
 
-			final DataBlock<?> loadedBigDataBlock = n5.readChunk(datasetName, attributes, 0, 0, 0);
+			final DataBlock<?> loadedBigDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 			assertArrayEquals(biggerData, (byte[])loadedBigDataBlock.getData());
 
 			// write a block that is too small
 			final ByteArrayDataBlock smallDataBlock = new ByteArrayDataBlock(smallerBlockSize, new long[]{0, 0, 0}, smallerData);
-			n5.writeChunk(datasetName, attributes, smallDataBlock);
+			n5.writeBlock(datasetName, attributes, smallDataBlock);
 
-			final DataBlock<?> loadedSmallDataBlock = n5.readChunk(datasetName, attributes, 0, 0, 0);
+			final DataBlock<?> loadedSmallDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 			assertArrayEquals(smallerData, (byte[])loadedSmallDataBlock.getData());
 
 			// write a block of the wrong type
 			final FloatArrayDataBlock floatDataBlock = new FloatArrayDataBlock(blockSize, new long[]{0, 0, 0}, floatData);
 			assertThrows(ClassCastException.class, () -> {
-				n5.writeChunk(datasetName, attributes, floatDataBlock);
+				n5.writeBlock(datasetName, attributes, floatDataBlock);
 			});
 		}
 	}
@@ -611,15 +615,15 @@ public abstract class AbstractN5Test {
 			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
 
 			final IntArrayDataBlock randomDataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, intBlock);
-			n5.writeChunk(datasetName, attributes, randomDataBlock);
-			final DataBlock<?> loadedRandomDataBlock = n5.readChunk(datasetName, attributes, 0, 0, 0);
+			n5.writeBlock(datasetName, attributes, randomDataBlock);
+			final DataBlock<?> loadedRandomDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 			assertArrayEquals(intBlock, (int[])loadedRandomDataBlock.getData());
 
 			// test the case where the resulting file becomes shorter (because the data compresses better)
 			final int[] emptyBlock = new int[DataBlock.getNumElements(blockSize)];
 			final IntArrayDataBlock emptyDataBlock = new IntArrayDataBlock(blockSize, new long[]{0, 0, 0}, emptyBlock);
-			n5.writeChunk(datasetName, attributes, emptyDataBlock);
-			final DataBlock<?> loadedEmptyDataBlock = n5.readChunk(datasetName, attributes, 0, 0, 0);
+			n5.writeBlock(datasetName, attributes, emptyDataBlock);
+			final DataBlock<?> loadedEmptyDataBlock = n5.readBlock(datasetName, attributes, 0, 0, 0);
 			assertArrayEquals(emptyBlock, (int[])loadedEmptyDataBlock.getData());
 		}
 	}
@@ -1053,7 +1057,7 @@ public abstract class AbstractN5Test {
 			final DatasetAttributes datasetAttributes = new DatasetAttributes(dimensions, blockSize, DataType.UINT64);
 			final LongArrayDataBlock dataBlock = new LongArrayDataBlock(blockSize, new long[]{0, 0, 0}, new long[blockNumElements]);
 			n5.createDataset(datasetName, datasetAttributes);
-			n5.writeChunk(datasetName, datasetAttributes, dataBlock);
+			n5.writeBlock(datasetName, datasetAttributes, dataBlock);
 
 			final List<String> datasetList = Arrays.asList(n5.deepList("/"));
 			for (final String subGroup : subGroupNames)
@@ -1297,10 +1301,10 @@ public abstract class AbstractN5Test {
 			final long[] position2 = {0, 1, 2};
 
 			// no blocks should exist to begin with
-			assertNull(n5.readChunk(datasetName, attributes, position1));
+			assertNull(n5.readBlock(datasetName, attributes, position1));
 
 			final ByteArrayDataBlock dataBlock = new ByteArrayDataBlock(blockSize, position1, byteBlock);
-			n5.writeChunk(datasetName, attributes, dataBlock);
+			n5.writeBlock(datasetName, attributes, dataBlock);
 
 			// block should exist at position1 but not at position2
 			final DataBlock<?> readBlock = n5.readChunk(datasetName, attributes, position1);
@@ -1320,8 +1324,8 @@ public abstract class AbstractN5Test {
 			assertTrue("deleting existing block should return true", n5.deleteBlock(datasetName, position1));
 
 			// no block should exist anymore
-			assertNull(n5.readChunk(datasetName, attributes, position1));
-			assertNull(n5.readChunk(datasetName, attributes, position2));
+			assertNull(n5.readBlock(datasetName, attributes, position1));
+			assertNull(n5.readBlock(datasetName, attributes, position2));
 		}
 	}
 
