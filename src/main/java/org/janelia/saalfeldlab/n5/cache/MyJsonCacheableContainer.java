@@ -3,6 +3,7 @@ package org.janelia.saalfeldlab.n5.cache;
 import com.google.gson.JsonElement;
 import org.janelia.saalfeldlab.n5.GsonN5Reader;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.janelia.saalfeldlab.n5.N5Reader;
 
@@ -34,10 +35,14 @@ public interface MyJsonCacheableContainer {
 	 * the child path.
 	 *
 	 * @param group
-	 *            group path
+	 * 		group path
+	 *
 	 * @return list of children
+	 *
+	 * @throws N5NoSuchKeyException
+	 * 		if the given path does not exist
 	 * @throws N5IOException
-	 *             an exception is thrown if pathName is not a valid group
+	 * 		if an error occurs during listing
 	 * @see N5Reader#list
 	 */
 	String[] my_listFromContainer(N5GroupPath group) throws N5IOException;

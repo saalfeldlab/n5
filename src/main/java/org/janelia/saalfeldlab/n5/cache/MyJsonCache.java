@@ -124,7 +124,6 @@ public class MyJsonCache {
 
 		// create root CacheInfo (we assume it exists)
 		root = new CacheInfoDirectory(N5GroupPath.of(""), null);
-		root.valid = true;
 		add(root);
 	}
 
@@ -202,8 +201,7 @@ public class MyJsonCache {
 		if (parent != null) {
 			synchronized (parent) {
 				if (parent.list != null) {
-					final String[] pathParts = group.components();
-					parent.list.remove(pathParts[pathParts.length - 1]);
+					parent.list.remove(group.filename());
 				}
 			}
 		}
@@ -219,8 +217,10 @@ public class MyJsonCache {
 	 * the child path.
 	 *
 	 * @param group
-	 *            group path
+	 * 		group path
+	 *
 	 * @return list of children
+	 *
 	 * @throws N5NoSuchKeyException
 	 * 		if the given path does not exist
 	 * @throws N5IOException
@@ -228,42 +228,69 @@ public class MyJsonCache {
 	 */
 	public String[] list(final N5GroupPath group) throws N5IOException {
 
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO CONTINUE HERE
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		// TODO
-		throw new UnsupportedOperationException("TODO. not implemented");
+		final CacheInfoDirectory info = getOrCreate(group);
+		synchronized (info) {
+			if (!info.valid || (info.exists && info.list == null)) {
+				try {
+					final String[] list = container.my_listFromContainer(group);
+					info.list = new ArrayList<>(List.of(list));
+					info.exists = true;
+					info.valid = true;
+				} catch (N5NoSuchKeyException e) {
+					info.exists = false;
+					info.valid = true;
+					throw new N5NoSuchKeyException(e);
+				}
+				// NB: If listFromContainer throw a N5IOException other than
+				// N5NoSuchKeyException, we do not catch it and just let it be
+				// thrown. info.valid==false remains, and we will retry next
+				// time...
+			}
+		}
+		if (!info.exists) {
+			throw new N5NoSuchKeyException("No such file: " + group);
+		}
+		return info.list.toArray(new String[0]);
 	}
 
+	/**
+	 * TODO javadoc
+	 * @param group
+	 */
+	public void addDirectory(final N5GroupPath group) {
+		setExists(getOrCreate(group));
+	}
 
+	/**
+	 * The directory represented by {@code info} was just created or re-created.
+	 * Make sure that its {@code valid} and {@code exists} flags are set, and it
+	 * is present in its parent's {@code children} list (if that exists).
+	 * <p>
+	 * Recursively call for parent, because we know that all parent directories
+	 * must exist now as well.
+	 */
+	private void setExists(final CacheInfoDirectory info) {
+		boolean addToParent = false;
+		synchronized (info) {
+			if(!info.valid || !info.exists) {
+				addToParent = true;
+				info.valid = true;
+				info.exists = true;
+			}
+		}
+		// This group was just created or re-created.
+		// We need to add it to the parent's list, if that exists.
+		if (addToParent) {
+			final CacheInfoDirectory parent = info.parent;
+			if (parent != null) {
+				synchronized (parent) {
+					if (parent.list != null) {
+						parent.list.add(info.path.filename());
+					}
+				}
+				setExists(parent);
+			}
+		}
+	}
 
 }

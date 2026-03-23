@@ -61,6 +61,9 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		getRootedKeyValueAccess().createDirectories(group);
 
 		if (cacheMeta()) {
+			// TODO: REPLACES OLD CACHE
+			getMyCache().addDirectory(group);
+
 			// check all nodes that are parents of the added node, if they have
 			// a children set, add the new child to it
 			String[] pathParts = group.components();
