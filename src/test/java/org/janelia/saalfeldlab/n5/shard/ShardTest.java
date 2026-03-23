@@ -58,6 +58,7 @@ import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -177,7 +178,7 @@ public class ShardTest {
 			data[i] = (byte)((100) + (10) + i);
 		}
 
-		writer.writeBlocks(
+		writer.writeChunks(
 				dataset,
 				datasetAttributes,
 				/* shard (0, 0) */
@@ -214,7 +215,7 @@ public class ShardTest {
 
 		final long[][] blockIndices = new long[][]{{0, 0}, {0, 1}, {1, 0}, {1, 1}, {4, 0}, {5, 0}, {11, 11}};
 		for (long[] blockIndex : blockIndices) {
-			final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, blockIndex);
+			final DataBlock<?> block = writer.readChunk(dataset, datasetAttributes, blockIndex);
 			Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
 		}
 
@@ -223,7 +224,7 @@ public class ShardTest {
 			data2[i] = (byte)(10 + i);
 		}
 
-		writer.writeBlocks(
+		writer.writeChunks(
 				dataset,
 				datasetAttributes,
 				/* shard (0, 0) */
@@ -255,16 +256,16 @@ public class ShardTest {
 
 		final long[][] oldBlockIndices = new long[][]{{0, 1}, {1, 0}, {4, 0}, {5, 0}, {11, 11}};
 		for (long[] blockIndex : oldBlockIndices) {
-			final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, blockIndex);
+			final DataBlock<?> block = writer.readChunk(dataset, datasetAttributes, blockIndex);
 			Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
 		}
 
 		final long[][] newBlockIndices = new long[][]{{0, 0}, {1, 1}, {0, 4}, {0, 5}, {10, 10}};
 		final List<long[]> newBlockIndexList = Arrays.asList(newBlockIndices);
-		final List<DataBlock<Object>> readBlocks = writer.readBlocks(dataset, datasetAttributes, newBlockIndexList);
+		final List<DataBlock<Object>> readBlocks = writer.readChunks(dataset, datasetAttributes, newBlockIndexList);
 		for (int i = 0; i < newBlockIndices.length; i++) {
 			final long[] blockIndex = newBlockIndices[i];
-			final DataBlock<?> block = writer.readBlock(dataset, datasetAttributes, blockIndex);
+			final DataBlock<?> block = writer.readChunk(dataset, datasetAttributes, blockIndex);
 			Assert.assertArrayEquals("Read from shard doesn't match", data2, (byte[])block.getData());
 			final DataBlock<?> blockFromReadBlocks = readBlocks.get(i);
 			Assert.assertArrayEquals("Read from shard doesn't match", data2, (byte[])blockFromReadBlocks.getData());
@@ -324,14 +325,14 @@ public class ShardTest {
 		 * and every entry should be null.
 		 */
 		final long[][] newBlockIndices = new long[][]{{0, 0}, {1, 1}, {0, 4}, {0, 5}, {10, 10}};
-		final List<DataBlock<Object>> readBlocks = writer.readBlocks(dataset, datasetAttributes, Arrays.asList(newBlockIndices));
+		final List<DataBlock<Object>> readBlocks = writer.readChunks(dataset, datasetAttributes, Arrays.asList(newBlockIndices));
 		assertEquals(newBlockIndices.length, readBlocks.size());
 		assertTrue("readBlocks for empty shard: all blocks null", readBlocks.stream().allMatch(blk -> blk == null));
 
 		/*
 		 * Now write blocks
 		 */
-		writer.writeBlocks(
+		writer.writeChunks(
 				dataset,
 				datasetAttributes,
 				/* shard (0, 0) */
@@ -386,7 +387,7 @@ public class ShardTest {
 		writer.remove(dataset);
 		writer.createDataset(dataset, datasetAttributes);
 
-		final int[] blockSize = datasetAttributes.getBlockSize();
+		final int[] chunkSize = datasetAttributes.getChunkSize();
 		final DataType dataType = datasetAttributes.getDataType();
 		final int numElements = 2 * 2;
 
@@ -395,20 +396,20 @@ public class ShardTest {
 		for (int idx1 = 1; idx1 >= 0; idx1--) {
 			for (int idx2 = 1; idx2 >= 0; idx2--) {
 				final long[] gridPosition = {idx1, idx2};
-				final DataBlock<byte[]> dataBlock = (DataBlock<byte[]>)dataType.createDataBlock(blockSize, gridPosition, numElements);
+				final DataBlock<byte[]> dataBlock = (DataBlock<byte[]>)dataType.createDataBlock(chunkSize, gridPosition, numElements);
 				byte[] data = dataBlock.getData();
 				for (int i = 0; i < data.length; i++) {
 					data[i] = (byte)((idx1 * 100) + (idx2 * 10) + i);
 				}
-				writer.writeBlock(dataset, datasetAttributes, dataBlock);
+				writer.writeChunk(dataset, datasetAttributes, dataBlock);
 
-				final DataBlock<byte[]> block = writer.readBlock(dataset, datasetAttributes, dataBlock.getGridPosition().clone());
+				final DataBlock<byte[]> block = writer.readChunk(dataset, datasetAttributes, dataBlock.getGridPosition().clone());
 				Assert.assertArrayEquals("Read from shard doesn't match", data, (byte[])block.getData());
 
 				for (Map.Entry<long[], byte[]> entry : writtenBlocks.entrySet()) {
 					final long[] otherGridPosition = entry.getKey();
 					final byte[] otherData = entry.getValue();
-					final DataBlock<?> otherBlock = writer.readBlock(dataset, datasetAttributes, otherGridPosition);
+					final DataBlock<?> otherBlock = writer.readChunk(dataset, datasetAttributes, otherGridPosition);
 					Assert.assertArrayEquals("Read prior write from shard no loner matches", otherData, (byte[])otherBlock.getData());
 				}
 
@@ -425,18 +426,17 @@ public class ShardTest {
 			final int[] shardSize = new int[] {4,4};
 			final int shardN = 16;
 
-			final int[] blockSize = new int[] {2,2};
-			final int blockN = 4;
+			final int[] chunkSize = new int[] {2,2};
 
 			final String dataset = "writeReadShard";
-			DatasetAttributes attrs = getTestAttributes(DataType.INT32, new long[]{8, 8}, shardSize, blockSize);
+			DatasetAttributes attrs = getTestAttributes(DataType.INT32, new long[]{8, 8}, shardSize, chunkSize);
 
 			final int[] shardData = range(shardN);
 			IntArrayDataBlock shard = new IntArrayDataBlock(shardSize, new long[]{0, 0}, shardData);
 
-			n5.writeShard(dataset, attrs, shard);
-			DataBlock<int[]> readShard = n5.readShard(dataset, attrs, 0, 0);
-			assertArrayEquals(shardData, readShard.getData());
+			n5.writeBlock(dataset, attrs, shard);
+			DataBlock<int[]> readBlock = n5.readBlock(dataset, attrs, 0, 0);
+			assertArrayEquals(shardData, readBlock.getData());
 
 
 			/**
@@ -451,12 +451,12 @@ public class ShardTest {
 			 * 12  13  | 14  15
 			 */
 
-			assertArrayEquals(new int[]{0, 1, 4, 5}, (int[])n5.readBlock(dataset, attrs, 0, 0).getData());
-			assertArrayEquals(new int[]{2, 3, 6, 7}, (int[])n5.readBlock(dataset, attrs, 1, 0).getData());
-			assertArrayEquals(new int[]{8, 9, 12, 13}, (int[])n5.readBlock(dataset, attrs, 0, 1).getData());
-			assertArrayEquals(new int[]{10, 11, 14, 15}, (int[])n5.readBlock(dataset, attrs, 1, 1).getData());
+			assertArrayEquals(new int[]{0, 1, 4, 5}, (int[])n5.readChunk(dataset, attrs, 0, 0).getData());
+			assertArrayEquals(new int[]{2, 3, 6, 7}, (int[])n5.readChunk(dataset, attrs, 1, 0).getData());
+			assertArrayEquals(new int[]{8, 9, 12, 13}, (int[])n5.readChunk(dataset, attrs, 0, 1).getData());
+			assertArrayEquals(new int[]{10, 11, 14, 15}, (int[])n5.readChunk(dataset, attrs, 1, 1).getData());
 
-			n5.deleteBlock(dataset, attrs, new long[]{1, 1});
+			n5.deleteChunk(dataset, attrs, new long[]{1, 1});
 
 			/**
 			 * After deleting block (1,1)
@@ -467,15 +467,29 @@ public class ShardTest {
 			 *  8	9  |  0	  0
 			 * 12  13  |  0   0
 			 */
-			final DataBlock<int[]> partlyEmptyShard = n5.readShard(dataset, attrs, 0, 0);
+			final DataBlock<int[]> partlyEmptyShard = n5.readBlock(dataset, attrs, 0, 0);
 			assertArrayEquals(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 12, 13, 0, 0}, partlyEmptyShard.getData());
 
 
 			// Delete the rest of the blocks
-			n5.deleteBlocks(dataset, attrs,
+			n5.deleteChunks(dataset, attrs,
 					Stream.of( new long[] {0,0}, new long[] {1,0}, new long[] {0,1}).collect(Collectors.toList()));
 
-			assertNull(n5.readShard(dataset, attrs, 0, 0));
+			assertNull(n5.readBlock(dataset, attrs, 0, 0));
+
+
+			// write the shard again
+			n5.writeBlock(dataset, attrs, shard);
+
+			// delete the block
+			// ensure it returns true because the block exists
+			assertTrue(n5.deleteBlock(dataset, attrs, shard.getGridPosition()));
+
+			// ensure it returns false when the block does not exist
+			assertFalse(n5.deleteBlock(dataset, attrs, shard.getGridPosition()));
+
+			// readBlock must return null for the deleted block
+			assertNull(n5.readBlock(dataset, attrs, shard.getGridPosition()));
 		}
 	}
 
@@ -505,7 +519,7 @@ public class ShardTest {
 			data[i] = (byte)((100) + (10) + i);
 		}
 
-		writer.writeBlocks(
+		writer.writeChunks(
 				dataset,
 				datasetAttributes,
 				/* shard (0, 0) */
@@ -523,7 +537,7 @@ public class ShardTest {
 		);
 
 		writer.resetNumMaterializeCalls();
-		writer.readBlocks(dataset, datasetAttributes, Collections.singletonList(new long[] {0,0}));
+		writer.readChunks(dataset, datasetAttributes, Collections.singletonList(new long[] {0,0}));
 		System.out.println(writer.getNumMaterializeCalls());
 
 		ArrayList<long[]> ptList = new ArrayList<>();
@@ -533,7 +547,7 @@ public class ShardTest {
 		ptList.add(new long[] {1, 1});
 
 		writer.resetNumMaterializeCalls();
-		writer.readBlocks(dataset, datasetAttributes, ptList);
+		writer.readChunks(dataset, datasetAttributes, ptList);
 		System.out.println(writer.getNumMaterializeCalls());
 		System.out.println("");
 	}
@@ -562,7 +576,7 @@ public class ShardTest {
         }
 
         /* write blocks to shards (0,0), (1,0), and (2,2) */
-        writer.writeBlocks(
+        writer.writeChunks(
                 dataset,
                 attrs,
                 new ByteArrayDataBlock(blockSize, new long[]{0, 0}, data),  /* shard (0, 0) */
@@ -574,7 +588,7 @@ public class ShardTest {
 
         Predicate<long[]> assertShardExistsTracking = (gridPosition) -> {
             trackingWriter.resetAllTracking();
-            final boolean exists = writer.shardExists(dataset, attrs, gridPosition);
+            final boolean exists = writer.blockExists(dataset, attrs, gridPosition);
             assertEquals("isFileCheck incremented", 1, trackingWriter.getNumIsFileCalls());
             assertEquals("No Bytes Read", 0, trackingWriter.getTotalBytesRead());
             return exists;
@@ -629,7 +643,7 @@ public class ShardTest {
 			ptList.add(new long[] {1,1});
 
 	        /* write blocks to shard (0,0) */
-			writer.writeBlocks(
+			writer.writeChunks(
 					dataset,
 					datasetAttributes,
 					new ByteArrayDataBlock(blockSize, ptList.get(0), data),
@@ -639,14 +653,14 @@ public class ShardTest {
 			);
 
 			writer.resetNumMaterializeCalls();
-			writer.readBlocks(dataset, datasetAttributes, ptList);
+			writer.readChunks(dataset, datasetAttributes, ptList);
 
 			// TODO change this if and when we implement aggregation of read calls
 			// one for the index, one for each of the four blocks
 			assertEquals(5, writer.getNumMaterializeCalls());
 
 			writer.resetNumMaterializeCalls();
-			writer.readShard(dataset, datasetAttributes, new long[] {0,0});
+			writer.readBlock(dataset, datasetAttributes, new long[] {0,0});
 			// one for the index, one for each of the four blocks
 			assertEquals(5, writer.getNumMaterializeCalls());
 		}

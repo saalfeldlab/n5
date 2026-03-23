@@ -74,6 +74,9 @@ import com.google.gson.reflect.TypeToken;
 /**
  * Abstract base class for testing N5 functionality.
  * Subclasses are expected to provide a specific N5 implementation to be tested by defining the {@link #createN5Writer()} method.
+ * <p>
+ * This class does not create sharded datasets. Its tests generally call read/writeBlock which are equivalent to read/writeChunk
+ * for the cases being tested here. The test {@link #testReadChunkVsBlock} checks that the equivalence between these methods holds.
  *
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  * @author Igor Pisarev &lt;pisarevi@janelia.hhmi.org&gt;
@@ -162,7 +165,7 @@ public abstract class AbstractN5Test {
 		return createN5Writer(location, new GsonBuilder());
 	}
 
-	/* Tests that overide this should enusre that the `N5Writer` created will remove its container on close() */
+	/* Tests that override this should ensure that the `N5Writer` created will remove its container on close() */
 	protected abstract N5Writer createN5Writer(String location, GsonBuilder gson) throws IOException, URISyntaxException;
 
 	protected N5Reader createN5Reader(final String location) throws IOException, URISyntaxException {
@@ -243,6 +246,7 @@ public abstract class AbstractN5Test {
 			}
 			assertArrayEquals(dimensions, info.getDimensions());
 			assertArrayEquals(blockSize, info.getBlockSize());
+			assertArrayEquals("blockSize == chunkSize when not sharded", blockSize, info.getChunkSize());
 			assertEquals(DataType.UINT64, info.getDataType());
 	}
 
@@ -254,8 +258,8 @@ public abstract class AbstractN5Test {
 		final int[] largeBlockSize = new int[]{5, 7, 10};
 
 		try (final N5Writer n5 = createTempN5Writer()) {
-			n5.createDataset(datasetName, smallDimensions, largeBlockSize, DataType.UINT8, new RawCompression());
-			final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
+			final DatasetAttributes attributes = n5.createDataset(
+					datasetName, smallDimensions, largeBlockSize, DataType.UINT8, new RawCompression());
 
 			// Create a block that is larger than the dataset dimensions
 			final int numElements = largeBlockSize[0] * largeBlockSize[1] * largeBlockSize[2];
@@ -329,8 +333,6 @@ public abstract class AbstractN5Test {
 			assertArrayEquals("Truncated block data should match", data2, (int[])loadedBlock2.getData());
 		}
 	}
-
-
 
 	@Test
 	public void testWriteReadByteBlock() {
@@ -475,31 +477,34 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
-	public void testWriteReadShard() {
+	public void testReadChunkVsBlock() {
 
-		// test that writeShard behaves the same as writeBlock
-		// for unsharded datasets
-
+		// test that readBlock behaves the same as readChunk for unsharded datasets
 		for (final Compression compression : getCompressions()) {
 			try (final N5Writer n5 = createTempN5Writer()) {
 
+				final short[] shortData1 = new short[shortBlock.length];
+				for( int i = 0; i < shortBlock.length; i++)
+					shortData1[i] = (short)(2 * shortBlock[i] + 3);
+
 				n5.createDataset(datasetName, dimensions, blockSize, DataType.INT16, compression);
 				final DatasetAttributes attributes = n5.getDatasetAttributes(datasetName);
-				final ShortArrayDataBlock dataBlock = new ShortArrayDataBlock(blockSize, new long[]{0, 0, 0}, shortBlock);
+				final ShortArrayDataBlock dataBlock0 = new ShortArrayDataBlock(blockSize, new long[]{0, 0, 0}, shortBlock);
+				final ShortArrayDataBlock dataBlock1 = new ShortArrayDataBlock(blockSize, new long[]{1, 0, 0}, shortData1);
 
-				n5.writeShard(datasetName, attributes, dataBlock);
-
-				// read with readShard
-				final DataBlock<?> loadedShard = n5.readShard(datasetName, attributes, 0, 0, 0);
-				assertArrayEquals(shortBlock, (short[])loadedShard.getData());
+				n5.writeChunk(datasetName, attributes, dataBlock0);
+				n5.writeBlock(datasetName, attributes, dataBlock1);
 
 				// read with readBlock
-				final DataBlock<?> loadedDataBlock = n5.readShard(datasetName, attributes, 0, 0, 0);
-				assertArrayEquals(shortBlock, (short[])loadedDataBlock.getData());
+				assertArrayEquals(shortBlock, (short[])n5.readBlock(datasetName, attributes, 0, 0, 0).getData());
+				assertArrayEquals(shortData1, (short[])n5.readBlock(datasetName, attributes, 1, 0, 0).getData());
+
+				// read with readChunk
+				assertArrayEquals(shortBlock, (short[])n5.readChunk(datasetName, attributes, 0, 0, 0).getData());
+				assertArrayEquals(shortData1, (short[])n5.readChunk(datasetName, attributes, 1, 0, 0).getData());
 			}
 		}
 	}
-
 
 	@Test
 	public void testMode1WriteReadByteBlock() {
@@ -1302,14 +1307,21 @@ public abstract class AbstractN5Test {
 			n5.writeBlock(datasetName, attributes, dataBlock);
 
 			// block should exist at position1 but not at position2
-			final DataBlock<?> readBlock = n5.readBlock(datasetName, attributes, position1);
+			final DataBlock<?> readBlock = n5.readChunk(datasetName, attributes, position1);
 			assertNotNull(readBlock);
 			assertTrue(readBlock instanceof ByteArrayDataBlock);
 			assertArrayEquals(byteBlock, ((ByteArrayDataBlock)readBlock).getData());
 
-			assertTrue("deleting existing block should return true", n5.deleteBlock(datasetName, position1));
+			assertTrue("deleting existing chunk should return true", n5.deleteChunk(datasetName, position1));
+			assertFalse("deleting non-existing chunk should return false", n5.deleteChunk(datasetName, position1));
+			assertFalse("deleting non-existing chunk should return false", n5.deleteChunk(datasetName, position2));
+
+			// for an unsharded dataset, deleteChunk and deleteBlock behave identically
 			assertFalse("deleting non-existing block should return false", n5.deleteBlock(datasetName, position1));
 			assertFalse("deleting non-existing block should return false", n5.deleteBlock(datasetName, position2));
+
+			n5.writeChunk(datasetName, attributes, dataBlock);
+			assertTrue("deleting existing block should return true", n5.deleteBlock(datasetName, position1));
 
 			// no block should exist anymore
 			assertNull(n5.readBlock(datasetName, attributes, position1));
