@@ -105,6 +105,21 @@ public interface N5Path {
 	}
 
 	/**
+	 * Split this path into components separated by {@code "/"}, and return the
+	 * last component.
+	 * <p>
+	 * Note, that the components are derived from the string representation,
+	 * so special characters in components are not escaped.
+	 * <p>
+	 * If this path is empty (that is {@code ""}, which is equivalent to the
+	 * group "./") then {@code ""} is returned.
+	 */
+	default String filename() {
+		final String[] c = components();
+		return c[c.length - 1];
+	}
+
+	/**
 	 * A relative path representing a directory (typically, the path of a group
 	 * relative to the container root).
 	 * <p>
