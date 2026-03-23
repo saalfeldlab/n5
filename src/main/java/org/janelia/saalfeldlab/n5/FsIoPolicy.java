@@ -6,8 +6,10 @@ import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
 
@@ -29,11 +31,37 @@ public class FsIoPolicy {
         return true;
     }
 
+    /**
+     * Opens a file channel. If the channel is opened {@code forWriting},
+     * then this may create the file and the parent directories as needed.
+     *
+     * @throws IOException
+     * 		if the channel cannot be opened
+     */
+    static FileChannel openFileChannel(final Path path, final boolean forWriting) throws IOException {
+
+        if (forWriting) {
+            final Path parent = path.getParent();
+            /* if not null and not directory, it will call `createDirectories` but we expect it to throw an IOException */
+            if (parent != null && !parent.toFile().isDirectory()) {
+                Files.createDirectories(parent);
+            }
+            return FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } else {
+            return FileChannel.open(path, StandardOpenOption.READ);
+        }
+    }
+
     public static class Unsafe implements IoPolicy {
         @Override
         public void write(String key, ReadData readData) throws IOException {
             final Path path = Paths.get(key);
-            Files.copy(readData.inputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+            try (
+                    FileChannel channel = openFileChannel(path, true);
+                    OutputStream os = Channels.newOutputStream(channel);
+            ) {
+                readData.writeTo(os);
+            }
         }
 
         @Override
