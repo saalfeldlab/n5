@@ -28,9 +28,6 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-
 public class N5Exception extends RuntimeException {
 
 	public N5Exception() {
