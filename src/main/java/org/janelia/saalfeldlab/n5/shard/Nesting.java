@@ -37,14 +37,15 @@ import java.util.Objects;
  * sharded N5 datasets.
  * <p>
  * This class provides classes for representing and navigating nested/sharded
- * dataset layouts for the N5 API. In a sharded dataset, data blocks are grouped
- * into higher-level containers called shards, which can themselves be nested
- * within parent shards, creating a multi-level hierarchy.
+ * dataset layouts for the N5 API. In a sharded dataset, level-0 data blocks
+ * (called <em>chunks</em>) are grouped into higher-level containers called
+ * <em>shards</em>, which can themselves be nested within parent shards,
+ * creating a multi-level hierarchy.
  * <p>
- * <b>Nesting levels:</b> 
+ * <b>Nesting levels:</b>
  * <ul>
- * <li><b>Level 0:</b> The finest granularity - individual data blocks
- * containing actual pixel data
+ * <li><b>Level 0:</b> The finest granularity - individual chunks (level-0 data
+ * blocks) containing actual pixel data
  * <li><b>Level 1:</b> First-level shards, which contain multiple level-0 data
  * blocks
  * <li><b>Level 2+:</b> Higher-level shards (if they exist), which contain
@@ -62,7 +63,7 @@ import java.util.Objects;
  * {@code NestedGrid} at a particular nesting level, providing coordinate
  * transformations between levels.
  * </ul>
- * 
+ *
  */
 public class Nesting {
 
@@ -85,8 +86,8 @@ public class Nesting {
 		/**
 		 * Get the nesting level of this position.
 		 * <p>
-		 * Positions with {@code level=0} refer to DataBlocks, positions with
-		 * {@code level=1} refer to first-level shards (containing DataBlocks),
+		 * Positions with {@code level=0} refer to chunks, positions with
+		 * {@code level=1} refer to first-level shards (containing chunks),
 		 * and so on.
 		 *
 		 * @return nesting level
@@ -220,11 +221,11 @@ public class Nesting {
 
 	/**
 	 * A nested grid of blocks used to coordinate the relationships of shards
-	 * and the blocks / chunks they contain.
+	 * and the blocks (chunks / sub-shards) they contain.
 	 * <p>
 	 * The nesting depth ({@link #numLevels()}) of the {@code NestedGrid} is 1
 	 * for non-sharded datasets, 2 for simple sharded datasets (where shards
-	 * contain datablocks), and &ge;3 for nested sharded datasets.
+	 * contain chunks), and &ge;3 for nested sharded datasets.
 	 * <p>
 	 * Positions with {@code level=0} refer to the DataBlock grid, positions
 	 * with {@code level=1} refer to first-level Shard grid, and so on.
@@ -255,7 +256,7 @@ public class Nesting {
 		private final long[] datasetSize;
 
 		/**
-		 * dimensions of the dataset in (level-0) blocks.
+		 * dimensions of the dataset in level-0 blocks.
 		 */
 		private final long[] datasetSizeInBlocks;
 
@@ -337,7 +338,7 @@ public class Nesting {
 		 * level} grid {@code position}.
 		 * <p>
 		 * Note that {@code position} is in units of grid elements at {@code
-		 * level}. Positions with {@code level=0} refer to the DataBlock grid,
+		 * level}. Positions with {@code level=0} refer to the Chunk grid,
 		 * positions with {@code level=1} refer to first-level Shard grid, and
 		 * so on.
 		 * <p>
@@ -356,18 +357,18 @@ public class Nesting {
 		}
 
 		/**
-		 * Create a {@code NestedPosition} at the specified block grid {@code
+		 * Create a {@code NestedPosition} at the specified chunk grid {@code
 		 * position} (that is, at nesting level 0).
 		 * <p>
-		 * Note that {@code position} is in units of DataBlocks.
+		 * Note that {@code position} is in units of chunks.
 		 * <p>
 		 * The returned {@code NestedPosition} will have
 		 * {@link NestedPosition#level() level()==0}.
 		 *
 		 * @param position
-		 * 		position at level 0 (block grid)
+		 * 		position at level 0 (chunk grid)
 		 *
-		 * @return a NestedPosition representation of the specified block grid position
+		 * @return a NestedPosition representation of the specified chunk grid position
 		 */
 		public NestedPosition nestedPosition(final long[] position) {
 			return nestedPosition(position, 0);
@@ -429,12 +430,12 @@ public class Nesting {
 		}
 
 		/**
-		 * Get the maximum pixel position in the shard/block at the given {@code
-		 * sourcePos} grid position at {@code sourceLevel}.
+		 * Get the maximum pixel position in the block (chunk/shard) at the
+		 * given {@code sourcePos} grid position at {@code sourceLevel}.
 		 * <p>
 		 * Note that this does not take into account {@link #getDatasetSize()
 		 * dataset dimensions}. That is, it is always assumed that the
-		 * shard/block has the default size.
+		 * chunk/shard has the default size.
 		 *
 		 * @param sourcePos
 		 * 		a grid position at {@code sourceLevel}
@@ -454,12 +455,12 @@ public class Nesting {
 		}
 
 		/**
-		 * Get the maximum pixel position in the shard/block at the given {@code
-		 * sourcePos} grid position at {@code sourceLevel}.
+		 * Get the maximum pixel position in the block (chunk/shard) at the
+		 * given {@code sourcePos} grid position at {@code sourceLevel}.
 		 * <p>
 		 * Note that this does not take into account {@link #getDatasetSize()
 		 * dataset dimensions}. That is, it is always assumed that the
-		 * shard/block has the default size.
+		 * chunk/shard has the default size.
 		 *
 		 * @param sourcePos
 		 * 		a grid position at {@code sourceLevel}
@@ -483,7 +484,7 @@ public class Nesting {
 		 * <p>
 		 * For example, this can be used to compute the coordinates on the shard
 		 * grid ({@code targetLevel==1}) of the shard containing a given
-		 * datablock ({@code sourcePos} at {@code sourceLevel==0}).
+		 * chunk ({@code sourcePos} at {@code sourceLevel==0}).
 		 *
 		 * @param sourcePos
 		 * 		a grid position at {@code sourceLevel}
@@ -512,7 +513,7 @@ public class Nesting {
 		 * <p>
 		 * For example, this can be used to compute the coordinates on the shard
 		 * grid ({@code targetLevel==1}) of the shard containing a given
-		 * datablock ({@code sourcePos} at {@code sourceLevel==0}).
+		 * chunk ({@code sourcePos} at {@code sourceLevel==0}).
 		 *
 		 * @param sourcePos
 		 * 		the source position j
@@ -537,11 +538,11 @@ public class Nesting {
 
 		/**
 		 * Get the absolute grid position at {@code targetLevel} for the given
-		 * {@code sourcePos} block grid position (level 0).
+		 * {@code sourcePos} chunk grid position (level 0).
 		 * <p>
 		 * For example, this can be used to compute the coordinates on the shard
 		 * grid ({@code targetLevel==1}) of the shard containing a given
-		 * datablock ({@code sourcePos}.
+		 * chunk ({@code sourcePos}.
 		 *
 		 * @param sourcePos
 		 * 		the source position j
@@ -564,8 +565,8 @@ public class Nesting {
 		 * numLevels} or the dataset for {@code targetLevel+1 == numLevels}.)
 		 * <p>
 		 * For example, this can be used to compute the grid coordinates {@code
-		 * targetLevel==0} of a given datablock ({@code sourcePos} at {@code
-		 * sourceLevel==0}) withing a shard (containing element at level {@code
+		 * targetLevel==0} of a given chunk ({@code sourcePos} at {@code
+		 * sourceLevel==0}) within a shard (containing element at level {@code
 		 * targetLevel+1==1}).
 		 * </p>
 		 *
@@ -612,7 +613,7 @@ public class Nesting {
 		 * level-1} (that is, in units of {@code level-1} blocks).
 		 * <p>
 		 * For example {@code relativeBlockSize(1)} returns the number of
-		 * datablocks in a (non-nested) shard.
+		 * chunks in a (non-nested) shard.
 		 */
 		public int[] relativeBlockSize(final int level) {
 			return relativeToAdjacent[level];
@@ -623,7 +624,7 @@ public class Nesting {
 		 * 0} (that is, in units of {@code level-0} blocks).
 		 * <p>
 		 * For example {@code relativeToBaseBlockSize(1)} returns the number of
-		 * datablocks in a (non-nested) shard.
+		 * chunks in a (non-nested) shard.
 		 */
 		public int[] relativeToBaseBlockSize(final int level) {
 			return relativeToBase[level];
@@ -647,7 +648,7 @@ public class Nesting {
 		 * This might return {@code null}, if this {@code NestedGrid} was not
 		 * constructed with dataset dimensions.
 		 *
-		 * @return size of the dataset in pixels
+		 * @return size of the dataset in chunks
 		 */
 		public long[] getDatasetSizeInBlocks() {
 			return datasetSizeInBlocks;

@@ -45,6 +45,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 
 /**
  * A simple structured container for hierarchies of chunked
@@ -351,7 +352,7 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * Reads a block, returning a {@link DataBlock}. Will be a chunk or shard (if the dataset is sharded).
 	 * <p>
-	 * A block is the highest (coarsest) level of the dataset's {@link org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid}
+	 * A block is the highest (coarsest) level of the dataset's {@link NestedGrid}
 	 * This method's behavior is identical to {@link #readChunk} for un-sharded datasets.
 	 *
 	 * @param <T>
@@ -375,6 +376,10 @@ public interface N5Reader extends AutoCloseable {
 
 	/**
 	 * Checks if a block exists at the given grid position without reading the data.
+	 * <p>
+	 * A block is the highest (coarsest) level of the dataset's {@link
+	 * NestedGrid}, that is, a shard if the dataset is sharded, or a chunk
+	 * otherwise.
 	 * <p>
 	 * This method only checks for the presence of the key value for the gridPosition, it does not
 	 * read or validate the contents. As a result, this method refers to chunks in un-sharded datasets
