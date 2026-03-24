@@ -94,7 +94,7 @@ public interface GsonUtils {
 	 * @param gson
 	 *            used to deserialize {@code attribute}
 	 * @param type
-	 *            to desrialize {@code attribute} as
+	 *            to deserialize {@code attribute} as
 	 * @param <T>
 	 *            return type represented by {@link Type type}
 	 * @return the deserialized attribute object, or {@code null} if
@@ -548,7 +548,7 @@ public interface GsonUtils {
 	}
 
 	/**
-	 * Writes the attributes JsonElemnt to a given {@link Writer}.
+	 * Writes the attributes JsonElement to a given {@link Writer}.
 	 * This will overwrite any existing attributes.
 	 *
 	 * @param writer

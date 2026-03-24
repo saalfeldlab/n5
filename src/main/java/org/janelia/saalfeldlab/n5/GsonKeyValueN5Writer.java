@@ -84,7 +84,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 	/**
 	 * Helper method that writes an attributes tree into the store
-	 *
+	 * <p>
 	 * TODO This method is not part of the public API and should be protected
 	 * in Java versions greater than 8
 	 *
