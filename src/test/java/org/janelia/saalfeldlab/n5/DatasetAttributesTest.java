@@ -46,7 +46,7 @@ import org.junit.Test;
 public class DatasetAttributesTest {
 
 	/**
-	 * Test that validateBlockShardSizes method accepts valid shard and block size combinations.
+	 * Test that validateBlockShardSizes method accepts valid shard and chunk size combinations.
 	 */
 	@Test
 	public void testValidateBlockShardSizesValid() {
@@ -97,10 +97,10 @@ public class DatasetAttributesTest {
 	}
 
 	private static DatasetAttributes shardDatasetAttributes(
-			long[] dimensions, int[] shardSize, int[] blockSize, DataType dataType) {
+			long[] dimensions, int[] shardSize, int[] chunkSize, DataType dataType) {
 
 		DefaultShardCodecInfo blockCodecInfo = new DefaultShardCodecInfo(
-				blockSize,
+				chunkSize,
 				new N5BlockCodecInfo(),
 				new DataCodecInfo[]{new RawCompression()},
 				new RawBlockCodecInfo(),
