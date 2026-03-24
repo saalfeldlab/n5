@@ -33,6 +33,7 @@ import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 
 import com.google.gson.JsonSyntaxException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
@@ -80,33 +81,97 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 			final String key,
 			final Type type) throws N5Exception {
 
-		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
+		T result = my_getAttribute(pathName, key, type);
+		// TODO: REPLACES OLD CACHE
+		{
+			// run old code as well to not mess with N5JsonCache
+			final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
 
-		final JsonElement attributes;
-		if (cacheMeta()) {
-			final String normalPathName = N5GroupPath.of(pathName).normalPath();
-			attributes = getCache().getAttributes(normalPathName, getAttributesKey());
-		} else {
-			attributes = GsonKeyValueN5Reader.super.getAttributes(pathName);
+			final JsonElement attributes;
+			if (cacheMeta()) {
+				final String normalPathName = N5GroupPath.of(pathName).normalPath();
+				attributes = getCache().getAttributes(normalPathName, getAttributesKey());
+			} else {
+				attributes = GsonKeyValueN5Reader.super.getAttributes(pathName);
+			}
+
+			try {
+				GsonUtils.readAttribute(attributes, normalizedAttributePath, type, getGson());
+			} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
+				throw new N5ClassCastException(e);
+			}
 		}
+		return result;
+	}
+	// TODO: REVISED N5Reader
+	/**
+	 * TODO javadoc
+	 *
+	 * @throws N5IOException
+	 * 		if an error occurs reading the attributes file
+	 * @throws N5ClassCastException
+	 * 		if the requested attribute exists but is not of the requested type
+	 */
+	default <T> T my_getAttribute(
+			final String pathName,
+			final String key,
+			final Type type) throws N5IOException, N5ClassCastException {
 
+		final JsonElement attributes = my_getAttributes(pathName);
+
+		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
 		try {
 			return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, getGson());
 		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
-			throw new N5Exception.N5ClassCastException(e);
+			throw new N5ClassCastException(e);
 		}
 	}
 
 	@Override
 	default boolean exists(final String pathName) {
 
+		boolean result = my_exists(pathName);
+		// TODO: REPLACES OLD CACHE
+		{
+			// run old code as well to not mess with N5JsonCache
+			if (cacheMeta()) {
+				final String normalPathName = N5GroupPath.of(pathName).normalPath();
+				getCache().isGroup(normalPathName, getAttributesKey());
+			} else {
+				existsFromContainer(pathName, null);
+			}
+		}
+		return result;
+	}
+	// TODO: REVISED N5Reader
+	// TODO: Can this throw exceptions?  If so, declare them!
+	default boolean my_exists(final String pathName) {
+
+		// NB: This method checks for existence of a group or dataset.
+		//     For n5, every dataset must be a group, so checking for existence
+		//     of a group is sufficient.
+		final N5GroupPath group = N5GroupPath.of(pathName);
 		if (cacheMeta()) {
-			final String normalPathName = N5GroupPath.of(pathName).normalPath();
-			return getCache().isGroup(normalPathName, getAttributesKey());
+			return getMyCache().isDirectory(group);
 		} else {
-			return existsFromContainer(pathName, null);
+			return my_isDirectoryFromContainer(group);
 		}
 	}
+
+	// TODO: REVISED CacheableContainer
+	@Override
+	default boolean my_isDirectoryFromContainer(final N5GroupPath group) {
+//		TODO: throws N5IOException?
+
+		return getRootedKeyValueAccess().isDirectory(group);
+
+//		TODO: final String attributesKey required? --> n5-zarr ???
+//		if (attributesKey == null)
+//			return kva.isDirectory(normalPath);
+//		else
+//			return kva.isFile(normalPath.resolve(normalCacheKey));
+	}
+
 
 	@Override
 	default boolean existsFromContainer(final String normalPathName, final String normalCacheKey) {

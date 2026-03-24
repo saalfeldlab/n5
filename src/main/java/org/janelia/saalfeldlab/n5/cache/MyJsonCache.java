@@ -208,6 +208,25 @@ public class MyJsonCache {
 	}
 
 	/**
+	 * TODO: javadoc
+	 *
+	 * @param group
+	 * @return
+	 */
+	public boolean isDirectory(final N5GroupPath group) {
+
+		final CacheInfoDirectory info = getOrCreate(group);
+		synchronized (info) {
+			if (!info.valid) {
+				info.exists = container.my_isDirectoryFromContainer(group);
+				info.valid = true;
+				// TODO: Can isDirectoryFromContainer throw a N5IOException?
+			}
+		}
+		return info.exists;
+	}
+
+	/**
 	 * List all directory-like children (groups and datasets) in the given
 	 * {@code group}.
 	 * <p>
@@ -280,6 +299,7 @@ public class MyJsonCache {
 		}
 		// This group was just created or re-created.
 		// We need to add it to the parent's list, if that exists.
+		// Also, we want to recursively set exists=true for parents.
 		if (addToParent) {
 			final CacheInfoDirectory parent = info.parent;
 			if (parent != null) {

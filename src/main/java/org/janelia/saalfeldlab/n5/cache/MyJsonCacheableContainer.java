@@ -24,7 +24,6 @@ public interface MyJsonCacheableContainer {
 	 */
 	JsonElement my_getAttributesFromContainer(N5GroupPath group, String attributesKey) throws N5IOException;
 
-
 	/**
 	 * List all directory-like children (groups and datasets) in the given
 	 * {@code group}.
@@ -46,4 +45,15 @@ public interface MyJsonCacheableContainer {
 	 * @see N5Reader#list
 	 */
 	String[] my_listFromContainer(N5GroupPath group) throws N5IOException;
+
+	/**
+	 * Query whether a directory exists in this container.
+	 *
+	 * @param group
+	 * 		group path
+	 *
+	 * @return true if the directory exists
+	 */
+	boolean my_isDirectoryFromContainer(N5GroupPath group);
+
 }
