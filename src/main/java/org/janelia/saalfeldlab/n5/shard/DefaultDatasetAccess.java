@@ -171,18 +171,18 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	}
 
 	@Override
-	public void writeChunk(final PositionValueAccess pva, final DataBlock<T> dataBlock) throws N5IOException {
+	public void writeChunk(final PositionValueAccess pva, final DataBlock<T> chunk) throws N5IOException {
 
 		if (grid.numLevels() == 1) {
 			@SuppressWarnings("unchecked")
 			final BlockCodec<T> codec = (BlockCodec<T>) codecs[0];
-			pva.set(dataBlock.getGridPosition(), codec.encode(dataBlock));
+			pva.set(chunk.getGridPosition(), codec.encode(chunk));
 		} else {
-			final NestedPosition position = grid.nestedPosition(dataBlock.getGridPosition());
+			final NestedPosition position = grid.nestedPosition(chunk.getGridPosition());
 			final long[] key = position.key();
 			final ReadData modifiedData;
 			try (final VolatileReadData existingData = pva.get(key)) {
-				modifiedData = writeBlockRecursive(existingData, dataBlock, position, grid.numLevels() - 1);
+				modifiedData = writeBlockRecursive(existingData, chunk, position, grid.numLevels() - 1);
 				// Here, we are about to write the shard data, but with the new block modified.
 				// Need to make sure that the read operations happen now before pva.set acquires a write lock
 				modifiedData.materialize();
@@ -216,16 +216,16 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	}
 
 	@Override
-	public void writeChunks(final PositionValueAccess pva, final List<DataBlock<T>> dataBlocks) throws N5IOException {
+	public void writeChunks(final PositionValueAccess pva, final List<DataBlock<T>> chunks) throws N5IOException {
 
 		if (grid.numLevels() == 1) {
 			@SuppressWarnings("unchecked")
 			final BlockCodec<T> codec = (BlockCodec<T>) codecs[0];
-			dataBlocks.forEach(dataBlock -> pva.set(dataBlock.getGridPosition(), codec.encode(dataBlock)));
+			chunks.forEach(dataBlock -> pva.set(dataBlock.getGridPosition(), codec.encode(dataBlock)));
 		} else {
 			// Create a list of DataBlockRequests, sorted such that requests from
 			// the same (nested) shard are grouped contiguously.
-			final DataBlockRequests<T> requests = createWriteRequests(dataBlocks);
+			final DataBlockRequests<T> requests = createWriteRequests(chunks);
 			requests.removeDuplicates();
 			final List<DataBlockRequests<T>> split = requests.split();
 			for (final DataBlockRequests<T> subRequests : split) {
