@@ -36,6 +36,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -53,7 +54,7 @@ import java.util.regex.Pattern;
  */
 public class N5URI {
 
-	private static final Charset UTF8 = Charset.forName("UTF-8");
+	private static final Charset UTF8 = StandardCharsets.UTF_8;
 	public static final Pattern ARRAY_INDEX = Pattern.compile("\\[([0-9]+)]");
 	final URI uri;
 	private final String scheme;
