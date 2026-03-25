@@ -90,14 +90,13 @@ public interface DatasetAccess<T> {
 
 	/**
 	 * Writes a chunk to the given storage position.
-	 *
 	 */
-	void writeChunk(PositionValueAccess pva, DataBlock<T> dataBlock) throws N5IOException;
+	void writeChunk(PositionValueAccess pva, DataBlock<T> chunk) throws N5IOException;
 
 	/**
 	 * Writes multiple chunks to the given storage positions.
 	 */
-	void writeChunks(PositionValueAccess pva, List<DataBlock<T>> blocks) throws N5IOException;
+	void writeChunks(PositionValueAccess pva, List<DataBlock<T>> chunks) throws N5IOException;
 
 	/**
 	 * Deletes the chunk at {@code gridPosition}. @return true if it existed and

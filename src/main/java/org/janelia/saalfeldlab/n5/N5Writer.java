@@ -212,7 +212,7 @@ public interface N5Writer extends N5Reader {
 
 		final String normalPath = N5URI.normalizeGroupPath(datasetPath);
 		createGroup(normalPath);
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		setDatasetAttributes(normalPath, convertedDatasetAttributes);
 		return convertedDatasetAttributes;
 	}
@@ -245,32 +245,32 @@ public interface N5Writer extends N5Reader {
 	 *
 	 * @param datasetPath dataset path
 	 * @param datasetAttributes the dataset attributes
-	 * @param dataBlock the chunk as a DataBlock
+	 * @param chunk the chunk as a DataBlock
 	 * @param <T> the data block data type
 	 * @throws N5Exception the exception
 	 */
 	<T> void writeChunk(
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes,
-			final DataBlock<T> dataBlock) throws N5Exception;
+			final DataBlock<T> chunk) throws N5Exception;
 
 	/**
 	 * Write multiple chunks represented by {@link DataBlock}s, useful for aggregation.
 	 *
 	 * @param datasetPath dataset path
 	 * @param datasetAttributes the dataset attributes
-	 * @param dataBlocks the chunks
+	 * @param chunks the chunks
 	 * @param <T> the data block data type
 	 * @throws N5Exception the exception
 	 */
 	default <T> void writeChunks(
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes,
-			final DataBlock<T>... dataBlocks) throws N5Exception {
+			final DataBlock<T>... chunks) throws N5Exception {
 
 		// default method is naive
 		DatasetAttributes convertedAttributes = getConvertedDatasetAttributes(datasetAttributes);
-		for (DataBlock<T> block : dataBlocks) {
+		for (DataBlock<T> block : chunks) {
 			writeChunk(datasetPath, convertedAttributes, block);
 		}
 	}
@@ -278,7 +278,9 @@ public interface N5Writer extends N5Reader {
 	/**
 	 * Writes a block stored as a {@link DataBlock}.
 	 * <p>
-	 * A block is the highest (coarsest) level of the dataset's {@link org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid}.
+	 * A block is the highest (coarsest) level of the dataset's {@link NestedGrid},
+	 * that is, a shard if the dataset is sharded, or a chunk otherwise.
+	 * <p>
 	 * This method's behavior is identical to {@link #writeChunk} for un-sharded datasets.
 	 *
 	 * @param pathName dataset path
@@ -313,25 +315,25 @@ public interface N5Writer extends N5Reader {
 	 * @param datasetAttributes the dataset attributes
 	 * @param min min pixel coordinate of region to write
 	 * @param size size in pixels of region to write
-	 * @param dataBlocks is asked to create chunks within the given region
+	 * @param chunkSupplier is asked to create chunks within the given region
 	 * @param writeFully if false, merge existing data in shards/blocks that overlap the region boundary. if true, override everything.
 	 * @throws N5Exception the exception
 	 */
 	<T> void writeRegion(
-			final String datasetPath,
-			final DatasetAttributes datasetAttributes,
-			final long[] min,
-			final long[] size,
-			final DataBlockSupplier<T> dataBlocks,
-			final boolean writeFully) throws N5Exception;
+			String datasetPath,
+			DatasetAttributes datasetAttributes,
+			long[] min,
+			long[] size,
+			DataBlockSupplier<T> chunkSupplier,
+			boolean writeFully) throws N5Exception;
 
 	/**
 	 * @param datasetPath the dataset path
 	 * @param datasetAttributes the dataset attributes
 	 * @param min min pixel coordinate of region to write
 	 * @param size size in pixels of region to write
-	 * @param dataBlocks is asked to create blocks within the given region
-	 * @param writeFully if false, merge existing data in shards/blocks that overlap the region boundary. if true, override everything.
+	 * @param chunkSupplier is asked to create blocks within the given region
+	 * @param writeFully if false, merge existing data in shards/chunks that overlap the region boundary. if true, override everything.
 	 * @param exec used to parallelize over blocks (chunks and shards)
 	 * @throws N5Exception the exception
 	 */
@@ -340,7 +342,7 @@ public interface N5Writer extends N5Reader {
 			DatasetAttributes datasetAttributes,
 			long[] min,
 			long[] size,
-			DataBlockSupplier<T> dataBlocks,
+			DataBlockSupplier<T> chunkSupplier,
 			boolean writeFully,
 			ExecutorService exec) throws N5Exception, InterruptedException, ExecutionException;
 
