@@ -78,8 +78,8 @@ public interface N5Writer extends N5Reader {
 	 * @throws N5Exception the exception
 	 */
 	void setAttributes(
-			final String groupPath,
-			final Map<String, ?> attributes) throws N5Exception;
+			String groupPath,
+			Map<String, ?> attributes) throws N5Exception;
 
 	/**
 	 * Remove the attribute from group {@code pathName} with key {@code key}.
@@ -165,7 +165,7 @@ public interface N5Writer extends N5Reader {
 	 * @param groupPath the path
 	 * @throws N5Exception the exception
 	 */
-	void createGroup(final String groupPath) throws N5Exception;
+	void createGroup(String groupPath) throws N5Exception;
 
 	/**
 	 * Removes a group or dataset (directory and all contained files).
@@ -183,7 +183,7 @@ public interface N5Writer extends N5Reader {
 	 * @return true if removal was successful, false otherwise
 	 * @throws N5Exception the exception
 	 */
-	boolean remove(final String groupPath) throws N5Exception;
+	boolean remove(String groupPath) throws N5Exception;
 
 	/**
 	 * Removes the N5 container.
@@ -251,9 +251,9 @@ public interface N5Writer extends N5Reader {
 	 * @throws N5Exception the exception
 	 */
 	<T> void writeChunk(
-			final String datasetPath,
-			final DatasetAttributes datasetAttributes,
-			final DataBlock<T> chunk) throws N5Exception;
+			String datasetPath,
+			DatasetAttributes datasetAttributes,
+			DataBlock<T> chunk) throws N5Exception;
 
 	/**
 	 * Write multiple chunks represented by {@link DataBlock}s, useful for aggregation.
@@ -293,9 +293,9 @@ public interface N5Writer extends N5Reader {
 	 * @see DatasetAttributes#getNestedBlockGrid()
 	 */
 	<T> void writeBlock(
-			final String pathName,
-			final DatasetAttributes datasetAttributes,
-			final DataBlock<T> dataBlock) throws N5Exception;
+			String pathName,
+			DatasetAttributes datasetAttributes,
+			DataBlock<T> dataBlock) throws N5Exception;
 
 	@FunctionalInterface
 	interface DataBlockSupplier<T> {
@@ -308,7 +308,7 @@ public interface N5Writer extends N5Reader {
 		 *
 		 * @return data block at the given gridPos
 		 */
-		DataBlock<T> get(long[] gridPos, final DataBlock<T> existingDataBlock);
+		DataBlock<T> get(long[] gridPos, DataBlock<T> existingDataBlock);
 	}
 
 	/**
@@ -438,9 +438,9 @@ public interface N5Writer extends N5Reader {
 	 * @throws N5Exception if any of the chunks did exist but could not be deleted
 	 */
 	default boolean deleteChunks(
-			String datasetPath,
-			DatasetAttributes datasetAttributes,
-			List<long[]> gridPositions) throws N5Exception {
+			final String datasetPath,
+			final DatasetAttributes datasetAttributes,
+			final List<long[]> gridPositions) throws N5Exception {
 		boolean deleted = false;
 		for (long[] pos : gridPositions) {
 			deleted |= deleteChunk(datasetPath, datasetAttributes, pos);
