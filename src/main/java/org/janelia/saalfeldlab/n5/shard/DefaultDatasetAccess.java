@@ -102,18 +102,18 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	@Override
 	public List<DataBlock<T>> readChunks(final PositionValueAccess pva, final List<long[]> gridPositions) throws N5IOException {
 
-		// for non-sharded datasets, just read the blocks individually
+		// for non-sharded datasets, just read the chunks individually
 		if (grid.numLevels() == 1) {
 			return gridPositions.stream().map(pos -> readChunk(pva, pos)).collect(Collectors.toList());
 		}
 
-		// Create a list of DataBlockRequests and sort it such that requests
+		// Create a list of ChunkRequests and sort it such that requests
 		// from the same (nested) shard are grouped contiguously.
-		final DataBlockRequests<T> requests = createReadRequests(gridPositions);
-		final List<DataBlockRequest<T>> duplicates = requests.removeDuplicates();
+		final ChunkRequests<T> requests = createReadRequests(gridPositions);
+		final List<ChunkRequest<T>> duplicates = requests.removeDuplicates();
 
-		final List<DataBlockRequests<T>> split = requests.split();
-		for (final DataBlockRequests<T> subRequests : split) {
+		final List<ChunkRequests<T>> split = requests.split();
+		for (final ChunkRequests<T> subRequests : split) {
 			final long[] key = subRequests.relativeGridPosition();
 			try (final VolatileReadData readData = pva.get(key)) {
 				readChunksRecursive(readData, subRequests);
@@ -124,7 +124,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			}
 		}
 
-		return requests.blocks(duplicates);
+		return requests.chunks(duplicates);
 	}
 
 	/**
@@ -135,7 +135,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	 */
 	private void readChunksRecursive(
 			final ReadData readData,
-			final DataBlockRequests<T> requests
+			final ChunkRequests<T> requests
 	) {
 		assert !requests.requests.isEmpty();
 		assert requests.level > 0;
@@ -150,19 +150,19 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		final RawShard shard = codec.decode(readData, requests.gridPosition()).getData();
 
 		if (level == 1 ) {
-			//Base case; read the blocks
+			//Base case; read the chunks
 
 			// TODO: collect all the elementPos that we will need and prefetch
 			//       Probably best to add a prefetch method to RawShard?
 
-			for (final DataBlockRequest<T> request : requests) {
+			for (final ChunkRequest<T> request : requests) {
 				final long[] elementPos = request.position.relative(0);
 				final ReadData elementData = shard.getElementData(elementPos);
-				request.block = readChunkRecursive(elementData, request.position, 0);
+				request.chunk = readChunkRecursive(elementData, request.position, 0);
 			}
 		} else { // level > 1
-			final List<DataBlockRequests<T>> split = requests.split();
-			for (final DataBlockRequests<T> subRequests : split) {
+			final List<ChunkRequests<T>> split = requests.split();
+			for (final ChunkRequests<T> subRequests : split) {
 				final long[] subShardPosition = subRequests.relativeGridPosition();
 				final ReadData elementData = shard.getElementData(subShardPosition);
 				readChunksRecursive(elementData, subRequests);
@@ -182,7 +182,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final long[] key = position.key();
 			final ReadData modifiedData;
 			try (final VolatileReadData existingData = pva.get(key)) {
-				modifiedData = writeBlockRecursive(existingData, chunk, position, grid.numLevels() - 1);
+				modifiedData = writeChunkRecursive(existingData, chunk, position, grid.numLevels() - 1);
 				// Here, we are about to write the shard data, but with the new block modified.
 				// Need to make sure that the read operations happen now before pva.set acquires a write lock
 				modifiedData.materialize();
@@ -191,15 +191,15 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		}
 	}
 
-	private ReadData writeBlockRecursive(
+	private ReadData writeChunkRecursive(
 			final ReadData existingReadData,
-			final DataBlock<T> dataBlock,
+			final DataBlock<T> chunk,
 			final NestedPosition position,
 			final int level) {
 		if (level == 0) {
 			@SuppressWarnings("unchecked")
 			final BlockCodec<T> codec = (BlockCodec<T>) codecs[0];
-			return codec.encode(dataBlock);
+			return codec.encode(chunk);
 		} else {
 			@SuppressWarnings("unchecked")
 			final BlockCodec<RawShard> codec = (BlockCodec<RawShard>) codecs[level];
@@ -209,7 +209,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final ReadData existingElementData = (level == 1)
 					? null // if level == 1, we don't need to extract the nested (DataBlock<T>) ReadData because it will be overridden anyway
 					: shard.getElementData(elementPos);
-			final ReadData modifiedElementData = writeBlockRecursive(existingElementData, dataBlock, position, level - 1);
+			final ReadData modifiedElementData = writeChunkRecursive(existingElementData, chunk, position, level - 1);
 			shard.setElementData(modifiedElementData, elementPos);
 			return codec.encode(new RawShardDataBlock(gridPos, shard));
 		}
@@ -221,14 +221,14 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		if (grid.numLevels() == 1) {
 			@SuppressWarnings("unchecked")
 			final BlockCodec<T> codec = (BlockCodec<T>) codecs[0];
-			chunks.forEach(dataBlock -> pva.set(dataBlock.getGridPosition(), codec.encode(dataBlock)));
+			chunks.forEach(chunk -> pva.set(chunk.getGridPosition(), codec.encode(chunk)));
 		} else {
-			// Create a list of DataBlockRequests, sorted such that requests from
+			// Create a list of ChunkRequests, sorted such that requests from
 			// the same (nested) shard are grouped contiguously.
-			final DataBlockRequests<T> requests = createWriteRequests(chunks);
+			final ChunkRequests<T> requests = createWriteRequests(chunks);
 			requests.removeDuplicates();
-			final List<DataBlockRequests<T>> split = requests.split();
-			for (final DataBlockRequests<T> subRequests : split) {
+			final List<ChunkRequests<T>> split = requests.split();
+			for (final ChunkRequests<T> subRequests : split) {
 				final boolean writeFully = subRequests.coversShard();
 				final long[] shardKey = subRequests.relativeGridPosition();
 				final ReadData modifiedData;
@@ -251,7 +251,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	 */
 	private ReadData writeChunksRecursive(
 			final ReadData existingReadData, // may be null
-			final DataBlockRequests<T> requests
+			final ChunkRequests<T> requests
 	) {
 		assert !requests.requests.isEmpty();
 		assert requests.level > 0;
@@ -266,14 +266,14 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 
 		if ( level == 1 ) {
 			// Base case, write the blocks
-			for (final DataBlockRequest<T> request : requests) {
-				final ReadData elementData = writeBlockRecursive(null, request.block, request.position, 0);
+			for (final ChunkRequest<T> request : requests) {
+				final ReadData elementData = writeChunkRecursive(null, request.chunk, request.position, 0);
 				final long[] elementPos = request.position.relative(0);
 				shard.setElementData(elementData, elementPos);
 			}
 		} else { // level > 1
-			final List<DataBlockRequests<T>> split = requests.split();
-			for (final DataBlockRequests<T> subRequests : split) {
+			final List<ChunkRequests<T>> split = requests.split();
+			for (final ChunkRequests<T> subRequests : split) {
 				final boolean nestedWriteFully = writeFully || subRequests.coversShard();
 				final long[] elementPos = subRequests.relativeGridPosition();
 				final ReadData existingElementData = nestedWriteFully ? null : shard.getElementData(elementPos);
@@ -344,7 +344,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	private ReadData writeRegionRecursive(
 			final ReadData existingReadData, // may be null
 			final Region region,
-			final DataBlockSupplier<T> blocks,
+			final DataBlockSupplier<T> chunkSupplier,
 			final NestedPosition position
 	) {
 		final boolean writeFully = existingReadData == null;
@@ -360,21 +360,21 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			// existing DataBlock and pass it to the BlockSupplier for modification.
 			// (This might fail with N5NoSuchKeyException if existingReadData
 			// lazily points to non-existent data.)
-			DataBlock<T> existingDataBlock = null;
+			DataBlock<T> existingChunk = null;
 			if (existingReadData != null) {
 				try {
-					existingDataBlock = codec.decode(existingReadData, gridPosition);
+					existingChunk = codec.decode(existingReadData, gridPosition);
 				} catch (N5NoSuchKeyException ignored) {
 				}
 			}
-			final DataBlock<T> dataBlock = blocks.get(gridPosition, existingDataBlock);
+			final DataBlock<T> chunk = chunkSupplier.get(gridPosition, existingChunk);
 
 			// null blocks may be provided when they contain only the fill value
 			// and only non-empty blocks should be written, for example
-			if (dataBlock == null)
+			if (chunk == null)
 				return null;
 
-			return codec.encode(dataBlock);
+			return codec.encode(chunk);
 		} else {
 
 			@SuppressWarnings("unchecked")
@@ -385,7 +385,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				final boolean nestedWriteFully = writeFully || region.fullyContains(pos);
 				final long[] elementPos = pos.relative();
 				final ReadData existingElementData = nestedWriteFully ? null : shard.getElementData(elementPos);
-				final ReadData modifiedElementData = writeRegionRecursive(existingElementData, region, blocks, pos);
+				final ReadData modifiedElementData = writeRegionRecursive(existingElementData, region, chunkSupplier, pos);
 				shard.setElementData(modifiedElementData, elementPos);
 			}
 
@@ -398,7 +398,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	}
 
 	//
-	// -- deleteBlock ---------------------------------------------------------
+	// -- deleteChunk ---------------------------------------------------------
 
 	@Override
 	public boolean deleteChunk(final PositionValueAccess pva, final long[] gridPosition) throws N5IOException {
@@ -472,7 +472,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	}
 
 	//
-	// -- deleteBlocks --------------------------------------------------------
+	// -- deleteChunks --------------------------------------------------------
 
 	@Override
 	public boolean deleteChunks(final PositionValueAccess pva, final List<long[]> gridPositions) throws N5IOException {
@@ -486,25 +486,25 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			return deleted;
 		} else {
 
-			// Create a list of DataBlockRequests and sort it such that requests
+			// Create a list of ChunkRequests and sort it such that requests
 			// from the same (nested) shard are grouped contiguously.
 			// Despite the name, createReadRequests() works for delete requests as well ...
-			final DataBlockRequests<T> requests = createReadRequests(gridPositions);
+			final ChunkRequests<T> requests = createReadRequests(gridPositions);
 			requests.removeDuplicates();
 
 			boolean deleted = false;
-			final List<DataBlockRequests<T>> split = requests.split();
-			for (final DataBlockRequests<T> subRequests : split) {
+			final List<ChunkRequests<T>> split = requests.split();
+			for (final ChunkRequests<T> subRequests : split) {
 				final boolean writeFully = subRequests.coversShard();
 				final long[] key = subRequests.relativeGridPosition();
 				final ReadData modifiedData;
 				try (final VolatileReadData existingData = writeFully ? null : pva.get(key)) {
-					modifiedData = deleteBlocksRecursive(existingData, subRequests);;
+					modifiedData = deleteChunksRecursive(existingData, subRequests);;
 					if (modifiedData == existingData) {
-						// nothing changed, the blocks we wanted to delete didn't exist anyway
+						// nothing changed, the chunks we wanted to delete didn't exist anyway
 						continue;
 					} else if (existingData != null && modifiedData != null) {
-						// Here, we are about to write the shard data, but without the block to be deleted.
+						// Here, we are about to write the shard data, but without the chunk to be deleted.
 						// Need to make sure that the read operations happen now before pva.set acquires a write lock
 						modifiedData.materialize();
 					}
@@ -528,11 +528,11 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	 * Bulk Delete operation on a shard.
 	 *
 	 * @param existingReadData encoded existing shard data (to decode and partially override)
-	 * @param requests for blocks within the shard to be deleted
+	 * @param requests for chunks within the shard to be deleted
 	 */
-	private ReadData deleteBlocksRecursive(
+	private ReadData deleteChunksRecursive(
 			final ReadData existingReadData, // may be null
-			final DataBlockRequests<T> requests
+			final ChunkRequests<T> requests
 	) {
 		assert !requests.requests.isEmpty();
 		assert requests.level > 0;
@@ -550,8 +550,8 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		boolean modified = false;
 		boolean shardElementSetToNull = false;
 		if ( level == 1 ) {
-			// Base case, delete the blocks
-			for (final DataBlockRequest<T> request : requests) {
+			// Base case, delete the chunks
+			for (final ChunkRequest<T> request : requests) {
 				final long[] elementPos = request.position.relative(0);
 				if (shard.getElementData(elementPos) != null) {
 					shard.setElementData(null, elementPos);
@@ -560,12 +560,12 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				}
 			}
 		} else { // level > 1
-			final List<DataBlockRequests<T>> split = requests.split();
-			for (final DataBlockRequests<T> subRequests : split) {
+			final List<ChunkRequests<T>> split = requests.split();
+			for (final ChunkRequests<T> subRequests : split) {
 				final boolean writeFully = subRequests.coversShard();
 				final long[] elementPos = subRequests.relativeGridPosition();
 				final ReadData existingElementData = writeFully ? null : shard.getElementData(elementPos);
-				final ReadData modifiedElementData = deleteBlocksRecursive(existingElementData, subRequests);
+				final ReadData modifiedElementData = deleteChunksRecursive(existingElementData, subRequests);
 				if (modifiedElementData != existingElementData) {
 					shard.setElementData(modifiedElementData, elementPos);
 					modified = true;
@@ -575,13 +575,13 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		}
 
 		if (!modified) {
-			// No nested shard or DataBlock was modified.
+			// No nested shard or chunk was modified.
 			// This shard remains unchanged.
 			return existingReadData;
 		}
 
 		if (shardElementSetToNull) {
-			// At least one DataBlock or nested shard was removed.
+			// At least one chunk or nested shard was removed.
 			// Check whether this shard becomes empty.
 			if (shard.index().allElementsNull()) {
 				// This shard is empty and should be removed.
@@ -625,7 +625,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	// do not want to write DataBlocks that are completely outside the
 	// dataset (even if the "big DataBlock" covers this area.)
 	//
-	// This works for writing. For reading we'll have to decide what to return,
+	// This works for writing. For reading, we'll have to decide what to return,
 	// though... Potentially, there is no valid block at the border, so we
 	// cannot determine where to put the border just from the data. We need to
 	// rely on external input or heuristics.
@@ -674,50 +674,50 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			}
 		}
 
-		// level-0 block-grid position of the min block in the shard
+		// level-0 block-grid position of the min chunk in the shard
 		final long[] gridMin = grid.absolutePosition(shardGridPosition, level, 0);
 
-		// level-0 block-grid position of the max block in the shard that we need to read.
+		// level-0 block-grid position of the max chunk in the shard that we need to read.
 		// (the shard might go beyond the dataset border, and we don't need to read anything there)
 		final long[] gridMax = new long[n];
-		final long[] datasetSizeInBlocks = grid.getDatasetSizeInBlocks();
-		final int[] blockSize = grid.getBlockSize(0);
+		final long[] datasetSizeInChunks = grid.getDatasetSizeInChunks();
+		final int[] chunkSize = grid.getBlockSize(0);
 		for (int d = 0; d < n; ++d) {
-			final int shardSizeInBlocks = (shardSizeInPixels[d] + blockSize[d] - 1) / blockSize[d];
-			final int gridSize = Math.min(shardSizeInBlocks, (int) (datasetSizeInBlocks[d] - gridMin[d]));
+			final int shardSizeInChunks = (shardSizeInPixels[d] + chunkSize[d] - 1) / chunkSize[d];
+			final int gridSize = Math.min(shardSizeInChunks, (int) (datasetSizeInChunks[d] - gridMin[d]));
 			gridMax[d] = gridMin[d] + gridSize - 1;
 		}
 
-		// read all blocks in (gridMin, gridMax) and filter out missing blocks
-		final List<long[]> blockPositions = Region.gridPositions(gridMin, gridMax);
-		final List<DataBlock<T>> blocks = readChunks(pva, blockPositions)
+		// read all chunks in (gridMin, gridMax) and filter out missing chunks
+		final List<long[]> chunkPositions = Region.gridPositions(gridMin, gridMax);
+		final List<DataBlock<T>> chunks = readChunks(pva, chunkPositions)
 				.stream().filter(Objects::nonNull).collect(Collectors.toList());
-		if (blocks.isEmpty()) {
+		if (chunks.isEmpty()) {
 			return null;
 		}
 
-		// allocate shard and copy data from blocks
-		final DataBlock<T> shard = DataBlockFactory.of(blocks.get(0).getData()).createDataBlock(shardSizeInPixels, shardGridPosition);
+		// allocate shard and copy data from chunks
+		final DataBlock<T> shard = DataBlockFactory.of(chunks.get(0).getData()).createDataBlock(shardSizeInPixels, shardGridPosition);
 		final long[] shardPixelPos = grid.pixelPosition(shardGridPosition, level);
-		final long[] blockPixelPos = new long[n];
+		final long[] chunkPixelPos = new long[n];
 		final int[] srcPos = new int[n];
 		final int[] destPos = new int[n];
 		final int[] size = new int[n];
-		for (final DataBlock<T> block : blocks) {
-			// copy block data that overlaps the shard
-			grid.pixelPosition(block.getGridPosition(), 0, blockPixelPos);
-			final int[] bsize = block.getSize();
+		for (final DataBlock<T> chunk : chunks) {
+			// copy chunk data that overlaps the shard
+			grid.pixelPosition(chunk.getGridPosition(), 0, chunkPixelPos);
+			final int[] bsize = chunk.getSize();
 			for (int d = 0; d < n; d++) {
-				destPos[d] = (int) (blockPixelPos[d] - shardPixelPos[d]);
+				destPos[d] = (int) (chunkPixelPos[d] - shardPixelPos[d]);
 				size[d] = Math.min(bsize[d], shardSizeInPixels[d] - destPos[d]);
 			}
-			SubArrayCopy.copy(block.getData(), bsize, srcPos, shard.getData(), shardSizeInPixels, destPos, size);
+			SubArrayCopy.copy(chunk.getData(), bsize, srcPos, shard.getData(), shardSizeInPixels, destPos, size);
 		}
 		return shard;
 	}
 
 	//
-	// -- writeShard ----------------------------------------------------------
+	// -- writeBlock ----------------------------------------------------------
 
 	@Override
 	public void writeBlock(
@@ -735,49 +735,49 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		final DataBlockFactory<T> blockFactory = DataBlockFactory.of(shardData);
 
 		final int n = grid.numDimensions();
-		final int[] blockSize = grid.getBlockSize(0); // size of a standard (non-truncated) DataBlock
-		final long[] datasetBlockSize = grid.getDatasetSizeInBlocks();
+		final int[] chunkSize = grid.getBlockSize(0); // size of a standard (non-truncated) DataBlock
+		final long[] datasetChunkSize = grid.getDatasetSizeInChunks();
 
 		final long[] shardPixelMin = grid.pixelPosition(dataBlock.getGridPosition(), level);
 		final int[] shardPixelSize = dataBlock.getSize();
 
-		// the max block + 1 in the shard, if it isn't truncated by the dataset border
-		final long[] shardBlockTo = new long[n];
-		Arrays.setAll(shardBlockTo, d -> (shardPixelMin[d] + shardPixelSize[d] + blockSize[d] - 1) / blockSize[d]);
+		// the max chunk + 1 in the shard, if it isn't truncated by the dataset border
+		final long[] shardChunkTo = new long[n];
+		Arrays.setAll(shardChunkTo, d -> (shardPixelMin[d] + shardPixelSize[d] + chunkSize[d] - 1) / chunkSize[d]);
 
-		// level 0 DataBlock positions of all DataBlocks we want to extract
+		// level 0 grid positions of all chunks we want to extract
 		final long[] gridMin = grid.absolutePosition(dataBlock.getGridPosition(), level, 0);
 		final long[] gridMax = new long[n];
-		Arrays.setAll(gridMax, d -> Math.min(shardBlockTo[d], datasetBlockSize[d]) - 1);
-		final List<long[]> blockPositions = Region.gridPositions(gridMin, gridMax);
+		Arrays.setAll(gridMax, d -> Math.min(shardChunkTo[d], datasetChunkSize[d]) - 1);
+		final List<long[]> chunkPositions = Region.gridPositions(gridMin, gridMax);
 
 		// Max pixel coordinates + 1, of the region we want to copy. This should
 		// always be shardPixelMin + shardPixelSize, except at the dataset
-		// border, where we truncate to the smallest multiple of blockSize still
+		// border, where we truncate to the smallest multiple of chunkSize still
 		// overlapping the dataset.
 		final long[] regionBound = new long[n];
-		Arrays.setAll(regionBound, d -> Math.min(shardPixelMin[d] + shardPixelSize[d], datasetBlockSize[d] * blockSize[d]));
+		Arrays.setAll(regionBound, d -> Math.min(shardPixelMin[d] + shardPixelSize[d], datasetChunkSize[d] * chunkSize[d]));
 
-		final List<DataBlock<T>> blocks = new ArrayList<>(blockPositions.size());
+		final List<DataBlock<T>> chunks = new ArrayList<>(chunkPositions.size());
 		final int[] srcPos = new int[n];
 		final int[] destPos = new int[n];
 		final int[] destSize = new int[n];
-		for ( long[] blockPos : blockPositions) {
-			final long[] pixelMin = grid.pixelPosition(blockPos, 0);
+		for ( long[] chunkPos : chunkPositions) {
+			final long[] pixelMin = grid.pixelPosition(chunkPos, 0);
 
 			for (int d = 0; d < n; d++) {
 				srcPos[d] = (int) (pixelMin[d] - shardPixelMin[d]);
-				destSize[d] = Math.min(blockSize[d], (int) (regionBound[d] - pixelMin[d]));
+				destSize[d] = Math.min(chunkSize[d], (int) (regionBound[d] - pixelMin[d]));
 			}
 
 			// This extracting DataBlocks will not work if num_array_elements != num_block_elements.
 			// But we'll deal with that later if it becomes a problem...
-			final DataBlock<T> block = blockFactory.createDataBlock(destSize, blockPos);
-			SubArrayCopy.copy(shardData, shardPixelSize, srcPos, block.getData(), destSize, destPos, destSize);
-			blocks.add(block);
+			final DataBlock<T> chunk = blockFactory.createDataBlock(destSize, chunkPos);
+			SubArrayCopy.copy(shardData, shardPixelSize, srcPos, chunk.getData(), destSize, destPos, destSize);
+			chunks.add(chunk);
 		}
 
-		writeChunks(pva, blocks);
+		writeChunks(pva, chunks);
 	}
 
 	//
@@ -809,73 +809,72 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	}
 
 	/**
-	 * A request to read or write a (level-0) DataBlock at a given {@link #position}.
+	 * A request to read or write a chunk (level-0 DataBlock) at a given {@link #position}.
 	 * <p>
-	 * <em>Write requests</em> are constructed with {@link #position} and {@link #block}.
+	 * <em>Write requests</em> are constructed with {@link #position} and {@link #chunk}.
 	 * <p>
 	 * <em>Read requests</em> are constructed with only a {@link #position}, and
-	 * initially {@link #block block=null}. When the DataBlock is read, it will
-	 * be put into {@link #block}.
+	 * initially {@link #chunk chunk=null}. When the DataBlock is read, it will
+	 * be put into {@link #chunk}.
 	 * <p>
-	 * {@code DataBlockRequest} are used for reading/writing a list of blocks
-	 * with {@link #readBlocks} and {@link #writeBlocks}. The {@link #index}
-	 * field is the position in the list of positions/blocks to read/write. For
+	 * {@code ChunkRequest} are used for reading/writing a list of chunks
+	 * with {@link #readChunks} and {@link #writeChunks}. The {@link #index}
+	 * field is the position in the list of positions/chunks to read/write. For
 	 * processing, requests are re-ordered such that all requests from the same
 	 * (sub-)shard are grouped together. The {@link #index} field is used to
-	 * re-establish the order of results (only important for {@link
-	 * #readBlocks}).
+	 * re-establish the order of results (only important for {@link #readChunks}).
 	 *
 	 * @param <T>
 	 * 		type of the data contained in the DataBlock
 	 */
-	private static final class DataBlockRequest<T> {
+	private static final class ChunkRequest<T> {
 
 		final NestedPosition position;
 		final int index;
-		DataBlock<T> block;
+		DataBlock<T> chunk;
 
 		// read request
-		DataBlockRequest(final NestedPosition position, final int index) {
+		ChunkRequest(final NestedPosition position, final int index) {
 			this.position = position;
 			this.index = index;
-			this.block = null;
+			this.chunk = null;
 		}
 
 		// write request
-		DataBlockRequest(final NestedPosition position, final DataBlock<T> block) {
+		ChunkRequest(final NestedPosition position, final DataBlock<T> chunk) {
 			this.position = position;
 			this.index = -1;
-			this.block = block;
+			this.chunk = chunk;
 		}
 
 		@Override
 		public String toString() {
-			return "DataBlockRequest{position=" + position + ", index=" + index + '}';
+			return "ChunkRequest{position=" + position + ", index=" + index + '}';
 		}
 	}
 
 	/**
-	 * A list of {@code DataBlockRequest}, ordered by {@code NestedPosition}.
+	 * A list of {@code ChunkRequest}, ordered by {@code NestedPosition}.
 	 * All requests lie in the same shard at the given {@code level}.
 	 * <p>
-	 * {@code DataBlockRequests} should be constructed using {@link
+	 * {@code ChunkRequests} should be constructed using {@link
 	 * #createReadRequests} (for reading) or {@link #createWriteRequests} (for
 	 * writing).
 	 * <p>
-	 * When recursing into nested shard levels, {@code DataBlockRequests} should
-	 * be {@link #split} to partition into sub-{@code DataBlockRequests} that
+	 * When recursing into nested shard levels, {@code ChunkRequests} should
+	 * be {@link #split} to partition into sub-{@code ChunkRequests} that
 	 * each cover one shard.
 	 *
 	 * @param <T>
 	 * 		type of the data contained in the DataBlocks
 	 */
-	private static final class DataBlockRequests<T> implements Iterable<DataBlockRequest<T>> {
+	private static final class ChunkRequests<T> implements Iterable<ChunkRequest<T>> {
 
 		private final NestedGrid grid;
-		private final List<DataBlockRequest<T>> requests;
+		private final List<ChunkRequest<T>> requests;
 		private final int level;
 
-		private DataBlockRequests(final List<DataBlockRequest<T>> requests, final int level, final NestedGrid grid) {
+		private ChunkRequests(final List<ChunkRequest<T>> requests, final int level, final NestedGrid grid) {
 			this.requests = requests;
 			this.level = level;
 			this.grid = grid;
@@ -892,12 +891,12 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		 * If {@code n} duplicates occur in {@code requests}, the resulting list
 		 * will have {@code 2*n} elements.
 		 */
-		public List<DataBlockRequest<T>> removeDuplicates() {
-			List<DataBlockRequest<T>> duplicates = new ArrayList<>();
-			DataBlockRequest<T> previous = null;
-			final ListIterator<DataBlockRequest<T>> iter = requests.listIterator();
+		public List<ChunkRequest<T>> removeDuplicates() {
+			List<ChunkRequest<T>> duplicates = new ArrayList<>();
+			ChunkRequest<T> previous = null;
+			final ListIterator<ChunkRequest<T>> iter = requests.listIterator();
 			while (iter.hasNext()) {
-				final DataBlockRequest<T> current = iter.next();
+				final ChunkRequest<T> current = iter.next();
 				if (previous != null) {
 					if (previous.position.equals(current.position)) {
 						iter.remove();
@@ -912,15 +911,15 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		}
 
 		@Override
-		public Iterator<DataBlockRequest<T>> iterator() {
+		public Iterator<ChunkRequest<T>> iterator() {
 			return requests.iterator();
 		}
 
 		/**
-		 * All blocks contained in this {@code DataBlockRequests} are in the
+		 * All chunks contained in this {@code ChunkRequests} are in the
 		 * same shard at this nesting level.
 		 * <p>
-		 * Use {@link #split()} to partition into {@code DataBlockRequests} with
+		 * Use {@link #split()} to partition into {@code ChunkRequests} with
 		 * nesting level {@link #level()}{@code -1}.
 		 *
 		 * @return nesting level
@@ -930,7 +929,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		}
 
 		/**
-		 * Position on the shard grid at the level of this DataBlockRequests
+		 * Position on the shard grid at the level of this ChunkRequests
 		 * (of the one shard containing all the requested blocks).
 		 */
 		public long[] gridPosition() {
@@ -938,7 +937,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		}
 
 		/**
-		 * Relative grid position at the level of this DataBlockRequests,
+		 * Relative grid position at the level of this ChunkRequests,
 		 * that is, relative offset within containing the (level+1) element.
 		 */
 		public long[] relativeGridPosition() {
@@ -954,9 +953,9 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		/**
 		 * Split into sub-requests, grouping by same position at nesting level {@link #level()}{@code -1}.
 		 */
-		public List<DataBlockRequests<T>> split() {
+		public List<ChunkRequests<T>> split() {
 			final int subLevel = level - 1;
-			final List<DataBlockRequests<T>> subRequests = new ArrayList<>();
+			final List<ChunkRequests<T>> subRequests = new ArrayList<>();
 			for (int i = 0; i < requests.size(); ) {
 				final long[] ilpos = requests.get(i).position.absolute(subLevel);
 				int j = i + 1;
@@ -966,14 +965,14 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 						break;
 					}
 				}
-				subRequests.add(new DataBlockRequests<>(requests.subList(i, j), subLevel, grid));
+				subRequests.add(new ChunkRequests<>(requests.subList(i, j), subLevel, grid));
 				i = j;
 			}
 			return subRequests;
 		}
 
 		/**
-		 * Returns {@code true} if this {@code DataBlockRequests} completely
+		 * Returns {@code true} if this {@code ChunkRequests} completely
 		 * fills its containing shard at nesting level {@link #level()}.
 		 * (This can be used to avoid reading a shard that will be completely
 		 * overwritten).
@@ -983,7 +982,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		 */
 		public boolean coversShard() {
 			final long[] gridMin = grid.absolutePosition(position().absolute(level), level, 0);
-			final long[] datasetSize = grid.getDatasetSizeInBlocks(); // in units of DataBlocks
+			final long[] datasetSize = grid.getDatasetSizeInChunks(); // in units of DataBlocks
 			final int[] defaultShardSize = grid.relativeToBaseBlockSize(level); // in units of DataBlocks
 			int numElements = 1;
 			for (int d = 0; d < defaultShardSize.length; d++) {
@@ -993,65 +992,65 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		}
 
 		/**
-		 * Extract {@link DataBlockRequest#block DataBlock}s from the requests,
-		 * in the order of {@link DataBlockRequest#index indices}.
+		 * Extract {@link ChunkRequest#chunk chunk}s from the requests,
+		 * in the order of {@link ChunkRequest#index indices}.
 		 * <p>
-		 * (This is used in {@link #readBlocks} to collect DataBlocks in the
+		 * (This is used in {@link #readChunks} to collect chunks in the
 		 * requested order.)
  		 */
-		public List<DataBlock<T>> blocks(final List<DataBlockRequest<T>> duplicates) {
+		public List<DataBlock<T>> chunks(final List<ChunkRequest<T>> duplicates) {
 			final int size = requests.size() + duplicates.size() / 2;
 			final DataBlock<T>[] blocks = new DataBlock[size];
-			requests.forEach(r -> blocks[r.index] = r.block);
+			requests.forEach(r -> blocks[r.index] = r.chunk);
 			for (int i = 0; i < duplicates.size(); i += 2) {
-				final DataBlockRequest<T> a = duplicates.get(i * 2);
-				final DataBlockRequest<T> b = duplicates.get(i * 2 + 1);
-				blocks[a.index] = b.block;
+				final ChunkRequest<T> a = duplicates.get(i * 2);
+				final ChunkRequest<T> b = duplicates.get(i * 2 + 1);
+				blocks[a.index] = b.chunk;
 			}
 			return Arrays.asList(blocks);
 		}
 	}
 
 	/**
-	 * Construct {@code DataBlockRequests} from a list of level-0 grid positions
+	 * Construct {@code ChunkRequests} from a list of level-0 grid positions
 	 * for reading.
 	 * <p>
-	 * The nesting level ot the returned {@code DataBlockRequests} is {@code
+	 * The nesting level ot the returned {@code ChunkRequests} is {@code
 	 * grid.numLevels()}, that is level of the highest-order shard + 1. This
 	 * implies that the requests are not guaranteed to be in the same shard (at
-	 * any level. {@link DataBlockRequests#split() Splitting} the {@code
-	 * DataBlockRequests} once will return a list of {@code DataBlockRequests}
-	 * that each contain blocks from one highest-order shard.
+	 * any level. {@link ChunkRequests#split() Splitting} the {@code
+	 * ChunkRequests} once will return a list of {@code ChunkRequests}
+	 * that each contain chunks from one highest-order shard.
 	 */
-	private DataBlockRequests<T> createReadRequests(final List<long[]> gridPositions) {
-		final List<DataBlockRequest<T>> requests = new ArrayList<>(gridPositions.size());
+	private ChunkRequests<T> createReadRequests(final List<long[]> gridPositions) {
+		final List<ChunkRequest<T>> requests = new ArrayList<>(gridPositions.size());
 		for (int i = 0; i < gridPositions.size(); i++) {
 			final NestedPosition pos = grid.nestedPosition(gridPositions.get(i));
-			requests.add(new DataBlockRequest<>(pos, i));
+			requests.add(new ChunkRequest<>(pos, i));
 		}
 		requests.sort(Comparator.comparing(r -> r.position));
-		return new DataBlockRequests<>(requests, grid.numLevels(), grid);
+		return new ChunkRequests<>(requests, grid.numLevels(), grid);
 	}
 
 	/**
-	 * Construct {@code DataBlockRequests} from a list of level-0 DataBlocks for
-	 * writing.
+	 * Construct {@code ChunkRequests} from a list of chunks (level-0
+	 * DataBlocks) for writing.
 	 * <p>
-	 * The nesting level ot the returned {@code DataBlockRequests} is {@code
+	 * The nesting level ot the returned {@code ChunkRequests} is {@code
 	 * grid.numLevels()}, that is level of the highest-order shard + 1. This
 	 * implies that the requests are not guaranteed to be in the same shard (at
-	 * any level. {@link DataBlockRequests#split() Splitting} the {@code
-	 * DataBlockRequests} once will return a list of {@code DataBlockRequests}
-	 * that each contain blocks from one highest-order shard.
+	 * any level. {@link ChunkRequests#split() Splitting} the {@code
+	 * ChunkRequests} once will return a list of {@code ChunkRequests}
+	 * that each contain chunks from one highest-order shard.
 	 */
-	private DataBlockRequests<T> createWriteRequests(final List<DataBlock<T>> dataBlocks) {
-		final List<DataBlockRequest<T>> requests = new ArrayList<>(dataBlocks.size());
+	private ChunkRequests<T> createWriteRequests(final List<DataBlock<T>> dataBlocks) {
+		final List<ChunkRequest<T>> requests = new ArrayList<>(dataBlocks.size());
 		for (final DataBlock<T> dataBlock : dataBlocks) {
 			final NestedPosition pos = grid.nestedPosition(dataBlock.getGridPosition());
-			requests.add(new DataBlockRequest<>(pos, dataBlock));
+			requests.add(new ChunkRequest<>(pos, dataBlock));
 		}
 		requests.sort(Comparator.comparing(r -> r.position));
-		return new DataBlockRequests<>(requests, grid.numLevels(), grid);
+		return new ChunkRequests<>(requests, grid.numLevels(), grid);
 	}
 
 	/**
@@ -1059,7 +1058,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	 * array type and the number of elements in a block corresponds to the
 	 * {@link DataBlock#getSize()}.
 	 * <p>
-	 * This is used by {@link #readShard} and {@link #writeShard} which
+	 * This is used by {@link #readBlock} and {@link #writeBlock} which
 	 * internally need to allocate new DataBlocks to split or merge a shard.
 	 */
 	private interface DataBlockFactory<T> {
