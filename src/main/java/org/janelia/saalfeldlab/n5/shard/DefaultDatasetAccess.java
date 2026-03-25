@@ -290,7 +290,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final PositionValueAccess pva,
 			final long[] min,
 			final long[] size,
-			final DataBlockSupplier<T> blocks,
+			final DataBlockSupplier<T> chunkSupplier,
 			final boolean writeFully
 	) throws N5IOException {
 
@@ -301,7 +301,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final boolean nestedWriteFully = writeFully || region.fullyContains(pos);
 			final ReadData modifiedData;
 			try (final VolatileReadData existingData = nestedWriteFully ? null : pva.get(key)) {
-				modifiedData = writeRegionRecursive(existingData, region, blocks, pos);
+				modifiedData = writeRegionRecursive(existingData, region, chunkSupplier, pos);
 				// Here, we are about to write the shard data, but with the new block modified.
 				// Need to make sure that the read operations happen now before pva.set acquires a write lock
 				if (existingData != null && modifiedData != null) {
@@ -317,7 +317,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final PositionValueAccess pva,
 			final long[] min,
 			final long[] size,
-			final DataBlockSupplier<T> blocks,
+			final DataBlockSupplier<T> chunkSupplier,
 			final boolean writeFully,
 			final ExecutorService exec) throws N5Exception, InterruptedException, ExecutionException {
 
@@ -329,7 +329,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				final boolean nestedWriteFully = writeFully || region.fullyContains(pos);
 				final ReadData modifiedData;
 				try (final VolatileReadData existingData = nestedWriteFully ? null : pva.get(key)) {
-					modifiedData = writeRegionRecursive(existingData, region, blocks, pos);
+					modifiedData = writeRegionRecursive(existingData, region, chunkSupplier, pos);
 					// Here, we are about to write the shard data, but with the new block modified.
 					// Need to make sure that the read operations happen now before pva.set acquires a write lock
 					if (existingData != null && modifiedData != null) {
