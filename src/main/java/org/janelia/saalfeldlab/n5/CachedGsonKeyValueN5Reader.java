@@ -187,11 +187,23 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	@Override
 	default boolean groupExists(final String pathName) {
 
-		final String normalPathName = N5GroupPath.of(pathName).normalPath();
-		if (cacheMeta())
-			return getCache().isGroup(normalPathName, null);
-		else {
-			return isGroupFromContainer(normalPathName);
+		// TODO: REPLACES OLD CACHE
+		{
+			// run old code as well to not mess with N5JsonCache
+			final String normalPathName = N5GroupPath.of(pathName).normalPath();
+			if (cacheMeta())
+				getCache().isGroup(normalPathName, null);
+			else {
+				isGroupFromContainer(normalPathName);
+			}
+		}
+
+		// NB: For n5, every directory is a group
+		final N5GroupPath group = N5GroupPath.of(pathName);
+		if (cacheMeta()) {
+			return getMyCache().isDirectory(group);
+		} else {
+			return my_isDirectoryFromContainer(group);
 		}
 	}
 
@@ -210,11 +222,18 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	@Override
 	default boolean datasetExists(final String pathName) throws N5IOException {
 
-		final String normalPathName = N5GroupPath.of(pathName).normalPath();
-		if (cacheMeta()) {
-			return getCache().isDataset(normalPathName, getAttributesKey());
+		// TODO: REPLACES OLD CACHE
+		{
+			// run old code as well to not mess with N5JsonCache
+			final String normalPathName = N5GroupPath.of(pathName).normalPath();
+			if (cacheMeta()) {
+				getCache().isDataset(normalPathName, getAttributesKey());
+			} else {
+				isDatasetFromContainer(normalPathName);
+			}
 		}
-		return isDatasetFromContainer(normalPathName);
+
+		return getDatasetAttributes(pathName) != null;
 	}
 
 	@Override
