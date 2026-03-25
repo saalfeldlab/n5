@@ -84,6 +84,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	 *            normalized group path without leading slash
 	 * @return the absolute path to the attributes
 	 */
+	// TODO: not sure this method is worth being publicly exposed? Maybe better to just inline?
 	default N5FilePath relativeAttributesPath(final String normalPath) {
 
 		return N5GroupPath.of(normalPath).resolve(getAttributesKey()).asFile();

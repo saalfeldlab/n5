@@ -58,7 +58,7 @@ public interface N5Writer extends N5Reader {
 	 * @param groupPath group path
 	 * @param attributePath the key
 	 * @param attribute the attribute
-	 * @param <T> the attribute type type
+	 * @param <T> the attribute type
 	 * @throws N5Exception the exception
 	 */
 	default <T> void setAttribute(

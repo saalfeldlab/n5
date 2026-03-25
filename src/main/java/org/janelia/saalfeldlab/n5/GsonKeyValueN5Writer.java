@@ -75,7 +75,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 	/**
 	 * Helper method that writes an attributes tree into the store
-	 *
+	 * <p>
 	 * TODO This method is not part of the public API and should be protected
 	 * in Java versions greater than 8
 	 *
@@ -113,36 +113,6 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		writeAttributes(path, attributes);
 	}
 
-	/**
-	 * Helper method that reads the existing map of attributes, JSON encodes,
-	 * inserts and overrides the provided attributes, and writes them back into
-	 * the attributes store.
-	 * <p>
-	 * TODO This method is not part of the public API and should be protected
-	 * in Java greater than 8
-	 *
-	 * @param normalGroupPath
-	 *            to write the attributes to
-	 * @param attributes
-	 *            to write
-	 * @throws N5Exception
-	 *             if unable to read or write the attributes at
-	 *             {@code normalGroupPath}
-	 */
-	default void writeAttributes(
-			final String normalGroupPath,
-			final Map<String, ?> attributes) throws N5Exception {
-
-		if (attributes != null && !attributes.isEmpty()) {
-			JsonElement root = getAttributes(normalGroupPath);
-			root = root != null && root.isJsonObject()
-					? root.getAsJsonObject()
-					: new JsonObject();
-			root = GsonUtils.insertAttributes(root, attributes, getGson());
-			writeAttributes(normalGroupPath, root);
-		}
-	}
-
 	@Override
 	default void setAttributes(
 			final String path,
@@ -151,7 +121,14 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		if (!exists(path))
 			throw new N5IOException("\"" + path + "\" is not a group or dataset.");
 
-		writeAttributes(path, attributes);
+		if (attributes != null && !attributes.isEmpty()) {
+			JsonElement root = getAttributes(path);
+			root = root != null && root.isJsonObject()
+					? root.getAsJsonObject()
+					: new JsonObject();
+			root = GsonUtils.insertAttributes(root, attributes, getGson());
+			setAttributes(path, root);
+		}
 	}
 
 	@Override
