@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 
 /**
  * A simple structured container API for hierarchies of chunked
@@ -55,7 +56,7 @@ public interface N5Writer extends N5Reader {
 	 * @param groupPath group path
 	 * @param attributePath the key
 	 * @param attribute the attribute
-	 * @param <T> the attribute type type
+	 * @param <T> the attribute type
 	 * @throws N5Exception the exception
 	 */
 	default <T> void setAttribute(
@@ -348,6 +349,13 @@ public interface N5Writer extends N5Reader {
 
 	/**
 	 * Deletes the block at {@code gridPosition}.
+	 * <p>
+	 * A block is the highest (coarsest) level of the dataset's {@link NestedGrid},
+	 * that is, a shard if the dataset is sharded, or a chunk otherwise.
+	 * Note that {@code gridPosition} is in units of blocks at the highest
+	 * (coarsest) level, too.
+	 * <p>
+	 * This method's behavior is identical to {@link #deleteChunk} for un-sharded datasets.
 	 *
 	 * @param datasetPath dataset path
 	 * @param gridPosition position of block to be deleted
@@ -364,6 +372,13 @@ public interface N5Writer extends N5Reader {
 
 	/**
 	 * Deletes the block at {@code gridPosition}.
+	 * <p>
+	 * A block is the highest (coarsest) level of the dataset's {@link NestedGrid},
+	 * that is, a shard if the dataset is sharded, or a chunk otherwise.
+	 * Note that {@code gridPosition} is in units of blocks at the highest
+	 * (coarsest) level, too.
+	 * <p>
+	 * This method's behavior is identical to {@link #deleteChunk} for un-sharded datasets.
 	 *
 	 * @param datasetPath the dataset path
 	 * @param datasetAttributes the dataset attributes
@@ -379,6 +394,8 @@ public interface N5Writer extends N5Reader {
 
 	/**
 	 * Deletes the chunk at {@code gridPosition}.
+	 * <p>
+	 * Note that {@code gridPosition} is in units of chunks.
 	 *
 	 * @param datasetPath dataset path
 	 * @param gridPosition position of chunk to be deleted
@@ -395,6 +412,8 @@ public interface N5Writer extends N5Reader {
 
 	/**
 	 * Deletes the chunk at {@code gridPosition}.
+	 * <p>
+	 * Note that {@code gridPosition} is in units of chunks.
 	 *
 	 * @param datasetPath the dataset path
 	 * @param datasetAttributes the dataset attributes
@@ -410,6 +429,8 @@ public interface N5Writer extends N5Reader {
 
 	/**
 	 * Deletes the chunks at the given {@code gridPositions}.
+	 * <p>
+	 * Note that {@code gridPositions} are in units of chunks.
 	 *
 	 * @param datasetPath dataset path
 	 * @param gridPositions a list of grid positions
@@ -429,8 +450,7 @@ public interface N5Writer extends N5Reader {
 
 	/**
 	 * Save a {@link Serializable} as an N5 {@link DataBlock} at a given offset.
-	 * The
-	 * offset is given in {@link DataBlock} grid coordinates.
+	 * The offset is given in {@link DataBlock} grid coordinates.
 	 *
 	 * @param object the object to serialize
 	 * @param datasetPath the dataset path
