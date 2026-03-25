@@ -45,7 +45,7 @@ import org.janelia.saalfeldlab.n5.shard.ShardIndex.NDArray;
 public class RawShardCodec implements BlockCodec<RawShard> {
 
 	/**
-	 * Number of elements (DataBlocks, nested shards) in each dimension per shard.
+	 * Number of elements (chunks, nested shards) in each dimension per shard.
 	 */
 	private final int[] size;
 	private final IndexLocation indexLocation;

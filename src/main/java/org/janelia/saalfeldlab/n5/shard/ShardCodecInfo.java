@@ -37,8 +37,8 @@ import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 public interface ShardCodecInfo extends BlockCodecInfo {
 
 	/**
-	 * Chunk size of each shard element (either nested shard or DataBlock)
-	 * 
+	 * Size in pixels of each shard element (either nested shard or chunk)
+	 *
 	 * @return the size of each shard element
 	 */
 	int[] getInnerBlockSize();
@@ -64,14 +64,14 @@ public interface ShardCodecInfo extends BlockCodecInfo {
 
 	/**
 	 * BlockCodec for shard index
-	 * 
+	 *
 	 * @return the BlockCodecInfo for this shard's index
 	 */
 	BlockCodecInfo getIndexBlockCodecInfo();
 
 	/**
 	 * Deterministic-size DataCodecs for index BlockCodec
-	 * 
+	 *
 	 * @return the collection of DataCodecInfos for this shard's index
 	 */
 	DataCodecInfo[] getIndexDataCodecInfos();
