@@ -39,33 +39,33 @@ import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 /**
  * Wrap a KeyValueAccess and a dataset URI to be able to get/set values (ReadData) by {@code long[]} key
- * indicating the position of a block or shard.
+ * indicating the position of a top-level DataBlock (a top-level shard for sharded datasets,
+ * a chunk for non-sharded datasets).
  */
 public interface PositionValueAccess {
 
 	/**
-	 * Gets the {@link VolatileReadData} for the DataBlock (or shard) at the
-	 * given position in the block (or shard) grid.
+	 * Gets the {@link VolatileReadData} for the DataBlock at the given position
+	 * in the block grid.
 	 * <p>
 	 * If the requested key does not exist, either {@code null} is returned or a
 	 * lazy {@code VolatileReadData} that will throw {@code N5NoSuchKeyException}
 	 * when trying to materialize.
 	 *
 	 * @param key
-	 *            The position of the data block or shard
-	 * @return ReadData for the given key or {@code null} if the key doesn't
-	 *         exist
+	 *            The position of the block
+	 * @return ReadData for the given key or {@code null} if the key doesn't exist
 	 * @throws N5Exception.N5IOException
 	 *             if an error occurs while reading
 	 */
 	VolatileReadData get(long[] key) throws N5Exception.N5IOException;
 
 	/**
-	 * Write the {@code data} for a DataBlock (or shard) to the given position
-	 * in the block grid.
+	 * Write the {@code data} for a DataBlock to the given position in the block
+	 * grid.
 	 *
 	 * @param key
-	 * 		The grid position of the DataBlock (or shard) to write
+	 * 		The grid position of the DataBlock to write
 	 * @param data
 	 * 		The data to write
 	 *
@@ -106,7 +106,7 @@ public interface PositionValueAccess {
 		}
 
 		/**
-		 * Constructs the absolute path for a data block (or shard) at a given grid
+		 * Constructs the absolute path for a DataBlock at a given grid
 		 * position.
 		 *
 		 * @param gridPosition
