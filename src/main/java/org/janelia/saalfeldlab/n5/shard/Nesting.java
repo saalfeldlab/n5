@@ -258,7 +258,7 @@ public class Nesting {
 		/**
 		 * dimensions of the dataset in level-0 blocks.
 		 */
-		private final long[] datasetSizeInBlocks;
+		private final long[] datasetSizeInChunks;
 
 		/**
 		 * {@code blockSizes[l][d]} is the block size at level {@code l} in dimension {@code d}.
@@ -322,10 +322,10 @@ public class Nesting {
 			}
 
 			if (datasetSize == null) {
-				datasetSizeInBlocks = null;
+				datasetSizeInChunks = null;
 			} else {
-				datasetSizeInBlocks = new long[numDimensions];
-				Arrays.setAll(datasetSizeInBlocks, d -> (datasetSize[d] + blockSizes[0][d] - 1) / blockSizes[0][d]);
+				datasetSizeInChunks = new long[numDimensions];
+				Arrays.setAll(datasetSizeInChunks, d -> (datasetSize[d] + blockSizes[0][d] - 1) / blockSizes[0][d]);
 			}
 		}
 
@@ -602,12 +602,6 @@ public class Nesting {
 			return targetPos;
 		}
 
-		public long[] relativePosition(
-				final long[] sourcePos,
-				final int targetLevel) {
-			return relativePosition(sourcePos, 0, targetLevel);
-		}
-
 		/**
 		 * Get size of a block at the given {@code level} relative to {@code
 		 * level-1} (that is, in units of {@code level-1} blocks).
@@ -621,7 +615,7 @@ public class Nesting {
 
 		/**
 		 * Get size of a block at the given {@code level} relative to level {@code
-		 * 0} (that is, in units of {@code level-0} blocks).
+		 * 0} (that is, in units of chunks).
 		 * <p>
 		 * For example {@code relativeToBaseBlockSize(1)} returns the number of
 		 * chunks in a (non-nested) shard.
@@ -643,15 +637,15 @@ public class Nesting {
 		}
 
 		/**
-		 * Get the size of the dataset in units of DataBlocks.
+		 * Get the size of the dataset in units of chunks.
 		 * <p>
 		 * This might return {@code null}, if this {@code NestedGrid} was not
 		 * constructed with dataset dimensions.
 		 *
 		 * @return size of the dataset in chunks
 		 */
-		public long[] getDatasetSizeInBlocks() {
-			return datasetSizeInBlocks;
+		public long[] getDatasetSizeInChunks() {
+			return datasetSizeInChunks;
 		}
 	}
 }

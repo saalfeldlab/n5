@@ -78,7 +78,7 @@ public class NestedGridTest {
 	}
 
 	private static long relPosition1D(final NestedGrid grid, final int sourcePos, final int targetLevel) {
-		return grid.relativePosition(new long[] {sourcePos}, targetLevel)[0];
+		return grid.relativePosition(new long[] {sourcePos}, 0, targetLevel)[0];
 	}
 
 	@Test
