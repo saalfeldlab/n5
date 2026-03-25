@@ -56,7 +56,7 @@ import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
  */
 public interface N5Reader extends AutoCloseable {
 
-	public static class Version {
+	class Version {
 
 		private final int major;
 		private final int minor;
@@ -193,17 +193,17 @@ public interface N5Reader extends AutoCloseable {
 	/**
 	 * SemVer version of this N5 spec.
 	 */
-	public static final Version NO_VERSION = new Version(0, 0, 0);
+	Version NO_VERSION = new Version(0, 0, 0);
 
 	/**
 	 * SemVer version of this N5 spec.
 	 */
-	public static final Version VERSION = new Version(4, 0, 0);
+	Version VERSION = new Version(4, 0, 0);
 
 	/**
 	 * Version attribute key.
 	 */
-	public static final String VERSION_KEY = "n5";
+	String VERSION_KEY = "n5";
 
 	/**
 	 * Get the SemVer version of this container as specified in the 'version'
@@ -246,9 +246,9 @@ public interface N5Reader extends AutoCloseable {
 	 *             the exception
 	 */
 	<T> T getAttribute(
-			final String pathName,
-			final String key,
-			final Class<T> clazz) throws N5Exception;
+			String pathName,
+			String key,
+			Class<T> clazz) throws N5Exception;
 
 	/**
 	 * Reads an attribute.
@@ -266,9 +266,9 @@ public interface N5Reader extends AutoCloseable {
 	 *             the exception
 	 */
 	<T> T getAttribute(
-			final String pathName,
-			final String key,
-			final Type type) throws N5Exception;
+			String pathName,
+			String key,
+			Type type) throws N5Exception;
 
 	/**
 	 * Get mandatory dataset attributes.
@@ -280,7 +280,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws N5Exception
 	 *             the exception
 	 */
-	DatasetAttributes getDatasetAttributes(final String pathName) throws N5Exception;
+	DatasetAttributes getDatasetAttributes(String pathName) throws N5Exception;
 
 	/**
 	 * Some implementations may need to convert arbitrary DatasetAttributes to their specific equivalent variant.
@@ -314,9 +314,9 @@ public interface N5Reader extends AutoCloseable {
 	 *             the exception
 	 */
 	<T> DataBlock<T> readChunk(
-			final String pathName,
-			final DatasetAttributes datasetAttributes,
-			final long... gridPosition) throws N5Exception;
+			String pathName,
+			DatasetAttributes datasetAttributes,
+			long... gridPosition) throws N5Exception;
 
 	/**
 	 * Reads multiple chunks as {@link DataBlock}s.
@@ -370,9 +370,9 @@ public interface N5Reader extends AutoCloseable {
 	 * @see DatasetAttributes#getNestedBlockGrid()
 	 */
 	<T> DataBlock<T> readBlock(
-			final String pathName,
-			final DatasetAttributes datasetAttributes,
-			final long... gridPosition) throws N5Exception;
+			String pathName,
+			DatasetAttributes datasetAttributes,
+			long... gridPosition) throws N5Exception;
 
 	/**
 	 * Checks if a block exists at the given grid position without reading the data.
@@ -396,9 +396,9 @@ public interface N5Reader extends AutoCloseable {
 	 *             the exception
 	 */
 	boolean blockExists(
-			final String pathName,
-			final DatasetAttributes datasetAttributes,
-			final long... gridPosition) throws N5Exception;
+			String pathName,
+			DatasetAttributes datasetAttributes,
+			long... gridPosition) throws N5Exception;
 
 	/**
 	 * Load a {@link DataBlock} as a {@link Serializable}. The offset is given
@@ -444,7 +444,7 @@ public interface N5Reader extends AutoCloseable {
 	 *            group path
 	 * @return true if the path exists
 	 */
-	boolean exists(final String pathName);
+	boolean exists(String pathName);
 
 	/**
 	 * Test whether a dataset exists at a given path.
@@ -469,7 +469,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws N5Exception
 	 *             an exception is thrown if pathName is not a valid group
 	 */
-	String[] list(final String pathName) throws N5Exception;
+	String[] list(String pathName) throws N5Exception;
 
 	/**
 	 * Recursively list all groups and datasets in the given path.
@@ -873,7 +873,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @return a map of attribute keys to their inferred class
 	 * @throws N5Exception if an error occurred during listing
 	 */
-	Map<String, Class<?>> listAttributes(final String pathName) throws N5Exception;
+	Map<String, Class<?>> listAttributes(String pathName) throws N5Exception;
 
 	/**
 	 * Returns the symbol that is used to separate nodes in a group path.
