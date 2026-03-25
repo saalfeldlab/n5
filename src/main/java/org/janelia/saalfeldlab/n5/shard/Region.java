@@ -36,7 +36,7 @@ import org.janelia.saalfeldlab.n5.shard.Nesting.NestedGrid;
 /**
  * Bounds, in pixel coordinates, of a region in a dataset.
  * <p>
- * Provides methods to find which blocks and shards are contained in the
+ * Provides methods to find which chunks and shards are contained in the
  * region, iterate sub-NestedPositions, etc.
  */
 public class Region {
@@ -63,12 +63,12 @@ public class Region {
 	private final long[] size;
 
 	/**
-	 * {@code NestedPosition} of the block containing the min pixel position.
+	 * {@code NestedPosition} of the chunk containing the min pixel position.
 	 */
 	private final Nesting.NestedPosition minPos;
 
 	/**
-	 * {@code NestedPosition} of the block containing the max pixel position.
+	 * {@code NestedPosition} of the chunk containing the max pixel position.
 	 */
 	private final Nesting.NestedPosition maxPos;
 
@@ -79,37 +79,38 @@ public class Region {
 		this.datasetDimensions = grid.getDatasetSize();
 
 		final int n = min.length;
-		final int[] blockSize = grid.getBlockSize(0);
+		final int[] chunkSize = grid.getBlockSize(0);
 
-		final long[] minBlock = new long[n];
-		Arrays.setAll(minBlock, d -> min[d] / blockSize[d]);
-		minPos = grid.nestedPosition(minBlock);
+		final long[] minChunk = new long[n];
+		Arrays.setAll(minChunk, d -> min[d] / chunkSize[d]);
+		minPos = grid.nestedPosition(minChunk);
 
-		final long[] maxBlock = new long[n];
-		Arrays.setAll(maxBlock, d -> (min[d] + size[d] - 1) / blockSize[d]);
-		maxPos = grid.nestedPosition(maxBlock);
+		final long[] maxChunk = new long[n];
+		Arrays.setAll(maxChunk, d -> (min[d] + size[d] - 1) / chunkSize[d]);
+		maxPos = grid.nestedPosition(maxChunk);
 	}
 
 	/**
-	 * Get the {@code NestedPosition} of the minimum DataBlock touched by the region.
+	 * Get the {@code NestedPosition} of the minimum chunk touched by the region.
 	 */
 	public Nesting.NestedPosition minPos() {
 		return minPos;
 	}
 
 	/**
-	 * Get the {@code NestedPosition} of the maximum DataBlock touched by the region.
+	 * Get the {@code NestedPosition} of the maximum chunk touched by the region.
 	 */
 	public Nesting.NestedPosition maxPos() {
 		return maxPos;
 	}
 
 	/**
-	 * Check whether the Shard or DataBlock corresponding to the given
-	 * position is fully contained inside the region.
-	 * (The {@link Nesting.NestedPosition#level() level} of {@code position} is used
-	 * to determine whether it refers to a DataBlock or a (potentially
-	 * nested) Shard.
+	 * Check whether the shard or chunk corresponding to the given position is
+	 * fully contained inside the region.
+	 * <p>
+	 * The {@link Nesting.NestedPosition#level() level} of {@code position} is
+	 * used to determine whether it refers to a chunk or a (potentially nested)
+	 * shard.
 	 *
 	 * @param position
 	 * 		the NestedPosition to check
