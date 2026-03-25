@@ -56,7 +56,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	private final GsonKeyValueN5Reader reader;
 
 	public <W extends GsonKeyValueN5Writer, R extends GsonKeyValueN5Reader> HttpReaderFsWriter(final W writer, final R reader) {
-	
+
 		this.writer = writer;
 		this.reader = reader;
 
@@ -240,7 +240,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
 		writer.setDatasetAttributes(datasetPath, datasetAttributes);
 	}
-	
+
 	@Override public DatasetAttributes getConvertedDatasetAttributes(DatasetAttributes datasetAttributes) {
 
 		return writer.getConvertedDatasetAttributes(datasetAttributes);
@@ -272,8 +272,8 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		return convertedDatasetAttributes;
 	}
 
-	@Override public <T> void writeChunk(String datasetPath, DatasetAttributes datasetAttributes, DataBlock<T> dataBlock) throws N5Exception {
-		writer.writeChunk(datasetPath, getConvertedDatasetAttributes(datasetAttributes), dataBlock);
+	@Override public <T> void writeChunk(String datasetPath, DatasetAttributes datasetAttributes, DataBlock<T> chunk) throws N5Exception {
+		writer.writeChunk(datasetPath, getConvertedDatasetAttributes(datasetAttributes), chunk);
 	}
 
 	@Override public <T> void writeBlock(String datasetPath, DatasetAttributes datasetAttributes, DataBlock<T> dataBlock) throws N5Exception {
@@ -315,8 +315,8 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		writer.writeAttributes(normalGroupPath, attributes);
 	}
 
-	@Override public <T> void writeChunks(String datasetPath, DatasetAttributes datasetAttributes, DataBlock<T>... dataBlocks) throws N5Exception {
+	@Override public <T> void writeChunks(String datasetPath, DatasetAttributes datasetAttributes, DataBlock<T>... chunks) throws N5Exception {
 
-		writer.writeChunks(datasetPath, getConvertedDatasetAttributes(datasetAttributes), dataBlocks);
+		writer.writeChunks(datasetPath, getConvertedDatasetAttributes(datasetAttributes), chunks);
 	}
 }
