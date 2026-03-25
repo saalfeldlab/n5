@@ -46,7 +46,7 @@ public class RawShardDataBlock implements DataBlock<RawShard> {
 	}
 
 	// TODO: should this be the number of elements in the Shard (number of
-	//       sub-shards / datablock) along each dimension, or the number of
+	//       sub-shards / chunks) along each dimension, or the number of
 	//       pixels alon each dimension?
 	@Override
 	public int[] getSize() {
