@@ -41,6 +41,12 @@ import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
+/**
+ * Implementation of {@link PositionValueAccess} for tests.
+ * <p>
+ * Instead of writing to a {@code KeyValueAccess} backend, here, data is just
+ * stored in a {@code Map} as {@code byte[]} arrays.
+ */
 public class TestPositionValueAccess implements PositionValueAccess {
 
 	private final Map<Key, byte[]> map = new HashMap<>();

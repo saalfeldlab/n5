@@ -58,15 +58,15 @@ public class WriteShardTest {
 
 	public static void main(String[] args) {
 
-		final int[] datablockSize = {3};
+		final int[] chunkSize = {3};
 		final int[] level1ShardSize = {6};
 		final long[] datasetDimensions = {36};
 
-		// DataBlocks are 3
+		// Chunks are 3
 		// Level 1 shards are 6
 		final BlockCodecInfo c0 = new N5BlockCodecInfo();
 		final ShardCodecInfo c1 = new DefaultShardCodecInfo(
-				datablockSize,
+				chunkSize,
 				c0,
 				new DataCodecInfo[] {new RawCompression()},
 				new RawBlockCodecInfo(),
@@ -119,19 +119,19 @@ public class WriteShardTest {
 
 		System.out.println("all good");
 	}
-	
+
 	@Test
 	public void testShardDatasetAccess() {
 
-		final int[] datablockSize = {3};
+		final int[] chunkSize = {3};
 		final int[] level1ShardSize = {6};
 		final long[] datasetDimensions = {36};
 
-		// DataBlocks are 3
+		// Chunks are 3
 		// Level 1 shards are 6
 		final BlockCodecInfo c0 = new N5BlockCodecInfo();
 		final ShardCodecInfo c1 = new DefaultShardCodecInfo(
-				datablockSize,
+				chunkSize,
 				c0,
 				new DataCodecInfo[] {new RawCompression()},
 				new RawBlockCodecInfo(),
@@ -163,14 +163,14 @@ public class WriteShardTest {
 	@Test
 	public void testWriteNullBlockRemovesShard() throws Exception {
 
-		final int[] datablockSize = {3};
+		final int[] chunkSize = {3};
 		final int[] level1ShardSize = {6};
 		final long[] datasetDimensions = {36};
 
 		// Level 1 shards have size 6 (each containing two datablocks of size 3)
 		final BlockCodecInfo c0 = new N5BlockCodecInfo();
 		final ShardCodecInfo c1 = new DefaultShardCodecInfo(
-				datablockSize,
+				chunkSize,
 				c0,
 				new DataCodecInfo[]{new RawCompression()},
 				new RawBlockCodecInfo(),
@@ -194,58 +194,58 @@ public class WriteShardTest {
 
 		assertFalse("Shard should not exist at the start of the test", store.exists(shardKey));
 
-		// Write a single block at grid position [3]
-		// This block is in shard [1] 
-		// ( shard 0 contains blocks 0-1,
-		//   shard 1 contains blocks 2-3 )
-		final long[] blockGridPosition = {3};
-		final DataBlock<int[]> block = createDataBlock(datablockSize, blockGridPosition, 100);
+		// Write a single chunk at grid position [3]
+		// This chunk is in shard [1]
+		// ( shard 0 contains chunks 0-1,
+		//   shard 1 contains chunks 2-3 )
+		final long[] chunkGridPosition = {3};
+		final DataBlock<int[]> chunk = createDataBlock(chunkSize, chunkGridPosition, 100);
 
-		datasetAccess.writeChunk(store, block);
+		datasetAccess.writeChunk(store, chunk);
 
 		// Verify the shard exists
-		assertTrue("Shard should exist after writing block", store.exists(shardKey));
+		assertTrue("Shard should exist after writing chunk", store.exists(shardKey));
 
-		// Write a null block at the same location using writeRegion
-		// This should remove the block and delete the now-empty shard
-		final long[] regionMin = {9}; // pixel position of block [3]
+		// Write a null chunk at the same location using writeRegion
+		// This should remove the chunk and delete the now-empty shard
+		final long[] regionMin = {9}; // pixel position of chunk [3]
 		final long[] regionSize = {3}; // size of one block
 
 		datasetAccess.writeRegion(
 				store,
 				regionMin,
 				regionSize,
-				(gridPosition, existingBlock) -> null, // block supplier returns
-														// null to indicate
-														// removal
+				(gridPosition,
+						// block supplier returns null to indicate removal
+						existingBlock) -> null,
 				false);
 
 		// Verify the shard has been removed
-		assertFalse("Shard should be removed after writing null block", store.exists(shardKey));
-		
+		assertFalse("Shard should be removed after writing null chunk", store.exists(shardKey));
+
 		/**
-		 * THREE BLOCKS, TWO SHARDS
+		 * THREE CHUNKS, TWO SHARDS
 		 */
-		// Write two blocks into the same shard, and one block into a second shard
-		// Shard [1] contains blocks [2] and [3]
-		// Shard [2] contains block  [4]
+		// Write two chunks into the same shard, and one chunk into a second shard
+		// Shard [1] contains chunks [2] and [3]
+		// Shard [2] contains chunk  [4]
 		final long[] shardKey1 = {1};
 		final long[] shardKey2 = {2};
 
-		final DataBlock<int[]> block1 = createDataBlock(datablockSize, new long[]{2}, 100);
-		final DataBlock<int[]> block2 = createDataBlock(datablockSize, new long[]{3}, 200);
-		final DataBlock<int[]> block3 = createDataBlock(datablockSize, new long[]{4}, 300);
+		final DataBlock<int[]> chunk1 = createDataBlock(chunkSize, new long[]{2}, 100);
+		final DataBlock<int[]> chunk2 = createDataBlock(chunkSize, new long[]{3}, 200);
+		final DataBlock<int[]> chunk3 = createDataBlock(chunkSize, new long[]{4}, 300);
 
 
 		assertFalse("Shard should not exist at the start of the test", store.exists(shardKey1));
 		assertFalse("Shard should not exist at the start of the test", store.exists(shardKey2));
 
 		// write blocks
-		datasetAccess.writeChunks(store, Streams.of(block1, block2, block3).collect(Collectors.toList()));
+		datasetAccess.writeChunks(store, Streams.of(chunk1, chunk2, chunk3).collect(Collectors.toList()));
 
 		// Verify the shard exists
-		assertTrue("Shard should exist after writing blocks", store.exists(shardKey1));
-		assertTrue("Shard should exist after writing blocks", store.exists(shardKey2));
+		assertTrue("Shard should exist after writing chunks", store.exists(shardKey1));
+		assertTrue("Shard should exist after writing chunks", store.exists(shardKey2));
 
 		// Write a null block at block [3]'s location
 		datasetAccess.writeRegion(
@@ -255,26 +255,26 @@ public class WriteShardTest {
 				(gridPosition, existingBlock) -> null,
 				false);
 
-		// Verify the shard still exists (because block [2] is still there)
-		assertTrue("Shard should still exist because it contains another block", store.exists(shardKey1));
+		// Verify the shard still exists (because chunk [2] is still there)
+		assertTrue("Shard should still exist because it contains another chunk", store.exists(shardKey1));
 		assertTrue("Shard should still exist because was not affected", store.exists(shardKey2));
 
-		// Verify we can still read block [2]
-		final DataBlock<int[]> readBlock = datasetAccess.readChunk(store, new long[]{2});
-		assertTrue("Block [2] should still be readable", readBlock != null);
-		assertTrue("Block [2] data should match", Arrays.equals(block1.getData(), readBlock.getData()));
+		// Verify we can still read chunk [2]
+		final DataBlock<int[]> readChunk = datasetAccess.readChunk(store, new long[]{2});
+		assertTrue("Block [2] should still be readable", readChunk != null);
+		assertTrue("Block [2] data should match", Arrays.equals(chunk1.getData(), readChunk.getData()));
 
-		// Verify block [3] is gone
-		final DataBlock<int[]> readBlock2 = datasetAccess.readChunk(store, new long[]{3});
-		assertNull("Block [3] should be null after removal", readBlock2);
+		// Verify chunk [3] is gone
+		final DataBlock<int[]> readChunk2 = datasetAccess.readChunk(store, new long[]{3});
+		assertNull("Block [3] should be null after removal", readChunk2);
 
-		// Verify block [4] exists
-		final DataBlock<int[]> readBlock3 = datasetAccess.readChunk(store, new long[]{4});
-		assertTrue("Block [4] should still be readable", readBlock3 != null);
-		assertTrue("Block [4] data should match", Arrays.equals(block3.getData(), readBlock3.getData()));
+		// Verify chunk [4] exists
+		final DataBlock<int[]> readChunk3 = datasetAccess.readChunk(store, new long[]{4});
+		assertTrue("Block [4] should still be readable", readChunk3 != null);
+		assertTrue("Block [4] data should match", Arrays.equals(chunk3.getData(), readChunk3.getData()));
 
-		// Write a null block at block [2]'s location
-		final long[] regionMin2 = {6}; // pixel position of block [3]
+		// Write a null chunk at chunk [2]'s location
+		final long[] regionMin2 = {6}; // pixel position of chunk [3]
 		final long[] regionSize2 = {3};
 
 		datasetAccess.writeRegion(
@@ -284,7 +284,7 @@ public class WriteShardTest {
 				(gridPosition, existingBlock) -> null,
 				false);
 
-		assertFalse("Shard should not exist after deleting all blocks", store.exists(shardKey1));
+		assertFalse("Shard should not exist after deleting all chunks", store.exists(shardKey1));
 		assertTrue("Shard should still exist because was not affected", store.exists(shardKey2));
 	}
 

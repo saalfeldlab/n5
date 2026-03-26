@@ -32,7 +32,7 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
 
 /**
- * Used to Create {@code DataCodec}s, which transform one {@link ReadData} into another,
+ * Used to create {@code DataCodec}s, which transform one {@link ReadData} into another,
  * for example, applying compression.
  */
 @NameConfig.Prefix("data-codec")
