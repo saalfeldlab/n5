@@ -140,6 +140,7 @@ public class FsIoPolicy {
                 throw new N5Exception.N5IOException("FileLazyRead is already closed.");
             }
 
+            ReadData readData = null;
             try (final FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
 
                 channel.position(offset);
@@ -157,13 +158,19 @@ public class FsIoPolicy {
                 final byte[] data = new byte[(int) size];
                 final ByteBuffer buf = ByteBuffer.wrap(data);
                 channel.read(buf);
-                return ReadData.from(data);
+                readData = ReadData.from(data);
 
             } catch (final NoSuchFileException e) {
                 throw new N5Exception.N5NoSuchKeyException("No such file", e);
             } catch (IOException | UncheckedIOException e) {
-                throw new N5Exception.N5IOException(e);
+                /* Occasionally (frequently for some source remote mounted file systems) this can throw exceptions during
+                * `channel.close()` which is called automatically in the try-with-resources block. In this case, we have
+                * successfully read the data, and we can return it, and ignore the exception. 
+                * */
+                if (readData == null)
+                    throw new N5Exception.N5IOException(e);
             }
+            return readData;
         }
 
         @Override
