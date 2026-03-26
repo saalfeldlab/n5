@@ -131,7 +131,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	 * Bulk Read operation on a shard.
 	 *
 	 * @param readData for the corresponding shard
-	 * @param requests for blocks within the shard to be read
+	 * @param requests for chunks within the shard to be read
 	 */
 	private void readChunksRecursive(
 			final ReadData readData,
@@ -247,7 +247,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	 * Bulk Write operation on a shard.
 	 *
 	 * @param existingReadData encoded existing shard data (to decode and partially override)
-	 * @param requests for blocks within the shard to be written
+	 * @param requests for chunks within the shard to be written
 	 */
 	private ReadData writeChunksRecursive(
 			final ReadData existingReadData, // may be null
@@ -302,7 +302,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final ReadData modifiedData;
 			try (final VolatileReadData existingData = nestedWriteFully ? null : pva.get(key)) {
 				modifiedData = writeRegionRecursive(existingData, region, chunkSupplier, pos);
-				// Here, we are about to write the shard data, but with the new block modified.
+				// Here, we are about to write the shard data, but with the new shard modified.
 				// Need to make sure that the read operations happen now before pva.set acquires a write lock
 				if (existingData != null && modifiedData != null) {
 					modifiedData.materialize();
@@ -369,8 +369,8 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			}
 			final DataBlock<T> chunk = chunkSupplier.get(gridPosition, existingChunk);
 
-			// null blocks may be provided when they contain only the fill value
-			// and only non-empty blocks should be written, for example
+			// null chunks may be provided when they contain only the fill value
+			// and only non-empty chunks should be written, for example
 			if (chunk == null)
 				return null;
 
@@ -415,13 +415,13 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 					// nothing changed, the blocks we wanted to delete didn't exist anyway
 					return false;
 				} else if (modifiedData != null) {
-					// Here, we are about to write the shard data, but without the block to be deleted.
+					// Here, we are about to write the shard data, but without the chunk to be deleted.
 					// Need to make sure that the read operations happen now before pva.set acquires a write lock
 					modifiedData.materialize();
 				}
 			} catch (final N5NoSuchKeyException e) {
 				// the key didn't exist (as we found out when lazy-reading the index)
-				// so nothing changed, the blocks we wanted to delete didn't exist anyway
+				// so nothing changed, the chunks we wanted to delete didn't exist anyway
 				return false;
 			}
 			if (modifiedData == null) {
@@ -447,7 +447,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 			final long[] elementPos = position.relative(level - 1);
 			final ReadData existingElementData = shard.getElementData(elementPos);
 			if (existingElementData == null) {
-				// The DataBlock (or the whole nested shard containing it) does not exist.
+				// The chunk (or the whole nested shard containing it) does not exist.
 				// This shard remains unchanged.
 				return existingReadData;
 			} else {
@@ -459,7 +459,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				}
 				shard.setElementData(modifiedElementData, elementPos);
 				if (modifiedElementData == null) {
-					// The DataBlock or nested shard was removed.
+					// The chunk or nested shard was removed.
 					// Check whether this shard becomes empty.
 					if (shard.isEmpty()) {
 						// This shard is empty and should be removed.
@@ -477,7 +477,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 	@Override
 	public boolean deleteChunks(final PositionValueAccess pva, final List<long[]> gridPositions) throws N5IOException {
 
-		// for non-sharded datasets, just delete the blocks individually
+		// for non-sharded datasets, just delete the chunks individually
 		if (grid.numLevels() == 1) {
 			boolean deleted = false;
 			for (long[] pos : gridPositions) {
@@ -510,7 +510,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 					}
 				} catch (final N5NoSuchKeyException e) {
 					// the key didn't exist (as we found out when lazy-reading the index)
-					// so nothing changed, the blocks we wanted to delete didn't exist anyway
+					// so nothing changed, the chunks we wanted to delete didn't exist anyway
 					continue;
 				}
 				if (modifiedData == null) {
@@ -735,7 +735,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 		final DataBlockFactory<T> blockFactory = DataBlockFactory.of(shardData);
 
 		final int n = grid.numDimensions();
-		final int[] chunkSize = grid.getBlockSize(0); // size of a standard (non-truncated) DataBlock
+		final int[] chunkSize = grid.getBlockSize(0); // size of a standard (non-truncated) chunk
 		final long[] datasetChunkSize = grid.getDatasetSizeInChunks();
 
 		final long[] shardPixelMin = grid.pixelPosition(dataBlock.getGridPosition(), level);
@@ -770,7 +770,7 @@ public class DefaultDatasetAccess<T> implements DatasetAccess<T> {
 				destSize[d] = Math.min(chunkSize[d], (int) (regionBound[d] - pixelMin[d]));
 			}
 
-			// This extracting DataBlocks will not work if num_array_elements != num_block_elements.
+			// This extracting chunks will not work if num_array_elements != num_block_elements.
 			// But we'll deal with that later if it becomes a problem...
 			final DataBlock<T> chunk = blockFactory.createDataBlock(destSize, chunkPos);
 			SubArrayCopy.copy(shardData, shardPixelSize, srcPos, chunk.getData(), destSize, destPos, destSize);
