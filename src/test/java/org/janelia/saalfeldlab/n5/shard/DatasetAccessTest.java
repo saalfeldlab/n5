@@ -93,7 +93,7 @@ public class DatasetAccessTest {
 				new RawCompression()
 		);
 
-		datasetAccess = attributes.datasetAccess();
+		datasetAccess = attributes.getDatasetAccess();
 	}
 
 
@@ -243,12 +243,10 @@ public class DatasetAccessTest {
 			super(dimensions, outerBlockSize, dataType, blockCodecInfo, dataCodecInfos);
 		}
 
-		public DatasetAccess datasetAccess() {
-
-			// to make this accessible for the test
-			return createDatasetAccess();
+		@Override // to make this accessible for the test
+		protected <T> DatasetAccess<T> getDatasetAccess() {
+			return super.getDatasetAccess();
 		}
-
 	}
 
 }
