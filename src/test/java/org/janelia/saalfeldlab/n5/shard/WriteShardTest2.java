@@ -50,15 +50,15 @@ public class WriteShardTest2 {
 
 	public static void main(String[] args) {
 
-		final int[] datablockSize = {3,3};
+		final int[] chunkSize = {3,3};
 		final int[] level1ShardSize = {6,6};
 		final long[] datasetDimensions = {36, 18};
 
-		// DataBlocks are 3
-		// Level 1 shards are 6
+		// Chunks are 3x3
+		// Level 1 shards are 6x6
 		final BlockCodecInfo c0 = new N5BlockCodecInfo();
 		final ShardCodecInfo c1 = new DefaultShardCodecInfo(
-				datablockSize,
+				chunkSize,
 				c0,
 				new DataCodecInfo[] {new RawCompression()},
 				new RawBlockCodecInfo(),
@@ -92,7 +92,7 @@ public class WriteShardTest2 {
 		System.out.println("shard.getData() = " + Arrays.toString(shard.getData()));
 		datasetAccess.writeBlock(store, shard, 1);
 
-		// we should get these DataBlock values
+		// we should get these Chunk values
 
 		//  1,  2,  3, |  4,  5,  6,
 		//  7,  8,  9, | 10, 11, 12,
