@@ -2,16 +2,18 @@ package org.janelia.saalfeldlab.n5.kva;
 
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception;
+import org.janelia.saalfeldlab.n5.readdata.DelegatingVolatileReadData;
 import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
-import org.janelia.saalfeldlab.n5.shard.ShardTest;
+import org.janelia.saalfeldlab.n5.readdata.prefetch.AggregatingSliceTrackingLazyRead;
 
 public class TrackingKeyValueAccess extends DelegateKeyValueAccess {
 
     public int numMaterializeCalls = 0;
     public int numIsFileCalls = 0;
     public long totalBytesRead = 0;
+    public boolean aggregate = false;
 
     public TrackingKeyValueAccess(final KeyValueAccess kva) {
         super(kva);
@@ -25,15 +27,27 @@ public class TrackingKeyValueAccess extends DelegateKeyValueAccess {
 
     @Override
     public VolatileReadData createReadData(final String normalPath) {
-//			throw new N5NoSuchKeyException("Test No Such Key");
-        return VolatileReadData.from(new TrackingVolatileReadData(kva.createReadData(normalPath)));
+
+        final VolatileReadData volatileReadData = kva.createReadData(normalPath);
+        final TrackingLazyRead trackingLazyRead = new TrackingLazyRead(volatileReadData);
+        LazyRead lazyRead = trackingLazyRead;
+        if (aggregate)
+            lazyRead = new AggregatingSliceTrackingLazyRead(trackingLazyRead);
+        VolatileReadData delegate = VolatileReadData.from( lazyRead );
+        return new DelegatingVolatileReadData(delegate) {
+            @Override
+            public void close() throws N5Exception.N5IOException {
+                super.close(); //closes delegate
+                volatileReadData.close();
+            }
+        };
     }
 
-    private class TrackingVolatileReadData implements LazyRead {
+    private class TrackingLazyRead implements LazyRead {
 
         private final VolatileReadData readData;
 
-        TrackingVolatileReadData(final VolatileReadData readData) {
+        TrackingLazyRead(final VolatileReadData readData) {
             this.readData = readData;
         }
 
