@@ -30,7 +30,6 @@ package org.janelia.saalfeldlab.n5.benchmarks;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -138,7 +137,7 @@ public class N5BlockWriteBenchmarks {
 				blocks.add(blk);
 
 				// write data into the read group
-				n5.writeChunk(readGroup, dsetAttrs, blk);
+				n5.writeBlock(readGroup, dsetAttrs, blk);
 			}
 
 		} catch (final IOException e) {
@@ -151,7 +150,7 @@ public class N5BlockWriteBenchmarks {
 	public void writeBenchmark() throws IOException {
 
 		blocks.forEach(blk -> {
-			n5.writeChunk(writeGroup, dsetAttrs, blk);
+			n5.writeBlock(writeGroup, dsetAttrs, blk);
 		});
 	}
 
@@ -161,7 +160,7 @@ public class N5BlockWriteBenchmarks {
 		final long[] p = new long[numDimensions];
 		for (int i = 0; i < numBlocks; i++) {
 			p[0] = i;
-			hole.consume(n5.readChunk(readGroup, dsetAttrs, p));
+			hole.consume(n5.readBlock(readGroup, dsetAttrs, p));
 		}
 	}
 
