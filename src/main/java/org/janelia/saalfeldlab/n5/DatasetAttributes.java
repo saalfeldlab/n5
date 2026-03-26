@@ -189,7 +189,7 @@ public class DatasetAttributes implements Serializable {
 		this(dimensions, blockSize, dataType, new DataCodecInfo[0]);
 	}
 
-	protected DatasetAccess<?> createDatasetAccess() {
+	private DatasetAccess<?> createDatasetAccess() {
 
 		final int m = nestingDepth(blockCodecInfo);
 
@@ -210,7 +210,7 @@ public class DatasetAttributes implements Serializable {
 
 		BlockCodecInfo currentBlockCodecInfo = blockCodecInfo;
 		DataCodecInfo[] currentDataCodecInfos = dataCodecInfos;
-		
+
 		DatasetCodecInfo[] datasetCodecInfos = this.datasetCodecInfos;
 
 		final NestedGrid grid = new NestedGrid(blockSizes, dimensions);
@@ -323,9 +323,9 @@ public class DatasetAttributes implements Serializable {
 	 *
 	 * @return the {@code DatasetAccess} for this dataset
 	 */
-	<T> DatasetAccess<T> getDatasetAccess() {
+	protected <T> DatasetAccess<T> getDatasetAccess() {
 
-		return (DatasetAccess<T>)access;
+		return (DatasetAccess<T>) access;
 	}
 
 	/**

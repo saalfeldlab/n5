@@ -49,7 +49,6 @@ import org.janelia.saalfeldlab.n5.RawCompression;
 import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.codec.BytesCodecTests.BitShiftBytesCodec;
 import org.janelia.saalfeldlab.n5.shard.DatasetAccess;
-import org.janelia.saalfeldlab.n5.shard.DatasetAccessTest;
 import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 import org.janelia.saalfeldlab.n5.shard.TestPositionValueAccess;
 import org.junit.Test;
@@ -146,7 +145,7 @@ public class BlockCodecTests {
 		final int[] blockSize = {0, 0};
 		final long[] gridPosition = {0, 0};
 		final N5BlockCodecInfo blockCodecInfo = new N5BlockCodecInfo();
-		final DatasetAccessTest.TestDatasetAttributes attributes = new DatasetAccessTest.TestDatasetAttributes(
+		final TestDatasetAttributes attributes = new TestDatasetAttributes(
 				new long[]{64, 64},
 				new int[]{8, 8},
 				DataType.UINT8,
@@ -154,7 +153,7 @@ public class BlockCodecTests {
 				new RawCompression());
 
 		final PositionValueAccess store = new TestPositionValueAccess();
-		DatasetAccess access = attributes.datasetAccess();
+		DatasetAccess access = attributes.getDatasetAccess();
 
 		// Test encode/decode
 		final ByteArrayDataBlock emptyBlock = new ByteArrayDataBlock(blockSize, gridPosition, new byte[0]);
@@ -315,5 +314,18 @@ public class BlockCodecTests {
 		}
 	}
 
+	public static class TestDatasetAttributes extends DatasetAttributes {
+
+		public TestDatasetAttributes(long[] dimensions, int[] outerBlockSize, DataType dataType, BlockCodecInfo blockCodecInfo,
+				DataCodecInfo... dataCodecInfos) {
+
+			super(dimensions, outerBlockSize, dataType, blockCodecInfo, dataCodecInfos);
+		}
+
+		@Override // to make this accessible for the test
+		protected <T> DatasetAccess<T> getDatasetAccess() {
+			return super.getDatasetAccess();
+		}
+	}
 
 }

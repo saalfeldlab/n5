@@ -73,7 +73,7 @@ public class WriteShardTest2 {
 				c1,
 				new RawCompression());
 
-		final DatasetAccess<int[]> datasetAccess = attributes.datasetAccess();
+		final DatasetAccess<int[]> datasetAccess = attributes.getDatasetAccess();
 		final PositionValueAccess store = new TestPositionValueAccess();
 
 		//	0       1       2       3       4       5       6
@@ -129,10 +129,9 @@ public class WriteShardTest2 {
 			super(dimensions, outerBlockSize, dataType, blockCodecInfo, dataCodecInfos);
 		}
 
-		public DatasetAccess datasetAccess() {
-
-			// to make this accessible for the test
-			return createDatasetAccess();
+		@Override // to make this accessible for the test
+		protected <T> DatasetAccess<T> getDatasetAccess() {
+			return super.getDatasetAccess();
 		}
 	}
 }

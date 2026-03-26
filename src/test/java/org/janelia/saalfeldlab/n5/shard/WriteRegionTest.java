@@ -88,7 +88,7 @@ public class WriteRegionTest {
 				c2,
 				new RawCompression());
 
-		final DatasetAccess<byte[]> datasetAccess = attributes.datasetAccess();
+		final DatasetAccess<byte[]> datasetAccess = attributes.getDatasetAccess();
 		final PositionValueAccess store = new TestPositionValueAccess();
 
 		// ---------------------------------------------------------------
@@ -175,7 +175,7 @@ public class WriteRegionTest {
 				c1,
 				new RawCompression());
 
-		final DatasetAccess<byte[]> datasetAccess = attributes.datasetAccess();
+		final DatasetAccess<byte[]> datasetAccess = attributes.getDatasetAccess();
 		final PositionValueAccess store = new TestPositionValueAccess();
 
 		final int[] dataBlockSize = c1.getInnerBlockSize();
@@ -227,12 +227,10 @@ public class WriteRegionTest {
 			super(dimensions, outerBlockSize, dataType, blockCodecInfo, dataCodecInfos);
 		}
 
-		public DatasetAccess datasetAccess() {
-
-			// to make this accessible for the test
-			return createDatasetAccess();
+		@Override // to make this accessible for the test
+		protected <T> DatasetAccess<T> getDatasetAccess() {
+			return super.getDatasetAccess();
 		}
-
 	}
 
 }
