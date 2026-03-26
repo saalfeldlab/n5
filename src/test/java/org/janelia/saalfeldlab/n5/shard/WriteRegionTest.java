@@ -52,20 +52,20 @@ public class WriteRegionTest {
 
 	public static void main(String[] args) {
 
-//		int[] datablockSize = {3, 3, 3};
+//		int[] chunkSize = {3, 3, 3};
 //		int[] level1ShardSize = {6, 6, 6};
 //		int[] level2ShardSize = {24, 24, 24};
-		int[] datablockSize = {3};
+		int[] chunkSize = {3};
 		int[] level1ShardSize = {6};
 		int[] level2ShardSize = {24};
 		final long[] datasetDimensions = {96};
 
-		// DataBlocks are 3x3x3
+		// Chunks are 3x3x3
 		// Level 1 shards are 6x6x6 (contain 2x2x2 DataBlocks)
 		// Level 2 shards are 24x24x24 (contain 4x4x4 Level 1 shards)
 		final BlockCodecInfo c0 = new N5BlockCodecInfo();
 		final ShardCodecInfo c1 = new DefaultShardCodecInfo(
-				datablockSize,
+				chunkSize,
 				c0,
 				new DataCodecInfo[] {new RawCompression()},
 				new RawBlockCodecInfo(),
@@ -121,46 +121,46 @@ public class WriteRegionTest {
 				false);
 
 		// verify that the written blocks can be read back with the correct values
-//		checkBlock(datasetAccess.readBlock(store, new long[] {0, 0, 0}), true, 1);
-//		checkBlock(datasetAccess.readBlock(store, new long[] {1, 0, 0}), true, 2);
-//		checkBlock(datasetAccess.readBlock(store, new long[] {0, 1, 0}), true, 3);
-//		checkBlock(datasetAccess.readBlock(store, new long[] {1, 1, 0}), true, 4);
-//		checkBlock(datasetAccess.readBlock(store, new long[] {3, 2, 1}), true, 5);
-//		checkBlock(datasetAccess.readBlock(store, new long[] {8, 4, 1}), true, 6);
+//		checkBlock(datasetAccess.readChunk(store, new long[] {0, 0, 0}), true, 1);
+//		checkBlock(datasetAccess.readChunk(store, new long[] {1, 0, 0}), true, 2);
+//		checkBlock(datasetAccess.readChunk(store, new long[] {0, 1, 0}), true, 3);
+//		checkBlock(datasetAccess.readChunk(store, new long[] {1, 1, 0}), true, 4);
+//		checkBlock(datasetAccess.readChunk(store, new long[] {3, 2, 1}), true, 5);
+//		checkBlock(datasetAccess.readChunk(store, new long[] {8, 4, 1}), true, 6);
 
 		// verify that deleting a block removes it from the shard (while other blocks in the same shard are still present)
 //		datasetAccess.deleteBlock(store, new long[] {0, 0, 0});
-//		checkBlock(datasetAccess.readBlock(store, new long[] {0, 0, 0}), false, 1);
-//		checkBlock(datasetAccess.readBlock(store, new long[] {1, 0, 0}), true, 2);
+//		checkBlock(datasetAccess.readChunk(store, new long[] {0, 0, 0}), false, 1);
+//		checkBlock(datasetAccess.readChunk(store, new long[] {1, 0, 0}), true, 2);
 
 		// if a shard becomes empty the corresponding key should be deleted
 //		if ( store.get(new long[] {1, 0, 0}) == null ) {
 //			throw new IllegalStateException("expected non-null readData");
 //		}
-//		datasetAccess.deleteBlock(store, new long[] {8, 4, 1});
+//		datasetAccess.deleteChunk(store, new long[] {8, 4, 1});
 //		if ( store.get(new long[] {1, 0, 0}) != null ) {
 //			throw new IllegalStateException("expected null readData");
 //		}
 
 		// deleting a non-existent block should not fail
-//		datasetAccess.deleteBlock(store, new long[] {0, 0, 8});
+//		datasetAccess.deleteChunk(store, new long[] {0, 0, 8});
 
 		System.out.println("all good");
 	}
-	
+
 	@Test
 	public void testWriteRegionSharded() {
 
-		int[] datablockSize = {3};
+		int[] chunkSize = {3};
 		int[] level2ShardSize = {24};
 		final long[] datasetDimensions = {96};
 
-		// DataBlocks are 3x3x3
+		// Chunks are 3x3x3
 		// Level 1 shards are 6x6x6 (contain 2x2x2 DataBlocks)
 		// Level 2 shards are 24x24x24 (contain 4x4x4 Level 1 shards)
 		final BlockCodecInfo c0 = new N5BlockCodecInfo();
 		final ShardCodecInfo c1 = new DefaultShardCodecInfo(
-				datablockSize,
+				chunkSize,
 				c0,
 				new DataCodecInfo[] {new RawCompression()},
 				new RawBlockCodecInfo(),
