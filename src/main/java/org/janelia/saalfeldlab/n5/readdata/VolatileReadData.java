@@ -1,7 +1,7 @@
 package org.janelia.saalfeldlab.n5.readdata;
 
-import java.io.InputStream;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.slices.AggregatingSliceTrackingLazyRead;
 
 /**
  * During its life-time, the content of a {@code VolatileReadData} should not be
@@ -29,7 +29,8 @@ public interface VolatileReadData extends ReadData, AutoCloseable {
 	 * @return a new VolatileReadData
 	 */
 	static VolatileReadData from(final LazyRead lazyRead) {
-		return new LazyReadData(lazyRead);
+		final LazyRead aggregatingLazyRead = new AggregatingSliceTrackingLazyRead(lazyRead);
+		return new LazyReadData(aggregatingLazyRead);
 	}
 
 }

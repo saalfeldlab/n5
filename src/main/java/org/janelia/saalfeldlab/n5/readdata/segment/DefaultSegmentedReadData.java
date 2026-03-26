@@ -28,6 +28,10 @@
  */
 package org.janelia.saalfeldlab.n5.readdata.segment;
 
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.Range;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -35,9 +39,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.readdata.Range;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 /**
  * Implementation of a {@link SegmentedReadData} wrapper around an existing {@code ReadData} delegate.

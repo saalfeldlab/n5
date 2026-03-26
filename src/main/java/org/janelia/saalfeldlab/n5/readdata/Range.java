@@ -28,6 +28,9 @@
  */
 package org.janelia.saalfeldlab.n5.readdata;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 
 /**
@@ -61,7 +64,7 @@ public interface Range {
 	}
 
 	static boolean equals(final Range r0, final Range r1) {
-		if (r0 == null && r1==null) {
+		if (r0 == null && r1 == null) {
 			return true;
 		} else if (r0 == null || r1 == null) {
 			return false;
@@ -119,4 +122,49 @@ public interface Range {
 
 		return new DefaultRange(offset, length);
 	}
+
+	/**
+	 * Returns a potentially new collection of {@link Range}s such that 
+	 * adjacent or overlapping Ranges are combined. 
+	 * <p>
+	 * If the input ranges are non-adjacent the input instance is returned, but if aggregation 
+	 * occurs, the result will be a new, sorted List.
+	 *
+	 * @param ranges
+	 *		a collection of Ranges 
+	 * @return
+	 */
+	static Collection<? extends Range> aggregate(final Collection<? extends Range> ranges) {
+
+		if (ranges.size() == 0)
+			return ranges;
+
+		ArrayList<Range> sortedRanges = new ArrayList<>(ranges);
+		Collections.sort(sortedRanges, Range.COMPARATOR);
+
+		ArrayList<Range> result = new ArrayList<>();
+		boolean wereMerges = false;
+		Range lo = null;
+		for (Range hi : sortedRanges) {
+
+			if (lo == null)
+				lo = hi;
+			else if (lo.end() >= hi.offset()) {
+				// merge
+				final Range mergedLo = Range.at(lo.offset(), Math.max(lo.end(), hi.end()) - lo.offset());
+				lo = mergedLo;
+				wereMerges = true;
+			} else {
+				result.add(lo);
+				lo = hi;
+			}
+		}
+		result.add(lo);
+
+		if (!wereMerges)
+			return ranges;
+
+		return result;
+	}	
+
 }
