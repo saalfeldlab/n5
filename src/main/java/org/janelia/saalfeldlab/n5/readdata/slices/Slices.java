@@ -1,9 +1,10 @@
-package org.janelia.saalfeldlab.n5.readdata.kva;
+package org.janelia.saalfeldlab.n5.readdata.slices;
+
+import org.janelia.saalfeldlab.n5.readdata.Range;
 
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import org.janelia.saalfeldlab.n5.readdata.Range;
 
 class Slices {
 

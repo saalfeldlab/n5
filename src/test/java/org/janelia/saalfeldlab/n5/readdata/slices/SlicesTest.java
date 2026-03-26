@@ -1,9 +1,10 @@
-package org.janelia.saalfeldlab.n5.readdata.kva;
+package org.janelia.saalfeldlab.n5.readdata.slices;
+
+import org.janelia.saalfeldlab.n5.readdata.Range;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.janelia.saalfeldlab.n5.readdata.Range;
-import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 

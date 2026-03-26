@@ -1,15 +1,16 @@
-package org.janelia.saalfeldlab.n5.readdata.kva;
+package org.janelia.saalfeldlab.n5.readdata.slices;
 
-import static org.junit.Assert.assertEquals;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.LazyRead;
+import org.janelia.saalfeldlab.n5.readdata.Range;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.readdata.Range;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 public class SliceTrackingLazyReadTests {
 

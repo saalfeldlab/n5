@@ -28,23 +28,6 @@
  */
 package org.janelia.saalfeldlab.n5.shard;
 
-import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.ByteOrder;
-import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
 import org.janelia.saalfeldlab.n5.*;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
@@ -56,10 +39,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class ShardTest {
@@ -649,6 +640,23 @@ public class ShardTest {
 			writer.readShard(dataset, datasetAttributes, new long[] {0,0});
 			// one for the index, one for each of the four blocks
 			assertEquals(5, writer.getNumMaterializeCalls());
+
+
+			/**
+			 *  Aggregate read calls
+			 */
+			//TODO
+			 writer.tkva.aggregate = true;
+			writer.resetNumMaterializeCalls();
+			writer.readBlocks(dataset, datasetAttributes, ptList);
+
+			// one for the index, one that covers ALL the blocks)
+			assertEquals(2, writer.getNumMaterializeCalls());
+
+			writer.resetNumMaterializeCalls();
+			writer.readShard(dataset, datasetAttributes, new long[] {0,0});
+			// one for the index, one that covers ALL the blocks
+			assertEquals(2, writer.getNumMaterializeCalls());
 		}
 	}
 

@@ -1,8 +1,10 @@
-package org.janelia.saalfeldlab.n5.readdata.kva;
+package org.janelia.saalfeldlab.n5.readdata.slices;
+
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.readdata.LazyRead;
+import org.janelia.saalfeldlab.n5.readdata.Range;
 
 import java.util.Collection;
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.readdata.Range;
 
 public class DefaultSliceTrackingLazyRead extends SliceTrackingLazyRead {
 
