@@ -537,9 +537,8 @@ public class ShardTest {
 				new ByteArrayDataBlock(chunkSize, new long[]{11, 11}, data)
 		);
 
-		writer.resetNumMaterializeCalls();
-		writer.readChunks(dataset, datasetAttributes, Collections.singletonList(new long[] {0,0}));
-		System.out.println(writer.getNumMaterializeCalls());
+        writer.resetNumMaterializeCalls();
+        writer.readChunks(dataset, datasetAttributes, Collections.singletonList(new long[] {0,0}));
 
 		ArrayList<long[]> ptList = new ArrayList<>();
 		ptList.add(new long[] {0, 0});
@@ -547,10 +546,8 @@ public class ShardTest {
 		ptList.add(new long[] {1, 0});
 		ptList.add(new long[] {1, 1});
 
-		writer.resetNumMaterializeCalls();
-		writer.readChunks(dataset, datasetAttributes, ptList);
-		System.out.println(writer.getNumMaterializeCalls());
-		System.out.println("");
+        writer.resetNumMaterializeCalls();
+        writer.readChunks(dataset, datasetAttributes, ptList);
 	}
 
     @Test
@@ -656,14 +653,29 @@ public class ShardTest {
 			writer.resetNumMaterializeCalls();
 			writer.readChunks(dataset, datasetAttributes, ptList);
 
-			// TODO change this if and when we implement aggregation of read calls
-			// one for the index, one for each of the four blocks
-			assertEquals(5, writer.getNumMaterializeCalls());
+			// one for the index, one for the four blocks (aggregated)
+			assertEquals(2, writer.getNumMaterializeCalls());
 
 			writer.resetNumMaterializeCalls();
 			writer.readBlock(dataset, datasetAttributes, new long[] {0,0});
-			// one for the index, one for each of the four blocks
-			assertEquals(5, writer.getNumMaterializeCalls());
+			// one for the index, one for the four blocks (aggregated)
+			assertEquals(2, writer.getNumMaterializeCalls());
+
+
+			/**
+			 *  Aggregate read calls
+			 */
+            writer.tkva.aggregate = true;
+			writer.resetNumMaterializeCalls();
+			writer.readChunks(dataset, datasetAttributes, ptList);
+
+			// one for the index, one that covers ALL the blocks)
+			assertEquals(2, writer.getNumMaterializeCalls());
+
+			writer.resetNumMaterializeCalls();
+			writer.readBlock(dataset, datasetAttributes, new long[] {0,0});
+			// one for the index, one that covers ALL the blocks
+			assertEquals(2, writer.getNumMaterializeCalls());
 		}
 	}
 
