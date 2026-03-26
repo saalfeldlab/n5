@@ -632,14 +632,13 @@ public class ShardTest {
 			writer.resetNumMaterializeCalls();
 			writer.readBlocks(dataset, datasetAttributes, ptList);
 
-			// TODO change this if and when we implement aggregation of read calls
-			// one for the index, one for each of the four blocks
-			assertEquals(5, writer.getNumMaterializeCalls());
+			// one for the index, one for the four blocks (aggregated)
+			assertEquals(2, writer.getNumMaterializeCalls());
 
 			writer.resetNumMaterializeCalls();
 			writer.readShard(dataset, datasetAttributes, new long[] {0,0});
-			// one for the index, one for each of the four blocks
-			assertEquals(5, writer.getNumMaterializeCalls());
+			// one for the index, one for the four blocks (aggregated)
+			assertEquals(2, writer.getNumMaterializeCalls());
 
 
 			/**
