@@ -274,9 +274,30 @@ public class MyJsonCache implements DelegateStore {
 	@Override
 	public void store_createDirectories(final N5GroupPath group) throws N5IOException {
 
-		container.store_createDirectories(group);
-
-		setExists(getOrCreate(group));
+		final CacheInfoDirectory info = getOrCreate(group);
+		boolean addToParent = false;
+		synchronized (info) {
+			if(!info.valid || !info.exists) {
+				container.store_createDirectories(group);
+				addToParent = true;
+				info.valid = true;
+				info.exists = true;
+			}
+		}
+		// This group was just created or re-created.
+		// We need to add it to the parent's list, if that exists.
+		// Also, we want to recursively set exists=true for parents.
+		if (addToParent) {
+			final CacheInfoDirectory parent = info.parent;
+			if (parent != null) {
+				synchronized (parent) {
+					if (parent.list != null) {
+						parent.list.add(info.path.filename());
+					}
+				}
+				setExists(parent);
+			}
+		}
 	}
 
 	@Override
