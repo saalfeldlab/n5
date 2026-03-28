@@ -258,7 +258,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(++expectedExistCount, n5.getExistCallCount());
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
+		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
 		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
@@ -269,7 +269,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedExistCount, n5.getExistCallCount());
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
 		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getAttrCallCount());
+		assertEquals(++expectedAttributeCount, n5.getAttrCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
 		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
@@ -527,52 +527,38 @@ public class N5CachedFSTest extends N5FSTest {
 		}
 
 		@Override
-		public JsonElement readAttributesJson(final N5Path.N5GroupPath group, final String filename) throws N5Exception.N5IOException {
+		public JsonElement store_readAttributesJson(final N5Path.N5GroupPath group, final String filename) throws N5Exception.N5IOException {
 			attrCallCount++;
 			new Throwable().printStackTrace();
-			return super.readAttributesJson(group, filename);
+			return super.store_readAttributesJson(group, filename);
 		}
 
 		@Override
-		public void writeAttributesJson(final N5Path.N5GroupPath group, final String filename, final JsonElement attributes) throws N5Exception.N5IOException {
+		public void store_writeAttributesJson(final N5Path.N5GroupPath group, final String filename, final JsonElement attributes) throws N5Exception.N5IOException {
 			writeAttrCallCount++;
-			super.writeAttributesJson(group, filename, attributes);
+			super.store_writeAttributesJson(group, filename, attributes);
 		}
 
 		@Override
-		public boolean existsFromContainer(final String path, final String cacheKey) {
+		public boolean store_isDirectory(final N5Path.N5GroupPath group) {
 			existsCallCount++;
-			return super.existsFromContainer(path, cacheKey);
+			return super.store_isDirectory(group);
 		}
 
 		@Override
-		public boolean isGroupFromContainer(final String key) {
-			groupCallCount++;
-			return super.isGroupFromContainer(key);
+		public void store_removeDirectory(final N5Path.N5GroupPath group) throws N5Exception.N5IOException {
+			super.store_removeDirectory(group);
 		}
 
 		@Override
-		public boolean isGroupFromAttributes(final String normalCacheKey, final JsonElement attributes) {
-			groupAttrCallCount++;
-			return super.isGroupFromAttributes(normalCacheKey, attributes);
+		public void store_createDirectories(final N5Path.N5GroupPath group) throws N5Exception.N5IOException {
+			super.store_createDirectories(group);
 		}
 
 		@Override
-		public boolean isDatasetFromContainer(final String key) {
-			datasetCallCount++;
-			return super.isDatasetFromContainer(key);
-		}
-
-		@Override
-		public boolean isDatasetFromAttributes(final String normalCacheKey, final JsonElement attributes) {
-			datasetAttrCallCount++;
-			return super.isDatasetFromAttributes(normalCacheKey, attributes);
-		}
-
-		@Override
-		public String[] listFromContainer(final String key) {
+		public String[] store_listDirectories(final N5Path.N5GroupPath group) throws N5Exception.N5IOException {
 			listCallCount++;
-			return super.listFromContainer(key);
+			return super.store_listDirectories(group);
 		}
 
 		@Override

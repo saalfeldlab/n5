@@ -61,7 +61,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader, DelegateStore {
 
 	default boolean groupExists(final String normalPath) {
 
-		return getRootedKeyValueAccess().isDirectory(normalPath);
+		return getDelegateStore().store_isDirectory(N5GroupPath.of(normalPath));
 	}
 
 	@Override
@@ -103,35 +103,13 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader, DelegateStore {
 	@Override
 	default JsonElement getAttributes(final String pathName) throws N5Exception {
 
-		return readAttributesJson(N5GroupPath.of(pathName), getAttributesKey());
-	}
-
-	@Override
-	default JsonElement readAttributesJson(
-			final N5GroupPath group,
-			final String filename) throws N5IOException {
-
-		final N5FilePath attributesPath = group.resolve(filename).asFile();
-		try (final VolatileReadData readData = getRootedKeyValueAccess().createReadData(attributesPath);) {
-			// TODO: this (ReadData --> JsonElement) should go into GsonUtils?
-			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), getGson());
-		} catch (final N5NoSuchKeyException e) {
-			return null;
-		} catch (final UncheckedIOException | N5IOException e) {
-			throw new N5IOException("Failed to read attributes from " + attributesPath, e);
-		}
-	}
-
-	// TODO: separate DelegateStore into Read and Write parts
-	@Override
-	default void writeAttributesJson(final N5GroupPath group, final String filename, final JsonElement attributes) throws N5IOException {
-		throw new UnsupportedOperationException("TODO: separate DelegateStore into Read and Write parts");
+		return getDelegateStore().store_readAttributesJson(N5GroupPath.of(pathName), getAttributesKey());
 	}
 
 	@Override
 	default String[] list(final String pathName) throws N5Exception {
 
-		return getRootedKeyValueAccess().listDirectories(pathName);
+		return getDelegateStore().store_listDirectories(N5GroupPath.of(pathName));
 	}
 
 
@@ -192,6 +170,76 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader, DelegateStore {
 	}
 
 
+
+
+
+
+	// ------------------------------------------------------------------------
+	//
+	// -- DelegateStore --
+	//
+
+	default DelegateStore getDelegateStore() {
+		return this;
+	}
+
+
+	// ------------------------------------------------------------------------
+	//
+	// -- DelegateStore : READ --
+	//
+
+	@Override
+	default JsonElement store_readAttributesJson(
+			final N5GroupPath group,
+			final String filename) throws N5IOException {
+
+		final N5FilePath attributesPath = group.resolve(filename).asFile();
+		try (final VolatileReadData readData = getRootedKeyValueAccess().createReadData(attributesPath);) {
+			// TODO: this (ReadData --> JsonElement) should go into GsonUtils?
+			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), getGson());
+		} catch (final N5NoSuchKeyException e) {
+			return null;
+		} catch (final UncheckedIOException | N5IOException e) {
+			throw new N5IOException("Failed to read attributes from " + attributesPath, e);
+		}
+	}
+
+	@Override
+	default boolean store_isDirectory(final N5GroupPath group) {
+//		TODO: throws N5IOException?
+
+		return getRootedKeyValueAccess().isDirectory(group);
+	}
+
+	@Override
+	default String[] store_listDirectories(final N5GroupPath group) throws N5IOException {
+
+		return getRootedKeyValueAccess().listDirectories(group);
+	}
+
+
+	// ------------------------------------------------------------------------
+	//
+	// -- DelegateStore : WRITE --
+	//
+
+	// TODO: separate DelegateStore into Read and Write parts
+	@Override
+	default void store_writeAttributesJson(final N5GroupPath group, final String filename, final JsonElement attributes) throws N5IOException {
+		throw new UnsupportedOperationException("TODO: separate DelegateStore into Read and Write parts");
+	}
+
+	// TODO: separate DelegateStore into Read and Write parts
+	@Override
+	default void store_removeDirectory(final N5GroupPath group) throws N5IOException {
+		throw new UnsupportedOperationException("TODO: separate DelegateStore into Read and Write parts");
+	}
+
+	@Override
+	default void store_createDirectories(N5GroupPath group) throws N5IOException {
+		throw new UnsupportedOperationException("TODO: separate DelegateStore into Read and Write parts");
+	}
 
 	// ------------------------------------------------------------------------
 	//

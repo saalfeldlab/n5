@@ -71,28 +71,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	@Override
 	default void createGroup(final String path) throws N5Exception {
 
-		getRootedKeyValueAccess().createDirectories(N5GroupPath.of(path));
-	}
-
-	@Override
-	default void writeAttributesJson(
-			final N5GroupPath group,
-			final String filename,
-			final JsonElement attributes) throws N5IOException {
-
-		final N5FilePath attributesPath = group.resolve(filename).asFile();
-
-		// TODO: this (JsonElement --> ReadData) should go into GsonUtils?
-		final ReadData attributesReadData = ReadData.from(os -> {
-			final OutputStreamWriter writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
-			GsonUtils.writeAttributes(writer, attributes, getGson());
-		});
-
-		try {
-			getRootedKeyValueAccess().write(attributesPath, attributesReadData);
-		} catch (UncheckedIOException | N5IOException e) {
-			throw new N5Exception.N5IOException("Failed to write attributes to " + attributesPath, e);
-		}
+		getDelegateStore().store_createDirectories(N5GroupPath.of(path));
 	}
 
 	@Override
@@ -103,7 +82,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		if (!exists(path))
 			throw new N5IOException("\"" + path + "\" is not a group or dataset.");
 
-		writeAttributesJson(N5GroupPath.of(path), getAttributesKey(), attributes);
+		getDelegateStore().store_writeAttributesJson(N5GroupPath.of(path), getAttributesKey(), attributes);
 	}
 
 	@Override
@@ -129,7 +108,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		final String normalKey = N5URI.normalizeAttributePath(attributePath);
 
-		if (!getRootedKeyValueAccess().isDirectory(groupPath))
+		if (!getDelegateStore().store_isDirectory(N5GroupPath.of(groupPath)))
 			return false;
 
 		if (attributePath.equals("/")) {
@@ -268,8 +247,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	default boolean remove(final String path) throws N5Exception {
 
 		final N5GroupPath group = N5GroupPath.of(path);
-		if (getRootedKeyValueAccess().isDirectory(group))
-			getRootedKeyValueAccess().delete(group);
+		if (getDelegateStore().store_isDirectory(group))
+			getDelegateStore().store_removeDirectory(group);
 
 		/* an IOException should have occurred if anything had failed midway */
 		return true;
@@ -294,4 +273,45 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		final PositionValueAccess posKva = PositionValueAccess.fromKva(getRootedKeyValueAccess(), N5GroupPath.of(path), datasetAttributes);
 		return datasetAttributes.getDatasetAccess().deleteBlocks(posKva, gridPositions);
 	}
+
+
+
+	// ------------------------------------------------------------------------
+	//
+	// -- DelegateStore : WRITE --
+	//
+
+	@Override
+	default void store_writeAttributesJson(
+			final N5GroupPath group,
+			final String filename,
+			final JsonElement attributes) throws N5IOException {
+
+		final N5FilePath attributesPath = group.resolve(filename).asFile();
+
+		// TODO: this (JsonElement --> ReadData) should go into GsonUtils?
+		final ReadData attributesReadData = ReadData.from(os -> {
+			final OutputStreamWriter writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
+			GsonUtils.writeAttributes(writer, attributes, getGson());
+		});
+
+		try {
+			getRootedKeyValueAccess().write(attributesPath, attributesReadData);
+		} catch (UncheckedIOException | N5IOException e) {
+			throw new N5Exception.N5IOException("Failed to write attributes to " + attributesPath, e);
+		}
+	}
+
+	@Override
+	default void store_removeDirectory(final N5GroupPath group) throws N5IOException {
+
+		getRootedKeyValueAccess().delete(group);
+	}
+
+	@Override
+	default void store_createDirectories(N5GroupPath group) throws N5IOException {
+
+		getRootedKeyValueAccess().createDirectories(group);
+	}
+
 }

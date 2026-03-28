@@ -68,21 +68,6 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 					// Access the private 'cache' field in the reader (or the N5KeyValueReader as a fallback)
 					Field cacheField;
 					try {
-						cacheField = reader.getClass().getDeclaredField("cache");
-					} catch (NoSuchFieldException e) {
-						cacheField = N5KeyValueReader.class.getDeclaredField("cache");
-					}
-					cacheField.setAccessible(true);
-
-					// Set the value of 'cache' to the one from writer.getCache()
-					cacheField.set(reader, cachedWriter.getCache());
-				} catch (NoSuchFieldException | IllegalAccessException e) {
-					throw new RuntimeException("Failed to set reader cache reflectively", e);
-				}
-				try {
-					// Access the private 'cache' field in the reader (or the N5KeyValueReader as a fallback)
-					Field cacheField;
-					try {
 						cacheField = reader.getClass().getDeclaredField("myCache");
 					} catch (NoSuchFieldException e) {
 						cacheField = N5KeyValueReader.class.getDeclaredField("myCache");

@@ -51,7 +51,6 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	protected final Gson gson;
 	protected final boolean cacheMeta;
 
-	private final N5JsonCache cache;
 	private final MyJsonCache myCache;
 
 	/**
@@ -122,7 +121,6 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 		this.gson = registerGson(gsonBuilder).create();
 
 		this.cacheMeta = cacheMeta;
-		this.cache = cacheMeta ? new N5JsonCache(this) : null;
 		this.myCache = cacheMeta ? new MyJsonCache(this, gson) : null;
 
 		boolean versionFound = false;
@@ -178,12 +176,6 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	public boolean cacheMeta() {
 
 		return cacheMeta;
-	}
-
-	@Override
-	public N5JsonCache getCache() {
-
-		return cache;
 	}
 
 	@Override

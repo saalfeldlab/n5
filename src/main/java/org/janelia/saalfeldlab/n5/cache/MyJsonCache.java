@@ -120,7 +120,7 @@ public class MyJsonCache implements DelegateStore {
 	//
 	// ------------------------------------------------------------------------
 
-	private final MyJsonCacheableContainer container;
+	private final DelegateStore container;
 	private final Gson gson;
 
 	/**
@@ -130,7 +130,7 @@ public class MyJsonCache implements DelegateStore {
 	private final MyCacheInfo root;
 
 	public MyJsonCache(
-			final MyJsonCacheableContainer container,
+			final DelegateStore container,
 			final Gson gson
 	) {
 		this.container = container;
@@ -186,7 +186,7 @@ public class MyJsonCache implements DelegateStore {
 	 * @return the attributes as a json element.
 	 */
 	@Override
-	public JsonElement readAttributesJson(final N5GroupPath group, final String attributesKey) throws N5IOException {
+	public JsonElement store_readAttributesJson(final N5GroupPath group, final String attributesKey) throws N5IOException {
 
 		final N5FilePath path = group.resolve(attributesKey).asFile();
 		final CacheInfoAttributes info = getOrCreate(path);
@@ -196,7 +196,7 @@ public class MyJsonCache implements DelegateStore {
 				//       do it all externally (done here), OR
 				//       do it all internally in a synchronized method taking container
 				//       OR maybe something else entirely...
-				info.json = container.readAttributesJson(group, attributesKey);
+				info.json = container.store_readAttributesJson(group, attributesKey);
 				info.exists = (info.json != null); // TODO: remove exists field, and replace with exists() method?
 				info.valid = true;
 			}
@@ -205,7 +205,7 @@ public class MyJsonCache implements DelegateStore {
 	}
 
 	@Override
-	public void writeAttributesJson(final N5GroupPath group, final String filename, final JsonElement attributes) throws N5IOException {
+	public void store_writeAttributesJson(final N5GroupPath group, final String filename, final JsonElement attributes) throws N5IOException {
 
 		final N5FilePath path = group.resolve(filename).asFile();
 		final CacheInfoAttributes info = getOrCreate(path);
@@ -213,7 +213,7 @@ public class MyJsonCache implements DelegateStore {
 			if (!info.valid) {
 				throw new IllegalStateException("Unexpected invalid CacheInfoAttributes " + this);
 			}
-			container.writeAttributesJson(group, filename, attributes);
+			container.store_writeAttributesJson(group, filename, attributes);
 
 			/*
 			 * Gson only filters out nulls when you write the JsonElement. This
@@ -229,32 +229,13 @@ public class MyJsonCache implements DelegateStore {
 		}
 	}
 
-	public void remove(final N5GroupPath group) {
-
-		final CacheInfoDirectory info = getOrCreate(group);
-		info.markRemoved();
-		final CacheInfoDirectory parent = info.parent;
-		if (parent != null) {
-			synchronized (parent) {
-				if (parent.list != null) {
-					parent.list.remove(group.filename());
-				}
-			}
-		}
-	}
-
-	/**
-	 * TODO: javadoc
-	 *
-	 * @param group
-	 * @return
-	 */
-	public boolean isDirectory(final N5GroupPath group) {
+	@Override
+	public boolean store_isDirectory(final N5GroupPath group) {
 
 		final CacheInfoDirectory info = getOrCreate(group);
 		synchronized (info) {
 			if (!info.valid) {
-				info.exists = container.my_isDirectoryFromContainer(group);
+				info.exists = container.store_isDirectory(group);
 				info.valid = true;
 				// TODO: Can isDirectoryFromContainer throw a N5IOException?
 			}
@@ -262,32 +243,14 @@ public class MyJsonCache implements DelegateStore {
 		return info.exists;
 	}
 
-	/**
-	 * List all directory-like children (groups and datasets) in the given
-	 * {@code group}.
-	 * <p>
-	 * The returned child paths are normal paths relative to the given {@code
-	 * group} (no leading or trailing slashes). To obtain the path of a child
-	 * relative to the container root {@link N5GroupPath#resolve group.resolve}
-	 * the child path.
-	 *
-	 * @param group
-	 * 		group path
-	 *
-	 * @return list of children
-	 *
-	 * @throws N5NoSuchKeyException
-	 * 		if the given path does not exist
-	 * @throws N5IOException
-	 * 		if an error occurs during listing
-	 */
-	public String[] list(final N5GroupPath group) throws N5IOException {
+	@Override
+	public String[] store_listDirectories(final N5GroupPath group) throws N5IOException {
 
 		final CacheInfoDirectory info = getOrCreate(group);
 		synchronized (info) {
 			if (!info.valid || (info.exists && info.list == null)) {
 				try {
-					final String[] list = container.my_listFromContainer(group);
+					final String[] list = container.store_listDirectories(group);
 					info.list = new ArrayList<>(List.of(list));
 					info.exists = true;
 					info.valid = true;
@@ -308,12 +271,29 @@ public class MyJsonCache implements DelegateStore {
 		return info.list.toArray(new String[0]);
 	}
 
-	/**
-	 * TODO javadoc
-	 * @param group
-	 */
-	public void addDirectory(final N5GroupPath group) {
+	@Override
+	public void store_createDirectories(final N5GroupPath group) throws N5IOException {
+
+		container.store_createDirectories(group);
+
 		setExists(getOrCreate(group));
+	}
+
+	@Override
+	public void store_removeDirectory(final N5GroupPath group) throws N5IOException {
+
+		container.store_removeDirectory(group);
+
+		final CacheInfoDirectory info = getOrCreate(group);
+		info.markRemoved();
+		final CacheInfoDirectory parent = info.parent;
+		if (parent != null) {
+			synchronized (parent) {
+				if (parent.list != null) {
+					parent.list.remove(group.filename());
+				}
+			}
+		}
 	}
 
 	/**
