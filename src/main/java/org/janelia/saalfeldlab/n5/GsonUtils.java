@@ -548,7 +548,7 @@ public interface GsonUtils {
 	}
 
 	/**
-	 * Writes the attributes JsonElemnt to a given {@link Writer}.
+	 * Writes the attributes JsonElement to a given {@link Writer}.
 	 * This will overwrite any existing attributes.
 	 *
 	 * @param writer
