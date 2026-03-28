@@ -49,6 +49,7 @@ public interface RootedKeyValueAccess {
 	 * @throws N5IOException
 	 * 		if an error occurs
 	 */
+//	TODO: rename to just "read" ??
 	VolatileReadData createReadData(N5FilePath normalPath) throws N5IOException;
 
 	/**
