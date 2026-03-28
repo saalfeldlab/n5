@@ -34,8 +34,10 @@ import java.net.URI;
 import java.util.List;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
+import org.janelia.saalfeldlab.n5.cache.DelegateStore;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 
@@ -47,7 +49,7 @@ import com.google.gson.JsonElement;
  * attributes parsed with {@link Gson}.
  *
  */
-public interface GsonKeyValueN5Reader extends GsonN5Reader {
+public interface GsonKeyValueN5Reader extends GsonN5Reader, DelegateStore {
 
 	RootedKeyValueAccess getRootedKeyValueAccess();
 
@@ -101,14 +103,29 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	@Override
 	default JsonElement getAttributes(final String pathName) throws N5Exception {
 
-		final N5FilePath attributesPath = relativeAttributesPath(pathName);
+		return readAttributesJson(N5GroupPath.of(pathName), getAttributesKey());
+	}
+
+	@Override
+	default JsonElement readAttributesJson(
+			final N5GroupPath group,
+			final String filename) throws N5IOException {
+
+		final N5FilePath attributesPath = group.resolve(filename).asFile();
 		try (final VolatileReadData readData = getRootedKeyValueAccess().createReadData(attributesPath);) {
+			// TODO: this (ReadData --> JsonElement) should go into GsonUtils?
 			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), getGson());
-		} catch (final N5Exception.N5NoSuchKeyException e) {
+		} catch (final N5NoSuchKeyException e) {
 			return null;
 		} catch (final UncheckedIOException | N5IOException e) {
-			throw new N5IOException("Failed to read attributes from dataset " + pathName, e);
+			throw new N5IOException("Failed to read attributes from " + attributesPath, e);
 		}
+	}
+
+	// TODO: separate DelegateStore into Read and Write parts
+	@Override
+	default void writeAttributesJson(final N5GroupPath group, final String filename, final JsonElement attributes) throws N5IOException {
+		throw new UnsupportedOperationException("TODO: separate DelegateStore into Read and Write parts");
 	}
 
 	@Override
@@ -130,7 +147,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 					convertedDatasetAttributes);
 			return convertedDatasetAttributes.<T> getDatasetAccess().readBlock(posKva, gridPosition);
 
-		} catch (N5Exception.N5NoSuchKeyException e) {
+		} catch (N5NoSuchKeyException e) {
 			return null;
 		}
 	}
@@ -159,7 +176,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 					convertedDatasetAttributes);
 			return convertedDatasetAttributes.<T> getDatasetAccess().readShard(posKva, gridPosition, shardLevel);
 
-		} catch (N5Exception.N5NoSuchKeyException e) {
+		} catch (N5NoSuchKeyException e) {
 			return null;
 		}
 	}

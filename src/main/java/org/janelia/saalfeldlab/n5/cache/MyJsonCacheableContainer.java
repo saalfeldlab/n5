@@ -7,7 +7,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.janelia.saalfeldlab.n5.N5Reader;
 
-public interface MyJsonCacheableContainer {
+public interface MyJsonCacheableContainer extends DelegateStore {
 
 	/**
 	 * Returns a {@link JsonElement} containing the deserialized
@@ -22,7 +22,9 @@ public interface MyJsonCacheableContainer {
 	 * 		if there is an error reading the attributes file
 	 * @see GsonN5Reader#getAttributes
 	 */
-	JsonElement my_getAttributesFromContainer(N5GroupPath group, String attributesKey) throws N5IOException;
+	default JsonElement my_getAttributesFromContainer(N5GroupPath group, String attributesKey) throws N5IOException {
+		return readAttributesJson(group, attributesKey);
+	}
 
 	/**
 	 * List all directory-like children (groups and datasets) in the given

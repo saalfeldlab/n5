@@ -307,11 +307,6 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		writer.setVersion(path);
 	}
 
-	@Override public void writeAttributes(String normalGroupPath, JsonElement attributes) throws N5Exception {
-
-		writer.writeAttributes(normalGroupPath, attributes);
-	}
-
 	@Override public void setAttributes(String path, JsonElement attributes) throws N5Exception {
 
 		writer.setAttributes(path, attributes);

@@ -85,45 +85,6 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 	}
 
 	@Override
-	default void writeAttributes(
-			final String normalGroupPath,
-			final JsonElement attributes) throws N5Exception {
-
-		writeAndCacheAttributes(normalGroupPath, attributes);
-	}
-
-	default void writeAndCacheAttributes(
-			final String normalGroupPath,
-			final JsonElement attributes) throws N5Exception {
-
-		GsonKeyValueN5Writer.super.writeAttributes(normalGroupPath, attributes);
-
-		if (cacheMeta()) {
-			JsonElement nullRespectingAttributes = attributes;
-			/*
-			 * Gson only filters out nulls when you write the JsonElement. This
-			 * means it doesn't filter them out when caching.
-			 * To handle this, we explicitly writer the existing JsonElement to
-			 * a new JsonElement.
-			 * The output is identical to the input if:
-			 * - serializeNulls is true
-			 * - no null values are present
-			 * - caching is turned off
-			 */
-			if (!getGson().serializeNulls()) {
-				nullRespectingAttributes = getGson().toJsonTree(attributes);
-			}
-			/* Update the cache, and write to the writer */
-			final String normalPathKey = N5GroupPath.of(normalGroupPath).normalPath();
-			getCache().updateCacheInfo(normalPathKey, getAttributesKey(), nullRespectingAttributes);
-
-			// TODO: REPLACES OLD CACHE
-			final N5GroupPath group = N5GroupPath.of(normalGroupPath);
-			getMyCache().setAttributes(group, getAttributesKey(), nullRespectingAttributes);
-		}
-	}
-
-	@Override
 	default boolean remove(final String path) throws N5Exception {
 
 		final N5GroupPath group = N5GroupPath.of(path);
@@ -148,4 +109,16 @@ public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, 
 		/* an IOException should have occurred if anything had failed midway */
 		return true;
 	}
+
+	@Override
+	default void setAttributes(
+			final String path,
+			final JsonElement attributes) throws N5Exception {
+
+		if (!exists(path))
+			throw new N5IOException("\"" + path + "\" is not a group or dataset.");
+
+		getDelegateStore().writeAttributesJson(N5GroupPath.of(path), getAttributesKey(), attributes);
+	}
+
 }

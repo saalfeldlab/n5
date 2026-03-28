@@ -123,7 +123,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 		this.cacheMeta = cacheMeta;
 		this.cache = cacheMeta ? new N5JsonCache(this) : null;
-		this.myCache = cacheMeta ? new MyJsonCache(this) : null;
+		this.myCache = cacheMeta ? new MyJsonCache(this, gson) : null;
 
 		boolean versionFound = false;
 		if (checkVersion) {

@@ -38,6 +38,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
+import org.janelia.saalfeldlab.n5.cache.DelegateStore;
 import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
 import org.janelia.saalfeldlab.n5.cache.MyJsonCacheableContainer;
 import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
@@ -60,71 +61,16 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 
 	MyJsonCache getMyCache();
 
+	default DelegateStore getDelegateStore() {
+		return cacheMeta() ? getMyCache() : this;
+	}
+
 	@Override
 	default JsonElement getAttributesFromContainer(final String normalPathName, final String normalCacheKey) {
 
 		// This implementation doesn't use normalCacheKey, but rather depends on
 		// getAttributesKey() being implemented.
 		return GsonKeyValueN5Reader.super.getAttributes(normalPathName);
-	}
-
-	// TODO: remove (overrides identical default implementation)
-	@Override
-	default DatasetAttributes getDatasetAttributes(final String pathName) {
-
-		return createDatasetAttributes(getAttributes(pathName));
-	}
-
-	@Override
-	default <T> T getAttribute(
-			final String pathName,
-			final String key,
-			final Type type) throws N5Exception {
-
-		T result = my_getAttribute(pathName, key, type);
-		// TODO: REPLACES OLD CACHE
-		{
-			// run old code as well to not mess with N5JsonCache
-			final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
-
-			final JsonElement attributes;
-			if (cacheMeta()) {
-				final String normalPathName = N5GroupPath.of(pathName).normalPath();
-				attributes = getCache().getAttributes(normalPathName, getAttributesKey());
-			} else {
-				attributes = GsonKeyValueN5Reader.super.getAttributes(pathName);
-			}
-
-			try {
-				GsonUtils.readAttribute(attributes, normalizedAttributePath, type, getGson());
-			} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
-				throw new N5ClassCastException(e);
-			}
-		}
-		return result;
-	}
-	// TODO: REVISED N5Reader
-	/**
-	 * TODO javadoc
-	 *
-	 * @throws N5IOException
-	 * 		if an error occurs reading the attributes file
-	 * @throws N5ClassCastException
-	 * 		if the requested attribute exists but is not of the requested type
-	 */
-	default <T> T my_getAttribute(
-			final String pathName,
-			final String key,
-			final Type type) throws N5IOException, N5ClassCastException {
-
-		final JsonElement attributes = my_getAttributes(pathName);
-
-		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
-		try {
-			return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, getGson());
-		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
-			throw new N5ClassCastException(e);
-		}
 	}
 
 	@Override
@@ -260,43 +206,10 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader, N5Json
 	@Override
 	default JsonElement getAttributes(final String pathName) throws N5IOException {
 
-		// TODO: REPLACES OLD CACHE
-		final JsonElement result = my_getAttributes(pathName);
-		{
-			// run old code as well to not mess with N5JsonCache
-			final String normalPathName = N5GroupPath.of(pathName).normalPath();
-			if (cacheMeta()) {
-				getCache().getAttributes(normalPathName, getAttributesKey());
-			} else {
-				GsonKeyValueN5Reader.super.getAttributes(normalPathName);
-			}
-		}
-		return result;
-	}
-	// TODO: REVISED N5Reader
-	default JsonElement my_getAttributes(final String pathName) throws N5IOException {
-
-		final N5GroupPath group = N5GroupPath.of(pathName);
-		if (cacheMeta()) {
-			return getMyCache().getAttributes(group, getAttributesKey());
-		} else {
-			return my_getAttributesFromContainer(group, getAttributesKey());
-		}
+		return getDelegateStore().readAttributesJson(N5GroupPath.of(pathName), getAttributesKey());
 	}
 
-	// TODO: REVISED CacheableContainer
-	@Override
-	default JsonElement my_getAttributesFromContainer(final N5GroupPath group, final String attributesKey) throws N5IOException {
 
-		final N5FilePath path = group.resolve(getAttributesKey()).asFile();
-		try (final VolatileReadData readData = getRootedKeyValueAccess().createReadData(path);) {
-			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), getGson());
-		} catch (final N5NoSuchKeyException e) {
-			return null;
-		} catch (final UncheckedIOException | N5IOException e) {
-			throw new N5IOException("Failed to read attributes from " + group, e);
-		}
-	}
 
 
 

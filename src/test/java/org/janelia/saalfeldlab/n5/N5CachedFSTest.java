@@ -527,9 +527,16 @@ public class N5CachedFSTest extends N5FSTest {
 		}
 
 		@Override
-		public JsonElement getAttributesFromContainer(final String key, final String cacheKey) {
+		public JsonElement readAttributesJson(final N5Path.N5GroupPath group, final String filename) throws N5Exception.N5IOException {
 			attrCallCount++;
-			return super.getAttributesFromContainer(key, cacheKey);
+			new Throwable().printStackTrace();
+			return super.readAttributesJson(group, filename);
+		}
+
+		@Override
+		public void writeAttributesJson(final N5Path.N5GroupPath group, final String filename, final JsonElement attributes) throws N5Exception.N5IOException {
+			writeAttrCallCount++;
+			super.writeAttributesJson(group, filename, attributes);
 		}
 
 		@Override
@@ -568,11 +575,6 @@ public class N5CachedFSTest extends N5FSTest {
 			return super.listFromContainer(key);
 		}
 
-		@Override public void writeAttributes(String normalGroupPath, JsonElement attributes) throws N5Exception {
-			writeAttrCallCount++;
-			super.writeAttributes(normalGroupPath, attributes);
-		}
-
 		@Override
 		public int getAttrCallCount() {
 			return attrCallCount;
@@ -608,7 +610,8 @@ public class N5CachedFSTest extends N5FSTest {
 			return listCallCount;
 		}
 
-		@Override public int getWriteAttrCallCount() {
+		@Override
+		public int getWriteAttrCallCount() {
 			return writeAttrCallCount;
 		}
 	}

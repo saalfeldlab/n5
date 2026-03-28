@@ -38,6 +38,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 
 /**
  * {@link N5Reader} with JSON attributes parsed with {@link Gson}.
@@ -83,12 +84,12 @@ public interface GsonN5Reader extends N5Reader {
 	@Override
 	default <T> T getAttribute(final String pathName, final String key, final Type type) throws N5Exception {
 
-		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
 		final JsonElement attributes = getAttributes(pathName);
+		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
 		try {
 			return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, getGson());
 		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
-			throw new N5Exception.N5ClassCastException(e);
+			throw new N5ClassCastException(e);
 		}
 	}
 

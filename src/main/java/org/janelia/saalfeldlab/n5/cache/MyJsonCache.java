@@ -1,25 +1,23 @@
 package org.janelia.saalfeldlab.n5.cache;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 
-public class MyJsonCache {
+public class MyJsonCache implements DelegateStore {
 
-	private final MyJsonCacheableContainer container;
-
-	/**
-	 * Maps N5Path to MyCacheInfo
-	 */
-	private final ConcurrentHashMap<String, MyCacheInfo> infos;
-	private final MyCacheInfo root;
+	// ------------------------------------------------------------------------
+	//
+	// MyCacheInfo
+	//
+	// ------------------------------------------------------------------------
 
 	static abstract class MyCacheInfo {
 
@@ -52,8 +50,6 @@ public class MyJsonCache {
 	}
 
 
-
-
 	static class CacheInfoAttributes extends MyCacheInfo {
 
 		protected final N5FilePath path;
@@ -80,6 +76,7 @@ public class MyJsonCache {
 			exists = false;
 		}
 	}
+
 
 	static class CacheInfoDirectory extends MyCacheInfo {
 
@@ -117,8 +114,27 @@ public class MyJsonCache {
 	}
 
 
-	public MyJsonCache(final MyJsonCacheableContainer container) {
+	// ------------------------------------------------------------------------
+	//
+	// MyJsonCache
+	//
+	// ------------------------------------------------------------------------
+
+	private final MyJsonCacheableContainer container;
+	private final Gson gson;
+
+	/**
+	 * Maps N5Path to MyCacheInfo
+	 */
+	private final ConcurrentHashMap<String, MyCacheInfo> infos;
+	private final MyCacheInfo root;
+
+	public MyJsonCache(
+			final MyJsonCacheableContainer container,
+			final Gson gson
+	) {
 		this.container = container;
+		this.gson = gson;
 
 		infos = new ConcurrentHashMap<>();
 
@@ -126,6 +142,13 @@ public class MyJsonCache {
 		root = new CacheInfoDirectory(N5GroupPath.of(""), null);
 		add(root);
 	}
+
+	// TODO: inline and remove?
+	private Gson getGson() {
+		return gson;
+	}
+
+
 
 	private void add(MyCacheInfo info) {
 		infos.put(info.getPath().normalPath(), info);
@@ -162,7 +185,8 @@ public class MyJsonCache {
 	 *
 	 * @return the attributes as a json element.
 	 */
-	public JsonElement getAttributes(final N5GroupPath group, final String attributesKey) throws N5IOException {
+	@Override
+	public JsonElement readAttributesJson(final N5GroupPath group, final String attributesKey) throws N5IOException {
 
 		final N5FilePath path = group.resolve(attributesKey).asFile();
 		final CacheInfoAttributes info = getOrCreate(path);
@@ -172,7 +196,7 @@ public class MyJsonCache {
 				//       do it all externally (done here), OR
 				//       do it all internally in a synchronized method taking container
 				//       OR maybe something else entirely...
-				info.json = container.my_getAttributesFromContainer(group, attributesKey);
+				info.json = container.readAttributesJson(group, attributesKey);
 				info.exists = (info.json != null); // TODO: remove exists field, and replace with exists() method?
 				info.valid = true;
 			}
@@ -180,15 +204,27 @@ public class MyJsonCache {
 		return info.json;
 	}
 
-	public void setAttributes(final N5GroupPath group, final String attributesKey, final JsonElement attributes) throws N5IOException {
+	@Override
+	public void writeAttributesJson(final N5GroupPath group, final String filename, final JsonElement attributes) throws N5IOException {
 
-		final N5FilePath path = group.resolve(attributesKey).asFile();
+		final N5FilePath path = group.resolve(filename).asFile();
 		final CacheInfoAttributes info = getOrCreate(path);
 		synchronized (info) {
 			if (!info.valid) {
 				throw new IllegalStateException("Unexpected invalid CacheInfoAttributes " + this);
 			}
-			info.json = attributes;
+			container.writeAttributesJson(group, filename, attributes);
+
+			/*
+			 * Gson only filters out nulls when you write the JsonElement. This
+			 * means it doesn't filter them out when caching.
+			 * To handle this, we explicitly writer the existing JsonElement to
+			 * a new JsonElement.
+			 * The output is identical to the input if:
+			 * - serializeNulls is true
+			 * - no null values are present
+			 */
+			info.json = getGson().serializeNulls() ? attributes : getGson().toJsonTree(attributes);
 			info.exists = true;
 		}
 	}

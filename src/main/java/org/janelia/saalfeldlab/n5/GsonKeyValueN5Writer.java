@@ -39,6 +39,7 @@ import com.google.gson.JsonSyntaxException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
@@ -73,32 +74,24 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		getRootedKeyValueAccess().createDirectories(N5GroupPath.of(path));
 	}
 
-	/**
-	 * Helper method that writes an attributes tree into the store
-	 * <p>
-	 * TODO This method is not part of the public API and should be protected
-	 * in Java versions greater than 8
-	 *
-	 * @param normalGroupPath
-	 *            to write the attributes to
-	 * @param attributes
-	 *            to write
-	 * @throws N5Exception
-	 *             if unable to write the attributes at {@code normalGroupPath}
-	 */
-	default void writeAttributes(
-			final String normalGroupPath,
-			final JsonElement attributes) throws N5Exception {
+	@Override
+	default void writeAttributesJson(
+			final N5GroupPath group,
+			final String filename,
+			final JsonElement attributes) throws N5IOException {
 
-		final ReadData newAttributesReadData = ReadData.from(os -> {
+		final N5FilePath attributesPath = group.resolve(filename).asFile();
+
+		// TODO: this (JsonElement --> ReadData) should go into GsonUtils?
+		final ReadData attributesReadData = ReadData.from(os -> {
 			final OutputStreamWriter writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
 			GsonUtils.writeAttributes(writer, attributes, getGson());
 		});
 
 		try {
-			getRootedKeyValueAccess().write(relativeAttributesPath(normalGroupPath), newAttributesReadData);
+			getRootedKeyValueAccess().write(attributesPath, attributesReadData);
 		} catch (UncheckedIOException | N5IOException e) {
-			throw new N5Exception.N5IOException("Failed to write attributes into " + normalGroupPath, e);
+			throw new N5Exception.N5IOException("Failed to write attributes to " + attributesPath, e);
 		}
 	}
 
@@ -110,7 +103,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		if (!exists(path))
 			throw new N5IOException("\"" + path + "\" is not a group or dataset.");
 
-		writeAttributes(path, attributes);
+		writeAttributesJson(N5GroupPath.of(path), getAttributesKey(), attributes);
 	}
 
 	@Override
