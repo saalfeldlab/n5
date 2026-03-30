@@ -190,16 +190,32 @@ public class MyJsonCache implements DelegateStore {
 
 		final N5FilePath path = group.resolve(attributesKey).asFile();
 		final CacheInfoAttributes info = getOrCreate(path);
+
+		// If the parent directory is known to not exist, we don't need to
+		// try to read the attributes file.
+		final boolean parentDoesNotExist;
+		final CacheInfoDirectory parent = info.parent;
+		synchronized (parent) {
+			parentDoesNotExist = parent.valid && !parent.exists;
+		}
+
+		// If it becomes known that the attributes file exists, then we should
+		// also mark all parent directories as existing.
+		boolean setExistsParent = false;
 		synchronized (info) {
 			if (!info.valid) {
-				// TODO: Reconsider validation. Alternatives would be to
-				//       do it all externally (done here), OR
-				//       do it all internally in a synchronized method taking container
-				//       OR maybe something else entirely...
-				info.json = container.store_readAttributesJson(group, attributesKey);
+				if (parentDoesNotExist) {
+					info.json = null;
+				} else {
+					info.json = container.store_readAttributesJson(group, attributesKey);
+					setExistsParent = (info.json != null);
+				}
 				info.exists = (info.json != null); // TODO: remove exists field, and replace with exists() method?
 				info.valid = true;
 			}
+		}
+		if (setExistsParent) {
+			setExists(parent);
 		}
 		return info.json;
 	}
@@ -210,6 +226,8 @@ public class MyJsonCache implements DelegateStore {
 		final N5FilePath path = group.resolve(filename).asFile();
 		final CacheInfoAttributes info = getOrCreate(path);
 		synchronized (info) {
+
+			// TODO: allow to write attributes file if !info.valid but parent exists
 			if (!info.valid) {
 				throw new IllegalStateException("Unexpected invalid CacheInfoAttributes " + this);
 			}
@@ -247,13 +265,13 @@ public class MyJsonCache implements DelegateStore {
 	public String[] store_listDirectories(final N5GroupPath group) throws N5IOException {
 
 		final CacheInfoDirectory info = getOrCreate(group);
+		boolean setExists = false;
 		synchronized (info) {
 			if (!info.valid || (info.exists && info.list == null)) {
 				try {
 					final String[] list = container.store_listDirectories(group);
 					info.list = new ArrayList<>(List.of(list));
-					info.exists = true;
-					info.valid = true;
+					setExists = true;
 				} catch (N5NoSuchKeyException e) {
 					info.exists = false;
 					info.valid = true;
@@ -265,39 +283,13 @@ public class MyJsonCache implements DelegateStore {
 				// time...
 			}
 		}
+		if (setExists) {
+			setExists(info);
+		}
 		if (!info.exists) {
 			throw new N5NoSuchKeyException("No such file: " + group);
 		}
 		return info.list.toArray(new String[0]);
-	}
-
-	@Override
-	public void store_createDirectories(final N5GroupPath group) throws N5IOException {
-
-		final CacheInfoDirectory info = getOrCreate(group);
-		boolean addToParent = false;
-		synchronized (info) {
-			if(!info.valid || !info.exists) {
-				container.store_createDirectories(group);
-				addToParent = true;
-				info.valid = true;
-				info.exists = true;
-			}
-		}
-		// This group was just created or re-created.
-		// We need to add it to the parent's list, if that exists.
-		// Also, we want to recursively set exists=true for parents.
-		if (addToParent) {
-			final CacheInfoDirectory parent = info.parent;
-			if (parent != null) {
-				synchronized (parent) {
-					if (parent.list != null) {
-						parent.list.add(info.path.filename());
-					}
-				}
-				setExists(parent);
-			}
-		}
 	}
 
 	@Override
@@ -317,8 +309,22 @@ public class MyJsonCache implements DelegateStore {
 		}
 	}
 
+	@Override
+	public void store_createDirectories(final N5GroupPath group) throws N5IOException {
+
+		final CacheInfoDirectory info = getOrCreate(group);
+		synchronized (info) {
+			if(!info.valid || !info.exists) {
+				container.store_createDirectories(group);
+			}
+		}
+		setExists(info);
+	}
+
 	/**
-	 * The directory represented by {@code info} was just created or re-created.
+	 * The directory represented by {@code info} was just created, re-created,
+	 * or otherwise observed to exist.
+	 * <p>
 	 * Make sure that its {@code valid} and {@code exists} flags are set, and it
 	 * is present in its parent's {@code children} list (if that exists).
 	 * <p>
@@ -326,6 +332,7 @@ public class MyJsonCache implements DelegateStore {
 	 * must exist now as well.
 	 */
 	private void setExists(final CacheInfoDirectory info) {
+
 		boolean addToParent = false;
 		synchronized (info) {
 			if(!info.valid || !info.exists) {
@@ -334,20 +341,21 @@ public class MyJsonCache implements DelegateStore {
 				info.exists = true;
 			}
 		}
-		// This group was just created or re-created.
-		// We need to add it to the parent's list, if that exists.
-		// Also, we want to recursively set exists=true for parents.
 		if (addToParent) {
+			// This group was just created or re-created.
+			// We need to add it to the parent's list, if that exists.
+			// Also, we want to recursively set exists=true for parents.
 			final CacheInfoDirectory parent = info.parent;
 			if (parent != null) {
 				synchronized (parent) {
 					if (parent.list != null) {
-						parent.list.add(info.path.filename());
+						if (!parent.list.contains(info.path.filename())) {
+							parent.list.add(info.path.filename());
+						}
 					}
 				}
 				setExists(parent);
 			}
 		}
 	}
-
 }
