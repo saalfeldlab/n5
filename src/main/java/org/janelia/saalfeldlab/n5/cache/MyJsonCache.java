@@ -278,7 +278,7 @@ public class MyJsonCache implements DelegateStore {
 	/**
 	 * Maps N5Path to MyCacheInfo
 	 */
-	private final ConcurrentHashMap<String, MyCacheInfo> infos;
+	private final ConcurrentHashMap<N5Path, MyCacheInfo> infos;
 
 	public MyJsonCache(
 			final DelegateStore container,
@@ -290,23 +290,24 @@ public class MyJsonCache implements DelegateStore {
 		infos = new ConcurrentHashMap<>();
 
 		// create root CacheInfo
-		infos.put("", new CacheInfoDirectory(N5GroupPath.of(""), null));
+		final N5GroupPath root = N5GroupPath.of("");
+		infos.put(root, new CacheInfoDirectory(root, null));
 	}
 
 	private CacheInfoDirectory getOrCreate(N5GroupPath path) {
-		final MyCacheInfo info = infos.get(path.normalPath());
+		final MyCacheInfo info = infos.get(path);
 		if (info != null)
 			return info.asDirectory();
 		final CacheInfoDirectory parent = getOrCreate(path.parent());
-		return infos.computeIfAbsent(path.normalPath(), p -> new CacheInfoDirectory(path, parent)).asDirectory();
+		return infos.computeIfAbsent(path, p -> new CacheInfoDirectory(path, parent)).asDirectory();
 	}
 
 	private CacheInfoAttributes getOrCreate(N5FilePath path) {
-		final MyCacheInfo info = infos.get(path.normalPath());
+		final MyCacheInfo info = infos.get(path);
 		if (info != null)
 			return info.asAttributes();
 		final CacheInfoDirectory parent = getOrCreate(path.parent());
-		return infos.computeIfAbsent(path.normalPath(), p -> new CacheInfoAttributes(path, parent)).asAttributes();
+		return infos.computeIfAbsent(path, p -> new CacheInfoAttributes(path, parent)).asAttributes();
 	}
 
 
