@@ -58,9 +58,11 @@ public class MyJsonCache implements DelegateStore {
 		// if this entry is valid: does the path exist
 		abstract boolean exists();
 
-		boolean isKnownToExist() {
+		synchronized boolean isKnownToExist() {
 			return valid() && exists();
 		}
+
+		abstract boolean isKnownToNotExist();
 
 		CacheInfoAttributes asAttributes() {
 			throw new IllegalStateException("Not a CacheInfoAttributes: " + this);
@@ -86,6 +88,11 @@ public class MyJsonCache implements DelegateStore {
 		}
 
 		@Override
+		CacheInfoAttributes asAttributes() {
+			return this;
+		}
+
+		@Override
 		N5Path path() {
 			return path;
 		}
@@ -96,8 +103,15 @@ public class MyJsonCache implements DelegateStore {
 		}
 
 		@Override
-		CacheInfoAttributes asAttributes() {
-			return this;
+		synchronized boolean isKnownToNotExist() {
+			if (!valid) {
+				// if the parent doesn't exist, then this doesn't exist either
+				if (parent.isKnownToNotExist()) {
+					valid = true;
+					json = null;
+				}
+			}
+			return valid && json == null;
 		}
 
 		@Override
@@ -105,16 +119,11 @@ public class MyJsonCache implements DelegateStore {
 			json = null;
 		}
 
-		void setJson(final JsonElement json) {
-			boolean setParentExists;
-			synchronized (this) {
-				this.json = json;
-				setParentExists = !valid;
-				valid = true;
-			}
-			if (setParentExists) {
+		synchronized void setJson(final JsonElement json) {
+			if (!valid && json != null)
 				parent.setExists();
-			}
+			this.json = json;
+			valid = true;
 		}
 
 	}
@@ -136,6 +145,11 @@ public class MyJsonCache implements DelegateStore {
 		}
 
 		@Override
+		CacheInfoDirectory asDirectory() {
+			return this;
+		}
+
+		@Override
 		N5Path path() {
 			return path;
 		}
@@ -146,8 +160,15 @@ public class MyJsonCache implements DelegateStore {
 		}
 
 		@Override
-		CacheInfoDirectory asDirectory() {
-			return this;
+		synchronized boolean isKnownToNotExist() {
+			if (!valid) {
+				// if the parent doesn't exist, then this doesn't exist either
+				if (parent != null && parent.isKnownToNotExist()) {
+					valid = true;
+					exists = false;
+				}
+			}
+			return valid && !exists;
 		}
 
 		void addChild(final MyCacheInfo child) {
@@ -287,33 +308,12 @@ public class MyJsonCache implements DelegateStore {
 
 		final N5FilePath path = group.resolve(attributesKey).asFile();
 		final CacheInfoAttributes info = getOrCreate(path);
-
-		// If the parent directory is known to not exist, we don't need to
-		// try to read the attributes file.
-		final boolean parentDoesNotExist;
-		final CacheInfoDirectory parent = info.parent;
-		synchronized (parent) {
-			parentDoesNotExist = parent.valid && !parent.exists;
-		}
-
-		// If it becomes known that the attributes file exists, then we should
-		// also mark all parent directories as existing.
-		boolean setExistsParent = false;
 		synchronized (info) {
-			if (!info.valid) {
-				if (parentDoesNotExist) {
-					info.json = null;
-				} else {
-					info.json = container.store_readAttributesJson(group, attributesKey);
-					setExistsParent = (info.json != null);
-				}
-				info.valid = true;
+			if (!info.valid() && !info.isKnownToNotExist()) {
+				info.setJson(container.store_readAttributesJson(group, attributesKey));
 			}
+			return info.json;
 		}
-		if (setExistsParent) {
-			parent.setExists();
-		}
-		return info.json;
 	}
 
 	@Override
@@ -384,8 +384,8 @@ public class MyJsonCache implements DelegateStore {
 	public void store_removeDirectory(final N5GroupPath group) throws N5IOException {
 
 		final CacheInfoDirectory info = getOrCreate(group);
-//		if (!info.isKnownTo_NOT_Exist()) // TODO ?
-		container.store_removeDirectory(group);
+		if (!info.isKnownToNotExist())
+			container.store_removeDirectory(group);
 		info.markRemoved();
 	}
 
