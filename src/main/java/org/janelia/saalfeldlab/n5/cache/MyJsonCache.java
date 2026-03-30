@@ -3,6 +3,7 @@ package org.janelia.saalfeldlab.n5.cache;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
@@ -13,28 +14,29 @@ import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 
 public class MyJsonCache implements DelegateStore {
 
+	/*
+	 * Implementation notes:
+	 *
+	 * Within in a synchronized block on a CacheInfo, it is ok to take
+	 * additional locks on parents but not on children.
+	 *
+	 * When we add a new CacheInfo, we add it into the JsonCache's
+	 * ConcurrentHashMap immediately, to have something to synchronize on.
+	 * However, we are still initializing the CacheInfo (for example reading
+	 * attributes file from container). When initialization is done, we set
+	 * info.valid=true.
+	 */
+
 	// ------------------------------------------------------------------------
 	//
 	// MyCacheInfo
 	//
 	// ------------------------------------------------------------------------
 
-	/*
-	 * Implementation notes:
-	 *
-	 * Synchronization:
-	 *   Within in a synchronized block on a CacheInfo, it is ok to take
-	 *   additional locks on parents but not on children.
-	 */
-
 	static abstract class MyCacheInfo {
 
 		protected final CacheInfoDirectory parent;
 
-		// When we add a new CacheInfo, we put it into the map immediately, to
-		// have something ot synchronize on. However, we are still initializing
-		// it (for example reading attributes file from container). When
-		// initialization is done, we set valid:=true.
 		protected boolean valid = false;
 
 		MyCacheInfo(final CacheInfoDirectory parent) {
@@ -45,24 +47,17 @@ public class MyJsonCache implements DelegateStore {
 
 		abstract N5Path path();
 
+		/**
+		 * When deleting a directory (and its contents, recursively) this method
+		 * is called to mark this {@code CacheInfo} and all its children as
+		 * "known to not exist". Also remove the directory from the listing of
+		 * its parent (if that exists).
+		 */
 		abstract void markRemoved();
 
 		boolean valid() {
 			return valid;
 		}
-
-		CacheInfoDirectory parent() {
-			return parent;
-		}
-
-		// if this entry is valid: does the path exist
-		abstract boolean exists();
-
-		synchronized boolean isKnownToExist() {
-			return valid() && exists();
-		}
-
-		abstract boolean isKnownToNotExist();
 
 		CacheInfoAttributes asAttributes() {
 			throw new IllegalStateException("Not a CacheInfoAttributes: " + this);
@@ -97,12 +92,13 @@ public class MyJsonCache implements DelegateStore {
 			return path;
 		}
 
-		@Override
-		boolean exists() {
-			return json != null;
-		}
-
-		@Override
+		/**
+		 * Returns {@code true} if it is known (by direct observation or
+		 * implicitly) that this file <em>does not</em> exist.
+		 * <p>
+		 * Returns {@code false} if this file exists, or if its unknown whether
+		 * it exists.
+		 */
 		synchronized boolean isKnownToNotExist() {
 			if (!valid) {
 				// if the parent doesn't exist, then this doesn't exist either
@@ -126,6 +122,9 @@ public class MyJsonCache implements DelegateStore {
 			valid = true;
 		}
 
+		JsonElement json() {
+			return json;
+		}
 	}
 
 
@@ -154,12 +153,28 @@ public class MyJsonCache implements DelegateStore {
 			return path;
 		}
 
-		@Override
 		boolean exists() {
 			return exists;
 		}
 
-		@Override
+		/**
+		 * Returns {@code true} if it is known (by direct observation or
+		 * implicitly) that this directory or file exists.
+		 * <p>
+		 * Returns {@code false} if this directory or file does not exist, or if
+		 * its unknown whether it exists.
+		 */
+		synchronized boolean isKnownToExist() {
+			return valid() && exists();
+		}
+
+		/**
+		 * Returns {@code true} if it is known (by direct observation or
+		 * implicitly) that this directory <em>does not</em> exist.
+		 * <p>
+		 * Returns {@code false} if this directory exists, or if its unknown
+		 * whether it exists.
+		 */
 		synchronized boolean isKnownToNotExist() {
 			if (!valid) {
 				// if the parent doesn't exist, then this doesn't exist either
@@ -175,6 +190,15 @@ public class MyJsonCache implements DelegateStore {
 			synchronized (children) {
 				children.add(child);
 			}
+		}
+
+		String[] getList() {
+			return list == null ? null : list.toArray(new String[0]);
+		}
+
+		synchronized void setList(final String[] list) {
+			this.list = new ArrayList<>(Arrays.asList(list));
+			setExists();
 		}
 
 		private synchronized void removeFromList(final String filename) {
@@ -204,6 +228,18 @@ public class MyJsonCache implements DelegateStore {
 		}
 
 		/**
+		 * The directory represented by {@code info} was just observed to not exist.
+		 * Set {@code valid=true} and {@code exists=false}.
+		 * <p>
+		 * This method is only used by {@code isDirectory} checks. It will not
+		 * mark children as non-existing or remove this from the parents list.
+		 */
+		synchronized void setNotExists() {
+			exists = false;
+			valid = true;
+		}
+
+		/**
 		 * The directory represented by {@code info} was just created, re-created,
 		 * or otherwise observed to exist.
 		 * <p>
@@ -213,17 +249,9 @@ public class MyJsonCache implements DelegateStore {
 		 * Recursively call for parent, because we know that all parent directories
 		 * must exist now as well.
 		 */
-		void setExists() {
+		synchronized void setExists() {
 
-			boolean addToParent = false;
-			synchronized (this) {
-				if(!isKnownToExist()) {
-					addToParent = true;
-					valid = true;
-					exists = true;
-				}
-			}
-			if (addToParent) {
+			if (!isKnownToExist()) {
 				// This group was just created or re-created.
 				// We need to add it to the parent's list, if that exists.
 				// Also, we want to recursively set exists=true for parents.
@@ -231,9 +259,10 @@ public class MyJsonCache implements DelegateStore {
 					parent.addToList(path.filename());
 					parent.setExists();
 				}
+				valid = true;
+				exists = true;
 			}
 		}
-
 	}
 
 
@@ -250,7 +279,6 @@ public class MyJsonCache implements DelegateStore {
 	 * Maps N5Path to MyCacheInfo
 	 */
 	private final ConcurrentHashMap<String, MyCacheInfo> infos;
-	private final MyCacheInfo root;
 
 	public MyJsonCache(
 			final DelegateStore container,
@@ -261,9 +289,8 @@ public class MyJsonCache implements DelegateStore {
 
 		infos = new ConcurrentHashMap<>();
 
-		// create root CacheInfo (we assume it exists)
-		root = new CacheInfoDirectory(N5GroupPath.of(""), null);
-		infos.put(root.path().normalPath(), root);
+		// create root CacheInfo
+		infos.put("", new CacheInfoDirectory(N5GroupPath.of(""), null));
 	}
 
 	private CacheInfoDirectory getOrCreate(N5GroupPath path) {
@@ -312,7 +339,7 @@ public class MyJsonCache implements DelegateStore {
 			if (!info.valid() && !info.isKnownToNotExist()) {
 				info.setJson(container.store_readAttributesJson(group, attributesKey));
 			}
-			return info.json;
+			return info.json();
 		}
 	}
 
@@ -340,29 +367,33 @@ public class MyJsonCache implements DelegateStore {
 
 		final CacheInfoDirectory info = getOrCreate(group);
 		synchronized (info) {
-			if (!info.valid) {
-				info.exists = container.store_isDirectory(group);
-				info.valid = true;
-				// TODO: Can isDirectoryFromContainer throw a N5IOException?
+			if (!info.valid()) {
+				final boolean exists = container.store_isDirectory(group);
+				if (exists)
+					info.setExists();
+				else
+					info.setNotExists();
 			}
+			return info.exists();
 		}
-		return info.exists;
 	}
 
 	@Override
 	public String[] store_listDirectories(final N5GroupPath group) throws N5IOException {
 
 		final CacheInfoDirectory info = getOrCreate(group);
-		boolean setExists = false;
 		synchronized (info) {
-			if (!info.valid || (info.exists && info.list == null)) {
+			if (info.isKnownToNotExist()) {
+				throw new N5NoSuchKeyException("No such file: " + group);
+			}
+
+			String[] list = info.getList();
+			if (list == null) {
 				try {
-					final String[] list = container.store_listDirectories(group);
-					info.list = new ArrayList<>(List.of(list));
-					setExists = true;
+					list = container.store_listDirectories(group);
+					info.setList(list);
 				} catch (N5NoSuchKeyException e) {
-					info.exists = false;
-					info.valid = true;
+					info.setNotExists();
 					throw new N5NoSuchKeyException(e);
 				}
 				// NB: If listFromContainer throw a N5IOException other than
@@ -370,14 +401,8 @@ public class MyJsonCache implements DelegateStore {
 				// thrown. info.valid==false remains, and we will retry next
 				// time...
 			}
+			return list;
 		}
-		if (setExists) {
-			info.setExists();
-		}
-		if (!info.exists) {
-			throw new N5NoSuchKeyException("No such file: " + group);
-		}
-		return info.list.toArray(new String[0]);
 	}
 
 	@Override
