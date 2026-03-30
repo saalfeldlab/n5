@@ -29,8 +29,8 @@
 package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.JsonElement;
+import org.janelia.saalfeldlab.n5.cache.DelegateStore;
 import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
-import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -48,10 +48,9 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	public static final String ATTRIBUTES_JSON = "attributes.json";
 
 	protected final RootedKeyValueAccess keyValueAccess;
+	private final DelegateStore metaStore;
 	protected final Gson gson;
 	protected final boolean cacheMeta;
-
-	private final MyJsonCache myCache;
 
 	/**
 	 * Opens an {@link N5KeyValueReader} at a given base path with a custom
@@ -119,9 +118,11 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 		this.keyValueAccess = keyValueAccess;
 		this.gson = registerGson(gsonBuilder).create();
-
 		this.cacheMeta = cacheMeta;
-		this.myCache = cacheMeta ? new MyJsonCache(this, gson) : null;
+
+		// TODO: This uses keyValueAccess, gson, cacheMeta. Is it safe to use
+		//       them already, or should they be passed as arguments?
+		this.metaStore = newMetaStore();
 
 		boolean versionFound = false;
 		if (checkVersion) {
@@ -173,15 +174,14 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	}
 
 	@Override
+	public DelegateStore getDelegateStore() {
+
+		return metaStore;
+	}
+
+	@Override
 	public boolean cacheMeta() {
 
 		return cacheMeta;
 	}
-
-	@Override
-	public MyJsonCache getMyCache() {
-
-		return myCache;
-	}
-
 }

@@ -280,12 +280,9 @@ public class MyJsonCache implements DelegateStore {
 	 */
 	private final ConcurrentHashMap<N5Path, MyCacheInfo> infos;
 
-	public MyJsonCache(
-			final DelegateStore container,
-			final Gson gson
-	) {
+	public MyJsonCache(final DelegateStore container) {
 		this.container = container;
-		this.gson = gson;
+		this.gson = container.getGson();
 
 		infos = new ConcurrentHashMap<>();
 
@@ -313,8 +310,8 @@ public class MyJsonCache implements DelegateStore {
 
 
 
-	// TODO: inline and remove?
-	private Gson getGson() {
+	@Override
+	public Gson getGson() {
 		return gson;
 	}
 

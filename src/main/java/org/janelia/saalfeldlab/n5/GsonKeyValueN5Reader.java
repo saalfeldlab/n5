@@ -28,30 +28,26 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import java.net.URI;
 import java.util.List;
-
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.janelia.saalfeldlab.n5.cache.DelegateStore;
-import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
  * attributes parsed with {@link Gson}.
  *
  */
-public interface GsonKeyValueN5Reader extends GsonN5Reader, DelegateStore {
+public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	RootedKeyValueAccess getRootedKeyValueAccess();
+
+	DelegateStore getDelegateStore();
 
 	@Override
 	default URI getURI() {
@@ -169,77 +165,6 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader, DelegateStore {
 		return getRootedKeyValueAccess().isFile(path);
 	}
 
-
-
-
-
-
-	// ------------------------------------------------------------------------
-	//
-	// -- DelegateStore --
-	//
-
-	default DelegateStore getDelegateStore() {
-		return this;
-	}
-
-
-	// ------------------------------------------------------------------------
-	//
-	// -- DelegateStore : READ --
-	//
-
-	@Override
-	default JsonElement store_readAttributesJson(
-			final N5GroupPath group,
-			final String filename) throws N5IOException {
-
-		final N5FilePath attributesPath = group.resolve(filename).asFile();
-		try (final VolatileReadData readData = getRootedKeyValueAccess().createReadData(attributesPath);) {
-			// TODO: this (ReadData --> JsonElement) should go into GsonUtils?
-			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), getGson());
-		} catch (final N5NoSuchKeyException e) {
-			return null;
-		} catch (final UncheckedIOException | N5IOException e) {
-			throw new N5IOException("Failed to read attributes from " + attributesPath, e);
-		}
-	}
-
-	@Override
-	default boolean store_isDirectory(final N5GroupPath group) {
-//		TODO: throws N5IOException?
-
-		return getRootedKeyValueAccess().isDirectory(group);
-	}
-
-	@Override
-	default String[] store_listDirectories(final N5GroupPath group) throws N5IOException {
-
-		return getRootedKeyValueAccess().listDirectories(group);
-	}
-
-
-	// ------------------------------------------------------------------------
-	//
-	// -- DelegateStore : WRITE --
-	//
-
-	// TODO: separate DelegateStore into Read and Write parts
-	@Override
-	default void store_writeAttributesJson(final N5GroupPath group, final String filename, final JsonElement attributes) throws N5IOException {
-		throw new UnsupportedOperationException("TODO: separate DelegateStore into Read and Write parts");
-	}
-
-	// TODO: separate DelegateStore into Read and Write parts
-	@Override
-	default void store_removeDirectory(final N5GroupPath group) throws N5IOException {
-		throw new UnsupportedOperationException("TODO: separate DelegateStore into Read and Write parts");
-	}
-
-	@Override
-	default void store_createDirectories(N5GroupPath group) throws N5IOException {
-		throw new UnsupportedOperationException("TODO: separate DelegateStore into Read and Write parts");
-	}
 
 	// ------------------------------------------------------------------------
 	//

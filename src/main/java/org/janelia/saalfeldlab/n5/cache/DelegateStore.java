@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5.cache;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.janelia.saalfeldlab.n5.GsonN5Reader;
 import org.janelia.saalfeldlab.n5.N5Exception;
@@ -8,6 +9,8 @@ import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.janelia.saalfeldlab.n5.N5Reader;
 
 public interface DelegateStore {
+
+	Gson getGson();
 
 	// ------------------------------------------------------------------------
 	//

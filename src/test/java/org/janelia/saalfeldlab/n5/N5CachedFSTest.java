@@ -28,6 +28,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import java.io.IOException;
@@ -39,6 +40,8 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.janelia.saalfeldlab.n5.cache.DelegateStore;
+import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -207,6 +210,7 @@ public class N5CachedFSTest extends N5FSTest {
 		int expectedRmDirCount = 0;
 		int expectedMkDirCount = 0;
 		int expectedListCount = 0;
+		n5.resetCounters();
 
 		boolean exists = n5.exists(groupA);
 		boolean groupExists = n5.groupExists(groupA);
@@ -551,6 +555,8 @@ public class N5CachedFSTest extends N5FSTest {
 
 	public interface TrackingStorage extends CachedGsonKeyValueN5Writer {
 
+		void resetCounters();
+
 		int getReadAttrCallCount();
 		int getWriteAttrCallCount();
 		int getIsDirCallCount();
@@ -559,14 +565,66 @@ public class N5CachedFSTest extends N5FSTest {
 		int getListCallCount();
 	}
 
+	public static class TrackingMetaStore implements DelegateStore {
+
+		int readAttrCallCount = 0;
+		int writeAttrCallCount = 0;
+		int isDirCallCount = 0;
+		int rmDirCallCount = 0;
+		int mkDirCallCount = 0;
+		int listCallCount = 0;
+
+		private final DelegateStore delegate;
+
+		TrackingMetaStore(final DelegateStore delegate) {
+			this.delegate = delegate;
+		}
+
+		@Override
+		public Gson getGson() {
+			return delegate.getGson();
+		}
+
+		@Override
+		public JsonElement store_readAttributesJson(final N5Path.N5GroupPath group, final String filename) throws N5Exception.N5IOException {
+			readAttrCallCount++;
+			return delegate.store_readAttributesJson(group, filename);
+		}
+
+		@Override
+		public void store_writeAttributesJson(final N5Path.N5GroupPath group, final String filename, final JsonElement attributes) throws N5Exception.N5IOException {
+			writeAttrCallCount++;
+			delegate.store_writeAttributesJson(group, filename, attributes);
+		}
+
+		@Override
+		public boolean store_isDirectory(final N5Path.N5GroupPath group) {
+			isDirCallCount++;
+			return delegate.store_isDirectory(group);
+		}
+
+		@Override
+		public void store_removeDirectory(final N5Path.N5GroupPath group) throws N5Exception.N5IOException {
+			rmDirCallCount++;
+			delegate.store_removeDirectory(group);
+		}
+
+		@Override
+		public void store_createDirectories(final N5Path.N5GroupPath group) throws N5Exception.N5IOException {
+			mkDirCallCount++;
+			delegate.store_createDirectories(group);
+		}
+
+		@Override
+		public String[] store_listDirectories(final N5Path.N5GroupPath group) throws N5Exception.N5IOException {
+			listCallCount++;
+			return delegate.store_listDirectories(group);
+		}
+	}
+
 	public static class N5TrackingStorage extends N5KeyValueWriter implements TrackingStorage {
 
-		public int readAttrCallCount = 0;
-		public int writeAttrCallCount = 0;
-		public int isDirCallCount = 0;
-		public int rmDirCallCount = 0;
-		public int mkDirCallCount = 0;
-		public int listCallCount = 0;
+		private TrackingMetaStore trackingStore;
 
 		public N5TrackingStorage(final RootedKeyValueAccess keyValueAccess,
 				final GsonBuilder gsonBuilder, final boolean cacheAttributes) throws IOException {
@@ -575,69 +633,49 @@ public class N5CachedFSTest extends N5FSTest {
 		}
 
 		@Override
-		public JsonElement store_readAttributesJson(final N5Path.N5GroupPath group, final String filename) throws N5Exception.N5IOException {
-			readAttrCallCount++;
-			return super.store_readAttributesJson(group, filename);
+		public DelegateStore newMetaStore() {
+			trackingStore = new TrackingMetaStore(new KeyValueAccessMetaStore(keyValueAccess, gson));
+			return cacheMeta() ? new MyJsonCache(trackingStore) : trackingStore;
 		}
 
 		@Override
-		public void store_writeAttributesJson(final N5Path.N5GroupPath group, final String filename, final JsonElement attributes) throws N5Exception.N5IOException {
-			writeAttrCallCount++;
-			super.store_writeAttributesJson(group, filename, attributes);
-		}
-
-		@Override
-		public boolean store_isDirectory(final N5Path.N5GroupPath group) {
-			isDirCallCount++;
-			return super.store_isDirectory(group);
-		}
-
-		@Override
-		public void store_removeDirectory(final N5Path.N5GroupPath group) throws N5Exception.N5IOException {
-			rmDirCallCount++;
-			super.store_removeDirectory(group);
-		}
-
-		@Override
-		public void store_createDirectories(final N5Path.N5GroupPath group) throws N5Exception.N5IOException {
-			mkDirCallCount++;
-			super.store_createDirectories(group);
-		}
-
-		@Override
-		public String[] store_listDirectories(final N5Path.N5GroupPath group) throws N5Exception.N5IOException {
-			listCallCount++;
-			return super.store_listDirectories(group);
+		public void resetCounters() {
+			trackingStore.readAttrCallCount = 0;
+			trackingStore.writeAttrCallCount = 0;
+			trackingStore.isDirCallCount = 0;
+			trackingStore.rmDirCallCount = 0;
+			trackingStore.mkDirCallCount = 0;
+			trackingStore.listCallCount = 0;
 		}
 
 		@Override
 		public int getReadAttrCallCount() {
-			return readAttrCallCount;
+			return trackingStore.readAttrCallCount;
 		}
 
 		@Override
 		public int getWriteAttrCallCount() {
-			return writeAttrCallCount;
+			return trackingStore.writeAttrCallCount;
 		}
 
 		@Override
 		public int getIsDirCallCount() {
-			return isDirCallCount;
+			return trackingStore.isDirCallCount;
 		}
 
 		@Override
 		public int getRmDirCallCount() {
-			return rmDirCallCount;
+			return trackingStore.rmDirCallCount;
 		}
 
 		@Override
 		public int getMkDirCallCount() {
-			return mkDirCallCount;
+			return trackingStore.mkDirCallCount;
 		}
 
 		@Override
 		public int getListCallCount() {
-			return listCallCount;
+			return trackingStore.listCallCount;
 		}
 	}
 }

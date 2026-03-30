@@ -48,6 +48,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
+import org.janelia.saalfeldlab.n5.cache.DelegateStore;
 
 public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
@@ -59,28 +60,29 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		this.writer = writer;
 		this.reader = reader;
 
-		if (reader instanceof CachedGsonKeyValueN5Reader && writer instanceof CachedGsonKeyValueN5Writer) {
-			final CachedGsonKeyValueN5Reader cachedReader = (CachedGsonKeyValueN5Reader)reader;
-			final CachedGsonKeyValueN5Writer cachedWriter = (CachedGsonKeyValueN5Writer)writer;
-			if (cachedReader.cacheMeta()) {
-				/* Hack necessary to test HTTP reader caching without creating the data entirely first */
-				try {
-					// Access the private 'cache' field in the reader (or the N5KeyValueReader as a fallback)
-					Field cacheField;
-					try {
-						cacheField = reader.getClass().getDeclaredField("myCache");
-					} catch (NoSuchFieldException e) {
-						cacheField = N5KeyValueReader.class.getDeclaredField("myCache");
-					}
-					cacheField.setAccessible(true);
-
-					// Set the value of 'cache' to the one from writer.getCache()
-					cacheField.set(reader, cachedWriter.getMyCache());
-				} catch (NoSuchFieldException | IllegalAccessException e) {
-					throw new RuntimeException("Failed to set reader cache reflectively", e);
-				}
-			}
-		}
+		// TODO
+//		if (reader instanceof CachedGsonKeyValueN5Reader && writer instanceof CachedGsonKeyValueN5Writer) {
+//			final CachedGsonKeyValueN5Reader cachedReader = (CachedGsonKeyValueN5Reader)reader;
+//			final CachedGsonKeyValueN5Writer cachedWriter = (CachedGsonKeyValueN5Writer)writer;
+//			if (cachedReader.cacheMeta()) {
+//				/* Hack necessary to test HTTP reader caching without creating the data entirely first */
+//				try {
+//					// Access the private 'cache' field in the reader (or the N5KeyValueReader as a fallback)
+//					Field cacheField;
+//					try {
+//						cacheField = reader.getClass().getDeclaredField("myCache");
+//					} catch (NoSuchFieldException e) {
+//						cacheField = N5KeyValueReader.class.getDeclaredField("myCache");
+//					}
+//					cacheField.setAccessible(true);
+//
+//					// Set the value of 'cache' to the one from writer.getCache()
+//					cacheField.set(reader, cachedWriter.getMyCache());
+//				} catch (NoSuchFieldException | IllegalAccessException e) {
+//					throw new RuntimeException("Failed to set reader cache reflectively", e);
+//				}
+//			}
+//		}
 	}
 
 	@Override public String getAttributesKey() {
@@ -121,6 +123,11 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	@Override public RootedKeyValueAccess getRootedKeyValueAccess() {
 
 		return reader.getRootedKeyValueAccess();
+	}
+
+	@Override
+	public DelegateStore getDelegateStore() {
+		throw new UnsupportedOperationException("TODO: not implemented yet");
 	}
 
 	@Override public boolean exists(String pathName) {
