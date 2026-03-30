@@ -19,10 +19,17 @@ public class MyJsonCache implements DelegateStore {
 	//
 	// ------------------------------------------------------------------------
 
+	/*
+	 * Implementation notes:
+	 *
+	 * Synchronization:
+	 *   Within in a synchronized block on a CacheInfo, it is ok to take
+	 *   additional locks on parents but not on children.
+	 */
+
 	static abstract class MyCacheInfo {
 
 		protected final CacheInfoDirectory parent;
-		protected boolean exists = true;
 
 		// When we add a new CacheInfo, we put it into the map immediately, to
 		// have something ot synchronize on. However, we are still initializing
@@ -36,9 +43,24 @@ public class MyJsonCache implements DelegateStore {
 				parent.addChild(this);
 		}
 
-		abstract N5Path getPath();
+		abstract N5Path path();
 
 		abstract void markRemoved();
+
+		boolean valid() {
+			return valid;
+		}
+
+		CacheInfoDirectory parent() {
+			return parent;
+		}
+
+		// if this entry is valid: does the path exist
+		abstract boolean exists();
+
+		boolean isKnownToExist() {
+			return valid() && exists();
+		}
 
 		CacheInfoAttributes asAttributes() {
 			throw new IllegalStateException("Not a CacheInfoAttributes: " + this);
@@ -50,10 +72,13 @@ public class MyJsonCache implements DelegateStore {
 	}
 
 
+	/**
+	 * A cache entry referring to an attributes json file.
+	 */
 	static class CacheInfoAttributes extends MyCacheInfo {
 
-		protected final N5FilePath path;
-		protected JsonElement json;
+		private final N5FilePath path;
+		private JsonElement json;
 
 		CacheInfoAttributes(final N5FilePath path, CacheInfoDirectory parent) {
 			super(parent);
@@ -61,8 +86,13 @@ public class MyJsonCache implements DelegateStore {
 		}
 
 		@Override
-		N5Path getPath() {
+		N5Path path() {
 			return path;
+		}
+
+		@Override
+		boolean exists() {
+			return json != null;
 		}
 
 		@Override
@@ -71,18 +101,34 @@ public class MyJsonCache implements DelegateStore {
 		}
 
 		@Override
-		synchronized void markRemoved() {
+		void markRemoved() {
 			json = null;
-			exists = false;
 		}
+
+		void setJson(final JsonElement json) {
+			boolean setParentExists;
+			synchronized (this) {
+				this.json = json;
+				setParentExists = !valid;
+				valid = true;
+			}
+			if (setParentExists) {
+				parent.setExists();
+			}
+		}
+
 	}
 
 
+	/**
+	 * A cache entry referring to a directory.
+	 */
 	static class CacheInfoDirectory extends MyCacheInfo {
 
-		protected final N5GroupPath path;
-		protected final List<MyCacheInfo> children = new ArrayList<>();
-		protected List<String> list;
+		private boolean exists = true;
+		private final N5GroupPath path;
+		private final List<MyCacheInfo> children = new ArrayList<>();
+		private List<String> list;
 
 		CacheInfoDirectory(final N5GroupPath path, CacheInfoDirectory parent) {
 			super(parent);
@@ -90,8 +136,13 @@ public class MyJsonCache implements DelegateStore {
 		}
 
 		@Override
-		N5Path getPath() {
+		N5Path path() {
 			return path;
+		}
+
+		@Override
+		boolean exists() {
+			return exists;
 		}
 
 		@Override
@@ -105,12 +156,63 @@ public class MyJsonCache implements DelegateStore {
 			}
 		}
 
-		@Override
-		synchronized void markRemoved() {
-			list = null;
-			exists = false;
-			children.forEach(MyCacheInfo::markRemoved);
+		private synchronized void removeFromList(final String filename) {
+			if (list != null) {
+				list.remove(filename);
+			}
 		}
+
+		private synchronized void addToList(final String filename) {
+			if (list != null && !list.contains(filename)) {
+				list.add(filename);
+			}
+		}
+
+		@Override
+		void markRemoved() {
+			synchronized (this) {
+				list = null;
+				exists = false;
+			}
+			if (parent != null) {
+				parent.removeFromList(path.filename());
+			}
+			synchronized(children) {
+				children.forEach(MyCacheInfo::markRemoved);
+			}
+		}
+
+		/**
+		 * The directory represented by {@code info} was just created, re-created,
+		 * or otherwise observed to exist.
+		 * <p>
+		 * Make sure that its {@code valid} and {@code exists} flags are set, and it
+		 * is present in its parent's {@code children} list (if that exists).
+		 * <p>
+		 * Recursively call for parent, because we know that all parent directories
+		 * must exist now as well.
+		 */
+		void setExists() {
+
+			boolean addToParent = false;
+			synchronized (this) {
+				if(!isKnownToExist()) {
+					addToParent = true;
+					valid = true;
+					exists = true;
+				}
+			}
+			if (addToParent) {
+				// This group was just created or re-created.
+				// We need to add it to the parent's list, if that exists.
+				// Also, we want to recursively set exists=true for parents.
+				if (parent != null) {
+					parent.addToList(path.filename());
+					parent.setExists();
+				}
+			}
+		}
+
 	}
 
 
@@ -140,18 +242,7 @@ public class MyJsonCache implements DelegateStore {
 
 		// create root CacheInfo (we assume it exists)
 		root = new CacheInfoDirectory(N5GroupPath.of(""), null);
-		add(root);
-	}
-
-	// TODO: inline and remove?
-	private Gson getGson() {
-		return gson;
-	}
-
-
-
-	private void add(MyCacheInfo info) {
-		infos.put(info.getPath().normalPath(), info);
+		infos.put(root.path().normalPath(), root);
 	}
 
 	private CacheInfoDirectory getOrCreate(N5GroupPath path) {
@@ -171,6 +262,12 @@ public class MyJsonCache implements DelegateStore {
 	}
 
 
+
+
+	// TODO: inline and remove?
+	private Gson getGson() {
+		return gson;
+	}
 
 
 	/**
@@ -210,12 +307,11 @@ public class MyJsonCache implements DelegateStore {
 					info.json = container.store_readAttributesJson(group, attributesKey);
 					setExistsParent = (info.json != null);
 				}
-				info.exists = (info.json != null); // TODO: remove exists field, and replace with exists() method?
 				info.valid = true;
 			}
 		}
 		if (setExistsParent) {
-			setExists(parent);
+			parent.setExists();
 		}
 		return info.json;
 	}
@@ -223,28 +319,20 @@ public class MyJsonCache implements DelegateStore {
 	@Override
 	public void store_writeAttributesJson(final N5GroupPath group, final String filename, final JsonElement attributes) throws N5IOException {
 
+		container.store_writeAttributesJson(group, filename, attributes);
+		/*
+		 * Gson only filters out nulls when you write the JsonElement. This
+		 * means it doesn't filter them out when caching.
+		 * To handle this, we explicitly writer the existing JsonElement to
+		 * a new JsonElement.
+		 * The output is identical to the input if:
+		 * - serializeNulls is true
+		 * - no null values are present
+		 */
+		final JsonElement json = getGson().serializeNulls() ? attributes : getGson().toJsonTree(attributes);
 		final N5FilePath path = group.resolve(filename).asFile();
 		final CacheInfoAttributes info = getOrCreate(path);
-		synchronized (info) {
-
-			// TODO: allow to write attributes file if !info.valid but parent exists
-			if (!info.valid) {
-				throw new IllegalStateException("Unexpected invalid CacheInfoAttributes " + this);
-			}
-			container.store_writeAttributesJson(group, filename, attributes);
-
-			/*
-			 * Gson only filters out nulls when you write the JsonElement. This
-			 * means it doesn't filter them out when caching.
-			 * To handle this, we explicitly writer the existing JsonElement to
-			 * a new JsonElement.
-			 * The output is identical to the input if:
-			 * - serializeNulls is true
-			 * - no null values are present
-			 */
-			info.json = getGson().serializeNulls() ? attributes : getGson().toJsonTree(attributes);
-			info.exists = true;
-		}
+		info.setJson(json);
 	}
 
 	@Override
@@ -284,7 +372,7 @@ public class MyJsonCache implements DelegateStore {
 			}
 		}
 		if (setExists) {
-			setExists(info);
+			info.setExists();
 		}
 		if (!info.exists) {
 			throw new N5NoSuchKeyException("No such file: " + group);
@@ -295,67 +383,19 @@ public class MyJsonCache implements DelegateStore {
 	@Override
 	public void store_removeDirectory(final N5GroupPath group) throws N5IOException {
 
-		container.store_removeDirectory(group);
-
 		final CacheInfoDirectory info = getOrCreate(group);
+//		if (!info.isKnownTo_NOT_Exist()) // TODO ?
+		container.store_removeDirectory(group);
 		info.markRemoved();
-		final CacheInfoDirectory parent = info.parent;
-		if (parent != null) {
-			synchronized (parent) {
-				if (parent.list != null) {
-					parent.list.remove(group.filename());
-				}
-			}
-		}
 	}
 
 	@Override
 	public void store_createDirectories(final N5GroupPath group) throws N5IOException {
 
 		final CacheInfoDirectory info = getOrCreate(group);
-		synchronized (info) {
-			if(!info.valid || !info.exists) {
-				container.store_createDirectories(group);
-			}
-		}
-		setExists(info);
+		if (!info.isKnownToExist())
+			container.store_createDirectories(group);
+		info.setExists();
 	}
 
-	/**
-	 * The directory represented by {@code info} was just created, re-created,
-	 * or otherwise observed to exist.
-	 * <p>
-	 * Make sure that its {@code valid} and {@code exists} flags are set, and it
-	 * is present in its parent's {@code children} list (if that exists).
-	 * <p>
-	 * Recursively call for parent, because we know that all parent directories
-	 * must exist now as well.
-	 */
-	private void setExists(final CacheInfoDirectory info) {
-
-		boolean addToParent = false;
-		synchronized (info) {
-			if(!info.valid || !info.exists) {
-				addToParent = true;
-				info.valid = true;
-				info.exists = true;
-			}
-		}
-		if (addToParent) {
-			// This group was just created or re-created.
-			// We need to add it to the parent's list, if that exists.
-			// Also, we want to recursively set exists=true for parents.
-			final CacheInfoDirectory parent = info.parent;
-			if (parent != null) {
-				synchronized (parent) {
-					if (parent.list != null) {
-						if (!parent.list.contains(info.path.filename())) {
-							parent.list.add(info.path.filename());
-						}
-					}
-				}
-				setExists(parent);
-			}
-		}
-	}
 }
