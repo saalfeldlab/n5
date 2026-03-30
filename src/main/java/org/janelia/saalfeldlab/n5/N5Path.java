@@ -202,7 +202,7 @@ public interface N5Path {
 			return new GroupPath(createURI(p));
 		}
 
-		static class GroupPath implements N5GroupPath {
+		private static class GroupPath implements N5GroupPath {
 
 			private final URI uri;
 
@@ -252,9 +252,19 @@ public interface N5Path {
 			public String toString() {
 				return "{group \"" + uri + "\"}";
 			}
+
+			@Override
+			public final boolean equals(final Object o) {
+				return (o instanceof N5GroupPath) && uri.equals(((N5GroupPath) o).uri());
+			}
+
+			@Override
+			public int hashCode() {
+				return uri.hashCode();
+			}
 		}
 
-		static class FilePath implements N5FilePath {
+		private static class FilePath implements N5FilePath {
 
 			private final URI uri;
 
@@ -293,6 +303,16 @@ public interface N5Path {
 			@Override
 			public String toString() {
 				return "{file \"" + uri + "\"}";
+			}
+
+			@Override
+			public final boolean equals(final Object o) {
+				return (o instanceof N5FilePath) && uri.equals(((N5FilePath) o).uri());
+			}
+
+			@Override
+			public int hashCode() {
+				return uri.hashCode();
 			}
 		}
 
