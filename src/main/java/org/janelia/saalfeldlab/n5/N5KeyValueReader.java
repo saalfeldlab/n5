@@ -119,10 +119,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 		this.keyValueAccess = keyValueAccess;
 		this.gson = registerGson(gsonBuilder).create();
 		this.cacheMeta = cacheMeta;
-
-		// TODO: This uses keyValueAccess, gson, cacheMeta. Is it safe to use
-		//       them already, or should they be passed as arguments?
-		this.metaStore = newMetaStore();
+		this.metaStore = createMetaStore(keyValueAccess, cacheMeta);
 
 		boolean versionFound = false;
 		if (checkVersion) {

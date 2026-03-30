@@ -273,7 +273,6 @@ public class MyJsonCache implements DelegateStore {
 	// ------------------------------------------------------------------------
 
 	private final DelegateStore container;
-	private final Gson gson;
 
 	/**
 	 * Maps N5Path to MyCacheInfo
@@ -282,7 +281,6 @@ public class MyJsonCache implements DelegateStore {
 
 	public MyJsonCache(final DelegateStore container) {
 		this.container = container;
-		this.gson = container.getGson();
 
 		infos = new ConcurrentHashMap<>();
 
@@ -310,10 +308,6 @@ public class MyJsonCache implements DelegateStore {
 
 
 
-	@Override
-	public Gson getGson() {
-		return gson;
-	}
 
 
 	/**
@@ -329,22 +323,22 @@ public class MyJsonCache implements DelegateStore {
 	 * @return the attributes as a json element.
 	 */
 	@Override
-	public JsonElement store_readAttributesJson(final N5GroupPath group, final String attributesKey) throws N5IOException {
+	public JsonElement store_readAttributesJson(final N5GroupPath group, final String attributesKey, final Gson gson) throws N5IOException {
 
 		final N5FilePath path = group.resolve(attributesKey).asFile();
 		final CacheInfoAttributes info = getOrCreate(path);
 		synchronized (info) {
 			if (!info.valid() && !info.isKnownToNotExist()) {
-				info.setJson(container.store_readAttributesJson(group, attributesKey));
+				info.setJson(container.store_readAttributesJson(group, attributesKey, gson));
 			}
 			return info.json();
 		}
 	}
 
 	@Override
-	public void store_writeAttributesJson(final N5GroupPath group, final String filename, final JsonElement attributes) throws N5IOException {
+	public void store_writeAttributesJson(final N5GroupPath group, final String filename, final JsonElement attributes, final Gson gson) throws N5IOException {
 
-		container.store_writeAttributesJson(group, filename, attributes);
+		container.store_writeAttributesJson(group, filename, attributes, gson);
 		/*
 		 * Gson only filters out nulls when you write the JsonElement. This
 		 * means it doesn't filter them out when caching.
@@ -354,7 +348,7 @@ public class MyJsonCache implements DelegateStore {
 		 * - serializeNulls is true
 		 * - no null values are present
 		 */
-		final JsonElement json = getGson().serializeNulls() ? attributes : getGson().toJsonTree(attributes);
+		final JsonElement json = gson.serializeNulls() ? attributes : gson.toJsonTree(attributes);
 		final N5FilePath path = group.resolve(filename).asFile();
 		final CacheInfoAttributes info = getOrCreate(path);
 		info.setJson(json);

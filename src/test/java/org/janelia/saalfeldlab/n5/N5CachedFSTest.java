@@ -40,6 +40,8 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.janelia.saalfeldlab.n5.cache.DelegateStore;
 import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
 import org.junit.Test;
@@ -581,42 +583,37 @@ public class N5CachedFSTest extends N5FSTest {
 		}
 
 		@Override
-		public Gson getGson() {
-			return delegate.getGson();
-		}
-
-		@Override
-		public JsonElement store_readAttributesJson(final N5Path.N5GroupPath group, final String filename) throws N5Exception.N5IOException {
+		public JsonElement store_readAttributesJson(final N5GroupPath group, final String filename, final Gson gson) throws N5IOException {
 			readAttrCallCount++;
-			return delegate.store_readAttributesJson(group, filename);
+			return delegate.store_readAttributesJson(group, filename, gson);
 		}
 
 		@Override
-		public void store_writeAttributesJson(final N5Path.N5GroupPath group, final String filename, final JsonElement attributes) throws N5Exception.N5IOException {
+		public void store_writeAttributesJson(final N5GroupPath group, final String filename, final JsonElement attributes, final Gson gson) throws N5IOException {
 			writeAttrCallCount++;
-			delegate.store_writeAttributesJson(group, filename, attributes);
+			delegate.store_writeAttributesJson(group, filename, attributes, gson);
 		}
 
 		@Override
-		public boolean store_isDirectory(final N5Path.N5GroupPath group) {
+		public boolean store_isDirectory(final N5GroupPath group) {
 			isDirCallCount++;
 			return delegate.store_isDirectory(group);
 		}
 
 		@Override
-		public void store_removeDirectory(final N5Path.N5GroupPath group) throws N5Exception.N5IOException {
+		public void store_removeDirectory(final N5GroupPath group) throws N5IOException {
 			rmDirCallCount++;
 			delegate.store_removeDirectory(group);
 		}
 
 		@Override
-		public void store_createDirectories(final N5Path.N5GroupPath group) throws N5Exception.N5IOException {
+		public void store_createDirectories(final N5GroupPath group) throws N5IOException {
 			mkDirCallCount++;
 			delegate.store_createDirectories(group);
 		}
 
 		@Override
-		public String[] store_listDirectories(final N5Path.N5GroupPath group) throws N5Exception.N5IOException {
+		public String[] store_listDirectories(final N5GroupPath group) throws N5IOException {
 			listCallCount++;
 			return delegate.store_listDirectories(group);
 		}
@@ -633,9 +630,12 @@ public class N5CachedFSTest extends N5FSTest {
 		}
 
 		@Override
-		public DelegateStore newMetaStore() {
-			trackingStore = new TrackingMetaStore(new KeyValueAccessMetaStore(keyValueAccess, gson));
-			return cacheMeta() ? new MyJsonCache(trackingStore) : trackingStore;
+		public DelegateStore createMetaStore(
+				final RootedKeyValueAccess keyValueAccess,
+				final boolean cacheMeta) {
+
+			trackingStore = new TrackingMetaStore(new KeyValueAccessMetaStore(keyValueAccess));
+			return cacheMeta ? new MyJsonCache(trackingStore) : trackingStore;
 		}
 
 		@Override

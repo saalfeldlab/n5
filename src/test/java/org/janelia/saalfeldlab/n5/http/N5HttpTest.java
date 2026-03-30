@@ -30,13 +30,16 @@ package org.janelia.saalfeldlab.n5.http;
 
 import com.google.gson.GsonBuilder;
 import org.janelia.saalfeldlab.n5.AbstractN5Test;
-import org.janelia.saalfeldlab.n5.HttpKeyValueAccess;
+import org.janelia.saalfeldlab.n5.KeyValueAccessMetaStore;
 import org.janelia.saalfeldlab.n5.N5FSWriter;
 import org.janelia.saalfeldlab.n5.N5KeyValueReader;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
+import org.janelia.saalfeldlab.n5.RootedFileSystemKeyValueAccess;
 import org.janelia.saalfeldlab.n5.RootedHttpKeyValueAccess;
 import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
+import org.janelia.saalfeldlab.n5.cache.DelegateStore;
+import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Ignore;
@@ -107,9 +110,30 @@ public class N5HttpTest extends AbstractN5Test {
 			final String location,
 			final GsonBuilder gson) throws IOException {
 
+
+		final URI root = httpServerURI.resolve(location);
+		final DelegateStore readStore = new KeyValueAccessMetaStore(new RootedHttpKeyValueAccess(root));
+
 		final String writerFsPath = httpServerDirectory.resolve(location).toFile().getCanonicalPath();
-		final N5FSWriter writer = new N5FSWriter(writerFsPath, gson, cacheMeta);
-		final N5KeyValueReader reader = (N5KeyValueReader)createN5Reader(location, gson);
+		final DelegateStore writeStore = new KeyValueAccessMetaStore(new RootedFileSystemKeyValueAccess(writerFsPath));
+
+		final DelegateStore readWriteStore = new ReadWriteMetaStore(readStore, writeStore);
+		final DelegateStore store = cacheMeta ? new MyJsonCache(readWriteStore) : readWriteStore;
+
+		final N5FSWriter writer = new N5FSWriter(writerFsPath, gson, cacheMeta) {
+
+			@Override
+			public DelegateStore createMetaStore(final RootedKeyValueAccess keyValueAccess, final boolean cacheMeta) {
+				return store;
+			}
+		};
+		final N5KeyValueReader reader = new N5KeyValueReader(new RootedHttpKeyValueAccess(root), gson, cacheMeta) {
+
+			@Override
+			public DelegateStore createMetaStore(final RootedKeyValueAccess keyValueAccess, final boolean cacheMeta) {
+				return store;
+			}
+		};
 		return new HttpReaderFsWriter(writer, reader);
 	}
 

@@ -99,7 +99,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	@Override
 	default JsonElement getAttributes(final String pathName) throws N5Exception {
 
-		return getDelegateStore().store_readAttributesJson(N5GroupPath.of(pathName), getAttributesKey());
+		return getDelegateStore().store_readAttributesJson(N5GroupPath.of(pathName), getAttributesKey(), getGson());
 	}
 
 	@Override

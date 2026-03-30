@@ -10,8 +10,6 @@ import org.janelia.saalfeldlab.n5.N5Reader;
 
 public interface DelegateStore {
 
-	Gson getGson();
-
 	// ------------------------------------------------------------------------
 	//
 	// -- DelegateStore : READ --
@@ -40,7 +38,8 @@ public interface DelegateStore {
 	// TODO: replace (group, filename) with N5FilePath (not sure, but looks like a good idea...)
 	JsonElement store_readAttributesJson(
 			N5GroupPath group,
-			String filename) throws N5IOException;
+			String filename,
+			Gson gson) throws N5IOException;
 
 	/**
 	 * Query whether a directory exists in this container.
@@ -98,7 +97,8 @@ public interface DelegateStore {
 	void store_writeAttributesJson(
 			N5GroupPath group,
 			String filename,
-			JsonElement attributes) throws N5IOException;
+			JsonElement attributes,
+			Gson gson) throws N5IOException;
 
 	/**
 	 * Create a directory and all parent paths along the way. The directory

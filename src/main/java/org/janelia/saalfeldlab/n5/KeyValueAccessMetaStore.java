@@ -13,23 +13,17 @@ import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 public class KeyValueAccessMetaStore implements DelegateStore {
 
 	private final RootedKeyValueAccess kva;
-	private final Gson gson;
 
-	public KeyValueAccessMetaStore(final RootedKeyValueAccess kva, final Gson gson) {
+	public KeyValueAccessMetaStore(final RootedKeyValueAccess kva) {
 
 		this.kva = kva;
-		this.gson = gson;
-	}
-
-	@Override
-	public Gson getGson() {
-		return gson;
 	}
 
 	@Override
 	public JsonElement store_readAttributesJson(
 			final N5Path.N5GroupPath group,
-			final String filename) throws N5Exception.N5IOException {
+			final String filename,
+			final Gson gson) throws N5Exception.N5IOException {
 
 		final N5Path.N5FilePath attributesPath = group.resolve(filename).asFile();
 		try (final VolatileReadData readData = kva.createReadData(attributesPath);) {
@@ -58,7 +52,8 @@ public class KeyValueAccessMetaStore implements DelegateStore {
 	public void store_writeAttributesJson(
 			final N5Path.N5GroupPath group,
 			final String filename,
-			final JsonElement attributes) throws N5Exception.N5IOException {
+			final JsonElement attributes,
+			final Gson gson) throws N5Exception.N5IOException {
 
 		final N5Path.N5FilePath attributesPath = group.resolve(filename).asFile();
 

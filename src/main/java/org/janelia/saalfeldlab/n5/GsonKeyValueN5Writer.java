@@ -82,7 +82,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		if (!exists(path))
 			throw new N5IOException("\"" + path + "\" is not a group or dataset.");
 
-		getDelegateStore().store_writeAttributesJson(N5GroupPath.of(path), getAttributesKey(), attributes);
+		getDelegateStore().store_writeAttributesJson(N5GroupPath.of(path), getAttributesKey(), attributes, getGson());
 	}
 
 	@Override

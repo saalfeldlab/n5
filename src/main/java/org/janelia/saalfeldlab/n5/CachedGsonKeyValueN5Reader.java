@@ -45,9 +45,11 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader {
 
 	boolean cacheMeta();
 
-	default DelegateStore newMetaStore() {
+	default DelegateStore createMetaStore(
+			final RootedKeyValueAccess keyValueAccess,
+			final boolean cacheMeta) {
 
-		final KeyValueAccessMetaStore store = new KeyValueAccessMetaStore(getRootedKeyValueAccess(), getGson());
-		return cacheMeta() ? new MyJsonCache(store) : store;
+		final KeyValueAccessMetaStore store = new KeyValueAccessMetaStore(keyValueAccess);
+		return cacheMeta ? new MyJsonCache(store) : store;
 	}
 }
