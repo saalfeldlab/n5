@@ -38,6 +38,7 @@ import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
+import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.janelia.saalfeldlab.n5.N5Writer.DataBlockSupplier;
 import org.janelia.saalfeldlab.n5.shard.ShardIndex.IndexLocation;
 import org.junit.Test;
@@ -45,119 +46,94 @@ import org.junit.Test;
 public class WriteRegionTest {
 
 
-//	#...............................#...............................#...............................#...............................#
-//	$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$
-//	|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|
-//	0   3   6   9  12  15  18  21  24  27  30  33  36  39  42  45  48  51  54  57  60  63  66  69  72  75  78  81  84  87  90  93  96
+	@Test
+	public void testWriteRegion() {
 
-	public static void main(String[] args) {
-
-//		int[] chunkSize = {3, 3, 3};
-//		int[] level1ShardSize = {6, 6, 6};
-//		int[] level2ShardSize = {24, 24, 24};
 		int[] chunkSize = {3};
-		int[] level1ShardSize = {6};
-		int[] level2ShardSize = {24};
-		final long[] datasetDimensions = {96};
-
-		// Chunks are 3x3x3
-		// Level 1 shards are 6x6x6 (contain 2x2x2 DataBlocks)
-		// Level 2 shards are 24x24x24 (contain 4x4x4 Level 1 shards)
+		final long[] datasetDimensions = {15};
 		final BlockCodecInfo c0 = new N5BlockCodecInfo();
-		final ShardCodecInfo c1 = new DefaultShardCodecInfo(
-				chunkSize,
-				c0,
-				new DataCodecInfo[] {new RawCompression()},
-				new RawBlockCodecInfo(),
-				new DataCodecInfo[] {new RawCompression()},
-				IndexLocation.END
-		);
-		final ShardCodecInfo c2 = new DefaultShardCodecInfo(
-				level1ShardSize,
-				c1,
-				new DataCodecInfo[] {new RawCompression()},
-				new RawBlockCodecInfo(),
-				new DataCodecInfo[] {new RawCompression()},
-				IndexLocation.START
-		);
 
 		TestDatasetAttributes attributes = new TestDatasetAttributes(
 				datasetDimensions,
-				level2ShardSize,
+				chunkSize,
 				DataType.INT8,
-				c2,
+				c0,
 				new RawCompression());
 
 		final DatasetAccess<byte[]> datasetAccess = attributes.getDatasetAccess();
 		final PositionValueAccess store = new TestPositionValueAccess();
-
-		// ---------------------------------------------------------------
-		// Some "tests"
-		// TODO: Turn into unit tests
-		// ---------------------------------------------------------------
-
-		// write some blocks, filled with constant values
-		final int[] dataBlockSize = c1.getInnerBlockSize();
-//		final long[] datasetDimensions = {100, 100, 100};
-//		final long[] regionMin = {9,9,9};
-//		final long[] regionSize = {15,15,15};
-
-		//	#...............................#...............................#...............................#...............................#
-		//	$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$.......$
-		//	|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|
-		//	0   3   6   9  12  15  18  21  24  27  30  33  36  39  42  45  48  51  54  57  60  63  66  69  72  75  78  81  84  87  90  93  96
-
-		final long[] regionMin = {93};
-		final long[] regionSize = {1};
-
-		DataBlockSupplier<byte[]> blocks = (gridPos, existing) -> {
-//			System.out.println("BlockSupplier.get(" + Arrays.toString(gridPos) + ", " + existing + ")");
-			return createDataBlock(dataBlockSize, gridPos.clone(), (byte) gridPos[0]);
+		DataBlockSupplier<byte[]> chunks = (gridPos, existing) -> {
+			return createDataBlock(chunkSize, gridPos.clone(), (byte) gridPos[0]);
 		};
+		
+		DataBlockSupplier<byte[]> chunks255 = (gridPos, existing) -> {
+			return createDataBlock(chunkSize, gridPos.clone(), (byte)255);
+		};
+		
+		DataBlockSupplier<byte[]> chunksDelete = (gridPos, existing) -> {
+			return null;
+		};
+
+
+		// write one chunk at grid Position 1
 		datasetAccess.writeRegion(store,
-				regionMin,
-				regionSize,
-				blocks,
+				new long[] {3},
+				new long[] {3},
+				chunks,
 				false);
 
-		// verify that the written blocks can be read back with the correct values
-//		checkBlock(datasetAccess.readChunk(store, new long[] {0, 0, 0}), true, 1);
-//		checkBlock(datasetAccess.readChunk(store, new long[] {1, 0, 0}), true, 2);
-//		checkBlock(datasetAccess.readChunk(store, new long[] {0, 1, 0}), true, 3);
-//		checkBlock(datasetAccess.readChunk(store, new long[] {1, 1, 0}), true, 4);
-//		checkBlock(datasetAccess.readChunk(store, new long[] {3, 2, 1}), true, 5);
-//		checkBlock(datasetAccess.readChunk(store, new long[] {8, 4, 1}), true, 6);
+		// Chunks
+		//	|...|...|...|...|...|
+		// Pixels indexes
+		//	0   3   6   9   12   15-
 
-		// verify that deleting a block removes it from the shard (while other blocks in the same shard are still present)
-//		datasetAccess.deleteBlock(store, new long[] {0, 0, 0});
-//		checkBlock(datasetAccess.readChunk(store, new long[] {0, 0, 0}), false, 1);
-//		checkBlock(datasetAccess.readChunk(store, new long[] {1, 0, 0}), true, 2);
+		checkChunk(datasetAccess.readChunk(store, new long[] {0}), false, 0);
+		checkChunk(datasetAccess.readChunk(store, new long[] {1}), true, 1);
+		checkChunk(datasetAccess.readChunk(store, new long[] {2}), false, 0);
+		checkChunk(datasetAccess.readChunk(store, new long[] {3}), false, 0);
+		checkChunk(datasetAccess.readChunk(store, new long[] {4}), false, 0);
+		
+		// write two chunks at grid positions 2 and 3
+		datasetAccess.writeRegion(store,
+				new long[]{6},
+				new long[]{6},
+				chunks,
+				false);
 
-		// if a shard becomes empty the corresponding key should be deleted
-//		if ( store.get(new long[] {1, 0, 0}) == null ) {
-//			throw new IllegalStateException("expected non-null readData");
-//		}
-//		datasetAccess.deleteChunk(store, new long[] {8, 4, 1});
-//		if ( store.get(new long[] {1, 0, 0}) != null ) {
-//			throw new IllegalStateException("expected null readData");
-//		}
 
-		// deleting a non-existent block should not fail
-//		datasetAccess.deleteChunk(store, new long[] {0, 0, 8});
+		checkChunk(datasetAccess.readChunk(store, new long[] {0}), false, 0);
+		checkChunk(datasetAccess.readChunk(store, new long[] {1}), true, 1);
+		checkChunk(datasetAccess.readChunk(store, new long[] {2}), true, 2);
+		checkChunk(datasetAccess.readChunk(store, new long[] {3}), true, 3);
+		checkChunk(datasetAccess.readChunk(store, new long[] {4}), false, 0);
 
-		System.out.println("all good");
+		// delete two chunks at grid positions 3 and 4
+		datasetAccess.writeRegion(store,
+				new long[]{9},
+				new long[]{6},
+				chunksDelete,
+				false);
+
 	}
 
 	@Test
 	public void testWriteRegionSharded() {
 
-		int[] chunkSize = {3};
-		int[] level2ShardSize = {24};
-		final long[] datasetDimensions = {96};
+		// Shards
+		//	#...............................#...............................#...............................#...............................#
+		// Chunks
+		//	|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|...|
+		// Pixels indexes
+		//	0   3   6   9  12  15  18  21  24  27  30  33  36  39  42  45  48  51  54  57  60  63  66  69  72  75  78  81  84  87  90  93  96
 
-		// Chunks are 3x3x3
-		// Level 1 shards are 6x6x6 (contain 2x2x2 DataBlocks)
-		// Level 2 shards are 24x24x24 (contain 4x4x4 Level 1 shards)
+		int[] chunkSize = {3};
+		int[] shardSize = {24};
+		final long[] datasetDimensions = {96};
+		int numChunks = (int)(datasetDimensions[0] / chunkSize[0]);
+
+		// Chunks are size 3
+		// Shards are size 24 (contain 8 chunks)
+
 		final BlockCodecInfo c0 = new N5BlockCodecInfo();
 		final ShardCodecInfo c1 = new DefaultShardCodecInfo(
 				chunkSize,
@@ -170,7 +146,7 @@ public class WriteRegionTest {
 
 		TestDatasetAttributes attributes = new TestDatasetAttributes(
 				datasetDimensions,
-				level2ShardSize,
+				shardSize,
 				DataType.INT8,
 				c1,
 				new RawCompression());
@@ -178,25 +154,113 @@ public class WriteRegionTest {
 		final DatasetAccess<byte[]> datasetAccess = attributes.getDatasetAccess();
 		final PositionValueAccess store = new TestPositionValueAccess();
 
-		final int[] dataBlockSize = c1.getInnerBlockSize();
-		final long[] regionMin = {93};
-		final long[] regionSize = {1};
-
-		DataBlockSupplier<byte[]> blocks = (gridPos, existing) -> {
-			return createDataBlock(dataBlockSize, gridPos.clone(), (byte) gridPos[0]);
+		DataBlockSupplier<byte[]> chunks = (gridPos, existing) -> {
+			return createDataBlock(chunkSize, gridPos.clone(), (byte) gridPos[0]);
 		};
 
+		DataBlockSupplier<byte[]> chunks255 = (gridPos, existing) -> {
+			return createDataBlock(chunkSize, gridPos.clone(), (byte)255);
+		};
+
+		DataBlockSupplier<byte[]> chunksDelete = (gridPos, existing) -> {
+			return null;
+		};
+
+		// write one chunk at grid Position 1
 		datasetAccess.writeRegion(store,
-				regionMin,
-				regionSize,
-				blocks,
+				new long[] {3},
+				new long[] {3},
+				chunks,
 				false);
 
+		checkChunk(datasetAccess.readChunk(store, new long[] {0}), false, 0);
+		checkChunk(datasetAccess.readChunk(store, new long[] {1}), true, 1);
+		checkChunk(datasetAccess.readChunk(store, new long[] {2}), false, 0);
+		checkChunk(datasetAccess.readChunk(store, new long[] {3}), false, 0);
+		checkChunk(datasetAccess.readChunk(store, new long[] {4}), false, 0);
+
+		// only the first shard should exist
+		checkKey(store, new long[]{0}, true);
+		checkKey(store, new long[]{1}, false);
+		checkKey(store, new long[]{2}, false);
+		checkKey(store, new long[]{3}, false);
+
+		// write two chunks at grid positions 2 and 3
+		datasetAccess.writeRegion(store,
+				new long[]{6},
+				new long[]{6},
+				chunks,
+				false);
+
+		checkChunk(datasetAccess.readChunk(store, new long[]{0}), false, 0);
+		checkChunk(datasetAccess.readChunk(store, new long[]{1}), true, 1);
+		checkChunk(datasetAccess.readChunk(store, new long[]{2}), true, 2);
+		checkChunk(datasetAccess.readChunk(store, new long[]{3}), true, 3);
+		checkChunk(datasetAccess.readChunk(store, new long[]{4}), false, 0);
+
+		// delete two chunks at grid positions 3 and 4
+		datasetAccess.writeRegion(store,
+				new long[]{9},
+				new long[]{6},
+				chunksDelete,
+				false);
+
+		checkChunk(datasetAccess.readChunk(store, new long[]{0}), false, 0);
+		checkChunk(datasetAccess.readChunk(store, new long[]{1}), true, 1);
+		checkChunk(datasetAccess.readChunk(store, new long[]{2}), true, 2);
+		checkChunk(datasetAccess.readChunk(store, new long[]{3}), false, 0);
+		checkChunk(datasetAccess.readChunk(store, new long[]{4}), false, 0);
+
+		// overwrite all chunks to hold 255
+		datasetAccess.writeRegion(store,
+				new long[]{0},
+				new long[]{96},
+				chunks255,
+				false);
+
+		for (int i = 0; i < numChunks; i++) {
+			checkChunk(datasetAccess.readChunk(store, new long[]{i}), true, 255);
+		}
+
+		// all shards should exist
+		checkKey(store, new long[]{0}, true);
+		checkKey(store, new long[]{1}, true);
+		checkKey(store, new long[]{2}, true);
+		checkKey(store, new long[]{3}, true);
+
+		// delete some chunks
+		datasetAccess.writeRegion(store,
+				new long[]{18},
+				new long[]{18},
+				chunksDelete,
+				false);
+
+		checkChunk(datasetAccess.readChunk(store, new long[]{5}), true, 255);
+		checkChunk(datasetAccess.readChunk(store, new long[]{6}), false, 0);
+
+		// all shards should exist
+		checkKey(store, new long[]{0}, true);
+		checkKey(store, new long[]{1}, true);
+		checkKey(store, new long[]{2}, true);
+		checkKey(store, new long[]{3}, true);
+
+		// delete more chunks so that shard 1 is empty
+		datasetAccess.writeRegion(store,
+				new long[]{36},
+				new long[]{15},
+				chunksDelete,
+				false);
+
+		// shard 1 should be gone
+		checkKey(store, new long[]{0}, true);
+		checkKey(store, new long[]{1}, false);
+		checkKey(store, new long[]{2}, true);
+		checkKey(store, new long[]{3}, true);
 	}
 
-	private static void checkBlock(final DataBlock<byte[]> dataBlock, final boolean expectedNonNull, final int expectedFillValue) {
+	private static void checkChunk(final DataBlock<byte[]> chunk, final boolean expectedNonNull, final int expectedFillValue) {
 
-		if (dataBlock == null) {
+		if (chunk == null) {
 			if (expectedNonNull) {
 				throw new IllegalStateException("expected non-null dataBlock");
 			}
@@ -204,12 +268,23 @@ public class WriteRegionTest {
 			if (!expectedNonNull) {
 				throw new IllegalStateException("expected null dataBlock");
 			}
-			final byte[] bytes = dataBlock.getData();
+			final byte[] bytes = chunk.getData();
 			for (byte b : bytes) {
 				if (b != (byte) expectedFillValue) {
 					throw new IllegalStateException("expected all values to be " + expectedFillValue);
 				}
 			}
+		}
+	}
+
+	private static void checkKey(PositionValueAccess pva, long[] position, final boolean expectedNonNull) {
+
+		try (VolatileReadData val = pva.get(position)) {
+
+			if (expectedNonNull && val == null)
+				throw new IllegalStateException("expected non-null value");
+			else if (!expectedNonNull && val != null)
+				throw new IllegalStateException("expected null value");
 		}
 	}
 
