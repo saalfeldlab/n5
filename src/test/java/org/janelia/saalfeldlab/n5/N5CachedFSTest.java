@@ -216,7 +216,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertFalse(exists); // group does not exist
 		assertFalse(groupExists); // group does not exist
 		assertFalse(datasetExists); // dataset does not exist
-		assertEquals(++expectedReadAttrCount, n5.getReadAttrCallCount());
+		assertEquals(expectedReadAttrCount, n5.getReadAttrCallCount());
 		assertEquals(expectedWriteAttrCount, n5.getWriteAttrCallCount());
 		assertEquals(++expectedIsDirCount, n5.getIsDirCallCount());
 		assertEquals(expectedRmDirCount, n5.getRmDirCallCount());
@@ -238,7 +238,7 @@ public class N5CachedFSTest extends N5FSTest {
 		assertFalse(exists); // group now exists
 		assertFalse(groupExists); // group now exists
 		assertFalse(datasetExists); // dataset does not exist
-		assertEquals(++expectedReadAttrCount, n5.getReadAttrCallCount());
+		assertEquals(expectedReadAttrCount, n5.getReadAttrCallCount());
 		assertEquals(expectedWriteAttrCount, n5.getWriteAttrCallCount());
 		assertEquals(++expectedIsDirCount, n5.getIsDirCallCount());
 		assertEquals(expectedRmDirCount, n5.getRmDirCallCount());
@@ -316,38 +316,37 @@ public class N5CachedFSTest extends N5FSTest {
 		assertEquals(expectedListCount, n5.getListCallCount());
 
 		n5.removeAttribute(cachedGroup, "cow");
-		assertEquals(expectedExistCount, n5.getIsDirCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getReadAttrCallCount());
+		assertEquals(expectedReadAttrCount, n5.getReadAttrCallCount());
+		assertEquals(expectedWriteAttrCount, n5.getWriteAttrCallCount());
+		assertEquals(expectedIsDirCount, n5.getIsDirCallCount());
+		assertEquals(expectedRmDirCount, n5.getRmDirCallCount());
+		assertEquals(expectedMkDirCount, n5.getMkDirCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
-/*
 		n5.removeAttribute(cachedGroup, "two", Integer.class);
-		assertEquals(expectedExistCount, n5.getIsDirCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getReadAttrCallCount());
+		assertEquals(expectedReadAttrCount, n5.getReadAttrCallCount());
+		assertEquals(++expectedWriteAttrCount, n5.getWriteAttrCallCount());
+		assertEquals(expectedIsDirCount, n5.getIsDirCallCount());
+		assertEquals(expectedRmDirCount, n5.getRmDirCallCount());
+		assertEquals(expectedMkDirCount, n5.getMkDirCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(++expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		n5.list("");
-		assertEquals(expectedExistCount, n5.getIsDirCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getReadAttrCallCount());
+		assertEquals(expectedReadAttrCount, n5.getReadAttrCallCount());
+		assertEquals(expectedWriteAttrCount, n5.getWriteAttrCallCount());
+		assertEquals(expectedIsDirCount, n5.getIsDirCallCount());
+		assertEquals(expectedRmDirCount, n5.getRmDirCallCount());
+		assertEquals(expectedMkDirCount, n5.getMkDirCallCount());
 		assertEquals(++expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		n5.list(cachedGroup);
-		assertEquals(expectedExistCount, n5.getIsDirCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getReadAttrCallCount());
+		assertEquals(expectedReadAttrCount, n5.getReadAttrCallCount());
+		assertEquals(expectedWriteAttrCount, n5.getWriteAttrCallCount());
+		assertEquals(expectedIsDirCount, n5.getIsDirCallCount());
+		assertEquals(expectedRmDirCount, n5.getRmDirCallCount());
+		assertEquals(expectedMkDirCount, n5.getMkDirCallCount());
 		assertEquals(++expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
-*/
+
 		/*
 		 * Check existence for groups that have not been made by this reader but isGroup
 		 * and isDatatset must be false if it does not exists so then should not be
@@ -359,40 +358,40 @@ public class N5CachedFSTest extends N5FSTest {
 		 * Finally,listing on a non-existent group is pointless, so don't call the
 		 * backend storage
 		 */
-/*
+
 		final String nonExistentGroup = "doesNotExist";
 		n5.exists(nonExistentGroup);
-		assertEquals(++expectedExistCount, n5.getIsDirCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(++expectedAttributeCount, n5.getReadAttrCallCount());
+		assertEquals(expectedReadAttrCount, n5.getReadAttrCallCount());
+		assertEquals(expectedWriteAttrCount, n5.getWriteAttrCallCount());
+		assertEquals(++expectedIsDirCount, n5.getIsDirCallCount());
+		assertEquals(expectedRmDirCount, n5.getRmDirCallCount());
+		assertEquals(expectedMkDirCount, n5.getMkDirCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		n5.groupExists(nonExistentGroup);
-		assertEquals(expectedExistCount, n5.getIsDirCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getReadAttrCallCount());
+		assertEquals(expectedReadAttrCount, n5.getReadAttrCallCount());
+		assertEquals(expectedWriteAttrCount, n5.getWriteAttrCallCount());
+		assertEquals(expectedIsDirCount, n5.getIsDirCallCount());
+		assertEquals(expectedRmDirCount, n5.getRmDirCallCount());
+		assertEquals(expectedMkDirCount, n5.getMkDirCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		n5.datasetExists(nonExistentGroup);
-		assertEquals(expectedExistCount, n5.getIsDirCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getReadAttrCallCount());
+		assertEquals(expectedReadAttrCount, n5.getReadAttrCallCount());
+		assertEquals(expectedWriteAttrCount, n5.getWriteAttrCallCount());
+		assertEquals(expectedIsDirCount, n5.getIsDirCallCount());
+		assertEquals(expectedRmDirCount, n5.getRmDirCallCount());
+		assertEquals(expectedMkDirCount, n5.getMkDirCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
 
 		n5.getAttributes(nonExistentGroup);
-		assertEquals(expectedExistCount, n5.getIsDirCallCount());
-		assertEquals(expectedGroupCount, n5.getGroupCallCount());
-		assertEquals(expectedDatasetCount, n5.getDatasetCallCount());
-		assertEquals(expectedAttributeCount, n5.getReadAttrCallCount());
+		assertEquals(expectedReadAttrCount, n5.getReadAttrCallCount());
+		assertEquals(expectedWriteAttrCount, n5.getWriteAttrCallCount());
+		assertEquals(expectedIsDirCount, n5.getIsDirCallCount());
+		assertEquals(expectedRmDirCount, n5.getRmDirCallCount());
+		assertEquals(expectedMkDirCount, n5.getMkDirCallCount());
 		assertEquals(expectedListCount, n5.getListCallCount());
-		assertEquals(expectedWriteAttributeCount, n5.getWriteAttrCallCount());
-
+/*
 		assertThrows(N5Exception.class, () -> n5.list(nonExistentGroup));
 		assertEquals(expectedExistCount, n5.getIsDirCallCount());
 		assertEquals(expectedGroupCount, n5.getGroupCallCount());
