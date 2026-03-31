@@ -595,6 +595,11 @@ public class N5CachedFSTest extends N5FSTest {
 		}
 
 		@Override
+		public void store_removeAttributesJson(final N5GroupPath group, final String filename) throws N5IOException {
+			delegate.store_removeAttributesJson(group, filename);
+		}
+
+		@Override
 		public boolean store_isDirectory(final N5GroupPath group) {
 			isDirCallCount++;
 			return delegate.store_isDirectory(group);

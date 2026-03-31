@@ -355,6 +355,18 @@ public class MyJsonCache implements DelegateStore {
 	}
 
 	@Override
+	public void store_removeAttributesJson(
+			final N5GroupPath group,
+			final String filename) throws N5IOException {
+
+		// TODO:
+		//   if known to not exist, do nothing.
+		//   otherwise, container.store_removeAttributesJson
+		//   and mark as known-to-not-exist.
+		throw new UnsupportedOperationException("TODO. Not implemented yet.");
+	}
+
+	@Override
 	public boolean store_isDirectory(final N5GroupPath group) {
 
 		final CacheInfoDirectory info = getOrCreate(group);

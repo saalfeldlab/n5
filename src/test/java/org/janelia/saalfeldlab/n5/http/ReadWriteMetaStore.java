@@ -37,6 +37,11 @@ public class ReadWriteMetaStore implements DelegateStore {
 	}
 
 	@Override
+	public void store_removeAttributesJson(final N5GroupPath group, final String filename) throws N5IOException {
+		writeStore.store_removeAttributesJson(group, filename);
+	}
+
+	@Override
 	public void store_createDirectories(final N5GroupPath group) throws N5IOException {
 		writeStore.store_createDirectories(group);
 	}

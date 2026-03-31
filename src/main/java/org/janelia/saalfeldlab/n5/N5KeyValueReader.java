@@ -48,7 +48,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	public static final String ATTRIBUTES_JSON = "attributes.json";
 
 	protected final RootedKeyValueAccess keyValueAccess;
-	private final DelegateStore metaStore;
+	protected final DelegateStore metaStore;
 	protected final Gson gson;
 	protected final boolean cacheMeta;
 
