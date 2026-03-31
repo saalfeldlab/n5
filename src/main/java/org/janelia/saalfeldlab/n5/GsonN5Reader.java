@@ -65,20 +65,13 @@ public interface GsonN5Reader extends N5Reader {
 	@Override
 	default DatasetAttributes getDatasetAttributes(final String pathName) throws N5Exception {
 
-		return createDatasetAttributes(getAttributes(pathName));
+		return getGson().fromJson(getAttributes(pathName), DatasetAttributes.class);
 	}
 
+	// TODO: Can we remove this method?
 	default DatasetAttributes createDatasetAttributes(final JsonElement attributes) {
 
-		final JsonDeserializationContext context = new JsonDeserializationContext() {
-
-			@Override public <T> T deserialize(JsonElement json, Type typeOfT) throws JsonParseException {
-
-				return getGson().fromJson(json, typeOfT);
-			}
-		};
-
-		return DatasetAttributes.getJsonAdapter().deserialize(attributes, DatasetAttributes.class, context);
+		return getGson().fromJson(attributes, DatasetAttributes.class);
 	}
 
 	@Override
