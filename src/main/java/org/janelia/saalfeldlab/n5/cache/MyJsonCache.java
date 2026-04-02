@@ -112,6 +112,7 @@ public class MyJsonCache implements DelegateStore {
 
 		@Override
 		void markRemoved() {
+			valid = true;
 			json = null;
 		}
 
@@ -359,11 +360,14 @@ public class MyJsonCache implements DelegateStore {
 			final N5GroupPath group,
 			final String filename) throws N5IOException {
 
-		// TODO:
-		//   if known to not exist, do nothing.
-		//   otherwise, container.store_removeAttributesJson
-		//   and mark as known-to-not-exist.
-		throw new UnsupportedOperationException("TODO. Not implemented yet.");
+		final N5FilePath path = group.resolve(filename).asFile();
+		final CacheInfoAttributes info = getOrCreate(path);
+		synchronized (info) {
+			if (!info.isKnownToNotExist()) {
+				container.store_removeAttributesJson(group, filename);
+				info.markRemoved();
+			}
+		}
 	}
 
 	@Override
