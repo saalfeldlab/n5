@@ -143,17 +143,6 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	}
 
 	@Override
-	default boolean removeAttributes(final String pathName, final List<String> attributes) throws N5Exception {
-
-		boolean removed = false;
-		for (final String attribute : attributes) {
-			final String normalKey = N5URI.normalizeAttributePath(attribute);
-			removed |= removeAttribute(pathName, normalKey);
-		}
-		return removed;
-	}
-
-	@Override
 	default <T> void writeRegion(
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes,
