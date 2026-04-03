@@ -6,9 +6,14 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.Range;
 
-public class AggregatingSliceTrackingLazyRead extends SliceTrackingLazyRead {
+/**
+ * A {@link SliceTrackingLazyRead} that implements {@link #prefetch} to
+ * aggregate overlapping / adjacent ranges and then materialize each aggregated
+ * range.
+ */
+public class AggregatingPrefetchLazyRead extends SliceTrackingLazyRead {
 
-	public AggregatingSliceTrackingLazyRead(final LazyRead delegate) {
+	public AggregatingPrefetchLazyRead(final LazyRead delegate) {
 		super(delegate);
 	}
 

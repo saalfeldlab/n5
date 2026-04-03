@@ -5,7 +5,7 @@ import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
-import org.janelia.saalfeldlab.n5.readdata.prefetch.AggregatingSliceTrackingLazyRead;
+import org.janelia.saalfeldlab.n5.readdata.prefetch.AggregatingPrefetchLazyRead;
 
 public class TrackingKeyValueAccess extends DelegateKeyValueAccess {
 
@@ -31,7 +31,7 @@ public class TrackingKeyValueAccess extends DelegateKeyValueAccess {
         final TrackingLazyRead trackingLazyRead = new TrackingLazyRead(volatileReadData);
         LazyRead lazyRead = trackingLazyRead;
         if (aggregate)
-            lazyRead = new AggregatingSliceTrackingLazyRead(trackingLazyRead);
+            lazyRead = new AggregatingPrefetchLazyRead(trackingLazyRead);
         return VolatileReadData.from( lazyRead );
     }
 
