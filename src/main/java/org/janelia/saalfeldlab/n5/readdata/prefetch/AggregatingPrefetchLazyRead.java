@@ -1,7 +1,9 @@
 package org.janelia.saalfeldlab.n5.readdata.prefetch;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
+import java.util.List;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.Range;
@@ -31,7 +33,9 @@ public class AggregatingPrefetchLazyRead extends SliceTrackingLazyRead {
 	@Override
 	public void prefetch(final Collection<? extends Range> ranges) throws N5IOException {
 
-		final Collection<? extends Range> aggregatedRanges = Range.aggregate(ranges);
+		final List<Range> filteredRanges = new ArrayList<>(ranges);
+		filteredRanges.removeIf(this::isCovered);
+		final Collection<? extends Range> aggregatedRanges = Range.aggregate(filteredRanges);
 		for (final Range slice : aggregatedRanges) {
 			materialize(slice.offset(), slice.length());
 		}
