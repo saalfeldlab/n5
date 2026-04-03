@@ -160,7 +160,7 @@ public class SliceTrackingLazyReadTests {
 	/**
 	 * Testable wrapper for DefaultSliceTrackingLazyRead that exposes slices.
 	 */
-	static class TestableDefaultSliceTracker extends DefaultSliceTrackingLazyRead implements TestableSliceTracker {
+	static class TestableDefaultSliceTracker extends EnclosingPrefetchLazyRead implements TestableSliceTracker {
 		public TestableDefaultSliceTracker(LazyRead delegate) {
 			super(delegate);
 		}
@@ -174,7 +174,7 @@ public class SliceTrackingLazyReadTests {
 	/**
 	 * Testable wrapper for AggregatingSliceTrackingLazyRead that exposes slices.
 	 */
-	static class TestableAggregatingSliceTracker extends AggregatingSliceTrackingLazyRead implements TestableSliceTracker {
+	static class TestableAggregatingSliceTracker extends AggregatingPrefetchLazyRead implements TestableSliceTracker {
 		public TestableAggregatingSliceTracker(LazyRead delegate) {
 			super(delegate);
 		}
