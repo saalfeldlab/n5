@@ -12,8 +12,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * LockedFileChannel implementation for both read and write operations.
  */
-// TODO: This only has to be public because of a test in another package. Fix that
-public class LockedFileChannel implements LockedChannel {
+class LockedFileChannel implements LockedChannel {
 
 	private final FileChannel channel;
 	private ReleaseLock releaseLock;
@@ -52,12 +51,6 @@ public class LockedFileChannel implements LockedChannel {
 	public OutputStream newOutputStream() throws N5Exception.N5IOException {
 
 		return Channels.newOutputStream(channel);
-	}
-
-	// TODO: This only has to be public because of a test in another package. Fix that
-	public FileChannel getFileChannel() {
-
-		return channel;
 	}
 
 	@Override
