@@ -5,9 +5,13 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.Range;
 
-public class DefaultSliceTrackingLazyRead extends SliceTrackingLazyRead {
+/**
+ * A {@link SliceTrackingLazyRead} that implements {@link #prefetch} to
+ * materialize the bounding range of all requested ranges.
+ */
+public class EnclosingPrefetchLazyRead extends SliceTrackingLazyRead {
 
-	public DefaultSliceTrackingLazyRead(final LazyRead delegate) {
+	public EnclosingPrefetchLazyRead(final LazyRead delegate) {
 		super(delegate);
 	}
 
