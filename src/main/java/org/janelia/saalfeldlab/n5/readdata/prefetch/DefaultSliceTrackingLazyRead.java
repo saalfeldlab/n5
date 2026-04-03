@@ -42,9 +42,4 @@ public class DefaultSliceTrackingLazyRead extends SliceTrackingLazyRead {
 			materialize(fromIndex, toIndex - fromIndex);
 		}
 	}
-
-	private boolean isCovered(final Range slice) {
-
-		return Slices.findContainingSlice(slices, slice) != null;
-	}
 }
