@@ -2,7 +2,6 @@ package org.janelia.saalfeldlab.n5.kva;
 
 import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception;
-import org.janelia.saalfeldlab.n5.readdata.DelegatingVolatileReadData;
 import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
@@ -33,14 +32,7 @@ public class TrackingKeyValueAccess extends DelegateKeyValueAccess {
         LazyRead lazyRead = trackingLazyRead;
         if (aggregate)
             lazyRead = new AggregatingSliceTrackingLazyRead(trackingLazyRead);
-        VolatileReadData delegate = VolatileReadData.from( lazyRead );
-        return new DelegatingVolatileReadData(delegate) {
-            @Override
-            public void close() throws N5Exception.N5IOException {
-                super.close(); //closes delegate
-                volatileReadData.close();
-            }
-        };
+        return VolatileReadData.from( lazyRead );
     }
 
     private class TrackingLazyRead implements LazyRead {
