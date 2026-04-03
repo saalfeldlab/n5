@@ -52,16 +52,44 @@ public class FsIoPolicy {
         }
     }
 
+
+    /**
+     * This method is necessary to handle the situtation where writing is successful, but `close` fails on the file channel.
+     * This has been observed to happen fairly consistently on MacOS when writing to a file mounted over SMB.
+     *
+     * @param readData to write to the {@code Path}
+     * @param path to write to
+     * @throws IOException if writing failed.
+     */
+    private static void writeToPathIgnoreCloseException(ReadData readData, Path path) throws IOException {
+
+        FileChannel channel = openFileChannel(path, true);
+        OutputStream os = Channels.newOutputStream(channel);
+
+        try {
+            readData.writeTo(os);
+            os.flush();
+            channel.force(true);
+        } catch (Throwable e) {
+            os.close();
+            channel.close();
+            throw e;
+        }
+
+        /* if we get here, the write succeeded, and the os/channel may not be closed yet */
+        try {
+            os.close();
+            channel.close();
+        } catch (IOException | UncheckedIOException ignore) {
+            /* Ignore; we know the data was written already. */
+        }
+    }
+
     public static class Unsafe implements IoPolicy {
         @Override
         public void write(String key, ReadData readData) throws IOException {
             final Path path = Paths.get(key);
-            try (
-                    FileChannel channel = openFileChannel(path, true);
-                    OutputStream os = Channels.newOutputStream(channel);
-            ) {
-                readData.writeTo(os);
-            }
+            writeToPathIgnoreCloseException(readData, path);
         }
 
         @Override
@@ -164,9 +192,9 @@ public class FsIoPolicy {
                 throw new N5Exception.N5NoSuchKeyException("No such file", e);
             } catch (IOException | UncheckedIOException e) {
                 /* Occasionally (frequently for some source remote mounted file systems) this can throw exceptions during
-                * `channel.close()` which is called automatically in the try-with-resources block. In this case, we have
-                * successfully read the data, and we can return it, and ignore the exception. 
-                * */
+                 * `channel.close()` which is called automatically in the try-with-resources block. In this case, we have
+                 * successfully read the data, and we can return it, and ignore the exception.
+                 * */
                 if (readData == null)
                     throw new N5Exception.N5IOException(e);
             }
