@@ -2,14 +2,22 @@ package org.janelia.saalfeldlab.n5.readdata.prefetch;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.Range;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
-public abstract class SliceTrackingLazyRead implements LazyRead {
+/**
+ * A {@link LazyRead} that wraps a delegate {@code LazyRead} and keeps track of
+ * all slices that have been {@link #materialize materialized}.
+ * <p>
+ * When materializing a new slice, we first check whether it is completely
+ * covered by a materialized slice that we already track. If so, then we just
+ * return a slice on the existing materialized slice. If not, we materialize the
+ * slice from the delegate track it.
+ */
+public class SliceTrackingLazyRead implements LazyRead {
 
 	protected static class Slice implements Range {
 
@@ -75,39 +83,7 @@ public abstract class SliceTrackingLazyRead implements LazyRead {
 		return delegate.size();
 	}
 
-	/**
-	 * Indicates that the given slices will be subsequently read.
-	 * {@code LazyRead} implementations (optionally) may take steps to prepare
-	 * for these subsequent slices.
-	 * <p>
-	 * Minimal implementation: Find offset and length covering all ranges that
-	 * are not yet fully covered by existing slices. Then materialize the slice
-	 * covering that range.
-	 *
-	 * @param ranges
-	 * 		slice ranges to prefetch
-	 *
-	 * @throws N5IOException
-	 * 		if any I/O error occurs
-	 */
-	@Override
-	public void prefetch(final Collection<? extends Range> ranges) throws N5IOException {
-
-		long fromIndex = Long.MAX_VALUE;
-		long toIndex = Long.MIN_VALUE;
-		for (final Range slice : ranges) {
-			if (!isCovered(slice)) {
-				fromIndex = Math.min(fromIndex, slice.offset());
-				toIndex = Math.max(toIndex, slice.end());
-			}
-		}
-
-		if (fromIndex < toIndex) {
-			materialize(fromIndex, toIndex - fromIndex);
-		}
-	}
-
-	private boolean isCovered(final Range slice) {
+	protected boolean isCovered(final Range slice) {
 
 		return Slices.findContainingSlice(slices, slice) != null;
 	}
