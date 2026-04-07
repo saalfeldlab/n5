@@ -28,17 +28,8 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.reflect.TypeToken;
-import java.lang.reflect.Type;
-import java.util.Map;
-
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonParseException;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonSyntaxException;
-import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 
 /**
  * {@link N5Reader} with JSON attributes parsed with {@link Gson}.
