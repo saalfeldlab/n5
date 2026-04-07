@@ -46,6 +46,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
  */
 public interface GsonN5Reader extends N5Reader {
 
+	@Deprecated
 	Gson getGson();
 
 	/**
@@ -54,36 +55,13 @@ public interface GsonN5Reader extends N5Reader {
 	 *
 	 * @return the attributes key
 	 */
+	@Deprecated
 	String getAttributesKey();
 
-	@Override
-	default Map<String, Class<?>> listAttributes(final String pathName) throws N5Exception {
-
-		return GsonUtils.listAttributes(getAttributes(pathName));
-	}
-
-	@Override
-	default DatasetAttributes getDatasetAttributes(final String pathName) throws N5Exception {
-
-		return getGson().fromJson(getAttributes(pathName), DatasetAttributes.class);
-	}
-
-	// TODO: Can we remove this method?
-	default DatasetAttributes createDatasetAttributes(final JsonElement attributes) {
+	@Deprecated
+	default DatasetAttributes createDatasetAttributes(JsonElement attributes) {
 
 		return getGson().fromJson(attributes, DatasetAttributes.class);
-	}
-
-	@Override
-	default <T> T getAttribute(final String pathName, final String key, final Type type) throws N5Exception {
-
-		final JsonElement attributes = getAttributes(pathName);
-		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
-		try {
-			return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, getGson());
-		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
-			throw new N5ClassCastException(e);
-		}
 	}
 
 	/**
@@ -94,5 +72,6 @@ public interface GsonN5Reader extends N5Reader {
 	 * @return the attributes identified by pathName
 	 * @throws N5Exception if the attribute cannot be returned
 	 */
-	JsonElement getAttributes(final String pathName) throws N5Exception;
+	@Deprecated
+	JsonElement getAttributes(String pathName) throws N5Exception;
 }

@@ -118,20 +118,20 @@ public class N5HttpTest extends AbstractN5Test {
 		final DelegateStore writeStore = new KeyValueAccessMetaStore(new RootedFileSystemKeyValueAccess(writerFsPath));
 
 		final DelegateStore readWriteStore = new ReadWriteMetaStore(readStore, writeStore);
-		final DelegateStore store = cacheMeta ? new MyJsonCache(readWriteStore) : readWriteStore;
+		final DelegateStore xstore = cacheMeta ? new MyJsonCache(readWriteStore) : readWriteStore;
 
 		final N5FSWriter writer = new N5FSWriter(writerFsPath, gson, cacheMeta) {
 
 			@Override
 			public DelegateStore createMetaStore(final RootedKeyValueAccess keyValueAccess, final boolean cacheMeta) {
-				return store;
+				return xstore;
 			}
 		};
 		final N5KeyValueReader reader = new N5KeyValueReader(new RootedHttpKeyValueAccess(root), gson, cacheMeta) {
 
 			@Override
 			public DelegateStore createMetaStore(final RootedKeyValueAccess keyValueAccess, final boolean cacheMeta) {
-				return store;
+				return xstore;
 			}
 		};
 		return new HttpReaderFsWriter(writer, reader);

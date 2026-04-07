@@ -29,6 +29,8 @@
 package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.JsonElement;
+import java.lang.reflect.Type;
+import java.util.Map;
 import org.janelia.saalfeldlab.n5.cache.DelegateStore;
 import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
 
@@ -49,6 +51,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 	protected final RootedKeyValueAccess keyValueAccess;
 	protected final DelegateStore metaStore;
+	protected final N5Store store;
 	protected final Gson gson;
 	protected final boolean cacheMeta;
 
@@ -120,6 +123,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 		this.gson = registerGson(gsonBuilder).create();
 		this.cacheMeta = cacheMeta;
 		this.metaStore = createMetaStore(keyValueAccess, cacheMeta);
+		this.store = new DefaultN5Store(metaStore, gson);
 
 		boolean versionFound = false;
 		if (checkVersion) {
@@ -174,6 +178,12 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	public DelegateStore getDelegateStore() {
 
 		return metaStore;
+	}
+
+	@Override
+	public N5Store getN5Store() {
+
+		return store;
 	}
 
 	@Override

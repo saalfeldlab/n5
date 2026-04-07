@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
+import org.janelia.saalfeldlab.n5.N5Store;
 import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
 import org.janelia.saalfeldlab.n5.cache.DelegateStore;
 
@@ -105,6 +106,12 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	public DelegateStore getDelegateStore() {
 
 		return reader.getDelegateStore();
+	}
+
+	@Override
+	public N5Store getN5Store() {
+
+		return reader.getN5Store();
 	}
 
 	@Override public boolean exists(String pathName) {
