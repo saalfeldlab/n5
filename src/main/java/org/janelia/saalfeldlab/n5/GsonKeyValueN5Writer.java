@@ -71,75 +71,31 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	@Override
 	default void createGroup(final String path) throws N5Exception {
 
-		getDelegateStore().store_createDirectories(N5GroupPath.of(path));
+		getN5Store().createGroup(N5GroupPath.of(path));
 	}
 
 	@Override
-	default void setAttributes(
-			final String path,
-			final JsonElement attributes) throws N5Exception {
+	default void setAttributes(final String path, final Map<String, ?> attributes) throws N5Exception {
 
-		if (!exists(path))
-			throw new N5IOException("\"" + path + "\" is not a group or dataset.");
-
-		getDelegateStore().store_writeAttributesJson(N5GroupPath.of(path), getAttributesKey(), attributes, getGson());
+		getN5Store().setAttributes(N5GroupPath.of(path), attributes);
 	}
 
 	@Override
-	default void setAttributes(
-			final String path,
-			final Map<String, ?> attributes) throws N5Exception {
+	default boolean removeAttribute(final String path, final String attributePath) throws N5Exception {
 
-		if (!exists(path))
-			throw new N5IOException("\"" + path + "\" is not a group or dataset.");
-
-		if (attributes != null && !attributes.isEmpty()) {
-			JsonElement root = getAttributes(path);
-			root = root != null && root.isJsonObject()
-					? root.getAsJsonObject()
-					: new JsonObject();
-			root = GsonUtils.insertAttributes(root, attributes, getGson());
-			setAttributes(path, root);
-		}
+		return getN5Store().removeAttribute(N5GroupPath.of(path), attributePath);
 	}
 
 	@Override
-	default boolean removeAttribute(final String groupPath, final String attributePath) throws N5Exception {
+	default <T> T removeAttribute(final String path, final String attributePath, final Class<T> clazz) throws N5Exception {
 
-		final String normalKey = N5URI.normalizeAttributePath(attributePath);
-
-		if (!getDelegateStore().store_isDirectory(N5GroupPath.of(groupPath)))
-			return false;
-
-		if (attributePath.equals("/")) {
-			setAttributes(groupPath, JsonNull.INSTANCE);
-			return true;
-		}
-
-		final JsonElement attributes = getAttributes(groupPath);
-		if (GsonUtils.removeAttribute(attributes, normalKey) != null) {
-			setAttributes(groupPath, attributes);
-			return true;
-		}
-		return false;
+		return getN5Store().removeAttribute(N5GroupPath.of(path), attributePath, clazz);
 	}
 
 	@Override
-	default <T> T removeAttribute(final String pathName, final String key, final Class<T> cls) throws N5Exception {
+	default boolean remove(final String path) throws N5Exception {
 
-		final String normalKey = N5URI.normalizeAttributePath(key);
-
-		final JsonElement attributes = getAttributes(pathName);
-		final T obj;
-		try {
-			obj = GsonUtils.removeAttribute(attributes, normalKey, cls, getGson());
-		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
-			throw new N5Exception.N5ClassCastException(e);
-		}
-		if (obj != null) {
-			setAttributes(pathName, attributes);
-		}
-		return obj;
+		return getN5Store().remove(N5GroupPath.of(path));
 	}
 
 	@Override
@@ -233,17 +189,6 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	}
 
 	@Override
-	default boolean remove(final String path) throws N5Exception {
-
-		final N5GroupPath group = N5GroupPath.of(path);
-		if (getDelegateStore().store_isDirectory(group))
-			getDelegateStore().store_removeDirectory(group);
-
-		/* an IOException should have occurred if anything had failed midway */
-		return true;
-	}
-
-	@Override
 	default boolean deleteBlock(
 			final String path,
 			final DatasetAttributes datasetAttributes,
@@ -262,4 +207,25 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		final PositionValueAccess posKva = PositionValueAccess.fromKva(getRootedKeyValueAccess(), N5GroupPath.of(path), datasetAttributes);
 		return datasetAttributes.getDatasetAccess().deleteBlocks(posKva, gridPositions);
 	}
+
+
+
+
+	// ------------------------------------------------------------------------
+	//
+	// -- deprecated / semi-obsolete --
+	//
+
+	@Deprecated
+	@Override
+	default void setAttributes(
+			final String path,
+			final JsonElement attributes) throws N5Exception {
+
+		if (!exists(path))
+			throw new N5IOException("\"" + path + "\" is not a group or dataset.");
+
+		getDelegateStore().store_writeAttributesJson(N5GroupPath.of(path), getAttributesKey(), attributes, getGson());
+	}
+
 }

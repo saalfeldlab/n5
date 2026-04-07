@@ -47,6 +47,7 @@ public interface GsonN5Writer extends GsonN5Reader, N5Writer {
 	 *            to write
 	 * @throws N5Exception if the attributes cannot be set
 	 */
+	@Deprecated
 	void setAttributes(
 			final String groupPath,
 			final JsonElement attributes) throws N5Exception;
