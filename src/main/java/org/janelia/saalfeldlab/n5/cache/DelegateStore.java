@@ -32,7 +32,7 @@ public interface DelegateStore {
 	 * @return the attributes as a json element, or {@code null} if the attributes file does not exist
 	 *
 	 * @throws N5IOException
-	 * 		if an error occurs while writing the attributes
+	 * 		if an error occurs while reading the attributes
 	 * @see GsonN5Reader#getAttributes
 	 */
 	// TODO: replace (group, filename) with N5FilePath (not sure, but looks like a good idea...)
