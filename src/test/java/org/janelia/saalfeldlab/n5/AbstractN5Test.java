@@ -772,6 +772,21 @@ public abstract class AbstractN5Test {
 	}
 
 	@Test
+	public void testDatasetAttributes() {
+
+		final String dset = "";
+		final String key = "user-attr";
+		final String value = "value";
+		try (final N5Writer n5 = createTempN5Writer()) {
+
+			n5.setAttribute(dset, key, value);
+			n5.setDatasetAttributes(dset, new DatasetAttributes(new long[]{5}, new int[]{5}, DataType.INT32));
+			assertNotNull(n5.getDatasetAttributes(dset));
+			assertEquals(value, n5.getAttribute(dset, key, String.class));
+		}
+	}
+
+	@Test
 	public void testNullAttributes() throws URISyntaxException, IOException {
 
 		/* serializeNulls*/

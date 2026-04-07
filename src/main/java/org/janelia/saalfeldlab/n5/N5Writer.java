@@ -142,7 +142,7 @@ public interface N5Writer extends N5Reader {
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes) throws N5Exception {
 
-		setAttribute(datasetPath, "/", getConvertedDatasetAttributes(datasetAttributes));
+		setAttributes(datasetPath, getConvertedDatasetAttributes(datasetAttributes).asMap());
 	}
 
 	/**
