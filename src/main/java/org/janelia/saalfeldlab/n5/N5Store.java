@@ -1,5 +1,6 @@
 package org.janelia.saalfeldlab.n5;
 
+import com.google.gson.JsonElement;
 import java.lang.reflect.Type;
 import java.util.Map;
 import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
@@ -30,7 +31,7 @@ public interface N5Store {
 	 * @throws N5ClassCastException
 	 */
 	<T> T getAttribute(
-			N5GroupPath	path,
+			N5GroupPath path,
 			String key,
 			Type type) throws N5IOException, N5ClassCastException;
 
@@ -102,6 +103,17 @@ public interface N5Store {
 	 * 		if an error occurs parsing the attributes
 	 */
 	Map<String, Class<?>> listAttributes(N5GroupPath path) throws N5IOException, N5JsonParseException;
+
+	/**
+	 * Reads or the attributes of a group or dataset.
+	 *
+	 * @param path
+	 * 		dataset or group path
+	 * @return the attributes
+	 * @throws N5IOException if the attributes could not be read
+	 */
+	@Deprecated
+	JsonElement getAttributes(N5GroupPath path) throws N5IOException;
 
 	// ┌───────────────────────────────────────────────────────────────────────┐
 	// │ WRITE:                                                                │

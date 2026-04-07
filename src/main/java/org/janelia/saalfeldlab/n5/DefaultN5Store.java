@@ -82,6 +82,13 @@ public final class DefaultN5Store implements N5Store {
 		return GsonUtils.listAttributes(attributes);
 	}
 
+	@Deprecated
+	@Override
+	public JsonElement getAttributes(final N5GroupPath path) throws N5IOException {
+
+		return store.store_readAttributesJson(path, ATTRIBUTES_JSON, gson);
+	}
+
 	@Override
 	public <T> void setAttribute(
 			final N5GroupPath path,
