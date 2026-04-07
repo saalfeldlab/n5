@@ -28,18 +28,8 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
-
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
 import java.io.UncheckedIOException;
-import java.io.Writer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -47,10 +37,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
+import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
+import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 /**
  * An in-memory {@link KeyValueAccess}.
+ * <p>
+ * This implementation does not implement an {@link IoPolicy}.
  */
 public class InMemoryKeyValueAccess implements KeyValueAccess {
 
@@ -72,31 +68,15 @@ public class InMemoryKeyValueAccess implements KeyValueAccess {
 	}
 
 	@Override
-	public ReadData createReadData(final String normalPath) {
-		return new KeyValueAccessReadData(new MemoryLazyRead(normalPath));
+	public VolatileReadData createReadData(final String normalPath) {
+
+		return VolatileReadData.from(new MemoryLazyRead(normalPath));
 	}
 
 	@Override
-	public LockedChannel lockForReading(final String normalPath) throws N5IOException {
+	public void write(String normalPath, ReadData data) {
 
-		if (!isFile(normalPath))
-			throw new N5NoSuchKeyException("No such key: " + normalPath);
-
-		try {
-			return new MemoryLockedChannel(normalPath);
-		} catch (UncheckedIOException e) {
-			throw new N5IOException("Failed to lock file for reading: " + normalPath, e);
-		}
-	}
-
-	@Override
-	public synchronized LockedChannel lockForWriting(final String normalPath) throws N5IOException {
-
-		try {
-			return new MemoryLockedChannel(normalPath);
-		} catch (UncheckedIOException e) {
-			throw new N5IOException("Failed to lock file for writing: " + normalPath, e);
-		}
+		files.put(normalPath, data);
 	}
 
 	@Override
@@ -111,7 +91,6 @@ public class InMemoryKeyValueAccess implements KeyValueAccess {
 	public boolean isFile(final String normalPath) {
 
 		return files.containsKey(normalPath);
-
 	}
 
 	@Override
@@ -275,6 +254,10 @@ public class InMemoryKeyValueAccess implements KeyValueAccess {
 			}
 	    }
 
+		@Override
+		public void close() {
+			// No-op
+		}
 	}
 
 	private static boolean validBounds(long channelSize, long offset, long length) {
@@ -287,49 +270,6 @@ public class InMemoryKeyValueAccess implements KeyValueAccess {
 			return false;
 
 		return true;
-	}
-
-	private class MemoryLockedChannel implements LockedChannel {
-
-		private final String key;
-
-		private ByteArrayOutputStream os;
-
-		MemoryLockedChannel(final String normalKey) {
-			this.key = normalKey;
-		}
-
-		@Override
-		public void close() throws IOException {
-
-			files.put(key, ReadData.from(os.toByteArray()));
-		}
-
-		@Override
-		public Reader newReader() throws N5IOException {
-
-			return new InputStreamReader(newInputStream());
-		}
-
-		@Override
-		public InputStream newInputStream() throws N5IOException {
-
-			return InMemoryKeyValueAccess.this.files.get(key).inputStream();
-		}
-
-		@Override
-		public Writer newWriter() throws N5IOException {
-
-			return new OutputStreamWriter(newOutputStream());
-		}
-
-		@Override
-		public OutputStream newOutputStream() throws N5IOException {
-
-			os = new ByteArrayOutputStream();
-			return os;
-		}
-
 	}
 
 }
