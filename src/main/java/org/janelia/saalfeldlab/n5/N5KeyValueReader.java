@@ -175,12 +175,6 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	}
 
 	@Override
-	public DelegateStore getDelegateStore() {
-
-		return metaStore;
-	}
-
-	@Override
 	public N5Store getN5Store() {
 
 		return store;

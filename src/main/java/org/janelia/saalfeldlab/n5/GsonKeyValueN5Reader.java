@@ -49,9 +49,6 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	RootedKeyValueAccess getRootedKeyValueAccess();
 
-	@Deprecated // TODO: this shouldn't have to be used outside of N5Store ...
-	DelegateStore getDelegateStore();
-
 	N5Store getN5Store();
 
 	@Override

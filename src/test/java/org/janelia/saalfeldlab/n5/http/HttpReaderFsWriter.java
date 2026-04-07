@@ -29,27 +29,20 @@
 package org.janelia.saalfeldlab.n5.http;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Reader;
-import org.janelia.saalfeldlab.n5.CachedGsonKeyValueN5Writer;
-import org.janelia.saalfeldlab.n5.DataBlock;
-import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
-import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
-import org.janelia.saalfeldlab.n5.N5Exception;
-import org.janelia.saalfeldlab.n5.N5KeyValueReader;
-
 import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
+import org.janelia.saalfeldlab.n5.DataBlock;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
+import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
+import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Store;
 import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
-import org.janelia.saalfeldlab.n5.cache.DelegateStore;
 
 public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
@@ -100,12 +93,6 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	@Override public RootedKeyValueAccess getRootedKeyValueAccess() {
 
 		return reader.getRootedKeyValueAccess();
-	}
-
-	@Override
-	public DelegateStore getDelegateStore() {
-
-		return reader.getDelegateStore();
 	}
 
 	@Override
