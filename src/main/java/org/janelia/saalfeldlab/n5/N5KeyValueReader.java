@@ -133,14 +133,8 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 		}
 
 		// if a version was found, the container exists - don't need to check again
-		if (checkExists && (!versionFound && !inferExistence("/")))
+		if (checkExists && (!versionFound && !exists("/")))
 			throw new N5Exception.N5IOException("No container exists at " + keyValueAccess.root());
-	}
-
-	private boolean inferExistence(String path) {
-
-		final JsonElement attributes = getAttributes(path);
-		return attributes != null || exists(path);
 	}
 
 	protected GsonBuilder registerGson(final GsonBuilder gsonBuilder) {
