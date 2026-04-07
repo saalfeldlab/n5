@@ -28,26 +28,16 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import java.io.OutputStreamWriter;
+import com.google.gson.Gson;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import com.google.gson.JsonSyntaxException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
-import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
 
 /**
  * Default implementation of {@link N5Writer} with JSON attributes parsed with
@@ -207,25 +197,4 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		final PositionValueAccess posKva = PositionValueAccess.fromKva(getRootedKeyValueAccess(), N5GroupPath.of(path), datasetAttributes);
 		return datasetAttributes.getDatasetAccess().deleteBlocks(posKva, gridPositions);
 	}
-
-
-
-
-	// ------------------------------------------------------------------------
-	//
-	// -- deprecated / semi-obsolete --
-	//
-
-	@Deprecated
-	@Override
-	default void setAttributes(
-			final String path,
-			final JsonElement attributes) throws N5Exception {
-
-		if (!exists(path))
-			throw new N5IOException("\"" + path + "\" is not a group or dataset.");
-
-		getDelegateStore().store_writeAttributesJson(N5GroupPath.of(path), getAttributesKey(), attributes, getGson());
-	}
-
 }
