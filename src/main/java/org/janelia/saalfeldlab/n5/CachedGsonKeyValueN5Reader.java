@@ -28,13 +28,9 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
+import com.google.gson.Gson;
 import org.janelia.saalfeldlab.n5.cache.DelegateStore;
 import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
-import org.janelia.saalfeldlab.n5.cache.N5JsonCache;
-
-import com.google.gson.Gson;
 
 /**
  * {@link N5Reader} implementation through {@link RootedKeyValueAccess} with JSON
@@ -51,5 +47,13 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader {
 
 		final KeyValueAccessMetaStore store = new KeyValueAccessMetaStore(keyValueAccess);
 		return cacheMeta ? new MyJsonCache(store) : store;
+	}
+
+	default N5Store createN5Store(
+			final DelegateStore metaStore,
+			final Gson gson,
+			final boolean cacheMeta) {
+
+		return new DefaultN5Store(metaStore, gson);
 	}
 }
