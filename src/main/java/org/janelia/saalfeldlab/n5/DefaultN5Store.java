@@ -33,11 +33,11 @@ public final class DefaultN5Store implements N5Store {
 	@Override
 	public <T> T getAttribute(
 			final N5GroupPath path,
-			final String key,
+			final String attributePath,
 			final Type type) throws N5IOException, N5ClassCastException {
 
 		final JsonElement attributes = store.store_readAttributesJson(path, ATTRIBUTES_JSON, gson);
-		final String normalizedAttributePath = N5URI.normalizeAttributePath(key);
+		final String normalizedAttributePath = N5URI.normalizeAttributePath(attributePath);
 		try {
 			return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, gson);
 		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {

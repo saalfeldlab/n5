@@ -32,7 +32,7 @@ public interface N5Store {
 	 */
 	<T> T getAttribute(
 			N5GroupPath path,
-			String key,
+			String attributePath,
 			Type type) throws N5IOException, N5ClassCastException;
 
 	/**
