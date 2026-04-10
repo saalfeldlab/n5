@@ -65,6 +65,14 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	}
 
 	@Override
+	default DatasetAttributes createDataset(final String datasetPath, final DatasetAttributes datasetAttributes) throws N5Exception {
+
+		final DatasetAttributes attributes = getConvertedDatasetAttributes(datasetAttributes);
+		getN5Store().createDataset(N5GroupPath.of(datasetPath), attributes);
+		return attributes;
+	}
+
+	@Override
 	default void setAttributes(final String path, final Map<String, ?> attributes) throws N5Exception {
 
 		getN5Store().setAttributes(N5GroupPath.of(path), attributes);

@@ -23,7 +23,7 @@ public interface N5Store {
 	 * TODO javadoc
 	 *
 	 * @param path
-	 * @param key
+	 * @param attributePath
 	 * @param type
 	 * @return
 	 * @param <T>
@@ -57,7 +57,7 @@ public interface N5Store {
 	/**
 	 * TODO javadoc
 	 *
-	 * @param normal
+	 * @param path
 	 * @return
 	 * @throws N5IOException
 	 * 		if an error occurs (other than the path not existing)
@@ -77,7 +77,7 @@ public interface N5Store {
 	 * relative to the container root {@link N5GroupPath#resolve group.resolve}
 	 * the child path.
 	 *
-	 * @param group
+	 * @param path
 	 * 		path to list
 	 *
 	 * @return list of children
@@ -87,7 +87,7 @@ public interface N5Store {
 	 * @throws N5IOException
 	 * 		if an error occurs during listing
 	 */
-	String[] list(N5GroupPath group) throws N5IOException;
+	String[] list(N5GroupPath path) throws N5IOException;
 
 	/**
 	 * List all attributes and their class of the group or dataset at the given {@code path}.
@@ -105,14 +105,13 @@ public interface N5Store {
 	Map<String, Class<?>> listAttributes(N5GroupPath path) throws N5IOException, N5JsonParseException;
 
 	/**
-	 * Reads or the attributes of a group or dataset.
+	 * Reads the attributes of a group or dataset.
 	 *
 	 * @param path
 	 * 		dataset or group path
 	 * @return the attributes
 	 * @throws N5IOException if the attributes could not be read
 	 */
-	@Deprecated
 	JsonElement getAttributes(N5GroupPath path) throws N5IOException;
 
 	// ┌───────────────────────────────────────────────────────────────────────┐
@@ -202,6 +201,19 @@ public interface N5Store {
 	 * @throws N5IOException TODO
 	 */
 	void createGroup(N5GroupPath path) throws N5IOException;
+
+	/**
+	 * Creates a dataset. This does not create any data but the path and
+	 * mandatory attributes only.
+	 *
+	 * @param path dataset path
+	 * @param attributes the dataset attributes
+	 * @throws N5IOException TODO
+	 */
+	void createDataset(
+			N5GroupPath path,
+			DatasetAttributes attributes) throws N5IOException;
+
 
 	/**
 	 * Removes a group or dataset (directory and all contained files).

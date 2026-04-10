@@ -209,15 +209,9 @@ public interface N5Writer extends N5Reader {
 	 * @return DatasetAttributes optimal attributes object to be used for read/write operations
 	 * @throws N5Exception
 	 */
-	default DatasetAttributes createDataset(
+	DatasetAttributes createDataset(
 			final String datasetPath,
-			final DatasetAttributes datasetAttributes) throws N5Exception {
-
-		createGroup(datasetPath);
-		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
-		setDatasetAttributes(datasetPath, convertedDatasetAttributes);
-		return convertedDatasetAttributes;
-	}
+			final DatasetAttributes datasetAttributes) throws N5Exception;
 
 	/**
 	 * Creates a dataset. This does not create any data but the path and

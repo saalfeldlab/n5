@@ -82,9 +82,9 @@ public final class DefaultN5Store implements N5Store {
 		return GsonUtils.listAttributes(attributes);
 	}
 
-	@Deprecated
 	@Override
-	public JsonElement getAttributes(final N5GroupPath path) throws N5IOException {
+	public JsonElement getAttributes(
+			final N5GroupPath path) throws N5IOException {
 
 		return store.store_readAttributesJson(path, ATTRIBUTES_JSON, gson);
 	}
@@ -174,6 +174,16 @@ public final class DefaultN5Store implements N5Store {
 			final N5GroupPath path) throws N5IOException {
 
 		store.store_createDirectories(path);
+	}
+
+	@Override
+	public void createDataset(
+			final N5GroupPath path,
+			final DatasetAttributes attributes) throws N5IOException {
+
+		if (!store.store_isDirectory(path))
+			store.store_createDirectories(path);
+		setAttributes(path, attributes.asMap());
 	}
 
 	@Override
