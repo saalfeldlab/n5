@@ -45,19 +45,6 @@ import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
  */
 public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader {
 
-	/**
-	 * TODO This overrides the version even if incompatible, check
-	 * if this is the desired behavior or if it is always overridden, e.g. as by
-	 * the caching version. If this is true, delete this implementation.
-	 *
-	 * @param path to the group to write the version into
-	 */
-	default void setVersion(final String path) {
-
-		if (!VERSION.equals(getVersion()))
-			setAttribute("/", VERSION_KEY, VERSION.toString());
-	}
-
 	@Override
 	default void createGroup(final String path) throws N5Exception {
 

@@ -40,14 +40,4 @@ import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
  */
 public interface CachedGsonKeyValueN5Writer extends CachedGsonKeyValueN5Reader, GsonKeyValueN5Writer {
 
-	@Override
-	default void setVersion(final String path) throws N5Exception {
-
-		final Version version = getVersion();
-		if (!VERSION.isCompatible(version))
-			throw new N5IOException("Incompatible version " + version + " (this is " + VERSION + ").");
-
-		if (!VERSION.equals(version))
-			setAttribute("/", VERSION_KEY, VERSION.toString());;
-	}
 }

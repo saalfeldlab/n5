@@ -76,7 +76,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyV
 
 		if (version == null || version.equals(new Version(0, 0, 0, ""))) {
 			createGroup("/");
-			setVersion("/");
+			setVersion();
 		}
 	}
 }
