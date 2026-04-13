@@ -49,12 +49,6 @@ public interface GsonN5Reader extends N5Reader {
 	@Deprecated
 	String getAttributesKey();
 
-	@Deprecated
-	default DatasetAttributes createDatasetAttributes(JsonElement attributes) {
-
-		return getGson().fromJson(attributes, DatasetAttributes.class);
-	}
-
 	/**
 	 * Reads or the attributes of a group or dataset.
 	 *
