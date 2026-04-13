@@ -30,12 +30,13 @@ package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
@@ -55,15 +56,15 @@ public class InMemoryKeyValueAccess implements KeyValueAccess {
 
 	private static final String ROOT = "/";
 
-	private HashMap<String,ReadData> files;
-	private HashSet<String> directories;
+	private Map<String,ReadData> files;
+	private Set<String> directories;
 
 	/**
 	 * Creates a {@link InMemoryKeyValueAccess}.
 	 */
 	public InMemoryKeyValueAccess() {
-		files = new HashMap<>();
-		directories = new HashSet<>();
+		files = new ConcurrentHashMap<>();
+		directories = Collections.synchronizedSet(new HashSet<>());
 		directories.add(ROOT);
 	}
 
