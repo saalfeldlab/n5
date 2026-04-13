@@ -150,18 +150,24 @@ public class N5BlockCodecs {
 		@Override
 		public DataBlock<T> decode(final ReadData readData, final long[] gridPosition) throws N5IOException {
 
+			// read block header with input stream since header is variable length
+			final BlockHeader header;
 			try(final InputStream in = readData.inputStream()) {
-				final BlockHeader header = decodeBlockHeader(in);
-
-				final int numElements = header.numElements();
-				final ReadData decodeData = codec.decode(ReadData.from(in));
-
-				// the dataCodec knows the number of bytes per element
-				final T data = dataCodec.decode(decodeData, numElements);
-				return dataBlockFactory.createDataBlock(header.blockSize(), gridPosition, data);
+				header = decodeBlockHeader(in);
 			} catch (IOException e) {
 				throw new N5IOException(e);
 			}
+
+			// determine length
+			// and slice original read data so that bodyReadData is known length
+			final int numElements = header.numElements();
+			final long bodyLength = readData.length() - header.getSize();
+			final ReadData bodyReadData = bodyLength > 0 ? readData.slice(header.getSize(), bodyLength) : ReadData.empty();
+			final ReadData decodeData = codec.decode(bodyReadData);
+
+			// the dataCodec knows the number of bytes per element
+			final T data = dataCodec.decode(decodeData, numElements);
+			return dataBlockFactory.createDataBlock(header.blockSize(), gridPosition, data);
 		}
 	}
 
@@ -282,16 +288,7 @@ public class N5BlockCodecs {
 
 		public int getSize() {
 
-			switch (mode) {
-				case MODE_DEFAULT:
-					return 2 + 4 * blockSize.length;
-				case MODE_VARLENGTH:
-					return 2 + 4 * blockSize.length + 4;
-				case MODE_OBJECT:
-					return 2 + 4;
-				default:
-					throw new IllegalArgumentException("Unexpected mode: " + mode);
-			}
+			return headerSizeInBytes(mode, blockSize == null ? 0 : blockSize.length);
 		}
 
 		public int[] blockSize() {
