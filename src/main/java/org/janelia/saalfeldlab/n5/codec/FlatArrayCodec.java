@@ -132,7 +132,7 @@ public abstract class FlatArrayCodec<T> {
 		public byte[] decode(final ReadData readData, int numElements) throws N5IOException {
 			final byte[] data = newArray(numElements);
 			try {
-				new DataInputStream(readData.inputStream()).readFully(data);
+				new DataInputStream(readData.limit(numElements).inputStream()).readFully(data);
 			} catch (IOException e) {
 				throw new N5IOException(e);
 			}
@@ -159,7 +159,7 @@ public abstract class FlatArrayCodec<T> {
 		@Override
 		public short[] decode(final ReadData readData, int numElements) throws N5IOException {
 			final short[] data = newArray(numElements);
-			readData.toByteBuffer().order(order).asShortBuffer().get(data);
+			readData.limit(2 * numElements).toByteBuffer().order(order).asShortBuffer().get(data);
 			return data;
 		}
 	}
@@ -183,7 +183,7 @@ public abstract class FlatArrayCodec<T> {
 		@Override
 		public int[] decode(final ReadData readData, int numElements) throws N5IOException {
 			final int[] data = newArray(numElements);
-			final ByteBuffer byteBuffer = readData.toByteBuffer();
+			final ByteBuffer byteBuffer = readData.limit(4 * numElements).toByteBuffer();
 			final IntBuffer intBuffer = byteBuffer.order(order).asIntBuffer();
 			intBuffer.get(data);
 			return data;
@@ -209,7 +209,7 @@ public abstract class FlatArrayCodec<T> {
 		@Override
 		public long[] decode(final ReadData readData, int numElements) throws N5IOException {
 			final long[] data = newArray(numElements);
-			readData.toByteBuffer().order(order).asLongBuffer().get(data);
+			readData.limit(8 * numElements).toByteBuffer().order(order).asLongBuffer().get(data);
 			return data;
 		}
 	}
@@ -233,7 +233,7 @@ public abstract class FlatArrayCodec<T> {
 		@Override
 		public float[] decode(final ReadData readData, int numElements) throws N5IOException {
 			final float[] data = newArray(numElements);
-			readData.toByteBuffer().order(order).asFloatBuffer().get(data);
+			readData.limit(4 * numElements).toByteBuffer().order(order).asFloatBuffer().get(data);
 			return data;
 		}
 	}
@@ -257,7 +257,7 @@ public abstract class FlatArrayCodec<T> {
 		@Override
 		public double[] decode(final ReadData readData, int numElements) throws N5IOException {
 			final double[] data = newArray(numElements);
-			readData.toByteBuffer().order(order).asDoubleBuffer().get(data);
+			readData.limit(8 * numElements).toByteBuffer().order(order).asDoubleBuffer().get(data);
 			return data;
 		}
 	}
