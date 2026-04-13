@@ -30,6 +30,7 @@ package org.janelia.saalfeldlab.n5.codec;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -131,8 +132,8 @@ public abstract class FlatArrayCodec<T> {
 		@Override
 		public byte[] decode(final ReadData readData, int numElements) throws N5IOException {
 			final byte[] data = newArray(numElements);
-			try {
-				new DataInputStream(readData.limit(numElements).inputStream()).readFully(data);
+			try (final InputStream is = readData.limit(numElements).inputStream()) {
+				new DataInputStream(is).readFully(data);
 			} catch (IOException e) {
 				throw new N5IOException(e);
 			}
@@ -347,8 +348,8 @@ public abstract class FlatArrayCodec<T> {
 		@Override
 		public byte[] decode(ReadData readData, int numElements) throws N5IOException {
 			final byte[] data = newArray(numElements);
-			try {
-				new DataInputStream(readData.inputStream()).readFully(data);
+			try (final InputStream is = readData.inputStream()) {
+				new DataInputStream(is).readFully(data);
 			} catch (IOException e) {
 				throw new N5IOException(e);
 			}
