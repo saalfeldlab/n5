@@ -313,24 +313,24 @@ public class MyJsonCache implements DelegateStore {
 
 	/**
 	 * Returns a {@link JsonElement} containing the deserialized
-	 * {@code attributesKey} file in the given {@code group}.
+	 * {@code filename} file in the given {@code group}.
 	 * <p>
-	 * (Typically, the {@code attributesKey} is <em>attributes.json</em> for N5,
+	 * (Typically, the {@code filename} is <em>attributes.json</em> for N5,
 	 * and <em>.zarray</em>, <em>.zattrs</em>, or <em>.zgroup</em> for Zarr.)
 	 *
 	 * @param group
-	 * @param attributesKey
+	 * @param filename
 	 *
 	 * @return the attributes as a json element.
 	 */
 	@Override
-	public JsonElement store_readAttributesJson(final N5GroupPath group, final String attributesKey, final Gson gson) throws N5IOException {
+	public JsonElement store_readAttributesJson(final N5GroupPath group, final String filename, final Gson gson) throws N5IOException {
 
-		final N5FilePath path = group.resolve(attributesKey).asFile();
+		final N5FilePath path = group.resolve(filename).asFile();
 		final CacheInfoAttributes info = getOrCreate(path);
 		synchronized (info) {
 			if (!info.valid() && !info.isKnownToNotExist()) {
-				info.setJson(container.store_readAttributesJson(group, attributesKey, gson));
+				info.setJson(container.store_readAttributesJson(group, filename, gson));
 			}
 			return info.json();
 		}
