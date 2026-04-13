@@ -341,20 +341,23 @@ public class MyJsonCache implements DelegateStore {
 	@Override
 	public void store_writeAttributesJson(final N5GroupPath group, final String filename, final JsonElement attributes, final Gson gson) throws N5IOException {
 
-		container.store_writeAttributesJson(group, filename, attributes, gson);
-		/*
-		 * Gson only filters out nulls when you write the JsonElement. This
-		 * means it doesn't filter them out when caching.
-		 * To handle this, we explicitly writer the existing JsonElement to
-		 * a new JsonElement.
-		 * The output is identical to the input if:
-		 * - serializeNulls is true
-		 * - no null values are present
-		 */
+		// Gson only filters out nulls when you write the JsonElement. This
+		// means it doesn't filter them out when caching.
+		// To handle this, we explicitly write the existing JsonElement to
+		// a new JsonElement.
+		// The output is identical to the input if:
+		// - serializeNulls is true
+		// - no null values are present
 		final JsonElement json = gson.serializeNulls() ? attributes : gson.toJsonTree(attributes);
+
 		final N5FilePath path = group.resolve(filename).asFile();
 		final CacheInfoAttributes info = getOrCreate(path);
-		info.setJson(json);
+		synchronized (info) {
+			if (!info.valid() || info.json() == null || !info.json().equals(json)) {
+				container.store_writeAttributesJson(group, filename, json, gson);
+				info.setJson(json);
+			}
+		}
 	}
 
 	@Override
