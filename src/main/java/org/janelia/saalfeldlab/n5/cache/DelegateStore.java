@@ -21,6 +21,10 @@ public interface DelegateStore {
 	 * Returns a {@link JsonElement} containing the deserialized
 	 * {@code attributesKey} file in the given {@code group}.
 	 * <p>
+	 * NB: If the {@code JsonElement} is retrieved from a cache, a {@link
+	 * JsonElement#deepCopy() deepCopy} is returned. It is therefore safe to
+	 * modify. Further defensive copying is not necessary.
+	 * <p>
 	 * (Typically, the {@code attributesKey} is <em>attributes.json</em> for N5,
 	 * and <em>.zarray</em>, <em>.zattrs</em>, or <em>.zgroup</em> for Zarr.)
 	 *

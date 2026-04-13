@@ -328,12 +328,14 @@ public class MyJsonCache implements DelegateStore {
 
 		final N5FilePath path = group.resolve(filename).asFile();
 		final CacheInfoAttributes info = getOrCreate(path);
+		final JsonElement json;
 		synchronized (info) {
 			if (!info.valid() && !info.isKnownToNotExist()) {
 				info.setJson(container.store_readAttributesJson(group, filename, gson));
 			}
-			return info.json();
+			json = info.json();
 		}
+		return json == null ? null : json.deepCopy();
 	}
 
 	@Override
