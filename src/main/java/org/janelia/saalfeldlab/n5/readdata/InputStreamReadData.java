@@ -66,6 +66,11 @@ class InputStreamReadData implements ReadData {
 		return bytes.slice(offset, length);
 	}
 
+	@Override
+	public ReadData limit(final long length) {
+		return new InputStreamReadData(inputStream, (int)length);
+	}
+
 	private boolean inputStreamCalled = false;
 
 	@Override
