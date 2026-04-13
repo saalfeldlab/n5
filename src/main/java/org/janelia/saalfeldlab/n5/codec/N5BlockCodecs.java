@@ -282,16 +282,7 @@ public class N5BlockCodecs {
 
 		public int getSize() {
 
-			switch (mode) {
-				case MODE_DEFAULT:
-					return 2 + 4 * blockSize.length;
-				case MODE_VARLENGTH:
-					return 2 + 4 * blockSize.length + 4;
-				case MODE_OBJECT:
-					return 2 + 4;
-				default:
-					throw new IllegalArgumentException("Unexpected mode: " + mode);
-			}
+			return headerSizeInBytes(mode, blockSize == null ? 0 : blockSize.length);
 		}
 
 		public int[] blockSize() {
