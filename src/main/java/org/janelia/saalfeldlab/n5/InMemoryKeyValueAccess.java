@@ -68,6 +68,18 @@ public class InMemoryKeyValueAccess implements KeyValueAccess {
 		directories.add(ROOT);
 	}
 
+	/**
+	 * Returns a normalized path.
+	 *
+	 * @param path
+	 *            the path
+	 * @return the normalized path
+	 */
+	@Override
+	public String normalize(final String path) {
+		return N5URI.normalizeGroupPath(path);
+	}
+
 	@Override
 	public VolatileReadData createReadData(final String normalPath) {
 
@@ -124,14 +136,12 @@ public class InMemoryKeyValueAccess implements KeyValueAccess {
 
 	private ArrayList<String> listDirectoriesHelper(final String normalPath) {
 
-		Path dir = Paths.get(normalPath);
 		final ArrayList<String> children = new ArrayList<>();
-		for (String p : directories) {
-
-			Path path = Paths.get(p);
-			Path parent = path.getParent();
-			if (dir.equals(parent))
-				children.add(parent.relativize(path).toString());
+		for (String d : directories) {
+			// the parent method removes leading slash, so add it back
+			String parent = "/" + parent(d);
+			if (normalPath.equals(parent))
+				children.add(relativize(d, parent));
 		}
 		return children;
 	}
@@ -142,69 +152,37 @@ public class InMemoryKeyValueAccess implements KeyValueAccess {
 		if (!isDirectory(normalPath))
 			throw new N5IOException("Attempted to list directory that does not exist: " + normalPath);
 
-		final Path dir = Paths.get(normalPath);
 		final ArrayList<String> children = new ArrayList<>();
+		// all keys are normalized
 		for (String p : files.keySet()) {
-
-			Path path = Paths.get(p);
-			Path parent = path.getParent();
-			if (dir.equals(parent))
-				children.add(parent.relativize(path).toString());
+			final String parent = parent(p);
+			if (normalPath.equals(parent))
+				children.add(relativize(p, parent));
 		}
 
 		children.addAll(listDirectoriesHelper(normalPath));
 		return children.toArray(new String[0]);
 	}
 
-	/**
-	 * Returns a normalized path. It ensures correctness on both Unix and
-	 * Windows, otherwise {@code pathName} is treated as UNC path on Windows,
-	 * and {@code Paths.get(pathName, ...)} fails with
-	 * {@code InvalidPathException}.
-	 *
-	 * @param path
-	 *            the path
-	 * @return the normalized path, without leading slash
-	 */
 	@Override
-	public String normalize(final String path) {
-		return N5URI.normalizeGroupPath(path);
-	}
+	public void createDirectories(final String normalPath) throws N5IOException {
 
-	/**
-	 * Get the parent of a path string.
-	 *
-	 * @param path
-	 *            the path
-	 * @return the parent path or null if the path has no parent
-	 */
-	@Override
-	public String parent(final String path) {
-		final String removeTrailingSlash = path.replaceAll("/+$", "");
-		return N5URI.getAsUri(removeTrailingSlash).resolve("").toString();
-	}
-
-	@Override
-	public synchronized void createDirectories(final String normalPath) throws N5IOException {
-
-		try {
-			String p = normalPath;
-			p = p.replaceAll("/+$", "");
-			while( !p.equals(ROOT)) {
-				p = p.replaceAll("/+$", "");
-				directories.add(p);
-				p = parent(p);
-			}
-		} catch (UncheckedIOException e) {
-			throw new N5IOException("Failed to create directories", e);
+		String p = normalPath;
+		while( !isRoot(p)) {
+			directories.add(p);
+			p = "/" + parent(p);
 		}
 	}
 
+	private boolean isRoot(String path) {
+		return path.isEmpty() || path.equals(ROOT);
+	}
+
 	@Override
-	public synchronized void delete(final String normalPath) throws N5IOException {
+	public void delete(final String normalPath) throws N5IOException {
 
 		// disallow deletion of root
-		if (normalPath.equals("/") || normalPath.equals(""))
+		if (isRoot(normalPath))
 			return;
 
 		deleteHelper(normalPath, directories);
