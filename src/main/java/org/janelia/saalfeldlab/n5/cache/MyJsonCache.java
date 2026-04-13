@@ -117,7 +117,7 @@ public class MyJsonCache implements DelegateStore {
 		}
 
 		synchronized void setJson(final JsonElement json) {
-			if (!valid && json != null)
+			if (json != null)
 				parent.setExists();
 			this.json = json;
 			valid = true;
