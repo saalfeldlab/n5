@@ -4,7 +4,6 @@ import org.junit.Assert;
 
 public class MetaStoreCounters {
 
-	// TODO make private
 	private int readAttrCallCount = 0;
 	private int writeAttrCallCount = 0;
 	private int removeAttrCallCount = 0;
@@ -115,5 +114,19 @@ public class MetaStoreCounters {
 
 	public int listCallCount() {
 		return listCallCount;
+	}
+
+	@Override
+	public String toString() {
+		final StringBuffer sb = new StringBuffer("MetaStoreCounters{");
+		sb.append("readAttr:").append(readAttrCallCount);
+		sb.append(", writeAttr:").append(writeAttrCallCount);
+		sb.append(", removeAttr:").append(removeAttrCallCount);
+		sb.append(", isDir:").append(isDirCallCount);
+		sb.append(", rmDir:").append(rmDirCallCount);
+		sb.append(", mkDir:").append(mkDirCallCount);
+		sb.append(", list:").append(listCallCount);
+		sb.append('}');
+		return sb.toString();
 	}
 }
