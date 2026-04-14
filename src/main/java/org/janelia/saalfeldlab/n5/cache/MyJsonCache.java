@@ -380,14 +380,18 @@ public class MyJsonCache implements DelegateStore {
 
 		final CacheInfoDirectory info = getOrCreate(group);
 		synchronized (info) {
-			if (!info.valid()) {
+			if (info.isKnownToExist()) {
+				return true;
+			} else if (info.isKnownToNotExist()) {
+				return false;
+			} else {
 				final boolean exists = container.store_isDirectory(group);
 				if (exists)
 					info.setExists();
 				else
 					info.setNotExists();
+				return info.exists();
 			}
-			return info.exists();
 		}
 	}
 
