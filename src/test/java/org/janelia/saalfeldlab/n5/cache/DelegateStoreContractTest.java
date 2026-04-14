@@ -1,0 +1,387 @@
+package org.janelia.saalfeldlab.n5.cache;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import java.util.Arrays;
+import java.util.List;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
+import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+/**
+ * Verify that a {@link DelegateStore} implementation satisfies all the
+ * behavioral assumptions that {@link MyJsonCache} relies on when caching
+ * results from a delegate container. Any implementation of {@link
+ * DelegateStore} must satisfy these to be cacheable,
+ * <p>
+ * To test a specific implementation, subclass this test and implement
+ * {@link #createStore()}.
+ */
+public abstract class DelegateStoreContractTest {
+
+	protected static final Gson GSON = new Gson();
+
+	protected static final String FILENAME = "attributes.json";
+
+	protected DelegateStore store;
+
+	/**
+	 * Create and return a fresh, empty {@link DelegateStore} instance.
+	 * Called before each test.
+	 */
+	protected abstract DelegateStore createStore();
+
+	@Before
+	public void setUp() {
+		store = createStore();
+	}
+
+	// ------------------------------------------------------------------------
+	// Helpers
+	// ------------------------------------------------------------------------
+
+	private static N5GroupPath path(final String p) {
+		return N5GroupPath.of(p);
+	}
+
+	private static JsonElement someJson() {
+		final JsonObject obj = new JsonObject();
+		obj.addProperty("key", "value");
+		return obj;
+	}
+
+	private static JsonElement otherJson() {
+		final JsonObject obj = new JsonObject();
+		obj.addProperty("key", "other");
+		return obj;
+	}
+
+	// ------------------------------------------------------------------------
+	// 1. store_createDirectories
+	// ------------------------------------------------------------------------
+
+	/**
+	 * Assumption 1: After creating a directory, that directory exists.
+	 * <p>
+	 * {@code store_createDirectories("a/b")} must result in
+	 * {@code store_isDirectory("a/b") == true}.
+	 */
+	@Test
+	public void testCreateDirectories_directoryExists() {
+		store.store_createDirectories(path("a/b"));
+		assertTrue(store.store_isDirectory(path("a/b")));
+	}
+
+	/**
+	 * Assumption 2: After creating a directory, all ancestor directories exist.
+	 * <p>
+	 * {@code store_createDirectories("a/b/c")} must result in
+	 * {@code store_isDirectory("a") == true} and
+	 * {@code store_isDirectory("a/b") == true}.
+	 * <p>
+	 * This is required because {@link MyJsonCache.CacheInfoDirectory#setExists()}
+	 * propagates existence upward through the parent chain.
+	 */
+	@Test
+	public void testCreateDirectories_ancestorsExist() {
+		store.store_createDirectories(path("a/b/c"));
+		assertTrue(store.store_isDirectory(path("a")));
+		assertTrue(store.store_isDirectory(path("a/b")));
+	}
+
+	/**
+	 * Assumption 3: Creating a directory that already exists is a no-op and
+	 * does not throw.
+	 */
+	@Test
+	public void testCreateDirectories_idempotent() {
+		store.store_createDirectories(path("a/b"));
+		store.store_createDirectories(path("a/b")); // must not throw
+		assertTrue(store.store_isDirectory(path("a/b")));
+	}
+
+	// ------------------------------------------------------------------------
+	// 2. store_writeAttributesJson
+	// ------------------------------------------------------------------------
+
+	/**
+	 * Assumption 4: After writing a JSON attributes file, reading it back
+	 * returns the written content.
+	 */
+	@Test
+	public void testWriteAttributesJson_readBack() {
+		final JsonElement json = someJson();
+		store.store_writeAttributesJson(path("a/b"), FILENAME, json, GSON);
+		assertEquals(json, store.store_readAttributesJson(path("a/b"), FILENAME, GSON));
+	}
+
+	/**
+	 * Assumption 5: After writing a JSON attributes file, the parent directory
+	 * exists.
+	 * <p>
+	 * {@code store_writeAttributesJson("a/b", f, ...)} must result in
+	 * {@code store_isDirectory("a/b") == true}.
+	 * <p>
+	 * This is required because {@link MyJsonCache} calls
+	 * {@code parent.setExists()} when a JSON file is successfully written.
+	 */
+	@Test
+	public void testWriteAttributesJson_parentDirectoryExists() {
+		store.store_writeAttributesJson(path("a/b"), FILENAME, someJson(), GSON);
+		assertTrue(store.store_isDirectory(path("a/b")));
+	}
+
+	/**
+	 * Assumption 6: After writing a JSON attributes file, all ancestor
+	 * directories of its parent exist.
+	 * <p>
+	 * {@code store_writeAttributesJson("a/b/c", f, ...)} must result in
+	 * {@code store_isDirectory("a") == true} and
+	 * {@code store_isDirectory("a/b") == true}.
+	 * <p>
+	 * This is required because {@link MyJsonCache} recursively propagates
+	 * existence upward via {@code setExists()}.
+	 */
+	@Test
+	public void testWriteAttributesJson_ancestorDirectoriesExist() {
+		store.store_writeAttributesJson(path("a/b/c"), FILENAME, someJson(), GSON);
+		assertTrue(store.store_isDirectory(path("a")));
+		assertTrue(store.store_isDirectory(path("a/b")));
+	}
+
+	/**
+	 * Assumption 7: Writing a JSON attributes file a second time overwrites
+	 * the first, and reading it back returns the new content.
+	 */
+	@Test
+	public void testWriteAttributesJson_overwrite() {
+		store.store_writeAttributesJson(path("a/b"), FILENAME, someJson(), GSON);
+		store.store_writeAttributesJson(path("a/b"), FILENAME, otherJson(), GSON);
+		assertEquals(otherJson(), store.store_readAttributesJson(path("a/b"), FILENAME, GSON));
+	}
+
+	// ------------------------------------------------------------------------
+	// 3. store_removeAttributesJson
+	// ------------------------------------------------------------------------
+
+	/**
+	 * Assumption 8: After removing a JSON attributes file, reading it returns
+	 * {@code null}.
+	 */
+	@Test
+	public void testRemoveAttributesJson_readReturnsNull() {
+		store.store_writeAttributesJson(path("a/b"), FILENAME, someJson(), GSON);
+		store.store_removeAttributesJson(path("a/b"), FILENAME);
+		assertNull(store.store_readAttributesJson(path("a/b"), FILENAME, GSON));
+	}
+
+	/**
+	 * Assumption 9: Removing a JSON attributes file that does not exist does
+	 * not throw.
+	 */
+	@Test
+	public void testRemoveAttributesJson_nonExistentIsNoOp() {
+		store.store_createDirectories(path("a/b"));
+		store.store_removeAttributesJson(path("a/b"), FILENAME); // must not throw
+	}
+
+	// ------------------------------------------------------------------------
+	// 4. store_removeDirectory
+	// ------------------------------------------------------------------------
+
+	/**
+	 * Assumption 10: After removing a directory, that directory no longer
+	 * exists.
+	 */
+	@Test
+	public void testRemoveDirectory_directoryGone() {
+		store.store_createDirectories(path("a/b"));
+		store.store_removeDirectory(path("a/b"));
+		assertFalse(store.store_isDirectory(path("a/b")));
+	}
+
+	/**
+	 * Assumption 11: After removing a directory, all descendant directories
+	 * no longer exist.
+	 * <p>
+	 * This is required because {@link MyJsonCache.MyCacheInfo#markRemoved()}
+	 * propagates non-existence downward to all known children.
+	 */
+	@Test
+	public void testRemoveDirectory_descendantsGone() {
+		store.store_createDirectories(path("a/b/c/d"));
+		store.store_removeDirectory(path("a/b"));
+		assertFalse(store.store_isDirectory(path("a/b/c")));
+		assertFalse(store.store_isDirectory(path("a/b/c/d")));
+	}
+
+	/**
+	 * Assumption 12: After removing a directory, JSON attributes files in any
+	 * descendant directory return {@code null} when read.
+	 */
+	@Test
+	public void testRemoveDirectory_descendantAttributesGone() {
+		store.store_writeAttributesJson(path("a/b/c"), FILENAME, someJson(), GSON);
+		store.store_removeDirectory(path("a/b"));
+		assertNull(store.store_readAttributesJson(path("a/b/c"), FILENAME, GSON));
+	}
+
+	/**
+	 * Assumption 13: After removing a directory, that directory is no longer
+	 * listed as a child of its parent.
+	 */
+	@Test
+	public void testRemoveDirectory_removedFromParentListing() {
+		store.store_createDirectories(path("a/b"));
+		store.store_removeDirectory(path("a/b"));
+		final String[] children = store.store_listDirectories(path("a"));
+		assertFalse(Arrays.asList(children).contains("b"));
+	}
+
+	/**
+	 * Assumption 14: Removing a directory that does not exist does not throw.
+	 */
+	@Test
+	public void testRemoveDirectory_nonExistentIsNoOp() {
+		store.store_removeDirectory(path("a/b")); // must not throw
+	}
+
+	// ------------------------------------------------------------------------
+	// 5. store_isDirectory
+	// ------------------------------------------------------------------------
+
+	/**
+	 * Assumption 15: A directory that has never been created does not exist.
+	 */
+	@Test
+	public void testIsDirectory_nonExistentReturnsFalse() {
+		assertFalse(store.store_isDirectory(path("a/b")));
+	}
+
+	/**
+	 * Assumption 16: If a directory does not exist, none of its descendants
+	 * exist either.
+	 * <p>
+	 * This is required because {@link MyJsonCache} propagates non-existence
+	 * downward: if the cache knows a directory doesn't exist, it infers that
+	 * all children don't exist without going to the delegate.
+	 */
+	@Test
+	public void testIsDirectory_nonExistenceImpliesDescendantsAbsent() {
+		assertFalse(store.store_isDirectory(path("a")));
+		assertFalse(store.store_isDirectory(path("a/b")));
+		assertFalse(store.store_isDirectory(path("a/b/c")));
+	}
+
+	/**
+	 * Assumption 17: If a directory does not exist, reading any JSON
+	 * attributes file underneath it returns {@code null}.
+	 * <p>
+	 * This is required because {@link MyJsonCache} propagates non-existence
+	 * of a directory downward to attribute files it contains.
+	 */
+	@Test
+	public void testIsDirectory_nonExistenceImpliesAttributesAbsent() {
+		assertFalse(store.store_isDirectory(path("a/b")));
+		assertNull(store.store_readAttributesJson(path("a/b"), FILENAME, GSON));
+	}
+
+	// ------------------------------------------------------------------------
+	// 6. store_listDirectories
+	// ------------------------------------------------------------------------
+
+	/**
+	 * Assumption 18: Listing a directory that does not exist throws
+	 * {@link N5NoSuchKeyException}.
+	 */
+	@Test(expected = N5NoSuchKeyException.class)
+	public void testListDirectories_nonExistentThrows() {
+		store.store_listDirectories(path("a/b"));
+	}
+
+	/**
+	 * Assumption 19: After creating a child directory, it appears in the
+	 * listing of its parent.
+	 */
+	@Test
+	public void testListDirectories_createdChildAppears() {
+		store.store_createDirectories(path("a/b"));
+		final List<String> children = Arrays.asList(store.store_listDirectories(path("a")));
+		assertTrue(children.contains("b"));
+	}
+
+	/**
+	 * Assumption 20: After writing a JSON file into a child directory, that
+	 * child appears in the listing of its parent.
+	 * <p>
+	 * This is required because writing a JSON file implies the parent
+	 * directory exists and is therefore listable as a child of its own parent.
+	 */
+	@Test
+	public void testListDirectories_writtenFileImpliesChildInListing() {
+		store.store_writeAttributesJson(path("a/b"), FILENAME, someJson(), GSON);
+		final List<String> children = Arrays.asList(store.store_listDirectories(path("a")));
+		assertTrue(children.contains("b"));
+	}
+
+	/**
+	 * Assumption 21: Listing returns only immediate children, not deeper
+	 * descendants.
+	 */
+	@Test
+	public void testListDirectories_onlyImmediateChildren() {
+		store.store_createDirectories(path("a/b/c"));
+		final List<String> children = Arrays.asList(store.store_listDirectories(path("a")));
+		assertTrue(children.contains("b"));
+		assertFalse(children.contains("c"));
+		assertFalse(children.contains("b/c"));
+	}
+
+	/**
+	 * Assumption 22: After removing a child directory, it no longer appears
+	 * in the listing of its parent.
+	 */
+	@Test
+	public void testListDirectories_removedChildDisappears() {
+		store.store_createDirectories(path("a/b"));
+		store.store_createDirectories(path("a/c"));
+		store.store_removeDirectory(path("a/b"));
+		final List<String> children = Arrays.asList(store.store_listDirectories(path("a")));
+		assertFalse(children.contains("b"));
+		assertTrue(children.contains("c")); // sibling unaffected
+	}
+
+	// ------------------------------------------------------------------------
+	// 7. store_readAttributesJson
+	// ------------------------------------------------------------------------
+
+	/**
+	 * Assumption 23: Reading a JSON attributes file that does not exist
+	 * returns {@code null} (does not throw).
+	 */
+	@Test
+	public void testReadAttributesJson_nonExistentReturnsNull() {
+		store.store_createDirectories(path("a/b"));
+		assertNull(store.store_readAttributesJson(path("a/b"), FILENAME, GSON));
+	}
+
+	/**
+	 * Assumption 24: Reading a JSON attributes file is stable: repeated reads
+	 * without intervening writes return the same content.
+	 */
+	@Test
+	public void testReadAttributesJson_stable() {
+		final JsonElement json = someJson();
+		store.store_writeAttributesJson(path("a/b"), FILENAME, json, GSON);
+		final JsonElement first = store.store_readAttributesJson(path("a/b"), FILENAME, GSON);
+		final JsonElement second = store.store_readAttributesJson(path("a/b"), FILENAME, GSON);
+		assertEquals(first, second);
+	}
+}
