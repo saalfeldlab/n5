@@ -31,11 +31,12 @@ package org.janelia.saalfeldlab.n5.cache;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.janelia.saalfeldlab.n5.MetaStoreCounters;
-import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.N5Path;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 import org.janelia.saalfeldlab.n5.TrackingMetaStore;
 import org.junit.Test;
@@ -45,19 +46,26 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 public class MyJsonCacheTest {
 
+	private static Set<String> setOf(String... values) {
+		return Stream.of(values).collect(Collectors.toSet());
+	}
 
 	@Test
 	public void cacheBackingTest() {
 
 		final TrackingMetaStore delegate = new TrackingMetaStore(new DummyRawStore());
 		final DelegateStore store = new MyJsonCache(delegate);
-
 		final MetaStoreCounters expected = new MetaStoreCounters();
 
+
+		// ----------------------------
+		//  isDirectory
+		// ----------------------------
 
 		// first time we query existence of an existing directory, the delegate is called
 		assertTrue(store.store_isDirectory(N5GroupPath.of("a/b/c_exists")));
@@ -76,6 +84,7 @@ public class MyJsonCacheTest {
 		assertEqualCounters(expected, delegate.counters());
 
 
+
 		// first time we query existence of a non-existing directory, the delegate is called
 		assertFalse(store.store_isDirectory(N5GroupPath.of("d/e/f")));
 		expected.incIsDir();
@@ -91,183 +100,183 @@ public class MyJsonCacheTest {
 		expected.incIsDir();
 		assertEqualCounters(expected, delegate.counters());
 
-		assertFalse(store.store_isDirectory(N5GroupPath.of("d/e")));
-		assertEqualCounters(expected, delegate.counters());
-
 		// querying existence of child of non-existing parent should not call
 		// the delegate, because it can be inferred
 		assertFalse(store.store_isDirectory(N5GroupPath.of("d/e/g")));
 		assertEqualCounters(expected, delegate.counters());
 
-		/*
-		final DummyBackingStorage backingStorage = new DummyBackingStorage();
 
-		final N5JsonCache cache = new N5JsonCache(backingStorage);
 
-		int expectedAttrCallCount = 0;
+		// ----------------------------
+		//  list
+		// ----------------------------
 
-		// check existence, ensure backing storage is only called once
-		//	this cache `exists` is overridden to write an attribute
-		//	which means the `exists` call checks attr existence first,
-		//	and since it finds some, it infers the existence without
-		//	an explicit check. Some backends don't support exists
-		//	so this is a way to handle those cases more elegantly
-		assertEquals(0, backingStorage.existsCallCount);
-		cache.exists("a", null);
-		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
-		assertEquals(0, backingStorage.existsCallCount);
-		cache.exists("a", null);
-		assertEquals(0, backingStorage.existsCallCount);
-		assertEquals(expectedAttrCallCount, backingStorage.attrCallCount);
+		// listing a non-existing directory should throw N5IOException, for both cached and non-cached paths.
+		// if we have non-existence cached, list should not call the delegate
+		assertThrows(N5IOException.class, () -> store.store_listDirectories(N5GroupPath.of("d/e/f")));
+		assertEqualCounters(expected, delegate.counters());
 
-		// check existence of new group, ensure backing storage is only called one more time
-		cache.exists("b", null);
-		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
-		assertEquals(0, backingStorage.existsCallCount);
-		cache.exists("b", null);
-		assertEquals(expectedAttrCallCount, backingStorage.attrCallCount);
-		assertEquals(0, backingStorage.existsCallCount);
+		// for a non-cached path, list calls the delegate
+		assertThrows(N5IOException.class, () -> store.store_listDirectories(N5GroupPath.of("c")));
+		expected.incList();
+		assertEqualCounters(expected, delegate.counters());
 
-		// check isDataset, ensure backing storage is only called when expected
-		// isDataset is called by exists, so should have been called twice here
-		assertEquals(2, backingStorage.isDatasetCallCount);
-		cache.isDataset("a", null);
-		assertEquals(2, backingStorage.isDatasetCallCount);
+		// now, the path should be cached
+		assertThrows(N5IOException.class, () -> store.store_listDirectories(N5GroupPath.of("c")));
+		assertEqualCounters(expected, delegate.counters());
 
-		assertEquals(2, backingStorage.isDatasetCallCount);
-		cache.isDataset("b", null);
-		assertEquals(2, backingStorage.isDatasetCallCount);
 
-		// check isGroup, ensure backing storage is only called when expected
-		// isGroup is called by exists, so should have been called twice here
-		assertEquals(2, backingStorage.isGroupCallCount);
-		cache.isDataset("a", null);
-		assertEquals(2, backingStorage.isGroupCallCount);
 
-		assertEquals(2, backingStorage.isGroupCallCount);
-		cache.isDataset("b", null);
-		assertEquals(2, backingStorage.isGroupCallCount);
+		// listing an existing directory calls the delegate once and caches the result
+		assertEquals(setOf("list"), setOf(store.store_listDirectories(N5GroupPath.of("a_exists"))));
+		expected.incList();
+		assertEqualCounters(expected, delegate.counters());
 
-		// similarly check list, ensure backing storage is only called when expected
-		// list is called by exists, so should have been called twice here
-		assertEquals(0, backingStorage.listCallCount);
-		cache.list("a");
-		assertEquals(1, backingStorage.listCallCount);
+		// now, the list should be cached
+		assertEquals(setOf("list"), setOf(store.store_listDirectories(N5GroupPath.of("a_exists"))));
+		assertEqualCounters(expected, delegate.counters());
 
-		assertEquals(1, backingStorage.listCallCount);
-		cache.list("b");
-		assertEquals(2, backingStorage.listCallCount);
+		// creating children under a directory with a cached listing should modify the cached listing and not list again from the delegate
+		store.store_createDirectories(N5GroupPath.of("a_exists/b/c"));
+		expected.incMkDir();
+		assertEquals(setOf("list", "b"), setOf(store.store_listDirectories(N5GroupPath.of("a_exists"))));
+		assertEqualCounters(expected, delegate.counters());
 
-		// finally check getAttributes
-		// it is not called by exists (since it needs the cache key)
-		assertEquals(expectedAttrCallCount, backingStorage.attrCallCount);
-		cache.getAttributes("a", "foo");
-		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
-		cache.getAttributes("a", "foo");
-		assertEquals(expectedAttrCallCount, backingStorage.attrCallCount);
-		cache.getAttributes("a", "bar");
-		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
-		cache.getAttributes("a", "bar");
-		assertEquals(expectedAttrCallCount, backingStorage.attrCallCount);
-		cache.getAttributes("a", "face");
-		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
+		// removing children under a directory with a cached listing should modify the cached listing and not list again from the delegate
+		store.store_removeDirectory(N5GroupPath.of("a_exists/list"));
+		expected.incRmDir();
+		assertEquals(setOf("b"), setOf(store.store_listDirectories(N5GroupPath.of("a_exists"))));
+		assertEqualCounters(expected, delegate.counters());
 
-		cache.getAttributes("b", "foo");
-		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
-		cache.getAttributes("b", "foo");
-		assertEquals(expectedAttrCallCount, backingStorage.attrCallCount);
-		cache.getAttributes("b", "bar");
-		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
-		cache.getAttributes("b", "bar");
-		assertEquals(expectedAttrCallCount, backingStorage.attrCallCount);
-		cache.getAttributes("b", "face");
-		assertEquals(++expectedAttrCallCount, backingStorage.attrCallCount);
-*/
+
+
+		// ----------------------------
+		// readAttributesJson
+		// ----------------------------
+
+		final Gson gson = new Gson();
+
+		// reading an existing attributes file from the delegate caches its content
+		final JsonElement attr1 = store.store_readAttributesJson(N5GroupPath.of("h/i"), "key", gson);
+		expected.incReadAttr();
+		assertEqualCounters(expected, delegate.counters());
+
+		// no call to delegate when we read the attribute file again
+		final JsonElement attr2 = store.store_readAttributesJson(N5GroupPath.of("h/i"), "key", gson);
+		assertEquals(attr1, attr2);
+		assertEqualCounters(expected, delegate.counters());
+
+		// existence of parent directories should have been inferred
+		assertTrue(store.store_isDirectory(N5GroupPath.of("h/i")));
+		assertTrue(store.store_isDirectory(N5GroupPath.of("h")));
+		assertEqualCounters(expected, delegate.counters());
+
+
+		// reading a non-existing attributes file should cache its non-existence
+		assertNull(store.store_readAttributesJson(N5GroupPath.of("h/i"), "key_null", gson));
+		expected.incReadAttr();
+		assertEqualCounters(expected, delegate.counters());
+
+		// no call to delegate when we try to read the attribute file again
+		assertNull(store.store_readAttributesJson(N5GroupPath.of("h/i"), "key_null", gson));
+		assertEqualCounters(expected, delegate.counters());
+
+
+
+		// reading an attributes file in a directory that is known to not exist, should not attempt to read from the delegate
+		assertNull(store.store_readAttributesJson(N5GroupPath.of("d/e/f"), "key", gson));
+		assertEqualCounters(expected, delegate.counters());
+
+
+
+		// ----------------------------
+		// writeAttributesJson
+		// ----------------------------
+
+		// writing an attributes file calls the delegate
+		store.store_writeAttributesJson(N5GroupPath.of("d/e/f"), "key", attr1, gson);
+		expected.incWriteAttr();
+		assertEqualCounters(expected, delegate.counters());
+
+		// existence of parent directories should be inferred
+		assertTrue(store.store_isDirectory(N5GroupPath.of("d/e/f")));
+		assertTrue(store.store_isDirectory(N5GroupPath.of("d/e")));
+		assertTrue(store.store_isDirectory(N5GroupPath.of("d")));
+		assertEqualCounters(expected, delegate.counters());
+
+		// reading the attributes file should not call the delegate
+		assertEquals(attr1, store.store_readAttributesJson(N5GroupPath.of("d/e/f"), "key", gson));
+		assertEqualCounters(expected, delegate.counters());
+
+		// overwriting with identical attributes should not call delegate
+		store.store_writeAttributesJson(N5GroupPath.of("d/e/f"), "key", attr2, gson);
+		assertEqualCounters(expected, delegate.counters());
+
+		// overwriting with modified attributes should call the delegate
+		attr1.getAsJsonObject().addProperty("modified", "value");
+		store.store_writeAttributesJson(N5GroupPath.of("d/e/f"), "key", attr1, gson);
+		expected.incWriteAttr();
+		assertEqualCounters(expected, delegate.counters());
+
+
+
+		// ----------------------------
+		// removeDirectory
+		// ----------------------------
+
+		// removing a directory calls the delegate
+		store.store_removeDirectory(N5GroupPath.of("d"));
+		expected.incRmDir();
+		assertEqualCounters(expected, delegate.counters());
+
+		// nested files and directories should be inferred to be removed as well
+		assertFalse(store.store_isDirectory(N5GroupPath.of("d/e/f")));
+		assertFalse(store.store_isDirectory(N5GroupPath.of("d/e")));
+		assertFalse(store.store_isDirectory(N5GroupPath.of("d")));
+		assertNull(store.store_readAttributesJson(N5GroupPath.of("d/e/f"), "key", gson));
+		assertEqualCounters(expected, delegate.counters());
+
+		// removing a directory that is known to not exist should not call the delegate
+		store.store_removeDirectory(N5GroupPath.of("d"));
+		assertEqualCounters(expected, delegate.counters());
+
+
+
+		// ----------------------------
+		// createDirectories
+		// ----------------------------
+
+		// creating a new directory should call the delegate
+		store.store_createDirectories(N5GroupPath.of("j/k/l"));
+		expected.incMkDir();
+		assertEqualCounters(expected, delegate.counters());
+
+		// creating a (known to be) existing directory again should not call the delegate
+		store.store_createDirectories(N5GroupPath.of("j/k/l"));
+		store.store_createDirectories(N5GroupPath.of("a/b"));
+		assertEqualCounters(expected, delegate.counters());
+
 	}
 
 	@Test
 	public void testCopyOnReadPreventsExternalModification() {
-/*
-		final DummyBackingStorage backingStorage = new DummyBackingStorage();
-		final N5JsonCache cache = new N5JsonCache(backingStorage);
+
+		final TrackingMetaStore delegate = new TrackingMetaStore(new DummyRawStore());
+		final DelegateStore store = new MyJsonCache(delegate);
+		final Gson gson = new Gson();
 
 		// Get attributes and modify the returned object
-		JsonElement attrs1 = cache.getAttributes("path", "key");
+		JsonElement attrs1 = store.store_readAttributesJson(N5GroupPath.of("path"), "key", gson);
 		attrs1.getAsJsonObject().addProperty("modified", "value");
 
 		// Get attributes again - should not contain the modification
-		JsonElement attrs2 = cache.getAttributes("path", "key");
+		JsonElement attrs2 = store.store_readAttributesJson(N5GroupPath.of("path"), "key", gson);
 		assertFalse(attrs2.getAsJsonObject().has("modified"));
 
 		// Verify both calls return different instances
 		assertNotSame(attrs1, attrs2);
-*/
 	}
 
-	@Test
-	public void testCacheManipulationMethods() {
-/*
-		final DummyBackingStorage backingStorage = new DummyBackingStorage();
-		final N5JsonCache cache = new N5JsonCache(backingStorage);
-
-		// First, ensure the path exists in cache
-		assertTrue(cache.exists("path", null));
-
-		// Test setAttributes
-		JsonObject newAttrs = new JsonObject();
-		newAttrs.addProperty("custom", "value");
-		cache.setAttributes("path", "key", newAttrs);
-		JsonElement retrievedAttrs = cache.getAttributes("path", "key");
-		assertTrue(retrievedAttrs.getAsJsonObject().has("custom"));
-		assertEquals("value", retrievedAttrs.getAsJsonObject().get("custom").getAsString());
-
-		// Test updateCacheInfo
-		JsonObject updatedAttrs = new JsonObject();
-		updatedAttrs.addProperty("updated", "updated-value");
-		cache.updateCacheInfo("path", "key2", updatedAttrs);
-		JsonElement retrievedUpdated = cache.getAttributes("path", "key2");
-		assertTrue(retrievedUpdated.getAsJsonObject().has("updated"));
-		assertEquals("updated-value", retrievedUpdated.getAsJsonObject().get("updated").getAsString());
-
-		// Test initializeNonemptyCache
-		cache.initializeNonemptyCache("newPath", "newKey");
-		assertTrue(cache.exists("newPath", null));
-*/
-	}
-
-	@Test
-	public void testChildManagement() {
-/*
-		final DummyBackingStorage backingStorage = new DummyBackingStorage();
-		final N5JsonCache cache = new N5JsonCache( backingStorage );
-
-		// Initialize parent and children
-		cache.exists("parent", null);
-		cache.list("parent");
-
-		// Test addChild
-		cache.addChild( "parent", "child1" );
-		String[] children = cache.list( "parent" );
-		assertTrue( Arrays.asList( children ).contains( "child1" ) );
-
-		// Note: addChildIfPresent doesn't check or create the parent,
-		// it only adds to existing cache entries
-
-		// Test addChildIfPresent on non-cached parent
-		// This should not throw and should not create the parent
-		cache.addChildIfPresent("nonexistent", "child");
-		children = cache.list("nonexistent");
-		assertFalse(Arrays.asList(children).contains("child"));
-
-		// Test addChildIfPresent on cached parent without children list
-		cache.exists("parent2", null);
-		children = cache.list("parent2"); // create children array
-		cache.addChildIfPresent("parent2", "child");
-		children = cache.list("parent2");
-		assertTrue(Arrays.asList(children).contains("child"));
-
-*/
-	}
 
 	private static class DummyRawStore implements DelegateStore {
 
@@ -295,7 +304,7 @@ public class MyJsonCacheTest {
 			if (group.path().endsWith("_exists/"))
 				return new String[] {"list"};
 			else
-				throw new N5IOException("Directory does not exist");
+				throw new N5NoSuchKeyException("Directory does not exist");
 		}
 
 		@Override
