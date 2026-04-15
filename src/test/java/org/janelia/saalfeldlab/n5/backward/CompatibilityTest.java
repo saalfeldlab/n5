@@ -127,7 +127,7 @@ public class CompatibilityTest {
 		final JsonElement attrsMy = n5My.getAttributes(writeDataset);
 		assertEquals(attrsLegacy, attrsMy);
 
-		final RootedKeyValueAccess rkva = n5My.getRootedKeyValueAccess();
+		final RootedKeyValueAccess rkva = n5My.getKeyValueRoot();
 		for (final String path : writePathsToTest) {
 			final byte[] dataMy = read(rkva, writeDataset + "/" + path);
 			final byte[] dataLegacy = read(rkva, writeDataset + "/" + path);

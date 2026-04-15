@@ -90,9 +90,9 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		return reader.readSerializedBlock(dataset, getConvertedDatasetAttributes(attributes), gridPosition);
 	}
 
-	@Override public RootedKeyValueAccess getRootedKeyValueAccess() {
+	@Override public RootedKeyValueAccess getKeyValueRoot() {
 
-		return reader.getRootedKeyValueAccess();
+		return reader.getKeyValueRoot();
 	}
 
 	@Override

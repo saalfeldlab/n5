@@ -195,7 +195,7 @@ public class ShardTest {
 				new ByteArrayDataBlock(blockSize, new long[]{11, 11}, data)
 		);
 
-		final RootedKeyValueAccess kva = ((N5KeyValueWriter)writer).getRootedKeyValueAccess();
+		final RootedKeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueRoot();
 
 		long[][] keys = new long[][]{
 				{0, 0},
@@ -309,7 +309,7 @@ public class ShardTest {
 		final DatasetAttributes datasetAttributes = writer.createDataset(dataset, attrs);
 		assertTrue(datasetAttributes.isSharded());
 
-		final RootedKeyValueAccess rkva = ((N5KeyValueWriter)writer).getRootedKeyValueAccess();
+		final RootedKeyValueAccess rkva = ((N5KeyValueWriter)writer).getKeyValueRoot();
 
 		final int[] blockSize = datasetAttributes.getBlockSize();
 		final int numElements = blockSize[0] * blockSize[1];

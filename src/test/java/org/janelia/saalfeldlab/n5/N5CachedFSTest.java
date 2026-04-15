@@ -38,11 +38,13 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.janelia.saalfeldlab.n5.cache.DelegateStore;
 import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
 import org.junit.Test;
 
 import static org.janelia.saalfeldlab.n5.MetaStoreCounters.assertEqualCounters;
+import static org.janelia.saalfeldlab.n5.N5KeyValueReader.ATTRIBUTES_JSON;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -91,13 +93,16 @@ public class N5CachedFSTest extends N5FSTest {
 		};
 	}
 
+
 	@Test
 	public void cacheTest() throws IOException, URISyntaxException {
 		/* Test the cache by setting many attributes, then manually deleting the underlying file.
 		* The only possible way for the test to succeed is if it never again attempts to read the file, and relies on the cache. */
 		try (N5KeyValueWriter n5 = (N5KeyValueWriter) createN5Writer()) {
 			final String cachedGroup = "cachedGroup";
-			final String attributesPath = n5.getRootedKeyValueAccess().root().resolve(n5.relativeAttributesPath(cachedGroup).uri()).getPath();
+
+			final String relativeAttributesPath = N5DirectoryPath.of(cachedGroup).resolve(ATTRIBUTES_JSON).normalPath();
+			final String attributesPath = n5.getKeyValueRoot().root().resolve(relativeAttributesPath).getPath();
 
 			final ArrayList<TestData<?>> tests = new ArrayList<>();
 			n5.createGroup(cachedGroup);
@@ -111,7 +116,9 @@ public class N5CachedFSTest extends N5FSTest {
 
 		try (N5KeyValueWriter n5 = (N5KeyValueWriter)createN5Writer(tempN5Location(), false)) {
 			final String cachedGroup = "cachedGroup";
-			final String attributesPath = n5.getRootedKeyValueAccess().root().resolve(n5.relativeAttributesPath(cachedGroup).uri()).getPath();
+
+			final String relativeAttributesPath = N5DirectoryPath.of(cachedGroup).resolve(ATTRIBUTES_JSON).normalPath();
+			final String attributesPath = n5.getKeyValueRoot().root().resolve(relativeAttributesPath).getPath();
 
 			final ArrayList<TestData<?>> tests = new ArrayList<>();
 			n5.createGroup(cachedGroup);

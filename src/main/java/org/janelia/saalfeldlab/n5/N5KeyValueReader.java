@@ -158,7 +158,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	}
 
 	@Override
-	public RootedKeyValueAccess getRootedKeyValueAccess() {
+	public RootedKeyValueAccess getKeyValueRoot() {
 
 		return keyValueAccess;
 	}

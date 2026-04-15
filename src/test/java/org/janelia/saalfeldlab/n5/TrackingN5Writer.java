@@ -1,7 +1,6 @@
 package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.GsonBuilder;
-import org.janelia.saalfeldlab.n5.kva.TrackingKeyValueAccess;
 import org.janelia.saalfeldlab.n5.kva.TrackingRootedKeyValueAccess;
 
 /**
@@ -15,7 +14,7 @@ public class TrackingN5Writer extends N5KeyValueWriter {
 	public TrackingN5Writer(final RootedKeyValueAccess kva) {
 
 		super(new TrackingRootedKeyValueAccess(kva), new GsonBuilder(), false);
-		this.tkva = (TrackingRootedKeyValueAccess) getRootedKeyValueAccess();
+		this.tkva = (TrackingRootedKeyValueAccess) getKeyValueRoot();
 	}
 
 	public void resetNumMaterializeCalls() {
