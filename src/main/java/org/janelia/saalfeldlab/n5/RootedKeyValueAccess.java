@@ -59,8 +59,11 @@ public interface RootedKeyValueAccess {
 	 * 		path to test, relative to container root
 	 *
 	 * @return true if the path is a directory
+	 *
+	 * @throws N5IOException
+	 * 		if an error occurs
 	 */
-	boolean isDirectory(N5Path normalPath);
+	boolean isDirectory(N5Path normalPath) throws N5IOException;
 
 	/**
 	 * Test whether the path exists and is a file.
@@ -69,8 +72,11 @@ public interface RootedKeyValueAccess {
 	 * 		path to test, relative to container root
 	 *
 	 * @return true if the path is a file
+	 *
+	 * @throws N5IOException
+	 * 		if an error occurs
 	 */
-	boolean isFile(N5Path normalPath);
+	boolean isFile(N5Path normalPath) throws N5IOException;
 
 	/**
 	 * Test whether the path exists.
@@ -79,8 +85,11 @@ public interface RootedKeyValueAccess {
 	 * 		path to test, relative to container root
 	 *
 	 * @return true if the path exists
+	 *
+	 * @throws N5IOException
+	 * 		if an error occurs
 	 */
-	boolean exists(N5Path normalPath);
+	boolean exists(N5Path normalPath) throws N5IOException;
 
 	/**
 	 * Returns the size in bytes of the object at the given normalPath if it exists.
