@@ -5,7 +5,7 @@ import java.net.URI;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
-import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
@@ -123,7 +123,7 @@ public interface RootedKeyValueAccess {
 	 * @throws N5IOException
 	 * 		if an error occurs during listing
 	 */
-	String[] listDirectories(N5GroupPath normalPath) throws N5IOException;
+	String[] listDirectories(N5DirectoryPath normalPath) throws N5IOException;
 
 	/**
 	 * Create a directory and all parent paths along the way. The directory
@@ -137,7 +137,7 @@ public interface RootedKeyValueAccess {
 	 * @throws N5IOException
 	 * 		if an error occurs during creation
 	 */
-	void createDirectories(N5GroupPath normalPath) throws N5IOException;
+	void createDirectories(N5DirectoryPath normalPath) throws N5IOException;
 
 	/**
 	 * Delete a path. If the path is a directory, delete it recursively.
@@ -177,11 +177,11 @@ public interface RootedKeyValueAccess {
 	}
 
 	default String[] listDirectories(final String normalPath) throws N5IOException {
-		return listDirectories(N5GroupPath.of(normalPath));
+		return listDirectories(N5DirectoryPath.of(normalPath));
 	}
 
 	default void createDirectories( final String normalPath ) throws N5IOException {
-		createDirectories(N5GroupPath.of(normalPath));
+		createDirectories(N5DirectoryPath.of(normalPath));
 	}
 
 	default void delete(final String normalPath) throws N5IOException {

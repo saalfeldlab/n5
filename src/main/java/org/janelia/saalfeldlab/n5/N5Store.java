@@ -7,7 +7,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5JsonParseException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
-import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 
 
 // TODO Should this be generically typed on the DatasetAttributes sub-class?
@@ -31,7 +31,7 @@ public interface N5Store {
 	 * @throws N5ClassCastException
 	 */
 	<T> T getAttribute(
-			N5GroupPath path,
+			N5DirectoryPath path,
 			String attributePath,
 			Type type) throws N5IOException, N5ClassCastException;
 
@@ -42,7 +42,7 @@ public interface N5Store {
 	 * @return
 	 * @throws N5IOException
 	 */
-	DatasetAttributes getDatasetAttributes(N5GroupPath path) throws N5IOException;
+	DatasetAttributes getDatasetAttributes(N5DirectoryPath path) throws N5IOException;
 
 	/**
 	 * TODO javadoc
@@ -52,7 +52,7 @@ public interface N5Store {
 	 * @throws N5IOException
 	 * 		if an error occurs (other than the path not existing)
 	 */
-	boolean datasetExists(N5GroupPath path) throws N5IOException;
+	boolean datasetExists(N5DirectoryPath path) throws N5IOException;
 
 	/**
 	 * TODO javadoc
@@ -62,7 +62,7 @@ public interface N5Store {
 	 * @throws N5IOException
 	 * 		if an error occurs (other than the path not existing)
 	 */
-	boolean groupExists(N5GroupPath path) throws N5IOException;
+	boolean groupExists(N5DirectoryPath path) throws N5IOException;
 
 	/**
 	 * List all groups and datasets in a group.
@@ -74,7 +74,7 @@ public interface N5Store {
 	 * <p>
 	 * The returned child paths are normal paths relative to the given {@code
 	 * group} (no leading or trailing slashes). To obtain the path of a child
-	 * relative to the container root {@link N5GroupPath#resolve group.resolve}
+	 * relative to the container root {@link N5DirectoryPath#resolve group.resolve}
 	 * the child path.
 	 *
 	 * @param path
@@ -87,7 +87,7 @@ public interface N5Store {
 	 * @throws N5IOException
 	 * 		if an error occurs during listing
 	 */
-	String[] list(N5GroupPath path) throws N5IOException;
+	String[] list(N5DirectoryPath path) throws N5IOException;
 
 	/**
 	 * List all attributes and their class of the group or dataset at the given {@code path}.
@@ -102,7 +102,7 @@ public interface N5Store {
 	 * @throws N5JsonParseException
 	 * 		if an error occurs parsing the attributes
 	 */
-	Map<String, Class<?>> listAttributes(N5GroupPath path) throws N5IOException, N5JsonParseException;
+	Map<String, Class<?>> listAttributes(N5DirectoryPath path) throws N5IOException, N5JsonParseException;
 
 	/**
 	 * Reads the attributes of a group or dataset.
@@ -112,7 +112,7 @@ public interface N5Store {
 	 * @return the attributes
 	 * @throws N5IOException if the attributes could not be read
 	 */
-	JsonElement getAttributes(N5GroupPath path) throws N5IOException;
+	JsonElement getAttributes(N5DirectoryPath path) throws N5IOException;
 
 	// ┌───────────────────────────────────────────────────────────────────────┐
 	// │ WRITE:                                                                │
@@ -129,7 +129,7 @@ public interface N5Store {
 	 * TODO: exceptions...
 	 */
 	<T> void setAttribute(
-			N5GroupPath path,
+			N5DirectoryPath path,
 			String attributePath,
 			T attribute) throws N5IOException;
 
@@ -145,7 +145,7 @@ public interface N5Store {
 	 * TODO: exceptions...
 	 */
 	void setAttributes(
-			N5GroupPath path,
+			N5DirectoryPath path,
 			Map<String, ?> attributes) throws N5IOException;
 
 	/**
@@ -158,7 +158,7 @@ public interface N5Store {
 	 * @throws N5IOException TODO
 	 */
 	boolean removeAttribute(
-			N5GroupPath path,
+			N5DirectoryPath path,
 			String attributePath) throws N5IOException;
 
 
@@ -178,7 +178,7 @@ public interface N5Store {
 	 * @throws N5Exception if removing the attribute failed, parsing the attribute failed, or the attribute cannot be interpreted as T
 	 */
 	<T> T removeAttribute(
-			N5GroupPath path,
+			N5DirectoryPath path,
 			String attributePath,
 			Class<T> clazz) throws N5Exception; // TODO: exception types
 
@@ -191,7 +191,7 @@ public interface N5Store {
 	 * @throws N5IOException TODO
 	 */
 	void setDatasetAttributes(
-			N5GroupPath path,
+			N5DirectoryPath path,
 			DatasetAttributes attributes) throws N5IOException;
 
 	/**
@@ -200,7 +200,7 @@ public interface N5Store {
 	 * @param path the path
 	 * @throws N5IOException TODO
 	 */
-	void createGroup(N5GroupPath path) throws N5IOException;
+	void createGroup(N5DirectoryPath path) throws N5IOException;
 
 	/**
 	 * Creates a dataset. This does not create any data but the path and
@@ -211,7 +211,7 @@ public interface N5Store {
 	 * @throws N5IOException TODO
 	 */
 	void createDataset(
-			N5GroupPath path,
+			N5DirectoryPath path,
 			DatasetAttributes attributes) throws N5IOException;
 
 
@@ -222,7 +222,7 @@ public interface N5Store {
 	 * @return true if removal was successful, false otherwise
 	 * @throws N5IOException TODO
 	 */
-	boolean remove(N5GroupPath path) throws N5IOException;
+	boolean remove(N5DirectoryPath path) throws N5IOException;
 
 	// TODO: flesh out interface
 	//       implement for N5

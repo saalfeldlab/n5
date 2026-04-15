@@ -10,7 +10,7 @@ import org.apache.commons.io.IOUtils;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
-import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.janelia.saalfeldlab.n5.http.ListResponseParser;
 import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
@@ -54,7 +54,7 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	public boolean isDirectory(final N5Path normalPath) {
 
 		try {
-			final URI uri = root.resolve(normalPath.asGroup().uri());
+			final URI uri = root.resolve(normalPath.asDirectory().uri());
 			final HttpURLConnection http = requireValidHttpResponse(uri, HEAD, false);
 			final int code = http.getResponseCode();
 			if (code >= 300) {
@@ -127,7 +127,7 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	 * 		if an error occurs during listing
 	 */
 	@Override
-	public String[] listDirectories(final N5GroupPath normalPath) throws N5IOException {
+	public String[] listDirectories(final N5DirectoryPath normalPath) throws N5IOException {
 		try {
 			final HttpURLConnection http = requireValidHttpResponse(root.resolve(normalPath.uri()), GET, true);
 			final String listResponse = responseToString(http.getInputStream());
@@ -149,7 +149,7 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public void createDirectories(final N5GroupPath normalPath) throws N5IOException {
+	public void createDirectories(final N5DirectoryPath normalPath) throws N5IOException {
 		throw new N5IOException("HttpKeyValueAccess is read-only");
 	}
 

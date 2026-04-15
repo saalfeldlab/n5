@@ -4,11 +4,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import static org.janelia.saalfeldlab.n5.N5Path.N5PathImpl.filePathOf;
-import static org.janelia.saalfeldlab.n5.N5Path.N5PathImpl.groupPathOf;
+import static org.janelia.saalfeldlab.n5.N5Path.N5PathImpl.directoryPathOf;
 import static org.janelia.saalfeldlab.n5.N5Path.N5PathImpl.pathOf;
 
 /**
- * A relative path (typically, the path of a file or group relative to the
+ * A relative path (typically, the path of a file or directory relative to the
  * container root).
  */
 //TODO: Currently, {@code N5Path} is allowed to point outside the root (e.g.,
@@ -16,37 +16,51 @@ import static org.janelia.saalfeldlab.n5.N5Path.N5PathImpl.pathOf;
 // explicitly forbidden.
 public interface N5Path {
 
+	/**
+	 * Create a {@code N5Path} from the given {@code path} string.
+	 * <p>
+	 * The given {@code path} will be normalized by removing (any number of)
+	 * leading slashes, removing redundant "/", "./", and resolving relative
+	 * "../".
+	 * <p>
+	 * If, after normalization, there is a trailing "/" (or the path is empty)
+	 * then a {@code N5DirectoryPath} will be returned. Otherwise, a {@code
+	 * N5FilePath} will be returned
+	 *
+	 * @param path
+	 * 		path of a file or directory relative to the container root
+	 */
 	static N5Path of(final String path) {
 		return pathOf(path);
 	}
 
 	/**
-	 * Return this path as a {@code N5GroupPath}. If this path is not a already
-	 * {@link #isGroup() group}, appends a "/".
+	 * Return this path as a {@code N5DirectoryPath}. If this path is not a
+	 * already {@link #isDirectory() directory}, appends a "/".
 	 *
-	 * @return this path as a group (appending "/" if necessary).
+	 * @return this path as a directory (appending "/" if necessary).
 	 */
-	N5GroupPath asGroup();
+	N5DirectoryPath asDirectory();
 
 	/**
-	 * Return this path as a {@code N5FilePath}. If this path is a already
-	 * {@link #isGroup() group}, remove the trailing "/".
+	 * Return this path as a {@code N5FilePath}. If this path is a {@link
+	 * #isDirectory() directory}, remove the trailing "/".
 	 * <p>
-	 * If this path is the root group ({@code ""}) then it cannot be treated as
-	 * a file path.
+	 * If this path is the root directory({@code ""}) then it cannot be treated
+	 * as a file path.
 	 *
 	 * @return this path as a file (removing trailing "/" if necessary).
 	 *
 	 * @throws IllegalArgumentException
-	 * 		if this path represents the root group {@code ""}
+	 * 		if this path represents the root directory {@code ""}
 	 */
 	N5FilePath asFile() throws IllegalArgumentException;
 
 	/**
 	 * Return this {@code N5Path} as a relative URI with a relative path.
 	 * <p>
-	 * If this {@code N5Path} {@link #isGroup() represents a group} the URI
-	 * path will have a trailing slash (or be empty). Otherwise, if this
+	 * If this {@code N5Path} {@link #isDirectory() represents a directory} the
+	 * URI path will have a trailing slash (or be empty). Otherwise, if this
 	 * {@code N5Path} represents a normal file, the URI will be non-empty and
 	 * will not have a trailing slash.
 	 * <p>
@@ -57,10 +71,10 @@ public interface N5Path {
 	URI uri();
 
 	/**
-	 * Return this {@code N5Path} as a relative path without leading slashes.
-	 * If this {@code N5Path} is a file the path will have no trailing slash. If
-	 * this {@code N5Path} is a {@link #isGroup() group} the path will have a
-	 * trailing slash, unless it represents the root group ({@code ""}).
+	 * Return this {@code N5Path} as a relative path without leading slashes. If
+	 * this {@code N5Path} is a file the path will have no trailing slash. If
+	 * this {@code N5Path} is a {@link #isDirectory() directory} the path will
+	 * have a trailing slash, unless it represents the root directory ({@code ""}).
 	 * <p>
 	 * Note that in contrast to the URI representation, special characters are
 	 * not escaped.
@@ -77,15 +91,15 @@ public interface N5Path {
 	String normalPath();
 
 	// basically: whether the URI ends with a slash...
-	boolean isGroup();
+	boolean isDirectory();
 
 	/**
-	 * Returns the parent path, or {@code null} if this path is the root group
-	 * (i.e., the parent would be {@code ".."}.
+	 * Returns the parent path, or {@code null} if this path is the root
+	 * directory (i.e., the parent would be {@code ".."}.
 	 *
 	 * @return the parent path, or {@code null} if this path is empty
 	 */
-	N5GroupPath parent();
+	N5DirectoryPath parent();
 
 	/**
 	 * Split this path into components separated by {@code "/"}.
@@ -94,7 +108,7 @@ public interface N5Path {
 	 * so special characters in components are not escaped.
 	 * <p>
 	 * If this path is empty (that is {@code ""}, which is equivalent to the
-	 * group "./") then the returned array will be {@code {""}}.
+	 * directory "./") then the returned array will be {@code {""}}.
 	 * <p>
 	 * TODO: add examples.
 	 *
@@ -108,8 +122,8 @@ public interface N5Path {
 	 * Split this path into components separated by {@code "/"}, and return the
 	 * last component.
 	 * <p>
-	 * Note, that the components are derived from the string representation,
-	 * so special characters in components are not escaped.
+	 * Note, that the components are derived from the string representation, so
+	 * special characters in components are not escaped.
 	 * <p>
 	 * If this path is empty (that is {@code ""}, which is equivalent to the
 	 * group "./") then {@code ""} is returned.
@@ -120,15 +134,14 @@ public interface N5Path {
 	}
 
 	/**
-	 * A relative path representing a directory (typically, the path of a group
-	 * relative to the container root).
+	 * A relative path representing a directory (relative to the container root).
 	 * <p>
-	 * The {@link #uri()} has a trailing slash (or be empty).
+	 * The {@link #uri()} has a trailing slash (or is empty).
 	 */
-	interface N5GroupPath extends N5Path {
+	interface N5DirectoryPath extends N5Path {
 
 		@Override
-		default boolean isGroup() {
+		default boolean isDirectory() {
 			return true;
 		}
 
@@ -136,8 +149,18 @@ public interface N5Path {
 			return path == null ? this : N5Path.of(uri().resolve(path).getPath());
 		}
 
-		static N5GroupPath of(final String path) {
-			return groupPathOf(path);
+		/**
+		 * Create a {@code N5DirectoryPath} from the given {@code path} string.
+		 * <p>
+		 * The given {@code path} will be normalized by removing (any number of)
+		 * leading slashes, removing redundant "/", "./", and resolving relative
+		 * "../".
+		 *
+		 * @param path
+		 * 		directory path relative to the container root
+		 */
+		static N5DirectoryPath of(final String path) {
+			return directoryPathOf(path);
 		}
 	}
 
@@ -150,10 +173,20 @@ public interface N5Path {
 	interface N5FilePath extends N5Path {
 
 		@Override
-		default boolean isGroup() {
+		default boolean isDirectory() {
 			return false;
 		}
 
+		/**
+		 * Create a {@code N5FilePath} from the given {@code path} string.
+		 * <p>
+		 * The given {@code path} will be normalized by removing (any number of)
+		 * leading slashes, removing redundant "/", "./", and resolving relative
+		 * "../". If there is a trailing "/", it will be removed.
+		 *
+		 * @param path
+		 * 		file path relative to the container root
+		 */
 		static N5FilePath of(final String path) {
 			return filePathOf(path);
 		}
@@ -173,9 +206,9 @@ public interface N5Path {
 
 			final String p = normalize(path);
 			if (p.isEmpty() || p.endsWith("/"))
-				return new GroupPath(createURI(p));
+				return new DirectoryPath(createURI(p));
 			else if (p.equals("..") || p.endsWith("/.."))
-				return new GroupPath(createURI(p + "/"));
+				return new DirectoryPath(createURI(p + "/"));
 			else
 				return new FilePath(createURI(p));
 		}
@@ -193,27 +226,27 @@ public interface N5Path {
 			return new FilePath(uri);
 		}
 
-		static GroupPath groupPathOf(final String path) {
+		static DirectoryPath directoryPathOf(final String path) {
 
 			String p = normalize(path);
 			if (!p.isEmpty() && !p.endsWith("/"))
 				p = p + "/";
 
-			return new GroupPath(createURI(p));
+			return new DirectoryPath(createURI(p));
 		}
 
-		private static class GroupPath implements N5GroupPath {
+		private static class DirectoryPath implements N5DirectoryPath {
 
 			private final URI uri;
 
 			private transient String normalPath;
 
-			private GroupPath(final URI uri) {
+			private DirectoryPath(final URI uri) {
 				this.uri = uri;
 			}
 
 			@Override
-			public N5GroupPath asGroup() {
+			public N5DirectoryPath asDirectory() {
 				return this;
 			}
 
@@ -237,15 +270,15 @@ public interface N5Path {
 			}
 
 			@Override
-			public N5GroupPath parent() {
+			public N5DirectoryPath parent() {
 				final URI parent = uri.resolve("..");
 				final String path = parent.getPath();
 				if ("..".equals(path))
 					return null;
 				if (!path.isEmpty() && !path.endsWith("/"))
-					return new GroupPath(createURI(path + "/"));
+					return new DirectoryPath(createURI(path + "/"));
 				else
-					return new GroupPath(parent);
+					return new DirectoryPath(parent);
 			}
 
 			@Override
@@ -255,7 +288,7 @@ public interface N5Path {
 
 			@Override
 			public final boolean equals(final Object o) {
-				return (o instanceof N5GroupPath) && uri.equals(((N5GroupPath) o).uri());
+				return (o instanceof N5DirectoryPath) && uri.equals(((N5DirectoryPath) o).uri());
 			}
 
 			@Override
@@ -275,8 +308,8 @@ public interface N5Path {
 			}
 
 			@Override
-			public N5GroupPath asGroup() {
-				return new GroupPath(createURI(normalPath() + "/"));
+			public N5DirectoryPath asDirectory() {
+				return new DirectoryPath(createURI(normalPath() + "/"));
 			}
 
 			@Override
@@ -295,9 +328,9 @@ public interface N5Path {
 			}
 
 			@Override
-			public N5GroupPath parent() {
+			public N5DirectoryPath parent() {
 				final URI parent = uri.resolve(".");
-				return "..".equals(parent.getPath()) ? null : new GroupPath(parent);
+				return "..".equals(parent.getPath()) ? null : new DirectoryPath(parent);
 			}
 
 			@Override
@@ -328,7 +361,7 @@ public interface N5Path {
 		}
 
 		/**
-		 * Normalize a POSIX path, for use with {@link N5GroupPath#of},  {@link N5FilePath#of}, TODO.
+		 * Normalize a POSIX path, for use with {@link N5DirectoryPath#of},  {@link N5FilePath#of}, TODO.
 		 * <p>
 		 * Remove (any number of) leading slashes.
 		 * Remove redundant "/", "./", and resolution of relative "../".

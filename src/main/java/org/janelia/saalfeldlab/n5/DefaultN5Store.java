@@ -10,7 +10,7 @@ import java.util.Map;
 import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5JsonParseException;
-import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.janelia.saalfeldlab.n5.cache.DelegateStore;
 
 import static org.janelia.saalfeldlab.n5.N5KeyValueReader.ATTRIBUTES_JSON;
@@ -32,7 +32,7 @@ public final class DefaultN5Store implements N5Store {
 
 	@Override
 	public <T> T getAttribute(
-			final N5GroupPath path,
+			final N5DirectoryPath path,
 			final String attributePath,
 			final Type type) throws N5IOException, N5ClassCastException {
 
@@ -47,7 +47,7 @@ public final class DefaultN5Store implements N5Store {
 
 	@Override
 	public DatasetAttributes getDatasetAttributes(
-			final N5GroupPath path) throws N5IOException {
+			final N5DirectoryPath path) throws N5IOException {
 
 		final JsonElement attributes = store.store_readAttributesJson(path, ATTRIBUTES_JSON, gson);
 		return gson.fromJson(attributes, DatasetAttributes.class);
@@ -55,28 +55,28 @@ public final class DefaultN5Store implements N5Store {
 
 	@Override
 	public boolean datasetExists(
-			final N5GroupPath path) throws N5IOException {
+			final N5DirectoryPath path) throws N5IOException {
 
 		return getDatasetAttributes(path) != null;
 	}
 
 	@Override
 	public boolean groupExists(
-			final N5GroupPath path) throws N5IOException {
+			final N5DirectoryPath path) throws N5IOException {
 
 		return store.store_isDirectory(path);
 	}
 
 	@Override
 	public String[] list(
-			final N5GroupPath group) throws N5IOException {
+			final N5DirectoryPath group) throws N5IOException {
 
 		return store.store_listDirectories(group);
 	}
 
 	@Override
 	public Map<String, Class<?>> listAttributes(
-			final N5GroupPath path) throws N5IOException, N5JsonParseException {
+			final N5DirectoryPath path) throws N5IOException, N5JsonParseException {
 
 		final JsonElement attributes = store.store_readAttributesJson(path, ATTRIBUTES_JSON, gson);
 		return GsonUtils.listAttributes(attributes);
@@ -84,14 +84,14 @@ public final class DefaultN5Store implements N5Store {
 
 	@Override
 	public JsonElement getAttributes(
-			final N5GroupPath path) throws N5IOException {
+			final N5DirectoryPath path) throws N5IOException {
 
 		return store.store_readAttributesJson(path, ATTRIBUTES_JSON, gson);
 	}
 
 	@Override
 	public <T> void setAttribute(
-			final N5GroupPath path,
+			final N5DirectoryPath path,
 			final String attributePath,
 			final T attribute) throws N5IOException {
 
@@ -100,7 +100,7 @@ public final class DefaultN5Store implements N5Store {
 
 	@Override
 	public void setAttributes(
-			final N5GroupPath path,
+			final N5DirectoryPath path,
 			final Map<String, ?> attributes) throws N5IOException {
 
 		if (!store.store_isDirectory(path))
@@ -119,7 +119,7 @@ public final class DefaultN5Store implements N5Store {
 
 	@Override
 	public boolean removeAttribute(
-			final N5GroupPath path,
+			final N5DirectoryPath path,
 			final String attributePath) throws N5IOException {
 
 		final JsonElement root = store.store_readAttributesJson(path, ATTRIBUTES_JSON, gson);
@@ -137,7 +137,7 @@ public final class DefaultN5Store implements N5Store {
 
 	@Override
 	public <T> T removeAttribute(
-			final N5GroupPath path,
+			final N5DirectoryPath path,
 			final String attributePath,
 			final Class<T> clazz) throws N5Exception {
 
@@ -161,7 +161,7 @@ public final class DefaultN5Store implements N5Store {
 
 	@Override
 	public void setDatasetAttributes(
-			final N5GroupPath path,
+			final N5DirectoryPath path,
 			final DatasetAttributes attributes) throws N5IOException {
 
 		if (!store.store_isDirectory(path))
@@ -171,14 +171,14 @@ public final class DefaultN5Store implements N5Store {
 
 	@Override
 	public void createGroup(
-			final N5GroupPath path) throws N5IOException {
+			final N5DirectoryPath path) throws N5IOException {
 
 		store.store_createDirectories(path);
 	}
 
 	@Override
 	public void createDataset(
-			final N5GroupPath path,
+			final N5DirectoryPath path,
 			final DatasetAttributes attributes) throws N5IOException {
 
 		if (!store.store_isDirectory(path))
@@ -188,7 +188,7 @@ public final class DefaultN5Store implements N5Store {
 
 	@Override
 	public boolean remove(
-			final N5GroupPath path) throws N5IOException {
+			final N5DirectoryPath path) throws N5IOException {
 
 		if (store.store_isDirectory(path))
 			store.store_removeDirectory(path);

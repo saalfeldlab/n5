@@ -6,7 +6,7 @@ import com.google.gson.JsonObject;
 import java.util.Arrays;
 import java.util.List;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
-import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -47,8 +47,8 @@ public abstract class DelegateStoreContractTest {
 	// Helpers
 	// ------------------------------------------------------------------------
 
-	private static N5GroupPath path(final String p) {
-		return N5GroupPath.of(p);
+	private static N5DirectoryPath path(final String p) {
+		return N5DirectoryPath.of(p);
 	}
 
 	private static JsonElement someJson() {

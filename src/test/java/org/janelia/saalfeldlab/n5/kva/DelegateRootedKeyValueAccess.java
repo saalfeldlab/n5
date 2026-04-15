@@ -5,7 +5,7 @@ import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Path;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
-import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
@@ -60,12 +60,12 @@ public class DelegateRootedKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public String[] listDirectories(final N5GroupPath normalPath) throws N5IOException {
+	public String[] listDirectories(final N5DirectoryPath normalPath) throws N5IOException {
 		return kva.listDirectories(normalPath);
 	}
 
 	@Override
-	public void createDirectories(final N5GroupPath normalPath) throws N5IOException {
+	public void createDirectories(final N5DirectoryPath normalPath) throws N5IOException {
 		kva.createDirectories(normalPath);
 	}
 

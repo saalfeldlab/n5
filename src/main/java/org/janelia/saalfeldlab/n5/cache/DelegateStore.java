@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import org.janelia.saalfeldlab.n5.GsonN5Reader;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.janelia.saalfeldlab.n5.N5Reader;
 
 public interface DelegateStore {
@@ -41,7 +41,7 @@ public interface DelegateStore {
 	 */
 	// TODO: replace (group, filename) with N5FilePath (not sure, but looks like a good idea...)
 	JsonElement store_readAttributesJson(
-			N5GroupPath group,
+			N5DirectoryPath group,
 			String filename,
 			Gson gson) throws N5IOException;
 
@@ -54,7 +54,7 @@ public interface DelegateStore {
 	 * @return true if the directory exists
 	 */
 	// TODO rename
-	boolean store_isDirectory(N5GroupPath group);
+	boolean store_isDirectory(N5DirectoryPath group);
 
 	/**
 	 * List all directory-like children (groups and datasets) in the given
@@ -62,7 +62,7 @@ public interface DelegateStore {
 	 * <p>
 	 * The returned child paths are normal paths relative to the given {@code
 	 * group} (no leading or trailing slashes). To obtain the path of a child
-	 * relative to the container root {@link N5GroupPath#resolve group.resolve}
+	 * relative to the container root {@link N5DirectoryPath#resolve group.resolve}
 	 * the child path.
 	 *
 	 * @param group
@@ -76,7 +76,7 @@ public interface DelegateStore {
 	 * 		if an error occurs during listing
 	 * @see N5Reader#list
 	 */
-	String[] store_listDirectories(N5GroupPath group) throws N5IOException;
+	String[] store_listDirectories(N5DirectoryPath group) throws N5IOException;
 
 
 	// ------------------------------------------------------------------------
@@ -99,13 +99,13 @@ public interface DelegateStore {
 	 */
 	// TODO: replace (group, filename) with N5FilePath (not sure, but looks like a good idea...)
 	void store_writeAttributesJson(
-			N5GroupPath group,
+			N5DirectoryPath group,
 			String filename,
 			JsonElement attributes,
 			Gson gson) throws N5IOException;
 
 	void store_removeAttributesJson(
-			final N5GroupPath group,
+			final N5DirectoryPath group,
 			final String filename) throws N5IOException;
 
 	/**
@@ -120,7 +120,7 @@ public interface DelegateStore {
 	 * @throws N5IOException
 	 * 		if an error occurs during creation
 	 */
-	void store_createDirectories(N5GroupPath group) throws N5IOException;
+	void store_createDirectories(N5DirectoryPath group) throws N5IOException;
 
 	/**
 	 * Delete a directory, recursively.
@@ -131,6 +131,6 @@ public interface DelegateStore {
 	 * @throws N5IOException
 	 * 		if an error occurs during deletion
 	 */
-	void store_removeDirectory(N5GroupPath group) throws N5IOException;
+	void store_removeDirectory(N5DirectoryPath group) throws N5IOException;
 
 }

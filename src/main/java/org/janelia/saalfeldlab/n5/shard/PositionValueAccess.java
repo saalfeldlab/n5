@@ -35,7 +35,7 @@ import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
-import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
@@ -83,7 +83,7 @@ public interface PositionValueAccess {
 
 	static PositionValueAccess fromKva(
 			final RootedKeyValueAccess kva,
-			final N5GroupPath normalPath,
+			final N5DirectoryPath normalPath,
 			final DatasetAttributes attributes) {
 
 		return new RootedKvaPositionValueAccess(kva, normalPath, attributes);
@@ -92,11 +92,11 @@ public interface PositionValueAccess {
 	class RootedKvaPositionValueAccess implements PositionValueAccess {
 
 		private final RootedKeyValueAccess kva;
-		private final N5GroupPath normalPath;
+		private final N5DirectoryPath normalPath;
 		private final DatasetAttributes attributes;
 
 		RootedKvaPositionValueAccess(final RootedKeyValueAccess kva,
-				final N5GroupPath normalPath,
+				final N5DirectoryPath normalPath,
 				final DatasetAttributes attributes) {
 
 			this.kva = kva;

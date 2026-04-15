@@ -28,11 +28,7 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import org.janelia.saalfeldlab.n5.N5Path.N5GroupPath;
 
 /**
  * Cached default implementation of {@link N5Writer} with JSON attributes parsed
