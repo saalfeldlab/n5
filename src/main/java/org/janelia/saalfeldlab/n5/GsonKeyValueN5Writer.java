@@ -94,8 +94,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueRoot(), N5DirectoryPath.of(datasetPath), convertedDatasetAttributes);
-			convertedDatasetAttributes.<T>getDatasetAccess().writeRegion(posKva, min, size, dataBlocks, writeFully);
+			final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(datasetPath), convertedDatasetAttributes);
+			convertedDatasetAttributes.<T>getDatasetAccess().writeRegion(pva, min, size, dataBlocks, writeFully);
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write blocks into dataset " + datasetPath, e);
@@ -114,8 +114,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueRoot(), N5DirectoryPath.of(datasetPath), convertedDatasetAttributes);
-			convertedDatasetAttributes.<T>getDatasetAccess().writeRegion(posKva, min, size, dataBlocks, writeFully, exec);
+			final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(datasetPath), convertedDatasetAttributes);
+			convertedDatasetAttributes.<T>getDatasetAccess().writeRegion(pva, min, size, dataBlocks, writeFully, exec);
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write blocks into dataset " + datasetPath, e);
@@ -130,8 +130,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueRoot(), N5DirectoryPath.of(datasetPath), convertedDatasetAttributes);
-			convertedDatasetAttributes.<T>getDatasetAccess().writeBlocks(posKva, Arrays.asList(dataBlocks));
+			final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(datasetPath), convertedDatasetAttributes);
+			convertedDatasetAttributes.<T>getDatasetAccess().writeBlocks(pva, Arrays.asList(dataBlocks));
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write blocks into dataset " + datasetPath, e);
@@ -146,8 +146,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 
 		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueRoot(), N5DirectoryPath.of(path), convertedDatasetAttributes);
-			convertedDatasetAttributes.<T> getDatasetAccess().writeBlock(posKva, dataBlock);
+			final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(path), convertedDatasetAttributes);
+			convertedDatasetAttributes.<T> getDatasetAccess().writeBlock(pva, dataBlock);
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write block " + Arrays.toString(dataBlock.getGridPosition()) + " into dataset " + path,
@@ -164,8 +164,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		final int shardLevel = convertedDatasetAttributes.getNestedBlockGrid().numLevels() - 1;
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueRoot(), N5DirectoryPath.of(path), convertedDatasetAttributes);
-			convertedDatasetAttributes.<T> getDatasetAccess().writeShard(posKva, shard, shardLevel);
+			final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(path), convertedDatasetAttributes);
+			convertedDatasetAttributes.<T> getDatasetAccess().writeShard(pva, shard, shardLevel);
 		} catch (final UncheckedIOException e) {
 			throw new N5IOException(
 					"Failed to write block " + Arrays.toString(shard.getGridPosition()) + " into dataset " + path,
@@ -179,8 +179,8 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueRoot(), N5DirectoryPath.of(path), datasetAttributes);
-		return datasetAttributes.getDatasetAccess().deleteBlock(posKva, gridPosition);
+		final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(path), datasetAttributes);
+		return datasetAttributes.getDatasetAccess().deleteBlock(pva, gridPosition);
 	}
 
 	@Override
@@ -189,7 +189,7 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> gridPositions) throws N5Exception {
 
-		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueRoot(), N5DirectoryPath.of(path), datasetAttributes);
-		return datasetAttributes.getDatasetAccess().deleteBlocks(posKva, gridPositions);
+		final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(path), datasetAttributes);
+		return datasetAttributes.getDatasetAccess().deleteBlocks(pva, gridPositions);
 	}
 }

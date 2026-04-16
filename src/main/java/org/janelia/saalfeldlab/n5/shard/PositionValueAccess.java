@@ -78,25 +78,25 @@ public interface PositionValueAccess {
 
 	boolean remove(long[] key) throws N5Exception.N5IOException;
 
-	static PositionValueAccess fromKva(
-			final KeyValueRoot kva,
+	static PositionValueAccess fromKeyValueRoot(
+			final KeyValueRoot kvr,
 			final N5DirectoryPath normalPath,
 			final DatasetAttributes attributes) {
 
-		return new RootedKvaPositionValueAccess(kva, normalPath, attributes);
+		return new KvrPositionValueAccess(kvr, normalPath, attributes);
 	}
 
-	class RootedKvaPositionValueAccess implements PositionValueAccess {
+	class KvrPositionValueAccess implements PositionValueAccess {
 
-		private final KeyValueRoot kva;
+		private final KeyValueRoot kvr;
 		private final N5DirectoryPath normalPath;
 		private final DatasetAttributes attributes;
 
-		RootedKvaPositionValueAccess(final KeyValueRoot kva,
+		KvrPositionValueAccess(final KeyValueRoot kvr,
 				final N5DirectoryPath normalPath,
 				final DatasetAttributes attributes) {
 
-			this.kva = kva;
+			this.kvr = kvr;
 			this.normalPath = normalPath;
 			this.attributes = attributes;
 		}
@@ -117,7 +117,7 @@ public interface PositionValueAccess {
 		@Override
 		public VolatileReadData get(final long[] key) throws N5IOException {
 			try {
-				return kva.createReadData(relativePath(key));
+				return kvr.createReadData(relativePath(key));
 			} catch (N5Exception.N5NoSuchKeyException e) {
 				return null;
 			}
@@ -125,7 +125,7 @@ public interface PositionValueAccess {
 
 		@Override
 		public boolean exists(final long[] key) throws N5IOException {
-			return kva.isFile(relativePath(key));
+			return kvr.isFile(relativePath(key));
 		}
 
 		@Override
@@ -133,17 +133,17 @@ public interface PositionValueAccess {
 			if (data == null) {
 				remove(key);
 			} else {
-				kva.write(relativePath(key), data);
+				kvr.write(relativePath(key), data);
 			}
 		}
 
 		@Override
 		public boolean remove(final long[] gridPosition) throws N5IOException {
 			final N5FilePath key = relativePath(gridPosition);
-			if (!kva.isFile(key))
+			if (!kvr.isFile(key))
 				return false;
 
-			kva.delete(key);
+			kvr.delete(key);
 			return true;
 		}
 	}

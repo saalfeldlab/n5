@@ -105,9 +105,9 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueRoot(), N5DirectoryPath.of(pathName),
+			final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(pathName),
 					convertedDatasetAttributes);
-			return convertedDatasetAttributes.<T> getDatasetAccess().readBlock(posKva, gridPosition);
+			return convertedDatasetAttributes.<T> getDatasetAccess().readBlock(pva, gridPosition);
 
 		} catch (N5NoSuchKeyException e) {
 			return null;
@@ -121,8 +121,8 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final List<long[]> blockPositions) throws N5Exception {
 
 		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
-		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueRoot(), N5DirectoryPath.of(pathName), convertedDatasetAttributes);
-		return convertedDatasetAttributes.<T> getDatasetAccess().readBlocks(posKva, blockPositions);
+		final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(pathName), convertedDatasetAttributes);
+		return convertedDatasetAttributes.<T> getDatasetAccess().readBlocks(pva, blockPositions);
 	}
 
 	@Override
@@ -134,9 +134,9 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		final int shardLevel = convertedDatasetAttributes.getNestedBlockGrid().numLevels() - 1;
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueRoot(), N5DirectoryPath.of(pathName),
+			final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(pathName),
 					convertedDatasetAttributes);
-			return convertedDatasetAttributes.<T> getDatasetAccess().readShard(posKva, gridPosition, shardLevel);
+			return convertedDatasetAttributes.<T> getDatasetAccess().readShard(pva, gridPosition, shardLevel);
 
 		} catch (N5NoSuchKeyException e) {
 			return null;
