@@ -30,7 +30,7 @@ package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.Gson;
 import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
-import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
+import org.janelia.saalfeldlab.n5.cache.HierarchyCache;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueRoot} with JSON
@@ -46,7 +46,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader {
 			final boolean cacheMeta) {
 
 		final KeyValueAccessMetaStore store = new KeyValueAccessMetaStore(keyValueRoot);
-		return cacheMeta ? new MyJsonCache(store) : store;
+		return cacheMeta ? new HierarchyCache(store) : store;
 	}
 
 	default ContainerDialect createContainerDialect(

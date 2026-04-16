@@ -17,7 +17,7 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * Verify that a {@link HierarchyStore} implementation satisfies all the
- * behavioral assumptions that {@link MyJsonCache} relies on when caching
+ * behavioral assumptions that {@link HierarchyCache} relies on when caching
  * results from a delegate container. Any implementation of {@link
  * HierarchyStore} must satisfy these to be cacheable,
  * <p>
@@ -86,7 +86,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 * {@code store_isDirectory("a") == true} and
 	 * {@code store_isDirectory("a/b") == true}.
 	 * <p>
-	 * This is required because {@link MyJsonCache.CacheInfoDirectory#setExists()}
+	 * This is required because {@link HierarchyCache.CacheInfoDirectory#setExists()}
 	 * propagates existence upward through the parent chain.
 	 */
 	@Test
@@ -129,7 +129,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 * {@code store_writeAttributesJson("a/b", f, ...)} must result in
 	 * {@code store_isDirectory("a/b") == true}.
 	 * <p>
-	 * This is required because {@link MyJsonCache} calls
+	 * This is required because {@link HierarchyCache} calls
 	 * {@code parent.setExists()} when a JSON file is successfully written.
 	 */
 	@Test
@@ -146,7 +146,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 * {@code store_isDirectory("a") == true} and
 	 * {@code store_isDirectory("a/b") == true}.
 	 * <p>
-	 * This is required because {@link MyJsonCache} recursively propagates
+	 * This is required because {@link HierarchyCache} recursively propagates
 	 * existence upward via {@code setExists()}.
 	 */
 	@Test
@@ -211,7 +211,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 * Assumption 11: After removing a directory, all descendant directories
 	 * no longer exist.
 	 * <p>
-	 * This is required because {@link MyJsonCache.MyCacheInfo#markRemoved()}
+	 * This is required because {@link HierarchyCache.CacheInfo#markRemoved()}
 	 * propagates non-existence downward to all known children.
 	 */
 	@Test
@@ -269,7 +269,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 * Assumption 16: If a directory does not exist, none of its descendants
 	 * exist either.
 	 * <p>
-	 * This is required because {@link MyJsonCache} propagates non-existence
+	 * This is required because {@link HierarchyCache} propagates non-existence
 	 * downward: if the cache knows a directory doesn't exist, it infers that
 	 * all children don't exist without going to the delegate.
 	 */
@@ -284,7 +284,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 * Assumption 17: If a directory does not exist, reading any JSON
 	 * attributes file underneath it returns {@code null}.
 	 * <p>
-	 * This is required because {@link MyJsonCache} propagates non-existence
+	 * This is required because {@link HierarchyCache} propagates non-existence
 	 * of a directory downward to attribute files it contains.
 	 */
 	@Test

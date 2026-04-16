@@ -39,7 +39,7 @@ import org.janelia.saalfeldlab.n5.FileSystemKeyValueRoot;
 import org.janelia.saalfeldlab.n5.HttpKeyValueRoot;
 import org.janelia.saalfeldlab.n5.KeyValueRoot;
 import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
-import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
+import org.janelia.saalfeldlab.n5.cache.HierarchyCache;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Ignore;
@@ -118,20 +118,20 @@ public class N5HttpTest extends AbstractN5Test {
 		final HierarchyStore writeStore = new KeyValueAccessMetaStore(new FileSystemKeyValueRoot(writerFsPath));
 
 		final HierarchyStore readWriteStore = new ReadWriteMetaStore(readStore, writeStore);
-		final HierarchyStore xstore = cacheMeta ? new MyJsonCache(readWriteStore) : readWriteStore;
+		final HierarchyStore store = cacheMeta ? new HierarchyCache(readWriteStore) : readWriteStore;
 
 		final N5FSWriter writer = new N5FSWriter(writerFsPath, gson, cacheMeta) {
 
 			@Override
 			public HierarchyStore createHierarchyStore(final KeyValueRoot keyValueRoot, final boolean cacheMeta) {
-				return xstore;
+				return store;
 			}
 		};
 		final N5KeyValueReader reader = new N5KeyValueReader(new HttpKeyValueRoot(root), gson, cacheMeta) {
 
 			@Override
 			public HierarchyStore createHierarchyStore(final KeyValueRoot keyValueRoot, final boolean cacheMeta) {
-				return xstore;
+				return store;
 			}
 		};
 		return new HttpReaderFsWriter(writer, reader);

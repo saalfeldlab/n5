@@ -12,7 +12,7 @@ import org.janelia.saalfeldlab.n5.N5Path;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 
-public class MyJsonCache implements HierarchyStore {
+public class HierarchyCache implements HierarchyStore {
 
 	/*
 	 * Implementation notes:
@@ -33,13 +33,13 @@ public class MyJsonCache implements HierarchyStore {
 	//
 	// ------------------------------------------------------------------------
 
-	static abstract class MyCacheInfo {
+	static abstract class CacheInfo {
 
 		protected final CacheInfoDirectory parent;
 
 		protected boolean valid = false;
 
-		MyCacheInfo(final CacheInfoDirectory parent) {
+		CacheInfo(final CacheInfoDirectory parent) {
 			this.parent = parent;
 			if (parent != null)
 				parent.addChild(this);
@@ -72,7 +72,7 @@ public class MyJsonCache implements HierarchyStore {
 	/**
 	 * A cache entry referring to an attributes json file.
 	 */
-	static class CacheInfoAttributes extends MyCacheInfo {
+	static class CacheInfoAttributes extends CacheInfo {
 
 		private final N5FilePath path;
 		private JsonElement json;
@@ -132,11 +132,11 @@ public class MyJsonCache implements HierarchyStore {
 	/**
 	 * A cache entry referring to a directory.
 	 */
-	static class CacheInfoDirectory extends MyCacheInfo {
+	static class CacheInfoDirectory extends CacheInfo {
 
 		private boolean exists = true;
 		private final N5DirectoryPath path;
-		private final List<MyCacheInfo> children = new ArrayList<>();
+		private final List<CacheInfo> children = new ArrayList<>();
 		private List<String> list;
 
 		CacheInfoDirectory(final N5DirectoryPath path, CacheInfoDirectory parent) {
@@ -187,7 +187,7 @@ public class MyJsonCache implements HierarchyStore {
 			return valid && !exists;
 		}
 
-		void addChild(final MyCacheInfo child) {
+		void addChild(final CacheInfo child) {
 			synchronized (children) {
 				children.add(child);
 			}
@@ -224,7 +224,7 @@ public class MyJsonCache implements HierarchyStore {
 				parent.removeFromList(path.filename());
 			}
 			synchronized(children) {
-				children.forEach(MyCacheInfo::markRemoved);
+				children.forEach(CacheInfo::markRemoved);
 			}
 		}
 
@@ -278,9 +278,9 @@ public class MyJsonCache implements HierarchyStore {
 	/**
 	 * Maps N5Path to MyCacheInfo
 	 */
-	private final ConcurrentHashMap<N5Path, MyCacheInfo> infos;
+	private final ConcurrentHashMap<N5Path, CacheInfo> infos;
 
-	public MyJsonCache(final HierarchyStore delegate) {
+	public HierarchyCache(final HierarchyStore delegate) {
 		this.delegate = delegate;
 
 		infos = new ConcurrentHashMap<>();
@@ -291,7 +291,7 @@ public class MyJsonCache implements HierarchyStore {
 	}
 
 	private CacheInfoDirectory getOrCreate(N5DirectoryPath path) {
-		final MyCacheInfo info = infos.get(path);
+		final CacheInfo info = infos.get(path);
 		if (info != null)
 			return info.asDirectory();
 		final CacheInfoDirectory parent = getOrCreate(path.parent());
@@ -299,7 +299,7 @@ public class MyJsonCache implements HierarchyStore {
 	}
 
 	private CacheInfoAttributes getOrCreate(N5FilePath path) {
-		final MyCacheInfo info = infos.get(path);
+		final CacheInfo info = infos.get(path);
 		if (info != null)
 			return info.asAttributes();
 		final CacheInfoDirectory parent = getOrCreate(path.parent());

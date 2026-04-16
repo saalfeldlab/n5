@@ -49,7 +49,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-public class MyJsonCacheTest {
+public class HierarchyCacheTest {
 
 	private static Set<String> setOf(String... values) {
 		return Stream.of(values).collect(Collectors.toSet());
@@ -59,7 +59,7 @@ public class MyJsonCacheTest {
 	public void cacheBackingTest() {
 
 		final TrackingMetaStore delegate = new TrackingMetaStore(new DummyHierarchyStore());
-		final HierarchyStore store = new MyJsonCache(delegate);
+		final HierarchyStore store = new HierarchyCache(delegate);
 		final MetaStoreCounters expected = new MetaStoreCounters();
 
 
@@ -262,7 +262,7 @@ public class MyJsonCacheTest {
 	public void testCopyOnReadPreventsExternalModification() {
 
 		final TrackingMetaStore delegate = new TrackingMetaStore(new DummyHierarchyStore());
-		final HierarchyStore store = new MyJsonCache(delegate);
+		final HierarchyStore store = new HierarchyCache(delegate);
 		final Gson gson = new Gson();
 
 		// Get attributes and modify the returned object
