@@ -28,15 +28,12 @@
  */
 package org.janelia.saalfeldlab.n5.shard;
 
-import java.net.URI;
-
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
-import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
+import org.janelia.saalfeldlab.n5.KeyValueRoot;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
@@ -82,7 +79,7 @@ public interface PositionValueAccess {
 	boolean remove(long[] key) throws N5Exception.N5IOException;
 
 	static PositionValueAccess fromKva(
-			final RootedKeyValueAccess kva,
+			final KeyValueRoot kva,
 			final N5DirectoryPath normalPath,
 			final DatasetAttributes attributes) {
 
@@ -91,11 +88,11 @@ public interface PositionValueAccess {
 
 	class RootedKvaPositionValueAccess implements PositionValueAccess {
 
-		private final RootedKeyValueAccess kva;
+		private final KeyValueRoot kva;
 		private final N5DirectoryPath normalPath;
 		private final DatasetAttributes attributes;
 
-		RootedKvaPositionValueAccess(final RootedKeyValueAccess kva,
+		RootedKvaPositionValueAccess(final KeyValueRoot kva,
 				final N5DirectoryPath normalPath,
 				final DatasetAttributes attributes) {
 

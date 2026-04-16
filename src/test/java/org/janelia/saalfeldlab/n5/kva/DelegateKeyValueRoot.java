@@ -6,15 +6,15 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Path;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
-import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
+import org.janelia.saalfeldlab.n5.KeyValueRoot;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
-public class DelegateRootedKeyValueAccess implements RootedKeyValueAccess {
+public class DelegateKeyValueRoot implements KeyValueRoot {
 
-	protected final RootedKeyValueAccess kva;
+	protected final KeyValueRoot kva;
 
-	public DelegateRootedKeyValueAccess(RootedKeyValueAccess kva) {
+	public DelegateKeyValueRoot(KeyValueRoot kva) {
 		this.kva = kva;
 	}
 
@@ -25,8 +25,8 @@ public class DelegateRootedKeyValueAccess implements RootedKeyValueAccess {
 	}
 
 	@Override
-	public URI root() {
-		return kva.root();
+	public URI uri() {
+		return kva.uri();
 	}
 
 	@Override

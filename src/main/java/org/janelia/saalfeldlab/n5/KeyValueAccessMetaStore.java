@@ -15,9 +15,9 @@ import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 public class KeyValueAccessMetaStore implements DelegateStore {
 
-	private final RootedKeyValueAccess kva;
+	private final KeyValueRoot kva;
 
-	public KeyValueAccessMetaStore(final RootedKeyValueAccess kva) {
+	public KeyValueAccessMetaStore(final KeyValueRoot kva) {
 
 		this.kva = kva;
 	}

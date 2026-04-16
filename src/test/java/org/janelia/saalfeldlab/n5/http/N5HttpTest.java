@@ -35,9 +35,9 @@ import org.janelia.saalfeldlab.n5.N5FSWriter;
 import org.janelia.saalfeldlab.n5.N5KeyValueReader;
 import org.janelia.saalfeldlab.n5.N5Reader;
 import org.janelia.saalfeldlab.n5.N5Writer;
-import org.janelia.saalfeldlab.n5.RootedFileSystemKeyValueAccess;
-import org.janelia.saalfeldlab.n5.RootedHttpKeyValueAccess;
-import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
+import org.janelia.saalfeldlab.n5.FileSystemKeyValueRoot;
+import org.janelia.saalfeldlab.n5.HttpKeyValueRoot;
+import org.janelia.saalfeldlab.n5.KeyValueRoot;
 import org.janelia.saalfeldlab.n5.cache.DelegateStore;
 import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
 import org.junit.After;
@@ -112,10 +112,10 @@ public class N5HttpTest extends AbstractN5Test {
 
 
 		final URI root = httpServerURI.resolve(location);
-		final DelegateStore readStore = new KeyValueAccessMetaStore(new RootedHttpKeyValueAccess(root));
+		final DelegateStore readStore = new KeyValueAccessMetaStore(new HttpKeyValueRoot(root));
 
 		final String writerFsPath = httpServerDirectory.resolve(location).toFile().getCanonicalPath();
-		final DelegateStore writeStore = new KeyValueAccessMetaStore(new RootedFileSystemKeyValueAccess(writerFsPath));
+		final DelegateStore writeStore = new KeyValueAccessMetaStore(new FileSystemKeyValueRoot(writerFsPath));
 
 		final DelegateStore readWriteStore = new ReadWriteMetaStore(readStore, writeStore);
 		final DelegateStore xstore = cacheMeta ? new MyJsonCache(readWriteStore) : readWriteStore;
@@ -123,14 +123,14 @@ public class N5HttpTest extends AbstractN5Test {
 		final N5FSWriter writer = new N5FSWriter(writerFsPath, gson, cacheMeta) {
 
 			@Override
-			public DelegateStore createMetaStore(final RootedKeyValueAccess keyValueAccess, final boolean cacheMeta) {
+			public DelegateStore createMetaStore(final KeyValueRoot keyValueAccess, final boolean cacheMeta) {
 				return xstore;
 			}
 		};
-		final N5KeyValueReader reader = new N5KeyValueReader(new RootedHttpKeyValueAccess(root), gson, cacheMeta) {
+		final N5KeyValueReader reader = new N5KeyValueReader(new HttpKeyValueRoot(root), gson, cacheMeta) {
 
 			@Override
-			public DelegateStore createMetaStore(final RootedKeyValueAccess keyValueAccess, final boolean cacheMeta) {
+			public DelegateStore createMetaStore(final KeyValueRoot keyValueAccess, final boolean cacheMeta) {
 				return xstore;
 			}
 		};
@@ -143,7 +143,7 @@ public class N5HttpTest extends AbstractN5Test {
 			final GsonBuilder gson) {
 
 		final URI root = httpServerURI.resolve(location);
-		return new N5KeyValueReader(new RootedHttpKeyValueAccess(root), gson, cacheMeta);
+		return new N5KeyValueReader(new HttpKeyValueRoot(root), gson, cacheMeta);
 	}
 
 	@Test

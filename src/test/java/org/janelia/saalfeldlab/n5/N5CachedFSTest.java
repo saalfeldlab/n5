@@ -102,7 +102,7 @@ public class N5CachedFSTest extends N5FSTest {
 			final String cachedGroup = "cachedGroup";
 
 			final String relativeAttributesPath = N5DirectoryPath.of(cachedGroup).resolve(ATTRIBUTES_JSON).normalPath();
-			final String attributesPath = n5.getKeyValueRoot().root().resolve(relativeAttributesPath).getPath();
+			final String attributesPath = n5.getKeyValueRoot().uri().resolve(relativeAttributesPath).getPath();
 
 			final ArrayList<TestData<?>> tests = new ArrayList<>();
 			n5.createGroup(cachedGroup);
@@ -118,7 +118,7 @@ public class N5CachedFSTest extends N5FSTest {
 			final String cachedGroup = "cachedGroup";
 
 			final String relativeAttributesPath = N5DirectoryPath.of(cachedGroup).resolve(ATTRIBUTES_JSON).normalPath();
-			final String attributesPath = n5.getKeyValueRoot().root().resolve(relativeAttributesPath).getPath();
+			final String attributesPath = n5.getKeyValueRoot().uri().resolve(relativeAttributesPath).getPath();
 
 			final ArrayList<TestData<?>> tests = new ArrayList<>();
 			n5.createGroup(cachedGroup);
@@ -176,7 +176,7 @@ public class N5CachedFSTest extends N5FSTest {
 	public void cacheBehaviorTest() throws IOException, URISyntaxException {
 
 		// make an uncached n5 writer
-		try (final N5TrackingStorage n5 = new N5TrackingStorage(new RootedFileSystemKeyValueAccess(tempN5Location()),
+		try (final N5TrackingStorage n5 = new N5TrackingStorage(new FileSystemKeyValueRoot(tempN5Location()),
 				new GsonBuilder(), true)) {
 
 			cacheBehaviorHelper(n5);
@@ -187,7 +187,7 @@ public class N5CachedFSTest extends N5FSTest {
 	@Test
 	public void cacheListTest() throws IOException, URISyntaxException {
 
-		try (final N5TrackingStorage n5 = new N5TrackingStorage(new RootedFileSystemKeyValueAccess(tempN5Location()),
+		try (final N5TrackingStorage n5 = new N5TrackingStorage(new FileSystemKeyValueRoot(tempN5Location()),
 				new GsonBuilder(), true)) {
 
 			final String groupA = "groupA";
@@ -428,7 +428,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 		private TrackingMetaStore trackingStore;
 
-		public N5TrackingStorage(final RootedKeyValueAccess keyValueAccess,
+		public N5TrackingStorage(final KeyValueRoot keyValueAccess,
 				final GsonBuilder gsonBuilder, final boolean cacheAttributes) throws IOException {
 
 			super(keyValueAccess, gsonBuilder, cacheAttributes);
@@ -436,7 +436,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 		@Override
 		public DelegateStore createMetaStore(
-				final RootedKeyValueAccess keyValueAccess,
+				final KeyValueRoot keyValueAccess,
 				final boolean cacheMeta) {
 
 			trackingStore = new TrackingMetaStore(new KeyValueAccessMetaStore(keyValueAccess));

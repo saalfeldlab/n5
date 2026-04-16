@@ -2,6 +2,7 @@ package org.janelia.saalfeldlab.n5;
 
 
 import java.net.URI;
+import java.nio.file.FileSystem;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
@@ -10,21 +11,24 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 /**
- * TODO: This is intented to eventually replace KeyValueAccess. The plan is to
- *   incrementally replace usages of KeyValueAccess, adding methods here as
- *   needed.
+ * Key value read primitives used by {@link GsonKeyValueN5Reader} and {@link
+ * KeyValueAccessMetaStore}. This interface implements a subset of access
+ * primitives provided by {@link FileSystem} to reduce the implementation burden
+ * for backends lacking a {@link FileSystem} implementation (such as AWS-S3).
+ * <p>
+ * TODO: This is intented to eventually fully replace {@link KeyValueAccess}.
  */
-public interface RootedKeyValueAccess {
+public interface KeyValueRoot {
 
 	@Deprecated
 	KeyValueAccess getKVA();
 
 	/**
-	 * Returns the absolute URI of the root.
+	 * Returns the absolute URI of this root.
 	 *
 	 * @return the base path URI
 	 */
-	URI root();
+	URI uri();
 
 	/**
 	 * Create a {@link VolatileReadData} through which data at the normal key

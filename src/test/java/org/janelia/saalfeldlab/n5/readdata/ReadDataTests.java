@@ -42,7 +42,7 @@ import java.util.Arrays;
 import java.util.function.IntUnaryOperator;
 
 import org.apache.commons.compress.utils.IOUtils;
-import org.janelia.saalfeldlab.n5.RootedFileSystemKeyValueAccess;
+import org.janelia.saalfeldlab.n5.FileSystemKeyValueRoot;
 import org.janelia.saalfeldlab.n5.readdata.ReadData.OutputStreamOperator;
 import org.junit.Test;
 
@@ -112,7 +112,7 @@ public class ReadDataTests {
 			os.write(data);
 		}
 
-		try( final VolatileReadData readData = new RootedFileSystemKeyValueAccess("/")
+		try( final VolatileReadData readData = new FileSystemKeyValueRoot("/")
 				.createReadData(tmpF.getAbsolutePath())) {
 
 			assertEquals("file read data length", -1, readData.length());

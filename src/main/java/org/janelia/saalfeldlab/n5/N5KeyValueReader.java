@@ -44,7 +44,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 	public static final String ATTRIBUTES_JSON = "attributes.json";
 
-	protected final RootedKeyValueAccess keyValueAccess;
+	protected final KeyValueRoot keyValueAccess;
 	protected final DelegateStore metaStore;
 	protected final N5Store store;
 	protected final Gson gson;
@@ -72,7 +72,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 *             implementation.
 	 */
 	public N5KeyValueReader(
-			final RootedKeyValueAccess keyValueAccess,
+			final KeyValueRoot keyValueAccess,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheMeta)
 			throws N5Exception {
@@ -108,7 +108,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 */
 	protected N5KeyValueReader(
 			final boolean checkVersion,
-			final RootedKeyValueAccess keyValueAccess,
+			final KeyValueRoot keyValueAccess,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheMeta,
 			final boolean checkExists)
@@ -133,7 +133,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 		// if a version was found, the container exists - don't need to check again
 		if (checkExists && (!versionFound && !exists("/")))
-			throw new N5Exception.N5IOException("No container exists at " + keyValueAccess.root());
+			throw new N5Exception.N5IOException("No container exists at " + keyValueAccess.uri());
 	}
 
 	protected GsonBuilder registerGson(final GsonBuilder gsonBuilder) {
@@ -158,7 +158,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	}
 
 	@Override
-	public RootedKeyValueAccess getKeyValueRoot() {
+	public KeyValueRoot getKeyValueRoot() {
 
 		return keyValueAccess;
 	}

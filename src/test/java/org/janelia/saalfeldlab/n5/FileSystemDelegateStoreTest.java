@@ -19,7 +19,7 @@ public class FileSystemDelegateStoreTest extends DelegateStoreContractTest {
 			tmpDir.delete();
 			tmpDir.mkdir(); //DeleteOnExit doesn't work on temp directory... so we delete and make it explicitly.
 			tmpDir.deleteOnExit();
-			return new KeyValueAccessMetaStore(new RootedFileSystemKeyValueAccess(tmpDir.getAbsolutePath()));
+			return new KeyValueAccessMetaStore(new FileSystemKeyValueRoot(tmpDir.getAbsolutePath()));
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

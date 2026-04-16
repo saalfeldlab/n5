@@ -16,7 +16,7 @@ import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
-public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
+public class HttpKeyValueRoot implements KeyValueRoot {
 
 	private static final String HEAD = "HEAD";
 	private static final String GET = "GET";
@@ -27,7 +27,7 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 
 	private final URI root;
 
-	public RootedHttpKeyValueAccess(final URI root) {
+	public HttpKeyValueRoot(final URI root) {
 		// The given root URI may not end in a slash in which case we append one.
 		final String uriStr = root.toString();
 		this.root = uriStr.endsWith("/") ? root : URI.create(uriStr + "/");
@@ -41,7 +41,7 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 	private final KeyValueAccess kva = new HttpKeyValueAccess();
 
 	@Override
-	public URI root() {
+	public URI uri() {
 		return root;
 	}
 
@@ -211,7 +211,7 @@ public class RootedHttpKeyValueAccess implements RootedKeyValueAccess {
 
 		@Override
 		public long size() {
-			return RootedHttpKeyValueAccess.this.size(normalPath);
+			return HttpKeyValueRoot.this.size(normalPath);
 		}
 
 		@Override

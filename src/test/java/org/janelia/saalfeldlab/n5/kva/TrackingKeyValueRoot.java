@@ -1,21 +1,20 @@
 package org.janelia.saalfeldlab.n5.kva;
 
-import java.net.URI;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Path;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
-import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
+import org.janelia.saalfeldlab.n5.KeyValueRoot;
 import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
-public class TrackingRootedKeyValueAccess extends DelegateRootedKeyValueAccess {
+public class TrackingKeyValueRoot extends DelegateKeyValueRoot {
 
 	public int numMaterializeCalls = 0;
 	public int numIsFileCalls = 0;
 	public long totalBytesRead = 0;
 
-	public TrackingRootedKeyValueAccess(final RootedKeyValueAccess kva) {
+	public TrackingKeyValueRoot(final KeyValueRoot kva) {
 		super(kva);
 	}
 

@@ -42,7 +42,7 @@ import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Store;
-import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
+import org.janelia.saalfeldlab.n5.KeyValueRoot;
 
 public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 
@@ -90,7 +90,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 		return reader.readSerializedBlock(dataset, getConvertedDatasetAttributes(attributes), gridPosition);
 	}
 
-	@Override public RootedKeyValueAccess getKeyValueRoot() {
+	@Override public KeyValueRoot getKeyValueRoot() {
 
 		return reader.getKeyValueRoot();
 	}

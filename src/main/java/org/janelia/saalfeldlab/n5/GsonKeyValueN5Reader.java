@@ -45,14 +45,14 @@ import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
  */
 public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
-	RootedKeyValueAccess getKeyValueRoot();
+	KeyValueRoot getKeyValueRoot();
 
 	N5Store getN5Store();
 
 	@Override
 	default URI getURI() {
 
-		return getKeyValueRoot().root();
+		return getKeyValueRoot().uri();
 	}
 
 	@Override

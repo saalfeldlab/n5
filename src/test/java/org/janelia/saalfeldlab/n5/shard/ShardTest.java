@@ -72,7 +72,7 @@ public class ShardTest {
 
 			if (LOCAL_DEBUG) {
 				final String basePath = "src/test/resources/test.n5";
-				final N5Writer writer = new TrackingN5Writer(new RootedFileSystemKeyValueAccess(basePath));
+				final N5Writer writer = new TrackingN5Writer(new FileSystemKeyValueRoot(basePath));
 				writer.remove(""); // Clear old when starting new test
 				return writer;
 			}
@@ -80,7 +80,7 @@ public class ShardTest {
 			final String basePath = new File(tempN5PathName()).toURI().normalize().getPath();
 			try {
 				String uri = new URI("file", null, basePath, null).toString();
-				return new TrackingN5Writer(new RootedFileSystemKeyValueAccess(uri));
+				return new TrackingN5Writer(new FileSystemKeyValueRoot(uri));
 			} catch (URISyntaxException e) {
 				e.printStackTrace();
 			}
@@ -195,7 +195,7 @@ public class ShardTest {
 				new ByteArrayDataBlock(blockSize, new long[]{11, 11}, data)
 		);
 
-		final RootedKeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueRoot();
+		final KeyValueRoot kva = ((N5KeyValueWriter)writer).getKeyValueRoot();
 
 		long[][] keys = new long[][]{
 				{0, 0},
@@ -272,7 +272,7 @@ public class ShardTest {
 		}
 	}
 
-	private void ensureKeysExist(RootedKeyValueAccess kva, String dataset,
+	private void ensureKeysExist(KeyValueRoot kva, String dataset,
 			DatasetAttributes datasetAttributes, long[][] keys) {
 
 		for (long[] key : keys) {
@@ -281,7 +281,7 @@ public class ShardTest {
 		}
 	}
 
-	private void ensureKeysDoNotExist(RootedKeyValueAccess kva, String dataset,
+	private void ensureKeysDoNotExist(KeyValueRoot kva, String dataset,
 			DatasetAttributes datasetAttributes, long[][] keys) {
 
 		for (long[] key : keys) {
@@ -309,7 +309,7 @@ public class ShardTest {
 		final DatasetAttributes datasetAttributes = writer.createDataset(dataset, attrs);
 		assertTrue(datasetAttributes.isSharded());
 
-		final RootedKeyValueAccess rkva = ((N5KeyValueWriter)writer).getKeyValueRoot();
+		final KeyValueRoot rkva = ((N5KeyValueWriter)writer).getKeyValueRoot();
 
 		final int[] blockSize = datasetAttributes.getBlockSize();
 		final int numElements = blockSize[0] * blockSize[1];

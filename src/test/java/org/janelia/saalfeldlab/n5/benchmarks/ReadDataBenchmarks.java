@@ -37,8 +37,8 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import org.janelia.saalfeldlab.n5.N5Exception;
-import org.janelia.saalfeldlab.n5.RootedFileSystemKeyValueAccess;
-import org.janelia.saalfeldlab.n5.RootedKeyValueAccess;
+import org.janelia.saalfeldlab.n5.FileSystemKeyValueRoot;
+import org.janelia.saalfeldlab.n5.KeyValueRoot;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -73,7 +73,7 @@ public class ReadDataBenchmarks {
 
 	protected Path basePath;
 	protected ArrayList<Path> tmpPaths;
-	protected RootedKeyValueAccess kva;
+	protected KeyValueRoot kva;
 	protected Random random;
 
 	public ReadDataBenchmarks() {}
@@ -110,7 +110,7 @@ public class ReadDataBenchmarks {
 		random = new Random();
 
 		basePath = Files.createTempDirectory("ReadDataBenchmark-");
-		kva = new RootedFileSystemKeyValueAccess(basePath.toString());
+		kva = new FileSystemKeyValueRoot(basePath.toString());
 
 		tmpPaths = new ArrayList<>();
 		for (final int sz : sizes()) {

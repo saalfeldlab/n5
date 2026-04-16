@@ -60,7 +60,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyV
 	 *             this implementation.
 	 */
 	public N5KeyValueWriter(
-			final RootedKeyValueAccess keyValueAccess,
+			final KeyValueRoot keyValueAccess,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheAttributes)
 			throws N5Exception {

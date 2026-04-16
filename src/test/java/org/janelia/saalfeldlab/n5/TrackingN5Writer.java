@@ -1,7 +1,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.GsonBuilder;
-import org.janelia.saalfeldlab.n5.kva.TrackingRootedKeyValueAccess;
+import org.janelia.saalfeldlab.n5.kva.TrackingKeyValueRoot;
 
 /**
  * An N5Writer that tracks the number of materialize calls performed by
@@ -9,12 +9,12 @@ import org.janelia.saalfeldlab.n5.kva.TrackingRootedKeyValueAccess;
  */
 public class TrackingN5Writer extends N5KeyValueWriter {
 
-	public final TrackingRootedKeyValueAccess tkva;
+	public final TrackingKeyValueRoot tkva;
 
-	public TrackingN5Writer(final RootedKeyValueAccess kva) {
+	public TrackingN5Writer(final KeyValueRoot kva) {
 
-		super(new TrackingRootedKeyValueAccess(kva), new GsonBuilder(), false);
-		this.tkva = (TrackingRootedKeyValueAccess) getKeyValueRoot();
+		super(new TrackingKeyValueRoot(kva), new GsonBuilder(), false);
+		this.tkva = (TrackingKeyValueRoot) getKeyValueRoot();
 	}
 
 	public void resetNumMaterializeCalls() {

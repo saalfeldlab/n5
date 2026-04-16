@@ -33,7 +33,7 @@ import org.janelia.saalfeldlab.n5.cache.DelegateStore;
 import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
 
 /**
- * {@link N5Reader} implementation through {@link RootedKeyValueAccess} with JSON
+ * {@link N5Reader} implementation through {@link KeyValueRoot} with JSON
  * attributes parsed with {@link Gson}.
  *
  */
@@ -42,7 +42,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader {
 	boolean cacheMeta();
 
 	default DelegateStore createMetaStore(
-			final RootedKeyValueAccess keyValueAccess,
+			final KeyValueRoot keyValueAccess,
 			final boolean cacheMeta) {
 
 		final KeyValueAccessMetaStore store = new KeyValueAccessMetaStore(keyValueAccess);

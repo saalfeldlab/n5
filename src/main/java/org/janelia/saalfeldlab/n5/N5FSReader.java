@@ -67,7 +67,7 @@ public class N5FSReader extends N5KeyValueReader {
 			throws N5Exception {
 
 		super(
-				new RootedFileSystemKeyValueAccess(basePath),
+				new FileSystemKeyValueRoot(basePath),
 				gsonBuilder,
 				cacheMeta);
 

@@ -25,14 +25,14 @@ import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
-public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
+public class FileSystemKeyValueRoot implements KeyValueRoot {
 
 	private final URI root;
 	private final FileKeyLockManager fileKeyLockManager;
 
 	// TODO: Turning basePath String into root URI here is fragile. It might already be a URI ("file:/...") or just a path, it might be relative or absolute, etc...
 	//       Maybe it would be better to take a URI here and handle the String higher up (where we might have more information)?
-	public RootedFileSystemKeyValueAccess(final String basePath) throws N5IOException {
+	public FileSystemKeyValueRoot(final String basePath) throws N5IOException {
 
 		// NB: We want to make sure that the root URI is a directory, that is,
 		// it ends with a slash. (Otherwise, relativizing and resolution against
@@ -70,7 +70,7 @@ public class RootedFileSystemKeyValueAccess implements RootedKeyValueAccess {
 	private final KeyValueAccess kva = new FileSystemKeyValueAccess();
 
 	@Override
-	public URI root() {
+	public URI uri() {
 		return root;
 	}
 
