@@ -21,12 +21,12 @@ public class FsIoPolicy {
 
     private static boolean validBounds(long channelSize, long offset, long length) {
 
-        if (offset < 0)
-            return false;
-        else if (channelSize > 0 && offset >= channelSize) // offset == 0 and channelSize == 0 is okay
-            return false;
-        else if (length >= 0 && offset + length > channelSize)
-            return false;
+		if (offset < 0)
+			throw new N5Exception("offset must be > 0, but was: " + offset);
+		else if (channelSize > 0 && offset >= channelSize)  // offset == 0 and channelSize == 0 is okay
+			throw new N5Exception("offset (" + offset + ") must be less than channel size (" + channelSize + ")");
+		else if (length >= 0 && offset + length > channelSize)
+			throw new N5Exception("offset + length (" + (offset + length) + ") must be less than channel size (" + channelSize + ")");
 
         return true;
     }
