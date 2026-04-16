@@ -429,7 +429,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 	public static class N5TrackingStorage extends N5KeyValueWriter implements TrackingStorage {
 
-		private TrackingMetaStore trackingStore;
+		private TrackingHierarchyStore trackingStore;
 
 		public N5TrackingStorage(final KeyValueRoot keyValueRoot,
 				final GsonBuilder gsonBuilder, final boolean cacheAttributes) throws IOException {
@@ -442,7 +442,7 @@ public class N5CachedFSTest extends N5FSTest {
 				final KeyValueRoot keyValueRoot,
 				final boolean cacheMeta) {
 
-			trackingStore = new TrackingMetaStore(new KeyValueAccessMetaStore(keyValueRoot));
+			trackingStore = new TrackingHierarchyStore(new KeyValueAccessMetaStore(keyValueRoot));
 			return cacheMeta ? new HierarchyCache(trackingStore) : trackingStore;
 		}
 

@@ -4,12 +4,12 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
 
-public class TrackingMetaStore implements HierarchyStore {
+public class TrackingHierarchyStore implements HierarchyStore {
 
 	private final HierarchyStore delegate;
 	private final HierarchyStoreCounters counters = new HierarchyStoreCounters();
 
-	public TrackingMetaStore(final HierarchyStore delegate) {
+	public TrackingHierarchyStore(final HierarchyStore delegate) {
 		this.delegate = delegate;
 	}
 

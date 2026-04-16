@@ -38,7 +38,7 @@ import org.janelia.saalfeldlab.n5.HierarchyStoreCounters;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
-import org.janelia.saalfeldlab.n5.TrackingMetaStore;
+import org.janelia.saalfeldlab.n5.TrackingHierarchyStore;
 import org.junit.Test;
 
 import static org.janelia.saalfeldlab.n5.HierarchyStoreCounters.assertEqualCounters;
@@ -58,7 +58,7 @@ public class HierarchyCacheTest {
 	@Test
 	public void cacheBackingTest() {
 
-		final TrackingMetaStore delegate = new TrackingMetaStore(new DummyHierarchyStore());
+		final TrackingHierarchyStore delegate = new TrackingHierarchyStore(new DummyHierarchyStore());
 		final HierarchyStore store = new HierarchyCache(delegate);
 		final HierarchyStoreCounters expected = new HierarchyStoreCounters();
 
@@ -261,7 +261,7 @@ public class HierarchyCacheTest {
 	@Test
 	public void testCopyOnReadPreventsExternalModification() {
 
-		final TrackingMetaStore delegate = new TrackingMetaStore(new DummyHierarchyStore());
+		final TrackingHierarchyStore delegate = new TrackingHierarchyStore(new DummyHierarchyStore());
 		final HierarchyStore store = new HierarchyCache(delegate);
 		final Gson gson = new Gson();
 
