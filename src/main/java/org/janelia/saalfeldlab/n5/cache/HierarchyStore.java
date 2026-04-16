@@ -8,7 +8,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.janelia.saalfeldlab.n5.N5Reader;
 
-public interface DelegateStore {
+public interface HierarchyStore {
 
 	// ------------------------------------------------------------------------
 	//

@@ -2,14 +2,14 @@ package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import org.janelia.saalfeldlab.n5.cache.DelegateStore;
+import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
 
-public class TrackingMetaStore implements DelegateStore {
+public class TrackingMetaStore implements HierarchyStore {
 
-	private final DelegateStore delegate;
+	private final HierarchyStore delegate;
 	private final MetaStoreCounters counters = new MetaStoreCounters();
 
-	public TrackingMetaStore(final DelegateStore delegate) {
+	public TrackingMetaStore(final HierarchyStore delegate) {
 		this.delegate = delegate;
 	}
 

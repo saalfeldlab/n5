@@ -4,14 +4,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
-import org.janelia.saalfeldlab.n5.cache.DelegateStore;
+import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
 
-public class ReadWriteMetaStore implements DelegateStore {
+public class ReadWriteMetaStore implements HierarchyStore {
 
-	private final DelegateStore readStore;
-	private final DelegateStore writeStore;
+	private final HierarchyStore readStore;
+	private final HierarchyStore writeStore;
 
-	public ReadWriteMetaStore(final DelegateStore readStore, final DelegateStore writeStore) {
+	public ReadWriteMetaStore(final HierarchyStore readStore, final HierarchyStore writeStore) {
 		this.readStore = readStore;
 		this.writeStore = writeStore;
 	}

@@ -39,7 +39,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
-import org.janelia.saalfeldlab.n5.cache.DelegateStore;
+import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
 import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
 import org.junit.Test;
 
@@ -438,7 +438,7 @@ public class N5CachedFSTest extends N5FSTest {
 		}
 
 		@Override
-		public DelegateStore createMetaStore(
+		public HierarchyStore createHierarchyStore(
 				final KeyValueRoot keyValueRoot,
 				final boolean cacheMeta) {
 

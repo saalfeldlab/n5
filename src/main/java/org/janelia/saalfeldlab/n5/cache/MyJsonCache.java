@@ -12,7 +12,7 @@ import org.janelia.saalfeldlab.n5.N5Path;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 
-public class MyJsonCache implements DelegateStore {
+public class MyJsonCache implements HierarchyStore {
 
 	/*
 	 * Implementation notes:
@@ -273,15 +273,15 @@ public class MyJsonCache implements DelegateStore {
 	//
 	// ------------------------------------------------------------------------
 
-	private final DelegateStore container;
+	private final HierarchyStore delegate;
 
 	/**
 	 * Maps N5Path to MyCacheInfo
 	 */
 	private final ConcurrentHashMap<N5Path, MyCacheInfo> infos;
 
-	public MyJsonCache(final DelegateStore container) {
-		this.container = container;
+	public MyJsonCache(final HierarchyStore delegate) {
+		this.delegate = delegate;
 
 		infos = new ConcurrentHashMap<>();
 
@@ -331,7 +331,7 @@ public class MyJsonCache implements DelegateStore {
 		final JsonElement json;
 		synchronized (info) {
 			if (!info.valid() && !info.isKnownToNotExist()) {
-				info.setJson(container.store_readAttributesJson(group, filename, gson));
+				info.setJson(delegate.store_readAttributesJson(group, filename, gson));
 			}
 			json = info.json();
 		}
@@ -354,7 +354,7 @@ public class MyJsonCache implements DelegateStore {
 		final CacheInfoAttributes info = getOrCreate(path);
 		synchronized (info) {
 			if (!info.valid() || info.json() == null || !info.json().equals(json)) {
-				container.store_writeAttributesJson(group, filename, json, gson);
+				delegate.store_writeAttributesJson(group, filename, json, gson);
 				info.setJson(json);
 			}
 		}
@@ -369,7 +369,7 @@ public class MyJsonCache implements DelegateStore {
 		final CacheInfoAttributes info = getOrCreate(path);
 		synchronized (info) {
 			if (!info.isKnownToNotExist()) {
-				container.store_removeAttributesJson(group, filename);
+				delegate.store_removeAttributesJson(group, filename);
 				info.markRemoved();
 			}
 		}
@@ -385,7 +385,7 @@ public class MyJsonCache implements DelegateStore {
 			} else if (info.isKnownToNotExist()) {
 				return false;
 			} else {
-				final boolean exists = container.store_isDirectory(group);
+				final boolean exists = delegate.store_isDirectory(group);
 				if (exists)
 					info.setExists();
 				else
@@ -407,7 +407,7 @@ public class MyJsonCache implements DelegateStore {
 			String[] list = info.getList();
 			if (list == null) {
 				try {
-					list = container.store_listDirectories(group);
+					list = delegate.store_listDirectories(group);
 					info.setList(list);
 				} catch (N5NoSuchKeyException e) {
 					info.setNotExists();
@@ -427,7 +427,7 @@ public class MyJsonCache implements DelegateStore {
 
 		final CacheInfoDirectory info = getOrCreate(group);
 		if (!info.isKnownToNotExist())
-			container.store_removeDirectory(group);
+			delegate.store_removeDirectory(group);
 		info.markRemoved();
 	}
 
@@ -436,7 +436,7 @@ public class MyJsonCache implements DelegateStore {
 
 		final CacheInfoDirectory info = getOrCreate(group);
 		if (!info.isKnownToExist())
-			container.store_createDirectories(group);
+			delegate.store_createDirectories(group);
 		info.setExists();
 	}
 

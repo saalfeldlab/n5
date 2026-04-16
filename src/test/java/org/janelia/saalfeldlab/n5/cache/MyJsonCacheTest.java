@@ -58,8 +58,8 @@ public class MyJsonCacheTest {
 	@Test
 	public void cacheBackingTest() {
 
-		final TrackingMetaStore delegate = new TrackingMetaStore(new DummyRawStore());
-		final DelegateStore store = new MyJsonCache(delegate);
+		final TrackingMetaStore delegate = new TrackingMetaStore(new DummyHierarchyStore());
+		final HierarchyStore store = new MyJsonCache(delegate);
 		final MetaStoreCounters expected = new MetaStoreCounters();
 
 
@@ -261,8 +261,8 @@ public class MyJsonCacheTest {
 	@Test
 	public void testCopyOnReadPreventsExternalModification() {
 
-		final TrackingMetaStore delegate = new TrackingMetaStore(new DummyRawStore());
-		final DelegateStore store = new MyJsonCache(delegate);
+		final TrackingMetaStore delegate = new TrackingMetaStore(new DummyHierarchyStore());
+		final HierarchyStore store = new MyJsonCache(delegate);
 		final Gson gson = new Gson();
 
 		// Get attributes and modify the returned object
@@ -278,7 +278,7 @@ public class MyJsonCacheTest {
 	}
 
 
-	private static class DummyRawStore implements DelegateStore {
+	private static class DummyHierarchyStore implements HierarchyStore {
 
 		@Override
 		public JsonElement store_readAttributesJson(

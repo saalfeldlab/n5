@@ -9,11 +9,11 @@ import java.nio.charset.StandardCharsets;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
-import org.janelia.saalfeldlab.n5.cache.DelegateStore;
+import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
-public class KeyValueAccessMetaStore implements DelegateStore {
+public class KeyValueAccessMetaStore implements HierarchyStore {
 
 	private final KeyValueRoot kvr;
 

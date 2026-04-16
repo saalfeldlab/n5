@@ -16,27 +16,27 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Verify that a {@link DelegateStore} implementation satisfies all the
+ * Verify that a {@link HierarchyStore} implementation satisfies all the
  * behavioral assumptions that {@link MyJsonCache} relies on when caching
  * results from a delegate container. Any implementation of {@link
- * DelegateStore} must satisfy these to be cacheable,
+ * HierarchyStore} must satisfy these to be cacheable,
  * <p>
  * To test a specific implementation, subclass this test and implement
  * {@link #createStore()}.
  */
-public abstract class DelegateStoreContractTest {
+public abstract class AbstractHierarchyCacheContractTest {
 
 	protected static final Gson GSON = new Gson();
 
 	protected static final String FILENAME = "attributes.json";
 
-	protected DelegateStore store;
+	protected HierarchyStore store;
 
 	/**
-	 * Create and return a fresh, empty {@link DelegateStore} instance.
+	 * Create and return a fresh, empty {@link HierarchyStore} instance.
 	 * Called before each test.
 	 */
-	protected abstract DelegateStore createStore();
+	protected abstract HierarchyStore createStore();
 
 	@Before
 	public void setUp() {

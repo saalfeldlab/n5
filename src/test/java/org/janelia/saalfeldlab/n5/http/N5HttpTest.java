@@ -38,7 +38,7 @@ import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.FileSystemKeyValueRoot;
 import org.janelia.saalfeldlab.n5.HttpKeyValueRoot;
 import org.janelia.saalfeldlab.n5.KeyValueRoot;
-import org.janelia.saalfeldlab.n5.cache.DelegateStore;
+import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
 import org.janelia.saalfeldlab.n5.cache.MyJsonCache;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -112,25 +112,25 @@ public class N5HttpTest extends AbstractN5Test {
 
 
 		final URI root = httpServerURI.resolve(location);
-		final DelegateStore readStore = new KeyValueAccessMetaStore(new HttpKeyValueRoot(root));
+		final HierarchyStore readStore = new KeyValueAccessMetaStore(new HttpKeyValueRoot(root));
 
 		final String writerFsPath = httpServerDirectory.resolve(location).toFile().getCanonicalPath();
-		final DelegateStore writeStore = new KeyValueAccessMetaStore(new FileSystemKeyValueRoot(writerFsPath));
+		final HierarchyStore writeStore = new KeyValueAccessMetaStore(new FileSystemKeyValueRoot(writerFsPath));
 
-		final DelegateStore readWriteStore = new ReadWriteMetaStore(readStore, writeStore);
-		final DelegateStore xstore = cacheMeta ? new MyJsonCache(readWriteStore) : readWriteStore;
+		final HierarchyStore readWriteStore = new ReadWriteMetaStore(readStore, writeStore);
+		final HierarchyStore xstore = cacheMeta ? new MyJsonCache(readWriteStore) : readWriteStore;
 
 		final N5FSWriter writer = new N5FSWriter(writerFsPath, gson, cacheMeta) {
 
 			@Override
-			public DelegateStore createMetaStore(final KeyValueRoot keyValueRoot, final boolean cacheMeta) {
+			public HierarchyStore createHierarchyStore(final KeyValueRoot keyValueRoot, final boolean cacheMeta) {
 				return xstore;
 			}
 		};
 		final N5KeyValueReader reader = new N5KeyValueReader(new HttpKeyValueRoot(root), gson, cacheMeta) {
 
 			@Override
-			public DelegateStore createMetaStore(final KeyValueRoot keyValueRoot, final boolean cacheMeta) {
+			public HierarchyStore createHierarchyStore(final KeyValueRoot keyValueRoot, final boolean cacheMeta) {
 				return xstore;
 			}
 		};

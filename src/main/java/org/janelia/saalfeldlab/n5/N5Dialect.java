@@ -12,7 +12,7 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5ClassCastException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5JsonParseException;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
-import org.janelia.saalfeldlab.n5.cache.DelegateStore;
+import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
 
 import static org.janelia.saalfeldlab.n5.N5KeyValueReader.ATTRIBUTES_JSON;
 
@@ -26,11 +26,11 @@ import static org.janelia.saalfeldlab.n5.N5KeyValueReader.ATTRIBUTES_JSON;
  */
 public final class N5Dialect implements ContainerDialect {
 
-	private final DelegateStore store;
+	private final HierarchyStore store;
 	private final Gson gson;
 
 	public N5Dialect(
-			final DelegateStore store,
+			final HierarchyStore store,
 			final Gson gson) {
 		this.store = store;
 		this.gson = gson;

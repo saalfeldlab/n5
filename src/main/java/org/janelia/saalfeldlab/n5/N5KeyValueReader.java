@@ -30,7 +30,7 @@ package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.janelia.saalfeldlab.n5.cache.DelegateStore;
+import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
@@ -45,8 +45,8 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	public static final String ATTRIBUTES_JSON = "attributes.json";
 
 	protected final KeyValueRoot keyValueRoot;
-	protected final DelegateStore metaStore;
-	protected final ContainerDialect store;
+	protected final HierarchyStore hierarchyStore;
+	protected final ContainerDialect containerDialect;
 	protected final Gson gson;
 	protected final boolean cacheMeta;
 
@@ -117,8 +117,8 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 		this.keyValueRoot = keyValueRoot;
 		this.gson = registerGson(gsonBuilder).create();
 		this.cacheMeta = cacheMeta;
-		this.metaStore = createMetaStore(keyValueRoot, cacheMeta);
-		this.store = createN5Store(metaStore, gson, cacheMeta);
+		this.hierarchyStore = createHierarchyStore(keyValueRoot, cacheMeta);
+		this.containerDialect = createContainerDialect(hierarchyStore, gson, cacheMeta);
 
 		boolean versionFound = false;
 		if (checkVersion) {
@@ -166,7 +166,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	@Override
 	public ContainerDialect getContainerDialect() {
 
-		return store;
+		return containerDialect;
 	}
 
 	@Override
