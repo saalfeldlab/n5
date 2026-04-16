@@ -12,65 +12,65 @@ import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 public class DelegateKeyValueRoot implements KeyValueRoot {
 
-	protected final KeyValueRoot kva;
+	protected final KeyValueRoot kvr;
 
-	public DelegateKeyValueRoot(KeyValueRoot kva) {
-		this.kva = kva;
+	public DelegateKeyValueRoot(KeyValueRoot kvr) {
+		this.kvr = kvr;
 	}
 
 	@Deprecated
 	@Override
 	public KeyValueAccess getKVA() {
-		return kva.getKVA();
+		return kvr.getKVA();
 	}
 
 	@Override
 	public URI uri() {
-		return kva.uri();
+		return kvr.uri();
 	}
 
 	@Override
 	public VolatileReadData createReadData(final N5FilePath normalPath) throws N5IOException {
-		return kva.createReadData(normalPath);
+		return kvr.createReadData(normalPath);
 	}
 
 	@Override
 	public boolean isDirectory(final N5Path normalPath) {
-		return kva.isDirectory(normalPath);
+		return kvr.isDirectory(normalPath);
 	}
 
 	@Override
 	public boolean isFile(final N5Path normalPath) {
-		return kva.isFile(normalPath);
+		return kvr.isFile(normalPath);
 	}
 
 	@Override
 	public boolean exists(final N5Path normalPath) {
-		return kva.exists(normalPath);
+		return kvr.exists(normalPath);
 	}
 
 	@Override
 	public long size(final N5FilePath normalPath) throws N5IOException {
-		return kva.size(normalPath);
+		return kvr.size(normalPath);
 	}
 
 	@Override
 	public void write(final N5FilePath normalPath, final ReadData data) throws N5IOException {
-		kva.write(normalPath, data);
+		kvr.write(normalPath, data);
 	}
 
 	@Override
 	public String[] listDirectories(final N5DirectoryPath normalPath) throws N5IOException {
-		return kva.listDirectories(normalPath);
+		return kvr.listDirectories(normalPath);
 	}
 
 	@Override
 	public void createDirectories(final N5DirectoryPath normalPath) throws N5IOException {
-		kva.createDirectories(normalPath);
+		kvr.createDirectories(normalPath);
 	}
 
 	@Override
 	public void delete(final N5Path normalPath) throws N5IOException {
-		kva.delete(normalPath);
+		kvr.delete(normalPath);
 	}
 }

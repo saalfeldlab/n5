@@ -127,10 +127,10 @@ public class CompatibilityTest {
 		final JsonElement attrsMy = n5My.getAttributes(writeDataset);
 		assertEquals(attrsLegacy, attrsMy);
 
-		final KeyValueRoot rkva = n5My.getKeyValueRoot();
+		final KeyValueRoot kvr = n5My.getKeyValueRoot();
 		for (final String path : writePathsToTest) {
-			final byte[] dataMy = read(rkva, writeDataset + "/" + path);
-			final byte[] dataLegacy = read(rkva, writeDataset + "/" + path);
+			final byte[] dataMy = read(kvr, writeDataset + "/" + path);
+			final byte[] dataLegacy = read(kvr, writeDataset + "/" + path);
 			assertArrayEquals(dataLegacy, dataMy);
 		}
 
@@ -139,10 +139,10 @@ public class CompatibilityTest {
 		n5Legacy.close();
 	}
 
-	private byte[] read(KeyValueRoot kva, String path) {
+	private byte[] read(final KeyValueRoot kvr, final String path) {
 
-		byte[] data;
-		try (VolatileReadData readData = kva.createReadData(path)) {
+		final byte[] data;
+		try (VolatileReadData readData = kvr.createReadData(path)) {
 			data = readData.allBytes();
 		} catch (N5Exception.N5IOException e) {
 			return null;
@@ -150,8 +150,8 @@ public class CompatibilityTest {
 		return data;
 	}
 
-	private static byte[] expectedData(int size, byte value ) {
-		byte[] data = new byte[size];
+	private static byte[] expectedData(final int size, final byte value ) {
+		final byte[] data = new byte[size];
 		Arrays.fill(data, value);
 		return data;
 	}

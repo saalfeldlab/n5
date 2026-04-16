@@ -15,11 +15,11 @@ import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 public class KeyValueAccessMetaStore implements DelegateStore {
 
-	private final KeyValueRoot kva;
+	private final KeyValueRoot kvr;
 
-	public KeyValueAccessMetaStore(final KeyValueRoot kva) {
+	public KeyValueAccessMetaStore(final KeyValueRoot kvr) {
 
-		this.kva = kva;
+		this.kvr = kvr;
 	}
 
 	@Override
@@ -29,7 +29,7 @@ public class KeyValueAccessMetaStore implements DelegateStore {
 			final Gson gson) throws N5IOException {
 
 		final N5FilePath attributesPath = group.resolve(filename).asFile();
-		try (final VolatileReadData readData = kva.createReadData(attributesPath);) {
+		try (final VolatileReadData readData = kvr.createReadData(attributesPath);) {
 			// TODO: this (ReadData --> JsonElement) should go into GsonUtils?
 			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), gson);
 		} catch (final N5Exception.N5NoSuchKeyException e) {
@@ -42,13 +42,13 @@ public class KeyValueAccessMetaStore implements DelegateStore {
 	@Override
 	public boolean store_isDirectory(final N5DirectoryPath group) {
 
-		return kva.isDirectory(group);
+		return kvr.isDirectory(group);
 	}
 
 	@Override
 	public String[] store_listDirectories(final N5DirectoryPath group) throws N5IOException {
 
-		return kva.listDirectories(group);
+		return kvr.listDirectories(group);
 	}
 
 	@Override
@@ -67,7 +67,7 @@ public class KeyValueAccessMetaStore implements DelegateStore {
 		});
 
 		try {
-			kva.write(attributesPath, attributesReadData);
+			kvr.write(attributesPath, attributesReadData);
 		} catch (UncheckedIOException | N5IOException e) {
 			throw new N5IOException("Failed to write attributes to " + attributesPath, e);
 		}
@@ -79,18 +79,18 @@ public class KeyValueAccessMetaStore implements DelegateStore {
 			final String filename) throws N5IOException {
 
 		final N5FilePath file = group.resolve(filename).asFile();
-		kva.delete(file);
+		kvr.delete(file);
 	}
 
 	@Override
 	public void store_removeDirectory(final N5DirectoryPath group) throws N5IOException {
 
-		kva.delete(group);
+		kvr.delete(group);
 	}
 
 	@Override
 	public void store_createDirectories(N5DirectoryPath group) throws N5IOException {
 
-		kva.createDirectories(group);
+		kvr.createDirectories(group);
 	}
 }

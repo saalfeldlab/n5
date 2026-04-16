@@ -113,8 +113,8 @@ public class N5BlockWriteBenchmarks {
 		File tmpDir;
 		try {
 			tmpDir = Files.createTempDirectory("n5-blockWriteBenchmark-").toFile();
-			final KeyValueRoot kva = new FileSystemKeyValueRoot(tmpDir.getAbsolutePath());
-			n5 = new N5KeyValueWriter(kva, new GsonBuilder(), true);
+			final KeyValueRoot kvr = new FileSystemKeyValueRoot(tmpDir.getAbsolutePath());
+			n5 = new N5KeyValueWriter(kvr, new GsonBuilder(), true);
 
 			int[] blockSize = new int[numDimensions];
 			Arrays.fill(blockSize, blockDim);

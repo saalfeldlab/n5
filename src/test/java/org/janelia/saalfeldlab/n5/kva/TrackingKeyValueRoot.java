@@ -14,19 +14,19 @@ public class TrackingKeyValueRoot extends DelegateKeyValueRoot {
 	public int numIsFileCalls = 0;
 	public long totalBytesRead = 0;
 
-	public TrackingKeyValueRoot(final KeyValueRoot kva) {
-		super(kva);
+	public TrackingKeyValueRoot(final KeyValueRoot kvr) {
+		super(kvr);
 	}
 
 	@Override
 	public boolean isFile(final N5Path normalPath) {
 		numIsFileCalls++;
-		return kva.isFile(normalPath);
+		return kvr.isFile(normalPath);
 	}
 
 	@Override
 	public VolatileReadData createReadData(final N5FilePath normalPath) {
-		return VolatileReadData.from(new TrackingVolatileReadData(kva.createReadData(normalPath)));
+		return VolatileReadData.from(new TrackingVolatileReadData(kvr.createReadData(normalPath)));
 	}
 
 	private class TrackingVolatileReadData implements LazyRead {

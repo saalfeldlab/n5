@@ -9,41 +9,41 @@ import org.janelia.saalfeldlab.n5.kva.TrackingKeyValueRoot;
  */
 public class TrackingN5Writer extends N5KeyValueWriter {
 
-	public final TrackingKeyValueRoot tkva;
+	public final TrackingKeyValueRoot tkvr;
 
-	public TrackingN5Writer(final KeyValueRoot kva) {
+	public TrackingN5Writer(final KeyValueRoot kvr) {
 
-		super(new TrackingKeyValueRoot(kva), new GsonBuilder(), false);
-		this.tkva = (TrackingKeyValueRoot) getKeyValueRoot();
+		super(new TrackingKeyValueRoot(kvr), new GsonBuilder(), false);
+		this.tkvr = (TrackingKeyValueRoot) getKeyValueRoot();
 	}
 
 	public void resetNumMaterializeCalls() {
-		tkva.numMaterializeCalls = 0;
+		tkvr.numMaterializeCalls = 0;
 	}
 
 	public int getNumMaterializeCalls() {
-		return tkva.numMaterializeCalls;
+		return tkvr.numMaterializeCalls;
 	}
 
 	public void resetNumIsFileCalls() {
-		tkva.numIsFileCalls = 0;
+		tkvr.numIsFileCalls = 0;
 	}
 
 	public int getNumIsFileCalls() {
-		return tkva.numIsFileCalls;
+		return tkvr.numIsFileCalls;
 	}
 
 	public void resetTotalBytesRead() {
-		tkva.totalBytesRead = 0;
+		tkvr.totalBytesRead = 0;
 	}
 
 	public long getTotalBytesRead() {
-		return tkva.totalBytesRead;
+		return tkvr.totalBytesRead;
 	}
 
 	public void resetAllTracking() {
-		tkva.numMaterializeCalls = 0;
-		tkva.numIsFileCalls = 0;
-		tkva.totalBytesRead = 0;
+		tkvr.numMaterializeCalls = 0;
+		tkvr.numIsFileCalls = 0;
+		tkvr.totalBytesRead = 0;
 	}
 }

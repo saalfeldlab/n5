@@ -73,7 +73,7 @@ public class ReadDataBenchmarks {
 
 	protected Path basePath;
 	protected ArrayList<Path> tmpPaths;
-	protected KeyValueRoot kva;
+	protected KeyValueRoot kvr;
 	protected Random random;
 
 	public ReadDataBenchmarks() {}
@@ -96,7 +96,7 @@ public class ReadDataBenchmarks {
 
 	public VolatileReadData read() throws IOException {
 
-		return kva.createReadData(getPath().toString());
+		return kvr.createReadData(getPath().toString());
 	}
 
 	protected Path getPath() {
@@ -110,7 +110,7 @@ public class ReadDataBenchmarks {
 		random = new Random();
 
 		basePath = Files.createTempDirectory("ReadDataBenchmark-");
-		kva = new FileSystemKeyValueRoot(basePath.toString());
+		kvr = new FileSystemKeyValueRoot(basePath.toString());
 
 		tmpPaths = new ArrayList<>();
 		for (final int sz : sizes()) {
@@ -133,7 +133,7 @@ public class ReadDataBenchmarks {
 		}).materialize();
 
 		try {
-			kva.write(path.toString(), readData);
+			kvr.write(path.toString(), readData);
 		} catch (N5Exception.N5IOException e) {
 			e.printStackTrace();
 		}
