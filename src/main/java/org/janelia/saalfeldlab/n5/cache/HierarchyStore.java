@@ -8,12 +8,22 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.janelia.saalfeldlab.n5.N5Reader;
 
+/**
+ * Operations on a directory hierarchy (or directory-like hierarchy like
+ * prefixes in a key value store):
+ * <ul>
+ * <li>creating directories</li>
+ * <li>listing directory-like children of a directory</li>
+ * <li>querying existence of a directory</li>
+ * <li>reading json files as {@code JsonElement}</li>
+ * <li>writing {@code JsonElement} into json files</li>
+ * </ul>
+ */
 public interface HierarchyStore {
 
-	// ------------------------------------------------------------------------
-	//
-	// -- DelegateStore : READ --
-	//
+	// ┌───────────────────────────────────────────────────────────────────────┐
+	// │ READ:                                                                 │
+	// └───────────────────────────────────────────────────────────────────────┘
 
 	/**
 	 * Read an attributes tree from the store.
@@ -39,7 +49,6 @@ public interface HierarchyStore {
 	 * 		if an error occurs while reading the attributes
 	 * @see GsonN5Reader#getAttributes
 	 */
-	// TODO: replace (group, filename) with N5FilePath (not sure, but looks like a good idea...)
 	JsonElement store_readAttributesJson(
 			N5DirectoryPath group,
 			String filename,
@@ -53,7 +62,6 @@ public interface HierarchyStore {
 	 *
 	 * @return true if the directory exists
 	 */
-	// TODO rename
 	boolean store_isDirectory(N5DirectoryPath group);
 
 	/**
@@ -79,10 +87,9 @@ public interface HierarchyStore {
 	String[] store_listDirectories(N5DirectoryPath group) throws N5IOException;
 
 
-	// ------------------------------------------------------------------------
-	//
-	// -- DelegateStore : WRITE --
-	//
+	// ┌───────────────────────────────────────────────────────────────────────┐
+	// │ WRITE:                                                                │
+	// └───────────────────────────────────────────────────────────────────────┘
 
 	/**
 	 * Write an attributes tree into the store
@@ -97,7 +104,6 @@ public interface HierarchyStore {
 	 * @throws N5IOException
 	 * 		if an error occurs while writing the attributes
 	 */
-	// TODO: replace (group, filename) with N5FilePath (not sure, but looks like a good idea...)
 	void store_writeAttributesJson(
 			N5DirectoryPath group,
 			String filename,
