@@ -428,18 +428,18 @@ public class N5CachedFSTest extends N5FSTest {
 
 		private TrackingMetaStore trackingStore;
 
-		public N5TrackingStorage(final KeyValueRoot keyValueAccess,
+		public N5TrackingStorage(final KeyValueRoot keyValueRoot,
 				final GsonBuilder gsonBuilder, final boolean cacheAttributes) throws IOException {
 
-			super(keyValueAccess, gsonBuilder, cacheAttributes);
+			super(keyValueRoot, gsonBuilder, cacheAttributes);
 		}
 
 		@Override
 		public DelegateStore createMetaStore(
-				final KeyValueRoot keyValueAccess,
+				final KeyValueRoot keyValueRoot,
 				final boolean cacheMeta) {
 
-			trackingStore = new TrackingMetaStore(new KeyValueAccessMetaStore(keyValueAccess));
+			trackingStore = new TrackingMetaStore(new KeyValueAccessMetaStore(keyValueRoot));
 			return cacheMeta ? new MyJsonCache(trackingStore) : trackingStore;
 		}
 

@@ -44,7 +44,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 	public static final String ATTRIBUTES_JSON = "attributes.json";
 
-	protected final KeyValueRoot keyValueAccess;
+	protected final KeyValueRoot keyValueRoot;
 	protected final DelegateStore metaStore;
 	protected final N5Store store;
 	protected final Gson gson;
@@ -54,17 +54,17 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 * Opens an {@link N5KeyValueReader} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
 	 *
-	 * @param keyValueAccess
-	 * 			  the KeyValueAccess backend used
+	 * @param keyValueRoot
+	 * 			  the backend key value access to use
 	 * @param gsonBuilder
 	 * 			  the GsonBuilder
 	 * @param cacheMeta
-	 *            cache attributes and meta data
-	 *            Setting this to true avoidsfrequent reading and parsing of
-	 *            JSON encoded attributes andother meta data that requires
-	 *            accessing the store. This ismost interesting for high latency
-	 *            backends. Changes of cachedattributes and meta data by an
-	 *            independent writer will not betracked.
+	 *            cache attributes and metadata.
+	 *            Setting this to true avoids frequent reading and parsing of
+	 *            JSON encoded attributes and other metadata that requires
+	 *            accessing the store. This is most interesting for high latency
+	 *            backends. Changes of cached attributes and metadata by an
+	 *            independent writer will not be tracked.
 	 *
 	 * @throws N5Exception
 	 *             if the base path cannot be read or does not exist, if the N5
@@ -72,12 +72,12 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 *             implementation.
 	 */
 	public N5KeyValueReader(
-			final KeyValueRoot keyValueAccess,
+			final KeyValueRoot keyValueRoot,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheMeta)
 			throws N5Exception {
 
-		this(true, keyValueAccess, gsonBuilder, cacheMeta, true);
+		this(true, keyValueRoot, gsonBuilder, cacheMeta, true);
 	}
 
 	/**
@@ -87,7 +87,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 * @param checkVersion
 	 *            if true, an N5IOException will be thrown if the container
 	 *            (exists and) has an incompatible version
-	 * @param keyValueAccess
+	 * @param keyValueRoot
 	 *            the backend KeyValueAccess used
 	 * @param gsonBuilder
 	 *            the GsonBuilder
@@ -108,16 +108,16 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	 */
 	protected N5KeyValueReader(
 			final boolean checkVersion,
-			final KeyValueRoot keyValueAccess,
+			final KeyValueRoot keyValueRoot,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheMeta,
 			final boolean checkExists)
 			throws N5Exception {
 
-		this.keyValueAccess = keyValueAccess;
+		this.keyValueRoot = keyValueRoot;
 		this.gson = registerGson(gsonBuilder).create();
 		this.cacheMeta = cacheMeta;
-		this.metaStore = createMetaStore(keyValueAccess, cacheMeta);
+		this.metaStore = createMetaStore(keyValueRoot, cacheMeta);
 		this.store = createN5Store(metaStore, gson, cacheMeta);
 
 		boolean versionFound = false;
@@ -133,7 +133,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 		// if a version was found, the container exists - don't need to check again
 		if (checkExists && (!versionFound && !exists("/")))
-			throw new N5Exception.N5IOException("No container exists at " + keyValueAccess.uri());
+			throw new N5Exception.N5IOException("No container exists at " + keyValueRoot.uri());
 	}
 
 	protected GsonBuilder registerGson(final GsonBuilder gsonBuilder) {
@@ -160,7 +160,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	@Override
 	public KeyValueRoot getKeyValueRoot() {
 
-		return keyValueAccess;
+		return keyValueRoot;
 	}
 
 	@Override

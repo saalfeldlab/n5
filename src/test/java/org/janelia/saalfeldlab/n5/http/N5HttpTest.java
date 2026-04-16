@@ -123,14 +123,14 @@ public class N5HttpTest extends AbstractN5Test {
 		final N5FSWriter writer = new N5FSWriter(writerFsPath, gson, cacheMeta) {
 
 			@Override
-			public DelegateStore createMetaStore(final KeyValueRoot keyValueAccess, final boolean cacheMeta) {
+			public DelegateStore createMetaStore(final KeyValueRoot keyValueRoot, final boolean cacheMeta) {
 				return xstore;
 			}
 		};
 		final N5KeyValueReader reader = new N5KeyValueReader(new HttpKeyValueRoot(root), gson, cacheMeta) {
 
 			@Override
-			public DelegateStore createMetaStore(final KeyValueRoot keyValueAccess, final boolean cacheMeta) {
+			public DelegateStore createMetaStore(final KeyValueRoot keyValueRoot, final boolean cacheMeta) {
 				return xstore;
 			}
 		};

@@ -45,7 +45,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyV
 	 * implementation, the N5 version of this container will be set to the
 	 * current N5 version of this implementation.
 	 *
-	 * @param keyValueAccess
+	 * @param keyValueRoot
 	 * 			  the backend key value access to use
 	 * @param gsonBuilder
 	 *            the gson builder
@@ -60,12 +60,12 @@ public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyV
 	 *             this implementation.
 	 */
 	public N5KeyValueWriter(
-			final KeyValueRoot keyValueAccess,
+			final KeyValueRoot keyValueRoot,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheAttributes)
 			throws N5Exception {
 
-		super(false, keyValueAccess, gsonBuilder, cacheAttributes, false);
+		super(false, keyValueRoot, gsonBuilder, cacheAttributes, false);
 
 		Version version = null;
 		try {
