@@ -1,0 +1,60 @@
+#!/bin/bash
+
+#
+# Run FsLockingValidation N times in parallel.
+#
+# Usage:
+#   [N=<processes>] ./fsLockValidation [FsLockingValidation options...]
+#
+# Example:
+#   N=4 ./fsLockValidation --file /tmp/shard-test --num-repeats 5000
+
+N=${N:-2}
+
+OWN_DIR="$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")"
+POM="$OWN_DIR/../pom.xml"
+TARGET="$OWN_DIR/../target"
+
+if [ ! -d "$TARGET/test-classes" ]; then
+    echo "test-classes not found -- run 'mvn test-compile' in n5/ first" >&2
+    exit 1
+fi
+
+echo "Building classpath..."
+CP=$(mvn -q -f "$POM" dependency:build-classpath \
+        -DincludeScope=test \
+        -Dmdep.outputFile=/dev/stdout \
+        2>/dev/null)
+CP="$TARGET/test-classes:$TARGET/classes:$CP"
+
+cleanup() {
+    kill "${pids[@]}" 2>/dev/null
+    wait "${pids[@]}" 2>/dev/null
+}
+trap cleanup INT TERM EXIT
+
+echo "Launching $N processes..."
+pids=()
+for i in $(seq 1 $N); do
+    java -cp "$CP" org.janelia.saalfeldlab.n5.kva.FsLockingValidation "$@" &
+    pids+=($!)
+done
+
+# Wait for all processes and collect exit codes
+all_ok=true
+for i in "${!pids[@]}"; do
+    pid=${pids[$i]}
+    wait "$pid"
+    code=$?
+    if [ $code -ne 0 ]; then
+        echo "Process $((i+1)) (pid $pid) exited with code $code" >&2
+        all_ok=false
+    fi
+done
+
+if $all_ok; then
+    echo "All $N processes completed without errors."
+else
+    echo "One or more processes reported errors." >&2
+    exit 1
+fi

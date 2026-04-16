@@ -224,6 +224,13 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>info.picocli</groupId>
+			<artifactId>picocli</artifactId>
+			<version>4.3.2</version>
+			<scope>test</scope>
+		</dependency>
+
 		<!-- JMH -->
 		<dependency>
 			<groupId>org.openjdk.jmh</groupId>
