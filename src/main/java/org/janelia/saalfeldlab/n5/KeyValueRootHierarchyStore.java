@@ -77,15 +77,6 @@ public class KeyValueRootHierarchyStore implements HierarchyStore {
 	}
 
 	@Override
-	public void store_removeAttributesJson(
-			final N5DirectoryPath group,
-			final String filename) throws N5IOException {
-
-		final N5FilePath file = group.resolve(filename).asFile();
-		kvr.delete(file);
-	}
-
-	@Override
 	public void store_removeDirectory(final N5DirectoryPath group) throws N5IOException {
 
 		kvr.delete(group);

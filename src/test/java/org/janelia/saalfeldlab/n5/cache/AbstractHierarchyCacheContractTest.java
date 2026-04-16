@@ -167,37 +167,13 @@ public abstract class AbstractHierarchyCacheContractTest {
 		assertEquals(otherJson(), store.store_readAttributesJson(path("a/b"), FILENAME, GSON));
 	}
 
-	// ------------------------------------------------------------------------
-	// 3. store_removeAttributesJson
-	// ------------------------------------------------------------------------
-
-	/**
-	 * Assumption 8: After removing a JSON attributes file, reading it returns
-	 * {@code null}.
-	 */
-	@Test
-	public void testRemoveAttributesJson_readReturnsNull() {
-		store.store_writeAttributesJson(path("a/b"), FILENAME, someJson(), GSON);
-		store.store_removeAttributesJson(path("a/b"), FILENAME);
-		assertNull(store.store_readAttributesJson(path("a/b"), FILENAME, GSON));
-	}
-
-	/**
-	 * Assumption 9: Removing a JSON attributes file that does not exist does
-	 * not throw.
-	 */
-	@Test
-	public void testRemoveAttributesJson_nonExistentIsNoOp() {
-		store.store_createDirectories(path("a/b"));
-		store.store_removeAttributesJson(path("a/b"), FILENAME); // must not throw
-	}
 
 	// ------------------------------------------------------------------------
-	// 4. store_removeDirectory
+	// 3. store_removeDirectory
 	// ------------------------------------------------------------------------
 
 	/**
-	 * Assumption 10: After removing a directory, that directory no longer
+	 * Assumption 8: After removing a directory, that directory no longer
 	 * exists.
 	 */
 	@Test
@@ -208,7 +184,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	}
 
 	/**
-	 * Assumption 11: After removing a directory, all descendant directories
+	 * Assumption 9: After removing a directory, all descendant directories
 	 * no longer exist.
 	 * <p>
 	 * This is required because {@link HierarchyCache.CacheInfo#markRemoved()}
@@ -223,7 +199,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	}
 
 	/**
-	 * Assumption 12: After removing a directory, JSON attributes files in any
+	 * Assumption 10: After removing a directory, JSON attributes files in any
 	 * descendant directory return {@code null} when read.
 	 */
 	@Test
@@ -234,7 +210,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	}
 
 	/**
-	 * Assumption 13: After removing a directory, that directory is no longer
+	 * Assumption 11: After removing a directory, that directory is no longer
 	 * listed as a child of its parent.
 	 */
 	@Test
@@ -246,7 +222,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	}
 
 	/**
-	 * Assumption 14: Removing a directory that does not exist does not throw.
+	 * Assumption 12: Removing a directory that does not exist does not throw.
 	 */
 	@Test
 	public void testRemoveDirectory_nonExistentIsNoOp() {
@@ -254,11 +230,11 @@ public abstract class AbstractHierarchyCacheContractTest {
 	}
 
 	// ------------------------------------------------------------------------
-	// 5. store_isDirectory
+	// 4. store_isDirectory
 	// ------------------------------------------------------------------------
 
 	/**
-	 * Assumption 15: A directory that has never been created does not exist.
+	 * Assumption 13: A directory that has never been created does not exist.
 	 */
 	@Test
 	public void testIsDirectory_nonExistentReturnsFalse() {
@@ -266,7 +242,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	}
 
 	/**
-	 * Assumption 16: If a directory does not exist, none of its descendants
+	 * Assumption 14: If a directory does not exist, none of its descendants
 	 * exist either.
 	 * <p>
 	 * This is required because {@link HierarchyCache} propagates non-existence
@@ -281,7 +257,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	}
 
 	/**
-	 * Assumption 17: If a directory does not exist, reading any JSON
+	 * Assumption 15: If a directory does not exist, reading any JSON
 	 * attributes file underneath it returns {@code null}.
 	 * <p>
 	 * This is required because {@link HierarchyCache} propagates non-existence
@@ -294,11 +270,11 @@ public abstract class AbstractHierarchyCacheContractTest {
 	}
 
 	// ------------------------------------------------------------------------
-	// 6. store_listDirectories
+	// 5. store_listDirectories
 	// ------------------------------------------------------------------------
 
 	/**
-	 * Assumption 18: Listing a directory that does not exist throws
+	 * Assumption 16: Listing a directory that does not exist throws
 	 * {@link N5NoSuchKeyException}.
 	 */
 	@Test(expected = N5NoSuchKeyException.class)
@@ -307,7 +283,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	}
 
 	/**
-	 * Assumption 19: After creating a child directory, it appears in the
+	 * Assumption 17: After creating a child directory, it appears in the
 	 * listing of its parent.
 	 */
 	@Test
@@ -318,7 +294,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	}
 
 	/**
-	 * Assumption 20: After writing a JSON file into a child directory, that
+	 * Assumption 18: After writing a JSON file into a child directory, that
 	 * child appears in the listing of its parent.
 	 * <p>
 	 * This is required because writing a JSON file implies the parent
@@ -332,7 +308,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	}
 
 	/**
-	 * Assumption 21: Listing returns only immediate children, not deeper
+	 * Assumption 19: Listing returns only immediate children, not deeper
 	 * descendants.
 	 */
 	@Test
@@ -345,7 +321,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	}
 
 	/**
-	 * Assumption 22: After removing a child directory, it no longer appears
+	 * Assumption 20: After removing a child directory, it no longer appears
 	 * in the listing of its parent.
 	 */
 	@Test
@@ -359,11 +335,11 @@ public abstract class AbstractHierarchyCacheContractTest {
 	}
 
 	// ------------------------------------------------------------------------
-	// 7. store_readAttributesJson
+	// 6. store_readAttributesJson
 	// ------------------------------------------------------------------------
 
 	/**
-	 * Assumption 23: Reading a JSON attributes file that does not exist
+	 * Assumption 21: Reading a JSON attributes file that does not exist
 	 * returns {@code null} (does not throw).
 	 */
 	@Test
@@ -373,7 +349,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	}
 
 	/**
-	 * Assumption 24: Reading a JSON attributes file is stable: repeated reads
+	 * Assumption 22: Reading a JSON attributes file is stable: repeated reads
 	 * without intervening writes return the same content.
 	 */
 	@Test

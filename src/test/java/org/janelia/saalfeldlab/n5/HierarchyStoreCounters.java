@@ -6,7 +6,6 @@ public class HierarchyStoreCounters {
 
 	private int readAttrCallCount = 0;
 	private int writeAttrCallCount = 0;
-	private int removeAttrCallCount = 0;
 	private int isDirCallCount = 0;
 	private int rmDirCallCount = 0;
 	private int mkDirCallCount = 0;
@@ -15,7 +14,6 @@ public class HierarchyStoreCounters {
 	public static void assertEqualCounters(final HierarchyStoreCounters expected, final HierarchyStoreCounters actual) {
 		Assert.assertEquals("readAttr", expected.readAttrCallCount, actual.readAttrCallCount);
 		Assert.assertEquals("writeAttr", expected.writeAttrCallCount, actual.writeAttrCallCount);
-		Assert.assertEquals("removeAttr", expected.removeAttrCallCount, actual.removeAttrCallCount);
 		Assert.assertEquals("isDir", expected.isDirCallCount, actual.isDirCallCount);
 		Assert.assertEquals("rmDir", expected.rmDirCallCount, actual.rmDirCallCount);
 		Assert.assertEquals("mkDir", expected.mkDirCallCount, actual.mkDirCallCount);
@@ -25,7 +23,6 @@ public class HierarchyStoreCounters {
 	public void reset() {
 		readAttrCallCount = 0;
 		writeAttrCallCount = 0;
-		removeAttrCallCount = 0;
 		isDirCallCount = 0;
 		rmDirCallCount = 0;
 		mkDirCallCount = 0;
@@ -46,14 +43,6 @@ public class HierarchyStoreCounters {
 
 	public void incWriteAttr(int increment) {
 		writeAttrCallCount += increment;
-	}
-
-	public void incRemoveAttr() {
-		removeAttrCallCount++;
-	}
-
-	public void incRemoveAttr(int increment) {
-		removeAttrCallCount += increment;
 	}
 
 	public void incIsDir() {
@@ -96,10 +85,6 @@ public class HierarchyStoreCounters {
 		return writeAttrCallCount;
 	}
 
-	public int removeAttrCallCount() {
-		return removeAttrCallCount;
-	}
-
 	public int isDirCallCount() {
 		return isDirCallCount;
 	}
@@ -121,7 +106,6 @@ public class HierarchyStoreCounters {
 		final StringBuilder sb = new StringBuilder("MetaStoreCounters{");
 		sb.append("readAttr:").append(readAttrCallCount);
 		sb.append(", writeAttr:").append(writeAttrCallCount);
-		sb.append(", removeAttr:").append(removeAttrCallCount);
 		sb.append(", isDir:").append(isDirCallCount);
 		sb.append(", rmDir:").append(rmDirCallCount);
 		sb.append(", mkDir:").append(mkDirCallCount);

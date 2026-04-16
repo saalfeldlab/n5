@@ -316,12 +316,6 @@ public class HierarchyCacheTest {
 		}
 
 		@Override
-		public void store_removeAttributesJson(
-				final N5DirectoryPath group,
-				final String filename) throws N5IOException {
-		}
-
-		@Override
 		public void store_createDirectories(final N5DirectoryPath group) throws N5IOException {
 		}
 

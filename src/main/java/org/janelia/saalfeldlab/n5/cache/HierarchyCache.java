@@ -361,21 +361,6 @@ public class HierarchyCache implements HierarchyStore {
 	}
 
 	@Override
-	public void store_removeAttributesJson(
-			final N5DirectoryPath group,
-			final String filename) throws N5IOException {
-
-		final N5FilePath path = group.resolve(filename).asFile();
-		final CacheInfoAttributes info = getOrCreate(path);
-		synchronized (info) {
-			if (!info.isKnownToNotExist()) {
-				delegate.store_removeAttributesJson(group, filename);
-				info.markRemoved();
-			}
-		}
-	}
-
-	@Override
 	public boolean store_isDirectory(final N5DirectoryPath group) {
 
 		final CacheInfoDirectory info = getOrCreate(group);

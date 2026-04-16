@@ -37,11 +37,6 @@ public class ReadWriteHierarchyStore implements HierarchyStore {
 	}
 
 	@Override
-	public void store_removeAttributesJson(final N5DirectoryPath group, final String filename) throws N5IOException {
-		writeStore.store_removeAttributesJson(group, filename);
-	}
-
-	@Override
 	public void store_createDirectories(final N5DirectoryPath group) throws N5IOException {
 		writeStore.store_createDirectories(group);
 	}

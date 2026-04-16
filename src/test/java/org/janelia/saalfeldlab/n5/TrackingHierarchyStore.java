@@ -31,12 +31,6 @@ public class TrackingHierarchyStore implements HierarchyStore {
 	}
 
 	@Override
-	public void store_removeAttributesJson(final N5Path.N5DirectoryPath group, final String filename) throws N5Exception.N5IOException {
-		counters.incRemoveAttr();
-		delegate.store_removeAttributesJson(group, filename);
-	}
-
-	@Override
 	public boolean store_isDirectory(final N5Path.N5DirectoryPath group) {
 		counters.incIsDir();
 		return delegate.store_isDirectory(group);

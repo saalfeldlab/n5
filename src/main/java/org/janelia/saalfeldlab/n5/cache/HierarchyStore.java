@@ -110,10 +110,6 @@ public interface HierarchyStore {
 			JsonElement attributes,
 			Gson gson) throws N5IOException;
 
-	void store_removeAttributesJson(
-			final N5DirectoryPath group,
-			final String filename) throws N5IOException;
-
 	/**
 	 * Create a directory and all parent paths along the way. The directory
 	 * and parent paths are discoverable. On a filesystem, this usually means
