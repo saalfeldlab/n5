@@ -41,7 +41,7 @@ import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Reader;
 import org.janelia.saalfeldlab.n5.GsonKeyValueN5Writer;
 import org.janelia.saalfeldlab.n5.N5Exception;
-import org.janelia.saalfeldlab.n5.N5Store;
+import org.janelia.saalfeldlab.n5.ContainerDialect;
 import org.janelia.saalfeldlab.n5.KeyValueRoot;
 
 public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
@@ -96,7 +96,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	}
 
 	@Override
-	public N5Store getN5Store() {
+	public ContainerDialect getN5Store() {
 
 		return reader.getN5Store();
 	}

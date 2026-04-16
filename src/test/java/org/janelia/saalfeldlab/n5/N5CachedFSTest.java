@@ -264,6 +264,9 @@ public class N5CachedFSTest extends N5FSTest {
 		expected.incWriteAttr();
 		assertEqualCounters(expected, n5.counters());
 
+		final DatasetAttributes i = n5.getDatasetAttributes(cachedGroup);
+		System.out.println("i = " + i);
+
 		n5.setAttribute(cachedGroup, "two", 2);
 		expected.incWriteAttr();
 		assertEqualCounters(expected, n5.counters());

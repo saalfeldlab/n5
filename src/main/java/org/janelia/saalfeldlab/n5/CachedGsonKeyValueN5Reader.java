@@ -49,7 +49,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader {
 		return cacheMeta ? new MyJsonCache(store) : store;
 	}
 
-	default N5Store createN5Store(
+	default ContainerDialect createN5Store(
 			final DelegateStore metaStore,
 			final Gson gson,
 			final boolean cacheMeta) {

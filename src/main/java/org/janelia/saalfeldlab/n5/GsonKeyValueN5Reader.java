@@ -47,7 +47,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	KeyValueRoot getKeyValueRoot();
 
-	N5Store getN5Store();
+	ContainerDialect getN5Store();
 
 	@Override
 	default URI getURI() {

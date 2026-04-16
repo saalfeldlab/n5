@@ -46,7 +46,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 
 	protected final KeyValueRoot keyValueRoot;
 	protected final DelegateStore metaStore;
-	protected final N5Store store;
+	protected final ContainerDialect store;
 	protected final Gson gson;
 	protected final boolean cacheMeta;
 
@@ -164,7 +164,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	}
 
 	@Override
-	public N5Store getN5Store() {
+	public ContainerDialect getN5Store() {
 
 		return store;
 	}

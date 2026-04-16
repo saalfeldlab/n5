@@ -10,25 +10,40 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 
 
+/**
+ * Methods to read/write groups, datasets, and attributes of a container. This
+ * abstracts how attributes are stored, what constitutes a group or a dataset,
+ * etc, because these details vary between N5, Zarr v2, and Zarr v3.
+ * <p>
+ * {@code ContainerDialect} is used by {@link GsonKeyValueN5Reader} and {@link
+ * GsonKeyValueN5Writer} for hierarchy and metadata management (basically
+ * everything that does not concern {@code DataBlock}s).
+ */
 // TODO Should this be generically typed on the DatasetAttributes sub-class?
-public interface N5Store {
-
-	// TODO: think more about which exceptions types should be thrown
+public interface ContainerDialect {
 
 	// ┌───────────────────────────────────────────────────────────────────────┐
 	// │ READ:                                                                 │
 	// └───────────────────────────────────────────────────────────────────────┘
 
 	/**
-	 * TODO javadoc
+	 * Read an attribute of a group or dataset.
 	 *
 	 * @param path
+	 * 		group or dataset path
 	 * @param attributePath
+	 * 		attribute path
 	 * @param type
-	 * @return
+	 * 		attribute Type (use this for specifying generic types)
 	 * @param <T>
+	 * 		the attribute type
+	 *
+	 * @return the attribute or {@code null} if the path or attribute does not exist
+	 *
 	 * @throws N5IOException
+	 * 		if an IO error occurs while reading the attributes file
 	 * @throws N5ClassCastException
+	 * 		if the attribute exists but is not of the specified {@code type}
 	 */
 	<T> T getAttribute(
 			N5DirectoryPath path,
@@ -36,29 +51,39 @@ public interface N5Store {
 			Type type) throws N5IOException, N5ClassCastException;
 
 	/**
-	 * TODO javadoc
+	 * Get mandatory attributes (for this dialect) of a dataset.
 	 *
 	 * @param path
-	 * @return
+	 * 		dataset path
+	 *
+	 * @return dataset attributes or {@code null} if the given path is not a dataset
+	 *
 	 * @throws N5IOException
+	 * 		if an IO error occurs while reading the attributes file
 	 */
 	DatasetAttributes getDatasetAttributes(N5DirectoryPath path) throws N5IOException;
 
 	/**
-	 * TODO javadoc
+	 * Test whether a dataset exists at a given path.
 	 *
 	 * @param path
-	 * @return
+	 * 		path to check
+	 *
+	 * @return {@code true} if path is a dataset
+	 *
 	 * @throws N5IOException
 	 * 		if an error occurs (other than the path not existing)
 	 */
 	boolean datasetExists(N5DirectoryPath path) throws N5IOException;
 
 	/**
-	 * TODO javadoc
+	 * Test whether a group exists at a given path.
 	 *
 	 * @param path
-	 * @return
+	 * 		path to check
+	 *
+	 * @return {@code true} if path is a group
+	 *
 	 * @throws N5IOException
 	 * 		if an error occurs (other than the path not existing)
 	 */
@@ -224,7 +249,4 @@ public interface N5Store {
 	 */
 	boolean remove(N5DirectoryPath path) throws N5IOException;
 
-	// TODO: flesh out interface
-	//       implement for N5
-	//       does any additional caching make sense?
 }

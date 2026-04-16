@@ -2,6 +2,7 @@ package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import java.lang.reflect.Type;
@@ -18,7 +19,7 @@ import static org.janelia.saalfeldlab.n5.N5KeyValueReader.ATTRIBUTES_JSON;
 // TODO: This is a N5Store implementation for the N5 format...
 //       Maybe should rename things such that this can be called N5MetaStore or
 //       something like that? FormatStore / N5FormatStore ???
-public final class DefaultN5Store implements N5Store {
+public final class DefaultN5Store implements ContainerDialect {
 
 	private final DelegateStore store;
 	private final Gson gson;
@@ -40,7 +41,7 @@ public final class DefaultN5Store implements N5Store {
 		final String normalizedAttributePath = N5URI.normalizeAttributePath(attributePath);
 		try {
 			return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, gson);
-		} catch (JsonSyntaxException | NumberFormatException | ClassCastException e) {
+		} catch (JsonIOException | JsonSyntaxException | NumberFormatException | ClassCastException e) {
 			throw new N5ClassCastException(e);
 		}
 	}
