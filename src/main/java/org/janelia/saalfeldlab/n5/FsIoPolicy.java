@@ -46,7 +46,7 @@ public class FsIoPolicy {
             if (parent != null && !parent.toFile().isDirectory()) {
                 Files.createDirectories(parent);
             }
-            return FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            return FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
         } else {
             return FileChannel.open(path, StandardOpenOption.READ);
         }

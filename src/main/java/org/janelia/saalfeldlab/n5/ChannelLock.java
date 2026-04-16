@@ -62,6 +62,8 @@ class ChannelLock implements Closeable {
 			while (true) {
 				try {
 					final FileLock lock = channel.lock(0, Long.MAX_VALUE, !forWriting);
+					if (forWriting)
+						channel.truncate(0);
 					return new ChannelLock(channel, lock);
 				} catch (final OverlappingFileLockException e) {
 					try {
