@@ -43,7 +43,7 @@ import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
 import org.janelia.saalfeldlab.n5.cache.HierarchyCache;
 import org.junit.Test;
 
-import static org.janelia.saalfeldlab.n5.MetaStoreCounters.assertEqualCounters;
+import static org.janelia.saalfeldlab.n5.HierarchyStoreCounters.assertEqualCounters;
 import static org.janelia.saalfeldlab.n5.N5KeyValueReader.ATTRIBUTES_JSON;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -210,7 +210,7 @@ public class N5CachedFSTest extends N5FSTest {
 		final String groupB = "groupB";
 
 		// expected backend method call counts
-		final MetaStoreCounters expected = new MetaStoreCounters();
+		final HierarchyStoreCounters expected = new HierarchyStoreCounters();
 		n5.counters().reset();
 
 		boolean exists = n5.exists(groupA);
@@ -424,7 +424,7 @@ public class N5CachedFSTest extends N5FSTest {
 
 	public interface TrackingStorage extends CachedGsonKeyValueN5Writer {
 
-		MetaStoreCounters counters();
+		HierarchyStoreCounters counters();
 	}
 
 	public static class N5TrackingStorage extends N5KeyValueWriter implements TrackingStorage {
@@ -447,7 +447,7 @@ public class N5CachedFSTest extends N5FSTest {
 		}
 
 		@Override
-		public MetaStoreCounters counters() {
+		public HierarchyStoreCounters counters() {
 			return trackingStore.counters();
 		}
 	}

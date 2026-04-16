@@ -7,13 +7,13 @@ import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
 public class TrackingMetaStore implements HierarchyStore {
 
 	private final HierarchyStore delegate;
-	private final MetaStoreCounters counters = new MetaStoreCounters();
+	private final HierarchyStoreCounters counters = new HierarchyStoreCounters();
 
 	public TrackingMetaStore(final HierarchyStore delegate) {
 		this.delegate = delegate;
 	}
 
-	public MetaStoreCounters counters() {
+	public HierarchyStoreCounters counters() {
 		return counters;
 	}
 

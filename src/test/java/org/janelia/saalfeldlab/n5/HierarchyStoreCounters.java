@@ -2,7 +2,7 @@ package org.janelia.saalfeldlab.n5;
 
 import org.junit.Assert;
 
-public class MetaStoreCounters {
+public class HierarchyStoreCounters {
 
 	private int readAttrCallCount = 0;
 	private int writeAttrCallCount = 0;
@@ -12,7 +12,7 @@ public class MetaStoreCounters {
 	private int mkDirCallCount = 0;
 	private int listCallCount = 0;
 
-	public static void assertEqualCounters(final MetaStoreCounters expected, final MetaStoreCounters actual) {
+	public static void assertEqualCounters(final HierarchyStoreCounters expected, final HierarchyStoreCounters actual) {
 		Assert.assertEquals("readAttr", expected.readAttrCallCount, actual.readAttrCallCount);
 		Assert.assertEquals("writeAttr", expected.writeAttrCallCount, actual.writeAttrCallCount);
 		Assert.assertEquals("removeAttr", expected.removeAttrCallCount, actual.removeAttrCallCount);
@@ -118,7 +118,7 @@ public class MetaStoreCounters {
 
 	@Override
 	public String toString() {
-		final StringBuffer sb = new StringBuffer("MetaStoreCounters{");
+		final StringBuilder sb = new StringBuilder("MetaStoreCounters{");
 		sb.append("readAttr:").append(readAttrCallCount);
 		sb.append(", writeAttr:").append(writeAttrCallCount);
 		sb.append(", removeAttr:").append(removeAttrCallCount);

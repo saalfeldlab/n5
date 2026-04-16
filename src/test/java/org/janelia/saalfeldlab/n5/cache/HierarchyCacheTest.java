@@ -34,14 +34,14 @@ import com.google.gson.JsonObject;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.janelia.saalfeldlab.n5.MetaStoreCounters;
+import org.janelia.saalfeldlab.n5.HierarchyStoreCounters;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.janelia.saalfeldlab.n5.TrackingMetaStore;
 import org.junit.Test;
 
-import static org.janelia.saalfeldlab.n5.MetaStoreCounters.assertEqualCounters;
+import static org.janelia.saalfeldlab.n5.HierarchyStoreCounters.assertEqualCounters;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
@@ -60,7 +60,7 @@ public class HierarchyCacheTest {
 
 		final TrackingMetaStore delegate = new TrackingMetaStore(new DummyHierarchyStore());
 		final HierarchyStore store = new HierarchyCache(delegate);
-		final MetaStoreCounters expected = new MetaStoreCounters();
+		final HierarchyStoreCounters expected = new HierarchyStoreCounters();
 
 
 		// ----------------------------
