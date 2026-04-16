@@ -54,6 +54,6 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader {
 			final Gson gson,
 			final boolean cacheMeta) {
 
-		return new DefaultN5Store(metaStore, gson);
+		return new N5Dialect(metaStore, gson);
 	}
 }

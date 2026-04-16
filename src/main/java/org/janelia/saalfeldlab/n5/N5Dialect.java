@@ -16,15 +16,20 @@ import org.janelia.saalfeldlab.n5.cache.DelegateStore;
 
 import static org.janelia.saalfeldlab.n5.N5KeyValueReader.ATTRIBUTES_JSON;
 
-// TODO: This is a N5Store implementation for the N5 format...
-//       Maybe should rename things such that this can be called N5MetaStore or
-//       something like that? FormatStore / N5FormatStore ???
-public final class DefaultN5Store implements ContainerDialect {
+/**
+ * {@code ContainerDialect} for the N5 format.
+ * <ul>
+ * <li>Every directory is a group.</li>
+ * <li>All attributes of a group/dataset are stored in "attributes.json".</li>
+ * <li>Every group that has the mandatory dataset attributes is a dataset.</li>
+ * </ul>
+ */
+public final class N5Dialect implements ContainerDialect {
 
 	private final DelegateStore store;
 	private final Gson gson;
 
-	public DefaultN5Store(
+	public N5Dialect(
 			final DelegateStore store,
 			final Gson gson) {
 		this.store = store;
