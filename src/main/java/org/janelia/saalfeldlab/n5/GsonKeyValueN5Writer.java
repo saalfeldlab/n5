@@ -48,39 +48,39 @@ public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader
 	@Override
 	default void createGroup(final String path) throws N5Exception {
 
-		getN5Store().createGroup(N5DirectoryPath.of(path));
+		getContainerDialect().createGroup(N5DirectoryPath.of(path));
 	}
 
 	@Override
 	default DatasetAttributes createDataset(final String datasetPath, final DatasetAttributes datasetAttributes) throws N5Exception {
 
 		final DatasetAttributes attributes = getConvertedDatasetAttributes(datasetAttributes);
-		getN5Store().createDataset(N5DirectoryPath.of(datasetPath), attributes);
+		getContainerDialect().createDataset(N5DirectoryPath.of(datasetPath), attributes);
 		return attributes;
 	}
 
 	@Override
 	default void setAttributes(final String path, final Map<String, ?> attributes) throws N5Exception {
 
-		getN5Store().setAttributes(N5DirectoryPath.of(path), attributes);
+		getContainerDialect().setAttributes(N5DirectoryPath.of(path), attributes);
 	}
 
 	@Override
 	default boolean removeAttribute(final String path, final String attributePath) throws N5Exception {
 
-		return getN5Store().removeAttribute(N5DirectoryPath.of(path), attributePath);
+		return getContainerDialect().removeAttribute(N5DirectoryPath.of(path), attributePath);
 	}
 
 	@Override
 	default <T> T removeAttribute(final String path, final String attributePath, final Class<T> clazz) throws N5Exception {
 
-		return getN5Store().removeAttribute(N5DirectoryPath.of(path), attributePath, clazz);
+		return getContainerDialect().removeAttribute(N5DirectoryPath.of(path), attributePath, clazz);
 	}
 
 	@Override
 	default boolean remove(final String path) throws N5Exception {
 
-		return getN5Store().remove(N5DirectoryPath.of(path));
+		return getContainerDialect().remove(N5DirectoryPath.of(path));
 	}
 
 	@Override

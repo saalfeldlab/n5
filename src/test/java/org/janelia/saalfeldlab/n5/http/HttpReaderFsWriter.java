@@ -96,9 +96,9 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	}
 
 	@Override
-	public ContainerDialect getN5Store() {
+	public ContainerDialect getContainerDialect() {
 
-		return reader.getN5Store();
+		return reader.getContainerDialect();
 	}
 
 	@Override public boolean exists(String pathName) {

@@ -47,7 +47,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
 	KeyValueRoot getKeyValueRoot();
 
-	ContainerDialect getN5Store();
+	ContainerDialect getContainerDialect();
 
 	@Override
 	default URI getURI() {
@@ -58,24 +58,24 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	@Override
 	default <T> T getAttribute(final String pathName, final String key, final Type type) throws N5Exception {
 
-		return getN5Store().getAttribute(N5DirectoryPath.of(pathName), key, type);
+		return getContainerDialect().getAttribute(N5DirectoryPath.of(pathName), key, type);
 	}
 
 	@Override
 	default DatasetAttributes getDatasetAttributes(final String pathName) throws N5Exception {
 
-		return getN5Store().getDatasetAttributes(N5DirectoryPath.of(pathName));
+		return getContainerDialect().getDatasetAttributes(N5DirectoryPath.of(pathName));
 	}
 
 	@Override
 	default Map<String, Class<?>> listAttributes(final String pathName) throws N5Exception {
 
-		return getN5Store().listAttributes(N5DirectoryPath.of(pathName));
+		return getContainerDialect().listAttributes(N5DirectoryPath.of(pathName));
 	}
 
 	default boolean groupExists(final String pathName) {
 
-		return getN5Store().groupExists(N5DirectoryPath.of(pathName));
+		return getContainerDialect().groupExists(N5DirectoryPath.of(pathName));
 	}
 
 	@Override
@@ -87,13 +87,13 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	@Override
 	default boolean datasetExists(final String pathName) throws N5Exception {
 
-		return getN5Store().datasetExists(N5DirectoryPath.of(pathName));
+		return getContainerDialect().datasetExists(N5DirectoryPath.of(pathName));
 	}
 
 	@Override
 	default String[] list(final String pathName) throws N5Exception {
 
-		return getN5Store().list(N5DirectoryPath.of(pathName));
+		return getContainerDialect().list(N5DirectoryPath.of(pathName));
 	}
 
 
@@ -170,7 +170,7 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 	@Override
 	default JsonElement getAttributes(final String pathName) throws N5Exception { // TODO: deprecate?
 
-		return getN5Store().getAttributes(N5DirectoryPath.of(pathName));
+		return getContainerDialect().getAttributes(N5DirectoryPath.of(pathName));
 	}
 
 	@Deprecated

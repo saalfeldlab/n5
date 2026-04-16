@@ -164,7 +164,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	}
 
 	@Override
-	public ContainerDialect getN5Store() {
+	public ContainerDialect getContainerDialect() {
 
 		return store;
 	}
