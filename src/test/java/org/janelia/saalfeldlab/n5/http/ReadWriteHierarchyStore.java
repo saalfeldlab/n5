@@ -6,12 +6,12 @@ import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
 
-public class ReadWriteMetaStore implements HierarchyStore {
+public class ReadWriteHierarchyStore implements HierarchyStore {
 
 	private final HierarchyStore readStore;
 	private final HierarchyStore writeStore;
 
-	public ReadWriteMetaStore(final HierarchyStore readStore, final HierarchyStore writeStore) {
+	public ReadWriteHierarchyStore(final HierarchyStore readStore, final HierarchyStore writeStore) {
 		this.readStore = readStore;
 		this.writeStore = writeStore;
 	}

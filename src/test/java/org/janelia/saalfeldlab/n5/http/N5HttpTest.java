@@ -117,7 +117,7 @@ public class N5HttpTest extends AbstractN5Test {
 		final String writerFsPath = httpServerDirectory.resolve(location).toFile().getCanonicalPath();
 		final HierarchyStore writeStore = new KeyValueAccessMetaStore(new FileSystemKeyValueRoot(writerFsPath));
 
-		final HierarchyStore readWriteStore = new ReadWriteMetaStore(readStore, writeStore);
+		final HierarchyStore readWriteStore = new ReadWriteHierarchyStore(readStore, writeStore);
 		final HierarchyStore store = cacheMeta ? new HierarchyCache(readWriteStore) : readWriteStore;
 
 		final N5FSWriter writer = new N5FSWriter(writerFsPath, gson, cacheMeta) {
