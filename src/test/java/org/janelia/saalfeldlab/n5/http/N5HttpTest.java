@@ -30,7 +30,7 @@ package org.janelia.saalfeldlab.n5.http;
 
 import com.google.gson.GsonBuilder;
 import org.janelia.saalfeldlab.n5.AbstractN5Test;
-import org.janelia.saalfeldlab.n5.KeyValueAccessMetaStore;
+import org.janelia.saalfeldlab.n5.KeyValueRootHierarchyStore;
 import org.janelia.saalfeldlab.n5.N5FSWriter;
 import org.janelia.saalfeldlab.n5.N5KeyValueReader;
 import org.janelia.saalfeldlab.n5.N5Reader;
@@ -112,10 +112,10 @@ public class N5HttpTest extends AbstractN5Test {
 
 
 		final URI root = httpServerURI.resolve(location);
-		final HierarchyStore readStore = new KeyValueAccessMetaStore(new HttpKeyValueRoot(root));
+		final HierarchyStore readStore = new KeyValueRootHierarchyStore(new HttpKeyValueRoot(root));
 
 		final String writerFsPath = httpServerDirectory.resolve(location).toFile().getCanonicalPath();
-		final HierarchyStore writeStore = new KeyValueAccessMetaStore(new FileSystemKeyValueRoot(writerFsPath));
+		final HierarchyStore writeStore = new KeyValueRootHierarchyStore(new FileSystemKeyValueRoot(writerFsPath));
 
 		final HierarchyStore readWriteStore = new ReadWriteHierarchyStore(readStore, writeStore);
 		final HierarchyStore store = cacheMeta ? new HierarchyCache(readWriteStore) : readWriteStore;

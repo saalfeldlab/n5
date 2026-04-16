@@ -442,7 +442,7 @@ public class N5CachedFSTest extends N5FSTest {
 				final KeyValueRoot keyValueRoot,
 				final boolean cacheMeta) {
 
-			trackingStore = new TrackingHierarchyStore(new KeyValueAccessMetaStore(keyValueRoot));
+			trackingStore = new TrackingHierarchyStore(new KeyValueRootHierarchyStore(keyValueRoot));
 			return cacheMeta ? new HierarchyCache(trackingStore) : trackingStore;
 		}
 

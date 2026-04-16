@@ -13,11 +13,14 @@ import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
-public class KeyValueAccessMetaStore implements HierarchyStore {
+/**
+ * Implements {@link HierarchyStore} operations on a {@link KeyValueRoot}.
+ */
+public class KeyValueRootHierarchyStore implements HierarchyStore {
 
 	private final KeyValueRoot kvr;
 
-	public KeyValueAccessMetaStore(final KeyValueRoot kvr) {
+	public KeyValueRootHierarchyStore(final KeyValueRoot kvr) {
 
 		this.kvr = kvr;
 	}

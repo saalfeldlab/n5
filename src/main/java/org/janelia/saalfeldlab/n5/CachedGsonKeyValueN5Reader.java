@@ -45,7 +45,7 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader {
 			final KeyValueRoot keyValueRoot,
 			final boolean cacheMeta) {
 
-		final KeyValueAccessMetaStore store = new KeyValueAccessMetaStore(keyValueRoot);
+		final KeyValueRootHierarchyStore store = new KeyValueRootHierarchyStore(keyValueRoot);
 		return cacheMeta ? new HierarchyCache(store) : store;
 	}
 

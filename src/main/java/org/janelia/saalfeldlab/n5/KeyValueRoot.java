@@ -11,12 +11,13 @@ import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 /**
- * Key value read primitives used by {@link GsonKeyValueN5Reader} and {@link
- * KeyValueAccessMetaStore}. This interface implements a subset of access
- * primitives provided by {@link FileSystem} to reduce the implementation burden
- * for backends lacking a {@link FileSystem} implementation (such as AWS-S3).
+ * Key value read/write primitives used by {@link GsonKeyValueN5Reader}, {@link
+ * GsonKeyValueN5Writer}, and {@link KeyValueRootHierarchyStore}. This interface
+ * implements a subset of access primitives provided by {@link FileSystem} to
+ * reduce the implementation burden for backends lacking a {@link FileSystem}
+ * implementation (such as AWS-S3).
  * <p>
- * TODO: This is intented to eventually fully replace {@link KeyValueAccess}.
+ * TODO: This is intended to eventually fully replace {@link KeyValueAccess}.
  */
 public interface KeyValueRoot {
 
