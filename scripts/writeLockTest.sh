@@ -4,7 +4,10 @@ set -euo pipefail
 TEST_DIR=/tmp/write-lock-test.zarr
 
 [ -d "$TEST_DIR" ] && rm -r -- "$TEST_DIR"
-#mvn test-compile
+
+if [ ! -d "test-classes" ]; then
+    mvn test-compile
+fi
 
 mvn -e -q exec:java \
   -Dexec.mainClass=org.janelia.saalfeldlab.n5.WriteLockExp \
