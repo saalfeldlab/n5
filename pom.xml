@@ -148,6 +148,16 @@
 		<releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
 
 		<n5-spec.version>4.0.0</n5-spec.version>
+
+		<!-- Only used for test scope -->
+		<n5-universe.version>2.4.0-alpha-9</n5-universe.version>
+		<n5-aws-s3.version>4.4.0-alpha-9</n5-aws-s3.version>
+		<n5-blosc.version>2.0.0-alpha-4</n5-blosc.version>
+		<n5-google-cloud.version>5.2.0-alpha-7</n5-google-cloud.version>
+		<n5-hdf5.version>2.3.0-alpha-7</n5-hdf5.version>
+		<n5-imglib2.version>7.1.0-alpha-8</n5-imglib2.version>
+		<n5-zarr.version>2.0.0-alpha-8</n5-zarr.version>
+		<n5-zstandard.version>2.0.0-alpha-4</n5-zstandard.version>
 	</properties>
 
 	<dependencies>
