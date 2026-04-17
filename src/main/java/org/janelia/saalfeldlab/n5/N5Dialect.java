@@ -80,14 +80,6 @@ public final class N5Dialect implements ContainerDialect {
 	}
 
 	@Override
-	public Map<String, Class<?>> listAttributes(
-			final N5DirectoryPath path) throws N5IOException, N5JsonParseException {
-
-		final JsonElement attributes = store.readAttributesJson(path, ATTRIBUTES_JSON, gson);
-		return GsonUtils.listAttributes(attributes);
-	}
-
-	@Override
 	public JsonElement getAttributes(
 			final N5DirectoryPath path) throws N5IOException {
 

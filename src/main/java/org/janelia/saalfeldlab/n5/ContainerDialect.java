@@ -127,7 +127,10 @@ public interface ContainerDialect {
 	 * @throws N5JsonParseException
 	 * 		if an error occurs parsing the attributes
 	 */
-	Map<String, Class<?>> listAttributes(N5DirectoryPath path) throws N5IOException, N5JsonParseException;
+	default Map<String, Class<?>> listAttributes(N5DirectoryPath path) throws N5IOException, N5JsonParseException {
+
+		return GsonUtils.listAttributes(getAttributes(path));
+	}
 
 	/**
 	 * Reads the attributes of a group or dataset.
