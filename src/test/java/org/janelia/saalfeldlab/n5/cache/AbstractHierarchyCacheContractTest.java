@@ -75,8 +75,8 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testCreateDirectories_directoryExists() {
-		store.store_createDirectories(path("a/b"));
-		assertTrue(store.store_isDirectory(path("a/b")));
+		store.createDirectories(path("a/b"));
+		assertTrue(store.isDirectory(path("a/b")));
 	}
 
 	/**
@@ -91,9 +91,9 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testCreateDirectories_ancestorsExist() {
-		store.store_createDirectories(path("a/b/c"));
-		assertTrue(store.store_isDirectory(path("a")));
-		assertTrue(store.store_isDirectory(path("a/b")));
+		store.createDirectories(path("a/b/c"));
+		assertTrue(store.isDirectory(path("a")));
+		assertTrue(store.isDirectory(path("a/b")));
 	}
 
 	/**
@@ -102,9 +102,9 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testCreateDirectories_idempotent() {
-		store.store_createDirectories(path("a/b"));
-		store.store_createDirectories(path("a/b")); // must not throw
-		assertTrue(store.store_isDirectory(path("a/b")));
+		store.createDirectories(path("a/b"));
+		store.createDirectories(path("a/b")); // must not throw
+		assertTrue(store.isDirectory(path("a/b")));
 	}
 
 	// ------------------------------------------------------------------------
@@ -118,8 +118,8 @@ public abstract class AbstractHierarchyCacheContractTest {
 	@Test
 	public void testWriteAttributesJson_readBack() {
 		final JsonElement json = someJson();
-		store.store_writeAttributesJson(path("a/b"), FILENAME, json, GSON);
-		assertEquals(json, store.store_readAttributesJson(path("a/b"), FILENAME, GSON));
+		store.writeAttributesJson(path("a/b"), FILENAME, json, GSON);
+		assertEquals(json, store.readAttributesJson(path("a/b"), FILENAME, GSON));
 	}
 
 	/**
@@ -134,8 +134,8 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testWriteAttributesJson_parentDirectoryExists() {
-		store.store_writeAttributesJson(path("a/b"), FILENAME, someJson(), GSON);
-		assertTrue(store.store_isDirectory(path("a/b")));
+		store.writeAttributesJson(path("a/b"), FILENAME, someJson(), GSON);
+		assertTrue(store.isDirectory(path("a/b")));
 	}
 
 	/**
@@ -151,9 +151,9 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testWriteAttributesJson_ancestorDirectoriesExist() {
-		store.store_writeAttributesJson(path("a/b/c"), FILENAME, someJson(), GSON);
-		assertTrue(store.store_isDirectory(path("a")));
-		assertTrue(store.store_isDirectory(path("a/b")));
+		store.writeAttributesJson(path("a/b/c"), FILENAME, someJson(), GSON);
+		assertTrue(store.isDirectory(path("a")));
+		assertTrue(store.isDirectory(path("a/b")));
 	}
 
 	/**
@@ -162,9 +162,9 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testWriteAttributesJson_overwrite() {
-		store.store_writeAttributesJson(path("a/b"), FILENAME, someJson(), GSON);
-		store.store_writeAttributesJson(path("a/b"), FILENAME, otherJson(), GSON);
-		assertEquals(otherJson(), store.store_readAttributesJson(path("a/b"), FILENAME, GSON));
+		store.writeAttributesJson(path("a/b"), FILENAME, someJson(), GSON);
+		store.writeAttributesJson(path("a/b"), FILENAME, otherJson(), GSON);
+		assertEquals(otherJson(), store.readAttributesJson(path("a/b"), FILENAME, GSON));
 	}
 
 
@@ -178,9 +178,9 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testRemoveDirectory_directoryGone() {
-		store.store_createDirectories(path("a/b"));
-		store.store_removeDirectory(path("a/b"));
-		assertFalse(store.store_isDirectory(path("a/b")));
+		store.createDirectories(path("a/b"));
+		store.removeDirectory(path("a/b"));
+		assertFalse(store.isDirectory(path("a/b")));
 	}
 
 	/**
@@ -192,10 +192,10 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testRemoveDirectory_descendantsGone() {
-		store.store_createDirectories(path("a/b/c/d"));
-		store.store_removeDirectory(path("a/b"));
-		assertFalse(store.store_isDirectory(path("a/b/c")));
-		assertFalse(store.store_isDirectory(path("a/b/c/d")));
+		store.createDirectories(path("a/b/c/d"));
+		store.removeDirectory(path("a/b"));
+		assertFalse(store.isDirectory(path("a/b/c")));
+		assertFalse(store.isDirectory(path("a/b/c/d")));
 	}
 
 	/**
@@ -204,9 +204,9 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testRemoveDirectory_descendantAttributesGone() {
-		store.store_writeAttributesJson(path("a/b/c"), FILENAME, someJson(), GSON);
-		store.store_removeDirectory(path("a/b"));
-		assertNull(store.store_readAttributesJson(path("a/b/c"), FILENAME, GSON));
+		store.writeAttributesJson(path("a/b/c"), FILENAME, someJson(), GSON);
+		store.removeDirectory(path("a/b"));
+		assertNull(store.readAttributesJson(path("a/b/c"), FILENAME, GSON));
 	}
 
 	/**
@@ -215,9 +215,9 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testRemoveDirectory_removedFromParentListing() {
-		store.store_createDirectories(path("a/b"));
-		store.store_removeDirectory(path("a/b"));
-		final String[] children = store.store_listDirectories(path("a"));
+		store.createDirectories(path("a/b"));
+		store.removeDirectory(path("a/b"));
+		final String[] children = store.listDirectories(path("a"));
 		assertFalse(Arrays.asList(children).contains("b"));
 	}
 
@@ -226,7 +226,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testRemoveDirectory_nonExistentIsNoOp() {
-		store.store_removeDirectory(path("a/b")); // must not throw
+		store.removeDirectory(path("a/b")); // must not throw
 	}
 
 	// ------------------------------------------------------------------------
@@ -238,7 +238,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testIsDirectory_nonExistentReturnsFalse() {
-		assertFalse(store.store_isDirectory(path("a/b")));
+		assertFalse(store.isDirectory(path("a/b")));
 	}
 
 	/**
@@ -251,9 +251,9 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testIsDirectory_nonExistenceImpliesDescendantsAbsent() {
-		assertFalse(store.store_isDirectory(path("a")));
-		assertFalse(store.store_isDirectory(path("a/b")));
-		assertFalse(store.store_isDirectory(path("a/b/c")));
+		assertFalse(store.isDirectory(path("a")));
+		assertFalse(store.isDirectory(path("a/b")));
+		assertFalse(store.isDirectory(path("a/b/c")));
 	}
 
 	/**
@@ -265,8 +265,8 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testIsDirectory_nonExistenceImpliesAttributesAbsent() {
-		assertFalse(store.store_isDirectory(path("a/b")));
-		assertNull(store.store_readAttributesJson(path("a/b"), FILENAME, GSON));
+		assertFalse(store.isDirectory(path("a/b")));
+		assertNull(store.readAttributesJson(path("a/b"), FILENAME, GSON));
 	}
 
 	// ------------------------------------------------------------------------
@@ -279,7 +279,7 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test(expected = N5NoSuchKeyException.class)
 	public void testListDirectories_nonExistentThrows() {
-		store.store_listDirectories(path("a/b"));
+		store.listDirectories(path("a/b"));
 	}
 
 	/**
@@ -288,8 +288,8 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testListDirectories_createdChildAppears() {
-		store.store_createDirectories(path("a/b"));
-		final List<String> children = Arrays.asList(store.store_listDirectories(path("a")));
+		store.createDirectories(path("a/b"));
+		final List<String> children = Arrays.asList(store.listDirectories(path("a")));
 		assertTrue(children.contains("b"));
 	}
 
@@ -302,8 +302,8 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testListDirectories_writtenFileImpliesChildInListing() {
-		store.store_writeAttributesJson(path("a/b"), FILENAME, someJson(), GSON);
-		final List<String> children = Arrays.asList(store.store_listDirectories(path("a")));
+		store.writeAttributesJson(path("a/b"), FILENAME, someJson(), GSON);
+		final List<String> children = Arrays.asList(store.listDirectories(path("a")));
 		assertTrue(children.contains("b"));
 	}
 
@@ -313,8 +313,8 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testListDirectories_onlyImmediateChildren() {
-		store.store_createDirectories(path("a/b/c"));
-		final List<String> children = Arrays.asList(store.store_listDirectories(path("a")));
+		store.createDirectories(path("a/b/c"));
+		final List<String> children = Arrays.asList(store.listDirectories(path("a")));
 		assertTrue(children.contains("b"));
 		assertFalse(children.contains("c"));
 		assertFalse(children.contains("b/c"));
@@ -326,10 +326,10 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testListDirectories_removedChildDisappears() {
-		store.store_createDirectories(path("a/b"));
-		store.store_createDirectories(path("a/c"));
-		store.store_removeDirectory(path("a/b"));
-		final List<String> children = Arrays.asList(store.store_listDirectories(path("a")));
+		store.createDirectories(path("a/b"));
+		store.createDirectories(path("a/c"));
+		store.removeDirectory(path("a/b"));
+		final List<String> children = Arrays.asList(store.listDirectories(path("a")));
 		assertFalse(children.contains("b"));
 		assertTrue(children.contains("c")); // sibling unaffected
 	}
@@ -344,8 +344,8 @@ public abstract class AbstractHierarchyCacheContractTest {
 	 */
 	@Test
 	public void testReadAttributesJson_nonExistentReturnsNull() {
-		store.store_createDirectories(path("a/b"));
-		assertNull(store.store_readAttributesJson(path("a/b"), FILENAME, GSON));
+		store.createDirectories(path("a/b"));
+		assertNull(store.readAttributesJson(path("a/b"), FILENAME, GSON));
 	}
 
 	/**
@@ -355,9 +355,9 @@ public abstract class AbstractHierarchyCacheContractTest {
 	@Test
 	public void testReadAttributesJson_stable() {
 		final JsonElement json = someJson();
-		store.store_writeAttributesJson(path("a/b"), FILENAME, json, GSON);
-		final JsonElement first = store.store_readAttributesJson(path("a/b"), FILENAME, GSON);
-		final JsonElement second = store.store_readAttributesJson(path("a/b"), FILENAME, GSON);
+		store.writeAttributesJson(path("a/b"), FILENAME, json, GSON);
+		final JsonElement first = store.readAttributesJson(path("a/b"), FILENAME, GSON);
+		final JsonElement second = store.readAttributesJson(path("a/b"), FILENAME, GSON);
 		assertEquals(first, second);
 	}
 }

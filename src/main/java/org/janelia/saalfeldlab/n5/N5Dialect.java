@@ -42,7 +42,7 @@ public final class N5Dialect implements ContainerDialect {
 			final String attributePath,
 			final Type type) throws N5IOException, N5ClassCastException {
 
-		final JsonElement attributes = store.store_readAttributesJson(path, ATTRIBUTES_JSON, gson);
+		final JsonElement attributes = store.readAttributesJson(path, ATTRIBUTES_JSON, gson);
 		final String normalizedAttributePath = N5URI.normalizeAttributePath(attributePath);
 		try {
 			return GsonUtils.readAttribute(attributes, normalizedAttributePath, type, gson);
@@ -55,7 +55,7 @@ public final class N5Dialect implements ContainerDialect {
 	public DatasetAttributes getDatasetAttributes(
 			final N5DirectoryPath path) throws N5IOException {
 
-		final JsonElement attributes = store.store_readAttributesJson(path, ATTRIBUTES_JSON, gson);
+		final JsonElement attributes = store.readAttributesJson(path, ATTRIBUTES_JSON, gson);
 		return gson.fromJson(attributes, DatasetAttributes.class);
 	}
 
@@ -70,21 +70,21 @@ public final class N5Dialect implements ContainerDialect {
 	public boolean groupExists(
 			final N5DirectoryPath path) throws N5IOException {
 
-		return store.store_isDirectory(path);
+		return store.isDirectory(path);
 	}
 
 	@Override
 	public String[] list(
 			final N5DirectoryPath group) throws N5IOException {
 
-		return store.store_listDirectories(group);
+		return store.listDirectories(group);
 	}
 
 	@Override
 	public Map<String, Class<?>> listAttributes(
 			final N5DirectoryPath path) throws N5IOException, N5JsonParseException {
 
-		final JsonElement attributes = store.store_readAttributesJson(path, ATTRIBUTES_JSON, gson);
+		final JsonElement attributes = store.readAttributesJson(path, ATTRIBUTES_JSON, gson);
 		return GsonUtils.listAttributes(attributes);
 	}
 
@@ -92,7 +92,7 @@ public final class N5Dialect implements ContainerDialect {
 	public JsonElement getAttributes(
 			final N5DirectoryPath path) throws N5IOException {
 
-		return store.store_readAttributesJson(path, ATTRIBUTES_JSON, gson);
+		return store.readAttributesJson(path, ATTRIBUTES_JSON, gson);
 	}
 
 	@Override
@@ -109,18 +109,18 @@ public final class N5Dialect implements ContainerDialect {
 			final N5DirectoryPath path,
 			final Map<String, ?> attributes) throws N5IOException {
 
-		if (!store.store_isDirectory(path))
+		if (!store.isDirectory(path))
 			throw new N5IOException(String.format("Directory does not exist: %s", path));
 
 		if (attributes == null || attributes.isEmpty())
 			return;
 
-		JsonElement root = store.store_readAttributesJson(path, ATTRIBUTES_JSON, gson);
+		JsonElement root = store.readAttributesJson(path, ATTRIBUTES_JSON, gson);
 		root = root != null && root.isJsonObject()
 				? root.getAsJsonObject()
 				: new JsonObject();
 		root = GsonUtils.insertAttributes(root, attributes, gson);
-		store.store_writeAttributesJson(path, ATTRIBUTES_JSON, root, gson);
+		store.writeAttributesJson(path, ATTRIBUTES_JSON, root, gson);
 	}
 
 	@Override
@@ -128,13 +128,13 @@ public final class N5Dialect implements ContainerDialect {
 			final N5DirectoryPath path,
 			final String attributePath) throws N5IOException {
 
-		final JsonElement root = store.store_readAttributesJson(path, ATTRIBUTES_JSON, gson);
+		final JsonElement root = store.readAttributesJson(path, ATTRIBUTES_JSON, gson);
 		if (root == null)
 			return false;
 
 		final String normalizedAttributePath = N5URI.normalizeAttributePath(attributePath);
 		if (null != GsonUtils.removeAttribute(root, normalizedAttributePath)) {
-			store.store_writeAttributesJson(path, ATTRIBUTES_JSON, root, gson);
+			store.writeAttributesJson(path, ATTRIBUTES_JSON, root, gson);
 			return true;
 		}
 
@@ -147,7 +147,7 @@ public final class N5Dialect implements ContainerDialect {
 			final String attributePath,
 			final Class<T> clazz) throws N5Exception {
 
-		final JsonElement root = store.store_readAttributesJson(path, ATTRIBUTES_JSON, gson);
+		final JsonElement root = store.readAttributesJson(path, ATTRIBUTES_JSON, gson);
 		if (root == null)
 			return null;
 
@@ -160,7 +160,7 @@ public final class N5Dialect implements ContainerDialect {
 		}
 
 		if (obj != null)
-			store.store_writeAttributesJson(path, ATTRIBUTES_JSON, root, gson);
+			store.writeAttributesJson(path, ATTRIBUTES_JSON, root, gson);
 
 		return obj;
 	}
@@ -170,8 +170,8 @@ public final class N5Dialect implements ContainerDialect {
 			final N5DirectoryPath path,
 			final DatasetAttributes attributes) throws N5IOException {
 
-		if (!store.store_isDirectory(path))
-			store.store_createDirectories(path);
+		if (!store.isDirectory(path))
+			store.createDirectories(path);
 		setAttributes(path, attributes.asMap());
 	}
 
@@ -179,7 +179,7 @@ public final class N5Dialect implements ContainerDialect {
 	public void createGroup(
 			final N5DirectoryPath path) throws N5IOException {
 
-		store.store_createDirectories(path);
+		store.createDirectories(path);
 	}
 
 	@Override
@@ -187,8 +187,8 @@ public final class N5Dialect implements ContainerDialect {
 			final N5DirectoryPath path,
 			final DatasetAttributes attributes) throws N5IOException {
 
-		if (!store.store_isDirectory(path))
-			store.store_createDirectories(path);
+		if (!store.isDirectory(path))
+			store.createDirectories(path);
 		setAttributes(path, attributes.asMap());
 	}
 
@@ -196,8 +196,8 @@ public final class N5Dialect implements ContainerDialect {
 	public boolean remove(
 			final N5DirectoryPath path) throws N5IOException {
 
-		if (store.store_isDirectory(path))
-			store.store_removeDirectory(path);
+		if (store.isDirectory(path))
+			store.removeDirectory(path);
 
 		// an IOException should have occurred if anything had failed midway
 		return true;

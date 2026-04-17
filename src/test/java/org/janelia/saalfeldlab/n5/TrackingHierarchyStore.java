@@ -2,6 +2,7 @@ package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
 
 public class TrackingHierarchyStore implements HierarchyStore {
@@ -18,39 +19,39 @@ public class TrackingHierarchyStore implements HierarchyStore {
 	}
 
 	@Override
-	public JsonElement store_readAttributesJson(final N5Path.N5DirectoryPath group, final String filename, final Gson gson) throws N5Exception.N5IOException {
+	public JsonElement readAttributesJson(final N5DirectoryPath parent, final String filename, final Gson gson) throws N5Exception.N5IOException {
 		counters.incReadAttr();
-		return delegate.store_readAttributesJson(group, filename, gson);
+		return delegate.readAttributesJson(parent, filename, gson);
 	}
 
 	@Override
-	public void store_writeAttributesJson(final N5Path.N5DirectoryPath group, final String filename, final JsonElement attributes, final Gson gson) throws
+	public void writeAttributesJson(final N5DirectoryPath parent, final String filename, final JsonElement attributes, final Gson gson) throws
 			N5Exception.N5IOException {
 		counters.incWriteAttr();
-		delegate.store_writeAttributesJson(group, filename, attributes, gson);
+		delegate.writeAttributesJson(parent, filename, attributes, gson);
 	}
 
 	@Override
-	public boolean store_isDirectory(final N5Path.N5DirectoryPath group) {
+	public boolean isDirectory(final N5DirectoryPath path) {
 		counters.incIsDir();
-		return delegate.store_isDirectory(group);
+		return delegate.isDirectory(path);
 	}
 
 	@Override
-	public void store_removeDirectory(final N5Path.N5DirectoryPath group) throws N5Exception.N5IOException {
+	public void removeDirectory(final N5DirectoryPath path) throws N5Exception.N5IOException {
 		counters.incRmDir();
-		delegate.store_removeDirectory(group);
+		delegate.removeDirectory(path);
 	}
 
 	@Override
-	public void store_createDirectories(final N5Path.N5DirectoryPath group) throws N5Exception.N5IOException {
+	public void createDirectories(final N5DirectoryPath path) throws N5Exception.N5IOException {
 		counters.incMkDir();
-		delegate.store_createDirectories(group);
+		delegate.createDirectories(path);
 	}
 
 	@Override
-	public String[] store_listDirectories(final N5Path.N5DirectoryPath group) throws N5Exception.N5IOException {
+	public String[] listDirectories(final N5DirectoryPath path) throws N5Exception.N5IOException {
 		counters.incList();
-		return delegate.store_listDirectories(group);
+		return delegate.listDirectories(path);
 	}
 }

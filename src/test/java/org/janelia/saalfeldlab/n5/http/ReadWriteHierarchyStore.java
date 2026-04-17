@@ -17,32 +17,32 @@ public class ReadWriteHierarchyStore implements HierarchyStore {
 	}
 
 	@Override
-	public JsonElement store_readAttributesJson(final N5DirectoryPath group, final String filename, final Gson gson) throws N5IOException {
-		return readStore.store_readAttributesJson(group, filename, gson);
+	public JsonElement readAttributesJson(final N5DirectoryPath parent, final String filename, final Gson gson) throws N5IOException {
+		return readStore.readAttributesJson(parent, filename, gson);
 	}
 
 	@Override
-	public boolean store_isDirectory(final N5DirectoryPath group) {
-		return readStore.store_isDirectory(group);
+	public boolean isDirectory(final N5DirectoryPath path) {
+		return readStore.isDirectory(path);
 	}
 
 	@Override
-	public String[] store_listDirectories(final N5DirectoryPath group) throws N5IOException {
-		return readStore.store_listDirectories(group);
+	public String[] listDirectories(final N5DirectoryPath path) throws N5IOException {
+		return readStore.listDirectories(path);
 	}
 
 	@Override
-	public void store_writeAttributesJson(final N5DirectoryPath group, final String filename, final JsonElement attributes, final Gson gson) throws N5IOException {
-		writeStore.store_writeAttributesJson(group, filename, attributes, gson);
+	public void writeAttributesJson(final N5DirectoryPath parent, final String filename, final JsonElement attributes, final Gson gson) throws N5IOException {
+		writeStore.writeAttributesJson(parent, filename, attributes, gson);
 	}
 
 	@Override
-	public void store_createDirectories(final N5DirectoryPath group) throws N5IOException {
-		writeStore.store_createDirectories(group);
+	public void createDirectories(final N5DirectoryPath path) throws N5IOException {
+		writeStore.createDirectories(path);
 	}
 
 	@Override
-	public void store_removeDirectory(final N5DirectoryPath group) throws N5IOException {
-		writeStore.store_removeDirectory(group);
+	public void removeDirectory(final N5DirectoryPath path) throws N5IOException {
+		writeStore.removeDirectory(path);
 	}
 }

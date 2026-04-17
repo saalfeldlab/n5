@@ -29,7 +29,7 @@ public interface HierarchyStore {
 	 * Read an attributes tree from the store.
 	 * <p>
 	 * Returns a {@link JsonElement} containing the deserialized
-	 * {@code attributesKey} file in the given {@code group}.
+	 * {@code attributesKey} file in the given {@code parent}.
 	 * <p>
 	 * NB: If the {@code JsonElement} is retrieved from a cache, a {@link
 	 * JsonElement#deepCopy() deepCopy} is returned. It is therefore safe to
@@ -38,8 +38,8 @@ public interface HierarchyStore {
 	 * (Typically, the {@code attributesKey} is <em>attributes.json</em> for N5,
 	 * and <em>.zarray</em>, <em>.zattrs</em>, or <em>.zgroup</em> for Zarr.)
 	 *
-	 * @param group
-	 * 		parent of the attributes file
+	 * @param parent
+	 * 		directory containing the attributes file
 	 * @param filename
 	 * 		filename of the attributes file
 	 *
@@ -49,31 +49,31 @@ public interface HierarchyStore {
 	 * 		if an error occurs while reading the attributes
 	 * @see GsonN5Reader#getAttributes
 	 */
-	JsonElement store_readAttributesJson(
-			N5DirectoryPath group,
+	JsonElement readAttributesJson(
+			N5DirectoryPath parent,
 			String filename,
 			Gson gson) throws N5IOException;
 
 	/**
 	 * Query whether a directory exists in this container.
 	 *
-	 * @param group
-	 * 		group path
+	 * @param path
+	 * 		directory path
 	 *
 	 * @return true if the directory exists
 	 */
-	boolean store_isDirectory(N5DirectoryPath group);
+	boolean isDirectory(N5DirectoryPath path);
 
 	/**
 	 * List all directory-like children (groups and datasets) in the given
-	 * {@code group}.
+	 * directory {@code path}.
 	 * <p>
-	 * The returned child paths are normal paths relative to the given {@code
-	 * group} (no leading or trailing slashes). To obtain the path of a child
-	 * relative to the container root {@link N5DirectoryPath#resolve group.resolve}
-	 * the child path.
+	 * The returned child paths are normal paths relative to the given directory
+	 * {@code path} (no leading or trailing slashes). To obtain the path of a
+	 * child relative to the container root, {@link N5DirectoryPath#resolve
+	 * path.resolve} the child path.
 	 *
-	 * @param group
+	 * @param path
 	 * 		group path
 	 *
 	 * @return list of children
@@ -84,7 +84,7 @@ public interface HierarchyStore {
 	 * 		if an error occurs during listing
 	 * @see N5Reader#list
 	 */
-	String[] store_listDirectories(N5DirectoryPath group) throws N5IOException;
+	String[] listDirectories(N5DirectoryPath path) throws N5IOException;
 
 
 	// ┌───────────────────────────────────────────────────────────────────────┐
@@ -94,8 +94,8 @@ public interface HierarchyStore {
 	/**
 	 * Write an attributes tree into the store
 	 *
-	 * @param group
-	 * 		parent of the attributes file
+	 * @param parent
+	 * 		directory containing the attributes file
 	 * @param filename
 	 * 		filename of the attributes file
 	 * @param attributes
@@ -104,8 +104,8 @@ public interface HierarchyStore {
 	 * @throws N5IOException
 	 * 		if an error occurs while writing the attributes
 	 */
-	void store_writeAttributesJson(
-			N5DirectoryPath group,
+	void writeAttributesJson(
+			N5DirectoryPath parent,
 			String filename,
 			JsonElement attributes,
 			Gson gson) throws N5IOException;
@@ -116,23 +116,23 @@ public interface HierarchyStore {
 	 * that the directories exist, on a key value store that is unaware of
 	 * directories, this may be implemented as creating an object for each path.
 	 *
-	 * @param group
+	 * @param path
 	 * 		directory path to create, relative to container root
 	 *
 	 * @throws N5IOException
 	 * 		if an error occurs during creation
 	 */
-	void store_createDirectories(N5DirectoryPath group) throws N5IOException;
+	void createDirectories(N5DirectoryPath path) throws N5IOException;
 
 	/**
 	 * Delete a directory, recursively.
 	 *
-	 * @param group
+	 * @param path
 	 * 		path to delete, relative to container root
 	 *
 	 * @throws N5IOException
 	 * 		if an error occurs during deletion
 	 */
-	void store_removeDirectory(N5DirectoryPath group) throws N5IOException;
+	void removeDirectory(N5DirectoryPath path) throws N5IOException;
 
 }

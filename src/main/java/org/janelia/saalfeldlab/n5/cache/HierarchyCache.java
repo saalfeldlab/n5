@@ -308,30 +308,15 @@ public class HierarchyCache implements HierarchyStore {
 
 
 
-
-
-
-	/**
-	 * Returns a {@link JsonElement} containing the deserialized
-	 * {@code filename} file in the given {@code group}.
-	 * <p>
-	 * (Typically, the {@code filename} is <em>attributes.json</em> for N5,
-	 * and <em>.zarray</em>, <em>.zattrs</em>, or <em>.zgroup</em> for Zarr.)
-	 *
-	 * @param group
-	 * @param filename
-	 *
-	 * @return the attributes as a json element.
-	 */
 	@Override
-	public JsonElement store_readAttributesJson(final N5DirectoryPath group, final String filename, final Gson gson) throws N5IOException {
+	public JsonElement readAttributesJson(final N5DirectoryPath parent, final String filename, final Gson gson) throws N5IOException {
 
-		final N5FilePath path = group.resolve(filename).asFile();
+		final N5FilePath path = parent.resolve(filename).asFile();
 		final CacheInfoAttributes info = getOrCreate(path);
 		final JsonElement json;
 		synchronized (info) {
 			if (!info.valid() && !info.isKnownToNotExist()) {
-				info.setJson(delegate.store_readAttributesJson(group, filename, gson));
+				info.setJson(delegate.readAttributesJson(parent, filename, gson));
 			}
 			json = info.json();
 		}
@@ -339,7 +324,7 @@ public class HierarchyCache implements HierarchyStore {
 	}
 
 	@Override
-	public void store_writeAttributesJson(final N5DirectoryPath group, final String filename, final JsonElement attributes, final Gson gson) throws N5IOException {
+	public void writeAttributesJson(final N5DirectoryPath parent, final String filename, final JsonElement attributes, final Gson gson) throws N5IOException {
 
 		// Gson only filters out nulls when you write the JsonElement. This
 		// means it doesn't filter them out when caching.
@@ -350,27 +335,27 @@ public class HierarchyCache implements HierarchyStore {
 		// - no null values are present
 		final JsonElement json = gson.serializeNulls() ? attributes : gson.toJsonTree(attributes);
 
-		final N5FilePath path = group.resolve(filename).asFile();
+		final N5FilePath path = parent.resolve(filename).asFile();
 		final CacheInfoAttributes info = getOrCreate(path);
 		synchronized (info) {
 			if (!info.valid() || info.json() == null || !info.json().equals(json)) {
-				delegate.store_writeAttributesJson(group, filename, json, gson);
+				delegate.writeAttributesJson(parent, filename, json, gson);
 				info.setJson(json);
 			}
 		}
 	}
 
 	@Override
-	public boolean store_isDirectory(final N5DirectoryPath group) {
+	public boolean isDirectory(final N5DirectoryPath path) {
 
-		final CacheInfoDirectory info = getOrCreate(group);
+		final CacheInfoDirectory info = getOrCreate(path);
 		synchronized (info) {
 			if (info.isKnownToExist()) {
 				return true;
 			} else if (info.isKnownToNotExist()) {
 				return false;
 			} else {
-				final boolean exists = delegate.store_isDirectory(group);
+				final boolean exists = delegate.isDirectory(path);
 				if (exists)
 					info.setExists();
 				else
@@ -381,18 +366,18 @@ public class HierarchyCache implements HierarchyStore {
 	}
 
 	@Override
-	public String[] store_listDirectories(final N5DirectoryPath group) throws N5IOException {
+	public String[] listDirectories(final N5DirectoryPath path) throws N5IOException {
 
-		final CacheInfoDirectory info = getOrCreate(group);
+		final CacheInfoDirectory info = getOrCreate(path);
 		synchronized (info) {
 			if (info.isKnownToNotExist()) {
-				throw new N5NoSuchKeyException("No such file: " + group);
+				throw new N5NoSuchKeyException("No such file: " + path);
 			}
 
 			String[] list = info.getList();
 			if (list == null) {
 				try {
-					list = delegate.store_listDirectories(group);
+					list = delegate.listDirectories(path);
 					info.setList(list);
 				} catch (N5NoSuchKeyException e) {
 					info.setNotExists();
@@ -408,20 +393,20 @@ public class HierarchyCache implements HierarchyStore {
 	}
 
 	@Override
-	public void store_removeDirectory(final N5DirectoryPath group) throws N5IOException {
+	public void removeDirectory(final N5DirectoryPath path) throws N5IOException {
 
-		final CacheInfoDirectory info = getOrCreate(group);
+		final CacheInfoDirectory info = getOrCreate(path);
 		if (!info.isKnownToNotExist())
-			delegate.store_removeDirectory(group);
+			delegate.removeDirectory(path);
 		info.markRemoved();
 	}
 
 	@Override
-	public void store_createDirectories(final N5DirectoryPath group) throws N5IOException {
+	public void createDirectories(final N5DirectoryPath path) throws N5IOException {
 
-		final CacheInfoDirectory info = getOrCreate(group);
+		final CacheInfoDirectory info = getOrCreate(path);
 		if (!info.isKnownToExist())
-			delegate.store_createDirectories(group);
+			delegate.createDirectories(path);
 		info.setExists();
 	}
 

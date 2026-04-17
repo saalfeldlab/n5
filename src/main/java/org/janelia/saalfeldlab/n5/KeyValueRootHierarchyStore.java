@@ -26,12 +26,12 @@ public class KeyValueRootHierarchyStore implements HierarchyStore {
 	}
 
 	@Override
-	public JsonElement store_readAttributesJson(
-			final N5DirectoryPath group,
+	public JsonElement readAttributesJson(
+			final N5DirectoryPath parent,
 			final String filename,
 			final Gson gson) throws N5IOException {
 
-		final N5FilePath attributesPath = group.resolve(filename).asFile();
+		final N5FilePath attributesPath = parent.resolve(filename).asFile();
 		try (final VolatileReadData readData = kvr.createReadData(attributesPath);) {
 			// TODO: this (ReadData --> JsonElement) should go into GsonUtils?
 			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), gson);
@@ -43,25 +43,25 @@ public class KeyValueRootHierarchyStore implements HierarchyStore {
 	}
 
 	@Override
-	public boolean store_isDirectory(final N5DirectoryPath group) {
+	public boolean isDirectory(final N5DirectoryPath path) {
 
-		return kvr.isDirectory(group);
+		return kvr.isDirectory(path);
 	}
 
 	@Override
-	public String[] store_listDirectories(final N5DirectoryPath group) throws N5IOException {
+	public String[] listDirectories(final N5DirectoryPath path) throws N5IOException {
 
-		return kvr.listDirectories(group);
+		return kvr.listDirectories(path);
 	}
 
 	@Override
-	public void store_writeAttributesJson(
-			final N5DirectoryPath group,
+	public void writeAttributesJson(
+			final N5DirectoryPath parent,
 			final String filename,
 			final JsonElement attributes,
 			final Gson gson) throws N5IOException {
 
-		final N5FilePath attributesPath = group.resolve(filename).asFile();
+		final N5FilePath attributesPath = parent.resolve(filename).asFile();
 
 		// TODO: this (JsonElement --> ReadData) should go into GsonUtils?
 		final ReadData attributesReadData = ReadData.from(os -> {
@@ -77,14 +77,14 @@ public class KeyValueRootHierarchyStore implements HierarchyStore {
 	}
 
 	@Override
-	public void store_removeDirectory(final N5DirectoryPath group) throws N5IOException {
+	public void removeDirectory(final N5DirectoryPath path) throws N5IOException {
 
-		kvr.delete(group);
+		kvr.delete(path);
 	}
 
 	@Override
-	public void store_createDirectories(N5DirectoryPath group) throws N5IOException {
+	public void createDirectories(N5DirectoryPath path) throws N5IOException {
 
-		kvr.createDirectories(group);
+		kvr.createDirectories(path);
 	}
 }
