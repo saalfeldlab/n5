@@ -110,12 +110,9 @@ public interface N5Writer extends N5Reader {
 	 * @param datasetAttributes the dataset attributes
 	 * @throws N5Exception the exception
 	 */
-	default void setDatasetAttributes(
-			final String datasetPath,
-			final DatasetAttributes datasetAttributes) throws N5Exception {
-
-		setAttributes(datasetPath, getConvertedDatasetAttributes(datasetAttributes).asMap());
-	}
+	void setDatasetAttributes(
+			String datasetPath,
+			DatasetAttributes datasetAttributes) throws N5Exception;
 
 	/**
 	 * Set the SemVer version of this container as specified in the

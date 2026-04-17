@@ -1,6 +1,5 @@
 package org.janelia.saalfeldlab.n5;
 
-import com.google.gson.reflect.TypeToken;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -218,12 +217,10 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws N5Exception
 	 *             the exception
 	 */
-	default <T> T getAttribute(
-			final String pathName,
-			final String key,
-			final Class<T> clazz) throws N5Exception {
-		return getAttribute(pathName, key, TypeToken.get(clazz).getType());
-	}
+	<T> T getAttribute(
+			String pathName,
+			String key,
+			Class<T> clazz) throws N5Exception;
 
 	/**
 	 * Reads an attribute.
