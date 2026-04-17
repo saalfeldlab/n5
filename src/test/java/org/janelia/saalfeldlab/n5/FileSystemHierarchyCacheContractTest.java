@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
 import org.janelia.saalfeldlab.n5.cache.AbstractHierarchyCacheContractTest;
 
 public class FileSystemHierarchyCacheContractTest extends AbstractHierarchyCacheContractTest {

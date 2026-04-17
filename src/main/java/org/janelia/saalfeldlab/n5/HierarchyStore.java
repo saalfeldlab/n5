@@ -1,12 +1,9 @@
-package org.janelia.saalfeldlab.n5.cache;
+package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import org.janelia.saalfeldlab.n5.GsonN5Reader;
-import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
-import org.janelia.saalfeldlab.n5.N5Reader;
 
 /**
  * Operations on a directory hierarchy (or directory-like hierarchy like

@@ -34,6 +34,7 @@ import com.google.gson.JsonObject;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.janelia.saalfeldlab.n5.HierarchyStore;
 import org.janelia.saalfeldlab.n5.HierarchyStoreCounters;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;

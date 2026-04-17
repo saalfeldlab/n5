@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
-import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
+import org.janelia.saalfeldlab.n5.HierarchyStore;
 
 public class ReadWriteHierarchyStore implements HierarchyStore {
 

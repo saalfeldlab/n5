@@ -29,7 +29,6 @@
 package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.Gson;
-import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
 import org.janelia.saalfeldlab.n5.cache.HierarchyCache;
 
 /**

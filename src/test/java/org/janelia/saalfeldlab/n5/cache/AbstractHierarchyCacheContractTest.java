@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.Arrays;
 import java.util.List;
+import org.janelia.saalfeldlab.n5.HierarchyStore;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.junit.Before;

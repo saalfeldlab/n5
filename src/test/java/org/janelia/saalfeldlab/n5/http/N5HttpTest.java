@@ -38,7 +38,7 @@ import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.n5.FileSystemKeyValueRoot;
 import org.janelia.saalfeldlab.n5.HttpKeyValueRoot;
 import org.janelia.saalfeldlab.n5.KeyValueRoot;
-import org.janelia.saalfeldlab.n5.cache.HierarchyStore;
+import org.janelia.saalfeldlab.n5.HierarchyStore;
 import org.janelia.saalfeldlab.n5.cache.HierarchyCache;
 import org.junit.After;
 import org.junit.AfterClass;
