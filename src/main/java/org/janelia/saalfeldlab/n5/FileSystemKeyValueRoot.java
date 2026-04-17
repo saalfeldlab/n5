@@ -48,7 +48,7 @@ public class FileSystemKeyValueRoot implements KeyValueRoot {
 		this.root = uriStr.endsWith("/") ? uri : URI.create(uriStr + "/");
 
 		final LockingPolicy policy = LockingPolicy.fromString(System.getProperty("n5.ioPolicy", "permissive"));
-		this.fileKeyLockManager = new FileKeyLockManager(policy);
+		this.fileKeyLockManager = FileKeyLockManager.forPolicy(policy);
 	}
 
 	private static URI uriForNormalPath(final String normalPath) {

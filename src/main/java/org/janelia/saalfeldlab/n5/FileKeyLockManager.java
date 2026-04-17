@@ -33,6 +33,9 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.nio.channels.FileLock;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.janelia.saalfeldlab.n5.LockingPolicy.STRICT;
@@ -43,11 +46,17 @@ import static org.janelia.saalfeldlab.n5.LockingPolicy.STRICT;
  */
 class FileKeyLockManager {
 
+	private static final Map<LockingPolicy, FileKeyLockManager> managers = Collections.synchronizedMap(new EnumMap<>(LockingPolicy.class));
+
+	static FileKeyLockManager forPolicy(final LockingPolicy policy) {
+		return managers.computeIfAbsent(policy, FileKeyLockManager::new);
+	}
+
 	/**
-	 * @deprecated use {@link FileKeyLockManager} instance per KVA instead of global one.
+	 * @deprecated use {@link FileKeyLockManager#forPolicy(LockingPolicy)}
 	 */
 	@Deprecated
-	static final FileKeyLockManager FILE_LOCK_MANAGER = new FileKeyLockManager(STRICT);
+	static final FileKeyLockManager FILE_LOCK_MANAGER = forPolicy(STRICT);
 
 	private final LockingPolicy policy;
 
@@ -66,7 +75,7 @@ class FileKeyLockManager {
 	 * @param policy
 	 * 		the locking policy
 	 */
-	FileKeyLockManager(final LockingPolicy policy) {
+	private FileKeyLockManager(final LockingPolicy policy) {
 		this.policy = policy;
 	}
 
