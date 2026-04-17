@@ -47,12 +47,4 @@ public interface CachedGsonKeyValueN5Reader extends GsonKeyValueN5Reader {
 		final KeyValueRootHierarchyStore store = new KeyValueRootHierarchyStore(keyValueRoot);
 		return cacheMeta ? new HierarchyCache(store) : store;
 	}
-
-	default ContainerDialect createContainerDialect(
-			final HierarchyStore store,
-			final Gson gson,
-			final boolean cacheMeta) {
-
-		return new N5Dialect(store, gson);
-	}
 }

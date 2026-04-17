@@ -46,44 +46,6 @@ import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 public interface GsonKeyValueN5Writer extends GsonN5Writer, GsonKeyValueN5Reader {
 
 	@Override
-	default void createGroup(final String path) throws N5Exception {
-
-		getContainerDialect().createGroup(N5DirectoryPath.of(path));
-	}
-
-	@Override
-	default DatasetAttributes createDataset(final String datasetPath, final DatasetAttributes datasetAttributes) throws N5Exception {
-
-		final DatasetAttributes attributes = getConvertedDatasetAttributes(datasetAttributes);
-		getContainerDialect().createDataset(N5DirectoryPath.of(datasetPath), attributes);
-		return attributes;
-	}
-
-	@Override
-	default void setAttributes(final String path, final Map<String, ?> attributes) throws N5Exception {
-
-		getContainerDialect().setAttributes(N5DirectoryPath.of(path), attributes);
-	}
-
-	@Override
-	default boolean removeAttribute(final String path, final String attributePath) throws N5Exception {
-
-		return getContainerDialect().removeAttribute(N5DirectoryPath.of(path), attributePath);
-	}
-
-	@Override
-	default <T> T removeAttribute(final String path, final String attributePath, final Class<T> clazz) throws N5Exception {
-
-		return getContainerDialect().removeAttribute(N5DirectoryPath.of(path), attributePath, clazz);
-	}
-
-	@Override
-	default boolean remove(final String path) throws N5Exception {
-
-		return getContainerDialect().remove(N5DirectoryPath.of(path));
-	}
-
-	@Override
 	default <T> void writeRegion(
 			final String datasetPath,
 			final DatasetAttributes datasetAttributes,

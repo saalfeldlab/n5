@@ -117,7 +117,7 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 		this.gson = registerGson(gsonBuilder).create();
 		this.cacheMeta = cacheMeta;
 		this.hierarchyStore = createHierarchyStore(keyValueRoot, cacheMeta);
-		this.containerDialect = createContainerDialect(hierarchyStore, gson, cacheMeta);
+		this.containerDialect = new N5Dialect(hierarchyStore, gson);
 
 		boolean versionFound = false;
 		if (checkVersion) {

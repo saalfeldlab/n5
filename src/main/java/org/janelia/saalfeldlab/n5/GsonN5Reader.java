@@ -30,6 +30,8 @@ package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import java.lang.reflect.Type;
+import java.util.Map;
 
 /**
  * {@link N5Reader} with JSON attributes parsed with {@link Gson}.
@@ -49,6 +51,13 @@ public interface GsonN5Reader extends N5Reader {
 	@Deprecated
 	String getAttributesKey();
 
+	// TODO: There is nothing tying the default implementations of the metadata
+	//   methods to Gson. They could be moved up to N5Reader. However, we don't
+	//   want to put getContainerDialect() there, because we want to avoid
+	//   adding new methods to the top-level interfaces.
+
+	ContainerDialect getContainerDialect();
+
 	/**
 	 * Reads or the attributes of a group or dataset.
 	 *
@@ -58,5 +67,49 @@ public interface GsonN5Reader extends N5Reader {
 	 * @throws N5Exception if the attribute cannot be returned
 	 */
 	@Deprecated
-	JsonElement getAttributes(String pathName) throws N5Exception;
+	default JsonElement getAttributes(String pathName) throws N5Exception {
+
+		return getContainerDialect().getAttributes(N5Path.N5DirectoryPath.of(pathName));
+	}
+
+	@Override
+	default <T> T getAttribute(final String pathName, final String key, final Type type) throws N5Exception {
+
+		return getContainerDialect().getAttribute(N5Path.N5DirectoryPath.of(pathName), key, type);
+	}
+
+	@Override
+	default DatasetAttributes getDatasetAttributes(final String pathName) throws N5Exception {
+
+		return getContainerDialect().getDatasetAttributes(N5Path.N5DirectoryPath.of(pathName));
+	}
+
+	@Override
+	default Map<String, Class<?>> listAttributes(final String pathName) throws N5Exception {
+
+		return getContainerDialect().listAttributes(N5Path.N5DirectoryPath.of(pathName));
+	}
+
+	default boolean groupExists(final String pathName) {
+
+		return getContainerDialect().groupExists(N5Path.N5DirectoryPath.of(pathName));
+	}
+
+	@Override
+	default boolean exists(final String pathName) {
+
+		return groupExists(pathName) || datasetExists(pathName);
+	}
+
+	@Override
+	default boolean datasetExists(final String pathName) throws N5Exception {
+
+		return getContainerDialect().datasetExists(N5Path.N5DirectoryPath.of(pathName));
+	}
+
+	@Override
+	default String[] list(final String pathName) throws N5Exception {
+
+		return getContainerDialect().list(N5Path.N5DirectoryPath.of(pathName));
+	}
 }
