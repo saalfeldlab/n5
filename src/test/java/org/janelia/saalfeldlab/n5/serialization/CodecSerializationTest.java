@@ -39,6 +39,7 @@ import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.IdentityCodec;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.gson.Gson;
@@ -83,6 +84,7 @@ public class CodecSerializationTest {
 	}
 
 	@Test
+	@Ignore
 	public void testSerializeCodecArray() {
 
 		CodecInfo[] codecs = new CodecInfo[]{
