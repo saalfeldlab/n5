@@ -28,31 +28,32 @@
  */
 package org.janelia.saalfeldlab.n5;
 
-import static org.janelia.saalfeldlab.n5.FileKeyLockManager.FILE_LOCK_MANAGER;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.janelia.saalfeldlab.n5.FileKeyLockManager.FILE_LOCK_MANAGER;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+
 public class FileKeyLockManagerTest {
+
 	private Path tempDir;
 
 	@Before
@@ -71,7 +72,7 @@ public class FileKeyLockManagerTest {
 						try {
 							Files.deleteIfExists(p);
 						} catch (IOException e) {
-							/* ignore */
+							// ignore
 						}
 					});
 		}
@@ -80,10 +81,10 @@ public class FileKeyLockManagerTest {
 	@Test
 	public void testConcurrentReads() throws Exception {
 
-		/* create a test file */
+		// create a test file
 		final Path testFile = tempDir.resolve("test.txt");
-		final String testContent = "test content for concurrent reads";
-		Files.write(testFile, testContent.getBytes());
+		final byte[] testContent = "test content for concurrent reads".getBytes();
+		Files.write(testFile, testContent);
 
 		final int numReaders = 5;
 		final ExecutorService executor = Executors.newFixedThreadPool(numReaders);
@@ -101,17 +102,15 @@ public class FileKeyLockManagerTest {
 					readersReady.countDown();
 					startLatch.await();
 
-					try (final LockedChannel lock = FILE_LOCK_MANAGER.lockForReading(testFile)) {
+					try (final LockedFileChannel lock = FILE_LOCK_MANAGER.lockForReading(testFile)) {
 						final int concurrent = concurrentReaders.incrementAndGet();
 						maxConcurrentReaders.updateAndGet(max -> Math.max(max, concurrent));
 
-						/* actually read from the channel */
-						try (final Reader reader = lock.newReader()) {
-							final char[] buf = new char[testContent.length()];
-							final int charsRead = reader.read(buf);
-							if (charsRead > 0 && new String(buf, 0, charsRead).equals(testContent)) {
-								successfulReads.incrementAndGet();
-							}
+						// actually read from the channel
+						final byte[] buf = new byte[testContent.length];
+						final int bytesRead = lock.read(ByteBuffer.wrap(buf), 0);
+						if (bytesRead > 0 && Arrays.equals(buf, testContent)) {
+							successfulReads.incrementAndGet();
 						}
 						Thread.sleep(100);
 						concurrentReaders.decrementAndGet();
@@ -147,33 +146,29 @@ public class FileKeyLockManagerTest {
 	@Test
 	public void testReadWriteExclusion() throws Exception {
 
-		/* create a test file */
+		// create a test file
 		final Path testFile = tempDir.resolve("test2.txt");
 		Files.write(testFile, "initial content".getBytes());
 
 		final String writtenContent = "written by writer";
 
-		/* acquire a write lock and write to the file */
-		final LockedChannel writeLock = FILE_LOCK_MANAGER.lockForWriting(testFile);
-		try (final Writer writer = writeLock.newWriter()) {
-			writer.write(writtenContent);
-		}
+		// acquire a write lock and write to the file
+		final OutputStream writeLock = FILE_LOCK_MANAGER.lockForWriting(testFile).asOutputStream();
+		writeLock.write(writtenContent.getBytes());
 
-		/* try to acquire a read lock from another thread - should block */
+		// try to acquire a read lock from another thread - should block
 		final CountDownLatch readAttempted = new CountDownLatch(1);
 		final CountDownLatch readAcquired = new CountDownLatch(1);
 		final AtomicReference<String> readContent = new AtomicReference<>();
 
 		new Thread(() -> {
 			readAttempted.countDown();
-			try (final LockedChannel readLock = FILE_LOCK_MANAGER.lockForReading(testFile)) {
-				/* actually read from the channel */
-				try (final Reader reader = readLock.newReader()) {
-					final char[] buf = new char[writtenContent.length()];
-					final int charsRead = reader.read(buf);
-					if (charsRead > 0) {
-						readContent.set(new String(buf, 0, charsRead));
-					}
+			try (final LockedFileChannel readLock = FILE_LOCK_MANAGER.lockForReading(testFile)) {
+				// actually read from the channel
+				final byte[] buf = new byte[writtenContent.getBytes().length];
+				final int charsRead = readLock.read(ByteBuffer.wrap(buf), 0);
+				if (charsRead > 0) {
+					readContent.set(new String(buf, 0, charsRead));
 				}
 				readAcquired.countDown();
 			} catch (IOException e) {
@@ -194,68 +189,8 @@ public class FileKeyLockManagerTest {
 		assertEquals("Reader should see written content", writtenContent, readContent.get());
 	}
 
-	@Test
-	public void testTryLock() throws Exception {
+	private class CleanUpHelper implements Closeable {
 
-		/* create a test file */
-		final Path testFile = tempDir.resolve("test3.txt");
-		final String testContent = "test content";
-		Files.write(testFile, testContent.getBytes());
-
-		/* try acquiring read lock and read */
-		LockedChannel readLock1 = FILE_LOCK_MANAGER.tryLockForReading(testFile);
-		assertNotNull("Should acquire read lock", readLock1);
-		try (final Reader reader = readLock1.newReader()) {
-			final char[] buf = new char[testContent.length()];
-			assertEquals("Should read correct number of chars", testContent.length(), reader.read(buf));
-		}
-
-		/* try acquiring another read lock and read */
-		LockedChannel readLock2 = FILE_LOCK_MANAGER.tryLockForReading(testFile);
-		assertNotNull("Should acquire second read lock", readLock2);
-		try (final Reader reader = readLock2.newReader()) {
-			final char[] buf = new char[testContent.length()];
-			assertEquals("Should read correct number of chars", testContent.length(), reader.read(buf));
-		}
-
-		/* try acquiring write lock while reads are held - should fail */
-		LockedChannel writeLock = FILE_LOCK_MANAGER.tryLockForWriting(testFile);
-		assertNull("Should not acquire write lock while reads are held", writeLock);
-
-		readLock1.close();
-		readLock2.close();
-
-		/* now try write lock and write */
-		writeLock = FILE_LOCK_MANAGER.tryLockForWriting(testFile);
-		assertNotNull("Should acquire write lock after reads are released", writeLock);
-		final String newContent = "new content";
-		try (final Writer writer = writeLock.newWriter()) {
-			writer.write(newContent);
-		}
-
-		/* try acquiring read lock from another thread while write is held */
-		final AtomicReference<LockedChannel> readLock3 = new AtomicReference<>();
-		final Thread readerThread = new Thread(() -> {
-			readLock3.set(FILE_LOCK_MANAGER.tryLockForReading(testFile));
-		});
-		readerThread.start();
-		readerThread.join();
-
-		assertNull("Should not acquire read lock while write is held", readLock3.get());
-
-		writeLock.close();
-
-		/* verify written content */
-		try (final LockedChannel verifyLock = FILE_LOCK_MANAGER.lockForReading(testFile);
-			 final Reader reader = verifyLock.newReader()) {
-			final char[] buf = new char[newContent.length()];
-			reader.read(buf);
-			assertEquals("Content should match what was written", newContent, new String(buf));
-		}
-	}
-
-	private class CleanUpHelper implements Closeable
-	{
 		private final Path path;
 		private final LockedFileChannel channel;
 
@@ -301,43 +236,36 @@ public class FileKeyLockManagerTest {
 	// TODO: Remove? This test relies on garbage collection behaviour and is inherently fragile.
 	public void testLockCleanup() throws Exception {
 
-		/* create test files */
+		// create test files
 		final Path testFile1 = tempDir.resolve("key1.txt");
 		final Path testFile2 = tempDir.resolve("key2.txt");
 		final Path testFile3 = tempDir.resolve("key3.txt");
-		final String content = "content";
-		Files.write(testFile1, content.getBytes());
-		Files.write(testFile2, content.getBytes());
-		Files.write(testFile3, content.getBytes());
+		final byte[] content = "content".getBytes();
+		Files.write(testFile1, content);
+		Files.write(testFile2, content);
+		Files.write(testFile3, content);
 
 		final CleanUpHelper cleanup = new CleanUpHelper();
 		final int initialSize = FILE_LOCK_MANAGER.size();
 
-		final LockedChannel lock1 = FILE_LOCK_MANAGER.lockForReading(testFile1);
-		final LockedChannel lock2 = FILE_LOCK_MANAGER.lockForWriting(testFile2);
-		final LockedChannel lock3 = FILE_LOCK_MANAGER.lockForReading(testFile3);
+		final LockedFileChannel lock1 = FILE_LOCK_MANAGER.lockForReading(testFile1);
+		final OutputStream lock2 = FILE_LOCK_MANAGER.lockForWriting(testFile2).asOutputStream();
+		final LockedFileChannel lock3 = FILE_LOCK_MANAGER.lockForReading(testFile3);
 
-		/* actually perform I/O on each lock */
-		try (final Reader reader = lock1.newReader()) {
-			final char[] buf = new char[content.length()];
-			reader.read(buf);
-		}
-		try (final Writer writer = lock2.newWriter()) {
-			writer.write("new content");
-		}
-		try (final Reader reader = lock3.newReader()) {
-			final char[] buf = new char[content.length()];
-			reader.read(buf);
-		}
+		// actually perform I/O on each lock
+		final byte[] buf = new byte[content.length];
+		lock1.read(ByteBuffer.wrap(buf),0);
+		lock2.write(content);
+		lock3.read(ByteBuffer.wrap(buf),0);
 
 		assertEquals("Should have 3 new keys", initialSize + 3, FILE_LOCK_MANAGER.size());
 
-		/* close lock1 - entry should be auto-removed */
+		// close lock1 - entry should be auto-removed
 		lock1.close();
 		cleanup.tryWaitForSize(initialSize + 2);
 		assertEquals("key1 should be auto-removed on close", initialSize + 2, FILE_LOCK_MANAGER.size());
 
-		/* close remaining locks - entries should be auto-removed */
+		// close remaining locks - entries should be auto-removed
 		lock2.close();
 		lock3.close();
 		cleanup.tryWaitForSize(initialSize);
@@ -347,52 +275,47 @@ public class FileKeyLockManagerTest {
 	@Test
 	public void testWriteLockCreatesFile() throws Exception {
 
-		/* file does not exist - write lock creates it via CREATE option */
+		// file does not exist - write lock creates it via CREATE option
 		final Path testFile = tempDir.resolve("newfile.txt");
 		final String content = "written to new file";
 
 		assertFalse("File should not exist initially", Files.exists(testFile));
 
-		try (final LockedChannel writeLock = FILE_LOCK_MANAGER.lockForWriting(testFile)) {
+		try (final LockedFileChannel writeLock = FILE_LOCK_MANAGER.lockForWriting(testFile)) {
 			assertTrue("File should be created by write lock", Files.exists(testFile));
-			/* actually write to the file */
-			try (final Writer writer = writeLock.newWriter()) {
-				writer.write(content);
-			}
+			// actually write to the file
+			writeLock.asOutputStream().write(content.getBytes());
 		}
 
-		/* verify written content */
+		// verify written content
 		assertEquals("Content should be written", content, new String(Files.readAllBytes(testFile)));
 	}
 
 	@Test
 	public void testWriteLockCreatesParentDirectories() throws Exception {
 
-		/* parent directories do not exist - write lock creates them */
+		// parent directories do not exist - write lock creates them
 		final Path testFile = tempDir.resolve("a/b/c/newfile.txt");
 		final String content = "written to nested file";
 
 		assertFalse("File should not exist initially", Files.exists(testFile));
 		assertFalse("Parent should not exist initially", Files.exists(testFile.getParent()));
 
-		try (final LockedChannel writeLock = FILE_LOCK_MANAGER.lockForWriting(testFile)) {
+		try (final LockedFileChannel writeLock = FILE_LOCK_MANAGER.lockForWriting(testFile)) {
 			assertTrue("File should be created by write lock", Files.exists(testFile));
 			assertTrue("Parent directories should be created", Files.exists(testFile.getParent()));
-			/* actually write to the file */
-			try (final Writer writer = writeLock.newWriter()) {
-				writer.write(content);
-			}
+			// actually write to the file
+			writeLock.asOutputStream().write(content.getBytes());
 		}
 
-		/* verify written content */
+		// verify written content
 		assertEquals("Content should be written", content, new String(Files.readAllBytes(testFile)));
 	}
 
 	@Test
 	public void testReadLockRequiresExistingFile() throws Exception {
 		final Path testFile = tempDir.resolve("nonexistent.txt");
-		assertNull("Should not acquire read lock for non-existent file",
-				FILE_LOCK_MANAGER.tryLockForReading(testFile));
+		assertThrows("Should not acquire read lock for non-existent file", NoSuchFileException.class, () -> FILE_LOCK_MANAGER.lockForReading(testFile));
 	}
 
 	@Test
@@ -405,16 +328,14 @@ public class FileKeyLockManagerTest {
 		final CleanUpHelper cleanup = new CleanUpHelper();
 		final int initialSize = FILE_LOCK_MANAGER.size();
 
-		try (final LockedChannel lock = FILE_LOCK_MANAGER.lockForWriting(testFile);
-			 final Writer writer = lock.newWriter()) {
-			writer.write("new content");
+		try (final LockedFileChannel lock = FILE_LOCK_MANAGER.lockForWriting(testFile)) {
+			lock.asOutputStream().write("new content".getBytes());
 		}
 
 		cleanup.tryWaitForSize(initialSize);
 		assertEquals("locks map should be back to initial size after proper close",
 				initialSize, FILE_LOCK_MANAGER.size());
 	}
-
 
 	@Test
 	// TODO: Remove? This test relies on garbage collection behaviour and is inherently fragile.
@@ -426,7 +347,7 @@ public class FileKeyLockManagerTest {
 		final CleanUpHelper cleanup = new CleanUpHelper();
 		final int initialSize = FILE_LOCK_MANAGER.size();
 
-		/* acquire lock in a separate scope so reference can be GC'd */
+		// acquire lock in a separate scope so reference can be GC'd
 		acquireAndLeakLock(testFile);
 
 		cleanup.tryWaitForSize(initialSize);
@@ -436,13 +357,11 @@ public class FileKeyLockManagerTest {
 	}
 
 	private void acquireAndLeakLock(final Path path) throws IOException {
-		/* acquire lock but don't close it - just let the reference go out of scope */
+		// acquire lock but don't close it - just let the reference go out of scope
 
 		@SuppressWarnings("resource")
-		LockedChannel leaked = FILE_LOCK_MANAGER.lockForWriting(path);
-		try (final Writer writer = leaked.newWriter()) {
-			writer.write("leaked content");
-		}
+		LockedFileChannel leaked = FILE_LOCK_MANAGER.lockForWriting(path);
+		leaked.asOutputStream().write("leaked content".getBytes());
 	}
 
 }

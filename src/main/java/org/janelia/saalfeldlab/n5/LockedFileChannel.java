@@ -1,18 +1,28 @@
 package org.janelia.saalfeldlab.n5;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Reader;
-import java.io.Writer;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
+import java.nio.channels.WritableByteChannel;
 
 /**
  * LockedFileChannel implementation for both read and write operations.
+ * <p>
+ * When closing this {@code LockedFileChannel}, {@code releaseLock} is called,
+ * but the {@code channel} is not closed. The channel may be shared among
+ * multiple {@code LockedFileChannel} for concurrent readers. {@code
+ * releaseLock} should take care of closing the channel when the last reader (or
+ * the only writer) is closed.
  */
-class LockedFileChannel implements LockedChannel {
+class LockedFileChannel implements Closeable {
+
+	// TODO: Consider splitting LockedFileChannel into read-only and write-only part.
+	// TODO: Consider removing LockedFileChannel and having
+	//       FileKeyLockManager.acquireRead() and FileKeyLockManager.acquireWrite()
+	//       return appropriately wrapped SeekableByteChannel.
 
 	private final FileChannel channel;
 	private ReleaseLock releaseLock;
@@ -29,34 +39,55 @@ class LockedFileChannel implements LockedChannel {
 		this.releaseLock = releaseLock;
 	}
 
-	@Override
-	public Reader newReader() throws N5Exception.N5IOException {
-
-		return Channels.newReader(channel, StandardCharsets.UTF_8.name());
+	/**
+	 * Returns the size of this channel's file.
+	 * <p>
+	 * See {@link FileChannel#size()}.
+	 */
+	public long size() throws IOException {
+		return channel.size();
 	}
 
-	@Override
-	public InputStream newInputStream() throws N5Exception.N5IOException {
-
-		return Channels.newInputStream(channel);
+	/**
+	 * Reads a sequence of bytes from this channel into the given buffer,
+	 * starting at the given file position.
+	 * <p>
+	 * See {@link FileChannel#read(ByteBuffer, long)}.
+	 */
+	public int read(final ByteBuffer dst, final long position) throws IOException {
+		return channel.read(dst, position);
 	}
 
-	@Override
-	public Writer newWriter() throws N5Exception.N5IOException {
-
-		return Channels.newWriter(channel, StandardCharsets.UTF_8.name());
+	/**
+	 * Return an {@link OutputStream} that writes into this channel.
+	 * Closing the OutputStream will close this channel.
+	 */
+	public OutputStream asOutputStream() {
+		return Channels.newOutputStream(new ClosingChannelWrapper());
 	}
 
-	@Override
-	public OutputStream newOutputStream() throws N5Exception.N5IOException {
+	private class ClosingChannelWrapper implements WritableByteChannel {
 
-		return Channels.newOutputStream(channel);
+		@Override
+		public int write(final ByteBuffer src) throws IOException {
+			return channel.write(src);
+		}
+
+		@Override
+		public boolean isOpen() {
+			return channel.isOpen();
+		}
+
+		@Override
+		public void close() throws IOException {
+			channel.close();
+			LockedFileChannel.this.close();
+		}
 	}
 
 	@Override
 	public void close() throws IOException {
 
-		channel.close();
 		if (releaseLock != null) {
 			releaseLock.release();
 			releaseLock = null;

@@ -36,7 +36,7 @@ public class FsLockTest {
         final Path path = Paths.get(tempPathName(), "lock");
         path.toFile().createNewFile();
         assertTrue("File Created", path.toFile().exists());
-        LockedChannel lock = LOCK_MANAGER.lockForReading(path);
+        LockedFileChannel lock = LOCK_MANAGER.lockForReading(path);
         lock.close();
         lock = LOCK_MANAGER.lockForReading(path);
 
@@ -68,7 +68,7 @@ public class FsLockTest {
     public void testWriteLock() throws IOException {
 
         final Path path = Paths.get(tempPathName(), "lock");
-        final LockedChannel lock = LOCK_MANAGER.lockForWriting(path);
+        final LockedFileChannel lock = LOCK_MANAGER.lockForWriting(path);
         System.out.println("locked");
 
         final ExecutorService exec = Executors.newSingleThreadExecutor();
@@ -105,8 +105,8 @@ public class FsLockTest {
         // first thread acquires the lock, waits for 200ms then should release it
         exec.submit(() -> {
             try {
-                try(final LockedChannel lock = LOCK_MANAGER.lockForWriting(path)) {
-                    lock.newReader();
+                try(final LockedFileChannel lock = LOCK_MANAGER.lockForWriting(path)) {
+					lock.size();
                     Thread.sleep(200);
                 }
             } catch (IOException e) {
@@ -141,8 +141,8 @@ public class FsLockTest {
         // first thread acquires a read lock, waits for 200ms
         Future<?> f = exec.submit(() -> {
             try {
-                try(final LockedChannel lock = LOCK_MANAGER.lockForReading(path)) {
-                    lock.newReader();
+                try(final LockedFileChannel lock = LOCK_MANAGER.lockForReading(path)) {
+					lock.size();
                     Thread.sleep(200);
 
                     // ensure that the other thread updated the value
@@ -160,8 +160,8 @@ public class FsLockTest {
         // and should not be blocked
         // this thread updates the boolean
         exec.submit(() -> {
-            try( final LockedChannel lock = LOCK_MANAGER.lockForReading(path)) {
-                lock.newReader();
+            try( final LockedFileChannel lock = LOCK_MANAGER.lockForReading(path)) {
+				lock.size();
                 v.set(true);
             }
             return null;
@@ -182,8 +182,8 @@ public class FsLockTest {
         // first thread acquires the lock, waits for 200ms then should release it
         exec.submit(() -> {
             try {
-                try(final LockedChannel lock = LOCK_MANAGER.lockForWriting(path)) {
-                    lock.newReader();
+                try(final LockedFileChannel lock = LOCK_MANAGER.lockForWriting(path)) {
+                    lock.size();
                     Thread.sleep(200);
                 }
             } catch (IOException e) {

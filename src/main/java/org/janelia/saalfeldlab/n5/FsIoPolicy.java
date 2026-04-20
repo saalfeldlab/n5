@@ -111,7 +111,7 @@ public class FsIoPolicy {
         public void write(String key, ReadData readData) throws IOException {
             final Path path = Paths.get(key);
             try (LockedFileChannel channel = FILE_LOCK_MANAGER.lockForWriting(path)) {
-                readData.writeTo(channel.newOutputStream());
+                readData.writeTo(channel.asOutputStream());
             }
         }
 
@@ -158,7 +158,14 @@ public class FsIoPolicy {
             if (lock == null) {
                 throw new N5Exception.N5IOException("FileLazyRead is already closed.");
             }
-            return FileSystemKeyValueAccess.size(path);
+
+			try {
+				return Files.size(path);
+			} catch (NoSuchFileException e) {
+				throw new N5Exception.N5NoSuchKeyException("No such file", e);
+			} catch (IOException | UncheckedIOException e) {
+				throw new N5Exception.N5IOException(e);
+			}
         }
 
         @Override

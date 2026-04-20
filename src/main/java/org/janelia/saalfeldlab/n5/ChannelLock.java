@@ -6,7 +6,9 @@ import java.io.UncheckedIOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 /**
  * Holds a channel and system-level file lock (shared for writing, non-shared
@@ -17,13 +19,22 @@ class ChannelLock implements Closeable {
 
 	private final FileChannel channel;
 
-	//Used to ensure a hard reference exists until we close
+	/**
+	 * Hold a hard reference to the {@code FileLock} to make sure it is not
+	 * prematurely released.
+	 * <p>
+	 * NB: We do not call {@code lock.release()} in {@link #close}, because at
+	 * this point the channel might be already closed (by an external writer).
+	 * {@code lock.release()} will throw an exception if the channel is already
+	 * closed. Instead, we just close the channel which will automatically
+	 * release the lock.
+	 */
 	@SuppressWarnings({"unused", "FieldCanBeLocal"})
-    private final FileLock unusedHardRef;
+	private final FileLock lock;
 
 	private ChannelLock(final FileChannel channel, final FileLock lock) {
 		this.channel = channel;
-		this.unusedHardRef = lock;
+		this.lock = lock;
 	}
 
 	public void close() throws IOException {
@@ -55,9 +66,12 @@ class ChannelLock implements Closeable {
 	 * @throws IOException if an error occurs while opening the channel, or if
 	 * the calling thread is interrupted while waiting for the {@code FileLock}.
 	 */
-	static ChannelLock lock(final Path path, final boolean forWriting) throws IOException {
+	static ChannelLock lock(final Path path, final boolean forWriting, final LockingPolicy policy) throws IOException {
 
-		final FileChannel channel = FsIoPolicy.openFileChannel(path, forWriting);
+		final FileChannel channel = openFileChannel(path, forWriting);
+		if (policy == LockingPolicy.UNSAFE) {
+			return new ChannelLock(channel, null);
+		}
 		try {
 			while (true) {
 				try {
@@ -75,34 +89,32 @@ class ChannelLock implements Closeable {
 				}
 			}
 		} catch (Exception e) {
-			closeQuietly(channel);
-			throw e;
+			if (policy == LockingPolicy.STRICT) {
+				closeQuietly(channel);
+				throw e;
+			} else {
+				return new ChannelLock(channel, null);
+			}
 		}
 	}
 
 	/**
-	 * Create a {@link FileChannel} on the given {@code path} and try to lock it
-	 * with a system-level {@link FileLock}. If the channel cannot be locked,
-	 * {@code null} is returned.
-	 * <p>
-	 * The {@code FileLock} is exclusive if the {@code path} is locked {@code
-	 * forWriting}, and shared otherwise.
-	 * <p>
-	 * If the {@code path} is locked {@code forWriting} non-existing file and
-	 * the parent directories are created as needed.
+	 * Opens a file channel. If the channel is opened {@code forWriting},
+	 * then this may create the file and the parent directories as needed.
 	 *
-	 * @throws IOException if an error occurs while opening the channel.
+	 * @throws IOException
+	 * 		if the channel cannot be opened
 	 */
-	static ChannelLock tryLock(final Path path, final boolean forWriting) throws IOException {
+	private static FileChannel openFileChannel(final Path path, final boolean forWriting) throws IOException {
 
-		FileChannel channel = null;
-		try {
-			channel = FsIoPolicy.openFileChannel(path, forWriting);
-			final FileLock lock = channel.tryLock(0, Long.MAX_VALUE, !forWriting);
-			return lock == null ? null : new ChannelLock(channel, lock);
-		} catch (Exception e) {
-			closeQuietly(channel);
-			throw e;
+		if (forWriting) {
+			final Path parent = path.getParent();
+			if (parent != null) {
+				Files.createDirectories(parent);
+			}
+			return FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+		} else {
+			return FileChannel.open(path, StandardOpenOption.READ);
 		}
 	}
 
@@ -112,6 +124,6 @@ class ChannelLock implements Closeable {
 				fileChannel.close();
 			} catch (final IOException | UncheckedIOException ignored) {
 			}
-        }
+		}
 	}
 }
