@@ -70,6 +70,8 @@ class ChannelLock implements Closeable {
 
 		final FileChannel channel = openFileChannel(path, forWriting);
 		if (policy == LockingPolicy.UNSAFE) {
+			if (forWriting)
+				channel.truncate(0);
 			return new ChannelLock(channel, null);
 		}
 		try {
@@ -93,6 +95,8 @@ class ChannelLock implements Closeable {
 				closeQuietly(channel);
 				throw e;
 			} else {
+				if (forWriting)
+					channel.truncate(0);
 				return new ChannelLock(channel, null);
 			}
 		}
