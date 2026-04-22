@@ -74,7 +74,7 @@ public class FsLockingValidation implements Callable<Integer> {
 					final long sliceOffset = totalLength - indexSliceSize;
 
 					Thread.sleep(sleepMs);
-					vrd.slice(sliceOffset, indexSliceSize);
+					vrd.slice(sliceOffset, indexSliceSize).materialize();
 
 					// 2. create new ReadData of dataSize, as if we merged the existing
 					//    shard with new blocks and are ready to write the result.
