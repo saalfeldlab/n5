@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
@@ -44,6 +45,8 @@ public class JustFileChannels {
 	static final int indexPairs = 100;
 
 	static void write(String path, boolean doLock, final Random random) {
+//		final long id = Thread.currentThread().getId();
+//		System.out.println("write ("+id+")");
 		try {
 
 			// NB: not creating any parent directories for now
@@ -52,8 +55,8 @@ public class JustFileChannels {
 			final FileChannel channel = FileChannel.open(p, READ, WRITE, CREATE);
 
 			FileLock lock = null;
-			if( doLock)
-				lock = channel.lock(0, Long.MAX_VALUE, false);
+			if (doLock)
+				lock = tryLockWait(channel, false);
 
 			channel.truncate(0);
 
@@ -74,13 +77,32 @@ public class JustFileChannels {
 			if (channel.write(buffer) != capacity)
 				throw new RuntimeException("write failed");
 
-			if( lock != null )
+			if (lock != null)
 				lock.release();
 
 			channel.close();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+	
+	static FileLock tryLockWait(FileChannel channel, boolean shared) throws IOException {
+
+		int i = 0;
+		while (i < 9999) {
+			try {
+				return channel.lock(0, Long.MAX_VALUE, shared);
+			} catch (final OverlappingFileLockException e) {
+				try {
+					Thread.sleep(100);
+				} catch (final InterruptedException ie) {
+					Thread.currentThread().interrupt();
+					throw new IOException("Interrupted while waiting for file lock", ie);
+				}
+			}
+			i++;
+		}
+		throw new IOException("Could not get a lock");
 	}
 
 	// throws RuntimeException if file is not valid
@@ -90,8 +112,8 @@ public class JustFileChannels {
 			final FileChannel channel = FileChannel.open(p, READ);
 
 			FileLock lock = null;
-			if( doLock)
-				lock = channel.lock(0, Long.MAX_VALUE, true);
+			if (doLock)
+				lock = tryLockWait(channel, true);
 
 			final long size = channel.size();
 
@@ -112,7 +134,7 @@ public class JustFileChannels {
 					throw new RuntimeException("verify failed");
 			}
 
-			if( lock != null )
+			if (lock != null)
 				lock.release();
 
 			channel.close();
@@ -120,6 +142,7 @@ public class JustFileChannels {
 			throw new RuntimeException(e);
 		}
 	}
+
 
 	public static void main(String[] args) throws InterruptedException {
 		
@@ -131,17 +154,28 @@ public class JustFileChannels {
 
 		long sleepTime = 0;
 		if( args.length > 2)
-			sleepTime = Long.parseLong(args[2]);
+		{
+			if( args[2].startsWith("rand"))
+				sleepTime = -1;
+			else
+				sleepTime = Long.parseLong(args[2]);
+		}
+		System.out.println("sleep Time: " + ((sleepTime < 0 ) ? "random" : sleepTime));
 
 		boolean doLock = true;
 		if( args.length > 3) {
 			doLock = args[3].equals("lock");
-			System.out.println("do lock: " + doLock);
 		}
+		System.out.println("do lock: " + doLock);
 
 		for( int i = 0; i < N; i++ ) {
 			write(path, doLock, random);
-			Thread.sleep(sleepTime);
+
+			if (sleepTime < 0)
+				Thread.sleep(random.nextInt(200));
+			else
+				Thread.sleep(sleepTime);
+
 			verify(path, doLock);
 		}
 	}
