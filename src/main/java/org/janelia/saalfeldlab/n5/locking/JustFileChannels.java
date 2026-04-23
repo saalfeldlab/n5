@@ -43,14 +43,18 @@ public class JustFileChannels {
 	static final int maxDataSize = 1024 * 1024;
 	static final int indexPairs = 100;
 
-	static void write(String path, final Random random) {
+	static void write(String path, boolean doLock, final Random random) {
 		try {
 
 			// NB: not creating any parent directories for now
 
 			final Path p = Paths.get(path);
 			final FileChannel channel = FileChannel.open(p, READ, WRITE, CREATE);
-			final FileLock lock = channel.lock(0, Long.MAX_VALUE, false);
+
+			FileLock lock = null;
+			if( doLock)
+				lock = channel.lock(0, Long.MAX_VALUE, false);
+
 			channel.truncate(0);
 
 			final int n = minDataSize + random.nextInt(maxDataSize - minDataSize);
@@ -70,7 +74,9 @@ public class JustFileChannels {
 			if (channel.write(buffer) != capacity)
 				throw new RuntimeException("write failed");
 
-			lock.release();
+			if( lock != null )
+				lock.release();
+
 			channel.close();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -78,11 +84,14 @@ public class JustFileChannels {
 	}
 
 	// throws RuntimeException if file is not valid
-	static void verify(String path) {
+	static void verify(String path, boolean doLock) {
 		try {
 			final Path p = Paths.get(path);
 			final FileChannel channel = FileChannel.open(p, READ);
-			final FileLock lock = channel.lock(0, Long.MAX_VALUE, true);
+
+			FileLock lock = null;
+			if( doLock)
+				lock = channel.lock(0, Long.MAX_VALUE, true);
 
 			final long size = channel.size();
 
@@ -103,7 +112,9 @@ public class JustFileChannels {
 					throw new RuntimeException("verify failed");
 			}
 
-			lock.release();
+			if( lock != null )
+				lock.release();
+
 			channel.close();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -121,11 +132,17 @@ public class JustFileChannels {
 		long sleepTime = 0;
 		if( args.length > 2)
 			sleepTime = Long.parseLong(args[2]);
-		
+
+		boolean doLock = true;
+		if( args.length > 3) {
+			doLock = args[3].equals("lock");
+			System.out.println("do lock: " + doLock);
+		}
+
 		for( int i = 0; i < N; i++ ) {
-			write(path, random);
+			write(path, doLock, random);
 			Thread.sleep(sleepTime);
-			verify(path);
+			verify(path, doLock);
 		}
 	}
 }
