@@ -66,11 +66,21 @@ class LockedFileChannel implements Closeable {
 		return Channels.newOutputStream(new ClosingChannelWrapper());
 	}
 
+	volatile boolean firstWrite = true;
+
 	private class ClosingChannelWrapper implements WritableByteChannel {
 
 		@Override
 		public int write(final ByteBuffer src) throws IOException {
-			return channel.write(src);
+			if (!firstWrite)
+				return channel.write(src);
+
+			try {
+				channel.truncate(0);
+				return channel.write(src);
+			} finally {
+				firstWrite = false;
+			}
 		}
 
 		@Override
