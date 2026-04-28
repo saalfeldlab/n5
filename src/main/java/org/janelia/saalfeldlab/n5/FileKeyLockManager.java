@@ -36,7 +36,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.janelia.saalfeldlab.n5.LockingPolicy.STRICT;
@@ -48,8 +47,6 @@ import static org.janelia.saalfeldlab.n5.LockingPolicy.STRICT;
 public class FileKeyLockManager {
 
 	private static final Map<LockingPolicy, FileKeyLockManager> managers = Collections.synchronizedMap(new EnumMap<>(LockingPolicy.class));
-	
-	private final long id;
 
 	public static FileKeyLockManager forPolicy(final LockingPolicy policy) {
 		return managers.computeIfAbsent(policy, FileKeyLockManager::new);
@@ -79,8 +76,6 @@ public class FileKeyLockManager {
 	 * 		the locking policy
 	 */
 	private FileKeyLockManager(final LockingPolicy policy) {
-		System.out.println("FileKeyLockManager constructor");
-		id = new Random().nextLong();
 		this.policy = policy;
 	}
 
@@ -156,13 +151,7 @@ public class FileKeyLockManager {
 	 */
 	public LockedFileChannel lockForReading(final Path path) throws IOException {
 
-		log("lockForReading " + path.toString());
 		return keyLockState(path, policy).acquireRead();
-	}
-	
-	private void log(String msg) {
-		final long time = System.nanoTime();
-		System.out.printf("[%d] (id %d) %s%n", time, id, msg);
 	}
 
 	/**

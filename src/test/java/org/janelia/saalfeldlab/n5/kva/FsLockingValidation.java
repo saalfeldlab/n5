@@ -92,14 +92,7 @@ public class FsLockingValidation implements Callable<Integer> {
 				System.err.printf("[id %d] ERROR at repeat %d: %s%n",
 						id, i, e.getMessage());
 			}
-
-			if (i % 1000 == 0)
-				System.out.printf("[id %d] repeat %d / %d (%d errors so far)%n",
-						id, i, numRepeats, errors);
 		}
-
-		System.out.printf("[id %d] done. %d errors / %d repeats%n",
-				id, errors, numRepeats);
 
 		return errors > 0 ? 1 : 0;
 	}
