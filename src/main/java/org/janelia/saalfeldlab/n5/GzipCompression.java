@@ -95,7 +95,7 @@ public class GzipCompression implements Compression {
 			return GzipCompressorInputStream.builder()
 					.setInputStream(in)
 					.setDecompressConcatenated(true)
-					.getInputStream();
+					.get();
 		}
 	}
 
