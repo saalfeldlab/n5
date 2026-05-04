@@ -137,12 +137,13 @@
 
 	<properties>
 		<package-name>org.janelia.saalfeldlab.n5</package-name>
+		
 		<license.licenseName>bsd_2</license.licenseName>
 		<license.projectName>Not HDF5</license.projectName>
 		<license.organizationName>Saalfeld Lab</license.organizationName>
 		<license.copyrightOwners>Stephan Saalfeld</license.copyrightOwners>
-
-		<license.excludes>**/*.json</license.excludes>
+		<license.skipUpdateLicense>true</license.skipUpdateLicense>
+		<license.skipUpdateProjectLicense>true</license.skipUpdateProjectLicense>
 
 		<!-- NB: Deploy releases to the SciJava Maven repository. -->
 		<releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
