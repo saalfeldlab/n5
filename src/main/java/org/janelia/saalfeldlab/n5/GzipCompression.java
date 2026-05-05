@@ -19,23 +19,31 @@ public class GzipCompression implements Compression {
 
 	private static final long serialVersionUID = 8630847239813334263L;
 
-	@CompressionParameter
-	@NameConfig.Parameter
-	//TODO Caleb: How to handle serialization of parameter-less constructor.
-	// For N5 the default is -1.
-	// For zarr the range is 0-9 and is required.
-	// How to map -1 to some default (1?) when serializing to zarr?
-	private final int level;
+	/**
+	 * Explicit equivalent of {@link java.util.zip.Deflater#DEFAULT_COMPRESSION}: zlib defines
+	 * level 6 as "a default compromise between speed and compression." An explicit value is used
+	 * instead of {@code DEFAULT_COMPRESSION} (-1) because -1 is not a valid level for Zarr codecs.
+	 *
+	 * @see <a href="https://www.zlib.net/manual.html">zlib Manual</a>
+	 */
+	private static final int N5_DEFAULT_GZIP_LEVEL = 6;
 
 	@CompressionParameter
-	@NameConfig.Parameter(optional = true)
+	@NameConfig.Parameter
+	private final int level;
+
+	/**
+	 * This is not a NameConfig.Parameter because this parameter must not be
+	 * serialized for zarr
+	 */
+	@CompressionParameter
 	private final boolean useZlib;
 
 	private final transient GzipParameters parameters = new GzipParameters();
 
 	public GzipCompression() {
 
-		this(Deflater.DEFAULT_COMPRESSION);
+		this(N5_DEFAULT_GZIP_LEVEL);
 	}
 
 	public GzipCompression(final int level) {
