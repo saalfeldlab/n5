@@ -341,6 +341,83 @@ public class DatasetAttributes implements Serializable {
 		return map;
 	}
 
+	public static Builder builder(final long[] dimensions, final DataType dataType) {
+
+		return new Builder(dimensions, dataType);
+	}
+
+	public static Builder builder(final DatasetAttributes attributes) {
+
+		return new Builder(attributes);
+	}
+
+	protected static int[] defaultBlockSize(final long[] dimensions) {
+
+		final int[] blockSize;
+		if (dimensions.length == 1)
+			blockSize = new int[]{1024};
+		else if (dimensions.length == 2)
+			blockSize = new int[]{256, 256};
+		else if (dimensions.length == 3)
+			blockSize = new int[]{128, 128, 128};
+		else {
+			blockSize = new int[dimensions.length];
+			Arrays.fill(blockSize, 64);
+		}
+		for (int i = 0; i < blockSize.length; i++)
+			blockSize[i] = (int)Math.min(blockSize[i], dimensions[i]);
+		return blockSize;
+	}
+
+	public static class Builder {
+
+		private final long[] dimensions;
+		private final DataType dataType;
+
+		private int[] blockSize;
+		private DataCodecInfo[] dataCodecInfos = new DataCodecInfo[0];
+
+		public Builder(final long[] dimensions, final DataType dataType) {
+
+			this.dimensions = dimensions.clone();
+			this.dataType = dataType;
+			this.blockSize = defaultBlockSize(dimensions);
+		}
+
+		public Builder(final DatasetAttributes attributes) {
+
+			this.dimensions = attributes.getDimensions();
+			this.dataType = attributes.getDataType();
+			this.blockSize = attributes.getBlockSize();
+			this.dataCodecInfos = attributes.getDataCodecInfos();
+		}
+
+		public Builder blockSize(final int[] blockSize) {
+
+			this.blockSize = blockSize.clone();
+			return this;
+		}
+
+		/**
+		 * Sets the compression codec. Has no effect if {@code compression} is
+		 * null or {@link RawCompression}.
+		 *
+		 * @param compression the compression to use
+		 * @return this builder
+		 */
+		public Builder compression(final Compression compression) {
+
+			if (compression != null && !(compression instanceof RawCompression))
+				this.dataCodecInfos = new DataCodecInfo[]{compression};
+			return this;
+		}
+
+		public DatasetAttributes build() {
+			final int[] resolvedBlockSize = blockSize != null ? blockSize : defaultBlockSize(dimensions);
+			return new DatasetAttributes(dimensions, resolvedBlockSize, dataType, new N5BlockCodecInfo(), null, dataCodecInfos);
+		}
+	}
+
 	private static DatasetAttributesAdapter adapter = null;
 
 	public static DatasetAttributesAdapter getJsonAdapter() {
