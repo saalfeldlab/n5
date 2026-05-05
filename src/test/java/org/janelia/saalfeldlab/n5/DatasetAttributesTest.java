@@ -1,6 +1,8 @@
 package org.janelia.saalfeldlab.n5;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -82,6 +84,39 @@ public class DatasetAttributesTest {
 		return new DatasetAttributes(dimensions, shardSize, dataType, blockCodecInfo);
 	}
 
+	@Test
+	public void builderTests() {
+
+		final long[] dims = new long[]{100, 200, 300};
+		final int[] blk = new int[]{32, 32, 32};
+
+		// default blockSize uses defaultBlockSize, not full dimensions
+		final DatasetAttributes defaultBlk = DatasetAttributes.builder(dims, DataType.FLOAT32).build();
+		assertArrayEquals(DatasetAttributes.defaultBlockSize(dims), defaultBlk.getBlockSize());
+
+		// blockSize is reflected in output
+		final DatasetAttributes withBlk = DatasetAttributes.builder(dims, DataType.FLOAT32)
+				.blockSize(blk).build();
+		assertArrayEquals(blk, withBlk.getBlockSize());
+		assertFalse(withBlk.isSharded());
+
+		// compression sets a data codec; RawCompression is a no-op
+		final DatasetAttributes withGzip = DatasetAttributes.builder(dims, DataType.FLOAT32)
+				.blockSize(blk).compression(new GzipCompression()).build();
+		assertEquals(1, withGzip.getDataCodecInfos().length);
+
+		final DatasetAttributes withRaw = DatasetAttributes.builder(dims, DataType.FLOAT32)
+				.blockSize(blk).compression(new RawCompression()).build();
+		assertEquals(0, withRaw.getDataCodecInfos().length);
+
+		// round-trip through Builder(DatasetAttributes)
+		final DatasetAttributes roundTrip = DatasetAttributes.builder(withGzip).build();
+		assertArrayEquals(withGzip.getDimensions(), roundTrip.getDimensions());
+		assertArrayEquals(withGzip.getBlockSize(), roundTrip.getBlockSize());
+		assertEquals(withGzip.getDataType(), roundTrip.getDataType());
+		assertEquals(withGzip.getDataCodecInfos().length, roundTrip.getDataCodecInfos().length);
+	}
+
 	/**
 	 * Test that validateBlockShardSizes method rejects invalid shard and block size combinations.
 	 */
@@ -91,7 +126,7 @@ public class DatasetAttributesTest {
 		final long[] dimensions = new long[]{100, 200, 300};
 		final DataType dataType = DataType.UINT8;
 
-		// Block size too small
+		// Block size too smallcompression != null && !(compression instanceof RawCompression)
 		IllegalArgumentException ex0 = assertThrows(
 				IllegalArgumentException.class,
 				() -> shardDatasetAttributes(dimensions, new int[]{1, 1, 1}, new int[]{1, 0, -1}, dataType));
