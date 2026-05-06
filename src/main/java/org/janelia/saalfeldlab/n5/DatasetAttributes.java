@@ -351,18 +351,23 @@ public class DatasetAttributes implements Serializable {
 		return new Builder(attributes);
 	}
 
+	private static final int[] DEFAULT_1D_BLOCK_SIZE = new int[]{65536};
+	private static final int[] DEFAULT_2D_BLOCK_SIZE = new int[]{512,512};
+	private static final int[] DEFAULT_3D_BLOCK_SIZE = new int[]{128,128,128};
+	private static final int DEFAULT_ND_DIM_LEN = 64;
+
 	protected static int[] defaultBlockSize(final long[] dimensions) {
 
 		final int[] blockSize;
 		if (dimensions.length == 1)
-			blockSize = new int[]{1024};
+			blockSize = DEFAULT_1D_BLOCK_SIZE.clone();
 		else if (dimensions.length == 2)
-			blockSize = new int[]{256, 256};
+			blockSize = DEFAULT_2D_BLOCK_SIZE.clone();
 		else if (dimensions.length == 3)
-			blockSize = new int[]{128, 128, 128};
+			blockSize = DEFAULT_3D_BLOCK_SIZE.clone();
 		else {
 			blockSize = new int[dimensions.length];
-			Arrays.fill(blockSize, 64);
+			Arrays.fill(blockSize, DEFAULT_ND_DIM_LEN);
 		}
 		for (int i = 0; i < blockSize.length; i++)
 			blockSize[i] = (int)Math.min(blockSize[i], dimensions[i]);
