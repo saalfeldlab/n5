@@ -50,7 +50,6 @@ public class WriteLockExp {
                 if( i % 1000 == 0)
                     System.out.println("iter: " + i);
 
-//				n5.writeRegion("", attrs, new long[]{0,0}, dimensions, blockSupplier(shardIdx, chunkSize, chunkN), true);
                 n5.writeChunks("", attrs, block);
 
             }
@@ -62,9 +61,9 @@ public class WriteLockExp {
 
     public DatasetAttributes getOrCreateDataset(N5Writer n5) {
 
-        ZarrV3DatasetAttributes tmpAttrs = ZarrV3DatasetAttributes.builder(dimensions, DataType.INT32)
-                .shardShape(shardSize)
-                .blockSize(chunkSize)
+        final ZarrV3DatasetAttributes tmpAttrs = ZarrV3DatasetAttributes.builder(dimensions, DataType.INT32)
+                .blockSize(shardSize)
+                .chunkSize(chunkSize)
                 .compression(new ZstandardCompression())
                 .build();
 
