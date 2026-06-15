@@ -2,13 +2,10 @@ package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
+import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
@@ -32,8 +29,7 @@ public class KeyValueRootHierarchyStore implements HierarchyStore {
 
 		final N5FilePath attributesPath = parent.resolve(filename).asFile();
 		try (final VolatileReadData readData = kvr.createReadData(attributesPath);) {
-			// TODO: this (ReadData --> JsonElement) should go into GsonUtils?
-			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), gson);
+			return GsonUtils.readAttributes(readData, gson);
 		} catch (final N5Exception.N5NoSuchKeyException e) {
 			return null;
 		} catch (final UncheckedIOException | N5IOException e) {
@@ -61,13 +57,7 @@ public class KeyValueRootHierarchyStore implements HierarchyStore {
 			final Gson gson) throws N5IOException {
 
 		final N5FilePath attributesPath = parent.resolve(filename).asFile();
-
-		// TODO: this (JsonElement --> ReadData) should go into GsonUtils?
-		final ReadData attributesReadData = ReadData.from(os -> {
-			final OutputStreamWriter writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
-			GsonUtils.writeAttributes(writer, attributes, gson);
-		});
-
+		final ReadData attributesReadData = GsonUtils.writeAttributes(attributes, gson);
 		try {
 			kvr.write(attributesPath, attributesReadData);
 		} catch (UncheckedIOException | N5IOException e) {

@@ -1,13 +1,19 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Array;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
+import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Exception.N5JsonParseException;
+import org.janelia.saalfeldlab.n5.readdata.ReadData;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -16,10 +22,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-import org.janelia.saalfeldlab.n5.N5Exception.N5JsonParseException;
+
 
 /**
- * Utility class for working with  JSON.
+ * Utility class for working with JSON.
  *
  * @author Stephan Saalfeld
  */
@@ -37,6 +43,20 @@ public interface GsonUtils {
 	static JsonElement readAttributes(final Reader reader, final Gson gson) {
 
 		return gson.fromJson(reader, JsonElement.class);
+	}
+
+	/**
+	 * Reads the attributes json from a given {@link ReadData}.
+	 *
+	 * @param readData
+	 *            the JSON
+	 * @param gson
+	 * 			  to parse Json from the {@code readData}
+	 * @return the root {@link JsonObject} of the attributes
+	 */
+	static JsonElement readAttributes(final ReadData readData, final Gson gson) {
+
+		return fromJson(gson, readData, JsonElement.class);
 	}
 
 	static <T> T readAttribute(
@@ -529,18 +549,64 @@ public interface GsonUtils {
 	 *            the root json element
 	 * @param gson
 	 *            the gson
-	 * @param <T>
-	 *            the attribute type
 	 * @throws IOException
 	 *             the exception
 	 */
-	static <T> void writeAttributes(
+	static void writeAttributes(
 			final Writer writer,
 			final JsonElement root,
 			final Gson gson) throws IOException {
 
 		gson.toJson(root, writer);
 		writer.flush();
+	}
+
+	/**
+	 * Lazily writes the attributes JsonElement into a new {@code ReadData}.
+	 *
+	 * @param root
+	 * 		the root json element
+	 * @param gson
+	 * 		the gson
+	 *
+	 * @return a ReadData that will contain the serialized JsonElement when materialized.
+	 */
+	static ReadData writeAttributes(
+			final JsonElement root,
+			final Gson gson) {
+
+		return ReadData.from(os -> {
+			final OutputStreamWriter writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
+			GsonUtils.writeAttributes(writer, root, gson);
+		});
+	}
+
+	/**
+	 * Deserialize the JSON contained in the specified readData into an object of the specified type.
+	 *
+	 * @param gson
+	 * 		the {@code Gson} instance to use for de-serialization
+	 * @param readData
+	 * 		the readData containing the JSON from which the object is to be deserialized
+	 * @param classOfT
+	 * 		the class of T
+	 * @param <T>
+	 * 		the type of the desired object
+	 *
+	 * @return an object of type T from the Reader. Returns {@code null} if {@code json} is at EOF.
+	 *
+	 * @throws JsonSyntaxException
+	 * 		if json is not a valid representation for an object of type typeOfT
+	 * @throws IllegalStateException
+	 * 		if no reader can be opened on readData
+	 * @throws N5IOException
+	 * 		N5IOException if there was a problem reading from readData
+	 */
+	static <T> T fromJson(
+			final Gson gson,
+			final ReadData readData,
+			final Class<T> classOfT) throws JsonSyntaxException, IllegalStateException, N5IOException {
+		return gson.fromJson(new InputStreamReader(readData.inputStream()), classOfT);
 	}
 
 	static JsonElement insertAttributes(JsonElement root, final Map<String, ?> attributes, final Gson gson) {
