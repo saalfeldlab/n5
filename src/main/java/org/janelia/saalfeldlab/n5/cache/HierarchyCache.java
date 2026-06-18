@@ -411,4 +411,47 @@ public class HierarchyCache implements HierarchyStore {
 		info.setExists();
 	}
 
+	/**
+	 * Inject a {@code CacheInfo} for the attributes file at {@code path} with
+	 * the given {@code json} content. This has the same side effects as if the
+	 * attributes file would have been read from {@code path}, that is, both the
+	 * {@code path} and its parents will become known-to-exist.
+	 * <p>
+	 * Currently, this is not used internally. It is a hook for implementing
+	 * consolidated metadata in zarr.
+	 *
+	 * @param path
+	 * 		the path of an attributes file
+	 * @param json
+	 * 		the contents to cache for that attributes file
+	 */
+	public void inject(final N5FilePath path, final JsonElement json) {
+		final CacheInfoAttributes info = getOrCreate(path);
+		synchronized (info) {
+			info.setJson(json);
+		}
+	}
+
+	/**
+	 * Inject a {@code CacheInfo} for the directory at {@code path} with
+	 * the given list of directory-like children. This has the same side effects
+	 * as (successfully) calling {@link #listDirectories} on {@code path}, that
+	 * is, both the {@code path} and its parents will become known-to-exist.
+	 * <p>
+	 * Currently, this is not used internally. It is a hook for implementing
+	 * consolidated metadata in zarr.
+	 *
+	 * @param path
+	 * 		the path of a directory
+	 * @param list
+	 * 		list of directory-like children to cache for the directory
+	 */
+	public void inject(final N5DirectoryPath path, final String[] list) {
+		if (list == null)
+			throw new NullPointerException();
+		final CacheInfoDirectory info = getOrCreate(path);
+		synchronized (info) {
+			info.setList(list);
+		}
+	}
 }
