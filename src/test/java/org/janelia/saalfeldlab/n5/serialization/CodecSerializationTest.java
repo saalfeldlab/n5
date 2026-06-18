@@ -10,8 +10,8 @@ import org.janelia.saalfeldlab.n5.codec.BytesCodecTests.BitShiftBytesCodec;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.IdentityCodec;
+import org.janelia.saalfeldlab.n5.zarr.v3.ZarrV3Compressor;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.gson.Gson;
@@ -56,7 +56,6 @@ public class CodecSerializationTest {
 	}
 
 	@Test
-	@Ignore
 	public void testSerializeCodecArray() {
 
 		CodecInfo[] codecs = new CodecInfo[]{
@@ -77,13 +76,13 @@ public class CodecSerializationTest {
 		};
 		jsonCodecArray = gson.toJsonTree(codecs).getAsJsonArray();
 		expected = gson.fromJson(
-				"[{\"name\":\"gzip\",\"configuration\":{\"level\":-1,\"useZlib\":false}}]",
+				"[{\"name\":\"gzip\",\"configuration\":{\"level\":6}}]",
 				JsonElement.class);
 		assertEquals("codec array", expected, jsonCodecArray.getAsJsonArray());
 
 		codecsDeserialized = gson.fromJson(expected, CodecInfo[].class);
 		assertEquals("codecs length not 1", 1, codecsDeserialized.length);
-		assertTrue("second codec not gzip", codecsDeserialized[0] instanceof GzipCompression);
+		assertTrue("second codec not gzip", codecsDeserialized[0] instanceof ZarrV3Compressor.Gzip);
 	}
 
 }
