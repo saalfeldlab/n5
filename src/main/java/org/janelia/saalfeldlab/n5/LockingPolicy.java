@@ -41,7 +41,7 @@ public enum LockingPolicy {
 	 */
 	PERMISSIVE;
 
-	static LockingPolicy fromString(final String s) {
+	public static LockingPolicy fromString(final String s) {
 		if ("strict".equalsIgnoreCase(s))
 			return STRICT;
 		else if ("unsafe".equalsIgnoreCase(s))
