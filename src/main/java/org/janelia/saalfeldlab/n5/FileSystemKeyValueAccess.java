@@ -516,7 +516,19 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		public void close() throws IOException {
 
 			if (lock != null) {
-				lock.close();
+				try {
+					lock.close();
+				} catch (IOException e) {
+					/* this is a particular case. Sometimes (seemingly only on MacOs, when accessing blocks
+					* over a SMB mount). Reading succeeds, but closing throws a "Bad File Descriptor" IOException.
+					* Since the read succeeded, we are willing to ignore this exception. */
+					boolean ignoreBadFileDescriptorOnClose = e.getMessage().matches("^Bad file descriptor$");
+
+					if (!ignoreBadFileDescriptorOnClose) {
+						throw e;
+					}
+
+				}
 				lock = null;
 			}
 		}
