@@ -32,14 +32,30 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
  * Benchmarks for the {@code scale_offset} and {@code cast_value} dataset
  * codecs, which transform a {@link DataBlock} element-wise.
  * <p>
- * Both codecs allocate a fresh block per call and do their arithmetic in
- * {@code double}, so {@link #baselineAllocateAndCopy} is included as a
- * reference point: it allocates a block of the same type and {@code
- * System.arraycopy}s into it, isolating allocation and memory bandwidth from
- * the per-element conversion cost.
+ * Both codecs allocate a fresh block per call, and for a 64<sup>3</sup> block
+ * that allocation is not negligible &mdash; so two baselines are provided.
+ * {@link #baselineAllocateSource} allocates a block of the <em>source</em> type
+ * and {@code System.arraycopy}s into it; {@link #baselineAllocateTarget} does
+ * the same for the <em>cast target</em> type. A codec benchmark should be
+ * compared against the baseline matching the type it <em>writes</em>, since
+ * that is the allocation it actually performs. Comparing a narrowing cast
+ * against the source-type baseline understates its per-element cost, sometimes
+ * by a factor of four.
  * <p>
  * The {@code pipeline*} benchmarks measure the canonical lossy-compression
  * chain, {@code scale_offset} followed by {@code cast_value}.
+ * <p>
+ * <b>On {@link #setup}:</b> the pre-encoded blocks that the {@code *Decode}
+ * benchmarks consume are built by the private helpers at the bottom of this
+ * class rather than by calling the codecs. This is deliberate and load-bearing.
+ * JMH runs each benchmark method in its own fork, but {@code setup} runs in
+ * <em>every</em> fork &mdash; so pre-encoding via the codec would drive
+ * {@code CastValueCodec.cast} with several different source/target type pairs
+ * before the measured loop ever starts. The reader/writer call sites inside
+ * that one shared method would then be polymorphic, defeating inlining and
+ * charging the measured benchmark for dispatch it would not perform in
+ * production. Building the fixtures independently keeps each fork's view of the
+ * codec monomorphic. Do not "simplify" these helpers back into codec calls.
  */
 @State(Scope.Benchmark)
 @Warmup(iterations = 3, time = 500, timeUnit = TimeUnit.MILLISECONDS)
@@ -49,11 +65,16 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Fork(1)
 public class DatasetCodecBenchmarks {
 
-	/** Data type of the (decoded) dataset. */
-	@Param(value = {"float64", "float32"})
+	/**
+	 * Data type of the (decoded) dataset. The integral types matter as much as
+	 * the floating-point ones: for an integral source the codecs' {@code double}
+	 * pivot is pure overhead, so those rows isolate dispatch cost from
+	 * arithmetic cost.
+	 */
+	@Param(value = {"float64", "float32", "int16", "uint8"})
 	protected String dataType;
 
-	/** Narrower data type that {@code cast_value} encodes to. */
+	/** Data type that {@code cast_value} encodes to. */
 	@Param(value = {"int16"})
 	protected String castDataType;
 
@@ -64,12 +85,17 @@ public class DatasetCodecBenchmarks {
 	protected int numDimensions;
 
 	private static final double SCALE = 2.0;
-	private static final double OFFSET = 50.0;
 
 	private final Random random = new Random(7777);
 
 	private DataType sourceType;
 	private DataType targetType;
+
+	/**
+	 * Chosen per source type so that no intermediate value leaves the source
+	 * type's range; see {@link #offsetFor}.
+	 */
+	private double offset;
 
 	private ScaleOffsetCodec<Object> scaleOffset;
 	private CastValueCodec<Object, Object> castValue;
@@ -101,21 +127,29 @@ public class DatasetCodecBenchmarks {
 
 		sourceType = DataType.fromString(dataType);
 		targetType = DataType.fromString(castDataType);
+		offset = offsetFor(sourceType);
 
 		final int[] blockSize = new int[numDimensions];
 		Arrays.fill(blockSize, blockDim);
 		final long[] gridPosition = new long[numDimensions];
 
-		scaleOffset = new ScaleOffsetCodec<>(sourceType, SCALE, OFFSET);
+		scaleOffset = new ScaleOffsetCodec<>(sourceType, SCALE, offset);
 		castValue = new CastValueCodec<>(sourceType, targetType, Rounding.NEAREST_EVEN, OutOfRange.CLAMP);
 
 		sourceBlock = (DataBlock<Object>)sourceType.createDataBlock(blockSize, gridPosition);
 		fill(sourceBlock.getData());
 
-		// pre-encode the inputs the decode benchmarks need
-		scaledBlock = scaleOffset.encode(sourceBlock);
-		castBlock = castValue.encode(sourceBlock);
-		pipelineBlock = castValue.encode(scaledBlock);
+		// Fixtures for the *Decode benchmarks, built WITHOUT touching the
+		// codecs -- see the class javadoc.
+		final double[] source = toDoubles(sourceBlock.getData(), sourceType);
+
+		final double[] scaled = new double[source.length];
+		for (int i = 0; i < source.length; i++)
+			scaled[i] = (source[i] - offset) * SCALE;
+
+		scaledBlock = fromDoubles(scaled, sourceType, blockSize, gridPosition);
+		castBlock = fromDoubles(source, targetType, blockSize, gridPosition);
+		pipelineBlock = fromDoubles(scaled, targetType, blockSize, gridPosition);
 	}
 
 	@Benchmark
@@ -155,16 +189,53 @@ public class DatasetCodecBenchmarks {
 	}
 
 	/**
-	 * Reference point: allocate a block of the source type and copy into it,
-	 * with no per-element conversion.
+	 * Reference point for benchmarks that write the <em>source</em> type
+	 * ({@code scaleOffset*}, {@code castValueDecode}): allocate and copy, with
+	 * no per-element conversion.
 	 */
 	@Benchmark
-	public void baselineAllocateAndCopy(final Blackhole hole) {
+	public void baselineAllocateSource(final Blackhole hole) {
 
-		final DataBlock<?> out = sourceType.createDataBlock(
-				sourceBlock.getSize(), sourceBlock.getGridPosition(), sourceBlock.getNumElements());
-		System.arraycopy(sourceBlock.getData(), 0, out.getData(), 0, sourceBlock.getNumElements());
-		hole.consume(out);
+		hole.consume(allocateAndCopy(sourceBlock, sourceType));
+	}
+
+	/**
+	 * Reference point for benchmarks that write the <em>cast target</em> type
+	 * ({@code castValueEncode}, {@code pipelineEncode}): allocate and copy, with
+	 * no per-element conversion.
+	 */
+	@Benchmark
+	public void baselineAllocateTarget(final Blackhole hole) {
+
+		hole.consume(allocateAndCopy(castBlock, targetType));
+	}
+
+	private static DataBlock<?> allocateAndCopy(final DataBlock<?> in, final DataType type) {
+
+		final DataBlock<?> out = type.createDataBlock(in.getSize(), in.getGridPosition(), in.getNumElements());
+		System.arraycopy(in.getData(), 0, out.getData(), 0, in.getNumElements());
+		return out;
+	}
+
+	/**
+	 * Returns a {@code scale_offset} offset that keeps every intermediate value
+	 * inside the source type's range, given the {@code [0, 100)} fill.
+	 * <p>
+	 * Unsigned types get {@code 0}: subtracting a positive offset would
+	 * underflow, and {@link ScaleOffsetCodec} does not currently reject that, it
+	 * silently wraps.
+	 */
+	private static double offsetFor(final DataType type) {
+
+		switch (type) {
+		case UINT8:
+		case UINT16:
+		case UINT32:
+		case UINT64:
+			return 0.0;
+		default:
+			return 50.0;
+		}
 	}
 
 	/**
@@ -200,6 +271,128 @@ public class DatasetCodecBenchmarks {
 		} else {
 			throw new IllegalArgumentException("Cannot fill data of type " + data.getClass());
 		}
+	}
+
+	// ------------------------------------------------------------------
+	// Fixture construction. Intentionally duplicates a little of what the
+	// codecs do, so that building a fixture never executes codec code.
+	// ------------------------------------------------------------------
+
+	private static double[] toDoubles(final Object data, final DataType type) {
+
+		final int n = java.lang.reflect.Array.getLength(data);
+		final double[] out = new double[n];
+		for (int i = 0; i < n; i++) {
+			switch (type) {
+			case INT8:
+				out[i] = ((byte[])data)[i];
+				break;
+			case UINT8:
+				out[i] = ((byte[])data)[i] & 0xff;
+				break;
+			case INT16:
+				out[i] = ((short[])data)[i];
+				break;
+			case UINT16:
+				out[i] = ((short[])data)[i] & 0xffff;
+				break;
+			case INT32:
+				out[i] = ((int[])data)[i];
+				break;
+			case UINT32:
+				out[i] = ((int[])data)[i] & 0xffffffffL;
+				break;
+			case INT64:
+			case UINT64:
+				out[i] = ((long[])data)[i];
+				break;
+			case FLOAT32:
+				out[i] = ((float[])data)[i];
+				break;
+			case FLOAT64:
+				out[i] = ((double[])data)[i];
+				break;
+			default:
+				throw new IllegalArgumentException("No numerical access for " + type);
+			}
+		}
+		return out;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static DataBlock<Object> fromDoubles(
+			final double[] values, final DataType type, final int[] blockSize, final long[] gridPosition) {
+
+		final DataBlock<Object> block = (DataBlock<Object>)type.createDataBlock(
+				blockSize, gridPosition, values.length);
+		final Object data = block.getData();
+
+		for (int i = 0; i < values.length; i++) {
+			final double v = values[i];
+			switch (type) {
+			case INT8:
+			case UINT8:
+				((byte[])data)[i] = (byte)(long)clampRound(v, type);
+				break;
+			case INT16:
+			case UINT16:
+				((short[])data)[i] = (short)(long)clampRound(v, type);
+				break;
+			case INT32:
+			case UINT32:
+				((int[])data)[i] = (int)(long)clampRound(v, type);
+				break;
+			case INT64:
+			case UINT64:
+				((long[])data)[i] = (long)clampRound(v, type);
+				break;
+			case FLOAT32:
+				((float[])data)[i] = (float)v;
+				break;
+			case FLOAT64:
+				((double[])data)[i] = v;
+				break;
+			default:
+				throw new IllegalArgumentException("No numerical access for " + type);
+			}
+		}
+		return block;
+	}
+
+	private static double clampRound(final double value, final DataType type) {
+
+		final double rounded = Math.rint(value);
+		final double min;
+		final double max;
+		switch (type) {
+		case INT8:
+			min = Byte.MIN_VALUE;
+			max = Byte.MAX_VALUE;
+			break;
+		case UINT8:
+			min = 0;
+			max = 0xffL;
+			break;
+		case INT16:
+			min = Short.MIN_VALUE;
+			max = Short.MAX_VALUE;
+			break;
+		case UINT16:
+			min = 0;
+			max = 0xffffL;
+			break;
+		case INT32:
+			min = Integer.MIN_VALUE;
+			max = Integer.MAX_VALUE;
+			break;
+		case UINT32:
+			min = 0;
+			max = 0xffffffffL;
+			break;
+		default:
+			return rounded;
+		}
+		return Math.min(max, Math.max(min, rounded));
 	}
 
 }
