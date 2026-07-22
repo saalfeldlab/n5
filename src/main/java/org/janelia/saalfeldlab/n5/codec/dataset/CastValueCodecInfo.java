@@ -179,15 +179,14 @@ public class CastValueCodecInfo implements DatasetCodecInfo {
 		return outOfRange;
 	}
 
-	@SuppressWarnings("rawtypes")
 	@Override
 	public CastValueCodec<?, ?> create(final DatasetAttributes attributes) {
 
-		validate();
-		return new CastValueCodec(attributes.getDataType(), dataType, getRounding(), outOfRange);
+		validate(attributes.getDataType());
+		return new CastValueCodec<Object, Object>(attributes.getDataType(), dataType, getRounding(), outOfRange);
 	}
 
-	private void validate() {
+	private void validate(final DataType sourceDataType) {
 
 		if (dataType == null)
 			throw new N5Exception("CastValueCodec requires a data_type");
@@ -195,6 +194,19 @@ public class CastValueCodecInfo implements DatasetCodecInfo {
 		if (outOfRange == OutOfRange.WRAP && BlockElementAccess.isFloatingPoint(dataType))
 			throw new N5Exception("CastValueCodec out_of_range \"wrap\" is only valid for integral data types, but "
 					+ "data_type is " + dataType);
+
+		// The codec selects its per-type Casters up front, so a non-numerical
+		// type would fail at construction rather than on the first element.
+		// Report it here instead, where the message can name which side is wrong.
+		requireNumerical(sourceDataType, "the dataset's data type");
+		requireNumerical(dataType, "data_type");
+	}
+
+	private static void requireNumerical(final DataType type, final String what) {
+
+		if (type == DataType.STRING || type == DataType.OBJECT)
+			throw new N5Exception("CastValueCodec cannot convert " + what + " " + type
+					+ "; only numerical data types are supported");
 	}
 
 	@Override

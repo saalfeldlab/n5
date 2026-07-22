@@ -234,6 +234,54 @@ public class CastValueCodecTests {
 	}
 
 	@Test
+	public void testFloat64ToFloat32OverflowWrapIsAnError() {
+
+		// "wrap" is meaningless for a float target; only "clamp" permits an
+		// overflow. CastValueCodecInfo rejects this combination up front, but
+		// the codec must not silently store an infinity if constructed directly.
+		final CastValueCodec<double[], float[]> codec = new CastValueCodec<>(
+				DataType.FLOAT64, DataType.FLOAT32, Rounding.NEAREST_EVEN, OutOfRange.WRAP);
+
+		assertThrows(N5IOException.class, () -> codec.encode(float64Block(1e40)));
+	}
+
+	@Test
+	public void testOutOfRangeErrorReportsTheOffendingValue() {
+
+		// a single bad value among good ones must still be the one reported
+		final CastValueCodec<double[], short[]> codec = new CastValueCodec<>(
+				DataType.FLOAT64, DataType.INT16, Rounding.NEAREST_EVEN, null);
+
+		final N5IOException e = assertThrows(N5IOException.class,
+				() -> codec.encode(float64Block(1.0, 2.0, 40000.0, 3.0)));
+
+		assertTrue("expected the message to name the offending value, got: " + e.getMessage(),
+				e.getMessage().contains("40000"));
+	}
+
+	@Test
+	public void testClampLeavesInRangeValuesUntouched() {
+
+		// only the out-of-range elements are clamped; their neighbours are exact
+		final CastValueCodec<double[], short[]> codec = new CastValueCodec<>(
+				DataType.FLOAT64, DataType.INT16, Rounding.NEAREST_EVEN, OutOfRange.CLAMP);
+
+		assertArrayEquals(new short[]{1, 32767, -3, -32768, 5},
+				codec.encode(float64Block(1.0, 1e9, -3.0, -1e9, 5.0)).getData());
+	}
+
+	@Test
+	public void testNaNAmongValidValuesIsAnError() {
+
+		// the NaN is neither first nor last, so it is only caught if every
+		// element is inspected rather than short-circuiting on the first
+		final CastValueCodec<double[], short[]> codec = new CastValueCodec<>(
+				DataType.FLOAT64, DataType.INT16, Rounding.NEAREST_EVEN, OutOfRange.CLAMP);
+
+		assertThrows(N5IOException.class, () -> codec.encode(float64Block(1.0, 2.0, Double.NaN, 3.0)));
+	}
+
+	@Test
 	public void testScaleOffsetThenCastValuePipeline() {
 
 		// the canonical lossy-float workflow: rescale, then narrow

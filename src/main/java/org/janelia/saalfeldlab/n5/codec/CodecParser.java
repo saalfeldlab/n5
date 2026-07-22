@@ -51,11 +51,55 @@ public class CodecParser {
 		dataCodecInfos = dataCodecList.stream().toArray(n -> new DataCodecInfo[n]);
 	}
 
-	private static CodecInfo[] concatenateCodecs(DatasetAttributes attributes) {
+	/**
+	 * Flattens the codecs of the given attributes into a single array, in the order
+	 * {@link #parse} expects: dataset ({@code array -> array}) codecs, then the block
+	 * ({@code array -> bytes}) codec, then data ({@code bytes -> bytes}) codecs.
+	 *
+	 * @param attributes
+	 *            the attributes whose codecs to concatenate
+	 * @return the concatenated codecs
+	 */
+	public static CodecInfo[] concatenateCodecs(final DatasetAttributes attributes) {
 
-		final CodecInfo[] codecs = new CodecInfo[attributes.getDataCodecInfos().length + 1];
-		codecs[0] = attributes.getBlockCodecInfo();
-		System.arraycopy(attributes.getDataCodecInfos(), 0, codecs, 1, attributes.getDataCodecInfos().length);
+		return concatenateCodecs(
+				attributes.getDatasetCodecInfos(),
+				attributes.getBlockCodecInfo(),
+				attributes.getDataCodecInfos());
+	}
+
+	/**
+	 * Flattens the given codecs into a single array, in the order {@link #parse} expects:
+	 * dataset ({@code array -> array}) codecs, then the block ({@code array -> bytes})
+	 * codec, then data ({@code bytes -> bytes}) codecs.
+	 * <p>
+	 * This is the inverse of {@link #parse}; the two must be kept in step.
+	 *
+	 * @param datasetCodecInfos
+	 *            the dataset codecs, may be null
+	 * @param blockCodecInfo
+	 *            the block codec
+	 * @param dataCodecInfos
+	 *            the data codecs, may be null
+	 * @return the concatenated codecs
+	 */
+	public static CodecInfo[] concatenateCodecs(
+			final DatasetCodecInfo[] datasetCodecInfos,
+			final BlockCodecInfo blockCodecInfo,
+			final DataCodecInfo[] dataCodecInfos) {
+
+		final int numDataset = datasetCodecInfos == null ? 0 : datasetCodecInfos.length;
+		final int numData = dataCodecInfos == null ? 0 : dataCodecInfos.length;
+
+		final CodecInfo[] codecs = new CodecInfo[numDataset + 1 + numData];
+		if (numDataset > 0)
+			System.arraycopy(datasetCodecInfos, 0, codecs, 0, numDataset);
+
+		codecs[numDataset] = blockCodecInfo;
+
+		if (numData > 0)
+			System.arraycopy(dataCodecInfos, 0, codecs, numDataset + 1, numData);
+
 		return codecs;
 	}
 }
