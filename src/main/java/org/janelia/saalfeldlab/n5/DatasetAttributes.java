@@ -188,7 +188,19 @@ public class DatasetAttributes implements Serializable {
 		final NestedGrid grid = new NestedGrid(blockSizes, dimensions);
 		final BlockCodec<?>[] blockCodecs = new BlockCodec[m];
 		for (int l = m - 1; l >= 0; --l) {
-			blockCodecs[l] = currentBlockCodecInfo.create(dataType, blockSizes[l], currentDataCodecInfos);
+			// the innermost block codec serializes whatever the dataset codecs produce,
+			// which is not the dataset's own type if one of them converts (e.g. cast_value)
+			final DataType blockCodecDataType;
+			if (l == 0) {
+				blockCodecDataType = encodedDataType(dataType, datasetCodecInfos);
+				if (m > 1 && blockCodecDataType != dataType)
+					throw new N5Exception.N5JsonParseException(
+							"Found a type-changing DatasetCodec (" + dataType + " -> " + blockCodecDataType
+									+ ") on a sharded dataset. Not handled");
+			} else
+				blockCodecDataType = dataType;
+
+			blockCodecs[l] = currentBlockCodecInfo.create(blockCodecDataType, blockSizes[l], currentDataCodecInfos);
 			if (l > 0) {
 				final ShardCodecInfo info = (ShardCodecInfo) currentBlockCodecInfo;
 				currentBlockCodecInfo = info.getInnerBlockCodecInfo();
@@ -215,10 +227,50 @@ public class DatasetAttributes implements Serializable {
 
 		BlockCodec<?> result = blockCodec;
 		if (datasetCodecInfos != null) {
-			for (final DatasetCodecInfo info : datasetCodecInfos) {
-				result = DatasetCodec.concatenate(info.create(attributes), (BlockCodec)result);
+
+			// The data type stored on disk may differ from the block data type 
+			// (e.g. due to presence of aCastValueCodec)
+			// infer the source data type for each DatasetCodec in the chain
+			final DataType[] sourceDataTypes = new DataType[datasetCodecInfos.length];
+			DataType current = attributes.getDataType();
+
+			// Each concatenate makes its codec run before the one wrapped so far, so
+			// wrapping the array back to front leaves it applied front to back on encode
+			// (the order the zarr v3 spec lists codecs in). Walk the types the same way:
+			// sourceDataTypes[i] is the type of the blocks codec i is handed on encode.
+			for (int i = 0; i < datasetCodecInfos.length; ++i) {
+				sourceDataTypes[i] = current;
+				current = datasetCodecInfos[i].encodedDataType(current);
+			}
+
+			for (int i = datasetCodecInfos.length - 1; i >= 0; --i) {
+				result = DatasetCodec.concatenate(
+						datasetCodecInfos[i].create(attributes, sourceDataTypes[i]), (BlockCodec)result);
 			}
 		}
+		return result;
+	}
+
+	/**
+	 * The data type the block codec must serialize: the type produced by applying every
+	 * dataset codec to blocks of the given type.
+	 * <p>
+	 * Iteration matches the order {@link #blockCodecWithDatasetCodecs} applies the codecs
+	 * in when encoding, which is from the start of the array to the end.
+	 *
+	 * @param dataType
+	 *            the dataset's data type
+	 * @param datasetCodecInfos
+	 *            the dataset codecs, may be null
+	 * @return the data type after the dataset codecs have been applied
+	 */
+	private static DataType encodedDataType(final DataType dataType, final DatasetCodecInfo[] datasetCodecInfos) {
+
+		DataType result = dataType;
+		if (datasetCodecInfos != null)
+			for (final DatasetCodecInfo info : datasetCodecInfos)
+				result = info.encodedDataType(result);
+
 		return result;
 	}
 

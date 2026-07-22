@@ -3,6 +3,7 @@ package org.janelia.saalfeldlab.n5.codec.transpose;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
+import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.codec.DatasetCodecInfo;
@@ -52,8 +53,14 @@ public class TransposeCodecInfo implements DatasetCodecInfo {
 	@Override
 	public TransposeCodec<?> create(DatasetAttributes datasetAttributes) {
 
+		return create(datasetAttributes, datasetAttributes.getDataType());
+	}
+
+	@Override
+	public TransposeCodec<?> create(DatasetAttributes datasetAttributes, DataType sourceDataType) {
+
 		validate();
-		return new TransposeCodec<>(datasetAttributes.getDataType(), getOrder());
+		return new TransposeCodec<>(sourceDataType, getOrder());
 	}
 
 	@Override

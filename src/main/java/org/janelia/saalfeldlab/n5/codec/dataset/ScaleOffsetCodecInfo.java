@@ -2,6 +2,7 @@ package org.janelia.saalfeldlab.n5.codec.dataset;
 
 import java.util.Objects;
 
+import org.janelia.saalfeldlab.n5.DataType;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.codec.DatasetCodecInfo;
 import org.janelia.saalfeldlab.n5.serialization.NameConfig;
@@ -66,11 +67,19 @@ public class ScaleOffsetCodecInfo implements DatasetCodecInfo {
 		return offset;
 	}
 
-	@SuppressWarnings("rawtypes")
 	@Override
 	public ScaleOffsetCodec<?> create(final DatasetAttributes attributes) {
 
-		return new ScaleOffsetCodec(attributes.getDataType(), scale, offset);
+		return create(attributes, attributes.getDataType());
+	}
+
+	@SuppressWarnings("rawtypes")
+	@Override
+	public ScaleOffsetCodec<?> create(final DatasetAttributes attributes, final DataType sourceDataType) {
+
+		// the codec is type-preserving, but the type it preserves is whatever an earlier
+		// codec in the chain handed it, not necessarily the dataset's own
+		return new ScaleOffsetCodec(sourceDataType, scale, offset);
 	}
 
 	@Override

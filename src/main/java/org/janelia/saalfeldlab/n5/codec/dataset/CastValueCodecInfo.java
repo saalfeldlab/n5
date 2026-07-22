@@ -182,8 +182,21 @@ public class CastValueCodecInfo implements DatasetCodecInfo {
 	@Override
 	public CastValueCodec<?, ?> create(final DatasetAttributes attributes) {
 
-		validate(attributes.getDataType());
-		return new CastValueCodec<Object, Object>(attributes.getDataType(), dataType, getRounding(), outOfRange);
+		return create(attributes, attributes.getDataType());
+	}
+
+	@Override
+	public CastValueCodec<?, ?> create(final DatasetAttributes attributes, final DataType sourceDataType) {
+
+		validate(sourceDataType);
+		return new CastValueCodec<Object, Object>(sourceDataType, dataType, getRounding(), outOfRange);
+	}
+
+	@Override
+	public DataType encodedDataType(final DataType dataType) {
+
+		// converting the data type is the whole point of this codec
+		return this.dataType;
 	}
 
 	private void validate(final DataType sourceDataType) {
