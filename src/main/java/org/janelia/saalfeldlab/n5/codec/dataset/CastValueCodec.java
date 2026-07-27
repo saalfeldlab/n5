@@ -177,7 +177,7 @@ public class CastValueCodec<S, T> implements DatasetCodec<S, T> {
 			this.targetType = targetType;
 			this.rounding = rounding;
 			this.outOfRange = outOfRange;
-			this.rounder = rounderFor(rounding);
+			this.rounder = Rounders.forRounding(rounding);
 		}
 
 		/**
@@ -333,34 +333,6 @@ public class CastValueCodec<S, T> implements DatasetCodec<S, T> {
 		static boolean outside(final double rounded, final double min, final double max) {
 
 			return (rounded < min) | (rounded > max);
-		}
-
-		private static DoubleUnaryOperator rounderFor(final Rounding rounding) {
-
-			switch (rounding) {
-			case NEAREST_EVEN:
-				return Math::rint;
-			case TOWARDS_ZERO:
-				return value -> value < 0 ? Math.ceil(value) : Math.floor(value);
-			case TOWARDS_POSITIVE:
-				return Math::ceil;
-			case TOWARDS_NEGATIVE:
-				return Math::floor;
-			case NEAREST_AWAY:
-				return Caster::roundNearestAway;
-			default:
-				throw new N5IOException("Unsupported rounding mode " + rounding);
-			}
-		}
-
-		private static double roundNearestAway(final double value) {
-
-			final double magnitude = Math.abs(value);
-			double result = Math.floor(magnitude + 0.5);
-			// guard the case where magnitude + 0.5 rounds up on its own
-			if (result - magnitude > 0.5)
-				result -= 1.0;
-			return Math.copySign(result, value);
 		}
 
 		/**
