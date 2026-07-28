@@ -367,18 +367,6 @@ public class FileSystemKeyValueRoot implements KeyValueRoot {
 		}
 	}
 
-	private static boolean validBounds(long channelSize, long offset, long length) {
-
-		if (offset < 0)
-			return false;
-		else if (channelSize > 0 && offset >= channelSize) // offset == 0 and channelSize == 0 is okay
-			return false;
-		else if (length >= 0 && offset + length > channelSize)
-			return false;
-
-		return true;
-	}
-
 	private class FileLazyRead implements LazyRead {
 
 		private final Path path;
@@ -415,9 +403,7 @@ public class FileSystemKeyValueRoot implements KeyValueRoot {
 				channel.position(offset);
 
 				final long channelSize = channel.size();
-				if (!validBounds(channelSize, offset, length)) {
-					throw new IndexOutOfBoundsException();
-				}
+				LazyRead.validateBounds(channelSize, offset, length);
 
 				final long size = length < 0 ? (channelSize - offset) : length;
 				if (size > Integer.MAX_VALUE) {
