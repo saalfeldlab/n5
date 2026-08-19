@@ -1,10 +1,11 @@
 package org.janelia.saalfeldlab.n5;
 
 import com.google.gson.GsonBuilder;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Set;
@@ -73,7 +74,7 @@ public class N5CachedFSTest extends N5FSTest {
 			final String cachedGroup = "cachedGroup";
 
 			final String relativeAttributesPath = N5DirectoryPath.of(cachedGroup).resolve(ATTRIBUTES_JSON).normalPath();
-			final String attributesPath = n5.getKeyValueRoot().uri().resolve(relativeAttributesPath).getPath();
+			final Path attributesPath = Path.of(n5.getKeyValueRoot().uri().resolve(relativeAttributesPath));
 
 			final ArrayList<TestData<?>> tests = new ArrayList<>();
 			n5.createGroup(cachedGroup);
@@ -81,7 +82,7 @@ public class N5CachedFSTest extends N5FSTest {
 			addAndTest(n5, tests, new TestData<>(cachedGroup, "a/a[5]", "asdf"));
 			addAndTest(n5, tests, new TestData<>(cachedGroup, "a/a[2]", 0));
 
-			Files.delete(Paths.get(attributesPath));
+			Files.delete(attributesPath);
 			runTests(n5, tests);
 		}
 
@@ -89,7 +90,7 @@ public class N5CachedFSTest extends N5FSTest {
 			final String cachedGroup = "cachedGroup";
 
 			final String relativeAttributesPath = N5DirectoryPath.of(cachedGroup).resolve(ATTRIBUTES_JSON).normalPath();
-			final String attributesPath = n5.getKeyValueRoot().uri().resolve(relativeAttributesPath).getPath();
+			final Path attributesPath = Path.of(n5.getKeyValueRoot().uri().resolve(relativeAttributesPath));
 
 			final ArrayList<TestData<?>> tests = new ArrayList<>();
 			n5.createGroup(cachedGroup);
@@ -97,7 +98,7 @@ public class N5CachedFSTest extends N5FSTest {
 			addAndTest(n5, tests, new TestData<>(cachedGroup, "a/a[5]", "asdf"));
 			addAndTest(n5, tests, new TestData<>(cachedGroup, "a/a[2]", 0));
 
-			Files.delete(Paths.get(attributesPath));
+			Files.delete(attributesPath);
 			assertThrows(AssertionError.class, () -> runTests(n5, tests));
 			n5.remove();
 		}
