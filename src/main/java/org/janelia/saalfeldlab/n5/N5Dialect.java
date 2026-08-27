@@ -46,6 +46,11 @@ public final class N5Dialect implements ContainerDialect {
 	}
 
 	@Override
+	public ContainerDialect withStore(final HierarchyStore store) {
+		return new N5Dialect(store, gson);
+	}
+
+	@Override
 	public <T> T getAttribute(
 			final N5DirectoryPath path,
 			final String attributePath,

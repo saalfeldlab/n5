@@ -44,6 +44,19 @@ public interface ContainerDialect {
 	 */
 	Gson getGson();
 
+	/**
+	 * Create a copy of this {@code ContainerDialect} that reads and writes
+	 * through the given {@link HierarchyStore}, instead of {@link
+	 * #getHierarchyStore() the current one}. The copy keeps everything else:
+	 * the {@link #getGson() Gson}, and all dialect-specific configuration.
+	 *
+	 * @param store
+	 * 		the new {@code HierarchyStore}
+	 *
+	 * @return a copy of this {@code ContainerDialect} on {@code store}
+	 */
+	ContainerDialect withStore(HierarchyStore store);
+
 	// ┌───────────────────────────────────────────────────────────────────────┐
 	// │ READ:                                                                 │
 	// └───────────────────────────────────────────────────────────────────────┘
