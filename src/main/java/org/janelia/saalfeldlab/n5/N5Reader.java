@@ -313,7 +313,7 @@ public interface N5Reader extends AutoCloseable {
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> gridPositions) throws N5Exception {
 
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
 		for( final long[] p : gridPositions )
 			blocks.add(readChunk(pathName, convertedDatasetAttributes, p));
@@ -374,8 +374,7 @@ public interface N5Reader extends AutoCloseable {
 
 	/**
 	 * Load a {@link DataBlock} as a {@link Serializable}. The offset is given
-	 * in
-	 * {@link DataBlock} grid coordinates.
+	 * in {@link DataBlock} grid coordinates.
 	 *
 	 * @param dataset
 	 *            the dataset path
@@ -396,7 +395,7 @@ public interface N5Reader extends AutoCloseable {
 			final DatasetAttributes attributes,
 			final long... gridPosition) throws N5Exception, ClassNotFoundException {
 
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(attributes);
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(attributes);
 		final DataBlock<byte[]> block = readChunk(dataset, convertedDatasetAttributes, gridPosition);
 		if (block == null)
 			return null;

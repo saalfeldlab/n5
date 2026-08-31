@@ -1,15 +1,11 @@
 package org.janelia.saalfeldlab.n5;
 
-import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
-import java.util.List;
-
-import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
-import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
-import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
-
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
+import java.net.URI;
+import java.util.List;
+import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
+import org.janelia.saalfeldlab.n5.shard.PositionValueAccess;
 
 /**
  * {@link N5Reader} implementation through {@link KeyValueAccess} with JSON
@@ -18,51 +14,17 @@ import com.google.gson.JsonElement;
  */
 public interface GsonKeyValueN5Reader extends GsonN5Reader {
 
-	KeyValueAccess getKeyValueAccess();
+	KeyValueRoot getKeyValueRoot();
 
-	default boolean groupExists(final String normalPath) {
-
-		return getKeyValueAccess().isDirectory(absoluteGroupPath(normalPath));
+	@Deprecated
+	default KeyValueAccess getKeyValueAccess() {
+		return getKeyValueRoot().getKVA();
 	}
 
 	@Override
-	default boolean exists(final String pathName) {
+	default URI getURI() {
 
-		final String normalPath = N5URI.normalizeGroupPath(pathName);
-		return groupExists(normalPath) || datasetExists(normalPath);
-	}
-
-	@Override
-	default boolean datasetExists(final String pathName) throws N5Exception {
-
-		// for n5, every dataset must be a group
-		return getDatasetAttributes(pathName) != null;
-	}
-
-	/**
-	 * Reads or creates the attributes map of a group or dataset.
-	 *
-	 * @param pathName
-	 *            group path
-	 * @return the attribute
-	 * @throws N5Exception if the attributes cannot be read
-	 */
-	@Override
-	default JsonElement getAttributes(final String pathName) throws N5Exception {
-
-		final String groupPath = N5URI.normalizeGroupPath(pathName);
-		final String attributesPath = absoluteAttributesPath(groupPath);
-
-		try (final VolatileReadData readData = getKeyValueAccess().createReadData(attributesPath);) {
-			if (readData == null) {
-				return null;
-			}
-			return GsonUtils.readAttributes(new InputStreamReader(readData.inputStream()), getGson());
-		} catch (final N5Exception.N5NoSuchKeyException e) {
-			return null;
-		} catch (final UncheckedIOException | N5IOException e) {
-			throw new N5IOException("Failed to read attributes from dataset " + pathName, e);
-		}
+		return getKeyValueRoot().uri();
 	}
 
 	@Override
@@ -71,13 +33,13 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName),
+			final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(pathName),
 					convertedDatasetAttributes);
-			return convertedDatasetAttributes.<T> getDatasetAccess().readChunk(posKva, gridPosition);
+			return convertedDatasetAttributes.<T> getDatasetAccess().readChunk(pva, gridPosition);
 
-		} catch (N5Exception.N5NoSuchKeyException e) {
+		} catch (N5NoSuchKeyException e) {
 			return null;
 		}
 	}
@@ -88,9 +50,9 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> blockPositions) throws N5Exception {
 
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
-		final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName), convertedDatasetAttributes);
-		return convertedDatasetAttributes.<T> getDatasetAccess().readChunks(posKva, blockPositions);
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(pathName), convertedDatasetAttributes);
+		return convertedDatasetAttributes.<T> getDatasetAccess().readChunks(pva, blockPositions);
 	}
 
 	@Override
@@ -102,45 +64,13 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		final int shardLevel = convertedDatasetAttributes.getNestedBlockGrid().numLevels() - 1;
 		try {
-			final PositionValueAccess posKva = PositionValueAccess.fromKva(getKeyValueAccess(), getURI(), N5URI.normalizeGroupPath(pathName),
+			final PositionValueAccess pva = PositionValueAccess.fromKeyValueRoot(getKeyValueRoot(), N5DirectoryPath.of(pathName),
 					convertedDatasetAttributes);
-			return convertedDatasetAttributes.<T> getDatasetAccess().readBlock(posKva, gridPosition, shardLevel);
+			return convertedDatasetAttributes.<T> getDatasetAccess().readBlock(pva, gridPosition, shardLevel);
 
-		} catch (N5Exception.N5NoSuchKeyException e) {
+		} catch (N5NoSuchKeyException e) {
 			return null;
 		}
-	}
-
-	@Override
-	default String[] list(final String pathName) throws N5Exception {
-
-		return getKeyValueAccess().listDirectories(absoluteGroupPath(pathName));
-	}
-
-	/**
-	 * Constructs the absolute path (in terms of this store) for the group or
-	 * dataset.
-	 *
-	 * @param normalGroupPath
-	 *            normalized group path without leading slash
-	 * @return the absolute path to the group
-	 */
-	default String absoluteGroupPath(final String normalGroupPath) {
-
-		return getKeyValueAccess().compose(getURI(), normalGroupPath);
-	}
-
-	/**
-	 * Constructs the absolute path (in terms of this store) for the attributes
-	 * file of a group or dataset.
-	 *
-	 * @param normalPath
-	 *            normalized group path without leading slash
-	 * @return the absolute path to the attributes
-	 */
-	default String absoluteAttributesPath(final String normalPath) {
-
-		return getKeyValueAccess().compose(getURI(), normalPath, getAttributesKey());
 	}
 
 	@Override
@@ -149,9 +79,8 @@ public interface GsonKeyValueN5Reader extends GsonN5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
-		final String normalPath = N5URI.normalizeGroupPath(pathName);
-		final String blockPath = getKeyValueAccess().compose(getURI(), normalPath,
-				datasetAttributes.relativeBlockPath(gridPosition));
-		return getKeyValueAccess().isFile(blockPath);
+		final N5Path path = N5DirectoryPath.of(pathName).resolve(datasetAttributes.relativeBlockPath(gridPosition));
+		return getKeyValueRoot().isFile(path);
 	}
+
 }

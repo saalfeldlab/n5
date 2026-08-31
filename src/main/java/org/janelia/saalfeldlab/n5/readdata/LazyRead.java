@@ -59,4 +59,28 @@ public interface LazyRead extends Closeable {
 	 */
 	default void prefetch(final Collection<? extends Range> ranges) throws N5IOException {
 	}
+
+	/**
+	 * Helper method to perform bounds checking.
+	 * Verify that the range {@code [offset, offset+length)} is fully contained in {@code [0, channelSize)}.
+	 *
+	 * @param channelSize
+	 * 		the size of the data source in bytes
+	 * @param offset
+	 * 		the starting position in the data source
+	 * @param length
+	 * 		the number of bytes to read, or -1 to read from offset to end
+	 *
+	 * @throws IndexOutOfBoundsException
+	 * 		if range is not fully contained
+	 */
+	static void validateBounds(final long channelSize, final long offset, final long length) {
+
+		if (offset < 0)
+			throw new IndexOutOfBoundsException("offset must be >= 0, but was: " + offset);
+		else if (channelSize > 0 && offset >= channelSize) // offset == 0 and dataLength == 0 is okay
+			throw new IndexOutOfBoundsException("offset (" + offset + ") must be less than channel size (" + channelSize + ")");
+		else if (length >= 0 && offset + length > channelSize)
+			throw new IndexOutOfBoundsException("offset + length (" + (offset + length) + ") must be less than channel size (" + channelSize + ")");
+	}
 }

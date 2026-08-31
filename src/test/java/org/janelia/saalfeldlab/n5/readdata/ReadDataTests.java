@@ -10,11 +10,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.function.IntUnaryOperator;
 
 import org.apache.commons.compress.utils.IOUtils;
-import org.janelia.saalfeldlab.n5.FileSystemKeyValueAccess;
+import org.janelia.saalfeldlab.n5.FileSystemKeyValueRoot;
+import org.janelia.saalfeldlab.n5.N5Path;
 import org.janelia.saalfeldlab.n5.readdata.ReadData.OutputStreamOperator;
 import org.junit.Test;
 
@@ -70,6 +72,13 @@ public class ReadDataTests {
 		sliceTestHelper(readData, N);
 	}
 
+	private static VolatileReadData fileKvrReadData(final File file) {
+		final Path path = file.toPath();
+		final Path root = path.getRoot();
+		final FileSystemKeyValueRoot kvr = new FileSystemKeyValueRoot(root.toString());
+		return kvr.createReadData(N5Path.N5FilePath.of(root.relativize(path).toString()));
+	}
+
 	@Test
 	public void testFileKvaReadData() throws IOException {
 
@@ -84,9 +93,7 @@ public class ReadDataTests {
 			os.write(data);
 		}
 
-		try( final VolatileReadData readData = new FileSystemKeyValueAccess()
-				.createReadData(tmpF.getAbsolutePath())) {
-
+		try( final VolatileReadData readData = fileKvrReadData(tmpF)) {
 			assertEquals("file read data length", -1, readData.length());
 			assertEquals("file read data length", 128, readData.requireLength());
 			sliceTestHelper(readData, N);

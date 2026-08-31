@@ -4,8 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
@@ -13,31 +13,180 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.stream.Stream;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
 import org.janelia.saalfeldlab.n5.N5Exception.N5NoSuchKeyException;
+import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.janelia.saalfeldlab.n5.readdata.LazyRead;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
-/**
- * Filesystem {@link KeyValueAccess}.
- *
- * @author Stephan Saalfeld
- * @author Igor Pisarev
- * @author Philipp Hanslovsky
- */
-public class FileSystemKeyValueAccess implements KeyValueAccess {
+public class FileSystemKeyValueRoot implements KeyValueRoot {
 
+	private final URI root;
 	private final FileKeyLockManager fileKeyLockManager;
 
-	public FileSystemKeyValueAccess() {
+	// TODO: Turning basePath String into root URI here is fragile. It might already be a URI ("file:/...") or just a path, it might be relative or absolute, etc...
+	//       Maybe it would be better to take a URI here and handle the String higher up (where we might have more information)?
+	public FileSystemKeyValueRoot(final String basePath) throws N5IOException {
+
+		// NB: We want to make sure that the root URI is a directory, that is,
+		// it ends with a slash. (Otherwise, relativizing and resolution against
+		// the root URI will not work correctly.)
+
+		// First we turn basePath into a URI. This takes care of OS specific
+		// separators and escaping of special characters:
+		final URI uri = uriForNormalPath(basePath);
+
+		// However, the resulting URI may not end in a slash in which case we
+		// append one.
+		final String uriStr = uri.toString();
+		this.root = uriStr.endsWith("/") ? uri : URI.create(uriStr + "/");
+
 		final LockingPolicy policy = LockingPolicy.fromString(System.getProperty("n5.ioPolicy", "permissive"));
 		this.fileKeyLockManager = FileKeyLockManager.forPolicy(policy);
+	}
+
+	private static URI uriForNormalPath(final String normalPath) {
+		// normalize make absolute the scheme specific part only
+		try {
+			final URI normalUri = URI.create(normalPath);
+			if (normalUri.isAbsolute()) return normalUri.normalize();
+		} catch (final IllegalArgumentException e) {
+			return new File(normalPath).toURI().normalize();
+		}
+		return new File(normalPath).toURI().normalize();
+	}
+
+	@Deprecated
+	@Override
+	public KeyValueAccess getKVA() {
+		return kva;
+	}
+	private final KeyValueAccess kva = new FileSystemKeyValueAccess();
+
+	@Override
+	public URI uri() {
+		return root;
+	}
+
+	@Override
+	public VolatileReadData createReadData(final N5FilePath normalPath) throws N5IOException {
+		return VolatileReadData.from(new FileLazyRead(resolve(normalPath)));
+	}
+
+	@Override
+	public boolean isDirectory(final N5Path normalPath) {
+		return Files.isDirectory(resolve(normalPath));
+	}
+
+	@Override
+	public boolean isFile(final N5Path normalPath) {
+		return Files.isRegularFile(resolve(normalPath));
+	}
+
+	@Override
+	public boolean exists(final N5Path normalPath) {
+		return Files.exists(resolve(normalPath));
+	}
+
+	@Override
+	public long size(final N5FilePath normalPath) throws N5IOException {
+
+		try {
+			return Files.size(resolve(normalPath));
+		} catch (IOException e) {
+			throw new N5IOException(e);
+		}
+	}
+
+	@Override
+	public void write(final N5FilePath normalPath, final ReadData data) throws N5IOException {
+
+		try (final LockedFileChannel channel = lockForWriting(resolve(normalPath))) {
+			data.writeTo(channel.asOutputStream());
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5IOException(e);
+		}
+	}
+
+	@Override
+	public String[] listDirectories(final N5DirectoryPath normalPath) throws N5IOException {
+
+		final Path path = resolve(normalPath);
+		try (final Stream<Path> pathStream = Files.list(path)) {
+			return pathStream
+					.filter(Files::isDirectory)
+					.map(a -> path.relativize(a).toString())
+					.toArray(String[]::new);
+		} catch (NoSuchFileException e) {
+			throw new N5NoSuchKeyException("No such file", e);
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5IOException("Failed to list directories", e);
+		}
+	}
+
+	@Override
+	public void createDirectories(final N5DirectoryPath normalPath) throws N5IOException {
+
+		try {
+			createDirectories(resolve(normalPath));
+		} catch (NoSuchFileException e) {
+			throw new N5NoSuchKeyException("No such file", e);
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5IOException("Failed to create directories", e);
+		}
+	}
+
+	@Override
+	public void delete(final N5Path normalPath) throws N5IOException {
+
+		try {
+			final Path path = resolve(normalPath);
+
+			if (Files.isRegularFile(path))
+				try (final LockedFileChannel channel = lockForWriting(path)) {
+					Files.delete(path);
+				}
+			else {
+				try (final Stream<Path> pathStream = Files.walk(path)) {
+					for (final Iterator<Path> i = pathStream.sorted(Comparator.reverseOrder()).iterator(); i.hasNext(); ) {
+						final Path childPath = i.next();
+						if (Files.isRegularFile(childPath))
+							try (final LockedFileChannel channel = lockForWriting(childPath)) {
+								Files.delete(childPath);
+							}
+						else
+							tryDelete(childPath);
+					}
+				}
+			}
+		} catch (NoSuchFileException ignore) {
+			/* It doesn't exist; that's sufficient for us to not complain on a `delete` call */
+		} catch (IOException | UncheckedIOException e) {
+			throw new N5IOException("Failed to delete file at " + normalPath, e);
+		}
+	}
+
+ 	// ------------------------------------------------------------------------
+ 	//
+	// -- helper methods --
+	//
+
+	/**
+	 * Resolve a relative {@code path} (relative with respect to the container
+	 * {@link #root}) to an absolute {@link Path}.
+	 *
+	 * @param normalPath path to resolve relative to container root
+	 * @return resolved absolute path
+	 */
+	private Path resolve(final N5Path normalPath) {
+		return Paths.get(root.resolve(normalPath.uri()));
 	}
 
 	private LockedFileChannel lockForReading(final Path path) throws N5IOException {
@@ -62,235 +211,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		}
 	}
 
-	@Override
-	public VolatileReadData createReadData(final String normalPath) {
-		return VolatileReadData.from(new FileLazyRead(Paths.get(normalPath)));
-	}
-
-	@Override
-	public void write(final String normalPath, final ReadData data) throws N5IOException {
-		final Path path = Paths.get(normalPath);
-		try (final LockedFileChannel channel = lockForWriting(path)) {
-			data.writeTo(channel.asOutputStream());
-		} catch (IOException e) {
-			throw new N5IOException(e);
-		}
-	}
-
-	@Override
-	public boolean isDirectory(final String normalPath) {
-
-		final Path path = Paths.get(normalPath);
-		return Files.isDirectory(path);
-	}
-
-	@Override
-	public boolean isFile(final String normalPath) {
-
-		final Path path = Paths.get(normalPath);
-		return Files.isRegularFile(path);
-	}
-
-	@Override
-	public boolean exists(final String normalPath) {
-
-		final Path path = Paths.get(normalPath);
-		return Files.exists(path);
-	}
-
-	@Override
-	public long size(final String normalPath) {
-
-		return size(Paths.get(normalPath));
-	}
-
-	private static long size(final Path path) {
-
-		try {
-			return Files.size(path);
-		} catch (NoSuchFileException e) {
-			throw new N5NoSuchKeyException("No such file", e);
-		} catch (IOException | UncheckedIOException e) {
-			throw new N5IOException(e);
-		}
-	}
-
-	@Override
-	public String[] listDirectories(final String normalPath) throws N5IOException {
-
-		final Path path = Paths.get(normalPath);
-		try (final Stream<Path> pathStream = Files.list(path)) {
-			return pathStream
-					.filter(Files::isDirectory)
-					.map(a -> path.relativize(a).toString())
-					.toArray(String[]::new);
-		} catch (NoSuchFileException e) {
-			throw new N5NoSuchKeyException("No such file", e);
-		} catch (IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to list directories", e);
-		}
-	}
-
-	@Override
-	public String[] list(final String normalPath) throws N5IOException {
-
-		final Path path = Paths.get(normalPath);
-		try (final Stream<Path> pathStream = Files.list(path)) {
-			return pathStream
-					.map(a -> path.relativize(a).toString())
-					.toArray(String[]::new);
-		} catch (NoSuchFileException e) {
-			throw new N5NoSuchKeyException("No such file", e);
-		} catch (IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to list files", e);
-		}
-	}
-
-	@Override
-	public String[] components(final String path) {
-
-		final Path fsPath = Paths.get(path);
-		final Path root = fsPath.getRoot();
-		final String separator = fsPath.getFileSystem().getSeparator();
-		final String[] components;
-		int o;
-		if (root == null) {
-			components = new String[fsPath.getNameCount()];
-			o = 0;
-		} else {
-			components = new String[fsPath.getNameCount() + 1];
-			components[0] = root.toString();
-			o = 1;
-		}
-
-		for (int i = o; i < components.length; ++i) {
-			String name = fsPath.getName(i - o).toString();
-			/* Preserve trailing slash on final component if present*/
-			if (i == components.length - 1) {
-				final String trailingSeparator = path.endsWith(separator) ? separator : path.endsWith("/") ? "/" : "";
-				name += trailingSeparator;
-			}
-			components[i] = name;
-		}
-		return components;
-	}
-
-	@Override
-	public String parent(final String path) {
-
-		final Path parent = Paths.get(path).getParent();
-		if (parent == null)
-			return null;
-		else
-			return parent.toString();
-	}
-
-	@Override
-	public String relativize(final String path, final String base) {
-
-		final Path basePath = Paths.get(base);
-		return basePath.relativize(Paths.get(path)).toString();
-	}
-
-	/**
-	 * Returns a normalized path. It ensures correctness on both Unix and
-	 * Windows,
-	 * otherwise {@code pathName} is treated as UNC path on Windows, and
-	 * {@code Paths.get(pathName, ...)} fails with {@code InvalidPathException}.
-	 *
-	 * @param path the path
-	 * @return the normalized path, without leading slash
-	 */
-	@Override
-	public String normalize(final String path) {
-
-		return Paths.get(path).normalize().toString();
-	}
-
-	@Override
-	public URI uri(final String normalPath) throws URISyntaxException {
-
-		// normalize make absolute the scheme specific part only
-		try {
-			final URI normalUri = URI.create(normalPath);
-			if (normalUri.isAbsolute()) return normalUri.normalize();
-		} catch (final IllegalArgumentException e) {
-			return new File(normalPath).toURI().normalize();
-		}
-		return new File(normalPath).toURI().normalize();
-
-	}
-
-	@Override
-	public String compose(final String... components) {
-
-		if (components == null || components.length == 0)
-			return null;
-		if (components.length == 1)
-			return Paths.get(components[0]).toString();
-		return Paths.get(components[0], Arrays.copyOfRange(components, 1, components.length)).normalize().toString();
-	}
-
-	@Override
-	public String compose(URI uri, String... components) {
-
-		Path composedPath;
-		if (uri.isAbsolute())
-			composedPath = Paths.get(uri);
-		else
-			composedPath = Paths.get(uri.toString());
-		for (String component : components) {
-			if (component == null || component.isEmpty())
-				continue;
-			composedPath = composedPath.resolve(component);
-		}
-
-		return composedPath.toAbsolutePath().toString();
-	}
-
-	@Override
-	public void createDirectories(final String normalPath) throws N5IOException {
-
-		try {
-			createDirectories(Paths.get(normalPath));
-		} catch (NoSuchFileException e) {
-			throw new N5NoSuchKeyException("No such file", e);
-		} catch (IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to create directories", e);
-		}
-	}
-
-	@Override
-	public void delete(final String normalPath) throws N5IOException {
-
-		try {
-			final Path path = Paths.get(normalPath);
-
-			if (Files.isRegularFile(path))
-				try (final LockedFileChannel channel = lockForWriting(path)) {
-					Files.delete(path);
-				}
-			else {
-				try (final Stream<Path> pathStream = Files.walk(path)) {
-					for (final Iterator<Path> i = pathStream.sorted(Comparator.reverseOrder()).iterator(); i.hasNext();) {
-						final Path childPath = i.next();
-						if (Files.isRegularFile(childPath))
-							try (final LockedFileChannel channel = lockForWriting(childPath)) {
-								Files.delete(childPath);
-							}
-						else
-							tryDelete(childPath);
-					}
-				}
-			}
-		} catch (NoSuchFileException ignore) {
-			/* It doesn't exist; that's sufficient for us to not complain on a `delete` call */
-		} catch (IOException | UncheckedIOException e) {
-			throw new N5IOException("Failed to delete file at " + normalPath, e);
-		}
-	}
-
-	protected static void tryDelete(final Path path) throws IOException {
+	private static void tryDelete(final Path path) throws IOException {
 
 		try {
 			Files.delete(path);
@@ -370,7 +291,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	 *             method to check access to the system property
 	 *             {@code user.dir}
 	 */
-	protected static Path createDirectories(Path dir, final FileAttribute<?>... attrs) throws IOException {
+	private static Path createDirectories(Path dir, final FileAttribute<?>... attrs) throws IOException {
 
 		// attempt to create the directory
 		try {
@@ -434,7 +355,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	 * @param attrs file attributes
 	 * @throws IOException the exception
 	 */
-	protected static void createAndCheckIsDirectory(
+	private static void createAndCheckIsDirectory(
 			final Path dir,
 			final FileAttribute<?>... attrs) throws IOException {
 
@@ -449,7 +370,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 	private class FileLazyRead implements LazyRead {
 
 		private final Path path;
-		private LockedFileChannel lock; // TODO rename
+		private LockedFileChannel lock;
 
 		FileLazyRead(final Path path) {
 			this.path = path;
@@ -465,9 +386,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 			try {
 				return Files.size(path);
-			} catch (NoSuchFileException e) {
-				throw new N5NoSuchKeyException("No such file", e);
-			} catch (IOException | UncheckedIOException e) {
+			} catch (IOException e) {
 				throw new N5IOException(e);
 			}
 		}
@@ -479,8 +398,11 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 				throw new N5IOException("FileLazyRead is already closed.");
 			}
 
-			try {
-				final long channelSize = lock.size();
+			try (final FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
+
+				channel.position(offset);
+
+				final long channelSize = channel.size();
 				LazyRead.validateBounds(channelSize, offset, length);
 
 				final long size = length < 0 ? (channelSize - offset) : length;
@@ -489,10 +411,14 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 				}
 
 				final byte[] data = new byte[(int) size];
-				lock.read(ByteBuffer.wrap(data), offset);
+				final ByteBuffer buf = ByteBuffer.wrap(data);
+				channel.read(buf);
 				return ReadData.from(data);
+
+			} catch (final NoSuchFileException e) {
+				throw new N5NoSuchKeyException("No such file", e);
 			} catch (IOException | UncheckedIOException e) {
-				throw new N5Exception.N5IOException(e);
+				throw new N5IOException(e);
 			}
 		}
 
@@ -500,19 +426,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		public void close() throws IOException {
 
 			if (lock != null) {
-				try {
-					lock.close();
-				} catch (IOException e) {
-					/* this is a particular case. Sometimes (seemingly only on MacOs, when accessing blocks
-					* over a SMB mount). Reading succeeds, but closing throws a "Bad File Descriptor" IOException.
-					* Since the read succeeded, we are willing to ignore this exception. */
-					boolean ignoreBadFileDescriptorOnClose = e.getMessage().matches("^Bad file descriptor$");
-
-					if (!ignoreBadFileDescriptorOnClose) {
-						throw e;
-					}
-
-				}
+				lock.close();
 				lock = null;
 			}
 		}
