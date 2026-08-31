@@ -150,6 +150,29 @@ public class N5PathTest {
 	}
 
 	@Test
+	public void testResolve() {
+
+		final N5DirectoryPath p = N5DirectoryPath.of("a/b");
+
+		assertEquals("a/b/c", p.resolve("c").path());
+		assertEquals("a/b/c/d", p.resolve("c/d").path());
+		assertEquals("a/b/", p.resolve((String) null).path());
+
+		// "path" is a plain path, not a URI: not escaped, and no query or fragment
+		assertEquals("a/b/c d", p.resolve("c d").path());
+		assertEquals("a/b/c#d", p.resolve("c#d").path());
+		assertEquals("a/b/c%d", p.resolve("c%d").path());
+		assertEquals("a/b/c?d", p.resolve("c?d").path());
+		assertEquals("a/b/c%20d", p.resolve("c%20d").path());
+
+		// "/", "./" and "../" are resolved
+		assertEquals("a/b/c/e", p.resolve("c/d/../e").path());
+		assertEquals("a/b/c", p.resolve("./c").path());
+		assertEquals("a/c", p.resolve("../c").path());
+		assertEquals("c", p.resolve("/c").path());
+	}
+
+	@Test
 	public void testComponents() {
 
 		assertArrayEquals(new String[] {""}, N5Path.of("").components());

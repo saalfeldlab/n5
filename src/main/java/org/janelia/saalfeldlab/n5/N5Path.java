@@ -145,8 +145,19 @@ public interface N5Path {
 			return true;
 		}
 
+		/**
+		 * Resolve {@code path} against this directory.
+		 * <p>
+		 * NB: {@code path} expects a plain path, not a URI, so special
+		 * characters should not be escaped.
+		 *
+		 * @param path
+		 * 		path to resolve against this directory
+		 *
+		 * @return the resolved path, or this path if {@code path} is {@code null}
+		 */
 		default N5Path resolve(final String path) {
-			return path == null ? this : N5Path.of(uri().resolve(path).getPath());
+			return path == null ? this : N5Path.of(uri().resolve(N5PathImpl.createURI(path)).getPath());
 		}
 
 		default N5Path resolve(final N5Path path) {
