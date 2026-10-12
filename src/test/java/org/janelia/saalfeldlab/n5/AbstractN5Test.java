@@ -1264,8 +1264,19 @@ public abstract class AbstractN5Test {
 			try (N5Reader wa = createN5Reader(location)) {
 				assertNotNull(wa);
 			}
+		}
+	}
 
-			// existing directory with incompatible version should fail
+	/**
+	 * Reader creation must fail on a container whose {@link N5Reader#VERSION_KEY} is incompatible.
+	 * Dialects that do not carry that attribute (zarr) should {@link org.junit.Ignore} this test.
+	 */
+	@Test
+	public void testReaderCreationIncompatibleVersion() throws IOException, URISyntaxException {
+
+		final String location = tempN5Location() + "-" + UUID.randomUUID();
+		try (N5Writer writer = createTempN5Writer(location)) {
+
 			writer.removeAttribute("/", "/");
 			final String invalidVersion = new Version(N5Reader.VERSION.getMajor() + 1, N5Reader.VERSION.getMinor(), N5Reader.VERSION.getPatch()).toString();
 			writer.setAttribute("/", N5Reader.VERSION_KEY, invalidVersion);

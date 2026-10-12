@@ -138,26 +138,31 @@ public class N5HttpTest extends AbstractN5Test {
 		}
 	}
 
+	@Test
 	@Ignore("N5Writer not supported for HTTP")
 	@Override public void testRemoveGroup() {
 
 	}
 
+	@Test
 	@Ignore("N5Writer not supported for HTTP")
 	@Override public void testRemoveAttributes() {
 
 	}
 
+	@Test
 	@Ignore("N5Writer not supported for HTTP")
 	@Override public void testRemoveContainer() {
 
 	}
 
+	@Test
 	@Ignore("N5Writer not supported for HTTP")
 	@Override public void testDelete() {
 
 	}
 
+	@Test
 	@Ignore("N5Writer not supported for HTTP")
 	@Override public void testWriterSeparation() {
 
