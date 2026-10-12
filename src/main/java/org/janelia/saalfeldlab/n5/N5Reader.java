@@ -577,8 +577,6 @@ public interface N5Reader extends AutoCloseable {
 	 * Helper method to recursively list all groups and datasets. This method is not part of the
 	 * public API and is accessible only because Java 8 does not support private
 	 * interface methods yet.
-	 * <p>
-	 * TODO make private when committing to Java versions newer than 8
 	 *
 	 * @param n5           the n5 reader
 	 * @param pathName     the base group path
@@ -588,7 +586,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws N5Exception
 	 * 				an exception is thrown if pathName is not a valid group
 	 */
-	static ArrayList<String> deepList(
+	private static ArrayList<String> deepList(
 			final N5Reader n5,
 			final String pathName,
 			final boolean datasetsOnly,
@@ -789,8 +787,6 @@ public interface N5Reader extends AutoCloseable {
 	 * public API and is accessible only because Java 8 does not support private
 	 * interface methods yet.
 	 *
-	 * TODO make private when committing to Java versions newer than 8
-	 *
 	 * @param n5
 	 *            the n5 reader
 	 * @param path
@@ -804,7 +800,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @param datasetFutures
 	 *            result futures
 	 */
-	static void deepListHelper(
+	private static void deepListHelper(
 			final N5Reader n5,
 			final String path,
 			final boolean datasetsOnly,

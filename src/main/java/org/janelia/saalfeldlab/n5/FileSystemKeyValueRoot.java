@@ -57,9 +57,7 @@ public class FileSystemKeyValueRoot implements KeyValueRoot {
 		try {
 			final URI normalUri = URI.create(normalPath);
 			if (normalUri.isAbsolute()) return normalUri.normalize();
-		} catch (final IllegalArgumentException e) {
-			return new File(normalPath).toURI().normalize();
-		}
+		} catch (final IllegalArgumentException ignored) {}
 		return new File(normalPath).toURI().normalize();
 	}
 

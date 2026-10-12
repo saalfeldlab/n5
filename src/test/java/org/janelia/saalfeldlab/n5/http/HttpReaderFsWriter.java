@@ -21,7 +21,7 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	private final GsonKeyValueN5Writer writer;
 	private final GsonKeyValueN5Reader reader;
 
-	public <W extends GsonKeyValueN5Writer, R extends GsonKeyValueN5Reader> HttpReaderFsWriter(final W writer, final R reader) {
+	public HttpReaderFsWriter(final GsonKeyValueN5Writer writer, final GsonKeyValueN5Reader reader) {
 
 		this.writer = writer;
 		this.reader = reader;
