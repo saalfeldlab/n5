@@ -159,6 +159,12 @@
 		<n5-imglib2.version>8.0.0</n5-imglib2.version>
 		<n5-zarr.version>2.0.1</n5-zarr.version>
 		<n5-zstandard.version>2.0.0</n5-zstandard.version>
+
+		<!-- TEMPORARY: remove the SNAPSHOT version and the two overrides below (use the managed or released versions) once janelia-jhdf5 is released. -->
+		<janelia-jhdf5.version>22.03.01-SNAPSHOT</janelia-jhdf5.version>
+		<!-- pom-scijava manages older bytedeco versions; match what janelia-jhdf5 is built against. -->
+		<javacpp.version>1.5.15-SNAPSHOT</javacpp.version>
+		<hdf5.version>2.2.0-${javacpp.version}</hdf5.version>
 	</properties>
 
 	<dependencies>
@@ -224,8 +230,15 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>cisd</groupId>
-			<artifactId>jhdf5</artifactId>
+			<groupId>org.scijava</groupId>
+			<artifactId>janelia-jhdf5</artifactId>
+			<version>${janelia-jhdf5.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- hdf.hdf5lib.H5 needs an slf4j binding at runtime; tests do not otherwise provide one. -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-nop</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -259,6 +272,13 @@
 		<repository>
 			<id>scijava.public</id>
 			<url>https://maven.scijava.org/content/groups/public</url>
+		</repository>
+		<!-- TEMPORARY: org.bytedeco snapshots (javacpp, hdf5) needed by janelia-jhdf5 until they are released. Remove once janelia-jhdf5 is released. -->
+		<repository>
+			<id>central-portal-snapshots</id>
+			<url>https://central.sonatype.com/repository/maven-snapshots/</url>
+			<releases><enabled>false</enabled></releases>
+			<snapshots><enabled>true</enabled></snapshots>
 		</repository>
 	</repositories>
 
