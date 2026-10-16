@@ -94,7 +94,7 @@ public class DatasetAttributes implements Serializable {
 		this.defaultValue = defaultValue == null ? JsonNull.INSTANCE : defaultValue;
 
 		this.blockCodecInfo = blockCodecInfo == null ? defaultBlockCodecInfo() : blockCodecInfo;
-		this.datasetCodecInfos = datasetCodecInfos;
+		this.datasetCodecInfos = datasetCodecInfos == null ? new DatasetCodecInfo[0] : datasetCodecInfos;
 
 		if (dataCodecInfos == null)
 			this.dataCodecInfos = new DataCodecInfo[0];
