@@ -1,9 +1,7 @@
 package org.janelia.saalfeldlab.n5;
 
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.concurrent.Semaphore;
 
 /**

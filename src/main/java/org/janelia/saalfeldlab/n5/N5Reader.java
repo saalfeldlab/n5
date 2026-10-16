@@ -313,7 +313,7 @@ public interface N5Reader extends AutoCloseable {
 			final DatasetAttributes datasetAttributes,
 			final List<long[]> gridPositions) throws N5Exception {
 
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		final ArrayList<DataBlock<T>> blocks = new ArrayList<>();
 		for( final long[] p : gridPositions )
 			blocks.add(readChunk(pathName, convertedDatasetAttributes, p));
@@ -374,8 +374,7 @@ public interface N5Reader extends AutoCloseable {
 
 	/**
 	 * Load a {@link DataBlock} as a {@link Serializable}. The offset is given
-	 * in
-	 * {@link DataBlock} grid coordinates.
+	 * in {@link DataBlock} grid coordinates.
 	 *
 	 * @param dataset
 	 *            the dataset path
@@ -396,7 +395,7 @@ public interface N5Reader extends AutoCloseable {
 			final DatasetAttributes attributes,
 			final long... gridPosition) throws N5Exception, ClassNotFoundException {
 
-		DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(attributes);
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(attributes);
 		final DataBlock<byte[]> block = readChunk(dataset, convertedDatasetAttributes, gridPosition);
 		if (block == null)
 			return null;
@@ -575,11 +574,7 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Helper method to recursively list all groups and datasets. This method is not part of the
-	 * public API and is accessible only because Java 8 does not support private
-	 * interface methods yet.
-	 * <p>
-	 * TODO make private when committing to Java versions newer than 8
+	 * Helper method to recursively list all groups and datasets.
 	 *
 	 * @param n5           the n5 reader
 	 * @param pathName     the base group path
@@ -589,7 +584,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @throws N5Exception
 	 * 				an exception is thrown if pathName is not a valid group
 	 */
-	static ArrayList<String> deepList(
+	private static ArrayList<String> deepList(
 			final N5Reader n5,
 			final String pathName,
 			final boolean datasetsOnly,
@@ -786,11 +781,7 @@ public interface N5Reader extends AutoCloseable {
 	}
 
 	/**
-	 * Helper method for parallel deep listing. This method is not part of the
-	 * public API and is accessible only because Java 8 does not support private
-	 * interface methods yet.
-	 *
-	 * TODO make private when committing to Java versions newer than 8
+	 * Helper method for parallel deep listing.
 	 *
 	 * @param n5
 	 *            the n5 reader
@@ -805,7 +796,7 @@ public interface N5Reader extends AutoCloseable {
 	 * @param datasetFutures
 	 *            result futures
 	 */
-	static void deepListHelper(
+	private static void deepListHelper(
 			final N5Reader n5,
 			final String path,
 			final boolean datasetsOnly,

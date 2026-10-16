@@ -1,11 +1,11 @@
 package org.janelia.saalfeldlab.n5.shard;
 
-import java.net.URI;
-
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
-import org.janelia.saalfeldlab.n5.KeyValueAccess;
 import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
+import org.janelia.saalfeldlab.n5.KeyValueRoot;
 import org.janelia.saalfeldlab.n5.readdata.ReadData;
 import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
@@ -50,49 +50,46 @@ public interface PositionValueAccess {
 
 	boolean remove(long[] key) throws N5Exception.N5IOException;
 
-	static PositionValueAccess fromKva(
-			final KeyValueAccess kva,
-			final URI uri,
-			final String normalPath,
+	static PositionValueAccess fromKeyValueRoot(
+			final KeyValueRoot kvr,
+			final N5DirectoryPath normalPath,
 			final DatasetAttributes attributes) {
 
-		return new KvaPositionValueAccess(kva, uri, normalPath, attributes);
+		return new KvrPositionValueAccess(kvr, normalPath, attributes);
 	}
 
-	class KvaPositionValueAccess implements PositionValueAccess {
+	class KvrPositionValueAccess implements PositionValueAccess {
 
-		private final KeyValueAccess kva;
-		private final URI uri;
-		private final String normalPath;
+		private final KeyValueRoot kvr;
+		private final N5DirectoryPath normalPath;
 		private final DatasetAttributes attributes;
 
-		KvaPositionValueAccess(final KeyValueAccess kva,
-				final URI uri,
-				final String normalPath,
+		KvrPositionValueAccess(final KeyValueRoot kvr,
+				final N5DirectoryPath normalPath,
 				final DatasetAttributes attributes) {
 
-			this.kva = kva;
-			this.uri = uri;
+			this.kvr = kvr;
 			this.normalPath = normalPath;
 			this.attributes = attributes;
 		}
 
 		/**
-		 * Constructs the absolute path for a DataBlock at a given grid
-		 * position.
+		 * Constructs the relative path for a DataBlock at a given
+		 * grid position.
 		 *
 		 * @param gridPosition
-		 *            to the target data block
-		 * @return the absolute path to the data block ad gridPosition
+		 * 		grid coordinates of the data block
+		 *
+		 * @return the path (relative to container root) of the data block at gridPosition
 		 */
-		protected String absolutePath(final long... gridPosition) {
-			return kva.compose(uri, normalPath, attributes.relativeBlockPath(gridPosition));
+		private N5FilePath relativePath(final long... gridPosition) {
+			return normalPath.resolve(attributes.relativeBlockPath(gridPosition)).asFile();
 		}
 
 		@Override
 		public VolatileReadData get(final long[] key) throws N5IOException {
 			try {
-				return kva.createReadData(absolutePath(key));
+				return kvr.createReadData(relativePath(key));
 			} catch (N5Exception.N5NoSuchKeyException e) {
 				return null;
 			}
@@ -100,7 +97,7 @@ public interface PositionValueAccess {
 
 		@Override
 		public boolean exists(final long[] key) throws N5IOException {
-			return kva.isFile(absolutePath(key));
+			return kvr.isFile(relativePath(key));
 		}
 
 		@Override
@@ -108,20 +105,19 @@ public interface PositionValueAccess {
 			if (data == null) {
 				remove(key);
 			} else {
-				kva.write(absolutePath(key), data);
+				kvr.write(relativePath(key), data);
 			}
 		}
 
 		@Override
 		public boolean remove(final long[] gridPosition) throws N5IOException {
-
-			final String key = absolutePath(gridPosition);
-			if (!kva.isFile(key))
+			final N5FilePath key = relativePath(gridPosition);
+			if (!kvr.isFile(key))
 				return false;
 
-			kva.delete(key);
+			kvr.delete(key);
 			return true;
 		}
-
 	}
+
 }

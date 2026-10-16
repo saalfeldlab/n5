@@ -12,18 +12,13 @@ public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyV
 	/**
 	 * Opens an {@link N5KeyValueWriter} at a given base path with a custom
 	 * {@link GsonBuilder} to support custom attributes.
-	 *
 	 * <p>
-	 * If the base path does not exist, it will be created.
-	 * <p>
-	 * If the base path exists and if the N5 version of the container is
-	 * compatible with this implementation, the N5 version of this container
-	 * will be set to the current N5 version of this implementation.
+	 * If the N5 version of the container is compatible with this
+	 * implementation, the N5 version of this container will be set to the
+	 * current N5 version of this implementation.
 	 *
-	 * @param keyValueAccess
+	 * @param keyValueRoot
 	 * 			  the backend key value access to use
-	 * @param basePath
-	 *            n5 base path
 	 * @param gsonBuilder
 	 *            the gson builder
 	 * @param cacheAttributes
@@ -37,13 +32,12 @@ public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyV
 	 *             this implementation.
 	 */
 	public N5KeyValueWriter(
-			final KeyValueAccess keyValueAccess,
-			final String basePath,
+			final KeyValueRoot keyValueRoot,
 			final GsonBuilder gsonBuilder,
 			final boolean cacheAttributes)
 			throws N5Exception {
 
-		super(false, keyValueAccess, basePath, gsonBuilder, cacheAttributes, false);
+		super(false, keyValueRoot, gsonBuilder, cacheAttributes, false);
 
 		Version version = null;
 		try {
@@ -54,7 +48,7 @@ public class N5KeyValueWriter extends N5KeyValueReader implements CachedGsonKeyV
 
 		if (version == null || version.equals(new Version(0, 0, 0, ""))) {
 			createGroup("/");
-			setVersion("/");
+			setVersion();
 		}
 	}
 }
