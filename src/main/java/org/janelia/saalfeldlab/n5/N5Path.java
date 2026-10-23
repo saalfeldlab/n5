@@ -2,6 +2,7 @@ package org.janelia.saalfeldlab.n5;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 
 import static org.janelia.saalfeldlab.n5.N5Path.N5PathImpl.filePathOf;
 import static org.janelia.saalfeldlab.n5.N5Path.N5PathImpl.directoryPathOf;
@@ -65,6 +66,11 @@ public interface N5Path {
 	 * will not have a trailing slash.
 	 * <p>
 	 * The URI is normalized.
+	 * <p>
+	 * NB: If the first path component contains a {@code ":"}, the URI path
+	 * starts with {@code "./"} (for example, {@code "./a:b/"}), because
+	 * otherwise it would be parsed as a URI scheme. {@link #path()}, {@link
+	 * #normalPath()}, and {@link #components()} do not have the {@code "./"}.
 	 *
 	 * @return this N5Path as a normalized relative URI
 	 */
@@ -76,11 +82,10 @@ public interface N5Path {
 	 * this {@code N5Path} is a {@link #isDirectory() directory} the path will
 	 * have a trailing slash, unless it represents the root directory ({@code ""}).
 	 * <p>
-	 * Note that in contrast to the URI representation, special characters are
-	 * not escaped.
+	 * Note that in contrast to the URI representation, special characters are not escaped.
 	 */
 	default String path() {
-		return uri().getPath();
+		return N5PathImpl.plainPath(uri());
 	}
 
 	/**
@@ -115,7 +120,7 @@ public interface N5Path {
 	 * @return components of this path
 	 */
 	default String[] components() {
-		return uri().getPath().split("/");
+		return path().split("/");
 	}
 
 	/**
@@ -319,7 +324,7 @@ public interface N5Path {
 			@Override
 			public String normalPath() {
 				if (normalPath == null) {
-					final String p = uri.getPath();
+					final String p = path();
 					normalPath = p.isEmpty() ? p : p.substring(0, p.length() - 1);
 				}
 				return normalPath;
@@ -380,7 +385,7 @@ public interface N5Path {
 
 			@Override
 			public String normalPath() {
-				return uri.getPath();
+				return path();
 			}
 
 			@Override
@@ -407,8 +412,13 @@ public interface N5Path {
 
 		private static URI createURI(final String normalPath) throws N5Exception.N5IOException {
 
+			// NB: The URI constructor assembles a string and parses it, so a
+			// ":" in the first path component would be parsed as a URI scheme
+			// ("a:b" would become the opaque URI with scheme "a"). Prefix "./"
+			// to keep it a relative path, as URI.normalize() does.
+			final String path = colonInFirstComponent(normalPath) ? "./" + normalPath : normalPath;
 			try {
-				return new URI(null, null, normalPath, null);
+				return new URI(null, null, path, null);
 			} catch (URISyntaxException e) {
 				// This should be unreachable: Scheme/authority/fragment are null
 				// and the path component accepts virtually anything.
@@ -417,7 +427,33 @@ public interface N5Path {
 		}
 
 		/**
-		 * Normalize a POSIX path, for use with {@link N5DirectoryPath#of},  {@link N5FilePath#of}, TODO.
+		 * Whether the first component of {@code path} contains a {@code ":"}.
+		 */
+		private static boolean colonInFirstComponent(final String path) {
+
+			final int colon = path.indexOf(':');
+			if (colon < 0)
+				return false;
+			final int slash = path.indexOf('/');
+			return slash < 0 || colon < slash;
+		}
+
+		/**
+		 * The path of {@code uri}, without the {@code "./"} that {@link
+		 * #createURI} and {@link URI#normalize()} prefix if the first
+		 * component contains a {@code ":"}.
+		 * <p>
+		 * NB: In a normalized path, a leading {@code "./"} can only be that
+		 * prefix, because {@code "."} components are otherwise removed.
+		 */
+		private static String plainPath(final URI uri) {
+
+			final String path = uri.getPath();
+			return path.startsWith("./") ? path.substring(2) : path;
+		}
+
+		/**
+		 * Normalize a POSIX path, for use with {@link N5DirectoryPath#of}, {@link N5FilePath#of}, {@link N5Path#of}.
 		 * <p>
 		 * Remove (any number of) leading slashes.
 		 * Remove redundant "/", "./", and resolution of relative "../".
@@ -435,7 +471,7 @@ public interface N5Path {
 			}
 
 			// normalize
-			return createURI(path.substring(start)).normalize().getPath();
+			return plainPath(createURI(path.substring(start)).normalize());
 		}
 	}
 }

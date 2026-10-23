@@ -4,6 +4,8 @@ import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
 import org.junit.Test;
 
+import java.net.URI;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -179,5 +181,54 @@ public class N5PathTest {
 		assertArrayEquals(new String[] {"a"}, N5Path.of("a").components());
 		assertArrayEquals(new String[] {"a", "b", "c"}, N5Path.of("a/b/c").components());
 		assertArrayEquals(new String[] {"a", "b", "c"}, N5Path.of("a/b/c/").components());
+	}
+
+	@Test
+	public void testColonInFirstComponent() {
+
+		// A ":" in the first component would be parsed as a URI scheme.
+		// In the URI, it is prefixed with "./", elsewhere not.
+		final N5DirectoryPath dir = N5DirectoryPath.of("a:b");
+		assertEquals("a:b/", dir.path());
+		assertEquals("a:b", dir.normalPath());
+		assertEquals("./a:b/", dir.uri().toString());
+		assertArrayEquals(new String[] {"a:b"}, dir.components());
+		assertEquals("a:b", dir.filename());
+		assertEquals(dir, N5DirectoryPath.of("/a:b/"));
+		assertEquals(dir, N5DirectoryPath.of("./a:b"));
+		assertEquals(dir, N5DirectoryPath.of("x/../a:b"));
+
+		final N5FilePath file = N5FilePath.of("a:b/c:d");
+		assertEquals("a:b/c:d", file.path());
+		assertEquals("a:b/c:d", file.normalPath());
+		assertEquals("./a:b/c:d", file.uri().toString());
+		assertEquals("c:d", file.filename());
+
+		// Only the first component needs the prefix.
+		assertEquals("x/a:b/", N5DirectoryPath.of("x/a:b").uri().toString());
+
+		// Not a valid scheme name either way.
+		assertEquals("1a:b/", N5DirectoryPath.of("1a:b").path());
+		assertEquals("a b:c/", N5DirectoryPath.of("a b:c").path());
+
+		// Conversions.
+		assertEquals("a:b", dir.asFile().path());
+		assertEquals("./a:b", dir.asFile().uri().toString());
+		assertEquals(dir, dir.asFile().asDirectory());
+
+		// Parent.
+		assertEquals(N5DirectoryPath.of(""), dir.parent());
+		assertEquals(N5DirectoryPath.of(""), N5FilePath.of("a:b").parent());
+		assertEquals(dir, N5DirectoryPath.of("a:b/c").parent());
+		assertEquals(dir, N5FilePath.of("a:b/c").parent());
+
+		// Resolve.
+		assertEquals("a:b/c", dir.resolve("c").path());
+		assertEquals("c:d", N5DirectoryPath.of("").resolve("c:d").path());
+		assertEquals("x/c:d", N5DirectoryPath.of("x").resolve("c:d").path());
+		assertEquals("c:d", dir.resolve("../c:d").path());
+
+		// Resolved against a container URI, as the KeyValueRoots do.
+		assertEquals("s3://bucket/x.zarr/a:b/", URI.create("s3://bucket/x.zarr/").resolve(dir.uri()).toString());
 	}
 }
