@@ -165,6 +165,47 @@ public interface N5Path {
 		}
 
 		/**
+		 * Relativize {@code path} against this directory.
+		 * For example, {@code * "a/b/"} relativizes {@code "a/b/c/d"} to {@code "c/d"}.
+		 * <p>
+		 * This behaves like {@link URI#relativize(URI)}:
+		 * If {@code path} is not inside this directory, it is returned unchanged.
+		 * (This is in different to {@link Path#relativize} behavior which would {@code ".."} components.)
+		 * <p>
+		 * For {@code path} that <em>are</em> inside this directory, this is the inverse of
+		 * {@link #resolve(N5Path)}: {@code resolve(relativize(path))} equals {@code path}.
+		 *
+		 * @param path
+		 * 		path to relativize against this directory
+		 *
+		 * @return the relative path, or {@code path} if it is not inside this directory
+		 */
+		default N5Path relativize(final N5Path path) {
+			return N5Path.of(uri().relativize(path.uri()).getPath());
+		}
+
+		/**
+		 * Relativize {@code path} against this directory.
+		 * <p>
+		 * NB: {@code path} expects a plain path, not a URI, so special
+		 * characters should not be escaped.
+		 * <p>
+		 * NB: {@code path} denotes a directory only if it ends in {@code "/"}.
+		 * For example, if this directory is {@code "a/b/"}, and {@code path=="a/b"} (that is, a file)
+		 * then {@code path} is not inside this directory. (t
+		 *
+		 * @param path
+		 * 		path to relativize against this directory
+		 *
+		 * @return the relative path, or {@code path} if it is not inside this directory
+		 *
+		 * @see #relativize(N5Path)
+		 */
+		default N5Path relativize(final String path) {
+			return relativize(N5Path.of(path));
+		}
+
+		/**
 		 * Create a {@code N5DirectoryPath} from the given {@code path} string.
 		 * <p>
 		 * The given {@code path} will be normalized by removing (any number of)
