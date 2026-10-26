@@ -57,6 +57,32 @@ public interface ContainerDialect {
 	 */
 	ContainerDialect withStore(HierarchyStore store);
 
+	/**
+	 * Create a copy of this {@code ContainerDialect} that de/serializes
+	 * attributes with the given {@link Gson}, instead of {@link #getGson() the
+	 * current one}. The copy keeps everything else: the {@link
+	 * #getHierarchyStore() HierarchyStore}, and all dialect-specific
+	 * configuration.
+	 * <p>
+	 * This is for <em>adding</em> type adapters, for example those of a
+	 * metadata convention. The dialect itself relies on adapters registered in
+	 * {@link #getGson()} (for dataset attributes, compressions, codecs, etc.),
+	 * so {@code gson} must be derived from this dialect's {@code Gson}, e.g.
+	 * <pre>{@code
+	 * dialect.withGson(dialect.getGson().newBuilder()
+	 *         .registerTypeAdapter(MyType.class, new MyTypeAdapter())
+	 *         .create());
+	 * }</pre>
+	 * <em>A {@code Gson} built from scratch silently drops the dialect adapters, and the
+	 * dialect fails to read its own metadata!</em>
+	 *
+	 * @param gson
+	 * 		the new {@code Gson}, derived from {@link #getGson()}
+	 *
+	 * @return a copy of this {@code ContainerDialect} using {@code gson}
+	 */
+	ContainerDialect withGson(Gson gson);
+
 	// ┌───────────────────────────────────────────────────────────────────────┐
 	// │ READ:                                                                 │
 	// └───────────────────────────────────────────────────────────────────────┘
