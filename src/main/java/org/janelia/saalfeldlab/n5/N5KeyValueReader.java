@@ -18,7 +18,6 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	protected final KeyValueRoot keyValueRoot;
 	protected final HierarchyStore hierarchyStore;
 	protected final ContainerDialect containerDialect;
-	protected final Gson gson;
 	protected final boolean cacheMeta;
 
 	/**
@@ -86,9 +85,9 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 			throws N5Exception {
 
 		this.keyValueRoot = keyValueRoot;
-		this.gson = registerGson(gsonBuilder).create();
 		this.cacheMeta = cacheMeta;
 		this.hierarchyStore = createHierarchyStore(keyValueRoot, cacheMeta);
+		final Gson gson = registerGson(gsonBuilder).create();
 		this.containerDialect = new N5Dialect(hierarchyStore, gson);
 
 		boolean versionFound = false;
@@ -120,12 +119,6 @@ public class N5KeyValueReader implements CachedGsonKeyValueN5Reader {
 	public String getAttributesKey() {
 
 		return ATTRIBUTES_JSON;
-	}
-
-	@Override
-	public Gson getGson() {
-
-		return gson;
 	}
 
 	@Override

@@ -1,6 +1,5 @@
 package org.janelia.saalfeldlab.n5.http;
 
-import com.google.gson.Gson;
 import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.List;
@@ -126,11 +125,6 @@ public class HttpReaderFsWriter implements GsonKeyValueN5Writer {
 	@Override public String[] deepListDatasets(String pathName, ExecutorService executor) throws N5Exception, InterruptedException, ExecutionException {
 
 		return reader.deepListDatasets(pathName, executor);
-	}
-
-	@Override public Gson getGson() {
-
-		return reader.getGson();
 	}
 
 	@Override public Map<String, Class<?>> listAttributes(String pathName) throws N5Exception {
