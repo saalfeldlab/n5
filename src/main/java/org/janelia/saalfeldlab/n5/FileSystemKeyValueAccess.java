@@ -446,22 +446,6 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		}
 	}
 
-	/**
-	 * Verify that the range {@code [offset, offset+length)} is fully contained in {@code [0, channelSize)}.
-	 *
-	 * @throws IndexOutOfBoundsException
-	 * 		if range is not fully contained
-	 */
-	private static void validBounds(final long channelSize, final long offset, final long length) throws IndexOutOfBoundsException {
-
-		if (offset < 0)
-			throw new IndexOutOfBoundsException("offset must be > 0, but was: " + offset);
-		else if (channelSize > 0 && offset >= channelSize)  // offset == 0 and channelSize == 0 is okay
-			throw new IndexOutOfBoundsException("offset (" + offset + ") must be less than channel size (" + channelSize + ")");
-		else if (length >= 0 && offset + length > channelSize)
-			throw new IndexOutOfBoundsException("offset + length (" + (offset + length) + ") must be less than channel size (" + channelSize + ")");
-	}
-
 	private class FileLazyRead implements LazyRead {
 
 		private final Path path;
@@ -497,7 +481,7 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 
 			try {
 				final long channelSize = lock.size();
-				validBounds(channelSize, offset, length);
+				LazyRead.validateBounds(channelSize, offset, length);
 
 				final long size = length < 0 ? (channelSize - offset) : length;
 				if (size > Integer.MAX_VALUE) {

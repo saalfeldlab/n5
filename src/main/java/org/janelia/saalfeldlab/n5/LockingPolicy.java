@@ -3,7 +3,7 @@ package org.janelia.saalfeldlab.n5;
 /**
  * File locking policy.
  * <p>
- * Usually, we want to coordinate reads and writs to a container such that
+ * Usually, we want to coordinate reads and writes to a container such that
  * <ul>
  * <li>multiple readers can access a key simultaneously (blocking all writers).</li>
  * <li>A writer should have exclusive access to a key (blocking all other readers and writers).</li>
@@ -41,7 +41,7 @@ public enum LockingPolicy {
 	 */
 	PERMISSIVE;
 
-	static LockingPolicy fromString(final String s) {
+	public static LockingPolicy fromString(final String s) {
 		if ("strict".equalsIgnoreCase(s))
 			return STRICT;
 		else if ("unsafe".equalsIgnoreCase(s))

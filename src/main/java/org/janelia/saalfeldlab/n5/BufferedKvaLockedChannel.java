@@ -6,6 +6,7 @@ import org.janelia.saalfeldlab.n5.readdata.VolatileReadData;
 
 import java.io.*;
 
+// TODO make @Deprecated ? (only used in KeyValueAccess)
 class BufferedKvaLockedChannel implements LockedChannel {
 
     private final KeyValueAccess kva;
