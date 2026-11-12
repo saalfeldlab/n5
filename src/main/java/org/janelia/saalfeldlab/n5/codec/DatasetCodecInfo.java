@@ -39,6 +39,47 @@ public interface DatasetCodecInfo extends CodecInfo {
 	}
 
 	/**
+	 * Creates the codec for a given position in a chain of dataset codecs, also
+	 * describing the size of the blocks it will receive.
+	 * <p>
+	 * {@code sourceBlockSize} accounts for the shape changes of all preceding
+	 * codecs (see {@link #encodedBlockSize(int[])}) and for cropped chunks at the
+	 * dataset boundary. Only codecs that need to know the shape of their input
+	 * when decoding (e.g. reshape) need to override this; the default ignores it
+	 * and delegates to {@link #create(DatasetAttributes, DataType)}.
+	 *
+	 * @param attributes
+	 *            the dataset attributes
+	 * @param sourceDataType
+	 *            the data type of the blocks passed to the returned codec's encode method
+	 * @param sourceBlockSize
+	 *            the size of the blocks passed to the returned codec's encode method
+	 * @return the codec
+	 */
+	default DatasetCodec<?, ?> create(final DatasetAttributes attributes, final DataType sourceDataType,
+			final SourceBlockSize sourceBlockSize) {
+
+		return create(attributes, sourceDataType);
+	}
+
+	/**
+	 * The size of the blocks this codec produces when encoding blocks of the given
+	 * size.
+	 * <p>
+	 * The default implementation is the identity, which is correct for every
+	 * shape-preserving codec. Codecs that permute or reshape blocks (transpose,
+	 * reshape) override it. Implementations must not modify {@code blockSize}.
+	 *
+	 * @param blockSize
+	 *            the size of the source block passed to encode
+	 * @return the size of the block returned by encode
+	 */
+	default int[] encodedBlockSize(final int[] blockSize) {
+
+		return blockSize;
+	}
+
+	/**
 	 * The data type of the blocks this codec produces when encoding blocks of the given
 	 * type.
 	 * <p>
@@ -54,4 +95,5 @@ public interface DatasetCodecInfo extends CodecInfo {
 
 		return dataType;
 	}
+
 }

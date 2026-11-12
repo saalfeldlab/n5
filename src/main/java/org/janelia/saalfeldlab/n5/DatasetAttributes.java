@@ -22,11 +22,13 @@ import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.DatasetCodec;
 import org.janelia.saalfeldlab.n5.codec.DatasetCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.SourceBlockSize;
 
 
 /**
@@ -190,17 +192,23 @@ public class DatasetAttributes implements Serializable {
 		for (int l = m - 1; l >= 0; --l) {
 			// the innermost block codec serializes whatever the dataset codecs produce,
 			// which is not the dataset's own type if one of them converts (e.g. cast_value)
+			// likewise, it serializes blocks of the shape the dataset codecs produce,
+			// which is not the chunk size if one of them reshapes (e.g. transpose, reshape)
 			final DataType blockCodecDataType;
+			final int[] blockCodecBlockSize;
 			if (l == 0) {
 				blockCodecDataType = encodedDataType(dataType, datasetCodecInfos);
+				blockCodecBlockSize = encodedBlockSize(blockSizes[0], datasetCodecInfos);
 				if (m > 1 && blockCodecDataType != dataType)
 					throw new N5Exception.N5JsonParseException(
 							"Found a type-changing DatasetCodec (" + dataType + " -> " + blockCodecDataType
 									+ ") on a sharded dataset. Not handled");
-			} else
+			} else {
 				blockCodecDataType = dataType;
+				blockCodecBlockSize = blockSizes[l];
+			}
 
-			blockCodecs[l] = currentBlockCodecInfo.create(blockCodecDataType, blockSizes[l], currentDataCodecInfos);
+			blockCodecs[l] = currentBlockCodecInfo.create(blockCodecDataType, blockCodecBlockSize, currentDataCodecInfos);
 			if (l > 0) {
 				final ShardCodecInfo info = (ShardCodecInfo) currentBlockCodecInfo;
 				currentBlockCodecInfo = info.getInnerBlockCodecInfo();
@@ -216,23 +224,28 @@ public class DatasetAttributes implements Serializable {
 		}
 
 		// add dataset codecs
-		blockCodecs[0] = blockCodecWithDatasetCodecs(this, blockCodecs[0], datasetCodecInfos);
+		blockCodecs[0] = blockCodecWithDatasetCodecs(this, blockCodecs[0], blockSizes[0], datasetCodecInfos);
 
 		return new DefaultDatasetAccess<>(grid, blockCodecs);
 	}
 
 	@SuppressWarnings("unchecked")
 	private static BlockCodec<?> blockCodecWithDatasetCodecs(final DatasetAttributes attributes, final BlockCodec<?> blockCodec,
-			final DatasetCodecInfo[] datasetCodecInfos) {
+			final int[] chunkSize, final DatasetCodecInfo[] datasetCodecInfos) {
 
 		BlockCodec<?> result = blockCodec;
 		if (datasetCodecInfos != null) {
 
-			// The data type stored on disk may differ from the block data type 
+			// The data type stored on disk may differ from the block data type
 			// (e.g. due to presence of aCastValueCodec)
 			// infer the source data type for each DatasetCodec in the chain
 			final DataType[] sourceDataTypes = new DataType[datasetCodecInfos.length];
 			DataType current = attributes.getDataType();
+
+			// Likewise, the shape of the blocks a codec receives may differ from the
+			// chunk size (e.g. after a transpose or reshape)
+			final SourceBlockSize[] sourceBlockSizes = new SourceBlockSize[datasetCodecInfos.length];
+			UnaryOperator<int[]> upstream = UnaryOperator.identity();
 
 			// Each concatenate makes its codec run before the one wrapped so far, so
 			// wrapping the array back to front leaves it applied front to back on encode
@@ -241,11 +254,16 @@ public class DatasetAttributes implements Serializable {
 			for (int i = 0; i < datasetCodecInfos.length; ++i) {
 				sourceDataTypes[i] = current;
 				current = datasetCodecInfos[i].encodedDataType(current);
+
+				sourceBlockSizes[i] = SourceBlockSize.of(attributes.getDimensions(), chunkSize, upstream);
+				final DatasetCodecInfo info = datasetCodecInfos[i];
+				final UnaryOperator<int[]> previous = upstream;
+				upstream = size -> info.encodedBlockSize(previous.apply(size));
 			}
 
 			for (int i = datasetCodecInfos.length - 1; i >= 0; --i) {
 				result = DatasetCodec.concatenate(
-						datasetCodecInfos[i].create(attributes, sourceDataTypes[i]), (BlockCodec)result);
+						datasetCodecInfos[i].create(attributes, sourceDataTypes[i], sourceBlockSizes[i]), (BlockCodec)result);
 			}
 		}
 		return result;
@@ -270,6 +288,26 @@ public class DatasetAttributes implements Serializable {
 		if (datasetCodecInfos != null)
 			for (final DatasetCodecInfo info : datasetCodecInfos)
 				result = info.encodedDataType(result);
+
+		return result;
+	}
+
+	/**
+	 * The size of the blocks the block codec must serialize: the size produced by
+	 * applying every dataset codec to a full chunk of the given size.
+	 *
+	 * @param chunkSize
+	 *            the (innermost) chunk size
+	 * @param datasetCodecInfos
+	 *            the dataset codecs, may be null
+	 * @return the block size after the dataset codecs have been applied
+	 */
+	private static int[] encodedBlockSize(final int[] chunkSize, final DatasetCodecInfo[] datasetCodecInfos) {
+
+		int[] result = chunkSize;
+		if (datasetCodecInfos != null)
+			for (final DatasetCodecInfo info : datasetCodecInfos)
+				result = info.encodedBlockSize(result);
 
 		return result;
 	}
