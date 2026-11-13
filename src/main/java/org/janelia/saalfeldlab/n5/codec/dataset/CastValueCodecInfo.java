@@ -34,94 +34,6 @@ public class CastValueCodecInfo implements DatasetCodecInfo {
 
 	public static final Rounding DEFAULT_ROUNDING = Rounding.NEAREST_EVEN;
 
-	/**
-	 * How non-integral values are rounded when cast to an integral type.
-	 */
-	public enum Rounding {
-
-		/** IEEE 754 {@code roundTiesToEven}. */
-		@SerializedName("nearest-even")
-		NEAREST_EVEN("nearest-even"),
-
-		/** Truncate towards zero. */
-		@SerializedName("towards-zero")
-		TOWARDS_ZERO("towards-zero"),
-
-		/** Round towards positive infinity (ceiling). */
-		@SerializedName("towards-positive")
-		TOWARDS_POSITIVE("towards-positive"),
-
-		/** Round towards negative infinity (floor). */
-		@SerializedName("towards-negative")
-		TOWARDS_NEGATIVE("towards-negative"),
-
-		/** Round to nearest, with ties away from zero. */
-		@SerializedName("nearest-away")
-		NEAREST_AWAY("nearest-away");
-
-		private final String label;
-
-		Rounding(final String label) {
-
-			this.label = label;
-		}
-
-		@Override
-		public String toString() {
-
-			return label;
-		}
-
-		public static Rounding fromString(final String string) {
-
-			for (final Rounding value : values())
-				if (value.label.equals(string))
-					return value;
-
-			return null;
-		}
-	}
-
-	/**
-	 * How values outside the range of the target data type are handled. If no
-	 * policy is configured, out-of-range values raise an error.
-	 */
-	public enum OutOfRange {
-
-		/**
-		 * Map to the smallest/largest representable value, using
-		 * &plusmn;Infinity for types that support it.
-		 */
-		@SerializedName("clamp")
-		CLAMP("clamp"),
-
-		/** Modular arithmetic; integral types only. */
-		@SerializedName("wrap")
-		WRAP("wrap");
-
-		private final String label;
-
-		OutOfRange(final String label) {
-
-			this.label = label;
-		}
-
-		@Override
-		public String toString() {
-
-			return label;
-		}
-
-		public static OutOfRange fromString(final String string) {
-
-			for (final OutOfRange value : values())
-				if (value.label.equals(string))
-					return value;
-
-			return null;
-		}
-	}
-
 	@NameConfig.Parameter(value = "data_type")
 	private DataType dataType;
 
@@ -195,7 +107,6 @@ public class CastValueCodecInfo implements DatasetCodecInfo {
 	@Override
 	public DataType encodedDataType(final DataType dataType) {
 
-		// converting the data type is the whole point of this codec
 		return this.dataType;
 	}
 
@@ -222,22 +133,80 @@ public class CastValueCodecInfo implements DatasetCodecInfo {
 					+ "; only numerical data types are supported");
 	}
 
-	@Override
-	public boolean equals(final Object obj) {
+	/**
+	 * How non-integral values are rounded when cast to an integral type.
+	 */
+	public enum Rounding {
 
-		if (obj instanceof CastValueCodecInfo) {
-			final CastValueCodecInfo other = (CastValueCodecInfo)obj;
-			return dataType == other.dataType
-					&& getRounding() == other.getRounding()
-					&& outOfRange == other.outOfRange;
+		/** IEEE 754 {@code roundTiesToEven}. */
+		@SerializedName("nearest-even")
+		NEAREST_EVEN("nearest-even"),
+
+		/** Truncate towards zero. */
+		@SerializedName("towards-zero")
+		TOWARDS_ZERO("towards-zero"),
+
+		/** Round towards positive infinity (ceiling). */
+		@SerializedName("towards-positive")
+		TOWARDS_POSITIVE("towards-positive"),
+
+		/** Round towards negative infinity (floor). */
+		@SerializedName("towards-negative")
+		TOWARDS_NEGATIVE("towards-negative"),
+
+		/** Round to nearest, with ties away from zero. */
+		@SerializedName("nearest-away")
+		NEAREST_AWAY("nearest-away");
+
+		private final String label;
+
+		Rounding(final String label) {
+
+			this.label = label;
 		}
-		return false;
+
+		public static Rounding fromString(final String string) {
+
+			for (final Rounding value : values())
+				if (value.label.equals(string))
+					return value;
+
+			return null;
+		}
 	}
 
-	@Override
-	public int hashCode() {
+	/**
+	 * How values outside the range of the target data type are handled. If no
+	 * policy is configured, out-of-range values raise an error.
+	 */
+	public enum OutOfRange {
 
-		return Objects.hash(dataType, getRounding(), outOfRange);
+		/**
+		 * Map to the smallest/largest representable value, using
+		 * &plusmn;Infinity for types that support it.
+		 */
+		@SerializedName("clamp")
+		CLAMP("clamp"),
+
+		/** Modular arithmetic; integral types only. */
+		@SerializedName("wrap")
+		WRAP("wrap");
+
+		private final String label;
+
+		OutOfRange(final String label) {
+
+			this.label = label;
+		}
+
+		public static OutOfRange fromString(final String string) {
+
+			for (final OutOfRange value : values())
+				if (value.label.equals(string))
+					return value;
+
+			return null;
+		}
 	}
 
 }
