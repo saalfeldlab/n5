@@ -12,20 +12,16 @@ import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.ShortArrayDataBlock;
 import org.janelia.saalfeldlab.n5.StringDataBlock;
 import org.janelia.saalfeldlab.n5.codec.DatasetCodec;
-import org.janelia.saalfeldlab.n5.codec.SourceBlockSize;
 
 /**
- * Reshapes {@link DataBlock}s without reordering their elements.
+ * Reshapes {@link DataBlock}s between two fixed shapes without reordering
+ * their elements.
  * <p>
- * Since N5 blocks are stored in F-order, and a reshape preserves the
- * (F-order) raveled element order, only the block size changes; the data array
- * is shared, never copied.
- * <p>
- * Decoding needs the input shape, which cannot in general be recovered from
- * the output shape (merged dimensions cannot be split). It is taken from the
- * {@link SourceBlockSize}: the full source size if the block has as many
- * elements as a full chunk, otherwise the cropped size at the block's grid
- * position.
+ * Encoding gives every block the {@code encodedShape}, decoding gives it the
+ * {@code decodedShape}. Both must have the same number of elements, and so must
+ * every block passed to the codec. This codec checks the number of
+ * data block elements when encoding / decoding, not an the exact
+ * data block shape.
  * <p>
  * Instances are immutable and thread-safe.
  *
@@ -34,45 +30,64 @@ import org.janelia.saalfeldlab.n5.codec.SourceBlockSize;
  */
 public class ReshapeCodec<T> implements DatasetCodec<T, T> {
 
-	private final ReshapeShape shape;
+	private final int[] decodedShape;
 
-	private final SourceBlockSize sourceBlockSize;
+	private final int[] encodedShape;
 
-	private final int[] fullSourceSize;
+	private final int numElements;
 
-	private final int fullNumElements;
+	/**
+	 * @param decodedShape
+	 *            the shape of decoded blocks
+	 * @param encodedShape
+	 *            the shape of encoded blocks
+	 */
+	public ReshapeCodec(final int[] decodedShape, final int[] encodedShape) {
 
-	ReshapeCodec(final ReshapeShape shape, final SourceBlockSize sourceBlockSize) {
+		this.numElements = DataBlock.getNumElements(decodedShape);
+		if (DataBlock.getNumElements(encodedShape) != numElements)
+			throw new N5Exception("Cannot reshape " + Arrays.toString(decodedShape) + " to " + Arrays.toString(encodedShape)
+					+ ": the number of elements differs");
 
-		this.shape = shape;
-		this.sourceBlockSize = sourceBlockSize;
-		this.fullSourceSize = sourceBlockSize.full();
-		this.fullNumElements = DataBlock.getNumElements(fullSourceSize);
+		this.decodedShape = decodedShape.clone();
+		this.encodedShape = encodedShape.clone();
+	}
 
-		// fail early on configurations that cannot reshape a full chunk
-		shape.outputShape(fullSourceSize);
+	public int[] getDecodedShape() {
+
+		return decodedShape.clone();
+	}
+
+	public int[] getEncodedShape() {
+
+		return encodedShape.clone();
 	}
 
 	@Override
 	public DataBlock<T> encode(final DataBlock<T> dataBlock) {
 
-		final int[] encodedSize = shape.outputShape(dataBlock.getSize());
-		return wrap(encodedSize, dataBlock.getGridPosition(), dataBlock.getData());
+		return reshape(dataBlock, encodedShape);
 	}
 
 	@Override
 	public DataBlock<T> decode(final DataBlock<T> dataBlock) {
 
-		final int numElements = dataBlock.getNumElements();
-		final int[] decodedSize = numElements == fullNumElements
-				? fullSourceSize.clone()
-				: sourceBlockSize.at(dataBlock.getGridPosition());
+		return reshape(dataBlock, decodedShape);
+	}
+	
+	private DataBlock<T> reshape(final DataBlock<T> dataBlock, int[] newShape) {
 
-		if (DataBlock.getNumElements(decodedSize) != numElements)
-			throw new N5Exception("Cannot decode reshaped block at " + Arrays.toString(dataBlock.getGridPosition())
-					+ ": it has " + numElements + " elements, expected a block of size " + Arrays.toString(decodedSize));
+		checkNumElements(dataBlock, newShape);
+		return wrap(newShape.clone(), dataBlock.getGridPosition(), dataBlock.getData());
+	}
 
-		return wrap(decodedSize, dataBlock.getGridPosition(), dataBlock.getData());
+	private void checkNumElements(final DataBlock<T> dataBlock, final int[] expectedShape) {
+
+		if (dataBlock.getNumElements() != numElements)
+			throw new N5Exception("Cannot reshape block at " + Arrays.toString(dataBlock.getGridPosition())
+					+ " of size " + Arrays.toString(dataBlock.getSize()) + " (" + dataBlock.getNumElements()
+					+ " elements): reshape expects blocks of size " + Arrays.toString(expectedShape)
+					+ " (" + numElements + " elements)");
 	}
 
 	@SuppressWarnings("unchecked")
