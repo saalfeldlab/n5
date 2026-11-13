@@ -5,9 +5,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DataType;
+import org.janelia.saalfeldlab.n5.DatasetAttributes;
+import org.janelia.saalfeldlab.n5.N5Exception;
 import org.janelia.saalfeldlab.n5.N5Exception.N5IOException;
+import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.DatasetCodecInfo;
+import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
+import org.janelia.saalfeldlab.n5.shard.DatasetAccess;
+import org.janelia.saalfeldlab.n5.shard.TestPositionValueAccess;
 import org.janelia.saalfeldlab.n5.codec.dataset.CastValueCodecInfo.OutOfRange;
 import org.janelia.saalfeldlab.n5.codec.dataset.CastValueCodecInfo.Rounding;
 import org.junit.Test;
@@ -60,7 +73,7 @@ public class CastValueCodecTests {
 
 		// ties round to the even neighbour
 		assertArrayEquals(new short[]{0, 2, 2, 4, -2, -2},
-				codec.encode(float64Block(0.5, 1.5, 2.5, 3.5, -1.5, -2.5)).getData());
+				codec.encode(float64Block(0.5, 1.5, 2.5, 3.5, -1.8, -2.3)).getData());
 	}
 
 	@Test
@@ -69,8 +82,8 @@ public class CastValueCodecTests {
 		final CastValueCodec<double[], short[]> codec = new CastValueCodec<>(
 				DataType.FLOAT64, DataType.INT16, Rounding.TOWARDS_ZERO, null);
 
-		assertArrayEquals(new short[]{1, 1, -1, -1},
-				codec.encode(float64Block(1.2, 1.8, -1.2, -1.8)).getData());
+		assertArrayEquals(new short[]{1, 1, 0, 0, -1, -1,},
+				codec.encode(float64Block(1.2, 1.8, 0.5, -0.5, -1.2, -1.8)).getData());
 	}
 
 	@Test
@@ -298,5 +311,150 @@ public class CastValueCodecTests {
 		// the round trip is lossy exactly where rounding occurred
 		final double[] decoded = scaleOffset.decode(cast.decode(encoded)).getData();
 		assertArrayEquals(new double[]{0.0, 0.12, 1.5, -2.25}, decoded, 1e-12);
+	}
+
+	/*
+	 * chains of cast_value codecs: each codec must be created for the data type
+	 * produced by the codecs before it, not the dataset's data type
+	 */
+
+	@Test
+	public void testChainedCastValueInfosUseIncomingDataType() {
+
+		final DatasetAttributes attributes = attributes(DataType.FLOAT64);
+		final CastValueCodecInfo toFloat32 = new CastValueCodecInfo(DataType.FLOAT32);
+		final CastValueCodecInfo toInt16 = new CastValueCodecInfo(DataType.INT16);
+
+		// walk the chain the way DatasetAttributes does
+		final DataType afterFirst = toFloat32.encodedDataType(attributes.getDataType());
+		assertEquals(DataType.FLOAT32, afterFirst);
+		assertEquals(DataType.INT16, toInt16.encodedDataType(afterFirst));
+
+		final CastValueCodec<?, ?> first = toFloat32.create(attributes, attributes.getDataType());
+		assertEquals(DataType.FLOAT64, first.getSourceDataType());
+		assertEquals(DataType.FLOAT32, first.getTargetDataType());
+
+		final CastValueCodec<?, ?> second = toInt16.create(attributes, afterFirst);
+		assertEquals(DataType.FLOAT32, second.getSourceDataType());
+		assertEquals(DataType.INT16, second.getTargetDataType());
+
+		// create(attributes) alone assumes the codec is first in the chain
+		assertEquals(DataType.FLOAT64, toInt16.create(attributes).getSourceDataType());
+	}
+
+	@Test
+	public void testDatasetAttributesPassIncomingDataTypesToCastValueInfos() {
+
+		// float64 -> float32 -> (scale_offset, type preserving) -> uint8 -> int32
+		final RecordingCastValueCodecInfo toFloat32 = new RecordingCastValueCodecInfo(DataType.FLOAT32);
+		final RecordingCastValueCodecInfo toUint8 = new RecordingCastValueCodecInfo(DataType.UINT8, OutOfRange.CLAMP);
+		final RecordingCastValueCodecInfo toInt32 = new RecordingCastValueCodecInfo(DataType.INT32);
+
+		final ChainAttributes attributes = new ChainAttributes(DataType.FLOAT64, new RawBlockCodecInfo(),
+				toFloat32, new ScaleOffsetCodecInfo(2.0, 1.0), toUint8, toInt32);
+
+		toFloat32.assertCreatedOnce(DataType.FLOAT64, DataType.FLOAT32);
+		toUint8.assertCreatedOnce(DataType.FLOAT32, DataType.UINT8);
+		toInt32.assertCreatedOnce(DataType.UINT8, DataType.INT32);
+
+		// encode a block through the chain
+		final TestPositionValueAccess store = new TestPositionValueAccess();
+		final DatasetAccess<double[]> access = attributes.getDatasetAccess();
+		final long[] gridPosition = {0};
+		access.writeChunk(store, float64Block(0.25, 1.75, 3.0, 200.0));
+
+		// float32 is exact for these values
+		// scale_offset:     (x - 1) * 2       -> {-1.5, 1.5, 4, 398}
+		// uint8, clamp:     round, then clamp -> {0, 2, 4, 255}
+		// int32:            exact             -> {0, 2, 4, 255}, stored big-endian by the raw block codec
+		final ByteBuffer stored = ByteBuffer.wrap(store.get(gridPosition).allBytes()).order(ByteOrder.BIG_ENDIAN);
+		assertEquals(4 * Integer.BYTES, stored.remaining());
+		final int[] storedValues = new int[4];
+		stored.asIntBuffer().get(storedValues);
+		assertArrayEquals(new int[]{0, 2, 4, 255}, storedValues);
+
+		// decoding inverts each step: int32 -> uint8 -> float32 -> x / 2 + 1 -> float64
+		final DataBlock<double[]> read = access.readChunk(store, gridPosition);
+		assertArrayEquals(new double[]{1, 2, 3, 128.5}, read.getData(), 0.0);
+	}
+
+	@Test
+	public void testChainedCastValueRoundTripStoresFinalDataType() {
+
+		final double[] values = {0.25, 1.5, -2.5, 1000.75};
+		final ChainAttributes attributes = new ChainAttributes(DataType.FLOAT64, new RawBlockCodecInfo(),
+				new CastValueCodecInfo(DataType.FLOAT32), new CastValueCodecInfo(DataType.INT16));
+
+		final TestPositionValueAccess store = new TestPositionValueAccess();
+		final DatasetAccess<double[]> access = attributes.getDatasetAccess();
+		final long[] gridPosition = {0};
+		access.writeChunk(store, float64Block(values));
+
+		// the raw block codec serializes the type at the end of the chain: 2 bytes per element
+		assertEquals(2 * values.length, store.get(gridPosition).allBytes().length);
+
+		// float32 is exact for these values; int16 rounds to nearest even
+		final DataBlock<double[]> read = access.readChunk(store, gridPosition);
+		assertArrayEquals(new double[]{0, 2, -2, 1001}, read.getData(), 0.0);
+	}
+
+	@Test
+	public void testCastValueInfoRejectsNonNumericalIncomingDataType() {
+
+		final CastValueCodecInfo toInt16 = new CastValueCodecInfo(DataType.INT16);
+		final DatasetAttributes attributes = attributes(DataType.FLOAT64);
+		assertThrows(N5Exception.class, () -> toInt16.create(attributes, DataType.STRING));
+		assertThrows(N5Exception.class, () -> toInt16.create(attributes, DataType.OBJECT));
+	}
+
+	private static DatasetAttributes attributes(final DataType dataType) {
+
+		return new DatasetAttributes(new long[]{4}, new int[]{4}, dataType);
+	}
+
+	/** Records the incoming data type of every codec it creates. */
+	private static class RecordingCastValueCodecInfo extends CastValueCodecInfo {
+
+		private final List<CastValueCodec<?, ?>> created = new ArrayList<>();
+
+		RecordingCastValueCodecInfo(final DataType dataType) {
+
+			super(dataType);
+		}
+
+		RecordingCastValueCodecInfo(final DataType dataType, final OutOfRange outOfRange) {
+
+			super(dataType, DEFAULT_ROUNDING, outOfRange);
+		}
+
+		@Override
+		public CastValueCodec<?, ?> create(final DatasetAttributes attributes, final DataType sourceDataType) {
+
+			final CastValueCodec<?, ?> codec = super.create(attributes, sourceDataType);
+			created.add(codec);
+			return codec;
+		}
+
+		void assertCreatedOnce(final DataType expectedSource, final DataType expectedTarget) {
+
+			assertEquals("codecs created by cast_value to " + getDataType(), 1, created.size());
+			assertEquals("source of cast_value to " + getDataType(), expectedSource, created.get(0).getSourceDataType());
+			assertEquals("target of cast_value to " + getDataType(), expectedTarget, created.get(0).getTargetDataType());
+		}
+	}
+
+	private static class ChainAttributes extends DatasetAttributes {
+
+		ChainAttributes(final DataType dataType, final BlockCodecInfo blockCodecInfo,
+				final DatasetCodecInfo... datasetCodecInfos) {
+
+			super(new long[]{4}, new int[]{4}, dataType, blockCodecInfo, datasetCodecInfos, new DataCodecInfo[0]);
+		}
+
+		@Override // to make this accessible for the test
+		protected <T> DatasetAccess<T> getDatasetAccess() {
+
+			return super.getDatasetAccess();
+		}
 	}
 }
