@@ -10,6 +10,7 @@ import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -213,13 +214,51 @@ public class FileSystemKeyValueAccess implements KeyValueAccess {
 		// normalize make absolute the scheme specific part only
 		try {
 			final URI normalUri = URI.create(normalPath);
-			if (normalUri.isAbsolute()) return normalUri.normalize();
+			if (normalUri.isAbsolute())
+				return normalUri.normalize();
 		} catch (final IllegalArgumentException e) {
-			return new File(normalPath).toURI().normalize();
+			//fallthrough
 		}
-		return new File(normalPath).toURI().normalize();
 
+		return normalizedUriFromFilePath(normalPath);
 	}
+
+
+    /**
+	 * This is an INTERNAL method, and should only be used when we expect
+	 * the passed in path to point to a file.
+	 * <p>
+	 * For UNC file paths, {@link File#toURI()} returns a legacy UNC format
+	 * which puts the entire location in the path part of the URI. Modern
+	 * URIs for UNC paths generally but the networks share in the authority
+	 * path, and this behaves better generally, especially when normalizing
+	 * the URI.
+	 * <p>
+	 * The solution is to go through {@link Path#toUri()} in that case. However,
+	 * We don't want to go directly through {@link Paths#get(String, String...)}
+	 * since unfortunately {@code File(path).toPath().toUri()} is not always the same
+	 * as {@code Paths.get(path).toUri()}.
+	 *
+	 * All other cases where the resulting path contains no authority
+	 * continue to go through {@link File#toURI()}
+	 *
+     * @param pathToFile path to get a File instance from
+     * @return a normalized URI.
+     */
+	private URI normalizedUriFromFilePath(final String pathToFile) {
+
+		final File file = new File(pathToFile);
+		try {
+			/* if URI from path has an authority, return it*/
+			final URI pathUri = file.toPath().toUri().normalize();
+			if (pathUri.getAuthority() != null)
+				return pathUri;
+		} catch (final InvalidPathException e) {
+			//fallthrough
+		}
+		return file.toURI().normalize();
+	}
+
 
 	@Override
 	public String compose(final String... components) {
