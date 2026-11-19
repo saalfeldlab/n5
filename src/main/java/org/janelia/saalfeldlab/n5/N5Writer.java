@@ -110,12 +110,9 @@ public interface N5Writer extends N5Reader {
 	 * @param datasetAttributes the dataset attributes
 	 * @throws N5Exception the exception
 	 */
-	default void setDatasetAttributes(
-			final String datasetPath,
-			final DatasetAttributes datasetAttributes) throws N5Exception {
-
-		setAttributes(datasetPath, getConvertedDatasetAttributes(datasetAttributes).asMap());
-	}
+	void setDatasetAttributes(
+			String datasetPath,
+			DatasetAttributes datasetAttributes) throws N5Exception;
 
 	/**
 	 * Set the SemVer version of this container as specified in the
@@ -179,16 +176,9 @@ public interface N5Writer extends N5Reader {
 	 * @return DatasetAttributes optimal attributes object to be used for read/write operations
 	 * @throws N5Exception
 	 */
-	default DatasetAttributes createDataset(
-			final String datasetPath,
-			final DatasetAttributes datasetAttributes) throws N5Exception {
-
-		final String normalPath = N5URI.normalizeGroupPath(datasetPath);
-		createGroup(normalPath);
-		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
-		setDatasetAttributes(normalPath, convertedDatasetAttributes);
-		return convertedDatasetAttributes;
-	}
+	DatasetAttributes createDataset(
+			String datasetPath,
+			DatasetAttributes datasetAttributes) throws N5Exception;
 
 	/**
 	 * Creates a dataset. This does not create any data but the path and
@@ -242,7 +232,7 @@ public interface N5Writer extends N5Reader {
 			final DataBlock<T>... chunks) throws N5Exception {
 
 		// default method is naive
-		DatasetAttributes convertedAttributes = getConvertedDatasetAttributes(datasetAttributes);
+		final DatasetAttributes convertedAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		for (DataBlock<T> block : chunks) {
 			writeChunk(datasetPath, convertedAttributes, block);
 		}
@@ -338,6 +328,7 @@ public interface N5Writer extends N5Reader {
 	default boolean deleteBlock(
 			final String datasetPath,
 			final long... gridPosition) throws N5Exception {
+
 		final DatasetAttributes datasetAttributes = getDatasetAttributes(datasetPath);
 		return deleteBlock(datasetPath, datasetAttributes, gridPosition);
 	}
@@ -410,9 +401,10 @@ public interface N5Writer extends N5Reader {
 	 * @throws N5Exception if any of the chunks did exist but could not be deleted
 	 */
 	default boolean deleteChunks(
-			final String datasetPath,
-			final DatasetAttributes datasetAttributes,
-			final List<long[]> gridPositions) throws N5Exception {
+			String datasetPath,
+			DatasetAttributes datasetAttributes,
+			List<long[]> gridPositions) throws N5Exception {
+
 		boolean deleted = false;
 		for (long[] pos : gridPositions) {
 			deleted |= deleteChunk(datasetPath, datasetAttributes, pos);
@@ -436,6 +428,7 @@ public interface N5Writer extends N5Reader {
 			final DatasetAttributes datasetAttributes,
 			final long... gridPosition) throws N5Exception {
 
+		final DatasetAttributes convertedDatasetAttributes = getConvertedDatasetAttributes(datasetAttributes);
 		final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
 		try (ObjectOutputStream out = new ObjectOutputStream(byteOutputStream)) {
 			out.writeObject(object);
@@ -444,6 +437,6 @@ public interface N5Writer extends N5Reader {
 		}
 		final byte[] bytes = byteOutputStream.toByteArray();
 		final DataBlock<?> dataBlock = new ByteArrayDataBlock(null, gridPosition, bytes);
-		writeChunk(datasetPath, datasetAttributes, dataBlock);
+		writeChunk(datasetPath, convertedDatasetAttributes, dataBlock);
 	}
 }

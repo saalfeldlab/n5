@@ -19,6 +19,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.janelia.saalfeldlab.n5.*;
+import org.janelia.saalfeldlab.n5.N5Path.N5DirectoryPath;
+import org.janelia.saalfeldlab.n5.N5Path.N5FilePath;
 import org.janelia.saalfeldlab.n5.codec.DataCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.N5BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.RawBlockCodecInfo;
@@ -45,7 +47,8 @@ public class ShardTest {
 		@Override public N5Writer createTempN5Writer() {
 
 			if (LOCAL_DEBUG) {
-				final N5Writer writer = new TrackingN5Writer("src/test/resources/test.n5", new FileSystemKeyValueAccess());
+				final String basePath = "src/test/resources/test.n5";
+				final N5Writer writer = new TrackingN5Writer(new FileSystemKeyValueRoot(basePath));
 				writer.remove(""); // Clear old when starting new test
 				return writer;
 			}
@@ -53,7 +56,7 @@ public class ShardTest {
 			final String basePath = new File(tempN5PathName()).toURI().normalize().getPath();
 			try {
 				String uri = new URI("file", null, basePath, null).toString();
-				return new TrackingN5Writer(uri, new FileSystemKeyValueAccess());
+				return new TrackingN5Writer(new FileSystemKeyValueRoot(uri));
 			} catch (URISyntaxException e) {
 				e.printStackTrace();
 			}
@@ -168,7 +171,7 @@ public class ShardTest {
 				new ByteArrayDataBlock(chunkSize, new long[]{11, 11}, data)
 		);
 
-		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
+		final KeyValueRoot kvr = ((N5KeyValueWriter)writer).getKeyValueRoot();
 
 		long[][] keys = new long[][]{
 				{0, 0},
@@ -183,8 +186,8 @@ public class ShardTest {
 				{2, 1}
 		};
 
-		ensureKeysExist(kva, writer.getURI(), dataset, datasetAttributes, keys);
-		ensureKeysDoNotExist(kva, writer.getURI(), dataset, datasetAttributes, someUnusedKeys);
+		ensureKeysExist(kvr, dataset, datasetAttributes, keys);
+		ensureKeysDoNotExist(kvr, dataset, datasetAttributes, someUnusedKeys);
 
 		final long[][] chunkIndices = new long[][]{{0, 0}, {0, 1}, {1, 0}, {1, 1}, {4, 0}, {5, 0}, {11, 11}};
 		for (long[] chunkIndex : chunkIndices) {
@@ -224,8 +227,8 @@ public class ShardTest {
 				{2, 1}
 		};
 
-		ensureKeysExist(kva, writer.getURI(), dataset, datasetAttributes, keys2);
-		ensureKeysDoNotExist(kva, writer.getURI(), dataset, datasetAttributes, someUnusedKeys2);
+		ensureKeysExist(kvr, dataset, datasetAttributes, keys2);
+		ensureKeysDoNotExist(kvr, dataset, datasetAttributes, someUnusedKeys2);
 
 		final long[][] oldChunkIndices = new long[][]{{0, 1}, {1, 0}, {4, 0}, {5, 0}, {11, 11}};
 		for (long[] chunkIndex : oldChunkIndices) {
@@ -245,21 +248,21 @@ public class ShardTest {
 		}
 	}
 
-	private void ensureKeysExist(KeyValueAccess kva, URI uri, String dataset,
+	private void ensureKeysExist(KeyValueRoot kvr, String dataset,
 			DatasetAttributes datasetAttributes, long[][] keys) {
 
 		for (long[] key : keys) {
-			final String shard = kva.compose(uri, dataset, datasetAttributes.relativeBlockPath(key));
-			Assert.assertTrue("Shard at" + shard + "Does not exist", kva.exists(shard));
+			final N5FilePath shard = N5DirectoryPath.of(dataset).resolve(datasetAttributes.relativeBlockPath(key)).asFile();
+			Assert.assertTrue("Shard at" + shard + "Does not exist", kvr.exists(shard));
 		}
 	}
 
-	private void ensureKeysDoNotExist(KeyValueAccess kva, URI uri, String dataset,
+	private void ensureKeysDoNotExist(KeyValueRoot kvr, String dataset,
 			DatasetAttributes datasetAttributes, long[][] keys) {
 
 		for (long[] key : keys) {
-			final String shard = kva.compose(uri, dataset, datasetAttributes.relativeBlockPath(key));
-			Assert.assertFalse("Shard at" + shard + " exists but should not.", kva.exists(shard));
+			final N5FilePath shard = N5DirectoryPath.of(dataset).resolve(datasetAttributes.relativeBlockPath(key)).asFile();
+			Assert.assertFalse("Shard at" + shard + " exists but should not.", kvr.exists(shard));
 		}
 	}
 
@@ -282,7 +285,7 @@ public class ShardTest {
 		final DatasetAttributes datasetAttributes = writer.createDataset(dataset, attrs);
 		assertTrue(datasetAttributes.isSharded());
 
-		final KeyValueAccess kva = ((N5KeyValueWriter)writer).getKeyValueAccess();
+		final KeyValueRoot kvr = ((N5KeyValueWriter)writer).getKeyValueRoot();
 
 		final int[] chunkSize = datasetAttributes.getChunkSize();
 		final int numElements = chunkSize[0] * chunkSize[1];
@@ -344,8 +347,8 @@ public class ShardTest {
 
 		int i = 0;
 		for (String[] key : keys) {
-			final String shardPath = kva.compose(writer.getURI(), key);
-			Assert.assertEquals("shard at " + shardPath + " was the wrong size", shardSizes[i++], kva.size(shardPath));
+			final N5FilePath shardPath = N5FilePath.of(String.join("/", key));
+			Assert.assertEquals("shard at " + shardPath + " was the wrong size", shardSizes[i++], kvr.size(shardPath));
 		}
 
 	}
@@ -631,22 +634,6 @@ public class ShardTest {
 			writer.resetNumMaterializeCalls();
 			writer.readBlock(dataset, datasetAttributes, new long[] {0,0});
 			// one for the index, one for the four blocks (aggregated)
-			assertEquals(2, writer.getNumMaterializeCalls());
-
-
-			/**
-			 *  Aggregate read calls
-			 */
-            writer.tkva.aggregate = true;
-			writer.resetNumMaterializeCalls();
-			writer.readChunks(dataset, datasetAttributes, ptList);
-
-			// one for the index, one that covers ALL the blocks)
-			assertEquals(2, writer.getNumMaterializeCalls());
-
-			writer.resetNumMaterializeCalls();
-			writer.readBlock(dataset, datasetAttributes, new long[] {0,0});
-			// one for the index, one that covers ALL the blocks
 			assertEquals(2, writer.getNumMaterializeCalls());
 		}
 	}

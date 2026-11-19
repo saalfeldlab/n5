@@ -9,6 +9,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
+import java.util.StringJoiner;
 import org.janelia.saalfeldlab.n5.codec.BlockCodec;
 import org.janelia.saalfeldlab.n5.codec.BlockCodecInfo;
 import org.janelia.saalfeldlab.n5.codec.CodecInfo;
@@ -93,7 +94,7 @@ public class DatasetAttributes implements Serializable {
 		this.defaultValue = defaultValue == null ? JsonNull.INSTANCE : defaultValue;
 
 		this.blockCodecInfo = blockCodecInfo == null ? defaultBlockCodecInfo() : blockCodecInfo;
-		this.datasetCodecInfos = datasetCodecInfos;
+		this.datasetCodecInfos = datasetCodecInfos == null ? new DatasetCodecInfo[0] : datasetCodecInfos;
 
 		if (dataCodecInfos == null)
 			this.dataCodecInfos = new DataCodecInfo[0];
@@ -512,5 +513,20 @@ public class DatasetAttributes implements Serializable {
 			}
 			return null;
 		}
+	}
+
+	@Override
+	public String toString() {
+		return new StringJoiner(", ", DatasetAttributes.class.getSimpleName() + "[", "]")
+				.add("blockCodecInfo=" + blockCodecInfo)
+				.add("dimensions=" + Arrays.toString(dimensions))
+				.add("chunkSize=" + Arrays.toString(chunkSize))
+				.add("blockSize=" + Arrays.toString(blockSize))
+				.add("dataType=" + dataType)
+				.add("defaultValue=" + defaultValue)
+				.add("dataCodecInfos=" + Arrays.toString(dataCodecInfos))
+				.add("datasetCodecInfos=" + Arrays.toString(datasetCodecInfos))
+				.add("access=" + access)
+				.toString();
 	}
 }
